@@ -39,7 +39,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Conditional, Controlled
+from pennylane.ops import Conditional, Controlled, GlobalPhase
 from pennylane.tape import QuantumScript
 
 
@@ -74,17 +74,23 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     return layer_str
 
 
-def _add_grouping_symbols(op, layer_str, config):  # pylint: disable=unused-argument
+def _add_grouping_symbols(op_wires, layer_str, config):  # pylint: disable=unused-argument
     """Adds symbols indicating the extent of a given object."""
 
-    if len(op.wires) > 1:
-        mapped_wires = [config.wire_map[w] for w in op.wires]
-        min_w, max_w = min(mapped_wires), max(mapped_wires)
-        layer_str[min_w] = "╭"
-        layer_str[max_w] = "╰"
+    if len(op_wires) == 1:
+        return layer_str
 
-        for w in range(min_w + 1, max_w):
-            layer_str[w] = "├" if w in mapped_wires else "│"
+    if len(op_wires) == 0:
+        mapped_wires = list(range(len(config.wire_map)))
+    else:
+        mapped_wires = [config.wire_map[w] for w in op_wires]
+    min_w, max_w = min(mapped_wires), max(mapped_wires)
+
+    layer_str[min_w] = "╭"
+    layer_str[max_w] = "╰"
+
+    for w in range(min_w + 1, max_w):
+        layer_str[w] = "├" if w in mapped_wires else "│"
 
     return layer_str
 
@@ -127,18 +133,35 @@ def _add_cond(obj: Conditional, layer_str, config, tape_cache=None, skip_groupin
 def _add_controlled(
     obj: Controlled, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
-    layer_str = _add_grouping_symbols(obj, layer_str, config)
+    if isinstance(obj.base, GlobalPhase):
+        return _add_controlled_global_phase(obj, layer_str, config)
+
+    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+    for w, val in zip(obj.control_wires, obj.control_values):
+        layer_str[config.wire_map[w]] += "●" if val else "○"
+    return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
+
+
+def _add_controlled_global_phase(obj, layer_str, config):
+    """This is not another dispatch managed by @_add_obj.register, but a manually managed dispatch."""
+    layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
+
     for w, val in zip(obj.control_wires, obj.control_values):
         layer_str[config.wire_map[w]] += "●" if val else "○"
 
-    return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
+    label = obj.base.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+    for w, val in config.wire_map.items():
+        if w not in obj.control_wires:
+            layer_str[val] += label
+
+    return layer_str
 
 
 @_add_obj.register
 def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation."""
     if not skip_grouping_symbols:
-        layer_str = _add_grouping_symbols(obj, layer_str, config)
+        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     if len(obj.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
@@ -169,7 +192,7 @@ def _add_mid_measure_op(
 
 @_add_obj.register
 def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_symbols=False):
-    layer_str = _add_grouping_symbols(obj, layer_str, config)
+    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
     label = f"Tape:{config.cache['tape_offset']+len(tape_cache)}"
     for w in obj.wires:
         layer_str[config.wire_map[w]] += label
@@ -234,7 +257,7 @@ def _add_measurement(
     if m.mv is not None:
         return _add_cwire_measurement(m, layer_str, config)
 
-    layer_str = _add_grouping_symbols(m, layer_str, config)
+    layer_str = _add_grouping_symbols(m.wires, layer_str, config)
 
     if m.obs is None:
         obs_label = None

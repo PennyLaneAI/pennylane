@@ -100,7 +100,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         config = _Config(
             wire_map=default_wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=0
         )
-        assert out == _add_grouping_symbols(op, ["", "", "", ""], config)
+        assert out == _add_grouping_symbols(op.wires, ["", "", "", ""], config)
 
     @pytest.mark.parametrize(
         "op, bit_map, layer_str, out",
