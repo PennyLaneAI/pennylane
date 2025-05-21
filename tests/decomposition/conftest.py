@@ -27,12 +27,9 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     self_adjoint,
 )
-<<<<<<< HEAD
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard, _controlled_x_decomp
 from pennylane.ops.qubit.parametric_ops_single_qubit import _controlled_phase_shift_decomp
-=======
->>>>>>> master
 
 decompositions = defaultdict(list)
 

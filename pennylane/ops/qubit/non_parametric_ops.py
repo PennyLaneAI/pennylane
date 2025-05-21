@@ -264,10 +264,6 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 
 
 def _controlled_h_resources(*_, num_control_wires, num_work_wires, **__):
