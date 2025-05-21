@@ -146,5 +146,12 @@ class ExecutionConfig:
         if self.executor_backend is None:
             self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
 
+    def __str__(self):
+        """Pretty print the execution config in constructor-style format."""
+        field_strs = []
+        for k, v in self.__dict__.items():
+            field_strs.append(f"    {k}={repr(v)},")
+        return "ExecutionConfig(\n" + "\n".join(field_strs) + "\n)"
+
 
 DefaultExecutionConfig = ExecutionConfig()
