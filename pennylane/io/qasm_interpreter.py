@@ -593,6 +593,11 @@ class QasmInterpreter(QASMVisitor):
 
             @for_loop(start, stop, step)
             def loop(i, execution_context):
+                context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = {
+                    'ty': i.__class__.__name__,
+                    'val': i,
+                    'line': node.span.start_line,
+                }
                 # we don't want to populate the gates again with every call to visit
                 context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                 # process loop body
@@ -873,9 +878,9 @@ class QasmInterpreter(QASMVisitor):
                 wrapper = ops.adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(pow, z=mod.argument.value)
+                    wrapper = partial(pow, exp=mod.argument.value)
                 elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(pow, z=self.retrieve_variable(mod.argument.name, context)["val"])
+                    wrapper = partial(pow, exp=self.retrieve_variable(mod.argument.name, context)["val"])
             elif mod.modifier.name == 'ctrl':
                 wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
@@ -949,6 +954,8 @@ class QasmInterpreter(QASMVisitor):
 
             elif re.search('Literal', arg.__class__.__name__) is not None:
                 args.append(arg.value)
+            else:
+                raise NameError("Uninitialized variable encountered in QASM.")
         return partial(
             gates_dict[node.name.name.upper()],
             *args,

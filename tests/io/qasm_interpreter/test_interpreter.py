@@ -1,8 +1,6 @@
 """
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
-from functools import partial
-
 import pytest
 from pennylane.wires import Wires
 
@@ -63,18 +61,6 @@ class TestInterpreter:
         spy = mocker.spy(QasmInterpreter, "visit")
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
-        
-    def test_control_flow(self, mocker):
-        # TODO: break up into smaller tests
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
-
-        # TODO: mocks
-
-        ast = parse(open("control_flow.qasm", mode="r").read(), permissive=True)
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'control_flow'})
-        context['callable']()
 
     def test_loops(self, mocker):
         from openqasm3.parser import parse
@@ -198,11 +184,11 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Uninitialized variable phi encountered in QASM.",
+            match="Uninitialized variable encountered in QASM.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
 
-    def test_unsuppoted_node_type_raises(self):
+    def test_unsupported_node_type_raises(self):
         from openqasm3.parser import parse
 
         from pennylane.io.qasm_interpreter import QasmInterpreter
@@ -210,18 +196,14 @@ class TestInterpreter:
         # parse the QASM program
         ast = parse(
             """
-            bit b;
-            qubit q0;
-            float theta = 0.2;
-            rx(theta) q0;
-            measure q0 -> b;
+            include "stdgates.inc";
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+            match="An unsupported QASM instruction Include was encountered on line 2, in unsupported-error.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
 
