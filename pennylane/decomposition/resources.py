@@ -21,8 +21,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional, Type
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 
@@ -333,7 +331,7 @@ def controlled_resource_rep(
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
-        base_params = base_params["base"].resource_params
+        base_params = {"num_wires": base_params["num_target_wires"]}
 
     return CompressedResourceOp(
         qml.ops.Controlled,
@@ -363,11 +361,6 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     )
 
 
-def _is_integer(x):
-    """Checks if x is an integer."""
-    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
-
-
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
@@ -377,8 +370,6 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
-        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,

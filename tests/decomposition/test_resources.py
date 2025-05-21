@@ -384,17 +384,15 @@ class TestControlledResourceRep:
     def test_nested_controlled_qubit_unitary(self):
         """Tests that a nested controlled qubit unitary is flattened."""
 
-        U = qml.math.eye(2)
-
         rep = controlled_resource_rep(
             qml.ops.Controlled,
             {
                 "base_class": qml.ControlledQubitUnitary,
                 "base_params": {
+                    "num_target_wires": 1,
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "base": qml.QubitUnitary(U, wires=[0]),
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
@@ -506,12 +504,3 @@ class TestSymbolicResourceRep:
 
         op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
         assert op.resource_params == rep.params
-
-    def test_non_integer_pow_not_supported(self):
-        """Tests that non-integer power is not supported yet."""
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)
