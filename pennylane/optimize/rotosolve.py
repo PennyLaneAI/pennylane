@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
-# pylint: disable=too-many-branches,cell-var-from-loop
+
 
 from inspect import signature
 
@@ -331,8 +331,6 @@ class RotosolveOptimizer:
     to converge than previously, Rotosolve was able to adapt to the more complicated
     dependence on the input arguments and still found the global minimum successfully.
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):
         self.substep_kwargs = {} if substep_kwargs is None else substep_kwargs

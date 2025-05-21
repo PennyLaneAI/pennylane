@@ -14,7 +14,7 @@
 """
 This module contains the Abstract Base Class for the next generation of devices.
 """
-# pylint: disable=comparison-with-callable
+
 import abc
 from collections.abc import Iterable
 from dataclasses import replace
