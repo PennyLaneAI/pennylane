@@ -191,6 +191,32 @@ class TestQubitUnitaryCSR:
         mat2 = qml.matrix(op.decomposition, wire_order=[0])()
         assert qml.math.allclose(mat2, mat.todense())
 
+    def test_csr_matrix_decomposition_new(self):
+        """Tests that the QubitUnitary's decomposition works with csr_matrix."""
+
+        U = csr_matrix(unitary_group.rvs(2))
+        op = qml.QubitUnitary(U, wires=[0])
+        rule = qml.list_decomps(qml.QubitUnitary)[0]
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        actual_mat = qml.matrix(tape)
+        assert qml.math.allclose(actual_mat, U.todense())
+
+    def test_csr_matrix_pow_new(self):
+        """Tests the pow decomposition of a QubitUnitary works with csr_matrix."""
+
+        U = csr_matrix(unitary_group.rvs(2))
+        op = qml.pow(qml.QubitUnitary(U, wires=[0]), 2)
+        rule = qml.list_decomps("Pow(QubitUnitary)")[0]
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        actual_mat = qml.matrix(tape)
+        assert qml.math.allclose(actual_mat, (U @ U).todense())
+
 
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""

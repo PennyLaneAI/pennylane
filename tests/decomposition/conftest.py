@@ -21,6 +21,12 @@ from collections import defaultdict
 import pennylane as qml
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_involutory,
+    pow_rotation,
+    self_adjoint,
+)
 
 decompositions = defaultdict(list)
 
@@ -126,22 +132,13 @@ def _t_ps(wires, **__):
 
 decompositions["T"] = [_t_ps]
 
+################################################
+# Custom Decompositions For Symbolic Operators #
+################################################
 
-@qml.register_resources({qml.H: 1})
-def _adjoint_hadamard(*_, wires, **__):
-    qml.H(wires)
-
-
-decompositions["Adjoint(Hadamard)"] = [_adjoint_hadamard]
-
-
-def _pow_hadamard_resource(z, **__):
-    return {qml.H: z % 2}
-
-
-@qml.register_resources(_pow_hadamard_resource)
-def _pow_hadamard(*_, wires, z, **__):
-    qml.cond(z % 2 == 1, qml.H)(wires=wires)
-
-
-decompositions["Pow(Hadamard)"] = [_pow_hadamard]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Pow(Hadamard)"] = [pow_involutory]
+decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Pow(RX)"] = [pow_rotation]
+decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]
