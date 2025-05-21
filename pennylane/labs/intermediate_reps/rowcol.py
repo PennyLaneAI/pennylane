@@ -42,7 +42,7 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
 
     Consider the tree
 
-    ```
+    ```python
     #                   (4)
     #                    |
     # (6) - (2) - (0) - (1) - (3) - (8)
@@ -126,7 +126,7 @@ def preorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
 
     Consider the tree
 
-    ```
+    ```python
     #                   (4)
     #                    |
     # (6) - (2) - (0) - (1) - (3) - (8)
@@ -335,7 +335,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     We walk through example 1 in arXiv:1910.14478 by Wu et al. in detail.
     We restrict ourselves to the following connectivity graph.
 
-    ```
+    ```python
     # (0) - (3) - (4)
     #        |
     #       (2)
@@ -376,7 +376,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     All non-zero vertices are ``S = [0, 2, 3, 4]``. A Steiner tree ``T`` connecting those
     vertices is given by
 
-    ```
+    ```python
     # (0) - (3) - (4)
     #        |
     #       (2)
@@ -426,7 +426,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     first unit vector :math:`e_0`.
     The Steiner tree :math:`T'` encapsulating :math:`S'` is then
 
-    ```
+    ```python
     # (0) - (3) - (4)
     #        |
     #       (2)
@@ -474,7 +474,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     The set :math:`S` of non-zero entries in column ``P[:,1]`` together with :math:`i` itself
     is :math:`S = [1, 2, 3]` and the encapsulating Steiner tree :math:`T` is simply
 
-    ```
+    ```python
     # (3)
     #  |
     # (2)
@@ -512,7 +512,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     We first construct :math:`S' = [1, 3, 4]`, which labels rows whose sum yields :math:`e_1`.
     The encapsulating Steiner tree :math:`T'` is
 
-    ```
+    ```python
     # (3) - (4)
     #  |
     # (2)
