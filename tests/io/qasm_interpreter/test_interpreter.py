@@ -90,6 +90,7 @@ class TestInterpreter:
         z = mocker.spy(PauliZ, "__init__")
         ry = mocker.spy(RY, "__init__")
         rx = mocker.spy(RX, "__init__")
+        rz = mocker.spy(RZ, "__init__")
 
         # run the program
         context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'loops'})
@@ -99,8 +100,9 @@ class TestInterpreter:
         assert x.call_count == 10
         assert rx.call_count == 4294967306 - 4294967296
         assert ry.call_count == 4
-        assert y.call_count == 2
+        assert y.call_count == 6
         assert z.call_count == 1
+        assert rz.call_count == 6
 
     def test_switch(self, mocker):
         from openqasm3.parser import parse

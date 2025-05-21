@@ -405,7 +405,7 @@ class QasmInterpreter(QASMVisitor):
                             func_context["vars"][arg.name] = evald_arg
 
                     # execute the subroutine
-                    [gate() for gate in func_context["gates"]]
+                    [gate(context) if not self._all_context_bound(gate) else gate() for gate in func_context["gates"]]
 
                     # the return value
                     return self.retrieve_variable(func_context["return"], func_context)
@@ -562,10 +562,6 @@ class QasmInterpreter(QASMVisitor):
             context["vars"] = inner_context["vars"] if "vars" in inner_context else None
             context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
-            self._init_vars(execution_context)
-            self._init_wires(execution_context)
-            execution_context["vars"] = execution_context["vars"] if "vars" in execution_context else None
-            execution_context["wires"] += execution_context["wires"] if "wires" in execution_context else None
             return execution_context
 
         context["gates"].append(loop)  # bind compilation context now, leave execution context
@@ -585,6 +581,8 @@ class QasmInterpreter(QASMVisitor):
             loop_params = self.retrieve_variable(loop_params.name, context)
             if loop_params["ty"] == "BitType":
                 loop_params =  bin(loop_params["val"])[2:].zfill(loop_params["size"])
+            else:
+                loop_params = loop_params["val"]
 
         if isinstance(loop_params, RangeDefinition):
             start = self.eval_expr(loop_params.start, context)
@@ -594,7 +592,7 @@ class QasmInterpreter(QASMVisitor):
                 step = 1
 
             @for_loop(start, stop, step)
-            def loop(i, context):
+            def loop(i, execution_context):
                 # we don't want to populate the gates again with every call to visit
                 context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                 # process loop body
@@ -603,10 +601,12 @@ class QasmInterpreter(QASMVisitor):
                     context["scopes"]["loops"][f"for_{node.span.start_line}"]
                 )
                 for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
-                    gate()  # updates vars in sub context... need to propagate these to outer context
+                    # updates vars in sub context... need to propagate these to outer context
+                    gate(execution_context) if not self._all_context_bound(gate) else gate()
                 context["vars"] = inner_context["vars"] if "vars" in inner_context else None
                 context["wires"] += inner_context["wires"] if "wires" in inner_context else None
-                return context
+
+                return execution_context
 
             context["gates"].append(loop)
 
@@ -616,14 +616,18 @@ class QasmInterpreter(QASMVisitor):
             iter = [self.eval_expr(literal, context) for literal in loop_params.values]
         elif isinstance(loop_params, Iterable):  # it's an array literal that's been eval'd before TODO: unify these reprs?
             iter = [val for val in loop_params]
-            def unrolled():
+            def unrolled(execution_context):
                 for i in iter:
-                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = i
+                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = {
+                        'ty': i.__class__.__name__,
+                        'val': i,
+                        'line': node.span.start_line,
+                    }
                     context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                     # visit the nodes once per loop iteration
                     self.visit(node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"])
-                    for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]:
-                        gate()  # updates vars in sub context if any measurements etc. occur
+                    for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"]:
+                        gate(execution_context) if not self._all_context_bound(gate) else gate()  # updates vars in sub context if any measurements etc. occur
 
             context["gates"].append(unrolled)
         elif loop_params is None:  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
@@ -656,11 +660,11 @@ class QasmInterpreter(QASMVisitor):
                     meas = partial(measure, qubit.value)
 
         # handle data flow. Note: data flow dependent on quantum operations deferred? Promises?
-        def set_local_var():
+        def set_local_var(execution_context: dict):
             name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier
             res = meas()
-            context["vars"][name]["val"] = res
-            context["vars"][name]["line"] = node.span.start_line
+            execution_context["vars"][name]["val"] = res
+            execution_context["vars"][name]["line"] = node.span.start_line
             return res
 
         # references to an unresolved value see a func for now

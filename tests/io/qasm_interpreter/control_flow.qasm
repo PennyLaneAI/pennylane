@@ -45,13 +45,13 @@ for int i in [0:2:20]
 
 // high precision typed loop variable
 for uint[64] i in [4294967296:4294967306] {
-   rx(i, q0);
+   rx(i) q0;
 }
 
 // Loop over an array of floats.
 array[float[64], 4] my_floats = {1.2, -3.4, 0.5, 9.8};
 for float[64] f in my_floats {
-   ry(f, q0);
+   ry(f) q0;
 }
 
 // Loop over a register of bits.
