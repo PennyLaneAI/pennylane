@@ -21,8 +21,8 @@ from typing import Literal
 
 import numpy as np
 
-from pennylane.allocation import Allocate
 from pennylane import math, ops
+from pennylane.allocation import Allocate
 from pennylane.devices.preprocess import decompose
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import DecompositionUndefinedError, Operator

@@ -25,8 +25,8 @@ from typing import Optional, Sequence, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.allocation import device_resolve_dynamic_wires
 from pennylane import math
+from pennylane.allocation import device_resolve_dynamic_wires
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP

@@ -26,7 +26,7 @@ class DynamicWire:
 
 @lru_cache()
 def _get_allocate_prim():
-    allocate_prim = jax.core.Primitive("allocate")
+    allocate_prim = jax.extend.core.Primitive("allocate")
     allocate_prim.multiple_results = True
 
     @allocate_prim.def_impl
@@ -43,7 +43,7 @@ def _get_allocate_prim():
 @lru_cache
 def _get_deallocate_prim():
 
-    deallocate_prim = jax.core.Primitive("deallocate")
+    deallocate_prim = jax.extend.core.Primitive("deallocate")
     deallocate_prim.multiple_results = True
 
     @deallocate_prim.def_impl
@@ -217,7 +217,6 @@ resolve_dynamic_wires_plxpr_to_plxpr = _get_plxpr_resolve_dynamic_wires()
 
 @partial(transform, plxpr_transform=resolve_dynamic_wires_plxpr_to_plxpr)
 def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="stack"):
-
     manager = WireManager(zeroed=zeroed, dirty=dirty, min_integer=min_integer, style=style)
 
     wire_map = {}
