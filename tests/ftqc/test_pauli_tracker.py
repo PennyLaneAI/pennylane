@@ -31,6 +31,7 @@ from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to
 
 TOL = 2e-1
 
+
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 

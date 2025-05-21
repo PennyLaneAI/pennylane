@@ -23,8 +23,8 @@ import numpy as np
 
 from pennylane import CNOT, H, I, S, X, Y, Z
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript
 from pennylane.ops import Prod
+from pennylane.tape import QuantumScript
 
 _OPS_TO_XZ = {
     I: (0, 0),
@@ -64,6 +64,7 @@ _MBQC_GATES_SUPPORTED = {
         ],
     },
 }
+
 
 def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     r"""
@@ -164,24 +165,24 @@ def pauli_prod(ops: List[Operator]) -> Operator:
 
 def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
     """Conjugate a xz encoded ops to a new xz encoded ops with a given Clifford op.
-       
-        Args:
-            clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
-            paulis (List): A list of Pauli operator
-        
-        Return:
-            A list of Pauli operators that clifford_op conjugates the paulis to.
-        
-        **Example:**
-            The following example shows how the `pauli_prod` works.
 
-            .. code-block:: python3
-                from pennylane.ftqc.pauli_tracker import apply_clifford_op
-                from pennylane import I, CNOT
-                >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
-                [I(0), I(1)]
+    Args:
+        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+        paulis (List): A list of Pauli operator
 
-            A list of Pauli operator is returned up to global phase.
+    Return:
+        A list of Pauli operators that clifford_op conjugates the paulis to.
+
+    **Example:**
+        The following example shows how the `pauli_prod` works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import apply_clifford_op
+            from pennylane import I, CNOT
+            >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
+            [I(0), I(1)]
+
+        A list of Pauli operator is returned up to global phase.
     """
     if type(clifford_op) not in _CLIFFORD_TABLEAU:
         raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
@@ -340,9 +341,7 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
     return pauli_record
 
 
-def _apply_measurement_correction_rule(
-    pauli: Operator, ob: Operator
-) -> np.int8:
+def _apply_measurement_correction_rule(pauli: Operator, ob: Operator) -> np.int8:
     """Get the phase correction factor based on the Pauli recorded of the target wire and the corresponding
     observable.
 
@@ -368,13 +367,12 @@ def _apply_measurement_correction_rule(
 
 def get_measurements_corrections(tape: QuantumScript, pauli_record: List):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
-    is calculated based on the measurement observables with the corresponding recorded xz.
+    is calculated based on the measurement observables with the corresponding recorded Paulis.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
-            x (np.array): x record for each wire.
-            z (np.array): z record for each wire.
+            pauli_record (list): Pauli record for each wire.
         Return:
-            Phase correction factor for all measurements.
+            A list of phase correction factor for all measurements.
     """
     phase_cor = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
