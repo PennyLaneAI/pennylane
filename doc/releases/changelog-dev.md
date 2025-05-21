@@ -281,6 +281,9 @@
 * Add conjugate rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc` module.
   [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
 
+* Add offline byproduct correction support to the `ftqc` module.
+  [(#7447)](https://github.com/PennyLaneAI/pennylane/pull/7447)
+
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
