@@ -41,7 +41,6 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
-    _decompose_mcx_with_many_workers,
     _decompose_mcx_with_no_worker,
     _decompose_mcx_with_two_workers,
     decompose_mcx_with_many_workers,
