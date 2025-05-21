@@ -192,7 +192,7 @@ def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
 
     pauli_wires_set = {pauli.wires[0] for pauli in paulis}
 
-    clifford_op_wires_set = {wire for wire in clifford_op.wires}
+    clifford_op_wires_set = set(clifford_op.wires)
 
     if len(paulis) != len(pauli_wires_set):
         raise ValueError("Please ensure each Pauli target at a different wire.")
@@ -200,14 +200,14 @@ def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
     if pauli_wires_set != clifford_op_wires_set:
         raise ValueError("Please the target wires of Clifford op match those of Paulis.")
 
-    if all(type(pauli) == I for pauli in paulis):
+    if all(isinstance(pauli, I) for pauli in paulis):
         return paulis
 
     wire_map = {}
 
     for clifford_wire in clifford_op.wires:
-        for idx in range(len(paulis)):
-            if clifford_wire == paulis[idx].wires[0]:
+        for idx, pauli in enumerate(paulis):
+            if clifford_wire == pauli.wires[0]:
                 wire_map[clifford_wire] = idx
 
     xz = [pauli_to_xz(paulis[wire_map[clifford_wire]]) for clifford_wire in clifford_op.wires]
