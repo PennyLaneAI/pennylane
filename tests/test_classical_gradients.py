@@ -94,7 +94,7 @@ class TestGradientMultiVar:
                 np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
             ]
         )
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -105,7 +105,7 @@ class TestGradientMultiVar:
         """Tests gradients with a quadratic function."""
         multi_var = lambda x: np.sum([x_**2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -201,7 +201,7 @@ class TestGradientMultivarMultidim:
 
     def test_sin(self, tol):
         """Tests gradients with multivariate multidimensional sin and cos."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: ([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
@@ -215,7 +215,7 @@ class TestGradientMultivarMultidim:
 
     def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array(
@@ -233,7 +233,7 @@ class TestGradientMultivarMultidim:
 
     def test_linear(self, tol):
         """Tests gradients with multivariate multidimensional linear func."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=2)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array([[2 * x_[0]] for x_ in x])
