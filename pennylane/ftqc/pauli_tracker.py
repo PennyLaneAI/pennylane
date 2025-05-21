@@ -60,7 +60,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
         .. code-block:: python3
             from pennylane.ftqc.pauli_tracker import pauli_to_xz
             from pennylane import I
-            >>> pauli_to_xz(I)
+            >>> pauli_to_xz(I(0))
             (0, 0)
 
         A xz tuple representation is return for a given Pauli operator.
@@ -113,8 +113,8 @@ def pauli_prod(ops: List[Operator]) -> Operator:
         .. code-block:: python3
             from pennylane.ftqc.pauli_tracker import pauli_prod
             from pennylane import I, X, Y, Z
-            >>> pauli_prod([I,X,Y,Z])
-            <class 'pennylane.ops.identity.Identity'>
+            >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
+            I(0)
 
         A Pauli operator is returned for a list of Pauli operator up to global phase.
     """
