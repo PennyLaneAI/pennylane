@@ -237,7 +237,6 @@
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
-
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * A :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` function is now available
