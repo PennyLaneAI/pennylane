@@ -32,7 +32,7 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial"):
         freqs(int): the harmonic frequencies
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
     Returns:
         TensorLike[float]: the kinetic energy part of the one body integrals
@@ -61,7 +61,7 @@ def _local_onemode_kinetic(rank, boscombos_on_rank, freqs, all_mode_combos):
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         freqs(int): the harmonic frequencies
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
 
@@ -95,9 +95,8 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
-        TensorLike[float]: the kinetic energy part of the two body integrals
     Returns:
         TensorLike[float]: the kinetic energy part of the two body integrals
     """
@@ -126,11 +125,9 @@ def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
     local_kin_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
     for nn, (ii, jj) in enumerate(all_mode_combos):
@@ -168,7 +165,7 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
@@ -198,12 +195,10 @@ def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
     local_ham_cform_onebody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
 
@@ -238,7 +233,7 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
@@ -268,12 +263,10 @@ def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
     local_dipole_cform_onebody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
 
@@ -310,7 +303,7 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
@@ -342,12 +335,10 @@ def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
@@ -404,7 +395,7 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
@@ -437,12 +428,10 @@ def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
 
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
@@ -494,7 +483,7 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
@@ -535,12 +524,10 @@ def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_comb
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
@@ -595,7 +582,7 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial"):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
@@ -639,12 +626,10 @@ def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mo
 
     Args:
         rank(int) : the rank of the process
-        boscombos_on_rank [int] : list of the combination of bosonic states handled by this process
+        boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         n_states(int): maximum number of bosonic states per mode
         pes(VibrationalPES): object containing the vibrational potential energy surface data
-        all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
+        all_mode_combos (int) : list of the combination of nmodes (the length of the list of harmonic frequencies)
     """
 
     local_dipole_cform_threebody = np.zeros((len(all_mode_combos) * len(boscombos_on_rank), 3))
@@ -1042,7 +1027,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
@@ -1083,7 +1068,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 

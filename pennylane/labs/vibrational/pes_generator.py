@@ -67,7 +67,7 @@ def _pes_onemode(
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backend.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
     Returns:
         tuple: A tuple containing the following:
@@ -248,7 +248,7 @@ def _pes_twomode(
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
     Returns:
@@ -617,7 +617,7 @@ def _pes_threemode(
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
@@ -758,7 +758,7 @@ def vibrational_pes(
            ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
            value is ``1``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends by qlm.concurrency.
+        backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
 
