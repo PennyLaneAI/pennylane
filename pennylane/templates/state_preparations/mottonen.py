@@ -23,7 +23,6 @@ from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 
 
-# pylint: disable=len-as-condition
 def gray_code(rank):
     """Generates the
     `Gray code <https://en.wikipedia.org/wiki/Gray_code>`__
