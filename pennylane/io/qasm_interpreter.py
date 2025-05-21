@@ -584,6 +584,7 @@ class QasmInterpreter(QASMVisitor):
             else:
                 loop_params = loop_params["val"]
 
+        # TODO: support dynamic start, stop, step
         if isinstance(loop_params, RangeDefinition):
             start = self.eval_expr(loop_params.start, context)
             stop = self.eval_expr(loop_params.end, context)
