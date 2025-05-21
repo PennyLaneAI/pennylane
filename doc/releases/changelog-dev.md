@@ -471,6 +471,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated. Using
+  dynamic wires with non-native transforms can lead to incorrect transformations.
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
+
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
  [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
@@ -485,6 +489,14 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where certain program capture native transforms transformed circuits incorrectly when
+  dynamic wires were present in the circuit. The affected transforms were:
+  * :func:`~pennylane.transforms.cancel_inverses`
+  * :func:`~pennylane.transforms.merge_rotations`
+  * :func:`~pennylane.transforms.single_qubit_fusion`
+  * :func:`~pennylane.transforms.merge_amplitude_embedding`
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
 
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
