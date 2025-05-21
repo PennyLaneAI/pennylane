@@ -221,6 +221,7 @@ def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="st
     manager = WireManager(zeroed=zeroed, dirty=dirty, min_integer=min_integer, style=style)
 
     wire_map = {}
+    deallocated = set()
 
     new_ops = []
     for op in tape.operations:
@@ -231,10 +232,14 @@ def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="st
                 wire_map[w] = wire
         elif isinstance(op, Deallocate):
             for w in op.wires:
+                deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
         elif isinstance(op, DeallocateAll):
             new_ops += manager.return_all()
         else:
+            op = op.map_wires(wire_map)
+            if intersection := deallocated.intersection(set(op.wires)):
+                raise ValueError(f"using deallocated wires {intersection}")
             new_ops.append(op.map_wires(wire_map))
 
     mps = [mp.map_wires(wire_map) for mp in tape.measurements]
