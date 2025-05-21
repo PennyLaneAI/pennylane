@@ -1,3 +1,12 @@
+qubit[1] q0;
+bit[2] bits = "10";
+
+// example loop
+while(int[2](bits) != 0) {
+  z q0;
+  bits = 0;
+}
+
 // loop over every even integer from 0 to 20 using a range, and call a
 // subroutine with that value.
 for int i in [0:2:20]

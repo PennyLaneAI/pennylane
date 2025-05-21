@@ -1,13 +1,16 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
-
+import copy
 import re
+import inspect
 from pennylane import ops
 
 from functools import partial
 from typing import Callable, Iterable
 
+from pennylane.control_flow.for_loop import ForLoopCallable
+from pennylane.control_flow.while_loop import WhileLoopCallable
 from pennylane.measurements import measure
 
 from pennylane import wires
@@ -149,23 +152,47 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
                 with a list of Callables that are queued into it.
         """
+        init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
         try:
             super().generic_visit(node, context)
         except InterruptedError as e:
             print(str(e))
-        self.construct_qnode(context)
+        self.construct_qnode(context, init_context)
         return context
+
+    @staticmethod
+    def _all_context_bound(quantum_function):
+        """
+        Checks whether a partial received all required context during compilation, or if
+        it requires execution context because it has parameters that are based on, for example,
+        the outcomes of mid-circuit measurements or subroutines.
+
+        Args:
+            partial_function (Callable): the partial with compilation context bound.
+        """
+        if hasattr(quantum_function, 'func'):
+            if isinstance(quantum_function.func, WhileLoopCallable):
+                return False
+            else:
+                try:
+                    inspect.signature(quantum_function.func).bind(*quantum_function.args, **quantum_function.keywords)
+                    return True
+                except TypeError:
+                    return False
+        elif len(inspect.signature(quantum_function).parameters) > 0:
+            return False
+        return True
 
     def classical_assignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
         """
         rhs = partial(self.eval_expr, node.rvalue, context)
-        def set_local_var():
+        def set_local_var(execution_context: dict):
             name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
             res = rhs()
-            context["vars"][name]["val"] = res
-            context["vars"][name]["line"] = node.span.start_line
+            execution_context["vars"][name]["val"] = res
+            execution_context["vars"][name]["line"] = node.span.start_line
             return res
 
         # references to an unresolved value see a func for now
@@ -416,6 +443,13 @@ class QasmInterpreter(QASMVisitor):
         if "vars" not in context:
             context["vars"] = dict()
 
+    def _init_wires(self, context: dict):
+        """
+        Inits the wires dict on the current context.
+        """
+        if "wires" not in context:
+            context["wires"] = []
+
     def _init_aliases(self, context: dict):
         """
         Inits the aliases dict on the current context.
@@ -507,21 +541,34 @@ class QasmInterpreter(QASMVisitor):
         self._init_loops_scope(node, context)
 
         @while_loop(partial(self.eval_expr, node.while_condition))  # traces data dep through context
-        def loop(loop_context):
+        def loop(execution_context):
+            """
+            Executes a traceable while loop.
+
+            Args:
+                loop_context (dict): the context used to compile the while loop.
+                execution_context (dict): the context passed at execution time with current variable values, etc.
+            """
             # we don't want to populate the gates again with every call to visit
-            loop_context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
+            context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
             # process loop body...
             inner_context = self.visit(
                 node.block,
-                loop_context["scopes"]["loops"][f"while_{node.span.start_line}"]
+                context["scopes"]["loops"][f"while_{node.span.start_line}"]
             )
             for gate in inner_context["gates"]:
-                gate()  # updates vars in context... need to propagate these to outer scope
-            loop_context["vars"] = inner_context["vars"] if "vars" in inner_context else None
-            loop_context["wires"] += inner_context["wires"] if "wires" in inner_context else None
-            return loop_context
+                # updates vars in context... need to propagate these to outer scope
+                gate(execution_context) if not self._all_context_bound(gate) else gate()
+            context["vars"] = inner_context["vars"] if "vars" in inner_context else None
+            context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
-        context["gates"].append(partial(loop, context))
+            self._init_vars(execution_context)
+            self._init_wires(execution_context)
+            execution_context["vars"] = execution_context["vars"] if "vars" in execution_context else None
+            execution_context["wires"] += execution_context["wires"] if "wires" in execution_context else None
+            return execution_context
+
+        context["gates"].append(loop)  # bind compilation context now, leave execution context
 
     def for_in_loop(self, node: QASMNode, context: dict):
         """
@@ -696,15 +743,25 @@ class QasmInterpreter(QASMVisitor):
                             wires = self._get_wires_helper(typed_context[cond], wires)
         return wires
 
-    def construct_qnode(self, context: dict):
+    def construct_qnode(self, context: dict, init_context: dict):
+        """
+        Constructs a Callable quantum function that may be queued into a QNode.
+
+        Args:
+            context (dict): the final context resulting from the compilation pass.
+            init_context (dict): the initial context.
+        """
         if "device" not in context:
             wires = [w for w in context["wires"]]
             curr = context
             if "scopes" in curr:
                 wires = self._get_wires_helper(curr, wires)
             context["wires"] = wires
-        # TODO: pass context through gate calls during second pass
-        context["callable"] = lambda: [gate() for gate in context["gates"]]
+        # passes and modifies init_context through gate calls during second pass
+        # static variables are already bound in context["gates"]
+        context["callable"] = lambda: [
+            gate(init_context) if not self._all_context_bound(gate) else gate() for gate in context["gates"]
+        ]
 
     @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):
@@ -729,6 +786,8 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The ClassicalDeclaration QASMNode.
             context (dict): The current context.
         """
+
+        # compile time tracking of static variables
         self._init_vars(context)
         if node.init_expression is not None:
             # TODO: store AST objects in context instead of these objects?
@@ -758,6 +817,10 @@ class QasmInterpreter(QASMVisitor):
                 'val': None,
                 'line': node.span.start_line
             }
+
+        # runtime Callable
+        self._init_gates_list(context)
+        context["gates"].append(partial(self.classical_declaration, node))
 
     def quantum_gate(self, node: QASMNode, context: dict):
         """

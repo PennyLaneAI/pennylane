@@ -47,9 +47,9 @@ def skip_if_no_openqasm_support():
 class TestInterpreter:
 
     qasm_programs = [
-        (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
-        (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 32, "qec"),
-        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
+        (open("adder.qasm", mode="r").read(), 22, "adder"),
+        (open("qec.qasm", mode="r").read(), 32, "qec"),
+        (open("teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
@@ -63,15 +63,52 @@ class TestInterpreter:
         spy = mocker.spy(QasmInterpreter, "visit")
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
+        
+    def test_control_flow(self, mocker):
+        # TODO: break up into smaller tests
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # TODO: mocks
+
+        ast = parse(open("control_flow.qasm", mode="r").read(), permissive=True)
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'control_flow'})
+        context['callable']()
+
+    def test_loops(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        ry = mocker.spy(RY, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # run the program
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'loops'})
+        context['callable']()
+
+        # assertions
+        assert x.call_count == 10
+        assert rx.call_count == 4294967306 - 4294967296
+        assert ry.call_count == 4
+        assert y.call_count == 2
+        assert z.call_count == 1
 
     def test_switch(self, mocker):
         from openqasm3.parser import parse
 
         from pennylane.io.qasm_interpreter import QasmInterpreter
-        from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -96,7 +133,7 @@ class TestInterpreter:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
