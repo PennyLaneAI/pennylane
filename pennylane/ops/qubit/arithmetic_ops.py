@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint: disable=arguments-differ
 from copy import copy
 from typing import Optional
 
@@ -23,6 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint
 from pennylane.operation import FlatPytree, Operation
 from pennylane.ops import Identity
 from pennylane.typing import TensorLike
@@ -357,6 +358,8 @@ def _qubitsum_to_cnots(wires: WiresLike, **__):
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
+add_decomps("Adjoint(QubitSum)", self_adjoint)
+add_decomps("Pow(QubitSum)", pow_involutory)
 
 
 class IntegerComparator(Operation):
@@ -415,7 +418,6 @@ class IntegerComparator(Operation):
         )
         return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         value: int,
@@ -466,7 +468,7 @@ class IntegerComparator(Operation):
     @staticmethod
     def compute_matrix(
         control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

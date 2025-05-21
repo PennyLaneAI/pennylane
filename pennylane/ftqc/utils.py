@@ -109,14 +109,14 @@ class QubitMgr:
         self._num_qubits = num_qubits
         self._active = set()
 
-        def is_valid(x):
+        def is_positive_integer(x):
             return isinstance(x, int) and x >= 0
 
-        if is_valid(num_qubits) and is_valid(start_idx):
+        if is_positive_integer(num_qubits) and is_positive_integer(start_idx):
             self._inactive = set(range(start_idx, start_idx + num_qubits, 1))
         else:
             raise TypeError(
-                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}"
+                f"Index counts and starting values must be positive integers. Received {num_qubits} and {start_idx}."
             )
 
     def __repr__(self):

@@ -15,7 +15,6 @@
 including a decorator for specifying gradient expansions."""
 import warnings
 
-import pennylane as qml
 from pennylane import math
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pytrees import flatten, unflatten
@@ -175,7 +174,6 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
 
     """
 
-    # pylint:disable=protected-access
     par_info = tape.par_info[param_index]
 
     if use_graph:
@@ -260,14 +258,14 @@ def _all_zero_grad(tape):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
-    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
+    par_shapes = [math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
-            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
+            sub_list_zeros = math.zeros(par_shapes[0] + shape)
         else:
-            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
+            sub_list_zeros = tuple(math.zeros(sh + shape) for sh in par_shapes)
 
         list_zeros.append(sub_list_zeros)
 
@@ -295,15 +293,15 @@ def _no_trainable_grad(tape):
     warnings.warn(_no_trainable_grad_warning)
     if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(tape.shots.num_copies))
+            return [], lambda _: tuple(math.zeros([0]) for _ in range(tape.shots.num_copies))
         return [], lambda _: tuple(
-            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+            tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
             for _ in range(tape.shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
-        return [], lambda _: qml.math.zeros([0])
-    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+        return [], lambda _: math.zeros([0])
+    return [], lambda _: tuple(math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size, squeeze=True):
@@ -475,14 +473,14 @@ def _single_shots_contraction(qjac, cjac, tape):
 def _single_meas_contraction(qjac, cjac, single_trainable_param):
     if single_trainable_param:
         # return spec squeezed out singleton dimension, so we need to add it back in
-        qjac = qml.math.expand_dims(qjac, axis=0)
-    qjac = qml.math.stack(qjac)
+        qjac = math.expand_dims(qjac, axis=0)
+    qjac = math.stack(qjac)
 
     # pytrees are easiest way to handle different argnum conventions: argnum=None, argnum=0, argnum=[0], etc.
     cjac_leaves, struct = flatten(cjac)
 
     contracted = [
-        qml.math.tensordot(qjac, cjac_for_arg, axes=[[0], [0]]) for cjac_for_arg in cjac_leaves
+        math.tensordot(qjac, cjac_for_arg, axes=[[0], [0]]) for cjac_for_arg in cjac_leaves
     ]
 
     return unflatten(contracted, struct)
