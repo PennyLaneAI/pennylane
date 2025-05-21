@@ -235,7 +235,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         for decomposition in self._get_decompositions(op_node):
             self._add_decomp(decomposition, op_node, op_node_idx)
 
-
         return op_node_idx
 
     def _add_decomp(self, rule: DecompositionRule, op_node: CompressedResourceOp, op_idx: int):
