@@ -23,13 +23,14 @@ class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 
     @pytest.mark.parametrize(
-        "op, expected", [(qml.I, (0, 0)), (qml.X, (1, 0)), (qml.Y, (1, 1)), (qml.Z, (0, 1))]
+        "op, expected",
+        [(qml.I(0), (0, 0)), (qml.X(1), (1, 0)), (qml.Y(0), (1, 1)), (qml.Z(0), (0, 1))],
     )
     def test_pauli_to_xz(self, op, expected):
         xz = pauli_to_xz(op)
         assert xz == expected
 
-    @pytest.mark.parametrize("op", [qml.S, qml.CNOT, qml.H])
+    @pytest.mark.parametrize("op", [qml.S(0), qml.CNOT(wires=[0, 1]), qml.H(2)])
     def test_unsuppored_ops_pauli_to_xz(self, op):
         with pytest.raises(NotImplementedError):
             _ = pauli_to_xz(op)
@@ -49,37 +50,36 @@ class TestPauliTracker:
     @pytest.mark.parametrize(
         "ops, expected",
         [
-            ([qml.I], qml.I),
-            ([qml.X], qml.X),
-            ([qml.Y], qml.Y),
-            ([qml.Z], qml.Z),
-            ([qml.I, qml.I], qml.I),
-            ([qml.I, qml.X], qml.X),
-            ([qml.I, qml.Y], qml.Y),
-            ([qml.I, qml.Z], qml.Z),
-            ([qml.X, qml.I], qml.X),
-            ([qml.X, qml.X], qml.I),
-            ([qml.X, qml.Y], qml.Z),
-            ([qml.X, qml.Z], qml.Y),
-            ([qml.Y, qml.I], qml.Y),
-            ([qml.Y, qml.X], qml.Z),
-            ([qml.Y, qml.Y], qml.I),
-            ([qml.Y, qml.Z], qml.X),
-            ([qml.Z, qml.I], qml.Z),
-            ([qml.Z, qml.X], qml.Y),
-            ([qml.Z, qml.Y], qml.X),
-            ([qml.Z, qml.Z], qml.I),
-            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], qml.Z),
+            ([qml.I(0)], qml.I(0)),
+            ([qml.X(1)], qml.X(1)),
+            ([qml.Y(2)], qml.Y(2)),
+            ([qml.Z(3)], qml.Z(3)),
+            ([qml.I(0), qml.I(0)], qml.I(0)),
+            ([qml.I(1), qml.X(1)], qml.X(1)),
+            ([qml.I(2), qml.Y(2)], qml.Y(2)),
+            ([qml.I(3), qml.Z(3)], qml.Z(3)),
+            ([qml.X(0), qml.I(0)], qml.X(0)),
+            ([qml.X(1), qml.X(1)], qml.I(1)),
+            ([qml.X(2), qml.Y(2)], qml.Z(2)),
+            ([qml.X(3), qml.Z(3)], qml.Y(3)),
+            ([qml.Y(0), qml.I(0)], qml.Y(0)),
+            ([qml.Y(1), qml.X(1)], qml.Z(1)),
+            ([qml.Y(2), qml.Y(2)], qml.I(2)),
+            ([qml.Y(3), qml.Z(3)], qml.X(3)),
+            ([qml.Z(0), qml.I(0)], qml.Z(0)),
+            ([qml.Z(1), qml.X(1)], qml.Y(1)),
+            ([qml.Z(2), qml.Y(2)], qml.X(2)),
+            ([qml.Z(3), qml.Z(3)], qml.I(3)),
+            ([qml.X(4), qml.Y(4), qml.Z(4), qml.I(4), qml.Z(4)], qml.Z(4)),
         ],
     )
     def test_pauli_prod(self, ops, expected):
         op = pauli_prod(ops)
         assert op == expected
 
-    @pytest.mark.parametrize("ops", [[]])
+    @pytest.mark.parametrize(
+        "ops", [([]), ([qml.X(0), qml.I(1)]), ([qml.X(0), qml.Y(0), qml.Z(1)])]
+    )
     def test_pauli_prod_to_xz_unsupported_error(self, ops):
-        with pytest.raises(
-            ValueError,
-            match="Please ensure that a valid list of operators are passed to the method.",
-        ):
+        with pytest.raises(ValueError):
             _ = pauli_prod(ops)

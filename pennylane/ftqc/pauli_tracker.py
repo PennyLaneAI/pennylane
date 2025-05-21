@@ -23,14 +23,14 @@ import numpy as np
 from pennylane import I, X, Y, Z
 from pennylane.operation import Operator
 
-_ENCODE_XZ_OPS = {
+_OPS_TO_XZ = {
     I: (0, 0),
     X: (1, 0),
     Y: (1, 1),
     Z: (0, 1),
 }
 
-_DECODE_XZ = {
+_XZ_TO_OPS = {
     (0, 0): I,
     (1, 0): X,
     (1, 1): Y,
@@ -66,8 +66,8 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
         A xz tuple representation is return for a given Pauli operator.
     """
 
-    if op in _PAULIS:
-        return _ENCODE_XZ_OPS[op]
+    if type(op) in _PAULIS:
+        return _OPS_TO_XZ[type(op)]
     raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
 
 
@@ -93,7 +93,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         A Pauli operator is returned for a given xz tuple.
     """
     if x in [0, 1] and z in [0, 1]:
-        return _DECODE_XZ[(x, z)]
+        return _XZ_TO_OPS[(x, z)]
     raise ValueError("x and z should either 0 or 1.")
 
 
@@ -121,12 +121,17 @@ def pauli_prod(ops: List[Operator]) -> Operator:
 
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-
-    res_x, res_z = pauli_to_xz(ops.pop())
+    op0 = ops.pop()
+    res_x, res_z = pauli_to_xz(op0)
+    op0_wire = op0.wires
 
     while len(ops) > 0:
-        x, z = pauli_to_xz(ops.pop())
+        op = ops.pop()
+        wire = op.wires
+        if wire != op0_wire:
+            raise ValueError("All operators should target at the same wire.")
+        x, z = pauli_to_xz(op)
         res_x ^= x
         res_z ^= z
 
-    return xz_to_pauli(res_x, res_z)
+    return xz_to_pauli(res_x, res_z)(wires=op0_wire)
