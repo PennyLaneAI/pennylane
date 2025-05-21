@@ -342,7 +342,7 @@ class TestSampling:
             return ms
 
         output = g()
-        assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
+        assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 33))
         # only way we could get different values between the mcms is if they had different seeds
 
     def test_each_measurement_has_different_key(self, seed):
