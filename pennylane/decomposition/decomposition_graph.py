@@ -40,17 +40,19 @@ from .controlled_decomposition import (
     controlled_global_phase_decomp,
     controlled_x_decomp,
 )
-from .decomposition_rule import DecompositionRule, list_decomps
+from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
-    AdjointDecomp,
-    adjoint_adjoint_decomp,
-    adjoint_controlled_decomp,
-    adjoint_pow_decomp,
-    pow_decomp,
-    pow_pow_decomp,
-    same_type_adjoint_decomp,
-    same_type_adjoint_ops,
+    adjoint_rotation,
+    cancel_adjoint,
+    decompose_to_base,
+    flip_pow_adjoint,
+    make_adjoint_decomp,
+    merge_powers,
+    pow_involutory,
+    pow_rotation,
+    repeat_pow_base,
+    self_adjoint,
 )
 from .utils import DecompositionError, translate_op_alias
 
@@ -136,35 +138,72 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
-        self._target_ops_indices: set[int] = set()
         self._all_op_indices: dict[CompressedResourceOp, int] = {}
 
         # Stores the library of custom decomposition rules
-        self._fixed_decomps = fixed_decomps or {}
-        self._alt_decomps = alt_decomps or {}
+        fixed_decomps = fixed_decomps or {}
+        alt_decomps = alt_decomps or {}
+        self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
+        self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
         self._visitor = None
 
         # Construct the decomposition graph
+        self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
-    def _get_decompositions(self, op_type) -> list[DecompositionRule]:
+    def _get_decompositions(self, op_node: CompressedResourceOp) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
-        if op_type in self._fixed_decomps:
-            return [self._fixed_decomps[op_type]]
-        return self._alt_decomps.get(op_type, []) + list_decomps(op_type)
+
+        op_name = _to_name(op_node)
+
+        if op_name in self._fixed_decomps:
+            return [self._fixed_decomps[op_name]]
+
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+
+        if (
+            issubclass(op_node.op_type, qml.ops.Adjoint)
+            and self_adjoint not in decomps
+            and adjoint_rotation not in decomps
+        ):
+            # In general, we decompose the adjoint of an operator by applying adjoint to the
+            # decompositions of the operator. However, this is not necessary if the operator
+            # is self-adjoint or if it has a single rotation angle which can be trivially
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
+            # would've already been retrieved as a potential decomposition rule for this
+            # operator, so there is no need to consider the general case.
+            decomps.extend(self._get_adjoint_decompositions(op_node))
+
+        elif (
+            issubclass(op_node.op_type, qml.ops.Pow)
+            and pow_rotation not in decomps
+            and pow_involutory not in decomps
+        ):
+            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
+            # approach we take to decompose powers of operators. However, if the operator is
+            # involutory or if it has a single rotation angle that can be trivially multiplied
+            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
+            # as a potential decomposition rule for this operator, so there is no need to consider
+            # the general case.
+            decomps.extend(self._get_pow_decompositions(op_node))
+
+        elif op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+            decomps.extend(self._get_controlled_decompositions(op_node))
+
+        return decomps
 
     def _construct_graph(self, operations):
         """Constructs the decomposition graph."""
         for op in operations:
             if isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
-            idx = self._recursively_add_op_node(op)
+            idx = self._add_op_node(op)
             self._original_ops_indices.add(idx)
 
-    def _recursively_add_op_node(self, op_node: CompressedResourceOp) -> int:
+    def _add_op_node(self, op_node: CompressedResourceOp) -> int:
         """Recursively adds an operation node to the graph.
 
         An operator node is uniquely defined by its operator type and resource parameters, which
@@ -179,86 +218,71 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._all_op_indices[op_node] = op_node_idx
 
         if op_node.name in self._gate_set:
-            self._target_ops_indices.add(op_node_idx)
+            self._graph.add_edge(self._start, op_node_idx, 1)
             return op_node_idx
 
-        if op_node.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            # This branch only applies to general controlled operators
-            return self._add_controlled_decomp_node(op_node, op_node_idx)
-
-        if issubclass(op_node.op_type, qml.ops.Adjoint):
-            return self._add_adjoint_decomp_node(op_node, op_node_idx)
-
-        if issubclass(op_node.op_type, qml.ops.Pow):
-            return self._add_pow_decomp_node(op_node, op_node_idx)
-
-        for decomposition in self._get_decompositions(op_node.op_type):
-            self._add_decomp_rule_to_op(decomposition, op_node, op_node_idx)
+        for decomposition in self._get_decompositions(op_node):
+            self._add_decomp(decomposition, op_node, op_node_idx)
 
         return op_node_idx
 
-    def _add_decomp_rule_to_op(
-        self, rule: DecompositionRule, op_node: CompressedResourceOp, op_node_idx: int
-    ):
-        """Adds a special decomposition rule to the graph."""
+    def _add_decomp(self, rule: DecompositionRule, op_node: CompressedResourceOp, op_idx: int):
+        """Adds a decomposition rule to the graph."""
         if not rule.is_applicable(**op_node.params):
             return  # skip the decomposition rule if it is not applicable
         decomp_resource = rule.compute_resources(**op_node.params)
-        d_node_idx = self._recursively_add_decomposition_node(rule, decomp_resource)
-        self._graph.add_edge(d_node_idx, op_node_idx, 0)
+        d_node = _DecompositionNode(rule, decomp_resource)
+        d_node_idx = self._graph.add_node(d_node)
+        if not decomp_resource.gate_counts:
+            # If an operator decomposes to nothing (e.g., a Hadamard raised to a
+            # power of 2), we must still connect something to this decomposition
+            # node so that it is accounted for.
+            self._graph.add_edge(self._start, d_node_idx, 0)
+        for op in decomp_resource.gate_counts:
+            op_node_idx = self._add_op_node(op)
+            self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
+        self._graph.add_edge(d_node_idx, op_idx, 0)
 
-    def _add_adjoint_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
-        """Adds an adjoint decomposition node."""
+    def _get_adjoint_decompositions(self, op_node: CompressedResourceOp) -> list[DecompositionRule]:
+        """Gets the decomposition rules for the adjoint of an operator."""
 
-        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
+        base_class, base_params = (op_node.params["base_class"], op_node.params["base_params"])
 
+        # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qml.ops.Adjoint):
-            rule = adjoint_adjoint_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+            return [cancel_adjoint]
 
-        if (
-            issubclass(base_class, qml.ops.Pow)
-            and base_params["base_class"] in same_type_adjoint_ops()
-        ):
-            rule = adjoint_pow_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+        # General case: apply adjoint to each of the base op's decomposition rules.
+        base = resource_rep(base_class, **base_params)
+        return [make_adjoint_decomp(base_decomp) for base_decomp in self._get_decompositions(base)]
 
-        if base_class in same_type_adjoint_ops():
-            rule = same_type_adjoint_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
-
-        if (
-            issubclass(base_class, qml.ops.Controlled)
-            and base_params["base_class"] in same_type_adjoint_ops()
-        ):
-            rule = adjoint_controlled_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
-
-        for base_decomposition in self._get_decompositions(base_class):
-            rule = AdjointDecomp(base_decomposition)
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-
-        return op_node_idx
-
-    def _add_pow_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
-        """Adds a power decomposition node to the graph."""
+    @staticmethod
+    def _get_pow_decompositions(op_node: CompressedResourceOp) -> list[DecompositionRule]:
+        """Gets the decomposition rules for the power of an operator."""
 
         base_class = op_node.params["base_class"]
 
+        # Special case: power of zero
+        if op_node.params["z"] == 0:
+            return [null_decomp]
+
+        if op_node.params["z"] == 1:
+            return [decompose_to_base]
+
+        # Special case: power of a power
         if issubclass(base_class, qml.ops.Pow):
-            rule = pow_pow_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+            return [merge_powers]
 
-        rule = pow_decomp
-        self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-        return op_node_idx
+        # Special case: power of an adjoint
+        if issubclass(base_class, qml.ops.Adjoint):
+            return [flip_pow_adjoint]
 
-    def _add_controlled_decomp_node(self, op_node: CompressedResourceOp, op_node_idx: int) -> int:
+        # General case: repeat the operator z times
+        return [repeat_pow_base]
+
+    def _get_controlled_decompositions(
+        self, op_node: CompressedResourceOp
+    ) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
         base_class = op_node.params["base_class"]
@@ -266,46 +290,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # Handle controlled global phase
         if base_class is qml.GlobalPhase:
-            rule = controlled_global_phase_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+            return [controlled_global_phase_decomp]
 
         # Handle controlled-X gates
         if base_class is qml.X:
-            rule = controlled_x_decomp
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+            return [controlled_x_decomp]
 
         # Handle custom controlled ops
         if (base_class, num_control_wires) in base_to_custom_ctrl_op():
             custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
-            rule = CustomControlledDecomposition(custom_op_type)
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-            return op_node_idx
+            return [CustomControlledDecomposition(custom_op_type)]
 
         # General case
-        for base_decomposition in self._get_decompositions(base_class):
-            rule = ControlledBaseDecomposition(base_decomposition)
-            self._add_decomp_rule_to_op(rule, op_node, op_node_idx)
-
-        return op_node_idx
-
-    def _recursively_add_decomposition_node(
-        self, rule: DecompositionRule, decomp_resource: Resources
-    ) -> int:
-        """Recursively adds a decomposition node to the graph.
-
-        A decomposition node is defined by a decomposition rule and a first-order resource estimate
-        of this decomposition as computed with resource params passed from the operator node.
-
-        """
-
-        d_node = _DecompositionNode(rule, decomp_resource)
-        d_node_idx = self._graph.add_node(d_node)
-        for op in decomp_resource.gate_counts:
-            op_node_idx = self._recursively_add_op_node(op)
-            self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
-        return d_node_idx
+        base_rep = resource_rep(base_class, **op_node.params["base_params"])
+        return [ControlledBaseDecomposition(rule) for rule in self._get_decompositions(base_rep)]
 
     def solve(self, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.
@@ -317,17 +315,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         """
         self._visitor = _DecompositionSearchVisitor(self._graph, self._original_ops_indices, lazy)
-        start = self._graph.add_node("dummy")
-        self._graph.add_edges_from(
-            [(start, op_node_idx, 1) for op_node_idx in self._target_ops_indices]
-        )
         rx.dijkstra_search(
             self._graph,
-            source=[start],
+            source=[self._start],
             weight_fn=self._visitor.edge_weight,
             visitor=self._visitor,
         )
-        self._graph.remove_node(start)
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
             op_names = set(op.name for op in unsolved_ops)
@@ -465,6 +458,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             return  # nothing is to be done for edges leading to an operator node
         if target_idx not in self.distances:
             self.distances[target_idx] = Resources()  # initialize with empty resource
+        if src_node is None:
+            return  # special case for when the decomposition produces nothing
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
         if target_idx not in self._num_edges_examined:
             self._num_edges_examined[target_idx] = 0
@@ -480,7 +475,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         """Triggered when an edge is relaxed during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
-        if self._graph[src_idx] == "dummy":
+        if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
             self.distances[target_idx] = Resources({target_node: 1})
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
@@ -497,3 +492,12 @@ class _DecompositionNode:
     def count(self, op: CompressedResourceOp):
         """Find the number of occurrences of an operator in the decomposition."""
         return self.decomp_resource.gate_counts.get(op, 0)
+
+
+def _to_name(op):
+    if isinstance(op, type):
+        return op.__name__
+    if isinstance(op, CompressedResourceOp):
+        return op.name
+    assert isinstance(op, str)
+    return translate_op_alias(op)

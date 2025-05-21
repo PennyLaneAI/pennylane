@@ -63,5 +63,13 @@ def test_translate_op_alias(base_op_alias, expected_op_name):
 
     assert translate_op_alias(base_op_alias) == expected_op_name
     assert translate_op_alias(f"C({base_op_alias})") == f"C({expected_op_name})"
+    assert translate_op_alias(f"Controlled({base_op_alias})") == f"C({expected_op_name})"
     assert translate_op_alias(f"Adjoint({base_op_alias})") == f"Adjoint({expected_op_name})"
     assert translate_op_alias(f"Pow({base_op_alias})") == f"Pow({expected_op_name})"
+
+
+def test_translate_op_error():
+    """Tests that an error is raised when the symbolic operator name is not valid."""
+
+    with pytest.raises(ValueError, match="'Adj' is not a valid name for a symbolic operator"):
+        translate_op_alias("Adj(X)")
