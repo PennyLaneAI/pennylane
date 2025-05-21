@@ -108,7 +108,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
-    def __new__(cls, *args, **_):
+    def __new__(cls, *args, **__):
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
