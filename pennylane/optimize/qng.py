@@ -210,7 +210,9 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                argnum = tuple(range(len(args))) if compiler.active_compiler() == "catalyst" else None
+                argnum = (
+                    tuple(range(len(args))) if compiler.active_compiler() == "catalyst" else None
+                )
                 metric_tensor_fn = metric_tensor(qnode, argnum=argnum, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
@@ -277,42 +279,22 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
-        mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
-
-        if compiler.active_compiler() == "catalyst":
-            args_new = self._apply_grad_jax(grad=grad, args=args, mt=mt)
-        else:
-            args_new = self._apply_grad(grad=grad, args=args, mt=mt)
-
-        return args_new
-
-    def _apply_grad_jax(self, grad, args, mt):
-        """TODO"""
-        import jax
-
         args_new = list(args)
+        mt_per_grad = (
+            self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
+        )
+        active_jit = compiler.active_compiler() == "catalyst"
+        trainable_indices = (
+            idx
+            for idx in range(len(args))
+            if active_jit or getattr(args[idx], "requires_grad", False)
+        )
 
-        for index, arg in enumerate(args):
-            grad_flat, _unravel_array = jax.flatten_util.ravel_pytree(grad[index])
-            # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-            update = math.linalg.pinv(mt[index]) @ grad_flat
-            args_new[index] = arg - self.stepsize * _unravel_array(update)
-
-        return tuple(args_new)
-
-    def _apply_grad(self, grad, args, mt):
-        """TODO"""
-        args_new = list(args)
-
-        trained_index = 0
-        for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", False):
-                grad_flat = math.array(list(_flatten_np(grad[trained_index])))
-                # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = math.linalg.pinv(mt[trained_index]) @ grad_flat
-                args_new[index] = arg - self.stepsize * _unflatten_np(update, grad[trained_index])
-
-                trained_index += 1
+        for g, mt in zip(grad, mt_per_grad):
+            idx = next(trainable_indices)
+            shape = math.shape(args[idx])
+            update = math.reshape(math.linalg.pinv(mt) @ math.flatten(g), shape)
+            args_new[idx] = args[idx] - self.stepsize * update
 
         return tuple(args_new)
 
