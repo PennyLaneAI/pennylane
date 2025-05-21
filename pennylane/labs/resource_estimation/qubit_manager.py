@@ -16,11 +16,11 @@ r"""This module contains the base class for qubit management"""
 from typing import Union
 
 import pennylane as qml
-from pennylane.queuing import QueuingManager
+
+# pylint: disable= too-few-public-methods
 
 
 class QubitManager:
-
     r"""Contains attributes which help track how auxiliary qubits are used in a circuit
     Args:
         work_wires (int or dict): Number of work wires or a dictionary containing
@@ -129,61 +129,50 @@ class QubitManager:
         Raises:
             ValueError: If number of qubits to be freed is greater than available dirty qubits.
         """
-        available_dirty = self.dirty_qubits
 
-        if num_qubits > available_dirty:
+        if num_qubits > self.dirty_qubits:
             raise ValueError(
                 f"Freeing more qubits than available dirty qubits."
-                f"Number of dirty qubits available is {available_dirty}, while {num_qubits} qubits are being released."
+                f"Number of dirty qubits available is {self.dirty_qubits}, while {num_qubits} qubits are being released."
             )
 
-        self._dirty_qubit_counts -= min(available_dirty, num_qubits)
-        self._clean_qubit_counts += min(available_dirty, num_qubits)
+        self._dirty_qubit_counts -= num_qubits
+        self._clean_qubit_counts += num_qubits
 
 
-class GrabWires:
-    r"""Allows users to allocate clean work wires
-
-    Args:
-        num_wires (int): number of work wires to be allocated
-    """
+class _WireAction:  # Using a leading underscore to suggest it's an internal base class
+    """Base class for operations that manage qubit resources."""
 
     _queue_category = "_resource_qubit_action"
 
     def __init__(self, num_wires):
         self.num_wires = num_wires
-
         if qml.QueuingManager.recording():
             self.queue()
 
-    def __repr__(self) -> str:
-        return f"GrabWires({self.num_wires})"
-
-    def queue(self, context=QueuingManager):
-        r"""Adds GrabWires object to a queue."""
+    def queue(self, context=qml.QueuingManager):
+        r"""Adds the wire action object to a queue."""
         context.append(self)
         return self
 
 
-class FreeWires:
-    r"""Allows users to free dirty work wires
+class AllocWires(_WireAction):
+    r"""Allows users to allocate clean work wires.
+
+    Args:
+        num_wires (int): number of work wires to be allocated.
+    """
+
+    def __repr__(self) -> str:
+        return f"GrabWires({self.num_wires})"
+
+
+class FreeWires(_WireAction):
+    r"""Allows users to free dirty work wires.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
     """
 
-    _queue_category = "_resource_qubit_action"
-
-    def __init__(self, num_wires):
-        self.num_wires = num_wires
-
-        if qml.QueuingManager.recording():
-            self.queue()
-
     def __repr__(self) -> str:
         return f"FreeWires({self.num_wires})"
-
-    def queue(self, context=QueuingManager):
-        r"""Adds FreeWires object to a queue."""
-        context.append(self)
-        return self
