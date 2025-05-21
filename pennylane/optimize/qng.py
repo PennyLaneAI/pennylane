@@ -297,7 +297,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         for index, arg in enumerate(args):
             grad_flat, _unravel_array = jax.flatten_util.ravel_pytree(grad[index])
             # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-            update = jax.numpy.linalg.pinv(mt[index]) @ grad_flat
+            update = math.linalg.pinv(mt[index]) @ grad_flat
             args_new[index] = arg - self.stepsize * _unravel_array(update)
 
         return tuple(args_new)
@@ -309,9 +309,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
+                grad_flat = math.array(list(_flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.pinv(mt[trained_index]) @ grad_flat
+                update = math.linalg.pinv(mt[trained_index]) @ grad_flat
                 args_new[index] = arg - self.stepsize * _unflatten_np(update, grad[trained_index])
 
                 trained_index += 1
