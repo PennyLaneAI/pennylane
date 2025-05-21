@@ -14,6 +14,7 @@
 """Gradient descent optimizer"""
 
 from pennylane._grad import grad as get_gradient
+from pennylane.compiler import compiler
 
 
 class GradientDescentOptimizer:
@@ -118,7 +119,8 @@ class GradientDescentOptimizer:
             objective function output. If ``grad_fn`` is provided, the objective function
             will not be evaluated and instead ``None`` will be returned.
         """
-        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
+        argnum = tuple(range(len(args))) if compiler.active_compiler() == "catalyst" else None
+        g = get_gradient(objective_fn, argnum=argnum) if grad_fn is None else grad_fn
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 

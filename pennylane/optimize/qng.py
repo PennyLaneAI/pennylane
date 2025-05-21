@@ -212,7 +212,8 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = metric_tensor(qnode, approx=self.approx)
+                argnum = tuple(range(len(args))) if self.active_compiler == "catalyst" else None
+                metric_tensor_fn = metric_tensor(qnode, argnum=argnum, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
             if isinstance(mt, tuple):
@@ -278,39 +279,32 @@ class QNGOptimizer(GradientDescentOptimizer):
         Returns:
             array: the new values :math:`x^{(t+1)}`
         """
+        mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
+
         if self.active_compiler == "catalyst":
-            args_new = self._apply_grad_jax(grad=grad, args=args)
+            args_new = self._apply_grad_jax(grad=grad, args=args, mt=mt)
         else:
-            args_new = self._apply_grad(grad=grad, args=args)
+            args_new = self._apply_grad(grad=grad, args=args, mt=mt)
 
         return args_new
 
-    def _apply_grad_jax(self, grad, args):
+    def _apply_grad_jax(self, grad, args, mt):
         """TODO"""
         import jax
 
-        mt = self.metric_tensor
-
-        grad_flat, _unravel_array = jax.flatten_util.ravel_pytree(grad)
-        update = jax.numpy.linalg.pinv(mt) @ grad_flat
-        new_arg = args[0] - self.stepsize * _unravel_array(update)
-
-        return (new_arg,)
-
-    def _apply_grad(self, grad, args):
-        r"""Update the parameter array :math:`x` for a single optimization step. Flattens and
-        unflattens the inputs to maintain nested iterables as the parameters of the optimization.
-
-        Args:
-            grad (array): The gradient of the objective
-                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
-            args (array): the current value of the variables :math:`x^{(t)}`
-
-        Returns:
-            array: the new values :math:`x^{(t+1)}`
-        """
         args_new = list(args)
-        mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
+
+        for index, arg in enumerate(args):
+            grad_flat, _unravel_array = jax.flatten_util.ravel_pytree(grad[index])
+            # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
+            update = jax.numpy.linalg.pinv(mt[index]) @ grad_flat
+            args_new[index] = arg - self.stepsize * _unravel_array(update)
+
+        return tuple(args_new)
+
+    def _apply_grad(self, grad, args, mt):
+        """TODO"""
+        args_new = list(args)
 
         trained_index = 0
         for index, arg in enumerate(args):
