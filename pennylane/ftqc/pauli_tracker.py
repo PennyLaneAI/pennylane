@@ -148,7 +148,7 @@ def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
     """Conjugate a xz encoded ops to a new xz encoded ops with a given Clifford op.
        
         Args:
-            clifford_op (qml.operation.Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+            clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
             paulis (List): A list of Pauli operator
         
         Return:
