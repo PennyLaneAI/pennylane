@@ -89,6 +89,7 @@ class ProductFormula:
     def __call__(self, t: float):
         ret = copy.copy(self)
         ret.timestep *= t
+        ret.label = f"{self.label}({t})"
 
         return ret
 
@@ -120,7 +121,6 @@ class ProductFormula:
     def __pow__(self, z: float) -> ProductFormula:
         ret = copy.copy(self)
         ret.exponent = z * self.exponent
-        ret.label = f"{self.label}**{z * self.exponent}"
 
         return ret
 
