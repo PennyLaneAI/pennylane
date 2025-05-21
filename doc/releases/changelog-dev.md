@@ -73,6 +73,65 @@
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
+* The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
+  preferential treatment of certain gates in a target `gate_set` over others.
+  [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
+
+  Gates specified in `gate_set` can be given a numerical weight associated with their effective cost to have in a circuit:
+  
+  * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
+  * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
+
+  Consider the following toy example.
+
+  ```python
+  qml.decomposition.enable_graph()
+  
+  @partial(
+    qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.CRX(0.1, wires=[0, 1])
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+
+  0: ───────────╭●────────────╭●─╭●─┤  <Z>
+  1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤     
+  2: ────────────────────────────╰X─┤     
+  ```
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  @partial(
+      qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.CRX(0.1, wires=[0, 1])
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+
+  0: ────╭●───────────╭●─┤  <Z>
+  1: ──H─╰RZ(0.10)──H─├●─┤     
+  2: ─────────────────╰X─┤  
+  ```
+
+  Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered *less* 
+  efficient. When they have relatively low weights, a decomposition involving them is considered *more* efficient.
+
+* The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
+  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
 * New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
   can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
   decompose into will be chosen based on the target gate set.
@@ -98,55 +157,93 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
-* Decomposition rules can be marked as not-applicable with :class:`~.decomposition.DecompositionNotApplicable`, allowing for flexibility when creating conditional decomposition 
-  rules based on parameters that affects the rule's resources.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+* A :func:`~.decomposition.register_condition` decorator is added that allows users to bind a condition to a
+  decomposition rule for when it is applicable. The condition should be a function that takes the
+  resource parameters of an operator as arguments and returns `True` or `False` based on whether
+  these parameters satisfy the condition for when this rule can be applied.
+  [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)
 
   ```python
   import pennylane as qml
-  from pennylane.decomposition import DecompositionNotApplicable
   from pennylane.math.decomposition import zyz_rotation_angles
   
-  def _zyz_resource(num_wires):
-      if num_wires != 1:
-          # This decomposition is only applicable when num_wires is 1
-          raise DecompositionNotApplicable
-      return {qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1}
+  # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
+  def _zyz_condition(num_wires):
+    return num_wires == 1
 
-  @qml.register_resources(_zyz_resource)
+  @qml.register_condition(_zyz_condition)
+  @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
   def zyz_decomposition(U, wires, **__):
+      # Assumes that U is a 2x2 unitary matrix
       phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
       qml.RZ(phi, wires=wires[0])
       qml.RY(theta, wires=wires[0])
       qml.RZ(omega, wires=wires[0])
       qml.GlobalPhase(-phase)
   
-  qml.add_decomps(QubitUnitary, zyz_decomposition)
+  # This decomposition will be ignored for `QubitUnitary` on more than one wire.
+  qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
   ```
-  
-  This decomposition will be ignored for `QubitUnitary` on more than one wire.
 
-* The :func:`~.transforms.decompose` transform now supports symbolic operators (e.g., `Adjoint` and `Controlled`) specified as strings in the `gate_set` argument
-  when the new graph-based decomposition system is enabled.
-  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
-
-  ```python
-  from functools import partial
-  import pennylane as qml
+* Symbolic operator types (e.g., `Adjoint`, `Controlled`, and `Pow`) can now be specified as strings
+  in various parts of the new graph-based decomposition system, specifically:
+  * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding symbolic
+    operators in the target gate set.
+    [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+    ```python
+    from functools import partial
+    import pennylane as qml
   
-  qml.decomposition.enable_graph()
+    qml.decomposition.enable_graph()
    
-  @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.Toffoli(wires=[0, 1, 2])
-  ```
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ───────────╭●───────────╭●────╭●──T──╭●─┤  
-  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤  
-  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
-  ```
+    @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.Toffoli(wires=[0, 1, 2])
+    ```
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+    ```
+  * Symbolic operator types can now be given as strings to the `op_type` argument of :func:`~.decomposition.add_decomps`,
+    or as keys of the dictionaries passed to the `alt_decomps` and `fixed_decomps` arguments of the
+    :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
+    registered for symbolic operators.
+    [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
+
+    [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+
+    ```python
+    @qml.register_resources({qml.RY: 1})
+    def my_adjoint_ry(phi, wires, **_):
+        qml.RY(-phi, wires=wires)
+
+    @qml.register_resources({qml.RX: 1})
+    def my_adjoint_rx(phi, wires, **__):
+        qml.RX(-phi, wires)
+
+    # Registers a decomposition rule for the adjoint of RY globally
+    qml.add_decomps("Adjoint(RY)", my_adjoint_ry)
+
+    @partial(
+        qml.transforms.decompose,
+        gate_set={"RX", "RY", "CNOT"},
+        fixed_decomps={"Adjoint(RX)": my_adjoint_rx}
+    )
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.adjoint(qml.RX(0.5, wires=[0]))
+        qml.CNOT(wires=[0, 1])
+        qml.adjoint(qml.RY(0.5, wires=[1]))
+        return qml.expval(qml.Z(0))
+    ```
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ──RX(-0.50)─╭●────────────┤  <Z>
+    1: ────────────╰X──RY(-0.50)─┤
+    ```
 
 <h3>Improvements 🛠</h3>
 
@@ -155,6 +252,12 @@
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+ 
+* An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
+  but it is coded in Python instead of C++.
+  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
+  [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -166,11 +269,6 @@
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
-* An experimental quantum dialect written in [xDSL](https://xdsl.dev/index) has been introduced.
-  This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
-  but it is coded in Python instead of C++.
-  [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
-  
 * The :func:`~.transforms.cancel_inverses` transform no longer changes the order of operations that don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
@@ -317,6 +415,18 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Fix subset of `pylint` errors in the `tests` folder.
+  [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
+
+* Remove and reduce excessively expensive test cases in `tests/templates/test_subroutines/` that do not add value.
+  [(#7436)](https://github.com/PennyLaneAI/pennylane/pull/7436)
+
+* Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
+  [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
+
+* Enforce subset of submodules in `templates` to be auxiliary layer modules.
+  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
+
 * Enforce `noise` module to be a tertiary layer module.
   [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
 
@@ -454,6 +564,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
