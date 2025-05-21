@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement processes"""
 
 import copy
+import itertools
 
 import autograd.numpy
 import pytest
@@ -218,6 +219,197 @@ class TestProcessState:
 
         res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
         res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+
+        # now test that results are the same
+        assert res1 == res2
+
+
+class TestProcessDensityMatrix:
+    """Unit tests for process_density_matrix_with_shots for the classical_shadow
+    and shadow_expval measurements"""
+
+    def test_shape_and_dtype(self):
+        """Test that the shape and dtype of the measurement is correct"""
+        mp = qml.classical_shadow(wires=[0, 1])
+        state = np.ones((2, 2)) / 2
+        dm = np.outer(state, state).reshape((2,) * 4)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert set(res[0].ravel()).issubset({0, 1})
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert set(res[1].ravel()).issubset({0, 1, 2})
+
+    def test_wire_order(self, seed):
+        """Test that the wire order is respected"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+        dm = np.outer(state, state).reshape((2,) * 4)
+
+        mp = qml.classical_shadow(wires=[0, 1])
+        res = mp.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=seed
+        )
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # test that the first qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 0] == 2][:, 0] == 0)
+
+        # test that the second qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
+
+        res = mp.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([1, 0]), shots=1000, rng=seed
+        )
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # now test that the first qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 0] == 2][:, 0] == 1)
+
+        # now test that the second qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    @pytest.mark.parametrize("shots", [100])
+    def test_wire_order_generalized(self, num_wires, shots, seed):
+        """Test that the wire order is respected for any number of wires and all permutations"""
+        # Prepare a GHZ-like state for num_wires
+        state = np.zeros((2,) * num_wires)
+        idx0 = tuple([0] * num_wires)
+        idx1 = tuple([1] * num_wires)
+        state[idx0] = 1 / np.sqrt(2)
+        state[idx1] = 1 / np.sqrt(2)
+        dm = np.outer(state.ravel(), state.ravel()).reshape((2,) * (2 * num_wires))
+
+        wires = list(range(num_wires))
+        mp = qml.classical_shadow(wires=wires)
+
+        for perm in itertools.permutations(wires):
+            res = mp.process_density_matrix_with_shots(
+                dm, qml.wires.Wires(list(perm)), shots=shots, rng=seed
+            )
+            assert res.shape == (2, shots, num_wires)
+            # bits are always 0 or 1
+            assert set(res[0].ravel()).issubset({0, 1})
+            # recipes are always 0, 1, or 2
+            assert set(res[1].ravel()).issubset({0, 1, 2})
+
+            # For GHZ state, when all qubits are measured in Z basis,
+            # they should all have the same value (all 0s or all 1s)
+            z_shots = np.where(np.all(res[1] == 2, axis=1))[0]
+            if len(z_shots) > 0:  # Only test if we have any all-Z shots
+                for shot_idx in z_shots:
+                    # All qubits should have the same measurement outcome
+                    first_bit = res[0][shot_idx, 0]
+                    assert np.all(res[0][shot_idx] == first_bit)
+
+    def test_subset_wires(self):
+        """Test that the measurement is correct when only a subset of wires is measured"""
+        mp = qml.classical_shadow(wires=[0, 1])
+
+        # GHZ state
+        state = np.zeros((2, 2, 2))
+        state[np.array([0, 1]), np.array([0, 1]), np.array([0, 1])] = 1 / np.sqrt(2)
+
+        dm = np.outer(state, state).reshape((2,) * 6)
+
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert set(res[0].ravel()).issubset({0, 1})
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert set(res[1].ravel()).issubset({0, 1, 2})
+
+    def test_same_rng(self):
+        """Test results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        dm = np.outer(state, state).reshape((2,) * 4)
+
+        mp1 = qml.classical_shadow(wires=[0, 1], seed=123)
+        mp2 = qml.classical_shadow(wires=[0, 1], seed=123)
+
+        res1 = mp1.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=100)
+        res2 = mp2.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=100)
+
+        # test recipes are the same but bits are different
+        assert np.all(res1[1] == res2[1])
+        assert np.any(res1[0] != res2[0])
+
+        res1 = mp1.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=100, rng=456
+        )
+        res2 = mp2.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=100, rng=456
+        )
+
+        # now test everything is the same
+        assert np.all(res1[1] == res2[1])
+        assert np.all(res1[0] == res2[0])
+
+    def test_expval_shape_and_val(self):
+        """Test that shadow expval measurements work as expected"""
+        mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
+        state = np.ones((2, 2)) / 2
+        dm = np.outer(state, state).reshape((2,) * 4)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=1000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+    def test_expval_wire_order(self):
+        """Test that shadow expval respects the wire order"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+
+        dm = np.outer(state, state).reshape((2,) * 4)
+
+        mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([0, 1]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+        res = mp.process_density_matrix_with_shots(dm, qml.wires.Wires([1, 0]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 0.0, atol=0.05)
+
+    def test_expval_same_rng(self):
+        """Test expval results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        dm = np.outer(state, state).reshape((2,) * 4)
+
+        mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+        mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+
+        res1 = mp1.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=100
+        )
+        res2 = mp2.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=200
+        )
+
+        # test results are different
+        assert res1 != res2
+
+        res1 = mp1.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=456
+        )
+        res2 = mp2.process_density_matrix_with_shots(
+            dm, qml.wires.Wires([0, 1]), shots=1000, rng=456
+        )
 
         # now test that results are the same
         assert res1 == res2
