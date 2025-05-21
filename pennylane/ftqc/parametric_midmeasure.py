@@ -399,7 +399,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments, arguments-differ
+    # pylint: disable=too-many-positional-arguments, arguments-differ, arguments-renamed
     @classmethod
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
