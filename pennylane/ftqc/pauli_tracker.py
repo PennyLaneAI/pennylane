@@ -19,38 +19,41 @@ import copy
 import itertools
 from typing import List, Tuple
 
-import pennylane as qml
-from pennylane import numpy as np
+import numpy as np
+
+from pennylane import CNOT, H, I, S, X, Y, Z
 from pennylane.operation import Operator
+from pennylane.tape import QuantumScript
+from pennylane.ops import Prod
 
-_ENCODE_XZ_OPS = {
-    qml.I: (0, 0),
-    qml.X: (1, 0),
-    qml.Y: (1, 1),
-    qml.Z: (0, 1),
+_OPS_TO_XZ = {
+    I: (0, 0),
+    X: (1, 0),
+    Y: (1, 1),
+    Z: (0, 1),
 }
 
-_DECODE_XZ = {
-    (0, 0): qml.I,
-    (1, 0): qml.X,
-    (1, 1): qml.Y,
-    (0, 1): qml.Z,
+_XZ_TO_OPS = {
+    (0, 0): I,
+    (1, 0): X,
+    (1, 1): Y,
+    (0, 1): Z,
 }
+
+_PAULIS = frozenset({X, Y, Z, I})
 
 _CLIFFORD_TABLEAU = {
-    qml.H: [[qml.Z, qml.X]],
-    qml.S: [[qml.Y, qml.Z]],
-    qml.CNOT: [[qml.X, qml.Z, qml.I, qml.Z], [qml.X, qml.I, qml.X, qml.Z]],
+    H: [[Z, X]],
+    S: [[Y, Z]],
+    CNOT: [[X, Z, I, Z], [X, I, X, Z]],
 }
 
-_PAULIS = (qml.X, qml.Y, qml.Z, qml.I)
-
-_GATE_SET_SUPPORTED = (qml.X, qml.Y, qml.Z, qml.I, qml.H, qml.S, qml.CNOT)
+_GATE_SET_SUPPORTED = (X, Y, Z, I, H, S, CNOT)
 
 _MBQC_GATES_SUPPORTED = {
-    qml.H: {"meas_len": 4, "cor": [[0, 2, 3], [1, 2], [0, 0]]},
-    qml.S: {"meas_len": 4, "cor": [[1, 3], [0, 1, 2], [0, 1]]},
-    qml.CNOT: {
+    H: {"meas_len": 4, "cor": [[0, 2, 3], [1, 2], [0, 0]]},
+    S: {"meas_len": 4, "cor": [[1, 3], [0, 1, 2], [0, 1]]},
+    CNOT: {
         "meas_len": 13,
         "cor": [
             [1, 2, 4, 5],
@@ -62,10 +65,9 @@ _MBQC_GATES_SUPPORTED = {
     },
 }
 
-
-def pauli_encode_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
-    """
-    Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
+def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
+    r"""
+    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
     the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
@@ -76,17 +78,27 @@ def pauli_encode_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
     the :class:`~pennylane.Z`.
+
+    **Example:**
+        The following example shows how the Pauli to XZ works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import pauli_to_xz
+            from pennylane import I
+            >>> pauli_to_xz(I(0))
+            (0, 0)
+
+        A xz tuple representation is return for a given Pauli operator.
     """
 
-    if op in _ENCODE_XZ_OPS:
-        return _ENCODE_XZ_OPS[op]
-    print(op)
+    if type(op) in _PAULIS:
+        return _OPS_TO_XZ[type(op)]
     raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
 
 
-def xz_decode_pauli(x: np.uint8, z: np.uint8):
+def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
-    Decode a x, z to a Pauli operator.
+    Convert x, z to a Pauli operator.
 
     Args:
         x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
@@ -94,61 +106,110 @@ def xz_decode_pauli(x: np.uint8, z: np.uint8):
 
     Return:
         A Pauli operator.
+
+    **Example:**
+        The following example shows how the XZ to Pauli works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import xz_to_pauli
+            >>> xz_to_pauli(0, 0)
+            <class 'pennylane.ops.identity.Identity'>
+
+        A Pauli operator is returned for a given xz tuple.
     """
     if x in [0, 1] and z in [0, 1]:
-        return _DECODE_XZ[(x, z)]
+        return _XZ_TO_OPS[(x, z)]
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod_to_xz(ops: List[Operator]) -> Operator:
+def pauli_prod(ops: List[Operator]) -> Operator:
     """
-    Get the result of a product of list of Pauli operators. The result is encoded with `xz` representation.
+    Get the result of a product of list of Pauli operators. The result is a new Pauli operator up to global phase.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
-        A Pauli operator.
+        A new Pauli operator.
+
+    **Example:**
+        The following example shows how the `pauli_prod` works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import pauli_prod
+            from pennylane import I, X, Y, Z
+            >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
+            I(0)
+
+        A Pauli operator is returned for a list of Pauli operator up to global phase.
     """
 
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-
-    res_x, res_z = pauli_encode_xz(ops.pop())
+    op0 = ops.pop()
+    res_x, res_z = pauli_to_xz(op0)
+    op0_wire = op0.wires
 
     while len(ops) > 0:
-        x, z = pauli_encode_xz(ops.pop())
+        op = ops.pop()
+        wire = op.wires
+        if wire != op0_wire:
+            raise ValueError("All operators should target at the same wire.")
+        x, z = pauli_to_xz(op)
         res_x ^= x
         res_z ^= z
-    return xz_decode_pauli(res_x, res_z)
+
+    return xz_to_pauli(res_x, res_z)(wires=op0_wire)
 
 
 def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
-    """Conjugate a xz encoded ops to a new xz encoded ops with a given
-    Clifford op.
-
+    """Conjugate a xz encoded ops to a new xz encoded ops with a given Clifford op.
+       
         Args:
-            clifford_op (qml.operation.Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+            clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
             paulis (List): A list of Pauli operator
-
+        
         Return:
             A list of Pauli operators that clifford_op conjugates the paulis to.
+        
+        **Example:**
+            The following example shows how the `pauli_prod` works.
+
+            .. code-block:: python3
+                from pennylane.ftqc.pauli_tracker import apply_clifford_op
+                from pennylane import I, CNOT
+                >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
+                [I(0), I(1)]
+
+            A list of Pauli operator is returned up to global phase.
     """
-    if clifford_op not in _CLIFFORD_TABLEAU:
+    if type(clifford_op) not in _CLIFFORD_TABLEAU:
         raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
-    if not all(pauli in _PAULIS for pauli in paulis):
-        raise ValueError("Please ensure the operator passed in are Paulis")
+    if not all(type(pauli) in _PAULIS for pauli in paulis):
+        raise ValueError("Please ensure the operator passed in are Paulis.")
 
-    if clifford_op.num_wires != len(paulis):
-        raise ValueError(
-            "Please ensure the number of Paulis matches the number of wires of the Clifford gate."
-        )
+    pauli_wires_set = {pauli.wires[0] for pauli in paulis}
 
-    if all(pauli == qml.I for pauli in paulis):
+    clifford_op_wires_set = {wire for wire in clifford_op.wires}
+
+    if len(paulis) != len(pauli_wires_set):
+        raise ValueError("Please ensure each Pauli target at a different wire.")
+
+    if pauli_wires_set != clifford_op_wires_set:
+        raise ValueError("Please the target wires of Clifford op match those of Paulis.")
+
+    if all(type(pauli) == I for pauli in paulis):
         return paulis
 
-    xz = [pauli_encode_xz(pauli) for pauli in paulis]
+    wire_map = {}
+
+    for clifford_wire in clifford_op.wires:
+        for idx in range(len(paulis)):
+            if clifford_wire == paulis[idx].wires[0]:
+                wire_map[clifford_wire] = idx
+
+    xz = [pauli_to_xz(paulis[wire_map[clifford_wire]]) for clifford_wire in clifford_op.wires]
     xz = tuple(itertools.chain.from_iterable(xz))
 
     # A Clifford gate conjugate non-Identify Pauli ops to a new Pauli ops
@@ -159,15 +220,16 @@ def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
             nonzero_indices.append(idx)
 
     # Get Paulis prod for each target wire
-    for table_row in _CLIFFORD_TABLEAU[clifford_op]:
+    for wire_idx, table_row in enumerate(_CLIFFORD_TABLEAU[type(clifford_op)]):
+        wire = clifford_op.wires[wire_idx]
         ps = []
         for idx in nonzero_indices:
-            ps.append(table_row[idx])
-        new_ops.append(pauli_prod_to_xz(ps))
+            ps.append(table_row[idx](wires=wire))
+        new_ops.append(pauli_prod(ps))
     return new_ops
 
 
-def _parse_mid_measurements(tape: qml.tape.QuantumScript, mid_meas: List) -> List:
+def _parse_mid_measurements(tape: QuantumScript, mid_meas: List) -> List:
     r"""Parse a serial of mid-measurement results of a quantum tape with only Pauli operators (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
     set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`) and the Clifford gates mentioned above are measured in the way defined in `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
@@ -190,12 +252,11 @@ def _parse_mid_measurements(tape: qml.tape.QuantumScript, mid_meas: List) -> Lis
     - if yes, are Paulis consolidated?
 
     Args:
-        tape (qml.tape.QuantumScript): The quantum tape in the standard circuit mode (Gates are not transformed into the MBQC formalism).
+        tape (QuantumScript): The quantum tape in the standard circuit mode (Gates are not transformed into the MBQC formalism).
         mid_meas (list): Mid-measurements results.
 
     Returns:
-        `byproduct` ops list and `operation` in a reversed manner. Each tuple contains the index of the corresponding Clifford gate together with the byproduct operation encoded
-        with `X`, `Z` and the corresponding wire.
+        `byproduct` ops list and `operation` in a reversed manner.
     """
     ops = copy.copy(tape.operations)
 
@@ -223,7 +284,7 @@ def _parse_mid_measurements(tape: qml.tape.QuantumScript, mid_meas: List) -> Lis
 
             by_op = []
             for i in range(op.num_wires):
-                by_op.append(xz_decode_pauli(cor[0 + 2 * i], cor[1 + 2 * i]))
+                by_op.append(xz_to_pauli(cor[0 + 2 * i], cor[1 + 2 * i])(wires=op.wires[i]))
 
             by_ops.append(by_op)
 
@@ -244,10 +305,9 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
         ops (list): List of Clifford/Pauli gates
 
     Return:
-        Final tracked Paulis represented by xz.
-
+        The final tracked Paulis for each wire.
     """
-    pauli_record = [qml.Identity] * num_wires
+    pauli_record = [I(wire) for wire in range(num_wires)]
 
     while len(by_ops) or len(ops):
         op = ops.pop()
@@ -261,17 +321,17 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
 
         if type(op) in _CLIFFORD_TABLEAU:
             # Step 1: Conjugate recorded Paulis to new Paulis
-            pauli_conjugated = apply_clifford_op(type(op), paulis)
+            pauli_conjugated = apply_clifford_op(op, paulis)
 
             # Step 2: Update the x, z record with the byproduct by_op
             by_op = by_ops.pop()
             for b_op, p_conj in zip(by_op, pauli_conjugated):
-                new_paulis.append(pauli_prod_to_xz([p_conj, b_op]))
+                new_paulis.append(pauli_prod([p_conj, b_op]))
 
         else:  # branch for Paulis
             # Conjugate step is skipped. Update the x, z record with the Pauli
-            paulis.extend([type(op)])
-            new_paulis.append(pauli_prod_to_xz(paulis))
+            paulis.extend([op])
+            new_paulis.append(pauli_prod(paulis))
 
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
@@ -281,33 +341,32 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
 
 
 def _apply_measurement_correction_rule(
-    pauli: qml.operation.Operator, ob: qml.operation.Operator
+    pauli: Operator, ob: Operator
 ) -> np.int8:
-    """Get the phase correction factor based on the $X$ recorded of the target wire and the corresponding
-    observable. Note that we only support corrections for `Z-basis` measurements.
+    """Get the phase correction factor based on the Pauli recorded of the target wire and the corresponding
+    observable.
 
         Args:
-            x (np.uint8): x recorded in the xz tracking.
-            z (np.unit8): z recorded in the xz tracking.
-            ob (qml.operation.Observable): Observable of the measurement.
+            pauli (Operator): Recorded Pauli at the target wire of ob.
+            ob (Operator): Observable of the measurement.
 
         Return:
             Phase correction factor.
     """
-    if isinstance(ob, qml.Z):
-        return -1 if pauli == qml.X or pauli == qml.Y else 1
+    if isinstance(ob, Z):
+        return -1 if isinstance(pauli, X) or isinstance(pauli, Y) else 1
 
-    if isinstance(ob, qml.X):
-        return -1 if pauli == qml.Z or pauli == qml.Y else 1
+    if isinstance(ob, X):
+        return -1 if isinstance(pauli, Z) or isinstance(pauli, Y) else 1
 
-    if isinstance(ob, qml.Y):
-        return -1 if pauli == qml.X or pauli == qml.Z else 1
+    if isinstance(ob, Y):
+        return -1 if isinstance(pauli, X) or isinstance(pauli, Z) else 1
 
-    if isinstance(ob, qml.I):
+    if isinstance(ob, I):
         return 1
 
 
-def get_measurements_corrections(tape: qml.tape.QuantumScript, pauli_record: List):
+def get_measurements_corrections(tape: QuantumScript, pauli_record: List):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
     is calculated based on the measurement observables with the corresponding recorded xz.
         Args:
@@ -320,12 +379,12 @@ def get_measurements_corrections(tape: qml.tape.QuantumScript, pauli_record: Lis
     phase_cor = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
         obs = measurement.obs
-        if isinstance(obs, _PAULIS):
+        if type(obs) in _PAULIS:
             # branch for NamedObs
             phase_cor[idx] *= _apply_measurement_correction_rule(
                 pauli_record[obs.wires[0]], measurement.obs
             )
-        elif isinstance(obs, qml.ops.Prod):
+        elif isinstance(obs, Prod):
             # branch for TensorProd
             obs = measurement.obs.decomposition()
             for ob in obs:
@@ -335,7 +394,7 @@ def get_measurements_corrections(tape: qml.tape.QuantumScript, pauli_record: Lis
     return phase_cor
 
 
-def get_byproduct_corrections(tape: qml.tape.QuantumScript, mid_meas: List):
+def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
     r"""Get measurement correction coefficients offline with a quantum script and mid-measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     gates. Note that byproduct operations and ops are stored with list and used in a stack manner. The calculation iteratively

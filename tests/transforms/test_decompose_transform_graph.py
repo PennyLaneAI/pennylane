@@ -22,6 +22,20 @@ import pennylane as qml
 
 
 @pytest.mark.unit
+def test_weighted_graph_handles_negative_weight():
+    """Tests a DecompositionGraph raises a ValueError when given negative weights."""
+
+    tape = qml.tape.QuantumScript([])
+
+    # edge case: negative gate weight
+    with pytest.raises(
+        ValueError,
+        match="Negative gate weights provided to gate_set in decompose" "are not supported.",
+    ):
+        qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
+
+
+@pytest.mark.unit
 def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""

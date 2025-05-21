@@ -21,102 +21,124 @@ import pennylane as qml
 from pennylane.ftqc import (
     GraphStatePrep,
     QubitMgr,
-    apply_clifford_op,
     diagonalize_mcms,
     generate_lattice,
     get_byproduct_corrections,
     measure_x,
     measure_y,
-    pauli_encode_xz,
-    pauli_prod_to_xz,
 )
+from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
 TOL = 2e-1
 
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 
-    @pytest.mark.parametrize("op", [qml.I, qml.X, qml.Y, qml.Z, qml.S])
-    def test_pauli_encode_xz(self, op):
-        if op not in [qml.I, qml.X, qml.Y, qml.Z]:
-            with pytest.raises(NotImplementedError):
-                _ = pauli_encode_xz(op)
-        else:
-            x, z = pauli_encode_xz(op)
-            assert x in [0, 1]
-            assert z in [0, 1]
+    @pytest.mark.parametrize(
+        "op, expected",
+        [(qml.I(0), (0, 0)), (qml.X(1), (1, 0)), (qml.Y(0), (1, 1)), (qml.Z(0), (0, 1))],
+    )
+    def test_pauli_to_xz(self, op, expected):
+        xz = pauli_to_xz(op)
+        assert xz == expected
 
-            x_res = 1 if op in [qml.X, qml.Y] else 0
-            z_res = 1 if op in [qml.Y, qml.Z] else 0
-
-            assert x == x_res
-            assert z == z_res
+    @pytest.mark.parametrize("op", [qml.S(0), qml.CNOT(wires=[0, 1]), qml.H(2)])
+    def test_unsuppored_ops_pauli_to_xz(self, op):
+        with pytest.raises(NotImplementedError):
+            _ = pauli_to_xz(op)
 
     @pytest.mark.parametrize(
-        "ops, res",
+        "x, z, expected", [(0, 0, qml.I), (1, 0, qml.X), (1, 1, qml.Y), (0, 1, qml.Z)]
+    )
+    def test_xz_to_pauli(self, x, z, expected):
+        op = xz_to_pauli(x, z)
+        assert op == expected
+
+    @pytest.mark.parametrize("x, z", [(0, -1), (-1, 0), (-1, -1)])
+    def test_xz_decode_pauli_unsupported_error(self, x, z):
+        with pytest.raises(ValueError):
+            _ = xz_to_pauli(x, z)
+
+    @pytest.mark.parametrize(
+        "ops, expected",
         [
-            ([], None),
-            ([qml.I], qml.I),
-            ([qml.X], qml.X),
-            ([qml.Y], qml.Y),
-            ([qml.Z], qml.Z),
-            ([qml.I, qml.I], qml.I),
-            ([qml.I, qml.X], qml.X),
-            ([qml.I, qml.Y], qml.Y),
-            ([qml.I, qml.Z], qml.Z),
-            ([qml.X, qml.I], qml.X),
-            ([qml.X, qml.X], qml.I),
-            ([qml.X, qml.Y], qml.Z),
-            ([qml.X, qml.Z], qml.Y),
-            ([qml.Y, qml.I], qml.Y),
-            ([qml.Y, qml.X], qml.Z),
-            ([qml.Y, qml.Y], qml.I),
-            ([qml.Y, qml.Z], qml.X),
-            ([qml.Z, qml.I], qml.Z),
-            ([qml.Z, qml.X], qml.Y),
-            ([qml.Z, qml.Y], qml.X),
-            ([qml.Z, qml.Z], qml.I),
-            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], qml.Z),
+            ([qml.I(0)], qml.I(0)),
+            ([qml.X(1)], qml.X(1)),
+            ([qml.Y(2)], qml.Y(2)),
+            ([qml.Z(3)], qml.Z(3)),
+            ([qml.I(0), qml.I(0)], qml.I(0)),
+            ([qml.I(1), qml.X(1)], qml.X(1)),
+            ([qml.I(2), qml.Y(2)], qml.Y(2)),
+            ([qml.I(3), qml.Z(3)], qml.Z(3)),
+            ([qml.X(0), qml.I(0)], qml.X(0)),
+            ([qml.X(1), qml.X(1)], qml.I(1)),
+            ([qml.X(2), qml.Y(2)], qml.Z(2)),
+            ([qml.X(3), qml.Z(3)], qml.Y(3)),
+            ([qml.Y(0), qml.I(0)], qml.Y(0)),
+            ([qml.Y(1), qml.X(1)], qml.Z(1)),
+            ([qml.Y(2), qml.Y(2)], qml.I(2)),
+            ([qml.Y(3), qml.Z(3)], qml.X(3)),
+            ([qml.Z(0), qml.I(0)], qml.Z(0)),
+            ([qml.Z(1), qml.X(1)], qml.Y(1)),
+            ([qml.Z(2), qml.Y(2)], qml.X(2)),
+            ([qml.Z(3), qml.Z(3)], qml.I(3)),
+            ([qml.X(4), qml.Y(4), qml.Z(4), qml.I(4), qml.Z(4)], qml.Z(4)),
         ],
     )
-    def test_pauli_prod_to_xz(self, ops, res):
-        if len(ops) == 0:
-            with pytest.raises(
-                ValueError,
-                match="Please ensure that a valid list of operators are passed to the method.",
-            ):
-                _ = pauli_prod_to_xz(ops)
-        else:
-            op = pauli_prod_to_xz(ops)
-            assert res == op
+    def test_pauli_prod(self, ops, expected):
+        op = pauli_prod(ops)
+        assert op == expected
+
+    @pytest.mark.parametrize(
+        "ops", [([]), ([qml.X(0), qml.I(1)]), ([qml.X(0), qml.Y(0), qml.Z(1)])]
+    )
+    def test_pauli_prod_to_xz_unsupported_error(self, ops):
+        with pytest.raises(ValueError):
+            _ = pauli_prod(ops)
 
     @pytest.mark.parametrize(
         "clifford_op, pauli, res",
         [
-            (qml.S, [qml.I], [qml.I]),
-            (qml.S, [qml.X], [qml.Y]),
-            (qml.S, [qml.Y], [qml.X]),
-            (qml.S, [qml.Z], [qml.Z]),
-            (qml.H, [qml.I], [qml.I]),
-            (qml.H, [qml.X], [qml.Z]),
-            (qml.H, [qml.Y], [qml.Y]),
-            (qml.H, [qml.Z], [qml.X]),
-            (qml.CNOT, [qml.I, qml.I], [qml.I, qml.I]),
-            (qml.CNOT, [qml.X, qml.I], [qml.X, qml.X]),
-            (qml.CNOT, [qml.Y, qml.I], [qml.Y, qml.X]),
-            (qml.CNOT, [qml.Z, qml.I], [qml.Z, qml.I]),
-            (qml.CNOT, [qml.I, qml.X], [qml.I, qml.X]),
-            (qml.CNOT, [qml.X, qml.X], [qml.X, qml.I]),
-            (qml.CNOT, [qml.Y, qml.X], [qml.Y, qml.I]),
-            (qml.CNOT, [qml.Z, qml.X], [qml.Z, qml.X]),
-            (qml.CNOT, [qml.I, qml.Y], [qml.Z, qml.Y]),
-            (qml.CNOT, [qml.X, qml.Y], [qml.Y, qml.Z]),
-            (qml.CNOT, [qml.Y, qml.Y], [qml.X, qml.Z]),
-            (qml.CNOT, [qml.Z, qml.Y], [qml.I, qml.Y]),
-            (qml.CNOT, [qml.I, qml.Z], [qml.Z, qml.Z]),
-            (qml.CNOT, [qml.X, qml.Z], [qml.Y, qml.Y]),
-            (qml.CNOT, [qml.Y, qml.Z], [qml.X, qml.Y]),
-            (qml.CNOT, [qml.Z, qml.Z], [qml.I, qml.Z]),
+            (qml.S(0), [qml.I(0)], [qml.I(0)]),
+            (qml.S(1), [qml.X(1)], [qml.Y(1)]),
+            (qml.S(2), [qml.Y(2)], [qml.X(2)]),
+            (qml.S(3), [qml.Z(3)], [qml.Z(3)]),
+            (qml.H(0), [qml.I(0)], [qml.I(0)]),
+            (qml.H(1), [qml.X(1)], [qml.Z(1)]),
+            (qml.H(2), [qml.Y(2)], [qml.Y(2)]),
+            (qml.H(3), [qml.Z(3)], [qml.X(3)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.I(1)], [qml.I(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(0), qml.I(1)], [qml.X(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Y(0), qml.I(1)], [qml.Y(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Z(0), qml.I(1)], [qml.Z(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.X(1)], [qml.I(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(0), qml.X(1)], [qml.X(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Y(0), qml.X(1)], [qml.Y(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Z(0), qml.X(1)], [qml.Z(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.Y(1)], [qml.Z(0), qml.Y(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(1)]),
+            (qml.CNOT(wires=[0, 2]), [qml.Y(0), qml.Y(2)], [qml.X(0), qml.Z(2)]),
+            (qml.CNOT(wires=[0, 2]), [qml.Z(0), qml.Y(2)], [qml.I(0), qml.Y(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.I(1), qml.Z(2)], [qml.Z(1), qml.Z(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.X(1), qml.Z(2)], [qml.Y(1), qml.Y(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.Y(1), qml.Z(2)], [qml.X(1), qml.Y(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.Z(1), qml.Z(2)], [qml.I(1), qml.Z(2)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(1), qml.I(0)], [qml.I(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(1), qml.I(0)], [qml.I(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Y(1), qml.I(0)], [qml.Z(0), qml.Y(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Z(1), qml.I(0)], [qml.Z(0), qml.Z(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(1), qml.X(0)], [qml.X(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(1), qml.X(0)], [qml.X(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Y(1), qml.X(0)], [qml.Y(0), qml.Z(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.Z(1), qml.X(0)], [qml.Y(0), qml.Y(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(1), qml.Y(0)], [qml.Y(0), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(1), qml.Y(0)], [qml.Y(0), qml.I(1)]),
+            (qml.CNOT(wires=[0, 2]), [qml.Y(2), qml.Y(0)], [qml.X(0), qml.Z(2)]),
+            (qml.CNOT(wires=[0, 2]), [qml.Z(2), qml.Y(0)], [qml.X(0), qml.Y(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.I(2), qml.Z(1)], [qml.Z(1), qml.I(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.X(2), qml.Z(1)], [qml.Z(1), qml.X(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.Y(2), qml.Z(1)], [qml.I(1), qml.Y(2)]),
+            (qml.CNOT(wires=[1, 2]), [qml.Z(2), qml.Z(1)], [qml.I(1), qml.Z(2)]),
         ],
     )
     def test_apply_clifford_ops(self, clifford_op, pauli, res):
@@ -124,8 +146,10 @@ class TestPauliTracker:
 
         assert new_pauli == res
 
-    @pytest.mark.parametrize("clifford_op", [qml.X, qml.RZ, qml.RX, qml.T])
-    @pytest.mark.parametrize("paulis", [[qml.I]])
+    @pytest.mark.parametrize(
+        "clifford_op", [qml.X(0), qml.RZ(phi=0.123, wires=0), qml.RX(phi=0.123, wires=0)]
+    )
+    @pytest.mark.parametrize("paulis", [[qml.I(0)]])
     def test_apply_clifford_ops_not_imp(self, clifford_op, paulis):
         with pytest.raises(
             NotImplementedError, match="Only qml.H, qml.S and qml.CNOT are supported."
@@ -134,10 +158,41 @@ class TestPauliTracker:
 
     @pytest.mark.parametrize(
         "clifford_op, paulis",
-        [(qml.S, [qml.I, qml.I]), (qml.S, [qml.RZ]), (qml.CNOT, [qml.I])],
+        [
+            (qml.S(0), [qml.S(0)]),
+            (qml.CNOT(wires=[0, 1]), [qml.H(0), qml.H(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.H(1)]),
+        ],
     )
     def test_apply_clifford_ops_val_err(self, clifford_op, paulis):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Please ensure the operator passed in are Paulis."):
+            _ = apply_clifford_op(clifford_op, paulis)
+
+    @pytest.mark.parametrize(
+        "clifford_op, paulis",
+        [
+            (qml.CNOT(wires=[0, 1]), [qml.X(1), qml.Y(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.Z(0)]),
+        ],
+    )
+    def test_apply_clifford_ops_pauli_wire_err(self, clifford_op, paulis):
+        with pytest.raises(
+            ValueError, match="Please ensure each Pauli target at a different wire."
+        ):
+            _ = apply_clifford_op(clifford_op, paulis)
+
+    @pytest.mark.parametrize(
+        "clifford_op, paulis",
+        [
+            (qml.S(0), [qml.I(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.X(2), qml.X(1)]),
+            (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.Y(3)]),
+        ],
+    )
+    def test_apply_clifford_ops_pauli_wire_err(self, clifford_op, paulis):
+        with pytest.raises(
+            ValueError, match="Please the target wires of Clifford op match those of Paulis."
+        ):
             _ = apply_clifford_op(clifford_op, paulis)
 
 
@@ -279,7 +334,7 @@ def cnot_stencil(q_mgr, ctrl_idx, target_idx):
 
 class TestOfflineCorrection:
 
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -340,7 +395,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(res_ref, cor_res, rtol=TOL)
 
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -404,7 +459,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(res_ref, cor_res, rtol=TOL)
 
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -468,7 +523,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(res_ref, cor_res, rtol=TOL)
 
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -533,7 +588,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(res_ref, cor_res, rtol=TOL)
 
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -606,7 +661,7 @@ class TestOfflineCorrection:
 
     @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
     @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [10000])
+    @pytest.mark.parametrize("num_shots", [20000])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
