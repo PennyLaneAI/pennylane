@@ -157,7 +157,7 @@ class QasmInterpreter(QASMVisitor):
             super().generic_visit(node, context)
         except InterruptedError as e:
             print(str(e))
-        self.construct_qnode(context, init_context)
+        self.construct_qfunc(context, init_context)
         return context
 
     @staticmethod
@@ -237,15 +237,15 @@ class QasmInterpreter(QASMVisitor):
                 context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]
             )
 
-        def branch():
+        def branch(execution_context: dict):
             ops.cond(
                 self.eval_expr(node.condition, context),
                 lambda: [
-                    gate() for gate in
+                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
                     context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]["gates"]
                 ],
                 lambda: [
-                    gate() for gate in
+                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
                     context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]["gates"]
                 ] if "gates" in context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] else None
             )()
@@ -290,22 +290,22 @@ class QasmInterpreter(QASMVisitor):
 
         # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
 
-        def switch():
+        def switch(execution_context: dict):
             target = self.eval_expr(node.target, context)
             ops.cond(
                 # TODO: support eval of lists, etc. to match
                 target == self.eval_expr(node.cases[0][0][0], context),
                 lambda: [
-                    gate() for gate in
+                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
                     context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_0"]["gates"]
                 ],
                 lambda: [
-                    gate() for gate in
+                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
                     context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]["gates"]
                 ] if f"cond_{i + 1}" in context["scopes"]["switches"][f"switch_{node.span.start_line}"] else None,
                 [
                     (target == self.eval_expr(node.cases[j + 1][0][0], context), lambda: [
-                        gate() for gate in
+                        gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
                         context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]["gates"]
                     ]) for j, case in
                     enumerate(list(context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys())[1:-1])
@@ -747,7 +747,7 @@ class QasmInterpreter(QASMVisitor):
                             wires = self._get_wires_helper(typed_context[cond], wires)
         return wires
 
-    def construct_qnode(self, context: dict, init_context: dict):
+    def construct_qfunc(self, context: dict, init_context: dict):
         """
         Constructs a Callable quantum function that may be queued into a QNode.
 

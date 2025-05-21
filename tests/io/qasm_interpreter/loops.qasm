@@ -1,7 +1,7 @@
 qubit[1] q0;
 bit[2] bits = "10";
 
-// example loop
+// while loop
 while(int[2](bits) != 0) {
   z q0;
   bits = 0;
