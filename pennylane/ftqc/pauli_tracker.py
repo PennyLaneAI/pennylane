@@ -187,8 +187,8 @@ def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
     wire_map = {}
 
     for clifford_wire in clifford_op.wires:
-        for idx in range(len(paulis)):
-            if clifford_wire == paulis[idx].wires[0]:
+        for idx, pauli in enumerate(paulis):
+            if clifford_wire == pauli.wires[0]:
                 wire_map[clifford_wire] = idx
 
     xz = [pauli_to_xz(paulis[wire_map[clifford_wire]]) for clifford_wire in clifford_op.wires]
