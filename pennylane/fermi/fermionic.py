@@ -737,9 +737,7 @@ def _to_string(fermi_op, of=False):
 
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
-    r"""
-    .. :no-index:
-    
+    r"""    
     FermiC(orbital)
     The fermionic creation operator :math:`a^{\dagger}`
 

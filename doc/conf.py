@@ -72,6 +72,7 @@ if os.environ.get("READTHEDOCS", "") == "True":
 os.environ["SPHINX_BUILD"] = "1"
 
 autosummary_generate = True
+autosummary_generate_overwrite = True
 autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
