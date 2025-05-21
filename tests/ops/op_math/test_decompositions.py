@@ -1511,7 +1511,7 @@ class TestQubitUnitaryDecompositionGraph:
         "gate_set",
         [
             # TODO: remove SelectPauliRot when decomposition is defined for it.
-            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase", "SelectPauliRot"),
+            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
             ("RX", "RZ", "CNOT", "SelectPauliRot", "GlobalPhase"),
             ("RZ", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
             ("Rot", "CNOT", "SelectPauliRot", "GlobalPhase"),
@@ -1522,7 +1522,7 @@ class TestQubitUnitaryDecompositionGraph:
         [
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
             (qml.QFT.compute_matrix(5), 5),
-            (qml.GroverOperator.compute_matrix(5, []), 5),
+            (qml.GroverOperator.compute_matrix(6, []), 6),
         ],
     )
     def test_multi_qubit_decomposition(self, gate_set, U, n_wires):
