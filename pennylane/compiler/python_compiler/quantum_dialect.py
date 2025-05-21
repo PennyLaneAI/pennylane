@@ -25,7 +25,7 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
-from typing import Sequence
+from typing import Sequence, TypeAlias
 
 from xdsl.dialects.builtin import (
     AnyAttr,
@@ -37,7 +37,15 @@ from xdsl.dialects.builtin import (
     StringAttr,
     UnitAttr,
 )
-from xdsl.ir import Dialect, Operation, ParametrizedAttribute, SSAValue, TypeAttribute
+from xdsl.ir import (
+    Block,
+    Dialect,
+    Operation,
+    ParametrizedAttribute,
+    Region,
+    SSAValue,
+    TypeAttribute,
+)
 from xdsl.irdl import (
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
@@ -55,6 +63,10 @@ from xdsl.irdl import (
     var_operand_def,
     var_result_def,
 )
+
+################################################################
+######################## ATTRIBUTES ############################
+################################################################
 
 
 @irdl_attr_definition
@@ -92,6 +104,15 @@ class NamedObservableAttr(ParametrizedAttribute):
     name = "quantum.named_observable"
 
 
+################################################################
+######################## OPERATIONS ############################
+################################################################
+
+
+QubitSSAValue: TypeAlias = SSAValue[QubitType]
+QregSSAValue: TypeAlias = SSAValue[QuregType]
+
+
 @irdl_op_definition
 class AdjointOp(IRDLOperation):
     """Calculate the adjoint of the enclosed operations"""
@@ -107,6 +128,11 @@ class AdjointOp(IRDLOperation):
     out_qreg = result_def(BaseAttr(QuregType))
 
     region = region_def("single_block")
+
+    def __init__(
+        self, qreg: QregSSAValue | Operation, region: Region | Sequence[Operation] | Sequence[Block]
+    ):
+        super().__init__(operands=(qreg,), result_types=(QuregType(),), regions=(region,))
 
 
 @irdl_op_definition
@@ -210,22 +236,25 @@ class CustomOp(IRDLOperation):
     def __init__(
         self,
         *,
-        in_qubits: (
-            SSAValue[QubitType] | Operation | Sequence[SSAValue[QubitType]] | Sequence[Operation]
-        ),
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue] | Sequence[Operation],
         gate_name: str | StringAttr,
-        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] = (),
+        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
         in_ctrl_qubits: (
-            SSAValue[QubitType] | Operation | Sequence[SSAValue[QubitType]] | Sequence[Operation]
-        ) = (),
+            QubitSSAValue | Operation | Sequence[QubitSSAValue] | Sequence[Operation] | None
+        ) = None,
         in_ctrl_values: (
             SSAValue[IntegerType]
             | Operation
             | Sequence[SSAValue[IntegerType]]
             | Sequence[Operation]
-        ) = (),
-        adjoint: bool | UnitAttr = False,
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
     ):
+        params = params or ()
+        in_ctrl_qubits = in_ctrl_qubits or ()
+        in_ctrl_values = in_ctrl_values or ()
+
         if not isinstance(params, Sequence):
             params = (params,)
         if not isinstance(in_qubits, Sequence):
@@ -248,9 +277,6 @@ class CustomOp(IRDLOperation):
             operands=(params, in_qubits, in_ctrl_qubits, in_ctrl_values),
             result_types=(out_qubits, out_ctrl_qubits),
             properties=properties,
-            attributes=None,
-            successors=None,
-            regions=None,
         )
 
 
@@ -343,9 +369,6 @@ class ExtractOp(IRDLOperation):
             operands=operands,
             result_types=(QubitType(),),
             properties=properties,
-            attributes=None,
-            successors=None,
-            regions=None,
         )
 
 
