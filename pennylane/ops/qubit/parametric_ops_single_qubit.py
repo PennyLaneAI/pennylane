@@ -25,6 +25,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -175,6 +176,8 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
+add_decomps("Adjoint(RX)", adjoint_rotation)
+add_decomps("Pow(RX)", pow_rotation)
 
 
 class RY(Operation):
@@ -307,6 +310,8 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
+add_decomps("Adjoint(RY)", adjoint_rotation)
+add_decomps("Pow(RY)", pow_rotation)
 
 
 class RZ(Operation):
@@ -478,6 +483,8 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
+add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Pow(RZ)", pow_rotation)
 
 
 class PhaseShift(Operation):
@@ -667,6 +674,8 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
+add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
 class Rot(Operation):
@@ -874,6 +883,14 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
 add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
+@register_resources({Rot: 1})
+def _adjoint_rot(phi, theta, omega, wires, **__):
+    Rot(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(Rot)", _adjoint_rot)
+
+
 class U1(Operation):
     r"""
     U1 gate.
@@ -1008,6 +1025,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
+add_decomps("Adjoint(U1)", adjoint_rotation)
+add_decomps("Pow(U1)", pow_rotation)
 
 
 class U2(Operation):
@@ -1173,6 +1192,16 @@ def _u2_phaseshift_rot(phi, delta, wires, **__):
 
 
 add_decomps(U2, _u2_phaseshift_rot)
+
+
+@register_resources({U2: 1})
+def _adjoint_u2(phi, delta, wires, **__):
+    new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+    new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
+    U2(new_phi, new_delta, wires=wires)
+
+
+add_decomps("Adjoint(U2)", _adjoint_u2)
 
 
 class U3(Operation):
@@ -1373,3 +1402,13 @@ def _u3_phaseshift_rot(theta, phi, delta, wires, **__):
 
 
 add_decomps(U3, _u3_phaseshift_rot)
+
+
+@register_resources({U3: 1})
+def _adjoint_u3(theta, phi, delta, wires, **__):
+    new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+    new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
+    U3(theta, new_phi, new_delta, wires=wires)
+
+
+add_decomps("Adjoint(U3)", _adjoint_u3)

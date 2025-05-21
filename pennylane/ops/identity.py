@@ -21,6 +21,9 @@ from typing import Sequence
 from scipy import sparse
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import CVObservable, Operation, SparseMatrixUndefinedError
 from pennylane.wires import WiresLike
 
@@ -53,6 +56,12 @@ class Identity(CVObservable, Operation):
     _queue_category = "_ops"
 
     ev_order = 1
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @classmethod
     def _primitive_bind_call(
@@ -229,6 +238,10 @@ Args:
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
 """
+
+add_decomps(Identity, null_decomp)
+add_decomps("Adjoint(Identity)", null_decomp)
+add_decomps("Pow(Identity)", null_decomp)
 
 
 class GlobalPhase(Operation):
@@ -468,3 +481,7 @@ class GlobalPhase(Operation):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
         return qml.s_prod(-1, qml.I(self.wires))
+
+
+add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
+add_decomps("Pow(GlobalPhase)", pow_rotation)
