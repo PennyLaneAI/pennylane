@@ -25,16 +25,19 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
+from typing import Sequence
+
 from xdsl.dialects.builtin import (
     AnyAttr,
     AnyOf,
     BaseAttr,
     Float64Type,
+    IntegerAttr,
     IntegerType,
     StringAttr,
     UnitAttr,
 )
-from xdsl.ir import Dialect, ParametrizedAttribute, TypeAttribute
+from xdsl.ir import Dialect, Operation, ParametrizedAttribute, SSAValue, TypeAttribute
 from xdsl.irdl import (
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
@@ -203,6 +206,53 @@ class CustomOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
 
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        in_qubits: (
+            SSAValue[QubitType] | Operation | Sequence[SSAValue[QubitType]] | Sequence[Operation]
+        ),
+        gate_name: str | StringAttr,
+        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] = (),
+        in_ctrl_qubits: (
+            SSAValue[QubitType] | Operation | Sequence[SSAValue[QubitType]] | Sequence[Operation]
+        ) = (),
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+        ) = (),
+        adjoint: bool | UnitAttr = False,
+    ):
+        if not isinstance(params, Sequence):
+            params = (params,)
+        if not isinstance(in_qubits, Sequence):
+            in_qubits = (in_qubits,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        if isinstance(gate_name, str):
+            gate_name = StringAttr(data=gate_name)
+
+        out_qubits = (QubitType() for _ in in_qubits)
+        out_ctrl_qubits = (QubitType() for _ in in_ctrl_qubits)
+        properties = {"gate_name": gate_name}
+        if adjoint:
+            properties["adjoint"] = UnitAttr()
+
+        super().__init__(
+            operands=(params, in_qubits, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_qubits, out_ctrl_qubits),
+            properties=properties,
+            attributes=None,
+            successors=None,
+            regions=None,
+        )
+
 
 @irdl_op_definition
 class DeallocOp(IRDLOperation):
@@ -277,6 +327,26 @@ class ExtractOp(IRDLOperation):
     idx_attr = opt_prop_def(AnyAttr())
 
     qubit = result_def(BaseAttr(QubitType))
+
+    def __init__(self, qreg: QuregType, idx: int | SSAValue | Operation | IntegerAttr):
+        if isinstance(idx, int):
+            idx = IntegerAttr.from_int_and_width(idx, 64)
+
+        if isinstance(idx, IntegerAttr):
+            operands = (qreg, None)
+            properties = {"idx_attr": idx}
+        else:
+            operands = (qreg, idx)
+            properties = {}
+
+        super().__init__(
+            operands=operands,
+            result_types=(QubitType(),),
+            properties=properties,
+            attributes=None,
+            successors=None,
+            regions=None,
+        )
 
 
 @irdl_op_definition
