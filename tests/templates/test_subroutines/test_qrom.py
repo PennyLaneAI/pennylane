@@ -265,7 +265,7 @@ def test_repr():
     op = qml.QROM(
         ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
     )
-    res = op.__repr__()
+    res = repr(op)
     expected = "QROM(control_wires=Wires([0, 1]), target_wires=Wires([2]),  work_wires=Wires([3]), clean=True)"
     assert res == expected
 

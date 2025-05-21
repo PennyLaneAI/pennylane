@@ -21,26 +21,28 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional, Type
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Resources:
     r"""Stores resource estimates.
 
     Args:
         gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-
+        weighted_cost (float): the cumulative weight of the gates.
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
+    weighted_cost: Optional[float] = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for gate, count in self.gate_counts.items())
+        assert self.weighted_cost >= 0.0
 
     @cached_property
     def num_gates(self) -> int:
@@ -50,15 +52,18 @@ class Resources:
     def __add__(self, other: Resources):
         return Resources(
             _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost,
         )
 
     def __mul__(self, scalar: int):
-        return Resources(_scale_dict(self.gate_counts, scalar))
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
 
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}>"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -326,7 +331,7 @@ def controlled_resource_rep(
         num_control_wires += base_params["num_control_wires"]
         num_zero_control_values += base_params["num_zero_control_values"]
         num_work_wires += base_params["num_work_wires"]
-        base_params = base_params["base"].resource_params
+        base_params = {"num_wires": base_params["num_target_wires"]}
 
     return CompressedResourceOp(
         qml.ops.Controlled,
@@ -356,11 +361,6 @@ def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
     )
 
 
-def _is_integer(x):
-    """Checks if x is an integer."""
-    return isinstance(x, int) or np.issubdtype(getattr(x, "dtype", None), np.integer)
-
-
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
@@ -370,8 +370,6 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    if (not qml.math.is_abstract(z)) and (not _is_integer(z) or z < 0):
-        raise NotImplementedError("Non-integer powers or negative powers are not supported yet.")
     base_resource_rep = resource_rep(base_class, **base_params)
     return CompressedResourceOp(
         qml.ops.Pow,

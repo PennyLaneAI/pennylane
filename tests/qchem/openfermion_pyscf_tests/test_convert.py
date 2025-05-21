@@ -909,6 +909,8 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     elif method == "uccsd":
         myhf = pyscf.scf.UHF(mol).run()
         solver = pyscf.cc.uccsd.UCCSD(myhf).run()
+    else:
+        assert False, "Invalid method"
 
     wf_comp = qchem.convert.import_state(solver)
 

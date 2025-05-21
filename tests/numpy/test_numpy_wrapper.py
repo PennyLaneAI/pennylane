@@ -30,9 +30,10 @@ from pennylane.numpy.tensor import tensor_to_arraybox
 class TestExtractTensors:
     """Tests for the extract_tensors function"""
 
-    def test_empty_terable(self):
+    def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
+        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res == []
 
     def test_iterable_with_strings(self):
@@ -88,12 +89,12 @@ class TestTensor:
     def test_string_representation(self, capsys):
         """Test the string representation is correct"""
         x = np.tensor([0, 1, 2])
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=True)" in captured.out
 
         x.requires_grad = False
-        print(x.__repr__())
+        print(repr(x))
         captured = capsys.readouterr()
         assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
 

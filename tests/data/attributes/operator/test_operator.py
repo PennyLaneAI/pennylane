@@ -237,8 +237,6 @@ def test_value_init_not_supported():
     class NotSupported(Operator):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
         """An operator."""
 
-        ...
-
     with pytest.raises(
         TypeError, match="Serialization of operator type 'NotSupported' is not supported"
     ):

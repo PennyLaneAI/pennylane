@@ -168,6 +168,8 @@ def graphql_mock(url, query, variables=None):
         json_data = _parameter_tree
     elif "GetDatasetClasses" in query:
         json_data = _dataclass_ids
+    else:
+        assert False, f"Unexpected query: {query}"
     return json_data
 
 
@@ -180,6 +182,8 @@ def graphql_mock_qchem(url, query, variables=None):
         json_data = _qchem_parameter_tree
     elif "GetDatasetClasses" in query:
         json_data = _dataclass_ids
+    else:
+        assert False, f"Unexpected query: {query}"
     return json_data
 
 

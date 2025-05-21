@@ -119,9 +119,9 @@ class TestDecomposition:
                     if exp_gate is qml.CRot:
                         if j < idx_CRot:
                             exp_params = [-phi, np.pi, phi]
-                        if j > idx_CRot:
+                        elif j > idx_CRot:
                             exp_params = [phi, np.pi, -phi]
-                        if j == idx_CRot:
+                        else:
                             exp_params = [0, 2 * theta, 0]
 
                         assert queue[idx].parameters == exp_params

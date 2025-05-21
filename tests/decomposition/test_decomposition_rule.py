@@ -63,7 +63,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_decorator(self):
@@ -97,7 +97,58 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+        )
+
+    def test_decomposition_condition(self):
+        """Tests that the register_condition works."""
+
+        @qml.register_resources({qml.H: 2, qml.Toffoli: 1})
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        def rule_1(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_1, DecompositionRule)
+        assert rule_1.is_applicable(num_wires=3)
+        assert not rule_1.is_applicable(num_wires=2)
+        assert rule_1.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        @qml.register_resources({qml.H: 2, qml.Toffoli: 1})
+        def rule_2(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_2, DecompositionRule)
+        assert rule_2.is_applicable(num_wires=3)
+        assert not rule_2.is_applicable(num_wires=2)
+        assert rule_2.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
+        def _resource_fn(**_):
+            return {qml.H: 2, qml.Toffoli: 1}
+
+        @qml.register_resources(_resource_fn)
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        def rule_3(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_3, DecompositionRule)
+        assert rule_3.is_applicable(num_wires=3)
+        assert not rule_3.is_applicable(num_wires=2)
+        assert rule_3.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
         )
 
     def test_inspect_decomposition_rule(self):
@@ -177,7 +228,19 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
-        _decompositions.pop(CustomOp)  # cleanup
+        _decompositions.pop("CustomOp")  # cleanup
+
+    def test_custom_symbolic_decomposition(self):
+        """Tests that custom decomposition rules for symbolic operators can be registered."""
+
+        @qml.register_resources({qml.RX: 1, qml.RZ: 1})
+        def my_adjoint_custom_op(theta, wires, **__):
+            qml.RX(theta, wires=wires[0])
+            qml.RZ(theta, wires=wires[1])
+
+        qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
+        assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
+        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
