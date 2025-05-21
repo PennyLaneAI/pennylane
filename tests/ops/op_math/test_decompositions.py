@@ -1506,3 +1506,31 @@ class TestQubitUnitaryDecompositionGraph:
         decomp_tape = qml.tape.QuantumScript(decomp)
         matrix = qml.matrix(decomp_tape, wire_order=[0, 1])
         assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            # TODO: remove SelectPauliRot when decomposition is defined for it.
+            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase", "SelectPauliRot"),
+            ("RX", "RZ", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("Rot", "CNOT", "SelectPauliRot", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "U, n_wires",
+        [
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
+            (qml.QFT.compute_matrix(5), 5),
+            (qml.GroverOperator.compute_matrix(5, []), 5),
+        ],
+    )
+    def test_multi_qubit_decomposition(self, gate_set, U, n_wires):
+        """Tests that the multi-qubit unitary can be decomposed."""
+
+        op = qml.QubitUnitary(U, wires=list(range(n_wires)))
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp, wire_order=list(range(n_wires)))
+        assert qml.math.allclose(matrix, sparse.csr_matrix(U), atol=1e-7)
