@@ -144,7 +144,7 @@ def drive(amplitude, phase, wires):
     >>> jax.grad(circuit_local)(params)
     (Array(-3.35835837, dtype=float64),
      [Array(-1.02229985, dtype=float64, weak_type=True),
-     Array(2.82368978, dtype=float64, weak_type=True)],
+      Array(2.82368978, dtype=float64, weak_type=True)],
      Array(0.1339487, dtype=float64))
 
     .. details::
