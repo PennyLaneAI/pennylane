@@ -335,17 +335,11 @@ class TestSampling:
 
         @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(seed))
         def g():
-            qml.Hadamard(0)
-            m0 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m1 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m2 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m3 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m4 = qml.measure(0, reset=0)
-            return m0, m1, m2, m3, m4
+            ms = []
+            for _ in range(33):
+                qml.Hadamard(0)
+                ms.append(qml.measure(0, reset=0))
+            return ms
 
         output = g()
         assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
