@@ -31,7 +31,7 @@ from .conditional_measure import cond_measure
 from .graph_state_preparation import make_graph_state
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
-from .utils import QubitMgr
+from .utils import QubitMgr, parity
 
 mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
 
@@ -234,7 +234,7 @@ def _hadamard_corrections(op, measurements):
 
     def correction_func(wire):
         cond(m2 ^ m3, Z)(wire)
-        cond((m1 + m3 + m4) % 2, X)(wire)
+        cond(parity(m1, m3, m4), X)(wire)
 
     return correction_func
 
@@ -247,7 +247,7 @@ def _s_corrections(op, measurements):
     m1, m2, m3, m4 = measurements
 
     def correction_func(wire):
-        cond((m1 + m2 + m3 + 1) % 2, Z)(wire)
+        cond(parity(m1, m2, m3, 1), Z)(wire)
         cond(m2 ^ m4, X)(wire)
 
     return correction_func
@@ -315,18 +315,18 @@ def cnot_corrections(measurements):
     m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
 
     # corrections on control
-    x_cor_ctrl = m2 + m3 + m5 + m6
-    z_cor_ctrl = m1 + m3 + m4 + m5 + m8 + m9 + m11 + 1
+    x_cor_ctrl = parity(m2, m3, m5, m6)
+    z_cor_ctrl = parity(m1, m3, m4, m5, m8, m9, m11, 1)
 
     # corrections on target
-    x_cor_tgt = m2 + m3 + m8 + m10 + m12 + m14
-    z_cor_tgt = m9 + m11 + m13
+    x_cor_tgt = parity(m2, m3, m8, m10, m12, m14)
+    z_cor_tgt = parity(m9, m11, m13)
 
     def correction_func(ctrl_wire, target_wire):
-        cond(z_cor_ctrl % 2, Z)(ctrl_wire)
-        cond(x_cor_ctrl % 2, X)(ctrl_wire)
-        cond(z_cor_tgt % 2, Z)(target_wire)
-        cond(x_cor_tgt % 2, X)(target_wire)
+        cond(z_cor_ctrl, Z)(ctrl_wire)
+        cond(x_cor_ctrl, X)(ctrl_wire)
+        cond(z_cor_tgt, Z)(target_wire)
+        cond(x_cor_tgt, X)(target_wire)
 
     return correction_func
 

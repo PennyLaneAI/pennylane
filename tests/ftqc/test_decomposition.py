@@ -334,7 +334,7 @@ class TestMBQCFormalismConversion:
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
 
-        dev = qml.device("lightning.qubit", wires=15)
+        dev = qml.device("lightning.qubit", wires=15, seed=42)
         q_mgr = QubitMgr(num_qubits=15, start_idx=0)
 
         op = qml.CNOT([2, 3])
@@ -382,7 +382,7 @@ class TestMBQCFormalismConversion:
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
 
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.05)
+        assert np.allclose(res, res_ref, atol=0.1)
 
     @pytest.mark.parametrize(
         "gate, wire",

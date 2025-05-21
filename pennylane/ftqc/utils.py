@@ -18,6 +18,19 @@ ftqc module.
 """
 from threading import RLock
 
+from pennylane import math
+from pennylane.measurements import MeasurementValue
+
+
+def parity(*args):
+    """Get the parity of the arguments"""
+    if isinstance(args[0], MeasurementValue):
+        # special handling needed until we stop casting everything from the pennylane namespace to autograd
+        return math.reduce(math.bitwise_xor, math.array([*args]))
+    return math.reduce(
+        math.bitwise_xor, math.array([*args], like=math.interface_utils.get_interface(args[0]))
+    )
+
 
 class QubitMgr:
     r"""
@@ -95,7 +108,10 @@ class QubitMgr:
         self._lock = RLock()
         self._num_qubits = num_qubits
         self._active = set()
-        is_valid = lambda x: (isinstance(x, int) and x >= 0)
+
+        def is_valid(x):
+            return isinstance(x, int) and x >= 0
+
         if is_valid(num_qubits) and is_valid(start_idx):
             self._inactive = set(range(start_idx, start_idx + num_qubits, 1))
         else:

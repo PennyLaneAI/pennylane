@@ -16,9 +16,12 @@
 import itertools as it
 import random
 
+import numpy as np
 import pytest
 
 from pennylane.ftqc import QubitMgr
+from pennylane.ftqc.utils import parity
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
@@ -26,6 +29,76 @@ from pennylane.ftqc import QubitMgr
 num_qubits_vals = [1, 3, 7]
 acquire_num_vals = [0, 1, 5]
 offsets_vals = [0, 8, 9]
+
+
+@pytest.mark.parametrize("arg_type", [tuple, np.array])
+@pytest.mark.parametrize(
+    "args, expected_outcome",
+    [((0, 1, 1), 0), ((0, 0, 1), 1), ((1, 1, 1), 1), ((0, 0, 0, 0), 0), ((0, 1), 1)],
+)
+def test_parity_numeric(arg_type, args, expected_outcome):
+    """Test the parity function behaves as expected"""
+    assert parity(*arg_type(args)) == expected_outcome
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "args, expected_outcome",
+    [((0, 1, 1), 0), ((0, 0, 1), 1), ((1, 1, 1), 1), ((0, 0, 0, 0), 0), ((0, 1), 1)],
+)
+def test_parity_numeric_jax(args, expected_outcome):
+    """Test the parity function behaves as expected with jax and jax-jit"""
+    import jax
+
+    values = jax.numpy.array(args)
+
+    assert parity(*values) == expected_outcome
+    assert jax.jit(parity)(*values) == expected_outcome
+
+
+@pytest.mark.parametrize(
+    "args, expected_outcome",
+    [((0, 1, 1), 0), ((0, 0, 1), 1), ((1, 1, 1), 1), ((0, 0, 0, 0), 0), ((0, 1), 1)],
+)
+def test_parity_measurement_values(args, expected_outcome):
+    """Test that passing a sequence of MeasurementValues to the parity function
+    returns a single MeasurementValue referencing all the relevant measurements,
+    with a processing function that applied the parity check when concrete values
+    are provided."""
+    mvs = [
+        MeasurementValue([MidMeasureMP(0, id=3)], lambda x: x),
+        MeasurementValue([MidMeasureMP(1, id=4)], lambda x: x),
+        MeasurementValue([MidMeasureMP(2, id=5)], lambda x: x),
+        MeasurementValue([MidMeasureMP(3, id=6)], lambda x: x),
+    ]
+
+    # only use as many MeasurementValues as matches the input arguments
+    mvs = mvs[: len(args)]
+    par = parity(*mvs)
+
+    assert isinstance(par, MeasurementValue)
+    # measurements stored are all the input MeasurementValue's measurements
+    assert par.measurements == [mv.measurements[0] for mv in mvs]
+    # processing function on the new MeasurementValue applies the parity check
+    assert par.processing_fn(*args) == expected_outcome
+
+
+@pytest.mark.parametrize(
+    "args, expected_outcome",
+    [((0, 1, 1), 1), ((0, 0, 1), 0), ((1, 1, 1), 0)],
+)
+def test_parity_mvs_and_constant(args, expected_outcome):
+    """Test that passing a sequence of MeasurementValues and a constant to the parity
+    function returns the expected MeasurementValue with the correct processing function."""
+    m1 = MeasurementValue([MidMeasureMP(0, id=3)], lambda x: x)
+    m2 = MeasurementValue([MidMeasureMP(1, id=4)], lambda x: x)
+    m3 = MeasurementValue([MidMeasureMP(2, id=5)], lambda x: x)
+
+    par = parity(m1, m2, m3, 1)
+    assert isinstance(par, MeasurementValue)
+    assert par.measurements == [mv.measurements[0] for mv in (m1, m2, m3)]
+    # processing function includes adding 1 in the parity check
+    assert par.processing_fn(*args) == expected_outcome
 
 
 def _is_valid(num_q, acquire_q):
