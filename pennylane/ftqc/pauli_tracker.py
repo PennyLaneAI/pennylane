@@ -83,7 +83,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         A Pauli operator.
 
     **Example:**
-        The following example shows how the Pauli to XZ works.
+        The following example shows how the XZ to Pauli works.
 
         .. code-block:: python3
             from pennylane.ftqc.pauli_tracker import xz_to_pauli
@@ -108,7 +108,7 @@ def pauli_prod(ops: List[Operator]) -> Operator:
         A new Pauli operator.
 
     **Example:**
-        The following example shows how the Pauli to XZ works.
+        The following example shows how the `pauli_prod` works.
 
         .. code-block:: python3
             from pennylane.ftqc.pauli_tracker import pauli_prod
