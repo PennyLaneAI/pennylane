@@ -177,7 +177,7 @@ class TestPauliTracker:
             (qml.CNOT(wires=[0, 1]), [qml.I(0), qml.Y(3)]),
         ],
     )
-    def test_apply_clifford_ops_pauli_wire_err(self, clifford_op, paulis):
+    def test_apply_clifford_ops_wire_mismatch_err(self, clifford_op, paulis):
         with pytest.raises(
             ValueError, match="Please the target wires of Clifford op match those of Paulis."
         ):

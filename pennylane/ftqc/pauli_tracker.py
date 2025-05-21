@@ -146,24 +146,24 @@ def pauli_prod(ops: List[Operator]) -> Operator:
 
 def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
     """Conjugate a xz encoded ops to a new xz encoded ops with a given Clifford op.
-       
-        Args:
-            clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
-            paulis (List): A list of Pauli operator
-        
-        Return:
-            A list of Pauli operators that clifford_op conjugates the paulis to.
-        
-        **Example:**
-            The following example shows how the `pauli_prod` works.
 
-            .. code-block:: python3
-                from pennylane.ftqc.pauli_tracker import apply_clifford_op
-                from pennylane import I, CNOT
-                >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
-                [I(0), I(1)]
+    Args:
+        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+        paulis (List): A list of Pauli operator
 
-            A list of Pauli operator is returned up to global phase.
+    Return:
+        A list of Pauli operators that clifford_op conjugates the paulis to.
+
+    **Example:**
+        The following example shows how the `pauli_prod` works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import apply_clifford_op
+            from pennylane import I, CNOT
+            >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
+            [I(0), I(1)]
+
+        A list of Pauli operator is returned up to global phase.
     """
     if type(clifford_op) not in _CLIFFORD_TABLEAU:
         raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
