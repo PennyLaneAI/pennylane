@@ -673,7 +673,6 @@ def _equal_measurements(
         if isinstance(dispatch_result, str):
             return dispatch_result
         return dispatch_result
-    return True
 
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
