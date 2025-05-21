@@ -15,7 +15,10 @@
 
 import math
 import warnings
+from functools import lru_cache, partial
 from itertools import product
+
+from tqdm import tqdm
 
 import pennylane as qml
 from pennylane.ops import Adjoint
@@ -330,6 +333,51 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
+class _CachedCallable:
+    """A class to cache the decomposition of the operators.
+
+    Args:
+        method (str): The method to be used for decomposition.
+        epsilon (float): The maximum permissible operator norm error for the decomposition.
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
+    """
+
+    def __init__(self, method, epsilon, **method_kwargs):
+        match method:
+            case "sk":
+                self.decompose_fn = lru_cache(maxsize=10000)(
+                    partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
+                )
+
+        self.method = method
+        self.epsilon = epsilon
+        self.method_kwargs = method_kwargs
+        self.query = lru_cache(maxsize=10000)(self.cached_decompose)
+
+    def equal(self, method, epsilon, **method_kwargs):
+        """Check equality based on `method`, `epsilon` and `method_kwargs`."""
+        return (
+            self.method == method
+            and qml.math.allclose(self.epsilon, epsilon)
+            and self.method_kwargs == method_kwargs
+        )
+
+    def cached_decompose(self, angle):
+        """Decomposes the angle into a sequence of gates."""
+        seq = self.decompose_fn(qml.RZ(abs(angle), [0]))
+        if angle != abs(angle):
+            adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
+            return adj[1:] + adj[:1]
+        return seq
+
+
+_CLIFFORD_T_CACHE = None
+
+
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
@@ -403,7 +451,7 @@ def clifford_t_decomposition(
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
-        for op in compiled_tape.operations:
+        for op in tqdm(compiled_tape.operations):
             # Check whether operation is to be skipped
             if isinstance(op, _SKIP_OP_TYPES):
                 decomp_ops.append(op)
@@ -450,26 +498,27 @@ def clifford_t_decomposition(
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
 
-        # Every decomposition implementation should have the following shape:
+        # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
+        # where the implementation of each function should have the following signature:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        # Build the approximation set for Solovay-Kitaev decomposition
-        if method == "sk":
-            decompose_fn = sk_decomposition
-
-        else:
-            raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
-            )
+        # Build the decomposition cache based on the method
+        global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
+        if _CLIFFORD_T_CACHE is None or _CLIFFORD_T_CACHE.equal(method, epsilon, **method_kwargs):
+            _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, **method_kwargs)
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
-        for op in new_operations:
+        for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                phase += qml.math.convert_like(clifford_ops.pop().data[0], phase)
-                decomp_ops.extend(clifford_ops)
+                # Decompose the RZ operation with a default wire
+                clifford_ops = _CLIFFORD_T_CACHE.query(op.data[0])
+                # Extract the global phase from the last operation
+                phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                # Map the operations to the original wires
+                mapped_ops = qml.map_wires(qml.prod(*clifford_ops[:-1]), {0: op.wires[0]})
+                decomp_ops.extend(getattr(mapped_ops, "operands", [mapped_ops]))
             else:
                 decomp_ops.append(op)
 
