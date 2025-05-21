@@ -15,7 +15,7 @@
 This submodule contains the qutrit quantum operations that
 accept a unitary matrix as a parameter.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+
 import warnings
 
 import pennylane as qml

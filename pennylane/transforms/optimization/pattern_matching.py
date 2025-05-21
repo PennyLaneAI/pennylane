@@ -30,7 +30,6 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-statements
 @transform
 def pattern_matching_optimization(
     tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
@@ -197,7 +196,7 @@ def pattern_matching_optimization(
     Exact and practical pattern matching for quantum circuit optimization.
     `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
     """
-    # pylint: disable=too-many-branches
+
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
     original_tape_meas = tape.measurements
@@ -571,7 +570,7 @@ def _update_qubits(circuit_dag, qubits_conf):
         list(list(int)): Target wires
         list(list(int)): Control wires
     """
-    # pylint: disable=too-many-arguments
+
     wires = []
     control_wires = []
     target_wires = []
@@ -638,7 +637,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    # pylint: disable=too-many-instance-attributes, too-many-arguments
+    # pylint: disable=too-many-arguments
 
     control_base = {
         "CNOT": "PauliX",
@@ -684,7 +683,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_p (int): index of the first gate matched in the pattern.
         """
-        # pylint: disable=too-many-branches, too-many-arguments
+        # pylint: disable=too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -839,7 +838,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
         """Apply the forward match algorithm and returns the list of matches given an initial match
         and a qubits configuration.
         """
-        # pylint: disable=too-many-branches,too-many-nested-blocks
+        # pylint: disable=too-many-nested-blocks
 
         # Initialization
         self._init_successors_to_visit()

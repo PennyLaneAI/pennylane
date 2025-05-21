@@ -56,7 +56,7 @@ from .gradient_transform import (
     reorder_grads,
 )
 
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,unused-argument
 
 
 NONINVOLUTORY_OBS = {

@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+# pylint: disable=too-many-branches,arguments-differ
 from typing import Optional, Union
 from warnings import warn
 

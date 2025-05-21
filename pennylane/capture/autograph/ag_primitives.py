@@ -203,7 +203,6 @@ def _call_pennylane_for(
     return final_iter_args
 
 
-# pylint: disable=too-many-statements
 def for_stmt(
     iteration_target: Any,
     _extra_test: Union[Callable[[], bool], None],
@@ -245,14 +244,14 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
 
     if exception_raised:
@@ -275,7 +274,7 @@ def for_stmt(
             enum_start,
             iteration_array,
         )
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         # pylint: disable=import-outside-toplevel
         import textwrap
 
@@ -496,13 +495,17 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods, super-init-not-called
+# pylint: disable=too-few-public-methods
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """
 
     def __init__(self, iterable, start=0):
+
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=super-init-not-called
+        # TODO: original enumerate constructor cannot be called as it causes some tests to break
         self.iteration_target = iterable
         self.start_idx = start
 

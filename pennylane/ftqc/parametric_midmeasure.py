@@ -386,7 +386,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
         )
         return (None, None), metadata
 
-    # pylint: disable=arguments-renamed, arguments-differ
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
@@ -400,7 +399,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments, arguments-differ, arguments-renamed
     @classmethod
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
@@ -432,9 +431,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
         )
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -471,7 +468,6 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_x"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -495,9 +491,7 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -532,7 +526,6 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_y"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -561,9 +554,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: str = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: str = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:

@@ -93,8 +93,10 @@ class TwoLocalSwapNetwork(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
-        new_op._weights = data[0]  # pylint: disable=protected-access
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=protected-access
+        new_op._hyperparameters = dict(metadata[1])
+        new_op._weights = data[0]
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 

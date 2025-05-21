@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-# pylint: disable=too-many-branches
+
 
 from functools import lru_cache, partial
 from typing import Optional
@@ -42,7 +42,7 @@ def _get_plxpr_merge_rotations():
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name, too-few-public-methods
+    # pylint: disable=redefined-outer-name
     class MergeRotationsInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
@@ -167,7 +167,7 @@ def _get_plxpr_merge_rotations():
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

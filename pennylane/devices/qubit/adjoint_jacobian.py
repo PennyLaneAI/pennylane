@@ -26,7 +26,7 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .simulate import get_final_state
 
-# pylint: disable=protected-access, too-many-branches
+# pylint: disable=too-many-branches
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

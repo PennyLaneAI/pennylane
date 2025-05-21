@@ -37,7 +37,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 __plugin_devices = (
     defaultdict(tuple, metadata.entry_points())["pennylane.io"]
     if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
+    else metadata.entry_points(group="pennylane.io")
 )
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 

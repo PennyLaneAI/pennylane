@@ -161,7 +161,7 @@ class ApproxTimeEvolution(Operation):
     @staticmethod
     def compute_decomposition(
         *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

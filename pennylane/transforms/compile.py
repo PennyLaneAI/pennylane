@@ -13,8 +13,6 @@
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches
 from functools import partial
 
 import pennylane as qml

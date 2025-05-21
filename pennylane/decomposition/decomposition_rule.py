@@ -255,7 +255,7 @@ def register_resources(
     return _decorator(qfunc) if qfunc else _decorator
 
 
-class DecompositionRule:  # pylint: disable=too-few-public-methods
+class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
     def __init__(

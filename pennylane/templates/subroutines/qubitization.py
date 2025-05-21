@@ -124,7 +124,7 @@ class Qubitization(Operation):
         return new_op
 
     @staticmethod
-    def compute_decomposition(*_, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(*_, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

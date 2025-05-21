@@ -15,7 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
+
 
 import itertools
 from collections import Counter
@@ -425,8 +425,10 @@ class Sum(CompositeOp):
 
         return new_summands
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @handle_recursion_error
-    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+    def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()
@@ -587,7 +589,7 @@ class _SumSummandsGrouping:
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
-        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(summand, qml.ops.SProd):
             coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
             self.add(summand=summand.base, coeff=coeff)
         else:

@@ -35,9 +35,7 @@ def about():
         plugin_devices = iter_entry_points("pennylane.plugins")
         dist_name = "project_name"
     else:  # pragma: no cover
-        plugin_devices = metadata.entry_points(  # pylint:disable=unexpected-keyword-arg
-            group="pennylane.plugins"
-        )
+        plugin_devices = metadata.entry_points(group="pennylane.plugins")
         dist_name = "name"
     print(check_output([sys.executable, "-m", "pip", "show", "pennylane"]).decode())
     print(f"Platform info:           {platform.platform(aliased=True)}")

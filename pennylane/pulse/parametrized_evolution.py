@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This file contains the ``ParametrizedEvolution`` operator.
@@ -508,7 +507,6 @@ class ParametrizedEvolution(Operation):
     def has_matrix(self):
         return self._has_matrix
 
-    # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
         if not has_jax:
             raise ImportError(

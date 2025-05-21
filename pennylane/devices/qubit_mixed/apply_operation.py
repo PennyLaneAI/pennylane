@@ -704,7 +704,6 @@ def apply_snapshot(
     return state
 
 
-# pylint: disable=unused-argument
 @apply_operation.register
 def apply_density_matrix(
     op: qml.QubitDensityMatrix,

@@ -17,7 +17,7 @@ of tapes.
 """
 import autograd
 
-# pylint: disable=no-member, too-many-branches
+# pylint: disable=too-many-branches
 import numpy as np
 
 from pennylane import math
@@ -120,6 +120,8 @@ def compute_vjp_single(dy, jac, num=None):
     # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=no-member
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
@@ -200,6 +202,8 @@ def compute_vjp_multi(dy, jac, num=None):
         return None
 
     # Single parameter
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=no-member
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
         for d, j_ in zip(dy, jac):
@@ -378,7 +382,6 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     return gradient_tapes, processing_fn
 
 
-# pylint: disable=too-many-arguments
 def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.

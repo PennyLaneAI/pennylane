@@ -18,7 +18,7 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-# pylint: disable=no-member
+
 from __future__ import annotations
 
 from collections import namedtuple
@@ -39,7 +39,7 @@ from .utils import (
     unwrap_controls,
 )
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=ungrouped-imports
 if TYPE_CHECKING:
     from pennylane.operation import Operator

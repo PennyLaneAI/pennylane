@@ -14,7 +14,7 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
-# pylint: disable=too-many-arguments
+
 import copy
 from typing import Literal, Sequence, Union
 

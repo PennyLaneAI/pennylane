@@ -258,7 +258,7 @@ class Superposition(Operation):
         hyperparams_dict = dict(metadata[1])
         return cls(*data, wires=metadata[0], **hyperparams_dict)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(
             *self.parameters,
             bases=self.hyperparameters["bases"],

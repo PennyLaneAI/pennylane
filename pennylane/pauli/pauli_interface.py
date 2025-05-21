@@ -59,7 +59,7 @@ def _pauli_word_prefactor(observable):
 @_pauli_word_prefactor.register(Identity)
 def _pw_prefactor_pauli(
     observable: Union[PauliX, PauliY, PauliZ, Identity],
-):  # pylint:disable=unused-argument
+):
     return 1
 
 

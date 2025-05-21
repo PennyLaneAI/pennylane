@@ -43,7 +43,7 @@ class ParamArg(enum.Enum):
         of its values."""
         return isinstance(val, ParamArg) or (isinstance(val, str) and val in cls.values())
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         return self.value
 
 

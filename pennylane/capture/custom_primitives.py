@@ -14,6 +14,10 @@
 """
 This submodule offers custom primitives for the PennyLane capture module.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=abstract-method
+
 from enum import Enum
 from typing import Union
 
@@ -30,7 +34,7 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
-# pylint: disable=too-few-public-methods,abstract-method
+# pylint: disable=too-few-public-methods
 class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
