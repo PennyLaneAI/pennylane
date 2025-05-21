@@ -41,7 +41,7 @@ _PAULIS = frozenset({X, Y, Z, I})
 
 
 def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
-    """
+    r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
     the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
@@ -53,6 +53,17 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
     the :class:`~pennylane.Z`.
+
+    **Example:**
+        The following example shows how the Pauli to XZ works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import pauli_to_xz
+            from pennylane import I
+            >>> pauli_to_xz(I)
+            (0, 0)
+
+        A xz tuple representation is return for a given Pauli operator.
     """
 
     if op in _PAULIS:
@@ -63,11 +74,23 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
 def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
     Convert x, z to a Pauli operator.
+
     Args:
         x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
         z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
+
     Return:
         A Pauli operator.
+
+    **Example:**
+        The following example shows how the Pauli to XZ works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import xz_to_pauli
+            >>> xz_to_pauli(0, 0)
+            <class 'pennylane.ops.identity.Identity'>
+
+        A Pauli operator is returned for a given xz tuple.
     """
     if x in [0, 1] and z in [0, 1]:
         return _DECODE_XZ[(x, z)]
@@ -83,6 +106,17 @@ def pauli_prod(ops: List[Operator]) -> Operator:
 
     Return:
         A new Pauli operator.
+
+    **Example:**
+        The following example shows how the Pauli to XZ works.
+
+        .. code-block:: python3
+            from pennylane.ftqc.pauli_tracker import pauli_prod
+            from pennylane import I, X, Y, Z
+            >>> pauli_prod([I,X,Y,Z])
+            <class 'pennylane.ops.identity.Identity'>
+
+        A Pauli operator is returned for a list of Pauli operator up to global phase.
     """
 
     if len(ops) == 0:
