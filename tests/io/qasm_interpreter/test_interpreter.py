@@ -90,6 +90,14 @@ class TestInterpreter:
         assert z.call_count == 1
         assert rz.call_count == 6
 
+        for i in range(4294967296, 4294967306):
+            rx.assert_called_with(RX(i, 0), i, 0)
+
+        for f in [1.2, -3.4, 0.5, 9.8]:
+            ry.assert_called_with(RY(f, 0), f, 0)
+
+        rz.assert_called_with(RZ(0.1, 0), 0.1, 0)
+
     def test_switch(self, mocker):
         from openqasm3.parser import parse
 
