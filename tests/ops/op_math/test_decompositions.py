@@ -1533,4 +1533,4 @@ class TestQubitUnitaryDecompositionGraph:
         [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
 
         matrix = qml.matrix(decomp, wire_order=list(range(n_wires)))
-        assert qml.math.allclose(matrix, sparse.csr_matrix(U), atol=1e-7)
+        assert qml.math.allclose(matrix, U, atol=1e-7)
