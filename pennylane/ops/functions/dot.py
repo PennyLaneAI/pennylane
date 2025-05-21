@@ -15,7 +15,7 @@
 This file contains the definition of the dot function, which computes the dot product between
 a vector and a list of operators.
 """
-# pylint: disable=too-many-branches
+
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from typing import Union

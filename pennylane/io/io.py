@@ -16,8 +16,13 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 from collections import defaultdict
+from collections.abc import Callable
+from functools import wraps
 from importlib import metadata
 from sys import version_info
+from typing import Any, Optional
+
+from pennylane.wires import WiresLike
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -32,7 +37,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 __plugin_devices = (
     defaultdict(tuple, metadata.entry_points())["pennylane.io"]
     if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
+    else metadata.entry_points(group="pennylane.io")
 )
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
@@ -611,6 +616,126 @@ def from_qasm(quantum_circuit: str, measurements=None):
         ) from e
 
     return plugin_converter(quantum_circuit, measurements=measurements)
+
+
+def to_openqasm(
+    qnode,
+    wires: Optional[WiresLike] = None,
+    rotations: bool = True,
+    measure_all: bool = True,
+    precision: Optional[int] = None,
+) -> Callable[[Any], str]:
+    """Convert a circuit to an OpenQASM 2.0 program.
+
+    .. note::
+      Terminal measurements are assumed to be performed on all qubits in the computational basis.
+      An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
+      is diagonal in the eigenbasis of the quantum circuit's observables.
+      The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
+
+    Args:
+        wires (Wires or None): the wires to use when serializing the circuit.
+            Default is ``None``, such that all device wires from the QNode are used for serialization.
+        rotations (bool): if ``True``, add gates that diagonalize the measured wires to the eigenbasis
+            of the circuit's observables. Default is ``True``.
+        measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
+            Default is ``True``.
+        precision (int or None): number of decimal digits to display for the parameters.
+
+    Returns:
+        str: OpenQASM 2.0 program corresponding to the circuit.
+
+    **Example**
+
+    The following QNode can be serialized to an OpenQASM 2.0 program:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit(theta, phi):
+            qml.RX(theta, wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.RZ(phi, wires=1)
+            return qml.sample()
+
+    >>> print(qml.to_openqasm(circuit)(1.2, 0.9))
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c[2];
+    rx(1.2) q[0];
+    cx q[0],q[1];
+    rz(0.9) q[1];
+    measure q[0] -> c[0];
+    measure q[1] -> c[1];
+
+    .. details::
+        :title: Usage Details
+
+        By default, the resulting OpenQASM code will have terminal measurements on all qubits, where all the measurements are performed in the computational basis.
+        However, if terminal measurements in the QNode act only on a subset of the qubits and ``measure_all=False``,
+        the OpenQASM code will include measurements on those specific qubits only.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2, shots=100)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(0)
+                qml.CNOT(wires=[0,1])
+                return qml.sample(wires=1)
+
+        >>> print(qml.to_openqasm(circuit, measure_all=False)())
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+        h q[0];
+        cx q[0],q[1];
+        measure q[1] -> c[1];
+
+        If the QNode returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
+        include the gates that diagonalize the measured wires such that they are in the eigenbasis of the measured observable.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2, shots=100)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(0)
+                qml.CNOT(wires=[0,1])
+                return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        >>> print(qml.to_openqasm(circuit, rotations=True)())
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+        h q[0];
+        cx q[0],q[1];
+        h q[0];
+        z q[1];
+        s q[1];
+        h q[1];
+        measure q[0] -> c[0];
+        measure q[1] -> c[1];
+    """
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.workflow import construct_tape
+
+    @wraps(qnode)
+    def wrapper(*args, **kwargs) -> str:
+        tape = construct_tape(qnode)(*args, **kwargs)
+        return tape.to_openqasm(
+            wires=wires, rotations=rotations, measure_all=measure_all, precision=precision
+        )
+
+    return wrapper
 
 
 def from_pyquil(pyquil_program):
