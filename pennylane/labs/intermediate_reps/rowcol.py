@@ -334,12 +334,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     Then we run the algorithm:
 
     >>> from pennylane.labs.intermediate_reps import rowcol, parity_matrix
-    >>> new_P, cnots = rowcol(P, G)
-
-    The new parity matrix has been transformed into the identity matrix:
-
-    >>> np.allclose(new_P, np.eye(5))
-    True
+    >>> cnots = rowcol(P, G)
 
     The constructed circuit is the one found in the paper as well:
 
@@ -658,5 +653,6 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
 
     # Assert that the parity matrix was transformed into the identity matrix
     assert np.allclose(np.eye(n), P)
+
     # Return CNOTs in reverse order
-    return P, cnots[::-1]
+    return cnots[::-1]

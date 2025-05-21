@@ -169,9 +169,8 @@ class TestRowCol:
         """Test with the identity Parity matrix/circuit."""
         P = np.eye(n, dtype=int)
         connectivity = connectivity_fn(n)
-        new_P, cnots = rowcol(P, connectivity)
+        cnots = rowcol(P, connectivity)
         assert not cnots
-        assert np.allclose(new_P, P)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
     @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
@@ -186,14 +185,13 @@ class TestRowCol:
 
         connectivity = connectivity_fn(n)
         input_connectivity = connectivity.copy()
-        new_P, cnots = rowcol(P, connectivity)
+        cnots = rowcol(P, connectivity)
         exp = sum(([(i, i + 1), (i + 2, i + 1)] for i in range(0, n - 2, 2)), start=[])
         if n % 2 == 0:
             exp.append((n - 2, n - 1))
         assert set(cnots) == set(exp)
-        assert np.allclose(new_P, np.eye(n))
         # Check that P and connectivity were not altered
-        assert np.allclose(input_P, P)  
+        assert np.allclose(input_P, P)
         assert set(input_connectivity.nodes()) == set(connectivity.nodes())
         assert set(input_connectivity.edges()) == set(connectivity.edges())
         assert_reproduces_parity_matrix(cnots, input_P)
@@ -208,9 +206,8 @@ class TestRowCol:
 
         connectivity = nx.path_graph(n)
         input_connectivity = connectivity.copy()
-        new_P, cnots = rowcol(P, connectivity)
+        cnots = rowcol(P, connectivity)
         assert len(cnots) == 4 * (n - 2)  # Minimal CNOT count for longe-range CNOT
-        assert np.allclose(new_P, np.eye(n))
         # Check that P and connectivity were not altered
         assert np.allclose(input_P, P)
         assert set(input_connectivity.nodes()) == set(connectivity.nodes())
@@ -233,8 +230,7 @@ class TestRowCol:
 
         connectivity = connectivity_fn(n)
         input_connectivity = connectivity.copy()
-        new_P, cnots = rowcol(P, connectivity)
-        assert np.allclose(new_P, np.eye(n))
+        cnots = rowcol(P, connectivity)
         # Check that P and connectivity were not altered
         assert np.allclose(input_P, P)
         assert set(input_connectivity.nodes()) == set(connectivity.nodes())
