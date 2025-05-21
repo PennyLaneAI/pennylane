@@ -19,7 +19,7 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import SWAP, FermionicSWAP
 
@@ -122,11 +122,11 @@ class TwoLocalSwapNetwork(Operation):
         if (
             weights is not None
             and acquaintances is not None
-            and qml.math.shape(weights)[0] != int(len(wires) * (len(wires) - 1) / 2)
+            and math.shape(weights)[0] != int(len(wires) * (len(wires) - 1) / 2)
         ):
             raise ValueError(
                 f"Weight tensor must be of length {int(len(wires) * (len(wires) - 1) / 2)}, \
-                    got {qml.math.shape(weights)[0]}"
+                    got {math.shape(weights)[0]}"
             )
 
         self._weights = weights
