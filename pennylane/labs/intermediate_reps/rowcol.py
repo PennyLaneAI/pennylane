@@ -42,13 +42,13 @@ def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
 
     Consider the tree
 
-    ```python
-    #                   (4)
-    #                    |
-    # (6) - (2) - (0) - (1) - (3) - (8)
-    #        |           |
-    #       (7)         (5)
-    ```
+    .. code-block:: python
+
+                          (4)
+                           |
+        (6) - (2) - (0) - (1) - (3) - (8)
+               |           |
+              (7)         (5)
 
     and consider ``(0)`` to be the source, or root, of the tree.
     We may construct this tree as a ``nx.Graph`` by providing the edge data:
