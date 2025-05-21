@@ -490,9 +490,6 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **
 
     ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
-    if len(wires) == 3:
-        return
-
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
@@ -822,10 +819,6 @@ def _CRZ(phi, wires):
 
 def _CRY(phi, wires):
     ops.CRY(phi, wires=wires)
-
-
-def _Toffoli(control_wires_x, control_wires_y, target_wires):
-    ops.Toffoli(wires=[control_wires_x[0], control_wires_y[0], target_wires[0]])
 
 
 def _ctrl_global_phase(phase, control_wires):

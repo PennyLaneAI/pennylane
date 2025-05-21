@@ -25,6 +25,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
 from pennylane.ops.op_math.controlled_decompositions import (
     _decompose_mcx_with_many_workers_old,
@@ -43,6 +44,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _decompose_mcx_with_many_workers,
     _decompose_mcx_with_no_worker,
     _decompose_mcx_with_two_workers,
+    decompose_mcx_with_many_workers,
     decompose_mcx_with_one_worker,
 )
 from pennylane.wires import Wires
@@ -807,14 +809,22 @@ class TestMCXDecomposition:
         num_work_wires = n_ctrl_wires - 2
         work_wires = list(range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires))
 
+        mcx = qml.MultiControlledX(wires=control_wires + [target_wire], work_wires=work_wires)
         with qml.queuing.AnnotatedQueue() as q:
-            _decompose_mcx_with_many_workers(control_wires + [target_wire], work_wires)
+            decompose_mcx_with_many_workers(wires=mcx.wires, **mcx.hyperparameters)
+
+        # Verify that the resource estimate is correct.
+        resource = decompose_mcx_with_many_workers.compute_resources(**mcx.resource_params)
+        expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
+        actual_gate_counts = defaultdict(int)
+        for _op in q.queue:
+            resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
+            actual_gate_counts[resource_rep] += 1
+        assert actual_gate_counts == expected_gate_counts
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
-
-        op = qml.MultiControlledX(wires=control_wires + [target_wire])
-        expected_matrix = op.sparse_matrix(wire_order=control_wires + work_wires + [target_wire])
+        expected_matrix = mcx.sparse_matrix(wire_order=control_wires + work_wires + [target_wire])
 
         assert qml.math.allclose(matrix, expected_matrix)
 
@@ -985,6 +995,21 @@ class TestMCXDecomposition:
         expected_matrix = mcx.sparse_matrix()
 
         assert qml.math.allclose(matrix, expected_matrix)
+
+    @pytest.mark.parametrize(
+        "test_mcx",
+        [
+            qml.MultiControlledX(wires=[1, 0]),
+            qml.MultiControlledX(wires=[1, 0], control_values=[0]),
+            qml.MultiControlledX(wires=[2, 1, 0]),
+            qml.MultiControlledX(wires=[2, 1, 0], control_values=[0, 1]),
+        ],
+    )
+    def test_mcx_decompositions(self, test_mcx):
+        """Tests that MCX can be resolved into CNOT and Toffoli properly."""
+
+        for rule in qml.list_decomps(qml.MultiControlledX):
+            _test_decomposition_rule(test_mcx, rule)
 
     @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 10))
