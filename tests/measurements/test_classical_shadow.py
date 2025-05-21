@@ -1017,7 +1017,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
-def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recipe):
+def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recipe, seed):
     """Test that the distribution of the bits and recipes are correct for a circuit
     that prepares all qubits in a Pauli basis"""
     # high number of shots to prevent true negatives
@@ -1033,7 +1033,7 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
             if circuit_basis == "y":
                 qml.RZ(np.pi / 2, wire)
 
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed=seed)
 
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
     tape = qml.workflow.construct_tape(circuit)()
