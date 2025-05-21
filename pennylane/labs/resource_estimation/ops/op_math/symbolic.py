@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
-from collections import defaultdict
 from functools import singledispatch
-from typing import Dict
+from typing import Dict, List, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resources_base import  _scale_dict
 from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
@@ -935,9 +933,64 @@ class ResourceProd(ResourceOperator):
     defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
 
     """
+    resource_keys = {"cmpr_factors"}
+    
+    def __init__(self, res_ops: List[ResourceOperator], wires=None) -> None:
+        self.queue(res_ops)
+
+        try:
+            cmpr_ops = tuple(op.resource_rep_from_op() for op in res_ops)  
+            self.cmpr_ops = cmpr_ops
+        except AttributeError as error:
+            raise ValueError(
+                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            ops_wires = [op.wires for op in res_ops if op.wires is not None]
+            if len(ops_wires) == 0:
+                self.wires = None
+                self.num_wires = max((op.num_wires for op in res_ops))
+            else:
+                self.wires = Wires.all_wires(ops_wires)
+                self.num_wires = len(self.wires)
+
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
+        """
+        return {"cmpr_factors": self.cmpr_ops}
+
+    @classmethod
+    def resource_rep(cls, cmpr_factors) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+                representation, corresponding to the factors in the product.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
 
     @staticmethod
-    def _resource_decomp(cmpr_factors, **kwargs):
+    def default_resource_decomp(cmpr_factors, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -967,10 +1020,53 @@ class ResourceProd(ResourceOperator):
         defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
 
         """
-        res = defaultdict(int)
-        for factor in cmpr_factors:
-            res[factor] += 1
-        return res
+        return [GateCount(cmpr_op) for cmpr_op in cmpr_factors]
+
+
+class ResourceChangeBasisOp(ResourceOperator):
+    """Change of Basis resource operator """
+    resource_keys = {"cmpr_compute_op", "cmpr_base_op", "cmpr_uncompute_op"}
+    
+    def __init__(
+        self, 
+        compute_op: ResourceOperator, 
+        base_op: ResourceOperator, 
+        uncompute_op: Union[None, ResourceOperator] = None, 
+        wires = None,
+    ) -> None:
+        uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
+        ops_to_remove = [compute_op, base_op, uncompute_op]
+
+        self.queue(ops_to_remove)
+
+        try:
+            self.cmpr_compute_op = compute_op.resource_rep_from_op()
+            self.cmpr_base_op = base_op.resource_rep_from_op()
+            self.cmpr_uncompute_op = uncompute_op.resource_rep_from_op()
+
+        except AttributeError as error:
+            raise ValueError(
+                "All ops of the ChangeofBasisOp must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            ops_wires = [op.wires for op in ops_to_remove if op.wires is not None]
+            if len(ops_wires) == 0:
+                self.wires = None
+                self.num_wires = max((op.num_wires for op in ops_to_remove))
+            else:
+                self.wires = Wires.all_wires(ops_wires)
+                self.num_wires = len(self.wires)
+
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> Dict:
@@ -980,17 +1076,14 @@ class ResourceProd(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
         """
-        try:
-            cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
-        except AttributeError as error:
-            raise ValueError(
-                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
-            ) from error
-
-        return {"cmpr_factors": cmpr_factors}
+        return {
+            "cmpr_compute_op": self.cmpr_compute_op,
+            "cmpr_base_op": self.cmpr_base_op,
+            "cmpr_uncompute_op": self.cmpr_uncompute_op,
+        }
 
     @classmethod
-    def resource_rep(cls, cmpr_factors) -> CompressedResourceOp:
+    def resource_rep(cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1001,7 +1094,52 @@ class ResourceProd(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
+        cmpr_uncompute_op = cmpr_uncompute_op or ResourceAdjoint.resource_rep(cmpr_compute_op)
+        return CompressedResourceOp(
+            cls, 
+            {
+            "cmpr_compute_op": cmpr_compute_op,
+            "cmpr_base_op": cmpr_base_op,
+            "cmpr_uncompute_op": cmpr_uncompute_op,                
+            },
+        )
+
+    @staticmethod
+    def default_resource_decomp(cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, **kwargs):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
+                representation, corresponding to the factors in the product.
+
+        Resources:
+            This symbolic class represents a product of operations. The resources are defined
+                trivially as the counts for each operation in the product.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        The product of operations can be constructed as follows. Note, each operation in the
+        product must be a valid :class:`~.ResourceOperator`
+
+        >>> prod_op = re.ResourceProd(
+        ...     re.ResourceQFT(range(3)),
+        ...     re.ResourceZ(0),
+        ...     re.ResourceGlobalPhase(1.23, wires=[1])
+        ... )
+        >>> prod_op
+        ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ ResourceGlobalPhase(1.23, wires=[1])
+        >>> prod_op.resources(**prod_op.resource_params)
+        defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
+
+        """
+        return [
+            GateCount(cmpr_compute_op),
+            GateCount(cmpr_base_op),
+            GateCount(cmpr_uncompute_op),
+        ]
 
 
 @singledispatch

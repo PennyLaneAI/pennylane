@@ -16,12 +16,11 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
+from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    AddQubits,
-    CutQubits,
     GateCount,
     ResourceOperator,
+    CompressedResourceOp,
 )
 
 # pylint: disable=arguments-differ
