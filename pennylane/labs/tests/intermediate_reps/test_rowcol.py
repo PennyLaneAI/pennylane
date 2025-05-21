@@ -150,22 +150,32 @@ def assert_reproduces_parity_matrix(cnots, expected_P):
     assert np.allclose(new_P, expected_P)
 
 
+def assert_respects_connectivity(cnots, connectivity):
+    """Helper function that asserts that only CNOTs allowed by a connectivity graph are used."""
+    # Get sorted tuples representing connected qubits
+    edges = set(tuple(sorted(edge)) for edge in connectivity.edges())
+    # Get sorted tuples (a, b) representing CNOT(a,b) or CNOT(b,a) (there is no direction in the
+    # connectivity graph)
+    unique_undirected_cnots = {tuple(sorted(cnot)) for cnot in cnots}
+    assert unique_undirected_cnots.issubset(edges)
+
+
 class TestRowCol:
     """Tests for rowcol."""
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("conn", [nx.path_graph, nx.complete_graph])
-    def test_identity(self, n, conn):
+    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    def test_identity(self, n, connectivity_fn):
         """Test with the identity Parity matrix/circuit."""
         P = np.eye(n, dtype=int)
-        connectivity = conn(n)
+        connectivity = connectivity_fn(n)
         new_P, cnots = rowcol(P, connectivity)
         assert not cnots
         assert np.allclose(new_P, P)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("conn", [nx.path_graph, nx.complete_graph])
-    def test_few_commuting_cnots(self, n, conn):
+    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
+    def test_few_commuting_cnots(self, n, connectivity_fn):
         """Test with a few commuting CNOTs."""
         P = np.eye(n, dtype=int)
         for i in range(0, n - 1, 2):
@@ -174,7 +184,7 @@ class TestRowCol:
             P[i + 1] += P[i + 2]
         input_P = P.copy()
 
-        connectivity = conn(n)
+        connectivity = connectivity_fn(n)
         new_P, cnots = rowcol(P, connectivity)
         exp = sum(([(i, i + 1), (i + 2, i + 1)] for i in range(0, n - 2, 2)), start=[])
         if n % 2 == 0:
@@ -183,6 +193,7 @@ class TestRowCol:
         assert np.allclose(new_P, np.eye(n))
         assert np.allclose(input_P, P)  # Check that P was not altered
         assert_reproduces_parity_matrix(cnots, input_P)
+        assert_respects_connectivity(cnots, connectivity)
 
     @pytest.mark.parametrize("n", list(range(3, 13)))
     def test_long_range_cnot(self, n):
@@ -197,11 +208,12 @@ class TestRowCol:
         assert np.allclose(new_P, np.eye(n))
         assert np.allclose(input_P, P)  # Check that P was not altered
         assert_reproduces_parity_matrix(cnots, input_P)
+        assert_respects_connectivity(cnots, connectivity)
 
     @pytest.mark.parametrize("n", list(range(2, 13)))
-    @pytest.mark.parametrize("conn", [nx.path_graph, nx.complete_graph])
+    @pytest.mark.parametrize("connectivity_fn", [nx.path_graph, nx.complete_graph])
     @pytest.mark.parametrize("input_depth", [(lambda n: n), (lambda n: n**3)])
-    def test_random_circuit(self, n, conn, input_depth):
+    def test_random_circuit(self, n, connectivity_fn, input_depth):
         """Test with a random CNOT circuit."""
 
         P = np.eye(n, dtype=int)
@@ -211,8 +223,9 @@ class TestRowCol:
         P %= 2
         input_P = P.copy()
 
-        connectivity = conn(n)
+        connectivity = connectivity_fn(n)
         new_P, cnots = rowcol(P, connectivity)
         assert np.allclose(new_P, np.eye(n))
         assert np.allclose(input_P, P)  # Check that P was not altered
         assert_reproduces_parity_matrix(cnots, input_P)
+        assert_respects_connectivity(cnots, connectivity)
