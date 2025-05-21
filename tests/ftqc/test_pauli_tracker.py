@@ -16,64 +16,75 @@
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc import pauli_encode_xz, pauli_prod_to_xz
+from pennylane.ftqc.pauli_tracker import pauli_encode_xz, pauli_prod, xz_decode_pauli
 
 
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 
-    @pytest.mark.parametrize("op", [qml.I, qml.X, qml.Y, qml.Z, qml.S])
+    @pytest.mark.parametrize("op", [qml.I, qml.X, qml.Y, qml.Z])
     def test_pauli_encode_xz(self, op):
-        if op not in [qml.I, qml.X, qml.Y, qml.Z]:
-            with pytest.raises(NotImplementedError):
-                _ = pauli_encode_xz(op)
-        else:
-            x, z = pauli_encode_xz(op)
-            assert x in [0, 1]
-            assert z in [0, 1]
+        x, z = pauli_encode_xz(op)
+        assert x in [0, 1]
+        assert z in [0, 1]
 
-            x_res = 1 if op in [qml.X, qml.Y] else 0
-            z_res = 1 if op in [qml.Y, qml.Z] else 0
+        x_res = 1 if op in [qml.X, qml.Y] else 0
+        z_res = 1 if op in [qml.Y, qml.Z] else 0
 
-            assert x == x_res
-            assert z == z_res
+        assert x == x_res
+        assert z == z_res
+
+    @pytest.mark.parametrize("op", [qml.S, qml.CNOT, qml.H])
+    def test_unsuppored_ops_pauli_encode_xz(self, op):
+        with pytest.raises(NotImplementedError):
+            _ = pauli_encode_xz(op)
+
+    @pytest.mark.parametrize(
+        "x, z, res", [(0, 0, qml.I), (1, 0, qml.X), (1, 1, qml.Y), (0, 1, qml.Z)]
+    )
+    def test_xz_decode_pauli(self, x, z, res):
+        op = xz_decode_pauli(x, z)
+        assert op == res
+
+    @pytest.mark.parametrize("x, z", [(0, -1), (-1, 0), (-1, -1)])
+    def test_xz_decode_pauli_unsupported_error(self, x, z):
+        with pytest.raises(ValueError):
+            _ = xz_decode_pauli(x, z)
 
     @pytest.mark.parametrize(
         "ops, res",
         [
-            ([], None),
-            ([qml.I], (0, 0)),
-            ([qml.X], (1, 0)),
-            ([qml.Y], (1, 1)),
-            ([qml.Z], (0, 1)),
-            ([qml.I, qml.I], (0, 0)),
-            ([qml.I, qml.X], (1, 0)),
-            ([qml.I, qml.Y], (1, 1)),
-            ([qml.I, qml.Z], (0, 1)),
-            ([qml.X, qml.I], (1, 0)),
-            ([qml.X, qml.X], (0, 0)),
-            ([qml.X, qml.Y], (0, 1)),
-            ([qml.X, qml.Z], (1, 1)),
-            ([qml.Y, qml.I], (1, 1)),
-            ([qml.Y, qml.X], (0, 1)),
-            ([qml.Y, qml.Y], (0, 0)),
-            ([qml.Y, qml.Z], (1, 0)),
-            ([qml.Z, qml.I], (0, 1)),
-            ([qml.Z, qml.X], (1, 1)),
-            ([qml.Z, qml.Y], (1, 0)),
-            ([qml.Z, qml.Z], (0, 0)),
-            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], (0, 1)),
+            ([qml.I], qml.I),
+            ([qml.X], qml.X),
+            ([qml.Y], qml.Y),
+            ([qml.Z], qml.Z),
+            ([qml.I, qml.I], qml.I),
+            ([qml.I, qml.X], qml.X),
+            ([qml.I, qml.Y], qml.Y),
+            ([qml.I, qml.Z], qml.Z),
+            ([qml.X, qml.I], qml.X),
+            ([qml.X, qml.X], qml.I),
+            ([qml.X, qml.Y], qml.Z),
+            ([qml.X, qml.Z], qml.Y),
+            ([qml.Y, qml.I], qml.Y),
+            ([qml.Y, qml.X], qml.Z),
+            ([qml.Y, qml.Y], qml.I),
+            ([qml.Y, qml.Z], qml.X),
+            ([qml.Z, qml.I], qml.Z),
+            ([qml.Z, qml.X], qml.Y),
+            ([qml.Z, qml.Y], qml.X),
+            ([qml.Z, qml.Z], qml.I),
+            ([qml.X, qml.Y, qml.Z, qml.I, qml.Z], qml.Z),
         ],
     )
-    def test_pauli_prod_to_xz(self, ops, res):
-        if len(ops) == 0:
-            with pytest.raises(
-                ValueError,
-                match="Please ensure that a valid list of operators are passed to the method.",
-            ):
-                _ = pauli_prod_to_xz(ops)
-        else:
-            op = pauli_prod_to_xz(ops)
-            assert len(op) == 2
-            assert res[0] == op[0]
-            assert res[1] == op[1]
+    def test_pauli_prod(self, ops, res):
+        op = pauli_prod(ops)
+        assert res == op
+
+    @pytest.mark.parametrize("ops", [[]])
+    def test_pauli_prod_to_xz_unsupported_error(self, ops):
+        with pytest.raises(
+            ValueError,
+            match="Please ensure that a valid list of operators are passed to the method.",
+        ):
+            _ = pauli_prod(ops)

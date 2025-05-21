@@ -42,7 +42,6 @@ from .lattice import Lattice, generate_lattice
 from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
 from .utils import QubitMgr
-from .pauli_tracker import pauli_encode_xz, pauli_prod_to_xz
 
 __all__ = [
     "GraphStatePrep",
@@ -62,6 +61,4 @@ __all__ = [
     "convert_to_mbqc_gateset",
     "generate_lattice",
     "make_graph_state",
-    "pauli_encode_xz",
-    "pauli_prod_to_xz",
 ]

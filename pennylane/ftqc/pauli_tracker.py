@@ -18,20 +18,29 @@ This module contains Pauli Tracking functions.
 
 from typing import List, Tuple
 
-import pennylane as qml
-from pennylane import numpy as np
+import numpy as np
+
+from pennylane import I, X, Y, Z
+from pennylane.operation import Operator
 
 _ENCODE_XZ_OPS = {
-    qml.I: (0, 0),
-    qml.X: (1, 0),
-    qml.Y: (1, 1),
-    qml.Z: (0, 1),
+    I: (0, 0),
+    X: (1, 0),
+    Y: (1, 1),
+    Z: (0, 1),
 }
 
-_paulis = frozenset({qml.X, qml.Y, qml.Z, qml.I})
+_DECODE_XZ = {
+    (0, 0): I,
+    (1, 0): X,
+    (1, 1): Y,
+    (0, 1): Z,
+}
+
+_PAULIS = frozenset({X, Y, Z, I})
 
 
-def pauli_encode_xz(op: qml.operation.Operator) -> Tuple[np.uint8, np.uint8]:
+def pauli_encode_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     """
     Encode a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -46,29 +55,44 @@ def pauli_encode_xz(op: qml.operation.Operator) -> Tuple[np.uint8, np.uint8]:
     the :class:`~pennylane.Z`.
     """
 
-    if op in _paulis:
+    if op in _PAULIS:
         return _ENCODE_XZ_OPS[op]
     raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
 
 
-def pauli_prod_to_xz(ops: List[qml.operation.Operator]) -> Tuple[np.uint8, np.uint8]:
+def xz_decode_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
-    Get the result of a product of list of Pauli operators. The result is encoded with `xz` representation.
+    Decode a x, z to a Pauli operator.
+    Args:
+        x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
+        z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
+    Return:
+        A Pauli operator.
+    """
+    if x in [0, 1] and z in [0, 1]:
+        return _DECODE_XZ[(x, z)]
+    raise ValueError("x and z should either 0 or 1.")
+
+
+def pauli_prod(ops: List[Operator]) -> Operator:
+    """
+    Get the result of a product of list of Pauli operators. The result is a new Pauli operator up to global phase.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
-        A tuple of `xz` encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
-    the :class:`~pennylane.Z`.
+        A new Pauli operator.
     """
 
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
 
-    res = pauli_encode_xz(ops.pop())
+    res_x, res_z = pauli_encode_xz(ops.pop())
 
     while len(ops) > 0:
-        res = np.bitwise_xor(pauli_encode_xz(ops.pop()), res)
+        x, z = pauli_encode_xz(ops.pop())
+        res_x ^= x
+        res_z ^= z
 
-    return res
+    return xz_decode_pauli(res_x, res_z)
