@@ -201,6 +201,7 @@ def _update(P: np.ndarray, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
+# Create the Galois number field F_2, in which we can create arrays in _get_S.
 F_2 = galois.GF(2)
 
 
@@ -297,46 +298,6 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
         list[tuple[int]]: Wire pairs for CNOTs that implement the parity matrix (control first,
         target second).
 
-    Given a parity matrix :math:`P` and a connectivity graph :math:`G(V, E)`, as well as an
-    empty list ``L`` to which we will append CNOT gates,
-    the algorithm consists of the following steps:
-
-    1. If :math:`|V|=1` (there is a single node), go to step 5. Else, select a vertex
-       :math:`i\in V` that is not a cut vertex, i.e. a vertex that we can remove without
-       disconnecting the graph.
-
-    2. Eliminate column ``P[:, i]``
-
-        a. Construct :math:`S = \{j | P_{ji} \neq 0\} \cup \{i\}` and find a Steiner tree
-           :math:`T \supseteq S`.
-        b. `Post-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Post-order,_LRN>`__
-           the Steiner tree :math:`T` starting from :math:`i` as root. If ``P[c, i]=1`` for node
-           :math:`c` in the traversal and ``P[p, i]=0`` for parent node :math:`p` of node :math:`c`,
-           add row ``P[c]`` to row ``P[p]`` and append ``CNOT([c, p])`` to ``L``.
-        c. Post-order traverse :math:`T` again starting from :math:`i`. For each node :math:`p`
-           in the traversal, add row ``P[p]`` to row ``P[c]``, where :math:`c` is the child node
-           of :math:`p`, and append ``CNOT([p, c])`` to ``L``.
-
-    3. Eliminate row ``P[i]``
-
-        a. Construct :math:`S'` such that the corresponding rows of :math:`P` add up to the
-           :math:`i`\ th basis vector, :math:`\sum_{j\in S'} P[j] = e_i`. Find a Steiner tree
-           :math:`T' \supseteq S'`.
-        b. `Pre-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR>`__
-           the Steiner tree :math:`T'` starting from :math:`i` and for each node :math:`c` in
-           the traversal for which :math:`c \notin S'`, add row :math:`P[c]` to row :math:`P[p]`,
-           where :math:`p` is the parent node of :math:`c`, and append ``CNOT([c, p])`` to ``L``.
-        c. Post-order traverse :math:`T` starting from :math:`i`. For each node :math:`c`
-           in the traversal, add row ``P[c]`` to row ``P[p]``, where :math:`p` is the parent node
-           of :math:`c`, and append ``CNOT([c, p])`` to ``L``.
-
-    4. Delete vertex :math:`i` from :math:`G` and ignore row and column with index :math:`i` in
-       the following. Go to step 1.
-
-    5. Revert the list ``L`` of CNOT gates in order to go from the circuit that transforms
-       :math:`P` to the identity to the circuit that implements :math:`P` starting from the
-       identity.
-
     **Example**
 
     Here we compute the example 1 from arXiv:1910.14478 by Wu et al. in code.
@@ -397,11 +358,55 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     True
 
     .. details::
+        :title: Algorithm overview
+        :href: algorithm-overview
+
+        Given a parity matrix :math:`P` and a connectivity graph :math:`G(V, E)`, as well as an
+        empty list ``L`` to which we will append CNOT gates,
+        the algorithm consists of the following steps:
+
+        #. If :math:`|V|=1` (there is a single node), go to step 5. Else, select a vertex
+           :math:`i\in V` that is not a cut vertex, i.e. a vertex that we can remove without
+           disconnecting the graph.
+        #. Eliminate column ``P[:, i]``
+
+            a. Construct :math:`S = \{j | P_{ji} \neq 0\} \cup \{i\}` and find a Steiner tree
+               :math:`T \supseteq S`.
+            b. `Post-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Post-order,_LRN>`__
+               the Steiner tree :math:`T` starting from :math:`i` as root. If ``P[c, i]=1`` for node
+               :math:`c` in the traversal and ``P[p, i]=0`` for parent node :math:`p` of node :math:`c`,
+               add row ``P[c]`` to row ``P[p]`` and append ``CNOT([c, p])`` to ``L``.
+            c. Post-order traverse :math:`T` again starting from :math:`i`. For each node :math:`p`
+               in the traversal, add row ``P[p]`` to row ``P[c]``, where :math:`c` is the child node
+               of :math:`p`, and append ``CNOT([p, c])`` to ``L``.
+
+        #. Eliminate row ``P[i]``
+
+            a. Construct :math:`S'` such that the corresponding rows of :math:`P` add up to the
+               :math:`i`\ th basis vector, :math:`\sum_{j\in S'} P[j] = e_i`. Find a Steiner tree
+               :math:`T' \supseteq S'`.
+            b. `Pre-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Pre-order,_NLR>`__
+               the Steiner tree :math:`T'` starting from :math:`i` and for each node :math:`c` in
+               the traversal for which :math:`c \notin S'`, add row :math:`P[c]` to row :math:`P[p]`,
+               where :math:`p` is the parent node of :math:`c`, and append ``CNOT([c, p])`` to ``L``.
+            c. Post-order traverse :math:`T` starting from :math:`i`. For each node :math:`c`
+               in the traversal, add row ``P[c]`` to row ``P[p]``, where :math:`p` is the parent node
+               of :math:`c`, and append ``CNOT([c, p])`` to ``L``.
+
+        #. Delete vertex :math:`i` from :math:`G` and ignore row and column with index :math:`i` in
+           the following. Go to step 1.
+        #. Revert the list ``L`` of CNOT gates in order to go from the circuit that transforms
+           :math:`P` to the identity to the circuit that implements :math:`P` starting from the
+           identity.
+
+    .. details::
         :title: Manual example
         :href: manual-example
 
         We walk through example 1 in arXiv:1910.14478 by Wu et al., which was demonstrated
-        in code above, in detail. We restrict ourselves to the following connectivity graph.
+        in code above, in detail. The steps are numbered according to the algorithm overview
+        above.
+        We restrict ourselves to the following connectivity graph.
 
         .. code-block:: python
 
