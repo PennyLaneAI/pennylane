@@ -978,6 +978,7 @@ class TestBroadcastingPRNG:
         # third batch of samples can be any of |00>, |01>, |10>, or |11>
         assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
 
+    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize(
         "measurement, expected",
         [
