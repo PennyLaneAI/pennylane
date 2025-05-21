@@ -234,7 +234,6 @@ def calculate_expval_sum_of_terms(
     )
 
 
-# pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
 ) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
