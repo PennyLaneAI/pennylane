@@ -35,7 +35,7 @@ class SimpleError(AlgorithmicError):
         return self.__class__(self.error + other.error)
 
     @staticmethod
-    def get_error(approx_op, other_op):
+    def get_error(approximate_op, exact_op):
         return 0.5  # get simple error is always 0.5
 
 
@@ -59,9 +59,10 @@ class TestAlgorithmicError:
 
             class ErrorNoCombine(AlgorithmicError):
                 @staticmethod
-                def get_error(approx_op, other_op):
+                def get_error(approximate_op, exact_op):
                     return 0.5  # get simple error is always 0.5
 
+            # pylint: disable=abstract-class-instantiated
             _ = ErrorNoCombine(1.23)
 
     @pytest.mark.parametrize("err1", [1.23, 0.45, -6])
@@ -151,6 +152,8 @@ class TestSpectralNormError:
         """Test that get_error fails if the operator matrix is not defined"""
 
         class MyOp(Operation):
+
+            @property
             def name(self):
                 return self.__class__.__name__
 

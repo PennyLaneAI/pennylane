@@ -103,7 +103,6 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     return graph
 
 
-# pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.

@@ -23,7 +23,7 @@ import scipy as sp
 from pennylane import math
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
-# pylint: disable=use-a-generator, too-few-public-methods
+# pylint: disable=too-few-public-methods
 # pylint: disable=too-many-branches
 
 
