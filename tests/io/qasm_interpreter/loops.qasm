@@ -28,6 +28,7 @@ bit[5] register = "011011";
 for bit b in register {
     rz(0.1) q0;
 }
+
 let alias = register[0:5];
 for bit b in alias {
     y q0;

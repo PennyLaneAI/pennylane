@@ -291,7 +291,7 @@ class QasmInterpreter(QASMVisitor):
         # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
 
         def switch(execution_context: dict):
-            target = self.eval_expr(node.target, context)
+            target = self.eval_expr(node.target, execution_context)
             ops.cond(
                 # TODO: support eval of lists, etc. to match
                 target == self.eval_expr(node.cases[0][0][0], context),

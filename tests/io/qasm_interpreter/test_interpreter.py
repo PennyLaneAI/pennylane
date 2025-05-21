@@ -62,6 +62,31 @@ class TestInterpreter:
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
+    def test_updating_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("updating_variables.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        s = mocker.spy(S, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # run the program
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'updating-vars'})
+        context['callable']()
+
+        # assertions
+        assert x.call_count == 1
+        assert y.call_count == 1
+        assert z.call_count == 0
+        assert rx.call_count == 1
+
     def test_loops(self, mocker):
         from openqasm3.parser import parse
 
