@@ -174,8 +174,6 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-        self.active_compiler = compiler.active_compiler()
-
     def step_and_cost(
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
@@ -212,7 +210,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                argnum = tuple(range(len(args))) if self.active_compiler == "catalyst" else None
+                argnum = tuple(range(len(args))) if compiler.active_compiler() == "catalyst" else None
                 metric_tensor_fn = metric_tensor(qnode, argnum=argnum, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
@@ -281,7 +279,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         """
         mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
 
-        if self.active_compiler == "catalyst":
+        if compiler.active_compiler() == "catalyst":
             args_new = self._apply_grad_jax(grad=grad, args=args, mt=mt)
         else:
             args_new = self._apply_grad(grad=grad, args=args, mt=mt)
