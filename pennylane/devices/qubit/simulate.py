@@ -15,6 +15,8 @@
 import logging
 
 # pylint: disable=protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
 from typing import Optional
@@ -215,7 +217,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments
 @debug_logger
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
@@ -322,6 +323,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    circuit = circuit.copy()
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
@@ -863,7 +865,7 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
 
 
 @singledispatch
-def combine_measurements_core(original_measurement, measures):  # pylint: disable=unused-argument
+def combine_measurements_core(original_measurement, measures):
     """Returns the combined measurement value of a given type."""
     raise TypeError(
         f"Native mid-circuit measurement mode does not support {type(original_measurement).__name__}"
@@ -871,7 +873,7 @@ def combine_measurements_core(original_measurement, measures):  # pylint: disabl
 
 
 @combine_measurements_core.register
-def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: CountsMP, measures):
     """The counts are accumulated using a ``Counter`` object."""
     keys = list(measures.keys())
     new_counts = Counter()
@@ -883,7 +885,7 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
 
 
 @combine_measurements_core.register
-def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ExpectationMP, measures):
     """The expectation value of two branches is a weighted sum of expectation values."""
     cum_value = 0
     total_counts = 0
@@ -896,7 +898,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
 
 
 @combine_measurements_core.register
-def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ProbabilityMP, measures):
     """The combined probability of two branches is a weighted sum of the probabilities. Note the implementation is the same as for ``ExpectationMP``."""
     cum_value = 0
     total_counts = 0
@@ -909,7 +911,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 
 @combine_measurements_core.register
-def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: SampleMP, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()

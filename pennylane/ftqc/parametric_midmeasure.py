@@ -17,6 +17,7 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
+from copy import copy
 from functools import lru_cache
 from typing import Iterable, Optional, Union
 
@@ -48,9 +49,9 @@ def _create_parametrized_mid_measure_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    measure_in_basis_p = NonInterpPrimitive("measure_in_basis")
+    measure_in_basis_p = QmlPrimitive("measure_in_basis")
 
     @measure_in_basis_p.def_impl
     def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
@@ -385,7 +386,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
         )
         return (None, None), metadata
 
-    # pylint: disable=arguments-renamed, arguments-differ
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
@@ -399,7 +399,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments, arguments-differ, arguments-renamed
     @classmethod
     def _primitive_bind_call(
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
@@ -431,9 +431,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
         )
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -470,7 +468,6 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_x"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -494,9 +491,7 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -531,7 +526,6 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_y"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -560,9 +554,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: str = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: str = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -783,6 +775,16 @@ def diagonalize_mcms(tape):
             new_operations.append(op)
 
         curr_idx += 1
+
+    new_measurements = []
+    for mp in tape.measurements:
+        if mp.mv is None:
+            new_measurements.append(mp)
+        else:
+            new_mp = copy(mp)
+            mps = [mps_mapping.get(m, m) for m in mp.mv.measurements]
+            new_mp.mv.measurements = mps
+            new_measurements.append(new_mp)
 
     new_tape = tape.copy(operations=new_operations)
 

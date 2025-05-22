@@ -239,9 +239,9 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    ctrl_prim = NonInterpPrimitive("ctrl_transform")
+    ctrl_prim = QmlPrimitive("ctrl_transform")
     ctrl_prim.multiple_results = True
     ctrl_prim.prim_type = "higher_order"
 
@@ -490,7 +490,7 @@ class Controlled(SymbolicOp):
             base, *control_wires, control_values=control_values, work_wires=work_wires
         )
 
-    # pylint: disable=too-many-function-args, too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -685,7 +685,6 @@ class Controlled(SymbolicOp):
     def has_sparse_matrix(self):
         return self.base.has_sparse_matrix or self.base.has_matrix
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         try:
             target_mat = self.base.sparse_matrix()
@@ -937,7 +936,7 @@ class ControlledOp(Controlled, operation.Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-function-args, too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity

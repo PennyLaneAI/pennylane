@@ -1437,7 +1437,7 @@ class ResourceQROM(qml.QROM, ResourceOperator):
     @classmethod
     def resource_rep(
         cls, num_bitstrings, num_bit_flips, num_control_wires, num_work_wires, size_bitstring, clean
-    ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 

@@ -15,7 +15,7 @@
 
 import inspect
 
-import pennylane as qml
+from pennylane.boolean_fn import BooleanFn
 
 
 class NoiseModel:
@@ -166,7 +166,7 @@ class NoiseModel:
     def check_model(model: dict) -> None:
         """Method to validate a ``{conditional -> noise_fn}`` map for constructing a noise model."""
         for condition, noise in model.items():
-            if not isinstance(condition, qml.BooleanFn):
+            if not isinstance(condition, BooleanFn):
                 raise ValueError(
                     f"{condition} must be a boolean conditional, i.e., an instance of "
                     "BooleanFn or one of its subclasses."

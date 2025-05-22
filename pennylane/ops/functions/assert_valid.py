@@ -25,7 +25,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionNotApplicable, DecompositionRule
+from pennylane.decomposition import DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -112,16 +112,24 @@ def _check_decomposition_new(op, heuristic_resources=False):
     for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"Adjoint({type(op).__name__})"):
+        adj_op = qml.ops.Adjoint(op)
+        _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
+
+    for rule in qml.list_decomps(f"Pow({type(op).__name__})"):
+        for z in [0.25, 0.5, 2, 3, 4, 8, 9]:
+            pow_op = qml.ops.Pow(op, z)
+            _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    # Test that the resource function is correct
-    try:
-        resources = rule.compute_resources(**op.resource_params)
-    except DecompositionNotApplicable:
+    if not rule.is_applicable(**op.resource_params):
         return
 
+    # Test that the resource function is correct
+    resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -327,8 +335,12 @@ def _check_capture(op):
 
     qml.capture.enable()
     try:
-        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
-        data, _ = jax.tree_util.tree_flatten(op)
+        data, struct = jax.tree_util.tree_flatten(op)
+
+        def test_fn(*args):
+            return jax.tree_util.tree_unflatten(struct, args)
+
+        jaxpr = jax.make_jaxpr(test_fn)(*data)
         new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
         assert op == new_op
     except Exception as e:
@@ -351,7 +363,6 @@ def _check_pickle(op):
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
 
-# pylint: disable=no-member
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]

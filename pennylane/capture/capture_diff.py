@@ -32,13 +32,12 @@ def _get_grad_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    grad_prim = NonInterpPrimitive("grad")
-    grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    grad_prim = QmlPrimitive("grad")
+    grad_prim.multiple_results = True
     grad_prim.prim_type = "higher_order"
 
-    # pylint: disable=too-many-arguments
     @grad_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
@@ -69,13 +68,12 @@ def _get_jacobian_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    jacobian_prim = NonInterpPrimitive("jacobian")
-    jacobian_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    jacobian_prim = QmlPrimitive("jacobian")
+    jacobian_prim.multiple_results = True
     jacobian_prim.prim_type = "higher_order"
 
-    # pylint: disable=too-many-arguments
     @jacobian_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover

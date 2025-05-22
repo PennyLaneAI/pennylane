@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-# pylint: disable=too-many-branches
+
 
 from functools import lru_cache, partial
 from typing import Optional
@@ -34,7 +34,7 @@ def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
-        from jax.core import Jaxpr
+        from jax.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
@@ -42,7 +42,7 @@ def _get_plxpr_merge_rotations():
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name, too-few-public-methods
+    # pylint: disable=redefined-outer-name
     class MergeRotationsInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
@@ -159,7 +159,7 @@ def _get_plxpr_merge_rotations():
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -167,7 +167,7 @@ def _get_plxpr_merge_rotations():
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

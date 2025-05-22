@@ -28,14 +28,14 @@ For example:
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
 >>> def g(x):
 ...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
-...     return jax.pure_callback(f, expected_output_shape, x)
+...     return jax.pure_callback(f, expected_output_shape, x, vmap_method="sequential")
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
 
 Note that we must provide the expected output shape for the function to use pure callbacks.
 
 """
-# pylint: disable=unused-argument, too-many-arguments, protected-access
+# pylint: disable=unused-argument,too-many-arguments
 from functools import partial
 
 import jax
@@ -75,7 +75,6 @@ def _set_trainable_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, t.trainable_params) for t, a in zip(tapes, params))
 
 
-# pylint: disable=no-member
 def _jax_dtype(m_type):
     if m_type == int:
         return jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
@@ -173,8 +172,11 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
     device_supports_vectorization = (
         qml.transforms.broadcast_expand not in device.preprocess_transforms()
     )
+
+    vmap_method = "legacy_vectorized" if device_supports_vectorization else "sequential"
+
     out = jax.pure_callback(
-        pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
+        pure_callback_wrapper, shape_dtype_structs, params, vmap_method=vmap_method
     )
     return out
 
@@ -206,7 +208,9 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
     res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
     jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes.vals)
-    results, jacobians = jax.pure_callback(wrapper, (res_struct, jac_struct), primals[0])
+    results, jacobians = jax.pure_callback(
+        wrapper, (res_struct, jac_struct), primals[0], vmap_method="sequential"
+    )
 
     jvps = _compute_jvps(jacobians, tangents_trainable, tapes.vals)
 
@@ -226,7 +230,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return _to_jax(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vectorized=True),)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="legacy_vectorized"),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])

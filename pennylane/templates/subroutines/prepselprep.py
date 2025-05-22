@@ -14,7 +14,7 @@
 """
 Contains the PrepSelPrep template.
 """
-# pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
+# pylint: disable=arguments-differ
 import copy
 
 import pennylane as qml

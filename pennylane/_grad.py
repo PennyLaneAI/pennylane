@@ -478,7 +478,6 @@ def jacobian(func, argnum=None, method=None, h=None):
            [ 0.03996468,  0.42472435]], dtype=float64)
 
     """
-    # pylint: disable=no-value-for-parameter
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
