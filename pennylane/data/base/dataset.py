@@ -23,7 +23,7 @@ from types import MappingProxyType
 from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, cast, get_origin
 
 # pylint doesn't think this exists
-from typing_extensions import dataclass_transform  # pylint: disable=no-name-in-module
+from typing_extensions import dataclass_transform
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
@@ -49,7 +49,7 @@ class Field(Generic[T]):
     info: AttributeInfo
 
 
-def field(  # pylint: disable=too-many-arguments, unused-argument
+def field(
     attribute_type: Union[Type[DatasetAttribute[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
@@ -232,7 +232,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return self.info.get("data_name", self.__data_name__)
 
     @property
-    def identifiers(self) -> Mapping[str, str]:  # pylint: disable=function-redefined
+    def identifiers(self) -> Mapping[str, str]:
         """Returns this dataset's parameters."""
         return {
             attr_name: getattr(self, attr_name)
@@ -246,7 +246,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return AttributeInfo(self.bind.attrs)
 
     @property
-    def bind(self) -> HDF5Group:  # pylint: disable=function-redefined
+    def bind(self) -> HDF5Group:
         """Return the HDF5 group that contains this dataset."""
         return self._bind
 

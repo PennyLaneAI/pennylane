@@ -227,7 +227,8 @@ def _get_rhf_dipole(scf_result):
     for num_atom in range(len(charges)):
         centered_coords[num_atom, :] -= nuc_mass_center
     dipole_n = np.einsum("z,zx->x", charges, centered_coords)
-
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=invalid-unary-operand-type
     dipole = -dipole_e + dipole_n
     return dipole
 
