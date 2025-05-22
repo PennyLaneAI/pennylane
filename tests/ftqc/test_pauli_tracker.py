@@ -134,9 +134,40 @@ class TestPauliTracker:
             (qml.CNOT(wires=[0, 1]), [(0, 0), (0, 0), (0, 0)]),
         ],
     )
-    def test_apply_clifford_ops_xz_size_mismatch(self, clifford_op, xz):
+    def test_apply_clifford_ops_xz_list_size_mismatch(self, clifford_op, xz):
         with pytest.raises(
             ValueError,
             match="Please ensure that the length of xz matches the number of wires of the clifford_op.",
+        ):
+            _ = apply_clifford_op(clifford_op, xz)
+
+    @pytest.mark.parametrize(
+        "clifford_op, xz",
+        [
+            (qml.S(0), [(0, 1, 0)]),
+            (qml.CNOT(wires=[0, 1]), [(0, 1), (0, 1, 1)]),
+            (qml.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0)]),
+            (qml.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0, 1)]),
+        ],
+    )
+    def test_apply_clifford_ops_xz_tuple_size_mismatch(self, clifford_op, xz):
+        with pytest.raises(
+            ValueError,
+            match="Please ensure there are 2 elements instead of in each tuple in the xz list.",
+        ):
+            _ = apply_clifford_op(clifford_op, xz)
+
+    @pytest.mark.parametrize(
+        "clifford_op, xz",
+        [
+            (qml.S(0), [(0, 2)]),
+            (qml.CNOT(wires=[0, 1]), [(0, 1), (0, 3)]),
+            (qml.CNOT(wires=[0, 1]), [(2, 0), (0, 0)]),
+        ],
+    )
+    def test_apply_clifford_ops_xz_value_err(self, clifford_op, xz):
+        with pytest.raises(
+            ValueError,
+            match="Please ensure xz are either 0 or 1.",
         ):
             _ = apply_clifford_op(clifford_op, xz)
