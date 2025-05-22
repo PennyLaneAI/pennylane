@@ -1,9 +1,9 @@
 """
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
+
 import numpy as np
 import pytest
-from pennylane.wires import Wires
 
 from pennylane import (
     CH,
@@ -33,6 +33,7 @@ from pennylane import (
     T,
     Toffoli,
 )
+from pennylane.wires import Wires
 
 
 @pytest.fixture
@@ -69,11 +70,15 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
-        context, execution_context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'advanced-vars'})
-        context['callable']()
+        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "advanced-vars"}
+        )
+        context["callable"]()
 
         # static vars are available in the compilation context
         assert context["vars"]["f"]["val"] == 3.2
@@ -97,7 +102,8 @@ class TestInterpreter:
             const int i = 2;
             i = 3;
             """,
-            permissive=True)
+            permissive=True,
+        )
 
         with pytest.raises(
             ValueError,
@@ -111,11 +117,15 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'basic-vars'})
-        context['callable']()
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "basic-vars"}
+        )
+        context["callable"]()
 
         assert context["vars"]["i"]["val"] == 4
         assert context["vars"]["j"]["val"] == 4
@@ -127,7 +137,10 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            permissive=True,
+        )
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -136,8 +149,10 @@ class TestInterpreter:
         rx = mocker.spy(RX, "__init__")
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'updating-vars'})
-        context['callable']()
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "updating-vars"}
+        )
+        context["callable"]()
 
         # assertions
         assert x.call_count == 1
@@ -162,8 +177,8 @@ class TestInterpreter:
         rz = mocker.spy(RZ, "__init__")
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'loops'})
-        context['callable']()
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "loops"})
+        context["callable"]()
 
         # assertions
         assert x.call_count == 10
@@ -196,8 +211,8 @@ class TestInterpreter:
         rx = mocker.spy(RX, "__init__")
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'switch'})
-        context['callable']()
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "switch"})
+        context["callable"]()
 
         # assertions
         assert x.call_count == 1
@@ -208,11 +223,13 @@ class TestInterpreter:
     def test_if_else(self, mocker):
         from openqasm3.parser import parse
 
-        from pennylane.io.qasm_interpreter import QasmInterpreter
         from pennylane import ops
+        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+        )
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
@@ -221,15 +238,17 @@ class TestInterpreter:
         z = mocker.spy(PauliZ, "__init__")
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
-        context['callable']()
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "if_else"}
+        )
+        context["callable"]()
 
         # assertions
         assert cond.call_count == 3
         assert x.call_count == 1
-        x.assert_called_with(PauliX(Wires(['q0'])), Wires(['q0']))
+        x.assert_called_with(PauliX(Wires(["q0"])), Wires(["q0"]))
         assert y.call_count == 1
-        y.assert_called_with(PauliY(Wires(['q0'])), Wires(['q0']))
+        y.assert_called_with(PauliY(Wires(["q0"])), Wires(["q0"]))
         assert z.call_count == 0
 
     def test_mod_with_declared_param(self, mocker):
@@ -312,7 +331,10 @@ class TestInterpreter:
             permissive=True,
         )
 
-        with pytest.raises(NameError, match="Attempt to reference wires that have not been declared in uninit-qubit"):
+        with pytest.raises(
+            NameError,
+            match="Attempt to reference wires that have not been declared in uninit-qubit",
+        ):
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
@@ -332,7 +354,9 @@ class TestInterpreter:
         )
 
         with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
-            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "unsupported-gate"})
+            QasmInterpreter(permissive=False).generic_visit(
+                ast, context={"name": "unsupported-gate"}
+            )
 
     def test_missing_param(self):
         from openqasm3.parser import parse
@@ -349,9 +373,10 @@ class TestInterpreter:
             permissive=True,
         )
 
-        with pytest.raises(TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"):
+        with pytest.raises(
+            TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
+        ):
             QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "missing-param"})
-
 
     def test_uninitialized_var(self):
         from openqasm3.parser import parse
@@ -564,7 +589,9 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(
+            ast, context={"name": "param-single-qubit-gates"}
+        )
 
         # setup mocks
 

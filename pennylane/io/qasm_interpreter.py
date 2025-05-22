@@ -1,26 +1,37 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
-import copy
-import re
-import inspect
-from pennylane import ops
 
+import copy
+import inspect
+import re
 from functools import partial
 from typing import Callable, Iterable
 
+from pennylane import ops, wires
+from pennylane.control_flow import for_loop, while_loop
 from pennylane.control_flow.while_loop import WhileLoopCallable
 from pennylane.measurements import measure
 
-from pennylane import wires
-from pennylane.control_flow import for_loop, while_loop
-
 has_openqasm = True
 try:
+    from openqasm3.ast import (
+        ArrayLiteral,
+        BinaryExpression,
+        BitstringLiteral,
+        Cast,
+        EndStatement,
+        ForInLoop,
+        FunctionCall,
+        Identifier,
+        IndexExpression,
+        IntegerLiteral,
+        QuantumArgument,
+        RangeDefinition,
+        UnaryExpression,
+        WhileLoop,
+    )
     from openqasm3.visitor import QASMNode, QASMVisitor
-    from openqasm3.ast import QuantumArgument, Identifier, IntegerLiteral, BinaryExpression, Cast, RangeDefinition, \
-        ArrayLiteral, UnaryExpression, WhileLoop, IndexExpression, BitstringLiteral, ForInLoop, EndStatement, \
-        FunctionCall
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
@@ -48,7 +59,13 @@ PARAMETERIZED_SINGLE_QUBIT_GATES = {
 
 TWO_QUBIT_GATES = {"CX": ops.CNOT, "CY": ops.CY, "CZ": ops.CZ, "CH": ops.CH, "SWAP": ops.SWAP}
 
-PARAMETERIZED_TWO_QUBIT_GATES = {"CP": ops.CPhase, "CPHASE": ops.CPhase, "CRX": ops.CRX, "CRY": ops.CRY, "CRZ": ops.CRZ}
+PARAMETERIZED_TWO_QUBIT_GATES = {
+    "CP": ops.CPhase,
+    "CPHASE": ops.CPhase,
+    "CRX": ops.CRX,
+    "CRY": ops.CRY,
+    "CRZ": ops.CRZ,
+}
 
 MULTI_QUBIT_GATES = {
     "CCX": ops.Toffoli,
@@ -58,6 +75,7 @@ MULTI_QUBIT_GATES = {
 
 class DirtyError(Exception):  # pragma: no cover
     """Exception raised when attempt is made to use a dirty variable in a compilation context."""
+
 
 class QasmInterpreter(QASMVisitor):
     """
@@ -90,7 +108,9 @@ class QasmInterpreter(QASMVisitor):
             ImportError: if the openqasm3 package is not available.
         """
         if not has_openqasm:  # pragma: no cover
-            raise ImportError("QASM interpreter requires openqasm3 to be installed")  # pragma: no cover
+            raise ImportError(
+                "QASM interpreter requires openqasm3 to be installed"
+            )  # pragma: no cover
         else:
             super().__init__()
 
@@ -115,10 +135,10 @@ class QasmInterpreter(QASMVisitor):
             InterruptedError: When a QASM program is terminated by an end instruction.
         """
         # CamelCase -> snake_case
-        handler_name = re.sub(r'(?<!^)(?=[A-Z])', '_', node.__class__.__name__).lower()
+        handler_name = re.sub(r"(?<!^)(?=[A-Z])", "_", node.__class__.__name__).lower()
         if node.__class__ == list:
             for sub_node in node:
-                    self.visit(sub_node, context)
+                self.visit(sub_node, context)
         elif node.__class__ == EndStatement:
             raise InterruptedError(
                 f"The QASM program was terminated om line {node.span.start_line}."
@@ -133,11 +153,15 @@ class QasmInterpreter(QASMVisitor):
                 else:
                     raise NotImplementedError(str(e)) from e
         elif self.permissive:
-            print(f"An unrecognized QASM instruction {node.__class__.__name__} "
-                  f"was encountered on line {node.span.start_line}, in {context['name']}.")
+            print(
+                f"An unrecognized QASM instruction {node.__class__.__name__} "
+                f"was encountered on line {node.span.start_line}, in {context['name']}."
+            )
         else:
-            raise NotImplementedError(f"An unsupported QASM instruction {node.__class__.__name__} "
-                  f"was encountered on line {node.span.start_line}, in {context['name']}.")
+            raise NotImplementedError(
+                f"An unsupported QASM instruction {node.__class__.__name__} "
+                f"was encountered on line {node.span.start_line}, in {context['name']}."
+            )
 
         return context
 
@@ -173,12 +197,14 @@ class QasmInterpreter(QASMVisitor):
         Args:
             partial_function (Callable): the partial with compilation context bound.
         """
-        if hasattr(quantum_function, 'func'):
+        if hasattr(quantum_function, "func"):
             if isinstance(quantum_function.func, WhileLoopCallable):
                 return False
             else:
                 try:
-                    inspect.signature(quantum_function.func).bind(*quantum_function.args, **quantum_function.keywords)
+                    inspect.signature(quantum_function.func).bind(
+                        *quantum_function.args, **quantum_function.keywords
+                    )
                     return True
                 except TypeError:
                     return False
@@ -200,23 +226,30 @@ class QasmInterpreter(QASMVisitor):
         if not context["vars"][name]["constant"]:
             context["vars"][name]["dirty"] = True
         else:
-            raise ValueError(f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                             f"defined on line {context['vars'][name]['line']}")
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"defined on line {context['vars'][name]['line']}"
+            )
         context["vars"][name]["line"] = node.span.start_line
 
     def classical_assignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
         """
+
         def set_local_var(execution_context: dict):
             rhs = partial(self.eval_expr, node.rvalue, execution_context)
-            name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
+            name = (
+                node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
+            )  # str or Identifier
             res = rhs()
             self._update_var(res, name, node, execution_context)
             return res
 
         # references to an unresolved value see a func for now
-        name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
+        name = (
+            node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
+        )  # str or Identifier
         self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
@@ -270,32 +303,31 @@ class QasmInterpreter(QASMVisitor):
         self._init_gates_list(context)
 
         # create the true body context
-        context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"] = \
+        context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"] = (
             self._init_clause_in_same_namespace(
-                context,
-                f'{context["name"]}_branch_{node.span.start_line}_true_body'
+                context, f'{context["name"]}_branch_{node.span.start_line}_true_body'
             )
-
+        )
 
         # process the true body
         self.visit(
             node.if_block,
-            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]
+            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"],
         )
 
         if hasattr(node, "else_block"):
 
             # create the false body context
-            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] = \
+            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] = (
                 self._init_clause_in_same_namespace(
-                    context,
-                    f'{context["name"]}_branch_{node.span.start_line}_false_body'
+                    context, f'{context["name"]}_branch_{node.span.start_line}_false_body'
                 )
+            )
 
             # process the false body
             self.visit(
                 node.else_block,
-                context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]
+                context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"],
             )
 
         def branch(execution_context: dict):
@@ -303,19 +335,26 @@ class QasmInterpreter(QASMVisitor):
                 self.eval_expr(
                     node.condition,
                     self._choose_context(
-                        partial(self.eval_expr, node.condition, context),
-                        context,
-                        execution_context
-                    )
+                        partial(self.eval_expr, node.condition, context), context, execution_context
+                    ),
                 ),
                 lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
-                    context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]["gates"]
+                    gate(execution_context) if not self._all_context_bound(gate) else gate()
+                    for gate in context["scopes"]["branches"][f"branch_{node.span.start_line}"][
+                        "true_body"
+                    ]["gates"]
                 ],
-                lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
-                    context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]["gates"]
-                ] if "gates" in context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"] else None
+                lambda: (
+                    [
+                        gate(execution_context) if not self._all_context_bound(gate) else gate()
+                        for gate in context["scopes"]["branches"][f"branch_{node.span.start_line}"][
+                            "false_body"
+                        ]["gates"]
+                    ]
+                    if "gates"
+                    in context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]
+                    else None
+                ),
             )()
 
         context["gates"].append(branch)
@@ -335,29 +374,29 @@ class QasmInterpreter(QASMVisitor):
 
         # we need to keep track of each clause individually
         for i, case in enumerate(node.cases):
-            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"] = \
+            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"] = (
                 self._init_clause_in_same_namespace(
-                    context,
-                    f'{context["name"]}_switch_{node.span.start_line}_cond_{i}'
+                    context, f'{context["name"]}_switch_{node.span.start_line}_cond_{i}'
                 )
+            )
 
             # process the individual clauses
             self.visit(
                 case[1].statements,
-                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"]
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"],
             )
 
         if hasattr(node, "default") and node.default is not None:
-            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = \
+            context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = (
                 self._init_clause_in_same_namespace(
-                    context,
-                    f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
+                    context, f'{context["name"]}_switch_{node.span.start_line}_cond_{i + 1}'
                 )
+            )
 
             # process the default case
             self.visit(
                 node.default.statements,
-                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
             )
 
         # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
@@ -366,36 +405,53 @@ class QasmInterpreter(QASMVisitor):
             target = self.eval_expr(
                 node.target,
                 self._choose_context(
-                    partial(self.eval_expr, node.target, context),
-                    context,
-                    execution_context
-                )
+                    partial(self.eval_expr, node.target, context), context, execution_context
+                ),
             )
             ops.cond(
                 # TODO: support eval of lists, etc. to match
-                target == self.eval_expr(
+                target
+                == self.eval_expr(
                     node.cases[0][0][0],
                     self._choose_context(
                         partial(self.eval_expr, node.cases[0][0][0], context),
                         context,
-                        execution_context
-                    )
+                        execution_context,
+                    ),
                 ),
                 lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
-                    context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_0"]["gates"]
+                    gate(execution_context) if not self._all_context_bound(gate) else gate()
+                    for gate in context["scopes"]["switches"][f"switch_{node.span.start_line}"][
+                        f"cond_0"
+                    ]["gates"]
                 ],
-                lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
-                    context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]["gates"]
-                ] if f"cond_{i + 1}" in context["scopes"]["switches"][f"switch_{node.span.start_line}"] else None,
+                lambda: (
+                    [
+                        gate(execution_context) if not self._all_context_bound(gate) else gate()
+                        for gate in context["scopes"]["switches"][f"switch_{node.span.start_line}"][
+                            f"cond_{i + 1}"
+                        ]["gates"]
+                    ]
+                    if f"cond_{i + 1}"
+                    in context["scopes"]["switches"][f"switch_{node.span.start_line}"]
+                    else None
+                ),
                 [
-                    (target == self.eval_expr(node.cases[j + 1][0][0], execution_context), lambda: [
-                        gate(execution_context) if not self._all_context_bound(gate) else gate() for gate in
-                        context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]["gates"]
-                    ]) for j, case in
-                    enumerate(list(context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys())[1:-1])
-                ]
+                    (
+                        target == self.eval_expr(node.cases[j + 1][0][0], execution_context),
+                        lambda: [
+                            gate(execution_context) if not self._all_context_bound(gate) else gate()
+                            for gate in context["scopes"]["switches"][
+                                f"switch_{node.span.start_line}"
+                            ][case]["gates"]
+                        ],
+                    )
+                    for j, case in enumerate(
+                        list(
+                            context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys()
+                        )[1:-1]
+                    )
+                ],
             )()
 
         context["gates"].append(switch)
@@ -423,6 +479,7 @@ class QasmInterpreter(QASMVisitor):
             name (str): the name of the variable to retrieve.
             context (dict): the current context.
         """
+
         def _warning(context, name):
             raise TypeError(
                 f"Attempt to use unevaluated variable {name} in {context['name']}, "
@@ -442,8 +499,13 @@ class QasmInterpreter(QASMVisitor):
                 if res["dirty"] == True and self.raise_if_dirty:
                     _dirty(context, name)
                 return res
-        elif "wires" in context and context["wires"] is not None and name in context["wires"] \
-                or "outer_wires" in context and name in context["outer_wires"]:
+        elif (
+            "wires" in context
+            and context["wires"] is not None
+            and name in context["wires"]
+            or "outer_wires" in context
+            and name in context["outer_wires"]
+        ):
             return name
         elif "aliases" in context and context["wires"] is not None and name in context["aliases"]:
             res = context["aliases"][name](context)  # evaluate the alias and de-reference
@@ -471,62 +533,85 @@ class QasmInterpreter(QASMVisitor):
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            res = eval(f'{lhs}{node.op.name}{rhs}')  # TODO: don't use eval
+            res = eval(f"{lhs}{node.op.name}{rhs}")  # TODO: don't use eval
         elif isinstance(node, UnaryExpression):
-            res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
+            res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
         # TODO: aliasing should be possible when an index is not provided as well
         elif isinstance(node, IndexExpression):
+
             def _index_into_var(var):
                 if var["ty"] == "BitType":
                     var = bin(var["val"])[2:].zfill(var["size"])
                 else:
                     var = var["val"]
                 if isinstance(node.index[0], RangeDefinition):
-                    return var[node.index[0].start.value:node.index[0].end.value]
-                elif re.search('Literal', node.index[0].__class__.__name__):
+                    return var[node.index[0].start.value : node.index[0].end.value]
+                elif re.search("Literal", node.index[0].__class__.__name__):
                     return var[node.index[0].value]
                 else:
-                    raise TypeError(f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}.")
+                    raise TypeError(
+                        f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+                    )
+
             if aliasing:
+
                 def alias(context):
                     try:
                         var = self.retrieve_variable(node.collection.name, context)
                         return _index_into_var(var)
                     except NameError:
-                        raise NameError(f"Attempt to alias an undeclared variable "
-                                        f"{node.collection.name} in {context['name']}.") from e
+                        raise NameError(
+                            f"Attempt to alias an undeclared variable "
+                            f"{node.collection.name} in {context['name']}."
+                        ) from e
+
                 res = alias
             else:
                 var = self.retrieve_variable(node.collection.name, context)
                 return _index_into_var(var)
         elif isinstance(node, Identifier):
             if aliasing:
+
                 def alias(context):
                     try:
                         return self.retrieve_variable(node.collection.name, context)
                     except NameError as e:
-                        raise NameError(f"Attempt to alias an undeclared variable "
-                                        f"{node.name} in {context['name']}.") from e
+                        raise NameError(
+                            f"Attempt to alias an undeclared variable "
+                            f"{node.name} in {context['name']}."
+                        ) from e
+
                 res = alias
             else:
                 try:
                     var = self.retrieve_variable(node.name, context)
                     value = var["val"] if isinstance(var, dict) and "val" in var else var
                     if isinstance(value, Callable):
-                        var["val"] = value(context) if not self._all_context_bound(value) else value()
+                        var["val"] = (
+                            value(context) if not self._all_context_bound(value) else value()
+                        )
                         var["line"] = node.span.start_line
                         var["dirty"] = True
                         value = var["val"]
                     return value
                 except NameError as e:
-                    raise NameError(f"Reference to an undeclared variable {node.name} in {context['name']}.") from e
+                    raise NameError(
+                        f"Reference to an undeclared variable {node.name} in {context['name']}."
+                    ) from e
         elif isinstance(node, FunctionCall):
             # TODO: make subroutines from outer scopes available
-            if "scopes" in context and "subroutines" in context["scopes"] or \
-                    "outer_scopes" in context and "subroutines" in context["outer_scopes"]:
-                name = node.name if isinstance(node.name, str) else node.name.name  # str or Identifier
-                if (("scopes" in context and name not in context["scopes"]["subroutines"]) or
-                        ("outer_scopes" in context and name not in context["outer_scopes"]["subroutines"])):
+            if (
+                "scopes" in context
+                and "subroutines" in context["scopes"]
+                or "outer_scopes" in context
+                and "subroutines" in context["outer_scopes"]
+            ):
+                name = (
+                    node.name if isinstance(node.name, str) else node.name.name
+                )  # str or Identifier
+                if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
+                    "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
+                ):
                     # TODO: make a warning
                     print(f"Reference to an undeclared subroutine {name} in {context['name']}.")
                 else:
@@ -540,17 +625,22 @@ class QasmInterpreter(QASMVisitor):
                         self._init_vars(func_context)
                         evald_arg = self.eval_expr(arg, context)
                         # TODO: maybe we want to have a class for classical and a class for quantum paramters
-                        if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                        if not isinstance(
+                            evald_arg, str
+                        ):  # this would indicate a quantum parameter
                             func_context["vars"][arg.name] = evald_arg
 
                     # execute the subroutine
-                    [gate(context) if not self._all_context_bound(gate) else gate() for gate in func_context["gates"]]
+                    [
+                        gate(context) if not self._all_context_bound(gate) else gate()
+                        for gate in func_context["gates"]
+                    ]
 
                     # the return value
                     return self.retrieve_variable(func_context["return"], func_context)
         elif isinstance(node, Callable):
             res = node()
-        elif re.search('Literal', node.__class__.__name__):
+        elif re.search("Literal", node.__class__.__name__):
             res = node.value
         # TODO: include all other cases here
         return res
@@ -572,16 +662,18 @@ class QasmInterpreter(QASMVisitor):
         if "outer_wires" in outer_context:
             outer_wires = outer_context["outer_wires"]
         context = {
-                "vars": outer_context["vars"]  if "vars" in outer_context else None,  # same namespace
-                "outer_wires": outer_wires,
-                "wires": [],
-                "name": name
+            "vars": outer_context["vars"] if "vars" in outer_context else None,  # same namespace
+            "outer_wires": outer_wires,
+            "wires": [],
+            "name": name,
         }
         # we want subroutines declared in outer scopes to be available
         if "scopes" in outer_context and "subroutines" in outer_context["scopes"]:
             context["outer_scopes"] = {
                 # no recursion here please! hence the filter
-                "subroutines": {k: v for k, v in outer_context["scopes"]["subroutines"].items() if k != name}
+                "subroutines": {
+                    k: v for k, v in outer_context["scopes"]["subroutines"].items() if k != name
+                }
             }
 
         return context
@@ -625,9 +717,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
         if not "scopes" in context:
-            context["scopes"] = {
-                "switches": dict()
-            }
+            context["scopes"] = {"switches": dict()}
         elif "switches" not in context["scopes"]:
             context["scopes"]["switches"] = dict()
 
@@ -642,9 +732,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
         if not "scopes" in context:
-            context["scopes"] = {
-                "branches": dict()
-            }
+            context["scopes"] = {"branches": dict()}
         elif "branches" not in context["scopes"]:
             context["scopes"]["branches"] = dict()
 
@@ -679,20 +767,24 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
         if not "scopes" in context:
-            context["scopes"] = {
-                "loops": dict()
-            }
+            context["scopes"] = {"loops": dict()}
         elif "loops" not in context["scopes"]:
             context["scopes"]["loops"] = dict()
 
         # the namespace is shared with the outer scope, but we need to keep track of the gates separately
         if isinstance(node, WhileLoop):
-            context["scopes"]["loops"][f"while_{node.span.start_line}"] = \
-                self._init_clause_in_same_namespace(context, f'{context["name"]}_while_{node.span.start_line}')
+            context["scopes"]["loops"][f"while_{node.span.start_line}"] = (
+                self._init_clause_in_same_namespace(
+                    context, f'{context["name"]}_while_{node.span.start_line}'
+                )
+            )
 
         elif isinstance(node, ForInLoop):
-            context["scopes"]["loops"][f"for_{node.span.start_line}"] = \
-                self._init_clause_in_same_namespace(context, f'{context["name"]}_for_{node.span.start_line}')
+            context["scopes"]["loops"][f"for_{node.span.start_line}"] = (
+                self._init_clause_in_same_namespace(
+                    context, f'{context["name"]}_for_{node.span.start_line}'
+                )
+            )
 
     def _init_subroutine_scope(self, node: QASMNode, context: dict):
         """
@@ -703,16 +795,15 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
         if not "scopes" in context:
-            context["scopes"] = {
-                "subroutines": dict()
-            }
+            context["scopes"] = {"subroutines": dict()}
         elif "subroutines" not in context["scopes"]:
             context["scopes"]["subroutines"] = dict()
 
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
-        context["scopes"]["subroutines"][node.name.name] = \
-            self._init_clause_in_same_namespace(context, f'{context["name"]}_{node.name.name}')
+        context["scopes"]["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+            context, f'{context["name"]}_{node.name.name}'
+        )
 
     def while_loop(self, node: QASMNode, context: dict):
         """
@@ -725,7 +816,9 @@ class QasmInterpreter(QASMVisitor):
         self._init_gates_list(context)
         self._init_loops_scope(node, context)
 
-        @while_loop(partial(self.eval_expr, node.while_condition))  # traces data dep through context
+        @while_loop(
+            partial(self.eval_expr, node.while_condition)
+        )  # traces data dep through context
         def loop(execution_context):
             """
             Executes a traceable while loop.
@@ -738,8 +831,7 @@ class QasmInterpreter(QASMVisitor):
             context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
             # process loop body...
             inner_context = self.visit(
-                node.block,
-                context["scopes"]["loops"][f"while_{node.span.start_line}"]
+                node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"]
             )
             for gate in inner_context["gates"]:
                 # updates vars in context... need to propagate these to outer scope
@@ -780,20 +872,23 @@ class QasmInterpreter(QASMVisitor):
 
             @for_loop(start, stop, step)
             def loop(i, execution_context):
-                context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = {
-                    'ty': i.__class__.__name__,
-                    'val': i,
-                    'line': node.span.start_line,
-                    'dirty': True
+                context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
+                    node.identifier.name
+                ] = {
+                    "ty": i.__class__.__name__,
+                    "val": i,
+                    "line": node.span.start_line,
+                    "dirty": True,
                 }
                 # we don't want to populate the gates again with every call to visit
                 context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                 # process loop body
                 inner_context = self.visit(
-                    node.block,
-                    context["scopes"]["loops"][f"for_{node.span.start_line}"]
+                    node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                 )
-                for gate in inner_context["gates"]:  # we only want to execute the gates in the loop's scope
+                for gate in inner_context[
+                    "gates"
+                ]:  # we only want to execute the gates in the loop's scope
                     # updates vars in sub context... need to propagate these to outer context
                     gate(execution_context) if not self._all_context_bound(gate) else gate()
                 context["vars"] = inner_context["vars"] if "vars" in inner_context else None
@@ -807,24 +902,35 @@ class QasmInterpreter(QASMVisitor):
         # accepts (start, stop, step) and nto a list of values.
         elif isinstance(loop_params, ArrayLiteral):
             iter = [self.eval_expr(literal, context) for literal in loop_params.values]
-        elif isinstance(loop_params, Iterable):  # it's an array literal that's been eval'd before TODO: unify these reprs?
+        elif isinstance(
+            loop_params, Iterable
+        ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
             iter = [val for val in loop_params]
+
             def unrolled(execution_context):
                 for i in iter:
-                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][node.identifier.name] = {
-                        'ty': i.__class__.__name__,
-                        'val': i,
-                        'line': node.span.start_line,
-                        'dirty': True
+                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
+                        node.identifier.name
+                    ] = {
+                        "ty": i.__class__.__name__,
+                        "val": i,
+                        "line": node.span.start_line,
+                        "dirty": True,
                     }
                     context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
                     # visit the nodes once per loop iteration
-                    self.visit(node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"])
+                    self.visit(
+                        node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
+                    )
                     for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"]:
-                        gate(execution_context) if not self._all_context_bound(gate) else gate()  # updates vars in sub context if any measurements etc. occur
+                        (
+                            gate(execution_context) if not self._all_context_bound(gate) else gate()
+                        )  # updates vars in sub context if any measurements etc. occur
 
             context["gates"].append(unrolled)
-        elif loop_params is None:  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
+        elif (
+            loop_params is None
+        ):  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     def return_statement(self, node: QASMNode, context: dict):
@@ -859,13 +965,17 @@ class QasmInterpreter(QASMVisitor):
 
         # handle data flow. Note: data flow dependent on quantum operations deferred? Promises?
         def set_local_var(execution_context: dict):
-            name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier
+            name = (
+                node.target.name if isinstance(node.target.name, str) else node.target.name.name
+            )  # str or Identifier
             res = meas()
             self._update_var(res, name, node, execution_context)
             return res
 
         # references to an unresolved value see a func for now
-        name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier
+        name = (
+            node.target.name if isinstance(node.target.name, str) else node.target.name.name
+        )  # str or Identifier
         self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
@@ -879,23 +989,17 @@ class QasmInterpreter(QASMVisitor):
         """
         self._init_gates_list(context)
         if isinstance(node.qubits, Identifier):
-            context["gates"].append(
-                partial(measure, node.qubits.name, reset=True)
-            )
-        elif isinstance(node.qubits, IntegerLiteral):  # TODO: are all these cases necessary / supported
-            context["gates"].append(
-                partial(measure, node.qubits.value, reset=True)
-            )
+            context["gates"].append(partial(measure, node.qubits.name, reset=True))
+        elif isinstance(
+            node.qubits, IntegerLiteral
+        ):  # TODO: are all these cases necessary / supported
+            context["gates"].append(partial(measure, node.qubits.value, reset=True))
         elif isinstance(node.qubits, list):
             for qubit in node.qubits:
                 if isinstance(qubit, Identifier):
-                    context["gates"].append(
-                        partial(measure, qubit.name, reset=True)
-                    )
+                    context["gates"].append(partial(measure, qubit.name, reset=True))
                 elif isinstance(qubit, IntegerLiteral):
-                    context["gates"].append(
-                        partial(measure, qubit.value, reset=True)
-                    )
+                    context["gates"].append(partial(measure, qubit.value, reset=True))
 
     def subroutine_definition(self, node: QASMNode, context: dict):
         """
@@ -912,18 +1016,17 @@ class QasmInterpreter(QASMVisitor):
         for param in node.arguments:
             if not isinstance(param, QuantumArgument):
                 context["scopes"]["subroutines"][node.name.name]["vars"][param.name.name] = {
-                    'ty': param.__class__.__name__,
-                    'val': None,
-                    'line': param.span.start_line,
-                    'dirty': False
+                    "ty": param.__class__.__name__,
+                    "val": None,
+                    "line": param.span.start_line,
+                    "dirty": False,
                 }
             else:
                 context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
 
         # process the subroutine body. Note we don't call the gates in the outer context until the subroutine is called.
         context["scopes"]["subroutines"][node.name.name] = self.visit(
-            node.body,
-            context["scopes"]["subroutines"][node.name.name]
+            node.body, context["scopes"]["subroutines"][node.name.name]
         )
 
         # Should we visit now or when the function is called with arguments?
@@ -949,14 +1052,18 @@ class QasmInterpreter(QASMVisitor):
             for context_type, typed_contexts in contexts.items():
                 for typed_context_name, typed_context in typed_contexts.items():
                     if context_type != "switches" and context_type != "branches":
-                        wires += [f'{contexts[context_type][typed_context_name]["name"]}_{w}'
-                                  for w in contexts[context_type][typed_context_name]["wires"]]
+                        wires += [
+                            f'{contexts[context_type][typed_context_name]["name"]}_{w}'
+                            for w in contexts[context_type][typed_context_name]["wires"]
+                        ]
                         wires = self._get_wires_helper(typed_context, wires)
                     else:
                         # TODO: account for: we don't need new wires for scopes that don't have their own namespaces
                         for cond in typed_context.keys():
-                            wires += [f'{typed_context[cond]["name"]}_{w}'
-                                      for w in typed_context[cond]["wires"]]
+                            wires += [
+                                f'{typed_context[cond]["name"]}_{w}'
+                                for w in typed_context[cond]["wires"]
+                            ]
                             wires = self._get_wires_helper(typed_context[cond], wires)
         return wires
 
@@ -980,7 +1087,8 @@ class QasmInterpreter(QASMVisitor):
         # passes and modifies init_context through gate calls during second pass
         # static variables are already bound in context["gates"]
         context["callable"] = lambda: [
-            gate(init_context) if not self._all_context_bound(gate) else gate() for gate in context["gates"]
+            gate(init_context) if not self._all_context_bound(gate) else gate()
+            for gate in context["gates"]
         ]
         return init_context
 
@@ -1028,37 +1136,39 @@ class QasmInterpreter(QASMVisitor):
             # must be calculated during execution TODO: implement this behaviour
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
-                    'ty': node.type.__class__.__name__,
-                    'val': self.eval_expr(node.init_expression, context),
-                    'size': node.init_expression.width,
-                    'line': node.init_expression.span.start_line,
-                    'dirty': False,
-                    'constant': constant,
+                    "ty": node.type.__class__.__name__,
+                    "val": self.eval_expr(node.init_expression, context),
+                    "size": node.init_expression.width,
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
                 }
             elif not isinstance(node.init_expression, ArrayLiteral):
                 context["vars"][node.identifier.name] = {
-                    'ty': node.type.__class__.__name__,
-                    'val': self.eval_expr(node.init_expression, context),
-                    'line': node.init_expression.span.start_line,
-                    'dirty': False,
-                    'constant': constant,
+                    "ty": node.type.__class__.__name__,
+                    "val": self.eval_expr(node.init_expression, context),
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
                 }
             else:
                 context["vars"][node.identifier.name] = {
-                    'ty': node.type.__class__.__name__,
-                    'val': [self.eval_expr(literal, context) for literal in node.init_expression.values],
-                    'line': node.init_expression.span.start_line,
-                    'dirty': False,
-                    'constant': constant,
+                    "ty": node.type.__class__.__name__,
+                    "val": [
+                        self.eval_expr(literal, context) for literal in node.init_expression.values
+                    ],
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
                 }
         else:
             # the var is declared but uninitialized
             context["vars"][node.identifier.name] = {
-                'ty': node.type.__class__.__name__,
-                'val': None,
-                'line': node.span.start_line,
-                'dirty': False,
-                'constant': constant,
+                "ty": node.type.__class__.__name__,
+                "val": None,
+                "line": node.span.start_line,
+                "dirty": False,
+                "constant": constant,
             }
 
         # runtime Callable
@@ -1114,8 +1224,10 @@ class QasmInterpreter(QASMVisitor):
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
                     wrapper = partial(pow, exp=mod.argument.value)
                 elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(pow, exp=self.retrieve_variable(mod.argument.name, context)["val"])
-            elif mod.modifier.name == 'ctrl':
+                    wrapper = partial(
+                        pow, exp=self.retrieve_variable(mod.argument.name, context)["val"]
+                    )
+            elif mod.modifier.name == "ctrl":
                 wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
             call_stack = [wrapper] + call_stack
 
@@ -1186,7 +1298,7 @@ class QasmInterpreter(QASMVisitor):
                 else:
                     raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
 
-            elif re.search('Literal', arg.__class__.__name__) is not None:
+            elif re.search("Literal", arg.__class__.__name__) is not None:
                 args.append(arg.value)
             else:
                 raise NameError("Uninitialized variable encountered in QASM.")
@@ -1194,10 +1306,9 @@ class QasmInterpreter(QASMVisitor):
             gates_dict[node.name.name.upper()],
             *args,
             wires=[
-                wires.Wires([
-                    self.eval_expr(node.qubits[q], context)
-                ]) for q in range(len(node.qubits))
-            ]
+                wires.Wires([self.eval_expr(node.qubits[q], context)])
+                for q in range(len(node.qubits))
+            ],
         )
 
     def non_parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
@@ -1217,8 +1328,7 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             wires=[
-                wires.Wires([
-                    self.eval_expr(node.qubits[q], context)
-                ]) for q in range(len(node.qubits))
-            ]
+                wires.Wires([self.eval_expr(node.qubits[q], context)])
+                for q in range(len(node.qubits))
+            ],
         )
