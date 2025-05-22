@@ -40,11 +40,19 @@ class Select(Operation):
         control (Sequence[int]): the wires controlling which operation is applied
         id (str or None): String representing the operation (optional)
 
+    This operator also is known as multiplexer, or multiplexed operation.
+    If the applied operations :math:`\{U_i\}` all are single-qubit Pauli rotations about the
+    same axis, with the angle determined by the control qubits, this is also called a
+    uniformly controlled rotation gate.
+
+    .. seealso:: :class:`~.SelectPauliRot`
+
     .. note::
-        The position of the operation in the list determines which qubit state implements that operation.
-        For example, when the qubit register is in the state :math:`|00\rangle`, we will apply ``ops[0]``.
-        When the qubit register is in the state :math:`|10\rangle`, we will apply ``ops[2]``. To obtain the
-        binary bitstring representing the state for list position ``index`` we can use the following relationship:
+        The position of the operation in the list determines which qubit state implements that
+        operation. For example, when the qubit register is in the state :math:`|00\rangle`,
+        we will apply ``ops[0]``. When the qubit register is in the state :math:`|10\rangle`,
+        we will apply ``ops[2]``. To obtain the list position ``index`` for a given binary
+        bitstring representing the control state we can use the following relationship:
         ``index = int(state_string, 2)``. For example, ``2 = int('10', 2)``.
 
     **Example**
