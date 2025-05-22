@@ -7,6 +7,7 @@
 * A new function :func:`~.from_qasm3` is provided that allows simple circuits composed of
   simple classical logic and gate applications to be converted into callables that may be loaded 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+* [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
 
   ```python
   import pennylane as qml
