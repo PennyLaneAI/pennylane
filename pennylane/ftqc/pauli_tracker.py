@@ -64,7 +64,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
             >>> pauli_to_xz(I(0))
             (0, 0)
 
-        A xz tuple representation is return for a given Pauli operator.
+        A xz tuple representation is returned for a given Pauli operator.
     """
 
     if type(op) in _PAULIS:
