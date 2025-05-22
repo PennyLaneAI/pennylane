@@ -14,7 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
-# pylint: disable=too-many-instance-attributes,invalid-sequence-index
+# pylint: disable=invalid-sequence-index
 import abc
 import copy
 from collections.abc import Callable
