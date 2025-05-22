@@ -186,6 +186,24 @@ class QasmInterpreter(QASMVisitor):
             return False
         return True
 
+    def _update_var(self, value: any, name: str, node: QASMNode, context: dict):
+        """
+        Updates a variable, or raises if it is constant.
+
+        Args:
+            value (any): the value to set.
+            name (str): the name of the variable.
+            node (QASMNode): the QASMNode that corresponds to the update.
+            context (dict): the current context.
+        """
+        context["vars"][name]["val"] = value
+        if not context["vars"][name]["constant"]:
+            context["vars"][name]["dirty"] = True
+        else:
+            raise ValueError(f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                             f"defined on line {context['vars'][name]['line']}")
+        context["vars"][name]["line"] = node.span.start_line
+
     def classical_assignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
@@ -194,16 +212,12 @@ class QasmInterpreter(QASMVisitor):
             rhs = partial(self.eval_expr, node.rvalue, execution_context)
             name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
             res = rhs()
-            execution_context["vars"][name]["val"] = res
-            execution_context["vars"][name]["line"] = node.span.start_line
-            execution_context["vars"][name]["dirty"] = True
+            self._update_var(res, name, node, execution_context)
             return res
 
         # references to an unresolved value see a func for now
         name = node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name  # str or Identifier
-        context["vars"][name]["val"] = set_local_var
-        context["vars"][name]["line"] = node.span.start_line
-        context["vars"][name]["dirty"] = True
+        self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
     def _choose_context(self, func: Callable, context: dict, execution_context: dict):
@@ -457,7 +471,7 @@ class QasmInterpreter(QASMVisitor):
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            res = eval(f'{lhs}{node.op.name}{rhs}')
+            res = eval(f'{lhs}{node.op.name}{rhs}')  # TODO: don't use eval
         elif isinstance(node, UnaryExpression):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
         # TODO: aliasing should be possible when an index is not provided as well
@@ -845,16 +859,12 @@ class QasmInterpreter(QASMVisitor):
         def set_local_var(execution_context: dict):
             name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier
             res = meas()
-            execution_context["vars"][name]["val"] = res
-            execution_context["vars"][name]["line"] = node.span.start_line
-            execution_context["vars"][name]["dirty"] = True
+            self._update_var(res, name, node, execution_context)
             return res
 
         # references to an unresolved value see a func for now
         name = node.target.name if isinstance(node.target.name, str) else node.target.name.name  # str or Identifier
-        context["vars"][name]["val"] = set_local_var
-        context["vars"][name]["line"] = node.span.start_line
-        context["vars"][name]["dirty"] = True
+        self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
     def quantum_reset(self, node: QASMNode, context: dict):
@@ -982,7 +992,18 @@ class QasmInterpreter(QASMVisitor):
             context["wires"] = []
         context["wires"].append(node.qubit.name)
 
-    def classical_declaration(self, node: QASMNode, context: dict):
+    def constant_declaration(self, node: QASMNode, context: dict):
+        """
+        Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
+        Python type variables that can be readily used in expression eval, etc.
+
+        Args:
+            node (QASMNode): The constant QASMNode.
+            context (dict): The current context.
+        """
+        self.classical_declaration(node, context, constant=True)
+
+    def classical_declaration(self, node: QASMNode, context: dict, constant=False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -1005,21 +1026,24 @@ class QasmInterpreter(QASMVisitor):
                     'val': self.eval_expr(node.init_expression, context),
                     'size': node.init_expression.width,
                     'line': node.init_expression.span.start_line,
-                    'dirty': False
+                    'dirty': False,
+                    'constant': constant,
                 }
             elif not isinstance(node.init_expression, ArrayLiteral):
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
                     'val': self.eval_expr(node.init_expression, context),
                     'line': node.init_expression.span.start_line,
-                    'dirty': False
+                    'dirty': False,
+                    'constant': constant,
                 }
             else:
                 context["vars"][node.identifier.name] = {
                     'ty': node.type.__class__.__name__,
                     'val': [self.eval_expr(literal, context) for literal in node.init_expression.values],
                     'line': node.init_expression.span.start_line,
-                    'dirty': False
+                    'dirty': False,
+                    'constant': constant,
                 }
         else:
             # the var is declared but uninitialized
@@ -1027,7 +1051,8 @@ class QasmInterpreter(QASMVisitor):
                 'ty': node.type.__class__.__name__,
                 'val': None,
                 'line': node.span.start_line,
-                'dirty': False
+                'dirty': False,
+                'constant': constant,
             }
 
         # runtime Callable

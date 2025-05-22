@@ -62,6 +62,41 @@ class TestInterpreter:
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
+    def test_updating_constant(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(
+            """
+            const int i = 2;
+            i = 3;
+            """,
+            permissive=True)
+
+        with pytest.raises(
+            ValueError,
+            match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
+
+    def test_classical_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'basic-vars'})
+        context['callable']()
+
+        assert context["vars"]["i"]["val"] == 4
+        assert context["vars"]["j"]["val"] == 4
+        assert context["vars"]["c"]["val"] == 0
+
     def test_updating_variables(self, mocker):
         from openqasm3.parser import parse
 
