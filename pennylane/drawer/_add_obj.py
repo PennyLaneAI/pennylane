@@ -189,7 +189,7 @@ def _add_global_phase(
 ):
     n_wires = len(config.wire_map)
     if not skip_grouping_symbols:
-        layer_str = _add_grouping_symbols(list(range(n_wires)), layer_str, config)
+        layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
 
     label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
     for i, s in enumerate(layer_str[:n_wires]):
