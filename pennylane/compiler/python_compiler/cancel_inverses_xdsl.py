@@ -55,6 +55,7 @@ class IterativeCancelInversesPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for iteratively cancelling consecutive self-inverse gates."""
 
+    # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
@@ -90,7 +91,7 @@ class IterativeCancelInversesPass(passes.ModulePass):
 
     name = "iterative-cancel-inverses"
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
         """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
