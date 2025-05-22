@@ -213,6 +213,7 @@
 
 * Symbolic operator types (e.g., `Adjoint`, `Controlled`, and `Pow`) can now be specified as strings
   in various parts of the new graph-based decomposition system, specifically:
+
   * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding symbolic
     operators in the target gate set.
     [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
