@@ -575,7 +575,6 @@ def _local_pes_threemode(
     f = h5py.File("v3data" + f"_{rank}" + ".hdf5", "w")
     f.create_dataset("V3_PES", data=local_pes_threebody)
     if dipole:
-        dipole_threebody = None
         f.create_dataset("D3_DMS", data=local_dipole_threebody)
     f.close()
 
