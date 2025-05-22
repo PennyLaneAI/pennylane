@@ -61,7 +61,7 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
-
+autoapi_dirs = ['code/api']
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
@@ -89,12 +89,23 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
+autodoc_default_options = {
+    'no-index':'pennylane.bose.bosonic.BoseSentence,pennylane.bose.bosonic.BoseWord,pennylane.fermi.fermionic.FermiA,pennylane.fermi.fermionic.FermiC,pennylane.fermi.fermionic.FermiSentence,pennylane.fermi.fermionic.FermiWord,pennylane.io.qualtran_io.FromBloq'
+}
+
+nitpick_ignore = {
+    ('py:class', 'duplicate')
+}
 
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
+suppress_warnings = ['None','duplicate_declaration.c,duplicate_declaration.cpp, epub.duplicated_toc_entry','toc.duplicate_entry']
+intersphinx_disabled_reftypes = ['*']
+autodoc_type_aliases = {'pennylane.BoseWord':'pennylane.bose.bosonic.BoseWord'}
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

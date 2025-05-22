@@ -15,6 +15,7 @@
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
+   :members:
    :show-inheritance:
 
    {% if '__init__' in methods %}

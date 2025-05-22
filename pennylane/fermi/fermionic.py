@@ -32,8 +32,6 @@ class FermiWord(dict):
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> print(w)
     a⁺(0) a(1)
-
-    :no-index:
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -432,8 +430,6 @@ class FermiSentence(dict):
     >>> print(s)
     1.2 * a⁺(0) a(1)
     + 3.1 * a⁺(1) a(2)
-
-    :no-index:
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -770,7 +766,8 @@ class FermiC(FermiWord):
     >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
 
-    :no-index:
+    .. autosummary::
+        :toctree: api
     """
 
     def __init__(self, orbital):
@@ -815,8 +812,6 @@ class FermiA(FermiWord):
     >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
-
-    :no-index:
     """
 
     def __init__(self, orbital):
