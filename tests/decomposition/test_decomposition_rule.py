@@ -63,7 +63,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_decorator(self):
@@ -97,7 +97,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_condition(self):
