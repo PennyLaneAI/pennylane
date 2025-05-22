@@ -255,7 +255,6 @@
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
 
-<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
