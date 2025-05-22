@@ -49,7 +49,7 @@ _CLIFFORD_TABLEAU = {
 
 def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     r"""
-    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
+    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
     the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
@@ -59,18 +59,19 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
 
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
-    the :class:`~pennylane.Z`.
+        the :class:`~pennylane.Z`.
 
     **Example:**
         The following example shows how the Pauli to XZ works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import pauli_to_xz
             from pennylane import I
             >>> pauli_to_xz(I(0))
             (0, 0)
 
-        A xz tuple representation is return for a given Pauli operator.
+        A xz tuple representation is returned for a given Pauli operator.
     """
 
     if type(op) in _PAULIS:
@@ -93,6 +94,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         The following example shows how the XZ to Pauli works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import xz_to_pauli
             >>> xz_to_pauli(0, 0)
             <class 'pennylane.ops.identity.Identity'>
@@ -106,7 +108,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
 
 def pauli_prod(ops: List[Operator]) -> Operator:
     """
-    Get the result of a product of list of Pauli operators. The result is a new Pauli operator up to global phase.
+    Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
@@ -118,12 +120,13 @@ def pauli_prod(ops: List[Operator]) -> Operator:
         The following example shows how the `pauli_prod` works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import pauli_prod
             from pennylane import I, X, Y, Z
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
             I(0)
 
-        A Pauli operator is returned for a list of Pauli operator up to global phase.
+        A Pauli operator is returned for a list of Pauli operator up to a global phase.
     """
 
     if len(ops) == 0:
