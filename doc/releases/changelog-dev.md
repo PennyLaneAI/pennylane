@@ -45,13 +45,8 @@
   Wires(['q0']): ──X─╭●──RX(0.50)──RY(0.20)──RX(0.50)†──X²─╭X─┤     
   Wires(['q1']): ────╰X────────────────────────────────────╰●─┤     
               0: ─────────────────────────────────────────────┤  <Z>
-<<<<<<< HEAD
- ```
-  
-=======
   ```
 
->>>>>>> feature/rebased-simple-gates-can-be-executed
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
 
