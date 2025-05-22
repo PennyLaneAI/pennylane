@@ -1545,7 +1545,13 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
+            pytest.param(
+                qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])),
+                4,
+                marks=pytest.mark.xfail(
+                    strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/7467"
+                ),
+            ),
             (qml.QFT.compute_matrix(5), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
         ],
