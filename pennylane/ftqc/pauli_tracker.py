@@ -100,8 +100,8 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         .. code-block:: python3
 
             from pennylane.ftqc.pauli_tracker import xz_to_pauli
-            >>> xz_to_pauli(0, 0)
-            <class 'pennylane.ops.identity.Identity'>
+            >>> xz_to_pauli(0, 0)(wires=0)
+            I(0)
 
         A Pauli operator is returned for a given xz tuple.
     """
