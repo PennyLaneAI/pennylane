@@ -857,7 +857,8 @@ def _compute_udv(a, b):
     u, _ = math.linalg.qr(u)
 
     # complex square root of eigenvalues
-    d = math.exp(1j * math.angle(d_square) / 2)
+    delta = 10e-15
+    d = math.exp(1j * math.angle(d_square) / 2 + delta)
 
     # Calculates v using Eq.40
     v = math.conj(math.diag(d).T) @ math.conj(u.T) @ a
