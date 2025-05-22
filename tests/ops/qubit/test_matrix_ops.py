@@ -599,7 +599,7 @@ class TestQubitUnitary:
         [
             (qml.matrix(qml.CRX(2, wires=[1, 0])), [0, 1]),
             (qml.matrix(qml.QFT(wires=[0, 1, 2, 3, 4])), [0, 1, 2, 3, 4]),
-            (qml.matrix(qml.RX(1, 0) @ qml.CRY(2, [1, 2])), [0, 1, 2]),
+            (qml.matrix(qml.CRX(1, [0, 2]) @ qml.CRY(2, [1, 3])), [0, 1, 2, 3]),
             (qml.matrix(qml.GroverOperator([0, 1, 2, 3, 4, 5])), [0, 1, 2, 3, 4, 5]),
         ],
     )
