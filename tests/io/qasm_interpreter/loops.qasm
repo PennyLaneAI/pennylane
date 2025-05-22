@@ -24,7 +24,7 @@ for float[64] f in my_floats {
 }
 
 // Loop over a register of bits.
-bit[5] register = "011011";
+bit[6] register = "011011";
 for bit b in register {
     rz(0.1) q0;
 }

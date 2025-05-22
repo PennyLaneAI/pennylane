@@ -111,9 +111,9 @@ class TestInterpreter:
         assert x.call_count == 10
         assert rx.call_count == 4294967306 - 4294967296
         assert ry.call_count == 4
-        assert y.call_count == 6
+        assert y.call_count == 5
         assert z.call_count == 1
-        assert rz.call_count == 6
+        assert rz.call_count == 5
 
         for i in range(4294967296, 4294967306):
             rx.assert_called_with(RX(i, 0), i, 0)

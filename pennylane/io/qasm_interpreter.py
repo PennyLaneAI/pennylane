@@ -9,7 +9,6 @@ from pennylane import ops
 from functools import partial
 from typing import Callable, Iterable
 
-from pennylane.control_flow.for_loop import ForLoopCallable
 from pennylane.control_flow.while_loop import WhileLoopCallable
 from pennylane.measurements import measure
 
@@ -361,33 +360,45 @@ class QasmInterpreter(QASMVisitor):
             res = eval(f'{node.op.name}{self.eval_expr(node.expression, context)}')
         # TODO: aliasing should be possible when an index is not provided as well
         elif isinstance(node, IndexExpression):
+            def _index_into_var(var):
+                if var["ty"] == "BitType":
+                    var = bin(var["val"])[2:].zfill(var["size"])
+                else:
+                    var = var["val"]
+                return var[node.index[0].start.value:node.index[0].end.value]
+            if aliasing:
+                def alias(context):
+                    try:
+                        var = self.retrieve_variable(node.collection.name, context)
+                        return _index_into_var(var)
+                    except NameError:
+                        raise NameError(f"Attempt to alias an undeclared variable "
+                                        f"{node.collection.name} in {context['name']}.") from e
+                res = alias
+            else:
+                var = self.retrieve_variable(node.collection.name, context)
+                return _index_into_var(var)
+        elif isinstance(node, Identifier):
             if aliasing:
                 def alias(context):
                     try:
                         return self.retrieve_variable(node.collection.name, context)
-                    except NameError:
-                        # TODO: make a warning
-                        print(f"Attempt to alias an undeclared variable {node.collection.name} in {context['name']}.")
-
-                    # if isinstance(node.index[0], RangeDefinition): TODO: support indexing here
-                    #     ret = ret[node.index[0].start: node.index[0].end: node.index[0].step]
-                    # return ret
+                    except NameError as e:
+                        raise NameError(f"Attempt to alias an undeclared variable "
+                                        f"{node.name} in {context['name']}.") from e
                 res = alias
             else:
-                return self.retrieve_variable(node.collection.name, context)["val"]
-        elif isinstance(node, Identifier):
-            try:
-                var = self.retrieve_variable(node.name, context)
-                value = var["val"] if isinstance(var, dict) and "val" in var else var
-                if isinstance(value, Callable):
-                    var["val"] = value(context) if not self._all_context_bound(value) else value()
-                    var["line"] = node.span.start_line
-                    var["dirty"] = True
-                    value = var["val"]
-                return value
-            except NameError:
-                # TODO: make a warning
-                print(f"Reference to an undeclared variable {node.name} in {context['name']}.")
+                try:
+                    var = self.retrieve_variable(node.name, context)
+                    value = var["val"] if isinstance(var, dict) and "val" in var else var
+                    if isinstance(value, Callable):
+                        var["val"] = value(context) if not self._all_context_bound(value) else value()
+                        var["line"] = node.span.start_line
+                        var["dirty"] = True
+                        value = var["val"]
+                    return value
+                except NameError as e:
+                    raise NameError(f"Reference to an undeclared variable {node.name} in {context['name']}.") from e
         elif isinstance(node, FunctionCall):
             # TODO: make subroutines from outer scopes available
             if "scopes" in context and "subroutines" in context["scopes"] or \
@@ -584,12 +595,7 @@ class QasmInterpreter(QASMVisitor):
 
         # de-referencing
         if isinstance(loop_params, Identifier):
-            # TODO: could be a ref to a range? support AST types, etc. in context instead of python types?
             loop_params = self.retrieve_variable(loop_params.name, context)
-            if loop_params["ty"] == "BitType":
-                loop_params =  bin(loop_params["val"])[2:].zfill(loop_params["size"])
-            else:
-                loop_params = loop_params["val"]
 
         # TODO: support dynamic start, stop, step
         if isinstance(loop_params, RangeDefinition):
