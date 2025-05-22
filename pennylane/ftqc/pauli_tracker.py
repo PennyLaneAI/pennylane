@@ -74,7 +74,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
 
 def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
-    Convert x, z to a Pauli operator.
+    Convert x, z to a Pauli operator class.
 
     Args:
         x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
