@@ -13,7 +13,7 @@
   from pennylane import device, wires
   from pennylane.io import from_qasm3
 
-  dev = device("default.qubit", wires=[wires.Wires('q0'), wires.Wires('q1'), 0])
+  dev = device("default.qubit", wires=['q0', 'q1', 0])
   
   @qml.qnode(dev)
   def my_circuit(y, p):
