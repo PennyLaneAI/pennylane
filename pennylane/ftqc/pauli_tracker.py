@@ -42,7 +42,7 @@ _PAULIS = frozenset({X, Y, Z, I})
 
 def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     r"""
-    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z)`, where
+    Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
     the :class:`~pennylane.Z`, meaning :math:`encode_{xz}(I) = (0, 0)`, :math:`encode_{xz}(X) = (1, 0)`,
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
