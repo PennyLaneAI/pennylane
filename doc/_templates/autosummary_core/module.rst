@@ -30,9 +30,10 @@
    .. rubric:: Classes
 
    .. autosummary::
-   {% for item in classes %}
-      {{ item }}
-   {%- endfor %}
+      :toctree:
+      {% for item in classes %}
+         {{ item }}
+      {%- endfor %}
    {% endif %}
    {% endblock %}
 

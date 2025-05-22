@@ -16,6 +16,7 @@ import os
 import re
 import sys
 from datetime import datetime
+import collections
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -344,3 +345,12 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+def remove_namedtuple_attrib_docstring(app, what, name, obj, skip, options):
+    if type(obj) is collections._tuplegetter:
+        return True
+    return skip
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', remove_namedtuple_attrib_docstring)
