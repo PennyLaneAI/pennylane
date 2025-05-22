@@ -112,6 +112,7 @@ def pauli_prod(ops: List[Operator]) -> Operator:
         The following example shows how the `pauli_prod` works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import pauli_prod
             from pennylane import I, X, Y, Z
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
