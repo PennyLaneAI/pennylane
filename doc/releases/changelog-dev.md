@@ -574,7 +574,7 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
-Shuli, Shu
+Shuli Shu,
 Kalman Szenes,
 David Wierichs,
 Jake Zaia
