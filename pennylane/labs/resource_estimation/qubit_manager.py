@@ -22,7 +22,6 @@ import pennylane as qml
 
 class QubitManager:
     r"""Contains attributes which help track how auxiliary qubits are used in a circuit
-    
     Args:
         work_wires (int or dict): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All work_wires are assumed to be clean when
@@ -141,7 +140,7 @@ class QubitManager:
         self._clean_qubit_counts += num_qubits
 
 
-class _WireAction:  # Using a leading underscore to suggest it's an internal base class
+class _WireAction:
     """Base class for operations that manage qubit resources."""
 
     _queue_category = "_resource_qubit_action"
