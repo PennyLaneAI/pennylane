@@ -14,8 +14,9 @@
 """
 This module contains tests for classes needed to track auxilliary qubits.
 """
-import pytest
 import copy
+
+import pytest
 
 import pennylane as qml
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, QubitManager
@@ -47,7 +48,6 @@ class TestQubitManager:
         assert qm.algo_qubits == logic_qubits
         assert qm.tight_budget == tight_budget
 
-        
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
     def test_equality(self, qm, attribute_tup):
         """Test that the equality methods behaves as expected"""
@@ -72,14 +72,16 @@ class TestQubitManager:
         qm.allocate_qubits(alloc_q)
         assert qm.clean_qubits == clean_qubits + alloc_q
 
-        
     qm_parameters_algo = (
         (2, 0, 0, False),
         (4, 2, 2, False),
         (2, 2, 4, True),
     )
 
-    @pytest.mark.parametrize("qm, attribute_tup, algo_q", zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits))
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
     def test_repr(self, qm, attribute_tup, algo_q):
         """Test that the QubitManager representation is correct."""
 
@@ -91,9 +93,10 @@ class TestQubitManager:
         )
         qm.algo_qubits = algo_q
         assert repr(qm) == expected_string
-       
+
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q", zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits)
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
     )
     def test_algo_qubits(self, qm, attribute_tup, algo_q):
         """Test that the logic qubits are set correctly."""
@@ -151,7 +154,7 @@ class TestAllocWires:
         wires = 3
         exp_string = f"AllocWires({wires})"
         assert repr(AllocWires(wires)) == exp_string
-        
+
     def test_init_recording(self):
         """Test that the AllocWires class is instantiated as expected when there is active recording."""
         with qml.queuing.AnnotatedQueue() as q:
@@ -174,7 +177,7 @@ class TestFreeWires:
         wires = 3
         exp_string = f"FreeWires({wires})"
         assert repr(FreeWires(wires)) == exp_string
-        
+
     def test_init_recording(self):
         """Test that the FreeWires class is instantiated as expected when there is active recording."""
         with qml.queuing.AnnotatedQueue() as q:
