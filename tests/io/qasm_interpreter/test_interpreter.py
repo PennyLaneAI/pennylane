@@ -46,9 +46,9 @@ def skip_if_no_openqasm_support():
 class TestInterpreter:
 
     qasm_programs = [
-        (open("adder.qasm", mode="r").read(), 22, "adder"),
-        (open("qec.qasm", mode="r").read(), 32, "qec"),
-        (open("teleport.qasm", mode="r").read(), 25, "teleport"),
+        (open("tests/io/qasm_interpreter/adder.qasm", mode="r").read(), 22, "adder"),
+        (open("tests/io/qasm_interpreter/qec.qasm", mode="r").read(), 32, "qec"),
+        (open("tests/io/qasm_interpreter/teleport.qasm", mode="r").read(), 25, "teleport"),
     ]
 
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
@@ -69,7 +69,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context, execution_context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'advanced-vars'})
@@ -111,7 +111,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'basic-vars'})
@@ -127,7 +127,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("updating_variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -151,7 +151,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -187,7 +187,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -212,7 +212,7 @@ class TestInterpreter:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
