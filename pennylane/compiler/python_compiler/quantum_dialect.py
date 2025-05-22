@@ -63,6 +63,7 @@ from xdsl.irdl import (
     var_operand_def,
     var_result_def,
 )
+from xdsl.utils.exceptions import VerifyException
 
 ################################################################
 ######################## ATTRIBUTES ############################
@@ -541,6 +542,14 @@ class MeasureOp(IRDLOperation):
         super().__init__(
             operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
         )
+
+    def verify_(self):
+        postselect = self.properties.get("postselect", None)
+        if postselect is None:
+            return
+
+        if postselect.value not in [0, 1]:
+            raise VerifyException("'postselect' must be 0 or 1.")
 
 
 @irdl_op_definition
