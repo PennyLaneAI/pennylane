@@ -100,7 +100,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
 
 def pauli_prod(ops: List[Operator]) -> Operator:
     """
-    Get the result of a product of list of Pauli operators. The result is a new Pauli operator up to global phase.
+    Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
