@@ -32,11 +32,10 @@
       )
       execute_qasm()
       return qml.expval(qml.Z(0))
-  
-  print(qml.draw(my_circuit)(0.2, 2))
   ```
   
   ```pycon
+  print(qml.draw(my_circuit)(0.2, 2))
   Wires(['q0']): ──X─╭●──RX(0.50)──RY(0.20)──RX(0.50)†──X²─╭X─┤     
   Wires(['q1']): ────╰X────────────────────────────────────╰●─┤     
               0: ─────────────────────────────────────────────┤  <Z>

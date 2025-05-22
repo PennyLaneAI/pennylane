@@ -847,7 +847,7 @@ def from_qasm3(quantum_circuit: str):
     >>> @qml.qnode(dev)
     >>> def my_circuit():
     >>>   execute_qasm()
-    >>>   return qml.expval(qml.Z(wires[0]))
+    >>>   return qml.expval(qml.Z(0))
     >>> my_circuit()
 
     Args:

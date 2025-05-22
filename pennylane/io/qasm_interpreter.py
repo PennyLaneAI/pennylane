@@ -137,8 +137,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
-            dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
-                with a list of Callables that are queued into it.
+            dict: The context updated after the compilation of all nodes by the visitor.
         """
 
         super().generic_visit(node, context)
