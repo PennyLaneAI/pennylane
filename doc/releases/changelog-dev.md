@@ -254,11 +254,12 @@
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
-
-<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
-
-* `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
+* `pennylane.labs.QubitManager` class has been added to track and manage auxiliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
+* `pennylane.labs.CompressedResourceOp` class has been added to store information about the operator type and parameters.
+  [(#7408)](https://github.com/PennyLaneAI/pennylane/pull/7408)
+
 
 <h3>Breaking changes 💔</h3>
 
