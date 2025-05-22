@@ -105,6 +105,33 @@ def test_fourth_order_recursive(fragment_dict):
 
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
+def test_fourth_order_recursive_three_frags(fragment_dict):
+    """Test the recursive version on three fragments"""
+
+    u = 1 / (4 - 4 ** (1 / 3))
+    v = 1 - 4 * u
+
+    frag_labels = ["X", "Y", "Z", "Y", "X"] * 5
+    frag_coeffs = (
+        [u / 2, u / 2, u, u / 2, u / 2] * 2
+        + [v / 2, v / 2, v, v / 2, v / 2]
+        + [u / 2, u / 2, u, u / 2, u / 2] * 2
+    )
+
+    fourth_order1 = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    second_order = ProductFormula(
+        ["X", "Y", "Z", "Y", "X"], coeffs=[1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], label="U"
+    )
+    fourth_order2 = second_order(u) ** 2 @ second_order(1 - 4 * u) @ second_order(u) ** 2
+
+    eff1 = effective_hamiltonian(fourth_order1, fragment_dict, order=5)
+    eff2 = effective_hamiltonian(fourth_order2, fragment_dict, order=5)
+
+    assert np.allclose(eff1, eff2)
+
+
+@pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_fourth_order_mult(fragment_dict):
     """Test that fourth order Trotter can be built from multiplying second order Trotters"""
     t = 0.1
