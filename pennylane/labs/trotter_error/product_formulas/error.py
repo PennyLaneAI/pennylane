@@ -95,7 +95,6 @@ def _insert_fragments(commutator, fragments):
 
 
 def _recursive_bch(product_formula: ProductFormula, order: int = 3):
-
     bch = product_formula.bch_approx(order)
 
     if not product_formula.recursive:

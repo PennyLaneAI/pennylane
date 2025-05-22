@@ -272,28 +272,35 @@ def _remove_redundancies(
 
     max_order = len(term_dicts)
 
+    term_dicts = [_make_right_nested(terms) for terms in term_dicts]
+
     for terms in term_dicts[1:]:
         _delete(terms)
         _swap(terms, less_than)
-        _flatten(terms)
-        _swap(terms, less_than)
+
+    if max_order < 3:
+        return _drop_zeros(term_dicts)
+
+    for terms in term_dicts[2]:
+        _jacobi(terms)
 
     if max_order < 4:
         return _drop_zeros(term_dicts)
 
-    swap = []
-    for commutator in term_dicts[3].keys():
-        if less_than(commutator[1], commutator[0]):
-            swap.append(commutator)
+    for terms in term_dicts[3:]:
+        swap = []
+        for commutator in terms.keys():
+            if less_than(commutator[-3], commutator[-4]):
+                swap.append(commutator)
 
-    for commutator in swap:
-        new_commutator = list(commutator)
-        new_commutator[0] = commutator[1]
-        new_commutator[1] = commutator[0]
-        new_commutator = tuple(new_commutator)
+        for commutator in swap:
+            new_commutator = list(commutator)
+            new_commutator[-4] = commutator[-3]
+            new_commutator[-3] = commutator[-4]
+            new_commutator = tuple(new_commutator)
 
-        term_dicts[3][new_commutator] += term_dicts[3][commutator]
-        del term_dicts[3][commutator]
+            terms[new_commutator] += terms[commutator]
+            del terms[commutator]
 
     return _drop_zeros(term_dicts)
 
@@ -324,17 +331,79 @@ def _delete(terms):
         del terms[commutator]
 
 
-def _flatten(terms):
-    flatten = []
+def _make_right_nested(terms):
+    ret = defaultdict(complex)
 
-    for commutator in terms:
-        if isinstance(commutator[-1], tuple):
-            flatten.append(commutator)
+    for commutator1, coeff1 in terms.items():
+        for commutator2, coeff2 in _right_nested(commutator1).items():
+            ret[commutator2] += coeff1 * coeff2
 
-    for commutator in flatten:
-        new_commutator = commutator[:-1] + commutator[-1]
-        terms[new_commutator] += terms[commutator]
-        del terms[commutator]
+    return ret
+
+
+def _right_nested(commutator) -> Dict[Tuple, float]:
+    if isinstance(commutator[-1], tuple):
+        commutator = commutator[:-1] + commutator[-1]
+
+    if not any(isinstance(x, tuple) for x in commutator):
+        return {commutator: 1}
+
+    if (
+        len(commutator) == 2
+        and isinstance(commutator[0], tuple)
+        and isinstance(commutator[1], tuple)
+    ):
+        return _right_nest_two_comms(commutator)
+
+    for i in range(len(commutator) - 1, -1, -1):
+        if isinstance(commutator[i], tuple):
+            break
+
+    coc = (commutator[i], commutator[i + 1 :])
+    partially_nested = {
+        commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(coc).items()
+    }
+
+    ret = {}
+
+    for partial, coeff1 in partially_nested.items():
+        for nested, coeff2 in _right_nested(partial).items():
+            ret[nested] = coeff1 * coeff2
+
+    return ret
+
+
+def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
+    """Assume commutator is the commutator of two right-nested commutators
+    Apply the Jacobi identity [A, [B, C]] = [C, [B, A]] - [B, [C, A]]
+    """
+
+    if len(commutator[0]) == 1:
+        return {commutator[0] + commutator[1]: 1}
+
+    if len(commutator[1]) == 1:
+        return {commutator[1] + commutator[0]: -1}
+
+    a = commutator[0]
+    b = commutator[1][0]
+    c = commutator[1][1:]
+
+    comm_bca = {(b,) + comm: -coeff for comm, coeff in _right_nest_two_comms((c, a)).items()}
+    comm_cab = {comm: -coeff for comm, coeff in _right_nest_two_comms(((b,) + a, c)).items()}
+
+    commutators = defaultdict(int)
+
+    for comm, coeff in comm_bca.items():
+        commutators[comm] += coeff
+
+    for comm, coeff in comm_cab.items():
+        commutators[comm] += coeff
+
+    return commutators
+
+
+def _jacobi(terms):
+    pass
 
 
 def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
