@@ -38,7 +38,7 @@ _XZ_TO_OPS = {
     (0, 1): Z,
 }
 
-_PAULIS = frozenset({X, Y, Z, I})
+_PAULIS = (X, Y, Z, I)
 
 _CLIFFORD_TABLEAU = {
     H: [[Z, X]],
@@ -74,9 +74,13 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
         A xz tuple representation is returned for a given Pauli operator.
     """
 
-    if type(op) in _PAULIS:
+    if isinstance(op, _PAULIS):
         return _OPS_TO_XZ[type(op)]
-    raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
+
+    if op in _PAULIS:
+        return _OPS_TO_XZ[op]
+
+    raise NotImplementedError(f"{type(op)} gate does not support xz encoding.")
 
 
 def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
@@ -106,7 +110,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: List[Operator]) -> Operator:
+def pauli_prod(ops: List[Operator]) -> Tuple[np.uint8, np.uint8]:
     """
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
 
@@ -114,7 +118,7 @@ def pauli_prod(ops: List[Operator]) -> Operator:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
-        A new Pauli operator.
+        A xz tuple representing a new Pauli operator.
 
     **Example:**
         The following example shows how the `pauli_prod` works.
@@ -124,91 +128,74 @@ def pauli_prod(ops: List[Operator]) -> Operator:
             from pennylane.ftqc.pauli_tracker import pauli_prod
             from pennylane import I, X, Y, Z
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
-            I(0)
+            (0, 0)
 
         A Pauli operator is returned for a list of Pauli operator up to a global phase.
     """
 
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-    op0 = ops.pop()
-    res_x, res_z = pauli_to_xz(op0)
-    op0_wire = op0.wires
+    res_x, res_z = pauli_to_xz(ops.pop())
 
     while len(ops) > 0:
-        op = ops.pop()
-        wire = op.wires
-        if wire != op0_wire:
-            raise ValueError("All operators should target at the same wire.")
-        x, z = pauli_to_xz(op)
+        x, z = pauli_to_xz(ops.pop())
         res_x ^= x
         res_z ^= z
 
-    return xz_to_pauli(res_x, res_z)(wires=op0_wire)
+    return (res_x, res_z)
 
 
-def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
+def apply_clifford_op(
+    clifford_op: Operator, xz: List[Tuple[np.uint8, np.uint8]]
+) -> List[Tuple[np.uint8, np.uint8]]:
     """Commuting a list of Pauli ops to a list of new Pauli ops with a given Clifford op.
 
     Args:
         clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
-        paulis (List): A list of Pauli operator
+        xz (list(tuple)): A list of xz tuples which map to Pauli operators
 
     Return:
-        A list of Pauli operators that clifford_op conjugates the paulis to.
+        A list of new xz tuples that the clifford_op commute the xz to.
 
     **Example:**
         The following example shows how the `pauli_prod` works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import apply_clifford_op
             from pennylane import I, CNOT
-            >>> apply_clifford_op(CNOT(wires=[0,1]), [I(0), I(1)])
-            [I(0), I(1)]
+            >>> apply_clifford_op(CNOT(wires=[0,1]), [(0, 0), (0, 0)])
+            [(0, 0), (0, 0)]
 
-        A list of Pauli operator is returned up to global phase.
+        A list of xz representation of Pauli operators is returned.
     """
     if type(clifford_op) not in _CLIFFORD_TABLEAU:
         raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
-    if not all(type(pauli) in _PAULIS for pauli in paulis):
-        raise ValueError("Please ensure the operator passed in are Paulis.")
+    if len(xz) != clifford_op.num_wires:
+        raise ValueError(
+            "Please ensure that the length of xz matches the number of wires of the clifford_op."
+        )
 
-    pauli_wires_set = {pauli.wires[0] for pauli in paulis}
+    if not all(len(element) == 2 for element in xz):
+        raise ValueError(
+            "Please ensure there are 2 elements instead of in each tuple in the xz list."
+        )
 
-    clifford_op_wires_set = set(clifford_op.wires)
+    xz_flatten = tuple(itertools.chain.from_iterable(xz))
 
-    if len(paulis) != len(pauli_wires_set):
-        raise ValueError("Please ensure each Pauli target at a different wire.")
+    if not all(element in [0, 1] for element in xz_flatten):
+        raise ValueError("Please ensure xz are either 0 or 1.")
 
-    if pauli_wires_set != clifford_op_wires_set:
-        raise ValueError("Please the target wires of Clifford op match those of Paulis.")
-
-    if all(isinstance(pauli, I) for pauli in paulis):
-        return paulis
-
-    wire_map = {}
-
-    for clifford_wire in clifford_op.wires:
-        for idx, pauli in enumerate(paulis):
-            if clifford_wire == pauli.wires[0]:
-                wire_map[clifford_wire] = idx
-
-    xz = [pauli_to_xz(paulis[wire_map[clifford_wire]]) for clifford_wire in clifford_op.wires]
-    xz = tuple(itertools.chain.from_iterable(xz))
+    if all(element == (0, 0) for element in xz):
+        return xz
 
     # A Clifford gate conjugate non-Identify Pauli ops to a new Pauli ops
-    new_ops = []
-    nonzero_indices = []
-    for idx, element in enumerate(xz):
-        if element == 1:
-            nonzero_indices.append(idx)
+    new_xz = []
+    nonzero_indices = [idx for idx, element in enumerate(xz_flatten) if element == 1]
 
     # Get Paulis prod for each target wire
-    for wire_idx, table_row in enumerate(_CLIFFORD_TABLEAU[type(clifford_op)]):
-        wire = clifford_op.wires[wire_idx]
-        ps = []
-        for idx in nonzero_indices:
-            ps.append(table_row[idx](wires=wire))
-        new_ops.append(pauli_prod(ps))
-    return new_ops
+    for table_row in _CLIFFORD_TABLEAU[type(clifford_op)]:
+        ps = [table_row[idx] for idx in nonzero_indices]
+        new_xz.append(pauli_prod(ps))
+    return new_xz
