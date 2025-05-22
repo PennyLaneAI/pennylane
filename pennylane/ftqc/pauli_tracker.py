@@ -164,7 +164,7 @@ def pauli_prod(ops: List[Operator]) -> Operator:
 
 
 def apply_clifford_op(clifford_op: Operator, paulis: list[Operator]):
-    """Conjugate a xz encoded ops to a new xz encoded ops with a given Clifford op.
+    """Commuting a list of Pauli ops to a list of new Pauli ops with a given Clifford op.
 
     Args:
         clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
