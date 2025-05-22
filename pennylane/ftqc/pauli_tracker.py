@@ -87,6 +87,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         The following example shows how the XZ to Pauli works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import xz_to_pauli
             >>> xz_to_pauli(0, 0)
             <class 'pennylane.ops.identity.Identity'>
