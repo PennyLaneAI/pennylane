@@ -372,9 +372,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     )
     """Maps types to their default DatasetAttribute"""
 
-    def __init_subclass__(  # pylint: disable=arguments-differ
-        cls, *, abstract: bool = False
-    ) -> None:
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
+    def __init_subclass__(cls, *, abstract: bool = False) -> None:
         if abstract:
             return super().__init_subclass__()
 

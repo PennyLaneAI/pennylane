@@ -4,6 +4,32 @@
 
 <h3>New features since last release</h3>
 
+* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
+  [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+
+  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+
+  ```python
+  @partial(qml.set_shots, shots=2)
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      return qml.sample(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([1., -1.])
+  ```
+  
+  Additionally, it can be used in-line to update a circuit's `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+  >>> new_circ()
+  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+  ```
+
 * A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
@@ -485,6 +511,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The documentation of `qml.pulse.drive` has been updated and corrected.
+  [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
 
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
