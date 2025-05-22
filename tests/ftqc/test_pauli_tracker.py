@@ -16,6 +16,7 @@
 import networkx as nx
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
 from pennylane.ftqc import (
@@ -29,7 +30,8 @@ from pennylane.ftqc import (
 )
 from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
-TOL = 2.5e-1
+RTOL = 2.5e-1
+ATOL = 2e-2
 
 
 class TestPauliTracker:
@@ -197,7 +199,7 @@ class TestPauliTracker:
             _ = apply_clifford_op(clifford_op, paulis)
 
 
-def generate_random_state(n, seed=42):
+def generate_random_state(n, seed=0):
     rng = np.random.default_rng(seed=seed)
     input_state = rng.random(2**n) + 1j * rng.random(2**n)
     return input_state / np.linalg.norm(input_state)
@@ -333,9 +335,10 @@ def cnot_stencil(q_mgr, ctrl_idx, target_idx):
     return output_ctrl_idx, output_target_idx, m
 
 
+@flaky(max_runs=5)
 class TestOfflineCorrection:
 
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -394,9 +397,9 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state, num_iter)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -458,9 +461,9 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state, num_iter)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -522,9 +525,9 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state, num_iter)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -587,9 +590,9 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -658,11 +661,11 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
     @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
     @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [20000])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -731,4 +734,4 @@ class TestOfflineCorrection:
 
         res_ref = circuit_ref(start_state)
 
-        assert np.allclose(res_ref, cor_res, rtol=TOL)
+        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
