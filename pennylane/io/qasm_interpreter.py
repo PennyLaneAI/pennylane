@@ -160,8 +160,8 @@ class QasmInterpreter(QASMVisitor):
             super().generic_visit(node, context)
         except InterruptedError as e:
             print(str(e))
-        self.construct_qfunc(context, init_context)
-        return context
+        execution_context = self.construct_qfunc(context, init_context)
+        return context, execution_context
 
     @staticmethod
     def _all_context_bound(quantum_function):
@@ -967,9 +967,12 @@ class QasmInterpreter(QASMVisitor):
         Args:
             context (dict): the final context resulting from the compilation pass.
             init_context (dict): the initial context.
+
+        Returns:
+            dict: the final executed context.
         """
         if "device" not in context:
-            wires = [w for w in context["wires"]]
+            wires = [w for w in context["wires"]] if "wires" in context else []
             curr = context
             if "scopes" in curr:
                 wires = self._get_wires_helper(curr, wires)
@@ -979,6 +982,7 @@ class QasmInterpreter(QASMVisitor):
         context["callable"] = lambda: [
             gate(init_context) if not self._all_context_bound(gate) else gate() for gate in context["gates"]
         ]
+        return init_context
 
     @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):

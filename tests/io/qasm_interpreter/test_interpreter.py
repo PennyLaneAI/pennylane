@@ -1,6 +1,7 @@
 """
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
+import numpy as np
 import pytest
 from pennylane.wires import Wires
 
@@ -62,6 +63,29 @@ class TestInterpreter:
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
+    def test_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, execution_context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'advanced-vars'})
+        context['callable']()
+
+        # static vars are available in the compilation context
+        assert context["vars"]["f"]["val"] == 3.2
+        assert context["vars"]["g"]["val"] == 3
+        assert context["vars"]["h"]["val"] == 2
+        assert context["vars"]["k"]["val"] == 3
+
+        # classical logic is represented in the execution context after execution
+        assert execution_context["vars"]["l"]["val"] == True
+        assert execution_context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
+        assert execution_context["vars"]["a"]["val"] == 3.3333333
+
     def test_updating_constant(self, mocker):
         from openqasm3.parser import parse
 
@@ -90,7 +114,7 @@ class TestInterpreter:
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'basic-vars'})
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'basic-vars'})
         context['callable']()
 
         assert context["vars"]["i"]["val"] == 4
@@ -112,7 +136,7 @@ class TestInterpreter:
         rx = mocker.spy(RX, "__init__")
 
         # run the program
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'updating-vars'})
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'updating-vars'})
         context['callable']()
 
         # assertions
@@ -138,7 +162,7 @@ class TestInterpreter:
         rz = mocker.spy(RZ, "__init__")
 
         # run the program
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'loops'})
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'loops'})
         context['callable']()
 
         # assertions
@@ -172,7 +196,7 @@ class TestInterpreter:
         rx = mocker.spy(RX, "__init__")
 
         # run the program
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'switch'})
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'switch'})
         context['callable']()
 
         # assertions
@@ -197,7 +221,7 @@ class TestInterpreter:
         z = mocker.spy(PauliZ, "__init__")
 
         # run the program
-        context = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": 'if_else'})
         context['callable']()
 
         # assertions
@@ -224,7 +248,7 @@ class TestInterpreter:
             permissive=True,
         )
 
-        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
 
         # setup mocks
         rx = mocker.spy(RX, "__init__")
@@ -368,7 +392,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -413,7 +437,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         # setup mocks
 
@@ -460,7 +484,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
@@ -501,7 +525,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
@@ -540,7 +564,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         # setup mocks
 
@@ -603,7 +627,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
