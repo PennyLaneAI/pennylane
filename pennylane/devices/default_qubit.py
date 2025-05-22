@@ -596,6 +596,7 @@ class DefaultQubit(Device):
         return transform_program
 
     # pylint: disable = too-many-branches
+    @debug_logger
     def setup_execution_config(
         self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
     ) -> ExecutionConfig:
