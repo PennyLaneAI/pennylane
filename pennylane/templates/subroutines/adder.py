@@ -62,7 +62,8 @@ class Adder(Operation):
         x_wires =[0,1,2,3]
         work_wires=[4,5]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)

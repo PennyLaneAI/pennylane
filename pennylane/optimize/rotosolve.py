@@ -210,7 +210,7 @@ class RotosolveOptimizer:
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=3, shots=None)
+        dev = qml.device('default.qubit', wires=3)
 
         @qml.qnode(dev)
         def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):

@@ -68,8 +68,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -89,8 +91,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -107,8 +111,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -299,8 +305,10 @@ class CountsMP(SampleMeasurement):
 
              .. code-block:: python3
 
-                dev = qml.device("default.qubit", wires=2, shots=4)
+                from functools import partial
+                dev = qml.device("default.qubit", wires=2)
 
+                @partial(qml.set_shots, shots=4)
                 @qml.qnode(dev)
                 def circuit(x):
                     qml.RX(x, wires=0)
