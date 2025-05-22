@@ -229,7 +229,7 @@ class QDrift(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument
+    def compute_decomposition(*args, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
