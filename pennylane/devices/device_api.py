@@ -22,7 +22,6 @@ from numbers import Number
 from typing import Optional, Union, overload
 
 import pennylane as qml
-from pennylane.allocation import device_resolve_dynamic_wires
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -38,6 +37,7 @@ from .capabilities import (
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     decompose,
+    device_resolve_dynamic_wires,
     validate_device_wires,
     validate_measurements,
     validate_observables,
