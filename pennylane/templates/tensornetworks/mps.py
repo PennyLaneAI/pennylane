@@ -231,10 +231,12 @@ class MPS(Operation):
         """int: Number of trainable parameters that the operator depends on."""
         return 0 if self._weights is None else 1
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, ind_gates=None, block=None, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -23,7 +23,7 @@ from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
 
-# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
+# pylint: disable=too-many-branches,too-many-arguments,too-many-locals
 # pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
 # pylint: disable=possibly-used-before-assignment
 
@@ -500,7 +500,7 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-):  # pylint:disable=too-many-arguments, too-many-statements
+):  # pylint: disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule."""
 
     method = method.strip().lower()

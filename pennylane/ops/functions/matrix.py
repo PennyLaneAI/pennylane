@@ -16,7 +16,7 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-# pylint: disable=protected-access,too-many-branches
+# pylint: disable=too-many-branches
 from typing import Union
 
 import pennylane as qml
