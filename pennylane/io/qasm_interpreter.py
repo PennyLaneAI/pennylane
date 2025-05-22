@@ -203,17 +203,18 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         gate = None
+        name = node.name.name.upper()
         if "gates" not in context:
             context["gates"] = []
-        if node.name.name.upper() in SINGLE_QUBIT_GATES:
+        if name in SINGLE_QUBIT_GATES:
             gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_SINGLE_QUBIT_GATES:
+        elif name in PARAMETERIZED_SINGLE_QUBIT_GATES:
             gate = self.parameterized_gate(PARAMETERIZED_SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in TWO_QUBIT_GATES:
+        elif name in TWO_QUBIT_GATES:
             gate = self.non_parameterized_gate(TWO_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_TWO_QUBIT_GATES:
+        elif name in PARAMETERIZED_TWO_QUBIT_GATES:
             gate = self.parameterized_gate(PARAMETERIZED_TWO_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in MULTI_QUBIT_GATES:
+        elif name in MULTI_QUBIT_GATES:
             gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
@@ -249,15 +250,15 @@ class QasmInterpreter(QASMVisitor):
                     wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
-            call_stack = [wrapper] + call_stack
+            call_stack.append(wrapper)
 
         def call():
             res = None
-            for callable in call_stack[::-1]:
+            for callable in call_stack:
                 # if there is a control in the stack
                 if (
-                    call_stack[0].__class__.__name__ == "partial"
-                    and "control" in call_stack[0].keywords
+                    call_stack[-1].__class__.__name__ == "partial"
+                    and "control" in call_stack[-1].keywords
                 ):
                     # if we are processing the control now
                     if "control" in callable.keywords:
