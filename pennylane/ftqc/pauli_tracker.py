@@ -58,6 +58,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
         The following example shows how the Pauli to XZ works.
 
         .. code-block:: python3
+
             from pennylane.ftqc.pauli_tracker import pauli_to_xz
             from pennylane import I
             >>> pauli_to_xz(I(0))
