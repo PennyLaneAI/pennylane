@@ -29,6 +29,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 # pylint: disable=unused-argument
 
 from functools import singledispatch
+from typing import Union
 
 from pennylane.measurements import (
     CountsMP,
@@ -42,7 +43,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Conditional, Controlled, GlobalPhase
+from pennylane.ops import Conditional, Controlled, GlobalPhase, Identity
 from pennylane.tape import QuantumScript
 
 
@@ -134,8 +135,8 @@ def _add_cond(obj: Conditional, layer_str, config, tape_cache=None, skip_groupin
 def _add_controlled(
     obj: Controlled, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
-    if isinstance(obj.base, GlobalPhase):
-        return _add_controlled_global_phase(obj, layer_str, config)
+    if isinstance(obj.base, (GlobalPhase, Identity)):
+        return _add_controlled_global_op(obj, layer_str, config)
 
     layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
     for w, val in zip(obj.control_wires, obj.control_values):
@@ -143,8 +144,9 @@ def _add_controlled(
     return _add_obj(obj.base, layer_str, config, skip_grouping_symbols=True)
 
 
-def _add_controlled_global_phase(obj, layer_str, config):
-    """This is not another dispatch managed by @_add_obj.register, but a manually managed dispatch."""
+def _add_controlled_global_op(obj, layer_str, config):
+    """This is not another dispatch managed by @_add_obj.register,
+    but a manually managed dispatch."""
     layer_str = _add_grouping_symbols(list(config.wire_map.keys()), layer_str, config)
 
     for w, val in zip(obj.control_wires, obj.control_values):
@@ -176,9 +178,14 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
     return layer_str
 
 
-@_add_obj.register
+@_add_obj.register(Identity)
+@_add_obj.register(GlobalPhase)
 def _add_global_phase(
-    obj: GlobalPhase, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    obj: Union[GlobalPhase, Identity],
+    layer_str,
+    config,
+    tape_cache=None,
+    skip_grouping_symbols=False,
 ):
     n_wires = len(config.wire_map)
     if not skip_grouping_symbols:
