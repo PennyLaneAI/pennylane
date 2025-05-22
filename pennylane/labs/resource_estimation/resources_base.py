@@ -20,35 +20,147 @@ from collections import defaultdict
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
+
 class Resources:
-    r"""Contains attributes which store key resources such as number of gates, number of wires, and gate types.
+    r"""A container to track and update the resources used throughout a quantum circuit.
+    The resources tracked include number of gates, number of wires, and gate types.
 
     Args:
-        num_wires (int): number of qubits
-        num_gates (int): number of gates
-        gate_types (dict): dictionary storing operation names (str) as keys
-            and the number of times they are used in the circuit (int) as values
+        qubit_manager (QubitManager): A qubit tracker class which contains the number of available 
+            work wires, catagorized as clean, diry or algorithmic wires. 
+        gate_types (dict): A dictionary storing operations (ResourceOperator) as keys and the number
+            of times they are used in the circuit (int) as values.
+    
+    **Example**
+
+    The resources can be accessed as class attributes. Additionally, the :class:`~.Resources` 
+    instance can be nicely displayed in the console.
+
+    >>> h = re.resource_rep(re.ResourceHadamard)
+    >>> x = re.resource_rep(re.ResourceX)
+    >>> y = re.resource_rep(re.ResourceY)
+    >>>
+    >>> qm = re.QubitManager(work_wires=3)
+    >>> gt = defaultdict(int, {h: 10, x:7, y:3})
+    >>>
+    >>> res = re.Resources(qubit_manager=qm, gate_types=gt)
+    >>> print(res)
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 20
+    Qubit breakdown:
+    clean qubits: 3, dirty qubits: 0, algorithmic qubits: 0
+    Gate breakdown:
+    {'Hadamard': 10, 'X': 7, 'Y': 3}
 
     .. details::
+        :title: Usage Details
 
-        The resources being tracked can be accessed as class attributes.
-        Additionally, the :class:`~.Resources` instance can be nicely displayed in the console.
+        The :class:`Resources` object supports arithmetic methods which allow for quick addition
+        and multiplication of resources.
 
-        **Example**
+        .. code-block::
+        
+            from collections import defaultdict    
 
-        >>> r = Resources(
-        ...             num_wires=2,
-        ...             num_gates=2,
-        ...             gate_types={"Hadamard": 1, "CNOT": 1}
-        ...     )
-        >>> print(r)
-        wires: 2
-        gates: 2
-        gate_types:
-        {'Hadamard': 1, 'CNOT': 1}
+            # Resource reps for each operator:
+            h = re.resource_rep(re.ResourceHadamard)
+            x = re.resource_rep(re.ResourceX)
+            z = re.resource_rep(re.ResourceZ)
+            cnot = re.resource_rep(re.ResourceCNOT)
+
+            # state of qubits:
+            qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1})
+            qm1.algo_qubits = 3
+
+            qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2})
+            qm2.algo_qubits = 4
+
+            # state of gates:
+            gt1 = defaultdict(int, {h: 10, x:5, cnot:2})
+            gt2 = defaultdict(int, {h: 15, z:5, cnot:4})
+
+            # resources: 
+            res1 = re.Resources(qubit_manager=qm1, gate_types=gt1)
+            res2 = re.Resources(qubit_manager=qm2, gate_types=gt2)
+
+            
+        .. code-block:: pycon
+
+            >>> print(res1)
+            --- Resources: ---
+            Total qubits: 6
+            Total gates : 17
+            Qubit breakdown:
+            clean qubits: 2, dirty qubits: 1, algorithmic qubits: 3
+            Gate breakdown:
+            {'Hadamard': 10, 'X': 5, 'CNOT': 2} 
+
+            >>> print(res2)
+            --- Resources: ---
+            Total qubits: 7
+            Total gates : 24
+            Qubit breakdown:
+            clean qubits: 1, dirty qubits: 2, algorithmic qubits: 4
+            Gate breakdown:
+            {'Hadamard': 15, 'Z': 5, 'CNOT': 4}
+
+        Specifically, users can add together two instances of resources using the :code:`+` and 
+        :code:`&` operators. These represent combining the resources assuming the circuits were 
+        executed in series or parallel respectively.
+
+        .. code-block:: pycon
+
+            >>> res_in_series = res1 + res2
+            >>> print(res_in_series)
+            --- Resources: ---
+            Total qubits: 9
+            Total gates : 41
+            Qubit breakdown:
+            clean qubits: 2, dirty qubits: 3, algorithmic qubits: 4
+            Gate breakdown:
+            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5} 
+
+            >>> res_in_parallel = res1 & res2
+            >>> print(res_in_parallel)
+            --- Resources: ---
+            Total qubits: 12
+            Total gates : 41
+            Qubit breakdown:
+            clean qubits: 2, dirty qubits: 3, algorithmic qubits: 7
+            Gate breakdown:
+            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5} 
+
+        Similarily, users can scale up the resources for an operator my some integer factor using 
+        the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
+        circuits were executed in series or parallel respectively.
+
+        .. code-block:: pycon
+
+            >>> res_in_series = 5 * res1
+            >>> print(res_in_series)
+            --- Resources: ---
+            Total qubits: 10
+            Total gates : 85
+            Qubit breakdown:
+            clean qubits: 2, dirty qubits: 5, algorithmic qubits: 3
+            Gate breakdown:
+            {'Hadamard': 50, 'X': 25, 'CNOT': 10} 
+
+            >>> res_in_parallel = 5 @ res1
+            >>> print(res_in_parallel)
+            --- Resources: ---
+            Total qubits: 22
+            Total gates : 85
+            Qubit breakdown:
+            clean qubits: 2, dirty qubits: 5, algorithmic qubits: 15
+            Gate breakdown:
+            {'Hadamard': 50, 'X': 25, 'CNOT': 10} 
+
     """
 
-    def __init__(self, qubit_manager, gate_types: dict = None):
+    def __init__(self, qubit_manager: QubitManager, gate_types: dict = None):
+        """Initialize the Resources class."""
         gate_types = gate_types or {}
 
         self.qubit_manager = qubit_manager
@@ -69,7 +181,7 @@ class Resources:
         return add_in_parallel(self, other)
 
     def __eq__(self, other: "Resources") -> bool:
-        """Test if two resource objects are equal"""
+        """Determine if two resources objects are equal"""
         return (self.gate_types == other.gate_types) and (self.qubit_manager == other.qubit_manager)
 
     def __mul__(self, scalar: int) -> "Resources":
@@ -89,6 +201,13 @@ class Resources:
 
     @property
     def clean_gate_counts(self):
+        r"""Produce a dictionary which stores the gate counts 
+        using the operator names as keys. 
+
+        Returns:
+            dict: A dictionary with operator names (str) as keys
+                and the number of occurances in the circuit (int) as values.
+        """
         clean_gate_counts = defaultdict(int)
 
         for cmp_res_op, counts in self.gate_types.items():
@@ -97,20 +216,26 @@ class Resources:
         return clean_gate_counts
 
     def __str__(self):
-        """String representation of the Resources object."""
-        gate_type_str = ", ".join(
-            [f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
-        )
+        """Generates a string representation of the Resources object."""
+        qm = self.qubit_manager
+        total_qubits = qm.clean_qubits + qm.dirty_qubits + qm.algo_qubits
+        total_gates = sum(self.clean_gate_counts.values())
+
+        total_gates_str = str(total_gates) if total_gates < 999 else f"{Decimal(total_gates):.3E}"
+        total_qubits_str = str(total_qubits) if total_gates < 9999 else f"{Decimal(total_qubits):.3E}"
 
         items = "--- Resources: ---\n"
-        items += f" qubit manager: {self.qubit_manager}\n"
+        items += f" Total qubits: {total_qubits_str}\n"
+        items += f" Total gates : {total_gates_str}\n"
 
-        if (total_gates := sum(self.clean_gate_counts.values())) > 999:
-            items += f" total gates: {Decimal(total_gates):.3E}\n"
-        else: 
-            items += f" total gates: {total_gates}\n"
+        qubit_breakdown_str = f"clean qubits: {qm.clean_qubits}, dirty qubits: {qm.dirty_qubits}, algorithmic qubits: {qm.algo_qubits}"
+        items += f" Qubit breakdown:\n  {qubit_breakdown_str}\n"
+        
+        gate_type_str = ", ".join(
+            [f"'{gate_name}': {Decimal(count):.3E}" if count>999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
+        )
+        items += " Gate breakdown:\n  {" + gate_type_str + "}"
 
-        items += " gate_types:\n  {" + gate_type_str + "}"
         return items
 
     def __repr__(self):
@@ -187,7 +312,7 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
         scalar (int): integer value to scale the resources by
 
     Returns:
-        Resources: combined resources
+        Resources: scaled resources
     """
     qm = first.qubit_manager
     
@@ -215,7 +340,7 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
         scalar (int): integer value to scale the resources by
 
     Returns:
-        Resources: combined resources
+        Resources: scaled resources
     """
     qm = first.qubit_manager
     
@@ -235,7 +360,7 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def _combine_dict(dict1: defaultdict, dict2: defaultdict):
+def _combine_dict(dict1: defaultdict, dict2: defaultdict) -> defaultdict:
     r"""Private function which combines two dictionaries together."""
     combined_dict = copy.copy(dict1)
 
@@ -245,7 +370,7 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict):
     return combined_dict
 
 
-def _scale_dict(dict1: defaultdict, scalar: int):
+def _scale_dict(dict1: defaultdict, scalar: int) -> defaultdict:
     r"""Private function which scales the values in a dictionary."""
     combined_dict = copy.copy(dict1)
 
