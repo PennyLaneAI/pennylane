@@ -674,11 +674,12 @@ class TestGeneralOperations:
 
     @pytest.mark.parametrize("input_wires", [tuple(), (0, 1), (0, 2, 1, 3)])
     @pytest.mark.parametrize("show_all_wires", [False, True])
-    def test_global_phase(self, input_wires, show_all_wires):
-        """Test that `qml.GlobalPhase` works properly with `tape_mpl`."""
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_global_phase(self, input_wires, show_all_wires, cls):
+        """Test that `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        # Test that empty figure is created when the only gate is `qml.Snapshot`
-        tape = QuantumScript([qml.GlobalPhase(0.3625, wires=input_wires), qml.X(0)])
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=input_wires), qml.X(0)])
         fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
 
         assert isinstance(fig, mpl.figure.Figure)
@@ -698,6 +699,29 @@ class TestGeneralOperations:
 
         plt.close()
 
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_multiple_global_ops(self, cls):
+        """Test that global ops correctly reserve layers for themselves."""
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        assert len(ax.patches) == 3  # Three boxes without notches
+        for i, patch in enumerate(ax.patches):
+            assert isinstance(patch, mpl.patches.FancyBboxPatch)
+            assert patch.get_x() == i + -self.width / 2.0
+            assert patch.get_y() == -self.width / 2.0
+            assert patch.get_width() == self.width
+            assert patch.get_height() == 2 + self.width
+
+        plt.close()
+
     @pytest.mark.parametrize(
         "input_wires, control_wires",
         [
@@ -710,11 +734,12 @@ class TestGeneralOperations:
         ],
     )
     @pytest.mark.parametrize("show_all_wires", [False, True])
-    def test_ctrl_global_phase(self, input_wires, control_wires, show_all_wires):
-        """Test that controlled `qml.GlobalPhase` works properly with `tape_mpl`."""
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op(self, input_wires, control_wires, show_all_wires, cls):
+        """Test that controlled `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        # Test that empty figure is created when the only gate is `qml.Snapshot`
-        op = qml.ctrl(qml.GlobalPhase(0.3625, wires=input_wires), control=control_wires)
+        data = [0.3625][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=input_wires), control=control_wires)
         tape = QuantumScript([op, qml.X(0), qml.X(1)])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -762,7 +787,7 @@ class TestGeneralOperations:
         plt.close()
 
     @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
-    def test_ctrl_global_op_withou_target(self, cls):
+    def test_ctrl_global_op_without_target(self, cls):
         """Test that an error is raised if a controlled GlobalPhase is present that can
         not infer any target wires."""
 
