@@ -14,7 +14,7 @@
 """Adaptive optimizer"""
 import copy
 
-# pylint: disable= no-value-for-parameter, protected-access, not-callable
+# pylint: disable=not-callable
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane._grad import grad

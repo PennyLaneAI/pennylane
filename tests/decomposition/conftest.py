@@ -21,13 +21,26 @@ from collections import defaultdict
 import pennylane as qml
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import _auto_wrap
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_involutory,
+    pow_rotation,
+    self_adjoint,
+)
 
 decompositions = defaultdict(list)
 
 
-def to_resources(gate_count: dict) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
+    return Resources(
+        {_auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
+        (
+            sum(count for gate, count in gate_count.items())
+            if weighted_cost is None
+            else weighted_cost
+        ),
+    )
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
@@ -84,7 +97,12 @@ def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRX"] = [_crx_to_rx_cz]
+@qml.register_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
+def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRX"] = [_crx_to_rx_cz, _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
 
 
 @qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})
@@ -126,22 +144,13 @@ def _t_ps(wires, **__):
 
 decompositions["T"] = [_t_ps]
 
+################################################
+# Custom Decompositions For Symbolic Operators #
+################################################
 
-@qml.register_resources({qml.H: 1})
-def _adjoint_hadamard(*_, wires, **__):
-    qml.H(wires)
-
-
-decompositions["Adjoint(Hadamard)"] = [_adjoint_hadamard]
-
-
-def _pow_hadamard_resource(z, **__):
-    return {qml.H: z % 2}
-
-
-@qml.register_resources(_pow_hadamard_resource)
-def _pow_hadamard(*_, wires, z, **__):
-    qml.cond(z % 2 == 1, qml.H)(wires=wires)
-
-
-decompositions["Pow(Hadamard)"] = [_pow_hadamard]
+decompositions["Adjoint(Hadamard)"] = [self_adjoint]
+decompositions["Pow(Hadamard)"] = [pow_involutory]
+decompositions["Adjoint(RX)"] = [adjoint_rotation]
+decompositions["Pow(RX)"] = [pow_rotation]
+decompositions["Adjoint(CNOT)"] = [self_adjoint]
+decompositions["Adjoint(PhaseShift)"] = [adjoint_rotation]

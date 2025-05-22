@@ -4,6 +4,32 @@
 
 <h3>New features since last release</h3>
 
+* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
+  [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+
+  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+
+  ```python
+  @partial(qml.set_shots, shots=2)
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      return qml.sample(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([1., -1.])
+  ```
+  
+  Additionally, it can be used in-line to update a circuit's `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+  >>> new_circ()
+  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+  ```
+
 * A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
@@ -72,6 +98,62 @@
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
+
+* The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
+  preferential treatment of certain gates in a target `gate_set` over others.
+  [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
+
+  Gates specified in `gate_set` can be given a numerical weight associated with their effective cost to have in a circuit:
+  
+  * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
+  * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
+
+  Consider the following toy example.
+
+  ```python
+  qml.decomposition.enable_graph()
+  
+  @partial(
+    qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.CRX(0.1, wires=[0, 1])
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+
+  0: ───────────╭●────────────╭●─╭●─┤  <Z>
+  1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤     
+  2: ────────────────────────────╰X─┤     
+  ```
+
+  ```python
+  qml.decomposition.enable_graph()
+
+  @partial(
+      qml.transforms.decompose, gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.CRX(0.1, wires=[0, 1])
+      qml.Toffoli(wires=[0, 1, 2])
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+
+  0: ────╭●───────────╭●─┤  <Z>
+  1: ──H─╰RZ(0.10)──H─├●─┤     
+  2: ─────────────────╰X─┤  
+  ```
+
+  Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered *less* 
+  efficient. When they have relatively low weights, a decomposition involving them is considered *more* efficient.
 
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
@@ -156,6 +238,9 @@
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
+
+    [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+
     ```python
     @qml.register_resources({qml.RY: 1})
     def my_adjoint_ry(phi, wires, **_):
@@ -427,6 +512,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The documentation of `qml.pulse.drive` has been updated and corrected.
+  [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
+
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
 
@@ -502,6 +590,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,

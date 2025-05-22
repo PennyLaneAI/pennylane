@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
+
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+# pylint: disable=arguments-differ
 import functools
 from operator import matmul
 from typing import Optional, Union
@@ -25,6 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.math import expand_matrix
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.operation import FlatPytree, Operation
@@ -86,9 +87,7 @@ class MultiRZ(Operation):
             )
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -129,9 +128,7 @@ class MultiRZ(Operation):
         return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -240,6 +237,8 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
+add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
+add_decomps("Pow(MultiRZ)", pow_rotation)
 
 
 class PauliRot(Operation):
@@ -396,9 +395,7 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -471,9 +468,7 @@ class PauliRot(Operation):
         )
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -568,6 +563,18 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {qml.GlobalPhase: 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+    }
+
+
+@register_resources(_pauli_rot_resources)
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
@@ -588,19 +595,9 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
             qml.RX(-np.pi / 2, wires=[wire])
 
 
-def _pauli_rot_resources(pauli_word):
-    if set(pauli_word) == {"I"}:
-        return {qml.GlobalPhase: 1}
-    num_active_wires = len(pauli_word.replace("I", ""))
-    return {
-        qml.Hadamard: 2 * pauli_word.count("X"),
-        qml.RX: 2 * pauli_word.count("Y"),
-        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
-    }
-
-
-pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
-add_decomps(PauliRot, pauli_rot_decomposition)
+add_decomps(PauliRot, _pauli_rot_decomposition)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation)
+add_decomps("Pow(PauliRot)", pow_rotation)
 
 
 def _ctrl_phase_shift(phi, wire, subspace, control_data):
@@ -1177,6 +1174,8 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
+add_decomps("Adjoint(IsingXX)", adjoint_rotation)
+add_decomps("Pow(IsingXX)", pow_rotation)
 
 
 class IsingYY(Operation):
@@ -1339,6 +1338,8 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+add_decomps("Adjoint(IsingYY)", adjoint_rotation)
+add_decomps("Pow(IsingYY)", pow_rotation)
 
 
 class IsingZZ(Operation):
@@ -1532,6 +1533,8 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
+add_decomps("Pow(IsingZZ)", pow_rotation)
 
 
 class IsingXY(Operation):
@@ -1756,6 +1759,8 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
+add_decomps("Adjoint(IsingXY)", adjoint_rotation)
+add_decomps("Pow(IsingXY)", pow_rotation)
 
 
 class PSWAP(Operation):
@@ -1932,6 +1937,7 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
 class CPhaseShift00(Operation):
@@ -2150,6 +2156,8 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift00, _cphaseshift00)
+add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
 class CPhaseShift01(Operation):
@@ -2359,6 +2367,8 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift01, _cphaseshift01)
+add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
 class CPhaseShift10(Operation):
@@ -2562,3 +2572,5 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, _cphaseshift10)
+add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift10)", pow_rotation)

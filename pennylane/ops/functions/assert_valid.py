@@ -112,6 +112,15 @@ def _check_decomposition_new(op, heuristic_resources=False):
     for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"Adjoint({type(op).__name__})"):
+        adj_op = qml.ops.Adjoint(op)
+        _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
+
+    for rule in qml.list_decomps(f"Pow({type(op).__name__})"):
+        for z in [0.25, 0.5, 2, 3, 4, 8, 9]:
+            pow_op = qml.ops.Pow(op, z)
+            _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
@@ -354,7 +363,6 @@ def _check_pickle(op):
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
 
-# pylint: disable=no-member
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]

@@ -255,7 +255,7 @@ def register_resources(
     return _decorator(qfunc) if qfunc else _decorator
 
 
-class DecompositionRule:  # pylint: disable=too-few-public-methods
+class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
     def __init__(
@@ -488,3 +488,9 @@ def has_decomp(op_type: Type[Operator] | str) -> bool:
         op_type = op_type.__name__
     op_type = translate_op_alias(op_type)
     return op_type in _decompositions and len(_decompositions[op_type]) > 0
+
+
+@register_resources({})
+def null_decomp(*_, **__):
+    """A decomposition rule that does nothing."""
+    return
