@@ -118,7 +118,7 @@ def pauli_prod(ops: List[Operator]) -> Operator:
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
             I(0)
 
-        A Pauli operator is returned for a list of Pauli operator up to global phase.
+        A Pauli operator is returned for a list of Pauli operator up to a global phase.
     """
 
     if len(ops) == 0:
