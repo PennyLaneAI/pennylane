@@ -341,7 +341,7 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
     return pauli_record
 
 
-def _apply_measurement_correction_rule(pauli: Operator, ob: Operator) -> np.int8:
+def _apply_measurement_correction_rule(pauli: Operator, ob: Operator):
     """Get the phase correction factor based on the Pauli recorded of the target wire and the corresponding
     observable.
 
@@ -353,16 +353,18 @@ def _apply_measurement_correction_rule(pauli: Operator, ob: Operator) -> np.int8
             Phase correction factor.
     """
     if isinstance(ob, Z):
-        return -1 if isinstance(pauli, X) or isinstance(pauli, Y) else 1
+        return -1 if isinstance(pauli, (X, Y)) else 1
 
     if isinstance(ob, X):
-        return -1 if isinstance(pauli, Z) or isinstance(pauli, Y) else 1
+        return -1 if isinstance(pauli, (Z, Y)) else 1
 
     if isinstance(ob, Y):
-        return -1 if isinstance(pauli, X) or isinstance(pauli, Z) else 1
+        return -1 if isinstance(pauli, (X, Z)) else 1
 
     if isinstance(ob, I):
         return 1
+
+    raise NotImplementedError(f"{ob.name} is not supported.")
 
 
 def get_measurements_corrections(tape: QuantumScript, pauli_record: List):
