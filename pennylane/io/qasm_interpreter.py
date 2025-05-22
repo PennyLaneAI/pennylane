@@ -35,7 +35,7 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
-SINGLE_QUBIT_GATES = {
+NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
     "H": ops.Hadamard,
     "X": ops.PauliX,
@@ -44,9 +44,16 @@ SINGLE_QUBIT_GATES = {
     "S": ops.S,
     "T": ops.T,
     "SX": ops.SX,
+    "CX": ops.CNOT,
+    "CY": ops.CY,
+    "CZ": ops.CZ,
+    "CH": ops.CH,
+    "SWAP": ops.SWAP,
+    "CCX": ops.Toffoli,
+    "CSWAP": ops.CSWAP,
 }
 
-PARAMETERIZED_SINGLE_QUBIT_GATES = {
+PARAMETERIZED_GATES = {
     "RX": ops.RX,
     "RY": ops.RY,
     "RZ": ops.RZ,
@@ -55,21 +62,11 @@ PARAMETERIZED_SINGLE_QUBIT_GATES = {
     "U1": ops.U1,
     "U2": ops.U2,
     "U3": ops.U3,
-}
-
-TWO_QUBIT_GATES = {"CX": ops.CNOT, "CY": ops.CY, "CZ": ops.CZ, "CH": ops.CH, "SWAP": ops.SWAP}
-
-PARAMETERIZED_TWO_QUBIT_GATES = {
     "CP": ops.CPhase,
     "CPHASE": ops.CPhase,
     "CRX": ops.CRX,
     "CRY": ops.CRY,
     "CRZ": ops.CRZ,
-}
-
-MULTI_QUBIT_GATES = {
-    "CCX": ops.Toffoli,
-    "CSWAP": ops.CSWAP,
 }
 
 
@@ -176,8 +173,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
-            dict: The context updated after the compilation of all nodes by the visitor. Contains a QNode
-                with a list of Callables that are queued into it.
+            dict: The context updated after the compilation of all nodes by the visitor.
         """
         init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
         try:
@@ -1185,16 +1181,17 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         self._init_gates_list(context)
-        if node.name.name.upper() in SINGLE_QUBIT_GATES:
-            gate = self.non_parameterized_gate(SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_SINGLE_QUBIT_GATES:
-            gate = self.parameterized_gate(PARAMETERIZED_SINGLE_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in TWO_QUBIT_GATES:
-            gate = self.non_parameterized_gate(TWO_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in PARAMETERIZED_TWO_QUBIT_GATES:
-            gate = self.parameterized_gate(PARAMETERIZED_TWO_QUBIT_GATES, node, context)
-        elif node.name.name.upper() in MULTI_QUBIT_GATES:
-            gate = self.non_parameterized_gate(MULTI_QUBIT_GATES, node, context)
+        name = node.name.name.upper()
+        if "gates" not in context:
+            context["gates"] = []
+        if name in PARAMETERIZED_GATES:
+            if not node.arguments:
+                raise TypeError(
+                    f"Missing required argument(s) for parameterized gate {node.name.name}"
+                )
+            gate = self.gate(PARAMETERIZED_GATES, node, context)
+        elif name in NON_PARAMETERIZED_GATES:
+            gate = self.gate(NON_PARAMETERIZED_GATES, node, context)
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
         if len(node.modifiers) > 0:
@@ -1229,15 +1226,15 @@ class QasmInterpreter(QASMVisitor):
                     )
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
-            call_stack = [wrapper] + call_stack
+            call_stack.append(wrapper)
 
         def call():
             res = None
-            for callable in call_stack[::-1]:
+            for callable in call_stack:
                 # if there is a control in the stack
                 if (
-                    call_stack[0].__class__.__name__ == "partial"
-                    and "control" in call_stack[0].keywords
+                    call_stack[-1].__class__.__name__ == "partial"
+                    and "control" in call_stack[-1].keywords
                 ):
                     # if we are processing the control now
                     if "control" in callable.keywords:
@@ -1266,9 +1263,9 @@ class QasmInterpreter(QASMVisitor):
                 f"Attempt to reference wires that have not been declared in {context['name']}"
             )
 
-    def parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
+    def gate(self, gates_dict: dict, node: QASMNode, context: dict):
         """
-        Registers a parameterized gate application. Builds a Callable partial
+        Registers a gate application. Builds a Callable partial
         that can be executed when the QNode is called. The gate will be executed at that time
         with the appropriate arguments.
 
@@ -1284,8 +1281,6 @@ class QasmInterpreter(QASMVisitor):
             NameError: If an argument is not found in the current context.
         """
         self._require_wires(context)
-        if not node.arguments:
-            raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
         args = []
         for arg in node.arguments:
             if hasattr(arg, "name") and "vars" in context and arg.name in context["vars"]:
@@ -1305,28 +1300,6 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             *args,
-            wires=[
-                wires.Wires([self.eval_expr(node.qubits[q], context)])
-                for q in range(len(node.qubits))
-            ],
-        )
-
-    def non_parameterized_gate(self, gates_dict: dict, node: QASMNode, context: dict):
-        """
-        Registers a multi qubit gate application. Builds a Callable partial that
-        will execute the gate with the appropriate arguments at "runtime".
-
-        Args:
-            gates_dict (dict): A mapping from QASM std lib naming to Pennylane gate class.
-            node (QASMNode): The QuantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The Callable partial that will execute the gate on the appropriate qubits.
-        """
-        self._require_wires(context)
-        return partial(
-            gates_dict[node.name.name.upper()],
             wires=[
                 wires.Wires([self.eval_expr(node.qubits[q], context)])
                 for q in range(len(node.qubits))

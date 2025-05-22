@@ -4,14 +4,16 @@
 
 <h3>New features since last release</h3>
 
+
 * A new function :func:`~.from_qasm3` is provided that allows simple circuits composed of
   simple classical logic and gate applications to be converted into callables that may be loaded 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
 * [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
 
+
   ```python
   import pennylane as qml
-  from pennylane import device
+  from pennylane import device, wires
   from pennylane.io import from_qasm3
 
   dev = device("default.qubit", wires=['q0', 'q1', 0])
@@ -43,8 +45,13 @@
   Wires(['q0']): ──X─╭●──RX(0.50)──RY(0.20)──RX(0.50)†──X²─╭X─┤     
   Wires(['q1']): ────╰X────────────────────────────────────╰●─┤     
               0: ─────────────────────────────────────────────┤  <Z>
+<<<<<<< HEAD
  ```
   
+=======
+  ```
+
+>>>>>>> feature/rebased-simple-gates-can-be-executed
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
 
