@@ -278,21 +278,17 @@ class QNGOptimizer(GradientDescentOptimizer):
             array: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
-        mt_per_grad = (
-            self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
-        )
-        active_jit = compiler.active_compiler() == "catalyst"
-        trainable_indices = (
-            idx
-            for idx in range(len(args))
-            if active_jit or getattr(args[idx], "requires_grad", False)
-        )
+        mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
 
-        for g, mt in zip(grad, mt_per_grad):
-            idx = next(trainable_indices)
-            shape = math.shape(args[idx])
-            update = math.reshape(math.linalg.pinv(mt) @ math.flatten(g), shape)
-            args_new[idx] = args[idx] - self.stepsize * update
+        trainable_indices = sorted(math.get_trainable_indices(args))
+        idx = 0
+        for trainable_idx in trainable_indices:
+            shape = math.shape(args[trainable_idx])
+            grad_flat = math.flatten(grad[idx])
+            update_flat = math.linalg.pinv(mt[idx]) @ grad_flat
+            update = math.reshape(update_flat, shape)
+            args_new[trainable_idx] = args[trainable_idx] - self.stepsize * update
+            idx += 1
 
         return tuple(args_new)
 
