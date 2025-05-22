@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for computing matrices.
 """
-# pylint: disable= too-many-branches
+
 import itertools as it
 
 import numpy as np

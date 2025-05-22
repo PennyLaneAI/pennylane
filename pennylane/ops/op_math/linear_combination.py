@@ -18,7 +18,7 @@ import itertools
 import numbers
 import warnings
 
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+# pylint: disable=too-many-arguments,protected-access
 from copy import copy
 from typing import Union
 

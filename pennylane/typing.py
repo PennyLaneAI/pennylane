@@ -14,7 +14,7 @@
 """This file contains different PennyLane types."""
 import contextlib
 
-# pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
+# pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
 from typing import TypeVar, Union
@@ -87,7 +87,7 @@ def _is_jax(other, subclass=False):
                     jax.Array  # TODO: keep this after jax>=0.4 is required
                     if hasattr(jax, "Array")
                     else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
-                ),  # pylint: disable=c-extension-no-member
+                ),
             ]
             check = issubclass if subclass else isinstance
 

@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
+# pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import types
 import warnings
@@ -663,7 +663,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        # pylint: disable=protected-access
+
         if max_expansion == 0:
             return circuit
 
@@ -911,7 +911,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
 
         # pylint: disable=no-self-use
-        class MockContext:  # pylint: disable=too-few-public-methods
+        class MockContext:
             """Mock class as a default for the with statement in execute()."""
 
             def __enter__(self):
