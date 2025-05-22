@@ -17,28 +17,27 @@ Test the base and abstract Resource class
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.labs.resource_estimation import ResourceOperator, CompressedResourceOp
 
 # pylint: disable=protected-access
 
-class ResourceDummyX(Operator, ResourceOperator):
+class ResourceDummyX(ResourceOperator):
     """Dummy testing class representing X gate"""
 
 
-class ResourceDummyQFT(Operator, ResourceOperator):
+class ResourceDummyQFT(ResourceOperator):
     """Dummy testing class representing QFT gate"""
 
 
-class ResourceDummyQSVT(Operator, ResourceOperator):
+class ResourceDummyQSVT(ResourceOperator):
     """Dummy testing class representing QSVT gate"""
 
 
-class ResourceDummyTrotterProduct(Operator, ResourceOperator):
+class ResourceDummyTrotterProduct(ResourceOperator):
     """Dummy testing class representing TrotterProduct gate"""
 
 
-class ResourceDummyAdjoint(Operator, ResourceOperator):
+class ResourceDummyAdjoint(ResourceOperator):
     """Dummy testing class representing the Adjoint symbolic operator"""
 
 
