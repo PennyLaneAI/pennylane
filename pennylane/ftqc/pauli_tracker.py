@@ -52,7 +52,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
 
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
-    the :class:`~pennylane.Z`.
+        the :class:`~pennylane.Z`.
 
     **Example:**
         The following example shows how the Pauli to XZ works.
