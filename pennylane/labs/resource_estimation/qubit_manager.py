@@ -165,7 +165,7 @@ class AllocWires(_WireAction):
     """
 
     def __repr__(self) -> str:
-        return f"GrabWires({self.num_wires})"
+        return f"AllocWires({self.num_wires})"
 
 
 class FreeWires(_WireAction):
