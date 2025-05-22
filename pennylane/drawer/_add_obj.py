@@ -75,15 +75,13 @@ def _add_cond_grouping_symbols(op, layer_str, config):
 
 
 def _add_grouping_symbols(op_wires, layer_str, config):  # pylint: disable=unused-argument
-    """Adds symbols indicating the extent of a given object."""
+    """Adds symbols indicating the extent of a given sequence of wires.
+    Does nothing if the sequence has length 0 or 1."""
 
-    if len(op_wires) == 1:
+    if len(op_wires) <= 1:
         return layer_str
 
-    if len(op_wires) == 0:
-        mapped_wires = list(range(len(config.wire_map)))
-    else:
-        mapped_wires = [config.wire_map[w] for w in op_wires]
+    mapped_wires = [config.wire_map[w] for w in op_wires]
     min_w, max_w = min(mapped_wires), max(mapped_wires)
 
     layer_str[min_w] = "╭"
@@ -171,6 +169,21 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
     else:
         for w in obj.wires:
             layer_str[config.wire_map[w]] += label
+
+    return layer_str
+
+
+@_add_obj.register
+def _add_global_phase(
+    obj: GlobalPhase, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    n_wires = len(config.wire_map)
+    if not skip_grouping_symbols:
+        layer_str = _add_grouping_symbols(list(range(n_wires)), layer_str, config)
+
+    label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
+    for i, s in enumerate(layer_str[:n_wires]):
+        layer_str[i] = s + label
 
     return layer_str
 
