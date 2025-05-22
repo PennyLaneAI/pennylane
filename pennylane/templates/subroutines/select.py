@@ -64,6 +64,13 @@ class Select(Operation):
 
     """
 
+    resource_keys = {"op_reps", "num_control_wires"}
+
+    @property
+    def resource_params(self):
+        op_reps = tuple(qml.resource_rep(type(op), **op.resource_params) for op in self.ops)
+        return {"op_reps": op_reps, "num_control_wires": len(self.control)}
+
     def _flatten(self):
         return (self.ops), (self.control)
 
@@ -195,11 +202,10 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        states = list(itertools.product([0, 1], repeat=len(control)))
-        decomp_ops = [
-            qml.ctrl(op, control, control_values=states[index]) for index, op in enumerate(ops)
+        return [
+            qml.ctrl(op, control, control_values=state)
+            for state, op in zip(itertools.product([0, 1], repeat=len(control)), ops)
         ]
-        return decomp_ops
 
     @property
     def ops(self):
@@ -220,3 +226,33 @@ class Select(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _target(target_rep, num_control_wires, state):
+    return qml.resource_rep(
+        qml.ops.Controlled,
+        base_class=target_rep.op_type,
+        base_params=target_rep.params,
+        num_control_wires=num_control_wires,
+        num_work_wires=0,
+        num_zero_control_values=sum((1 - s for s in state)),
+    )
+
+
+def _select_resources(op_reps, num_control_wires):
+    state_iterator = itertools.product([0, 1], repeat=num_control_wires)
+
+    resources = {
+        _target(rep, num_control_wires, state): 1 for rep, state in zip(op_reps, state_iterator)
+    }
+    return resources
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_select_resources)
+def _select_decomp(*_, wires, ops, control, target_wires):
+    state_iterator = itertools.product([0, 1], repeat=len(control))
+    return [qml.ctrl(op, control, control_values=state) for state, op in zip(state_iterator, ops)]
+
+
+qml.add_decomps(Select, _select_decomp)
