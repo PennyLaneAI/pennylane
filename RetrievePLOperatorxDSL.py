@@ -48,9 +48,13 @@ class PrintModule(passes.ModulePass):
 @qml.qnode(qml.device("lightning.qubit", wires=3))
 def circuit():
     """A simple circuit to test the pass."""
-    # qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[0, 1])
     qml.Rot(0.1, 0.2, 0.3, wires=1)
-    # qml.Rot(0.4, 0.5, 0.6, wires=1)
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[0, 2])
+    qml.Hadamard(wires=1)
+    qml.CNOT(wires=[1, 2])
     qml.Rot(0.4, 0.5, 0.6, wires=2)
     return qml.state()
 
@@ -81,7 +85,19 @@ from_str_to_PL_gate = {
     "RZ": qml.RZ,
     "Rot": qml.Rot,
     "CNOT": qml.CNOT,
+    "Hadamard": qml.Hadamard,
+    "PhaseShift": qml.PhaseShift,
 }
+
+
+def flatten(nested):
+    flat = []
+    for item in nested:
+        if isinstance(item, list):
+            flat.extend(flatten(item))
+        else:
+            flat.append(item)
+    return flat
 
 
 def resolve_constant_params(op):
@@ -99,19 +115,46 @@ def resolve_constant_params(op):
     raise NotImplementedError(f"Cannot resolve params from {op}")
 
 
-def resolve_constant_wire(op):
+from xdsl.ir import Operation
 
-    while hasattr(op, "owner"):
-        op = op.owner
-    if isinstance(op, ConstantOp):
-        val = op.value
-        if isinstance(val, IntegerAttr):
-            return val.value.data
-    if isinstance(op, ExtractOp):
-        return op.idx_attr.parameters[0].data
-    if isinstance(op, CustomOp):
-        raise NotImplementedError("Cannot resolve wires from CustomOp")
-    raise NotImplementedError(f"Cannot resolve wires from {op}")
+
+def resolve_constant_wire(operand):
+    """
+    Resolve the integer wire index that this operand originates from.
+    The operand may be:
+    - A constant (ConstantOp)
+    - The result of an ExtractOp
+    - The result of a CustomOp (e.g., a gate applied to one or more wires)
+    """
+
+    # Traverse to producing op if this is a result
+    while hasattr(operand, "owner"):
+        result_index = operand.index
+        operand = operand.owner  # the producing Operation
+
+        if isinstance(operand, ConstantOp):
+            val = operand.value
+            if isinstance(val, IntegerAttr):
+                return val.value.data
+
+        elif isinstance(operand, ExtractOp):
+            return operand.idx_attr.parameters[0].data
+
+        elif isinstance(operand, CustomOp):
+            # CustomOp result[i] is assumed to correspond to in_qubits[i]
+            # so we use the index of the result to retrieve the right input
+            if result_index < len(operand.in_qubits):
+                input_operand = operand.in_qubits[result_index]
+                return resolve_constant_wire(input_operand)
+            else:
+                raise IndexError(
+                    f"Result index {result_index} out of bounds for CustomOp with {len(operand.in_qubits)} in_qubits."
+                )
+
+        else:
+            raise NotImplementedError(f"Cannot resolve wires from operation type: {type(operand)}")
+
+    raise TypeError(f"Operand {operand} is not a result or constant-producing op")
 
 
 def get_parameters(op) -> list[float | int]:
@@ -137,6 +180,7 @@ def reconstruct_gate(op: CustomOp):
     gate_name = get_op_name(op)
     parameters = get_parameters(op)
     wires = get_wires(op)
+    wires = flatten(wires)
     print(f"Reconstructing gate: {gate_name} with parameters: {parameters} and wires: {wires}")
     return resolve_gate(gate_name)(*parameters, wires=wires)
 
@@ -164,9 +208,12 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
 
             for qml_op in decomp_ops:
 
+                # Now that we have the pennylane operator, we need to convert it to a CustomOp
+                # and insert it into the IR.
+                # However, this implementation assumes that the decomposition is a single-qubit gate and with a single parameter.
+                # Can be extended to support multi-qubit gates and multiple parameters?
                 angle = qml_op.parameters[0]
                 angle = angle.item() if not isinstance(angle, float) else angle
-
                 wire = qml_op.wires[0]
 
                 # Right now, we know that the angle is a float.
@@ -184,8 +231,6 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
                 wire_const_op = ConstantOp(value=wire_attr)
                 rewriter.insert_op(wire_const_op, InsertPoint.before(op))
 
-                # TODO: here I am simply parsing the properties and successors of the QubitUnitaryOp
-                # and passing them to the custom op. But it would be probably better to it differently.
                 custom_op = CustomOp(
                     operands=(angle_const_op.result, wire_const_op.result, None, None),
                     properties={
@@ -202,13 +247,69 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
 
                 last_custom_op = custom_op
 
-                # for old_res, new_res in zip(op.results, custom_op.results):
-                #    old_res.replace_by(new_res)
-
             if op.results:
                 op.results[0].replace_by(last_custom_op.results[0])
 
             rewriter.erase_op(op)
+
+
+@pattern_rewriter.op_type_rewrite_pattern
+def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+    for op in funcOp.body.walk():
+
+        if not isinstance(op, CustomOp):
+            continue
+
+        concrete_op = reconstruct_gate(op)
+
+        if not concrete_op.has_decomposition:
+            continue
+
+        decomp_ops = concrete_op.decomposition()
+
+        last_custom_op = None
+
+        for qml_op in decomp_ops:
+            operands = []
+
+            # Handle all parameters
+            for param in qml_op.parameters:
+                val = param.item() if hasattr(param, "item") else param
+                if isinstance(val, int):
+                    attr = IntegerAttr(val, IntegerType(64))
+                elif isinstance(val, float):
+                    attr = FloatAttr(val, Float64Type())
+                else:
+                    raise TypeError(f"Unsupported parameter type: {type(val)}")
+
+                const_op = ConstantOp(value=attr)
+                rewriter.insert_op(const_op, InsertPoint.before(op))
+                operands.append(const_op.result)
+
+            # Handle all wires
+            for wire in qml_op.wires:
+                wire_attr = IntegerAttr(wire, IntegerType(64))
+                wire_const_op = ConstantOp(value=wire_attr)
+                rewriter.insert_op(wire_const_op, InsertPoint.before(op))
+                operands.append(wire_const_op.result)
+
+            custom_op = CustomOp(
+                operands=tuple(operands) + (None, None),  # preserve unused slots if needed
+                properties={
+                    "gate_name": StringAttr(qml_op.name),
+                    # optionally inherit: **op.properties
+                },
+                attributes={},
+                successors=op.successors,
+                regions=(),
+                result_types=tuple(QubitType() for _ in qml_op.wires),
+            )
+
+            rewriter.insert_op(custom_op, InsertPoint.before(op))
+            last_custom_op = custom_op
+
+        if op.results and last_custom_op.results:
+            op.results[0].replace_by(last_custom_op.results[0])
 
 
 @dataclass(frozen=True)
