@@ -290,7 +290,7 @@ def _remove_redundancies(
     for terms in term_dicts[3:]:
         swap = []
         for commutator in terms.keys():
-            if less_than(commutator[-3], commutator[-4]):
+            if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
                 swap.append(commutator)
 
         for commutator in swap:

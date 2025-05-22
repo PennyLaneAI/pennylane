@@ -115,13 +115,9 @@ def _merge_commutators(commutator, terms, order, bch_coeff):
     merged = [defaultdict(complex) for _ in range(order)]
 
     for x in _commutator_terms(commutator, terms, order):
-        new_commutator = x[0][0] if len(x) == 1 else tuple(_flatten_commutator(y[0]) for y in x)
-
-        commutator_order = _commutator_order(new_commutator)
+        new_commutator = tuple(y[0] for y in x)
         term_coeff = math.prod(y[1] for y in x) * bch_coeff
-
-        if np.isclose(term_coeff, 0):
-            continue
+        commutator_order = _commutator_order(new_commutator)
 
         merged[commutator_order - 1][new_commutator] += term_coeff
 
@@ -150,13 +146,6 @@ def _partitions(m: int, n: int):
         for i in range(1, n - m + 2):
             for partition in _partitions(m - 1, n - i):
                 yield (i,) + partition
-
-
-def _flatten_commutator(commutator):
-    if isinstance(commutator, tuple) and len(commutator) == 1:
-        return commutator[0]
-
-    return commutator
 
 
 def _commutator_order(commutator):
