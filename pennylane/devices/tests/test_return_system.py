@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the correct output for multiple measurement."""
-# pylint: disable=no-self-use,no-member,redefined-outer-name
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qml

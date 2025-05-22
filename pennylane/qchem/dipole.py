@@ -332,7 +332,7 @@ def molecular_dipole(
     wires=None,
     args=None,
     cutoff=1.0e-16,
-):  # pylint:disable=too-many-arguments, too-many-statements, protected-access
+):  # pylint: disable=too-many-arguments,protected-access
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
 
     The dipole operator in the second-quantized form is
