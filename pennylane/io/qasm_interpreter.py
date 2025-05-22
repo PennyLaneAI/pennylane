@@ -767,6 +767,8 @@ class QasmInterpreter(QASMVisitor):
         # de-referencing
         if isinstance(loop_params, Identifier):
             loop_params = self.retrieve_variable(loop_params.name, context)
+            if "ty" in loop_params and loop_params["ty"] == "ArrayType":
+                loop_params = loop_params["val"]
 
         # TODO: support dynamic start, stop, step?
         if isinstance(loop_params, RangeDefinition):
