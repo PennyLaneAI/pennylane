@@ -109,8 +109,9 @@ class NamedObservableAttr(ParametrizedAttribute):
 ################################################################
 
 
-QubitSSAValue: TypeAlias = SSAValue[QubitType]
-QregSSAValue: TypeAlias = SSAValue[QuregType]
+QubitSSAValue: TypeAlias = SSAValue[QubitType] | Operation
+QuregSSAValue: TypeAlias = SSAValue[QuregType] | Operation
+ObservableSSAValue: TypeAlias = SSAValue[ObservableType] | Operation
 
 
 @irdl_op_definition
@@ -129,9 +130,7 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
-    def __init__(
-        self, qreg: QregSSAValue | Operation, region: Region | Sequence[Operation] | Sequence[Block]
-    ):
+    def __init__(self, qreg: QuregSSAValue, region: Region | Sequence[Operation] | Sequence[Block]):
         super().__init__(operands=(qreg,), result_types=(QuregType(),), regions=(region,))
 
 
@@ -150,6 +149,19 @@ class AllocOp(IRDLOperation):
     nqubits_attr = opt_prop_def(AnyAttr())
 
     qreg = result_def(BaseAttr(QuregType))
+
+    def __init__(self, nqubits: SSAValue[IntegerType] | Operation | int | IntegerAttr):
+        if isinstance(nqubits, int):
+            nqubits = IntegerAttr.from_int_and_width(nqubits, 64)
+
+        if isinstance(nqubits, IntegerAttr):
+            operands = (None,)
+            properties = {"nqubits_attr": nqubits}
+        else:
+            operands = (nqubits,)
+            properties = {}
+
+        super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
 
 
 @irdl_op_definition
@@ -236,12 +248,10 @@ class CustomOp(IRDLOperation):
     def __init__(
         self,
         *,
-        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue] | Sequence[Operation],
+        in_qubits: QubitSSAValue | Sequence[QubitSSAValue],
         gate_name: str | StringAttr,
         params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
-        in_ctrl_qubits: (
-            QubitSSAValue | Operation | Sequence[QubitSSAValue] | Sequence[Operation] | None
-        ) = None,
+        in_ctrl_qubits: QubitSSAValue | Sequence[QubitSSAValue] | None = None,
         in_ctrl_values: (
             SSAValue[IntegerType]
             | Operation
@@ -251,9 +261,9 @@ class CustomOp(IRDLOperation):
         ) = None,
         adjoint: UnitAttr | bool = False,
     ):
-        params = params or ()
-        in_ctrl_qubits = in_ctrl_qubits or ()
-        in_ctrl_values = in_ctrl_values or ()
+        params = () if params is None else params
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
 
         if not isinstance(params, Sequence):
             params = (params,)
@@ -291,6 +301,9 @@ class DeallocOp(IRDLOperation):
         """
 
     qreg = operand_def(BaseAttr(QuregType))
+
+    def __init__(self, qreg: QuregSSAValue):
+        super().__init__(operands=(qreg,))
 
 
 @irdl_op_definition
@@ -335,6 +348,9 @@ class ExpvalOp(IRDLOperation):
 
     expval = result_def(EqAttrConstraint(Float64Type()))
 
+    def __init__(self, obs: ObservableSSAValue):
+        super().__init__(operands=(obs,), result_types=(Float64Type(),))
+
 
 @irdl_op_definition
 class ExtractOp(IRDLOperation):
@@ -354,7 +370,9 @@ class ExtractOp(IRDLOperation):
 
     qubit = result_def(BaseAttr(QubitType))
 
-    def __init__(self, qreg: QuregType, idx: int | SSAValue | Operation | IntegerAttr):
+    def __init__(
+        self, qreg: QuregSSAValue, idx: int | SSAValue[IntegerType] | Operation | IntegerAttr
+    ):
         if isinstance(idx, int):
             idx = IntegerAttr.from_int_and_width(idx, 64)
 
@@ -474,6 +492,24 @@ class InsertOp(IRDLOperation):
 
     out_qreg = result_def(BaseAttr(QuregType))
 
+    def __init__(
+        self,
+        in_qreg: QuregSSAValue,
+        idx: SSAValue[IntegerType] | Operation | int | IntegerAttr,
+        qubit: QubitSSAValue,
+    ):
+        if isinstance(idx, int):
+            idx = IntegerAttr.from_int_and_width(idx, 64)
+
+        if isinstance(idx, IntegerAttr):
+            operands = (in_qreg, None, qubit)
+            properties = {"idx_attr": idx}
+        else:
+            operands = (in_qreg, idx, qubit)
+            properties = {}
+
+        super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
+
 
 @irdl_op_definition
 class MeasureOp(IRDLOperation):
@@ -492,6 +528,19 @@ class MeasureOp(IRDLOperation):
     mres = result_def(EqAttrConstraint(IntegerType(1)))
 
     out_qubit = result_def(BaseAttr(QubitType))
+
+    def __init__(self, in_qubit: QubitSSAValue, postselect: int | IntegerAttr | None = None):
+        if isinstance(postselect, int):
+            postselect = IntegerAttr.from_int_and_width(postselect, 32)
+
+        if postselect is None:
+            properties = {}
+        else:
+            properties = {"postselect": postselect}
+
+        super().__init__(
+            operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
+        )
 
 
 @irdl_op_definition
@@ -539,6 +588,11 @@ class NamedObsOp(IRDLOperation):
     type = prop_def(BaseAttr(NamedObservableAttr))
 
     obs = result_def(BaseAttr(ObservableType))
+
+    def __init__(self, qubit: QubitSSAValue, obs_type: NamedObservableAttr):
+        super().__init__(
+            operands=(qubit,), properties={"type": obs_type}, result_types=(ObservableType(),)
+        )
 
 
 @irdl_op_definition
