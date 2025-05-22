@@ -25,8 +25,8 @@ from pennylane.operation import Operation
 
 
 class Select(Operation):
-    r"""Applies specific input operations depending on the state of
-    the designated control qubits.
+    r"""Applies individual operations depending on the state of
+    designated control qubits.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
 
@@ -35,17 +35,17 @@ class Select(Operation):
                     :width: 70%
                     :target: javascript:void(0);
 
+    This operator also is known as **multiplexer**, or multiplexed operation.
+    If the applied operations :math:`\{U_i\}` all are single-qubit Pauli rotations about the
+    same axis, with the angle determined by the control qubits, this is also called a
+    **uniformly controlled rotation** gate.
+
+    .. seealso:: :class:`~.SelectPauliRot`
+
     Args:
         ops (list[Operator]): operations to apply
         control (Sequence[int]): the wires controlling which operation is applied
         id (str or None): String representing the operation (optional)
-
-    This operator also is known as multiplexer, or multiplexed operation.
-    If the applied operations :math:`\{U_i\}` all are single-qubit Pauli rotations about the
-    same axis, with the angle determined by the control qubits, this is also called a
-    uniformly controlled rotation gate.
-
-    .. seealso:: :class:`~.SelectPauliRot`
 
     .. note::
         The position of the operation in the list determines which qubit state implements that

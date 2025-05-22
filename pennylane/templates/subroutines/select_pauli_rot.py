@@ -21,9 +21,10 @@ from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotat
 
 
 class SelectPauliRot(Operation):
-    r"""Select-applies single-qubit Pauli rotations.
+    r"""Applies individual single-qubit Pauli rotations depending on the state of
+    designated control qubits.
 
-    This operator, also called a "multiplexed rotation" or "uniformly controlled rotation",
+    This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
     applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
