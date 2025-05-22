@@ -15,7 +15,6 @@
 This module contains tests for functions needed to compute PES object.
 """
 import os
-import sys
 
 import numpy as np
 import pytest

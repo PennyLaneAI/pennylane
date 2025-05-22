@@ -57,15 +57,13 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial"):
 
 def _local_onemode_kinetic(rank, boscombos_on_rank, freqs, all_mode_combos):
     """Worker function to calculate the kinetic energy part of the one body integrals to correct the integrals
-    for localized modes. The result are written on hdf5 file.
+    for localized modes. The result are written to a hdf5 file.
 
     Args:
         rank(int) : the rank of the process
         boscombos_on_rank (int) : list of the combination of bosonic states handled by this process
         freqs(int): the harmonic frequencies
         all_mode_combos [int] : list of the combination of nmodes (the length of the list of harmonic frequencies)
-
-
     """
 
     local_K_mat = np.zeros(len(all_mode_combos) * len(boscombos_on_rank))
