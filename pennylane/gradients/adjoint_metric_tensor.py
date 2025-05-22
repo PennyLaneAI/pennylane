@@ -21,8 +21,6 @@ import numpy as np
 
 from pennylane import math
 from pennylane.devices.qubit import apply_operation, create_initial_state
-
-# pylint: disable=too-many-statements,unused-argument
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.ops import StatePrep, adjoint
 from pennylane.ops.functions import generator, map_wires
@@ -44,7 +42,7 @@ def _group_operations(tape):
     # Extract tape operations list
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
-    # pylint: disable=protected-access
+
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices

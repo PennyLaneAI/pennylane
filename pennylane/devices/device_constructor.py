@@ -30,7 +30,6 @@ def _get_device_entrypoints():
     entries = (
         metadata.entry_points()["pennylane.plugins"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.plugins")
     )
     return {entry.name: entry for entry in entries}
