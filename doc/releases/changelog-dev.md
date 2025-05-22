@@ -216,6 +216,7 @@
   * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding symbolic
     operators in the target gate set.
     [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+
     ```python
     from functools import partial
     import pennylane as qml
