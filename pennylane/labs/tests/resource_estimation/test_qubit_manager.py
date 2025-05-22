@@ -106,6 +106,17 @@ class TestQubitManager:
         qm.algo_qubits = algo_q
         assert qm.algo_qubits == logic_qubits
 
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_total_qubits(self, qm, attribute_tup, algo_q):
+        """Test that the total qubits returned are correct."""
+
+        qm.algo_qubits = algo_q
+        total_qubits = attribute_tup[0] + attribute_tup[1] + attribute_tup[2]
+        assert qm.total_qubits == total_qubits
+
     def test_grab_clean_qubits(self):
         """Test that the clean qubits are grabbed properly."""
 
