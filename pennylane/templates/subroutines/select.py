@@ -32,7 +32,7 @@ class Select(Operation):
 
     .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
-                    :width: 60%
+                    :width: 70%
                     :target: javascript:void(0);
 
     Args:
