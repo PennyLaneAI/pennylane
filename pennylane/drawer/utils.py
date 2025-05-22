@@ -121,8 +121,8 @@ def unwrap_controls(op):
     if isinstance(control_values, list):
         control_values = control_values.copy()
 
+    next_ctrl = op
     if isinstance(op, Controlled):
-        next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
 

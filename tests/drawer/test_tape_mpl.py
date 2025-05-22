@@ -656,6 +656,7 @@ class TestGeneralOperations:
         assert isinstance(ax, mpl.axes._axes.Axes)
 
         assert fig.axes == [ax]
+        assert len(ax.patches) == len(ax.texts) == 0
 
         # Test that `qml.Snapshot` works properly when other gates are present
         tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
@@ -666,6 +667,32 @@ class TestGeneralOperations:
         assert ax.patches[0].get_y() == -self.width / 2.0
         assert ax.patches[0].get_width() == self.width
         assert ax.patches[0].get_height() == 2 + self.width
+
+        plt.close()
+
+    @pytest.mark.parametrize("input_wires", [tuple(), (0, 1), (0, 2, 1, 3)])
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    def test_global_phase(self, input_wires, show_all_wires):
+        """Test that `qml.GlobalPhase` works properly with `tape_mpl`."""
+
+        # Test that empty figure is created when the only gate is `qml.Snapshot`
+        tape = QuantumScript([qml.GlobalPhase(0.3625, wires=input_wires), qml.X(0)])
+        fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        if show_all_wires:
+            num_wires = 5
+        else:
+            num_wires = max(len(input_wires), 1)
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
 

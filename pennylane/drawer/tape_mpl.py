@@ -71,10 +71,10 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
-    op_control_wires, control_values, last_base = unwrap_controls(op)
+    op_control_wires, control_values, base = unwrap_controls(op)
     op_wires = (
         list(range(drawer.n_wires))
-        if (len(op.wires) == 0 or isinstance(last_base, ops.GlobalPhase))
+        if (len(op.wires) == 0 or isinstance(base, ops.GlobalPhase))
         else op.wires
     )
     target_wires = [w for w in op_wires if w not in op_control_wires]
