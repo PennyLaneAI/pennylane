@@ -22,6 +22,7 @@ from typing import Literal
 import numpy as np
 
 from pennylane import math, ops
+from pennylane.allocation import Allocate
 from pennylane.devices.preprocess import decompose
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import DecompositionUndefinedError, Operator
@@ -42,7 +43,6 @@ from .gradient_transform import (
     choose_trainable_param_indices,
     contract_qjac_with_cjac,
 )
-from .metric_tensor import _get_aux_wire
 
 
 def _hadamard_stopping_condition(op) -> bool:
@@ -390,10 +390,6 @@ def hadamard_grad(
     # Validate or get default for aux_wire
     # unless using direct or reversed-direct modes
 
-    aux_wire = (
-        _get_aux_wire(aux_wire, tape, device_wires) if mode in ["standard", "reversed"] else None
-    )
-
     g_tapes = []
     coeffs = []
     generators_per_parameter = []
@@ -410,7 +406,7 @@ def hadamard_grad(
         else:
             # can dispatch between different algorithms here in the future
             # hadamard test, direct hadamard test, reversed, reversed direct, and flexible
-            batch, new_coeffs = gradient_method(tape, trainable_param_idx, aux_wire)
+            batch, new_coeffs = gradient_method(tape, trainable_param_idx)
             g_tapes += batch
             coeffs += new_coeffs
             generators_per_parameter.append(len(batch))
@@ -420,7 +416,7 @@ def hadamard_grad(
     )
 
 
-def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+def _hadamard_test(tape, trainable_param_idx) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
@@ -430,12 +426,23 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
     # Get a generator and coefficients
     sub_coeffs, generators = _get_pauli_generators(trainable_op)
 
+    allocate = Allocate(1)
+    aux_wire = allocate.wires[0]
+
     measurements = [_new_measurement(mp, aux_wire, tape.wires) for mp in tape.measurements]
 
     new_batch = []
     for gen in generators:
         ctrl_gen = [ops.op_math.ctrl(gen, control=aux_wire)]
         hadamard = [ops.H(wires=aux_wire)]
+        ops = (
+            ops_to_trainable_op
+            + [allocate]
+            + hadamard
+            + ctrl_gen
+            + hadamard
+            + ops_after_trainable_op
+        )
         operators = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
 
         new_tape = QuantumScript(operators, measurements, shots=tape.shots)
@@ -443,7 +450,7 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
     return new_batch, sub_coeffs
 
 
-def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+def _direct_hadamard_test(tape, trainable_param_idx) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
@@ -472,7 +479,7 @@ def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, li
     return new_batch, new_coeffs
 
 
-def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+def _reversed_hadamard_test(tape, trainable_param_idx) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
@@ -482,6 +489,8 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     ]
 
     # Create measurement with gate generators
+    allocate = Allocate(1)
+    aux_wire = allocate.wires[0]
     mp = expval(trainable_op.generator() @ ops.Y(aux_wire))
     measurements = [mp]
 
@@ -494,8 +503,13 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     for obs in observables:
         ctrl_obs = [ops.op_math.ctrl(obs, control=aux_wire)]
         hadamard = [ops.H(wires=aux_wire)]
-        operators = (
-            ops_before_trainable_op + hadamard + ctrl_obs + hadamard + ops_after_trainable_op
+        ops = (
+            ops_before_trainable_op
+            + [allocate]
+            + hadamard
+            + ctrl_obs
+            + hadamard
+            + ops_after_trainable_op
         )
 
         new_tape = QuantumScript(operators, measurements, shots=tape.shots)
@@ -503,7 +517,7 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     return new_batch, coeffs
 
 
-def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
+def _reversed_direct_hadamard_test(tape, trainable_param_idx) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
 
