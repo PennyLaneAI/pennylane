@@ -361,7 +361,7 @@ class TestMidCircuitMeasurements:
         "op, grouped",
         [
             (qml.GlobalPhase(0.1), True),
-            (qml.Identity(), False),
+            (qml.Identity(), True),
             (qml.Snapshot(), False),
             (qml.Barrier(), False),
         ],

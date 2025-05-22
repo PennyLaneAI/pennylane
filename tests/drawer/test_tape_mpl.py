@@ -761,20 +761,22 @@ class TestGeneralOperations:
 
         plt.close()
 
-    def test_ctrl_global_phase_withou_target(self):
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op_withou_target(self, cls):
         """Test that an error is raised if a controlled GlobalPhase is present that can
         not infer any target wires."""
 
-        op = qml.ctrl(qml.GlobalPhase(0.251, wires=[]), control=(0, 4))
+        data = [0.251][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=[]), control=(0, 4))
         tape = QuantumScript([op])
-        with pytest.raises(ValueError, match="controlled GlobalPhase gate with unknown"):
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
             _ = tape_mpl(tape)
 
         # No error if wire_order provides additional wire(s)
         _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
 
         # Error if wire_order provides additional wire(s) but they are not drawn
-        with pytest.raises(ValueError, match="controlled GlobalPhase gate with unknown"):
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
             _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=False)
 
     @pytest.mark.parametrize("op", general_op_data)
