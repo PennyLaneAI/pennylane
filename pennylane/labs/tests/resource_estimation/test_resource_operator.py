@@ -14,12 +14,17 @@
 """
 Test the base and abstract Resource class
 """
+from typing import Hashable
+
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import ResourceOperator, CompressedResourceOp
+from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+from pennylane.labs.resource_estimation.resource_operator import _make_hashable
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods, no-self-use
+
 
 class ResourceDummyX(ResourceOperator):
     """Dummy testing class representing X gate"""
@@ -124,3 +129,37 @@ class TestCompressedResourceOp:
         """Test that an error is raised if wrong type is provided for op_type."""
         with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
             CompressedResourceOp(type(1))
+
+
+@pytest.mark.parametrize(
+    "input_obj, expected_hashable",
+    [
+        (123, 123),
+        ("hello", "hello"),
+        (3.14, 3.14),
+        (None, None),
+        ((1, 2, 3), (1, 2, 3)),
+        ([], ()),
+        ([1, 2, 3], (1, 2, 3)),
+        ([[1, 2], [3, 4]], ((1, 2), (3, 4))),
+        (set(), ()),
+        ({3, 1, 2}, (1, 2, 3)),
+        ({}, ()),
+        ({"b": 2, "a": 1}, (("a", 1), ("b", 2))),
+        ({"key": [1, 2]}, (("key", (1, 2)),)),
+        ({"nested": {"x": 1, "y": [2, 3]}}, (("nested", (("x", 1), ("y", (2, 3)))),)),
+        (np.array([1, 2, 3]), (1, 2, 3)),
+        (np.array([["a", "b"], ["c", "d"]]), (("a", "b"), ("c", "d"))),
+        ([{"a": 1}, {2, 3}], ((("a", 1),), (2, 3))),
+        (
+            {"list_key": [1, {"nested_dict": "val"}]},
+            (("list_key", (1, (("nested_dict", "val"),))),),
+        ),
+    ],
+)
+def test_make_hashable(input_obj, expected_hashable):
+    """Test that _make_hashable function works as expected"""
+    result = _make_hashable(input_obj)
+    assert result == expected_hashable
+    assert isinstance(result, Hashable)
+    assert hash(result) is not None

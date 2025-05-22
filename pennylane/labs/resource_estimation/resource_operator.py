@@ -14,19 +14,21 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
-from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type, Optional, Hashable
+from inspect import signature
+from typing import Callable, Hashable, List, Optional, Type
 
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
-from pennylane.operation import classproperty
+import numpy as np
 
-from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.operation import classproperty
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 # pylint: disable=unused-argument
+
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
@@ -86,12 +88,21 @@ def _make_hashable(d) -> tuple:
 
     if isinstance(d, Hashable):
         return d
-    sorted_keys = sorted(d)
-    return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
+
+    if isinstance(d, dict):
+        return tuple(sorted((_make_hashable(k), _make_hashable(v)) for k, v in d.items()))
+    if isinstance(d, (list, tuple)):
+        return tuple(_make_hashable(elem) for elem in d)
+    if isinstance(d, set):
+        return tuple(sorted(_make_hashable(elem) for elem in d))
+    if isinstance(d, np.ndarray):
+        return _make_hashable(d.tolist())
+
+    raise TypeError(f"Object of type {type(d)} is not hashable and cannot be converted.")
 
 
 class ResourceOperator(ABC):
-    r"""Abstract base class to represent quantum operators according to the 
+    r"""Abstract base class to represent quantum operators according to the
     information required for resource estimation.
     """
 
@@ -254,7 +265,9 @@ class ResourceOperator(ABC):
             _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys.union({"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"})
+            keys = cls.resource_keys.union(
+                {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
+            )
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
@@ -284,15 +297,15 @@ class ResourceOperator(ABC):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
-    
+
     def __and__(self, other):
         if isinstance(other, self.__class__):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     __radd__ = __add__
@@ -317,18 +330,18 @@ def _validate_signature(func: Callable, expected_args: set):
         func (Callable): function to match signature with
         expected_args (set): expected signature
     """
-    
+
     sig = signature(func)
     actual_args = set(sig.parameters)
 
-    if (extra_args := actual_args - expected_args):
+    if extra_args := actual_args - expected_args:
         raise ValueError(
             f"The function provided specifies addtional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
 
-    if (missing_args := expected_args - actual_args):
+    if missing_args := expected_args - actual_args:
         raise ValueError(
             f"The function is missing arguments ({missing_args}) which are expected. Please"
             + " update the function signature or modify the base class' `resource_keys` argument."
