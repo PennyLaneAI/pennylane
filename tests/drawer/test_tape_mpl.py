@@ -18,6 +18,8 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -695,6 +697,85 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
+
+    @pytest.mark.parametrize(
+        "input_wires, control_wires",
+        [
+            (tuple(), (0,)),
+            ((0, 1), (2, 3)),
+            ((0, 3), (2,)),
+            ((0, 2, 3), (1,)),
+            ((0, 3), (1, 2)),
+            ((0, 2), (1, 3)),
+        ],
+    )
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    def test_ctrl_global_phase(self, input_wires, control_wires, show_all_wires):
+        """Test that controlled `qml.GlobalPhase` works properly with `tape_mpl`."""
+
+        # Test that empty figure is created when the only gate is `qml.Snapshot`
+        op = qml.ctrl(qml.GlobalPhase(0.3625, wires=input_wires), control=control_wires)
+        tape = QuantumScript([op, qml.X(0), qml.X(1)])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Control node circular patches (may be invisible)
+        for i, c in enumerate(control_wires):
+            patch = ax.patches[i]
+            assert isinstance(patch, mpl.patches.Circle)
+            assert patch.center == (0, c)
+
+        # Main box
+        if show_all_wires:
+            covered_wires = range(5)
+        elif len(input_wires) == 0:
+            covered_wires = (0, 1)  # Wires for qml.X operations transfer to GlobalPhase
+        else:
+            covered_wires = range(min(input_wires), max(input_wires) + 1)
+        min_box_wire = min([w for w in covered_wires if w not in control_wires])
+        max_box_wire = max([w for w in covered_wires if w not in control_wires])
+        i = len(control_wires)
+        main_patch = ax.patches[i]
+        assert isinstance(main_patch, mpl.patches.FancyBboxPatch)
+
+        assert main_patch.get_x() == -self.width / 2.0
+        assert main_patch.get_y() == min_box_wire - self.width / 2.0
+        assert main_patch.get_width() == self.width
+        assert main_patch.get_height() == max_box_wire - min_box_wire + self.width
+        for j in range(i):
+            assert main_patch.zorder > ax.patches[j].zorder
+
+        # Notches
+        i += 1
+        for w in control_wires:
+            if min_box_wire < w < max_box_wire:
+                notch_patch = ax.patches[i]
+                assert isinstance(notch_patch, mpl.patches.FancyBboxPatch)
+                assert notch_patch.zorder < main_patch.zorder
+
+        plt.close()
+
+    def test_ctrl_global_phase_withou_target(self):
+        """Test that an error is raised if a controlled GlobalPhase is present that can
+        not infer any target wires."""
+
+        op = qml.ctrl(qml.GlobalPhase(0.251, wires=[]), control=(0, 4))
+        tape = QuantumScript([op])
+        with pytest.raises(ValueError, match="controlled GlobalPhase gate with unknown"):
+            _ = tape_mpl(tape)
+
+        # No error if wire_order provides additional wire(s)
+        _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
+
+        # Error if wire_order provides additional wire(s) but they are not drawn
+        with pytest.raises(ValueError, match="controlled GlobalPhase gate with unknown"):
+            _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=False)
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):

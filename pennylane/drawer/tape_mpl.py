@@ -72,12 +72,14 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
 
     """
     op_control_wires, control_values, base = unwrap_controls(op)
-    op_wires = (
-        list(range(drawer.n_wires))
-        if (len(op.wires) == 0 or isinstance(base, ops.GlobalPhase))
-        else op.wires
-    )
+    is_gphase = isinstance(base, ops.GlobalPhase)
+    if len(op.wires) == 0 or is_gphase:
+        op_wires = list(range(drawer.n_wires))
+    else:
+        op_wires = op.wires
     target_wires = [w for w in op_wires if w not in op_control_wires]
+    if is_gphase and len(target_wires) == 0:
+        raise ValueError("Can't draw controlled GlobalPhase gate with unknown non-control wires.")
 
     if control_values is None:
         control_values = [True for _ in op_control_wires]
