@@ -17,7 +17,7 @@ This module contains tests for classes needed to track auxilliary qubits.
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import FreeWires, GrabWires, QubitManager
+from pennylane.labs.resource_estimation import AllocWires, FreeWires, QubitManager
 
 
 # pylint: disable= no-self-use
@@ -118,24 +118,24 @@ class TestQubitManager:
             qm.free_qubits(6)
 
 
-class TestGrabWires:
-    """Test the methods and attributes of the GrabWires class"""
+class TestAllocWires:
+    """Test the methods and attributes of the AllocWires class"""
 
     def test_init(self):
-        """Test that the GrabWires class is instantiated as expected when there is no active recording."""
+        """Test that the AllocWires class is instantiated as expected when there is no active recording."""
 
         for i in range(3):
-            assert GrabWires(i).num_wires == i
+            assert AllocWires(i).num_wires == i
 
     def test_init_recording(self):
-        """Test that the GrabWires class is instantiated as expected when there is active recording."""
+        """Test that the AllocWires class is instantiated as expected when there is active recording."""
         with qml.queuing.AnnotatedQueue() as q:
-            ops = [GrabWires(2), GrabWires(4)]
+            ops = [AllocWires(2), AllocWires(4)]
         assert q.queue == ops
 
 
 class TestFreeWires:
-    """Test the methods and attributes of the GrabWires class"""
+    """Test the methods and attributes of the FreeWires class"""
 
     def test_init(self):
         """Test that the FreeWires class is instantiated as expected when there is no recording."""

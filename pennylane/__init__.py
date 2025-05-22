@@ -33,6 +33,7 @@ import pennylane.operation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
+    register_condition,
     add_decomps,
     list_decomps,
     resource_rep,
@@ -129,6 +130,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
+    set_shots,
 )
 from pennylane.ops.functions import (
     dot,

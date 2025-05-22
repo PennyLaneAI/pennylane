@@ -32,7 +32,6 @@ def _stop_autograph(f):
     return new_f
 
 
-# pylint: disable=no-self-argument, too-few-public-methods
 class CaptureMeta(type):
     """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
     of normal class creation.
