@@ -278,7 +278,7 @@
 * Add xz encoding related `pauli_encode_xz` and `pauli_prod_to_xz` functions to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
 
-* Add conjugate rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc` module.
+* Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc` module.
   [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
 
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
