@@ -90,6 +90,12 @@
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
+  iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
+  matrices much more performant.
+  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
+  [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
+
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
@@ -304,7 +310,7 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
-* Add xz encoding related `pauli_encode_xz` and `pauli_prod_to_xz` functions to the `ftqc` module.
+* Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
 
 * Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc` module.

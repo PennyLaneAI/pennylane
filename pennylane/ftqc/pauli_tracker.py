@@ -85,14 +85,14 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
 
 def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     """
-    Convert x, z to a Pauli operator.
+    Convert x, z to a Pauli operator class.
 
     Args:
         x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
         z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
 
     Return:
-        A Pauli operator.
+        A Pauli operator class.
 
     **Example:**
         The following example shows how the XZ to Pauli works.
@@ -103,7 +103,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
             >>> xz_to_pauli(0, 0)(wires=0)
             I(0)
 
-        A Pauli operator is returned for a given xz tuple.
+        A Pauli operator class is returned for a given xz tuple.
     """
     if x in [0, 1] and z in [0, 1]:
         return _XZ_TO_OPS[(x, z)]
