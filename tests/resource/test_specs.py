@@ -206,12 +206,12 @@ class TestSpecsTransform:
                     return False
                 return True
 
-            def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
-                program, config = super().preprocess(execution_config)
+            def preprocess_transforms(self, execution_config=qml.devices.DefaultExecutionConfig):
+                program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
                 )
-                return program, config
+                return program
 
         dev = TestDevice(wires=2)
         matrix = qml.matrix(qml.RX(1.2, 0))

@@ -435,6 +435,48 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
     return new_preprocess
 
 
+def _create_decomp_preprocess_transforms(custom_decomps, dev, decomp_depth=None):
+
+    def decomposer(op):
+        if isinstance(op, qml.ops.Controlled) and type(op.base) in custom_decomps:
+            op.base.compute_decomposition = custom_decomps[type(op.base)]
+            return op.decomposition()
+        if op.name in custom_decomps:
+            return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
+        if type(op) in custom_decomps:
+            return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
+        return op.decomposition()
+
+    original_preprocess_transforms = dev.preprocess_transforms
+
+    # pylint: disable=cell-var-from-loop
+    def new_preprocess_transforms(execution_config=qml.devices.DefaultExecutionConfig):
+        program = original_preprocess_transforms(execution_config)
+
+        for container in program:
+            if container.transform == qml.devices.preprocess.decompose.transform:
+                container.kwargs["decomposer"] = decomposer
+
+                for cond in ["stopping_condition", "stopping_condition_shots"]:
+                    # Devices that do not support native mid-circuit measurements
+                    # will not have "stopping_condition_shots".
+                    if cond in container.kwargs:
+                        original_stopping_condition = container.kwargs[cond]
+
+                        def stopping_condition(obj):
+                            if obj.name in custom_decomps or type(obj) in custom_decomps:
+                                return False
+                            return original_stopping_condition(obj)
+
+                        container.kwargs[cond] = stopping_condition
+
+                break
+
+        return program
+
+    return new_preprocess_transforms
+
+
 @contextlib.contextmanager
 def set_decomposition(custom_decomps, dev):
     """Context manager for setting custom decompositions.
@@ -502,7 +544,7 @@ def set_decomposition(custom_decomps, dev):
         finally:
             dev.custom_expand_fn = original_custom_expand_fn
 
-    else:
+    elif type(dev).preprocess != qml.devices.Device.preprocess:
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 action="ignore",
@@ -518,3 +560,19 @@ def set_decomposition(custom_decomps, dev):
 
             finally:
                 dev.preprocess = original_preprocess
+    else:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message=r"max_expansion argument is deprecated",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            original_preprocess_transforms = dev.preprocess_transforms
+            new_preprocess_transforms = _create_decomp_preprocess_transforms(custom_decomps, dev)
+
+            try:
+                dev.preprocess_transforms = new_preprocess_transforms
+                yield
+
+            finally:
+                dev.preprocess_transforms = original_preprocess_transforms

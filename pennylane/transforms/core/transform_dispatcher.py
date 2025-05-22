@@ -94,6 +94,74 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
+def _preprocess_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program, config = self.original_device.preprocess(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program, config
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess_transforms(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program = self.original_device.preprocess_transforms(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -404,33 +472,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self._final_transform:
             raise TransformError("Device transform does not support final transforms.")
 
-        class TransformedDevice(type(original_device)):
-            """A transformed device with updated preprocess method."""
+        if type(original_device).preprocess != qml.devices.Device.preprocess:
+            return _preprocess_device(original_device, self.transform, targs, tkwargs)
 
-            def __init__(self, original_device, transform):
-                for key, value in original_device.__dict__.items():
-                    self.__setattr__(key, value)
-                self.transform = transform
-                self._original_device = original_device
-
-            def __repr__(self):
-                return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
-
-            def preprocess(
-                self,
-                execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
-            ):
-                """This function updates the original device transform program to be applied."""
-                program, config = self.original_device.preprocess(execution_config)
-                program.push_back(TransformContainer(self.transform, args=targs, kwargs=tkwargs))
-                return program, config
-
-            @property
-            def original_device(self):
-                """Return the original device."""
-                return self._original_device
-
-        return TransformedDevice(original_device, self._transform)
+        return _preprocess_transforms_device(original_device, self.transform, targs, tkwargs)
 
     def _batch_transform(self, original_batch, targs, tkwargs):
         """Apply the transform on a batch of tapes."""
