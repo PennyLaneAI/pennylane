@@ -218,23 +218,23 @@
     operators in the target gate set.
     [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
-    ```python
-    from functools import partial
-    import pennylane as qml
+  ```python
+  from functools import partial
+  import pennylane as qml
+
+  qml.decomposition.enable_graph()
   
-    qml.decomposition.enable_graph()
-   
-    @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.Toffoli(wires=[0, 1, 2])
-    ```
-    ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
-    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
-    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
-    ```
+  @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Toffoli(wires=[0, 1, 2])
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
 
   * Symbolic operator types can now be given as strings to the `op_type` argument of :func:`~.decomposition.add_decomps`,
     or as keys of the dictionaries passed to the `alt_decomps` and `fixed_decomps` arguments of the
