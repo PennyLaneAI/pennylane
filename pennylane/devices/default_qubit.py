@@ -987,6 +987,7 @@ class DefaultQubit(Device):
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
+        execution_config = execution_config or ExecutionConfig()
         if (mcm_method := execution_config.mcm_config.mcm_method) not in (
             "deferred",
             "single-branch-statistics",
