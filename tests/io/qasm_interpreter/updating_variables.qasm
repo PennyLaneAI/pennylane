@@ -41,3 +41,13 @@ switch (i) {
     }
 }
 
+i = (i + 1) * 2;
+
+switch (i) {
+    case 2 {
+        y q0;
+    }
+    default {
+        rx(0.1) q0;
+    }
+}

@@ -74,7 +74,6 @@ class TestInterpreter:
         x = mocker.spy(PauliX, "__init__")
         y = mocker.spy(PauliY, "__init__")
         z = mocker.spy(PauliZ, "__init__")
-        s = mocker.spy(S, "__init__")
         rx = mocker.spy(RX, "__init__")
 
         # run the program
@@ -83,7 +82,7 @@ class TestInterpreter:
 
         # assertions
         assert x.call_count == 1
-        assert y.call_count == 1
+        assert y.call_count == 2
         assert z.call_count == 0
         assert rx.call_count == 1
 
