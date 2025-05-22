@@ -2,6 +2,7 @@
 {{ underline }}
 
 .. autoclass:: {{ fullname }}
+   :noindex:
    :show-inheritance:
 
    {% if '__init__' in methods %}
