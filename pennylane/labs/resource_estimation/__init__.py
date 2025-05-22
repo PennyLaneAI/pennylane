@@ -24,5 +24,5 @@ resource estimation.
 
 """
 
-from .qubit_manager import QubitManager, GrabWires, FreeWires
+from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources

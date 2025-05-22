@@ -350,7 +350,9 @@ class QuantumMonteCarlo(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=protected-access
+        new_op._hyperparameters = dict(metadata[1])
 
         # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
         Operation.__init__(new_op, *data, wires=metadata[0])
@@ -400,10 +402,12 @@ class QuantumMonteCarlo(Operation):
     def num_params(self):
         return 3
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

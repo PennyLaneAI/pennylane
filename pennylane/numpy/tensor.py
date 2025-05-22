@@ -130,7 +130,6 @@ class tensor(_np.ndarray):
         return super().__array_wrap__(out_arr)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        # pylint: disable=no-member,attribute-defined-outside-init
 
         # unwrap any outputs the ufunc might have
         outputs = [i.view(onp.ndarray) for i in kwargs.get("out", ())]
@@ -208,7 +207,7 @@ class tensor(_np.ndarray):
     def __setstate__(self, reduced_obj) -> None:
         # Called when unpickling the object.
         # Set self.requires_grad with the last element in the tuple returned by __reduce__:
-        # pylint: disable=attribute-defined-outside-init,no-member
+        # pylint: disable=attribute-defined-outside-init
         self.requires_grad = reduced_obj[-1]
         # And call parent's __setstate__ without this element:
         super().__setstate__(reduced_obj[:-1])
