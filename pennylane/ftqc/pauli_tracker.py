@@ -81,7 +81,7 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
         z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
 
     Return:
-        A Pauli operator.
+        A Pauli operator class.
 
     **Example:**
         The following example shows how the XZ to Pauli works.
