@@ -53,7 +53,11 @@ NON_PARAMETERIZED_GATES = {
     "S": S,
     "T": T,
     "SX": SX,
-"CX": CNOT, "CY": CY, "CZ": CZ, "CH": CH, "SWAP": SWAP,
+    "CX": CNOT,
+    "CY": CY,
+    "CZ": CZ,
+    "CH": CH,
+    "SWAP": SWAP,
     "CCX": Toffoli,
     "CSWAP": CSWAP,
 }
@@ -67,7 +71,11 @@ PARAMETERIZED_GATES = {
     "U1": U1,
     "U2": U2,
     "U3": U3,
-"CP": CPhase, "CPHASE": CPhase, "CRX": CRX, "CRY": CRY, "CRZ": CRZ
+    "CP": CPhase,
+    "CPHASE": CPhase,
+    "CRX": CRX,
+    "CRY": CRY,
+    "CRZ": CRZ,
 }
 
 
@@ -202,7 +210,9 @@ class QasmInterpreter(QASMVisitor):
             context["gates"] = []
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
-                raise TypeError(f"Missing required argument(s) for parameterized gate {node.name.name}")
+                raise TypeError(
+                    f"Missing required argument(s) for parameterized gate {node.name.name}"
+                )
             gate = self.gate(PARAMETERIZED_GATES, node, context)
         elif name in NON_PARAMETERIZED_GATES:
             gate = self.gate(NON_PARAMETERIZED_GATES, node, context)
