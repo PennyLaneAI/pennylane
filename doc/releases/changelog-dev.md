@@ -233,6 +233,7 @@
     1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
     ```
+
   * Symbolic operator types can now be given as strings to the `op_type` argument of :func:`~.decomposition.add_decomps`,
     or as keys of the dictionaries passed to the `alt_decomps` and `fixed_decomps` arguments of the
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
