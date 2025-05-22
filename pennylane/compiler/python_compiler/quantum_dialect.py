@@ -147,7 +147,7 @@ class AllocOp(IRDLOperation):
 
     nqubits = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
-    nqubits_attr = opt_prop_def(AnyAttr())
+    nqubits_attr = opt_prop_def(IntegerType(64))
 
     qreg = result_def(BaseAttr(QuregType))
 
@@ -163,6 +163,14 @@ class AllocOp(IRDLOperation):
             properties = {}
 
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
+
+    def verify_(self):
+        nqubits = self.properties.get("nqubits_attr", None)
+        if nqubits is None:
+            return
+
+        if nqubits < 0:
+            raise VerifyException("Cannot allocate less than zero qubits.")
 
 
 @irdl_op_definition
@@ -524,7 +532,7 @@ class MeasureOp(IRDLOperation):
 
     in_qubit = operand_def(BaseAttr(QubitType))
 
-    postselect = opt_prop_def(AnyAttr())
+    postselect = opt_prop_def(IntegerType(32))
 
     mres = result_def(EqAttrConstraint(IntegerType(1)))
 
