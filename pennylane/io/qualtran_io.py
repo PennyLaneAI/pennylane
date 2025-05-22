@@ -135,6 +135,90 @@ def _get_op_call_graph():
 
         return gate_types
     
+    @_op_call_graph.register
+    def _(op: qtemps.state_preparations.QROMStatePreparation):
+        import pennylane as qml
+        pass
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QROM):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import CSwap, Hadamard
+
+        num_ctrl_wires = len(op.control_wires)
+        control_wires = op.control_wires
+
+        gate_types = defaultdict()
+        if num_ctrl_wires == 0:
+            for bits in op.bitstrings:
+                gate_types[_map_to_bloq()(qml.BasisEmbedding(int(bits, 2), wires=op.target_wires))] += 1
+
+            return gate_types
+        
+        swap_wires = op.target_wires + op.work_wires
+
+        # number of operators we store per column (power of 2)
+        depth = len(swap_wires) // len(op.target_wires)
+        depth = int(2 ** np.floor(np.log2(depth)))
+        depth = min(depth, len(op.bitstrings))
+
+        ops = [qml.BasisEmbedding(int(bits, 2), wires=op.target_wires) for bits in op.bitstrings]
+        ops_identity = ops + [qml.I(op.target_wires)] * int(2 ** len(op.control_wires) - len(ops))
+
+        n_columns = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
+        new_ops = []
+        for i in range(n_columns):
+            column_ops = []
+            for j in range(depth):
+                dic_map = {
+                    ops_identity[i * depth + j].wires[l]: swap_wires[j * len(op.target_wires) + l]
+                    for l in range(len(op.target_wires))
+                }
+                column_ops.append(qml.map_wires(ops_identity[i * depth + j], dic_map))
+            new_ops.append(qml.prod(*column_ops))
+
+        # Select block
+        n_control_select_wires = int(qml.math.ceil(qml.math.log2(2 ** len(op.control_wires) / depth)))
+        control_select_wires = control_wires[:n_control_select_wires]
+
+        select_ops = []
+        if control_select_wires:
+            select_op = _map_to_bloq()(qml.Select(new_ops, control=control_select_wires))
+            gate_types[select_op] = 1
+            select_ops.append(select_op)
+        else:
+            for op in new_ops:
+                bloq = _map_to_bloq()(op)
+                gate_types[bloq] += 1
+                select_ops.append(bloq)
+
+        # Swap block
+        control_swap_wires = control_wires[n_control_select_wires:]
+        gate_types[CSwap(len(op.target_wires))] = 2 ** len(control_swap_wires) - 1
+
+        if not op.clean or depth == 1:
+            return gate_types
+        else:
+            # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
+            gate_types[Hadamard()] = 2 * len(op.target_wires)
+            gate_types[CSwap(len(op.target_wires))] *= 4
+            gate_types[_map_to_bloq()(qml.Select(new_ops, control=control_select_wires))] = 1
+            for op in select_ops:
+                gate_types[op] *= 2
+                
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QFT):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
+
+        gate_types = {}
+        num_wires = len(op.wires)
+        gate_types[Hadamard()] = num_wires
+        gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
+        gate_types[TwoBitSwap()] = num_wires // 2
+        return gate_types
     # @_op_call_graph.register
     # def _(op: qtemps.subroutines.ModExp):
     #     import pennylane as qml
