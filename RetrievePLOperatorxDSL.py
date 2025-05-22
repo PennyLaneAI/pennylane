@@ -19,6 +19,7 @@ from pennylane.compiler.python_compiler.quantum_dialect import (
     ExtractOp,
     QuantumDialect,
     QubitType,
+    GlobalPhaseOp,
     QubitUnitaryOp,
 )
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
@@ -50,10 +51,11 @@ def circuit():
     """A simple circuit to test the pass."""
     qml.CNOT(wires=[0, 1])
     qml.Rot(0.1, 0.2, 0.3, wires=1)
-    qml.Hadamard(wires=0)
+    qml.GlobalPhase(0.5)
+    # qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[0, 2])
-    qml.Hadamard(wires=1)
+    # qml.Hadamard(wires=1)
     qml.CNOT(wires=[1, 2])
     qml.Rot(0.4, 0.5, 0.6, wires=2)
     return qml.state()
@@ -113,9 +115,6 @@ def resolve_constant_params(op):
     if isinstance(op, CustomOp):
         raise NotImplementedError("Cannot resolve params from CustomOp")
     raise NotImplementedError(f"Cannot resolve params from {op}")
-
-
-from xdsl.ir import Operation
 
 
 def resolve_constant_wire(operand):
@@ -185,7 +184,7 @@ def reconstruct_gate(op: CustomOp):
     return resolve_gate(gate_name)(*parameters, wires=wires)
 
 
-class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
+class DummyTransform(pattern_rewriter.RewritePattern):
     def __init__(self, module):
         self.module = module
         super().__init__()
@@ -207,41 +206,66 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
             last_custom_op = None
 
             for qml_op in decomp_ops:
+                parameters_xdsl = []
+                wires_xdsl = []
 
-                # Now that we have the pennylane operator, we need to convert it to a CustomOp
-                # and insert it into the IR.
-                # However, this implementation assumes that the decomposition is a single-qubit gate and with a single parameter.
-                # Can be extended to support multi-qubit gates and multiple parameters?
-                angle = qml_op.parameters[0]
-                angle = angle.item() if not isinstance(angle, float) else angle
-                wire = qml_op.wires[0]
+                # We convert the parameters to xDSL constants
+                for param in qml_op.parameters:
+                    val = param.item() if hasattr(param, "item") else param
+                    if isinstance(val, int):
+                        attr = IntegerAttr(val, IntegerType(64))
+                    elif isinstance(val, float):
+                        attr = FloatAttr(val, Float64Type())
+                    else:
+                        raise TypeError(f"Unsupported parameter type: {type(val)}")
 
-                # Right now, we know that the angle is a float.
-                if isinstance(angle, int):
-                    angle_attr = IntegerAttr(angle, IntegerType(64))
-                elif isinstance(angle, float):
-                    angle_attr = FloatAttr(angle, Float64Type())
+                    const_op = ConstantOp(value=attr)
+                    rewriter.insert_op(const_op, InsertPoint.before(op))
+                    parameters_xdsl.append(const_op.result)
+
+                # We convert the wires to xDSL constants
+                for wire in qml_op.wires:
+                    wire_attr = IntegerAttr(wire, IntegerType(64))
+                    wire_const_op = ConstantOp(value=wire_attr)
+                    rewriter.insert_op(wire_const_op, InsertPoint.before(op))
+                    wires_xdsl.append(wire_const_op.result)
+
+                print(f"qml.op: {qml_op}")
+                print(f"parameters_xdsl: {parameters_xdsl}")
+                print(f"wires_xdsl: {wires_xdsl}")
+
+                if qml_op.name == "GlobalPhase":
+
+                    custom_op = GlobalPhaseOp(
+                        operands=(*parameters_xdsl, None, None),
+                        properties={
+                            "gate_name": StringAttr(qml_op.name),
+                            # Do we need to pass more properties here?
+                            # **op.properties,
+                        },
+                        attributes={},
+                        successors=op.successors,
+                        regions=(),
+                        # This should probably be generalized
+                        result_types=(QubitType(),),
+                    )
+
                 else:
-                    raise TypeError(f"Unsupported angle type: {type(angle)}")
 
-                angle_const_op = ConstantOp(value=angle_attr)
-                rewriter.insert_op(angle_const_op, InsertPoint.before(op))
-
-                wire_attr = IntegerAttr(wire, IntegerType(64))
-                wire_const_op = ConstantOp(value=wire_attr)
-                rewriter.insert_op(wire_const_op, InsertPoint.before(op))
-
-                custom_op = CustomOp(
-                    operands=(angle_const_op.result, wire_const_op.result, None, None),
-                    properties={
-                        "gate_name": StringAttr(qml_op.name),
-                        # **op.properties,
-                    },
-                    attributes={},
-                    successors=op.successors,
-                    regions=(),
-                    result_types=(QubitType(), []),
-                )
+                    custom_op = CustomOp(
+                        operands=(*parameters_xdsl, *wires_xdsl, None, None),
+                        # operands=(angle_const_op.result, wire_const_op.result, None, None),
+                        properties={
+                            "gate_name": StringAttr(qml_op.name),
+                            # Do we need to pass more properties here?
+                            # **op.properties,
+                        },
+                        attributes={},
+                        successors=op.successors,
+                        regions=(),
+                        # This should probably be generalized
+                        result_types=(QubitType(), []),
+                    )
 
                 rewriter.insert_op(custom_op, InsertPoint.before(op))
 
@@ -253,71 +277,12 @@ class UnitaryToRotPattern(pattern_rewriter.RewritePattern):
             rewriter.erase_op(op)
 
 
-@pattern_rewriter.op_type_rewrite_pattern
-def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-    for op in funcOp.body.walk():
-
-        if not isinstance(op, CustomOp):
-            continue
-
-        concrete_op = reconstruct_gate(op)
-
-        if not concrete_op.has_decomposition:
-            continue
-
-        decomp_ops = concrete_op.decomposition()
-
-        last_custom_op = None
-
-        for qml_op in decomp_ops:
-            operands = []
-
-            # Handle all parameters
-            for param in qml_op.parameters:
-                val = param.item() if hasattr(param, "item") else param
-                if isinstance(val, int):
-                    attr = IntegerAttr(val, IntegerType(64))
-                elif isinstance(val, float):
-                    attr = FloatAttr(val, Float64Type())
-                else:
-                    raise TypeError(f"Unsupported parameter type: {type(val)}")
-
-                const_op = ConstantOp(value=attr)
-                rewriter.insert_op(const_op, InsertPoint.before(op))
-                operands.append(const_op.result)
-
-            # Handle all wires
-            for wire in qml_op.wires:
-                wire_attr = IntegerAttr(wire, IntegerType(64))
-                wire_const_op = ConstantOp(value=wire_attr)
-                rewriter.insert_op(wire_const_op, InsertPoint.before(op))
-                operands.append(wire_const_op.result)
-
-            custom_op = CustomOp(
-                operands=tuple(operands) + (None, None),  # preserve unused slots if needed
-                properties={
-                    "gate_name": StringAttr(qml_op.name),
-                    # optionally inherit: **op.properties
-                },
-                attributes={},
-                successors=op.successors,
-                regions=(),
-                result_types=tuple(QubitType() for _ in qml_op.wires),
-            )
-
-            rewriter.insert_op(custom_op, InsertPoint.before(op))
-            last_custom_op = custom_op
-
-        if op.results and last_custom_op.results:
-            op.results[0].replace_by(last_custom_op.results[0])
-
-
 @dataclass(frozen=True)
 class DummyTransformPass(passes.ModulePass):
     name = "dummy-transform"
 
     def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        pattern = UnitaryToRotPattern(module)
+        pattern = DummyTransform(module)
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([pattern])
         ).rewrite_module(module)
