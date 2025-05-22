@@ -17,7 +17,7 @@ import functools
 import pennylane as qml
 from pennylane.math import Interface
 
-from .construct_batch import construct_batch
+from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
 
@@ -104,8 +104,8 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
         )
 
         if resolve:
-            batch, _ = construct_batch(qnode, level="user")(*args, **kwargs)
-            config = _resolve_execution_config(config, qnode.device, batch)
+            tape = construct_tape(qnode, level=0)(*args, **kwargs)
+            config = _resolve_execution_config(config, qnode.device, (tape,))
 
         return config
 
