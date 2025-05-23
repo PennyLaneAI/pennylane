@@ -38,11 +38,7 @@ _XZ_TO_OPS = {
 
 _PAULIS = (X, Y, Z, I)
 
-_CLIFFORD_TABLEAU = {
-    H: [[Z, X]],
-    S: [[Y, Z]],
-    CNOT: [[X, Z, I, Z], [X, I, X, Z]],
-}
+_CLIFFORD_OPS = (CNOT, S, H)
 
 
 def pauli_to_xz(op: Operator) -> Tuple[int, int]:
@@ -143,7 +139,51 @@ def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
     return (res_x, res_z)
 
 
-def apply_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def _commute_h(x: int, z: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.H`.
+
+    Args:
+        x(int): Exponent of PauliX in the xz representation of a Pauli.
+        z(int): Exponent of PauliZ in the xz representation of a Pauli.
+
+    Return:
+        A tuple of xz representing a new Pauli operation that the :class:`~pennylane.H` commutes to.
+    """
+    return (z, x)
+
+
+def _commute_s(x: int, z: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.S`.
+
+    Args:
+        x(int): Exponent of PauliX in the xz representation of a Pauli.
+        z(int): Exponent of PauliZ in the xz representation of a Pauli.
+
+    Return:
+        A tuple of xz representing a new Pauli operation that the :class:`~pennylane.S` commutes to.
+    """
+    return (x, x ^ z)
+
+
+def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.CNOT`.
+
+    Args:
+        xc(int): Exponent of PauliX in the xz representation of a Pauli at the control wire.
+        zc(int): Exponent of PauliZ in the xz representation of a Pauli at the control wire.
+        xt(int): Exponent of PauliX in the xz representation of a Pauli at the target wire.
+        zt(int): Exponent of PauliZ in the xz representation of a Pauli at the target wire.
+
+    Return:
+        xz tuples representing new Paulis operation that the :class:`~pennylane.cnot` commutes to.
+    """
+    return (xc, zc ^ zt), (xc ^ xt, zt)
+
+
+def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """Get a list of xz representing a list of Pauli ops commuting/moving through a given Clifford op.
     Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = xz \cdot clifford\_op` to
     move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
@@ -168,7 +208,7 @@ def apply_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[
 
         A list of xz representation of Pauli operators is returned.
     """
-    if type(clifford_op) not in _CLIFFORD_TABLEAU:
+    if type(clifford_op) not in _CLIFFORD_OPS:
         raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
     if len(xz) != clifford_op.num_wires:
@@ -186,15 +226,15 @@ def apply_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[
     if not all(element in [0, 1] for element in xz_flatten):
         raise ValueError("Please ensure xz are either 0 or 1.")
 
-    if all(element == (0, 0) for element in xz):
-        return xz
+    if isinstance(clifford_op, S):
+        _x, _z = xz[0]
+        return _commute_s(_x, _z)
 
-    # A Clifford gate commutates non-Identify Pauli ops to new Pauli ops
-    new_xz = []
-    nonzero_indices = [idx for idx, element in enumerate(xz_flatten) if element == 1]
+    if isinstance(clifford_op, H):
+        _x, _z = xz[0]
+        return _commute_h(_x, _z)
 
-    # Get Paulis prod for each target wire
-    for table_row in _CLIFFORD_TABLEAU[type(clifford_op)]:
-        ps = [table_row[idx] for idx in nonzero_indices]
-        new_xz.append(pauli_prod(ps))
-    return new_xz
+    if isinstance(clifford_op, CNOT):
+        _xc, _zc = xz[0]
+        _xt, _zt = xz[1]
+        return _commute_cnot(_xc, _zc, _xt, _zt)

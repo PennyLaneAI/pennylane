@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
+from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
@@ -87,7 +87,7 @@ class TestPauliTracker:
         pauli = pauli(wires=wires)
         clifford_op = clifford_op(wires=wires)
         xz = [pauli_to_xz(pauli)]
-        new_xz = apply_clifford_op(clifford_op, xz)
+        new_xz = commute_clifford_op(clifford_op, xz)
         new_x, new_z = new_xz[0]
         new_pauli = xz_to_pauli(new_x, new_z)(wires=wires)
 
@@ -108,7 +108,7 @@ class TestPauliTracker:
         clifford_op = clifford_op(wires=wires)
 
         xz = [pauli_to_xz(pauli_control), pauli_to_xz(pauli_target)]
-        new_xz = apply_clifford_op(clifford_op, xz)
+        new_xz = commute_clifford_op(clifford_op, xz)
 
         _xc, _zc = new_xz[0]
         new_pauli_control = xz_to_pauli(_xc, _zc)(wires=wires[0])
@@ -130,7 +130,7 @@ class TestPauliTracker:
         with pytest.raises(
             NotImplementedError, match="Only qml.H, qml.S and qml.CNOT are supported."
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -145,7 +145,7 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure that the length of xz matches the number of wires of the clifford_op.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -161,7 +161,7 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure there are 2 elements instead of in each tuple in the xz list.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -176,4 +176,4 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure xz are either 0 or 1.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
