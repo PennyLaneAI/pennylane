@@ -45,18 +45,10 @@ from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import (
-    FermiC,
-    FermiA,
-    FermiWord,
-    FermiSentence,
-)
-from pennylane.fermi import (
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
 )
-from pennylane.bose import BoseWord
-from pennylane.bose import BoseSentence
 from pennylane.bose import (
     binary_mapping,
     unary_mapping,
@@ -77,7 +69,7 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-from pennylane.io import FromBloq
+# from pennylane.io import FromBloq
 from pennylane.io import (
     from_pyquil,
     from_qasm,
@@ -176,7 +168,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
-from pennylane.devices import Tracker
+# from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
