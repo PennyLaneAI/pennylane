@@ -94,10 +94,6 @@ class Elbow(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def adjoint(self):
-        # TODO: add efficient decomposition with MCMs when supported by the pipeline
-        return qml.adjoint(Elbow(self.wires))
-
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
