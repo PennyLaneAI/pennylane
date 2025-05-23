@@ -291,8 +291,8 @@ class CustomOp(IRDLOperation):
         if isinstance(gate_name, str):
             gate_name = StringAttr(data=gate_name)
 
-        out_qubits = (QubitType() for _ in in_qubits)
-        out_ctrl_qubits = (QubitType() for _ in in_ctrl_qubits)
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
         properties = {"gate_name": gate_name}
         if adjoint:
             properties["adjoint"] = UnitAttr()
