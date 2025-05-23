@@ -352,6 +352,8 @@ E_dag = E.conj().T
 CNOT01 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+P_0 = np.kron(np.diag([1j, 1]), np.eye(2))
+P_0_dag = P_0.conj().T
 
 
 def _compute_num_cnots(U):
@@ -616,94 +618,124 @@ def _decompose_2_cnots(U, wires, initial_phase):
     return math.cast_like(0, initial_phase)
 
 
+def _multidot(*matrices):
+    mat = matrices[0]
+    for m in matrices[1:]:
+        mat = math.dot(mat, m)
+    return mat
+
+
+def ai_kak(u):
+    """Compute a type-AI Cartan decomposition of ``u`` in the
+    standard basis/representation."""
+
+    Delta = math.dot(u, math.transpose(u))
+    _, o1 = math.linalg.eigh(math.real(Delta) + math.imag(Delta))
+    evals = _multidot(math.transpose(o1), Delta, o1)
+
+    # This implements o1[:, 0] *= det(o1) to ensure det(o1) = 1 afterwards
+    # No need to modify the eigenvalues or d because this change will be absorbed in o2
+    o1 = math.transpose(math.set_index(math.transpose(o1), 0, math.linalg.det(o1) * o1[:, 0]))
+
+    d = math.diag(math.sqrt(evals))
+    o2 = _multidot(math.conj(d), math.transpose(o1), u)
+
+    # Instead of guaranteeing the correct determinant while taking the square root,
+    # we correct it after the fact
+    # This implements o2[0] *= det(o2) to ensure det(o2) = 1 afterwards
+    # Here we need to also adapt d because o1 already is fixed, so it can not absorb det(o2)
+    det_o2 = math.linalg.det(o2)
+    o2 = math.set_index(o2, 0, det_o2 * o2[0])
+    d = math.set_index(d, 0, det_o2 * d[0])
+
+    return o1, d, o2
+
+
+def extract_abde(A):
+    """Extract the parameters for the central part of a 3-CNOT circuit as well
+    as a global phase."""
+    a_plus_b_half = math.cond(
+        math.allclose(math.real(A[::3, 0]), math.zeros_like(A[::3, 0])),
+        lambda: math.arctan2(math.imag(A[3, 0]), math.imag(A[0, 0])),
+        lambda: math.arctan2(math.real(A[3, 0]), math.real(A[0, 0])),
+        (),
+    )
+    a_minus_b_half = math.cond(
+        math.allclose(math.real(A[1:3, 1]), math.zeros_like(A[1:3, 1])),
+        lambda: math.arctan2(math.imag(A[1, 1]), math.imag(A[2, 1])),
+        lambda: math.arctan2(math.real(A[1, 1]), math.real(A[2, 1])),
+        (),
+    )
+    a = a_plus_b_half + a_minus_b_half
+    b = a_plus_b_half - a_minus_b_half
+
+    apb_frac = math.cond(
+        math.isclose(A[0, 0], math.zeros_like(A[0, 0])),
+        lambda: A[3, 0] / math.sin(a_plus_b_half),
+        lambda: A[0, 0] / math.cos(a_plus_b_half),
+        (),
+    )
+    amb_frac = math.cond(
+        math.isclose(A[2, 1], math.zeros_like(A[2, 1])),
+        lambda: A[1, 1] / math.sin(a_minus_b_half),
+        lambda: A[2, 1] / math.cos(a_minus_b_half),
+        (),
+    )
+
+    d = math.angle(amb_frac * math.conj(apb_frac))
+    e = -math.angle(amb_frac * math.exp(-1j * d / 2))
+    return a, b, d, e
+
+
+def center_circuit(a, b, d, wires):
+    """Central part of 3-CNOT circuit."""
+    ops.CNOT([wires[1], wires[0]])
+    ops.RZ(d, wires[0])
+    ops.RY(b, wires[1])
+    ops.CNOT(wires)
+    ops.RY(a, wires[1])
+    ops.CNOT([wires[1], wires[0]])
+
+
 def _decompose_3_cnots(U, wires, initial_phase):
-    r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
-    where V is as depicted in the circuit below:
-     -╭U- = -C--╭X--RZ(d)--╭C---------╭X--A-
-     -╰U- = -D--╰C--RY(b)--╰X--RY(a)--╰C--B-
+    """The derivation of this function needs to be added.
+    We basically just combine some basis changes with a type-AI Cartan decomposition.
     """
+    U_tilde = _multidot(P_0_dag, SWAP, U, P_0)
+    # assert math.allclose(U, _multidot(SWAP, P_0, U_tilde, P_0_dag))
+    V = _multidot(E_dag, U_tilde, E)
+    # assert math.allclose(_multidot(E, V, E_dag), U_tilde)
 
-    # First we add a SWAP as per v1 of arXiv:0308033, which helps with some
-    # rearranging of gates in the decomposition (it will cancel out the fact
-    # that we need to add a SWAP to fix the determinant in another part later).
-    swap_U = np.exp(1j * np.pi / 4) * math.dot(math.cast_like(SWAP, U), U)
+    K_1, A, K_2 = ai_kak(V)
+    # assert math.allclose(_multidot(K_1, A, K_2), V)
 
-    # Choose the rotation angles of RZ, RY in the two-qubit decomposition.
-    # They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
-    # on the phases of the eigenvalues of :math:`E^\dagger \gamma(U) E`, where
-    #    \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
-    # The rotation angles can be computed as follows (any three eigenvalues can be used)
-    u = math.dot(E_dag, math.dot(swap_U, E))
-    gammaU = math.dot(u, math.T(u))
-    # !Note: [sc-89460]
-    evs, _ = math.linalg.eig(gammaU)
+    K_1_tilde = _multidot(E, K_1, E_dag)
+    A_tilde = _multidot(E, A, E_dag)
+    K_2_tilde = _multidot(E, K_2, E_dag)
+    # assert math.allclose(_multidot(K_1_tilde, A_tilde, K_2_tilde), U_tilde)
 
-    x = math.angle(evs[0])
-    y = math.angle(evs[1])
-    z = math.angle(evs[2])
+    K_1 = _multidot(SWAP, P_0, K_1_tilde, P_0_dag, SWAP)
+    K_2 = _multidot(P_0, K_2_tilde, P_0_dag)
+    A = _multidot(SWAP, P_0, A_tilde, P_0_dag)
+    # assert math.allclose(_multidot(P_0_dag, SWAP, K_1, A, K_2, P_0), U_tilde)
+    # assert math.allclose(U, _multidot(SWAP, P_0, P_0_dag, SWAP, K_1, A, K_2, P_0, P_0_dag))
+    # assert _compute_num_cnots(K_1) == 0
+    # assert _compute_num_cnots(K_2) == 0
 
-    # Compute functions of the eigenvalues; there are different options in v1
-    # vs. v3 of the paper, I'm not entirely sure why. This is the version from v3.
-    alpha = (x + y) / 2
-    beta = (x + z) / 2
-    delta = (z + y) / 2
+    a, b, d, e = extract_abde(A)
+    # center_matrix = ops.functions.matrix(center_circuit, wire_order=[0, 1])
+    # recon_A = center_matrix(a, b, d, wires)
+    # assert math.allclose(
+    # recon_A, A
+    # ), f"\n{math.round(A, 3)}\n{math.round(recon_A, 3)}\n{math.round(recon_A / A, 3)}"
 
-    # We need the matrix representation of this interior part, V, in order to
-    # decompose U = (A \otimes B) V (C \otimes D)
-    #
-    # Looking at the decomposition above, V has determinant -1 (because there
-    # are 3 CNOTs, each with determinant -1). The relationship between U and V
-    # requires that both are in SU(4), so we add a SWAP after to V. We will see
-    # how this gets fixed later.
-    #
-    # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
-    # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
+    gphase = 0.0
+    gphase += _decompose_0_cnots(K_2, wires, gphase)
+    center_circuit(a, b, d, wires)
+    gphase += _decompose_0_cnots(K_1, wires, gphase)
+    # assert math.allclose(gphase, 0.0)
 
-    EPS = math.finfo(delta.dtype).eps
-    RZd = ops.RZ.compute_matrix(math.cast_like(delta + 5 * EPS, 1j))
-    RYb = ops.RY.compute_matrix(beta + 5 * EPS)
-    RYa = ops.RY.compute_matrix(alpha)
-
-    V_mats = [
-        CNOT10,
-        math.kron(RZd, RYb),
-        CNOT01,
-        math.kron(math.eye(2), RYa),
-        CNOT10,
-        SWAP,
-    ]
-    V = math.convert_like(math.eye(4), U)
-    for mat in V_mats:
-        V = math.dot(math.cast_like(mat, U), V)
-
-    # Now we need to find the four SU(2) operations A, B, C, D
-    A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
-
-    # At this point, we have the following:
-    # -╭U-╭SWAP- = --C--╭X-RZ(d)-╭C-------╭X-╭SWAP--A
-    # -╰U-╰SWAP- = --D--╰C-RZ(b)-╰X-RY(a)-╰C-╰SWAP--B
-    #
-    # Using the relationship that SWAP(A \otimes B) SWAP = B \otimes A,
-    # -╭U-╭SWAP- = --C--╭X-RZ(d)-╭C-------╭X--B--╭SWAP-
-    # -╰U-╰SWAP- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--╰SWAP-
-    #
-    # Now the SWAPs cancel, giving us the desired decomposition
-    # (up to a global phase).
-    # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
-    # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
-
-    ops.QubitUnitary(C, wires[0])
-    ops.QubitUnitary(D, wires[1])
-    ops.CNOT(wires=[wires[1], wires[0]])
-    ops.RZ(delta, wires=wires[0])
-    ops.RY(beta, wires=wires[1])
-    ops.CNOT(wires=wires)
-    ops.RY(alpha, wires=wires[1])
-    ops.CNOT(wires=[wires[1], wires[0]])
-    ops.QubitUnitary(A, wires[1])
-    ops.QubitUnitary(B, wires[0])
-
-    return math.cast_like(-np.pi / 4, initial_phase)
+    return math.cast_like(-e, initial_phase)
 
 
 def _two_qubit_resource(**_):
