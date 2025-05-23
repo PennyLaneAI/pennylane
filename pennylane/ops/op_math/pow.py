@@ -140,6 +140,7 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return pow(data[0], z=data[1])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
@@ -406,7 +407,6 @@ class Pow(ScalarSymbolicOp):
             return Pow(base=base, z=self.z)
 
 
-# pylint: disable=no-member
 class PowOperation(Pow, Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 

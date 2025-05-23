@@ -14,7 +14,7 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
-# pylint: disable=too-many-arguments,arguments-differ
+# pylint: disable=arguments-differ
 import copy
 
 import pennylane as qml
@@ -143,7 +143,6 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     grad_method = None
 
-    # pylint: disable=no-member
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
         metadata = (self.hyperparameters["estimation_wires"],)
