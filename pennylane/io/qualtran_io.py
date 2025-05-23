@@ -19,19 +19,505 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint: disable=unused-argument
 
 from collections import defaultdict
-from functools import lru_cache, singledispatch
+from functools import cached_property, lru_cache, singledispatch
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
 import pennylane.ops as qops
+import pennylane.templates as qtemps
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
 
 try:
     import qualtran as qt
+
+    qualtran = True
 except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+    qualtran = False
+
+if TYPE_CHECKING:
+    from qualtran.cirq_interop._bloq_to_cirq import _QReg
+
+
+# pylint: disable=import-outside-toplevel, unused-argument
+@lru_cache
+def _get_op_call_graph():
+    # ToDo: implement build_call_graphs for each high level operation
+    @singledispatch
+    def _op_call_graph(op):
+        return None
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        return {
+            Hadamard(): len(op.estimation_wires),
+            ToBloq(op.hyperparameters["unitary"]).controlled(): (
+                2 ** len(op.estimation_wires)
+            )
+            - 1,
+            ToBloq(qops.adjoint(qtemps.QFT(wires=op.estimation_wires))): 1,
+        }
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.TrotterizedQfunc):
+        import pennylane as qml
+
+        n = op.hyperparameters["n"]
+        order = op.hyperparameters["order"]
+        k = order // 2
+        qfunc = op.hyperparameters["qfunc"]
+        qfunc_args = op.parameters[1:]
+
+        with qml.QueuingManager.stop_recording():
+            with qml.queuing.AnnotatedQueue() as q:
+                base_hyper_params = ("n", "order", "qfunc", "reverse")
+
+                qfunc_args = op.parameters
+                qfunc_kwargs = {
+                    k: v for k, v in op.hyperparameters.items() if not k in base_hyper_params
+                }
+
+                qfunc = op.hyperparameters["qfunc"]
+                qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
+        
+        call_graph = defaultdict(int, {})
+        num_gates = 2 * n * (5 ** (k - 1))
+        for op in q.queue:
+            call_graph[_map_to_bloq()(op)] += num_gates
+
+        return call_graph
+
+    @_op_call_graph.register
+    def _(op: qtemps.state_preparations.Superposition):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import CNOT
+        from pennylane.templates.state_preparations.superposition import _assign_states
+
+        gate_types = {}
+        wires = op.wires
+        coeffs = op.coeffs
+        bases = op.hyperparameters["bases"]
+        num_basis_states = len(bases)
+        size_basis_state = len(bases[0])  # assuming they are all the same size
+        
+        dic_state = dict(zip(bases, coeffs))
+        perms = _assign_states(bases)
+        new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
+
+        sorted_coefficients = [
+            value
+            for key, value in sorted(
+                new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
+            )
+        ]
+        msp = qml.StatePrep(
+            qml.math.stack(sorted_coefficients),
+            wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+            pad_with=0,
+        )
+        gate_types[_map_to_bloq()(msp)] = 1
+
+        cnot = CNOT()
+        num_zero_ctrls = size_basis_state // 2
+        control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
+
+        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(size_basis_state+1), control_values=control_values))
+
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+
+        if num_permutes:
+            gate_types[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
+
+        return gate_types
+    
+    @_op_call_graph.register
+    def _(op: qtemps.state_preparations.QROMStatePreparation):
+        import pennylane as qml
+
+        gate_types = defaultdict()
+        probs = qml.math.abs(state_vector) ** 2
+        phases = qml.math.angle(state_vector) % (2 * np.pi)
+        eps = 1e-15  # Small constant to avoid division by zero
+
+        decomp_ops = []
+        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+        rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
+
+        for i in range(num_iterations):
+
+            probs_aux = qml.math.reshape(probs, [1, -1])
+
+            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
+            for itx in range(i + 1):
+                probs_denominator = qml.math.sum(probs_aux, axis=1)
+                probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
+                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+
+            # Compute the binary representations of the angles θi
+            thetas_binary = [
+                _float_to_binary(
+                    2
+                    * qml.math.arccos(
+                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                    )
+                    / np.pi,
+                    len(precision_wires),
+                )
+                for j in range(qml.math.shape(probs_numerator)[0])
+            ]
+            # Apply the QROM operation to encode the thetas binary representation
+            decomp_ops.append(
+                qml.QROM(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires[:i],
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+            # Turn binary representation into proper rotation
+            for ind, wire in enumerate(precision_wires):
+                decomp_ops.append(qml.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
+
+            # Clean wires used to store the theta values
+            decomp_ops.append(
+                qml.adjoint(qml.QROM)(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires[:i],
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+        if not qml.math.allclose(phases, 0.0):
+            # Compute the binary representations of the phases
+
+            thetas_binary = [
+                _float_to_binary(phase / (2 * np.pi), len(precision_wires)) for phase in phases
+            ]
+
+            # Apply the QROM operation to encode the thetas binary representation
+            decomp_ops.append(
+                qml.QROM(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires,
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+            for ind, wire in enumerate(precision_wires):
+                decomp_ops.append(
+                    qml.ctrl(
+                        qml.GlobalPhase(
+                            (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
+                        ),
+                        control=wire,
+                    )
+                )
+
+            decomp_ops.append(
+                qml.adjoint(qml.QROM)(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires,
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+        
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QROM):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import CSwap, Hadamard
+
+        num_ctrl_wires = len(op.control_wires)
+        control_wires = op.control_wires
+
+        gate_types = defaultdict()
+        if num_ctrl_wires == 0:
+            for bits in op.bitstrings:
+                gate_types[_map_to_bloq()(qml.BasisEmbedding(int(bits, 2), wires=op.target_wires))] += 1
+
+            return gate_types
+        
+        swap_wires = op.target_wires + op.work_wires
+
+        # number of operators we store per column (power of 2)
+        depth = len(swap_wires) // len(op.target_wires)
+        depth = int(2 ** np.floor(np.log2(depth)))
+        depth = min(depth, len(op.bitstrings))
+
+        ops = [qml.BasisEmbedding(int(bits, 2), wires=op.target_wires) for bits in op.bitstrings]
+        ops_identity = ops + [qml.I(op.target_wires)] * int(2 ** len(op.control_wires) - len(ops))
+
+        n_columns = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
+        new_ops = []
+        for i in range(n_columns):
+            column_ops = []
+            for j in range(depth):
+                dic_map = {
+                    ops_identity[i * depth + j].wires[l]: swap_wires[j * len(op.target_wires) + l]
+                    for l in range(len(op.target_wires))
+                }
+                column_ops.append(qml.map_wires(ops_identity[i * depth + j], dic_map))
+            new_ops.append(qml.prod(*column_ops))
+
+        # Select block
+        n_control_select_wires = int(qml.math.ceil(qml.math.log2(2 ** len(op.control_wires) / depth)))
+        control_select_wires = control_wires[:n_control_select_wires]
+
+        select_ops = []
+        if control_select_wires:
+            select_op = _map_to_bloq()(qml.Select(new_ops, control=control_select_wires))
+            gate_types[select_op] = 1
+            select_ops.append(select_op)
+        else:
+            for op in new_ops:
+                bloq = _map_to_bloq()(op)
+                gate_types[bloq] += 1
+                select_ops.append(bloq)
+
+        # Swap block
+        control_swap_wires = control_wires[n_control_select_wires:]
+        gate_types[CSwap(len(op.target_wires))] = 2 ** len(control_swap_wires) - 1
+
+        if not op.clean or depth == 1:
+            return gate_types
+        else:
+            # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
+            gate_types[Hadamard()] = 2 * len(op.target_wires)
+            gate_types[CSwap(len(op.target_wires))] *= 4
+            gate_types[_map_to_bloq()(qml.Select(new_ops, control=control_select_wires))] = 1
+            for op in select_ops:
+                gate_types[op] *= 2
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QFT):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
+
+        gate_types = {}
+        num_wires = len(op.wires)
+        gate_types[Hadamard()] = num_wires
+        gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
+        gate_types[TwoBitSwap()] = num_wires // 2
+        return gate_types
+    
+    # @_op_call_graph.register
+    # def _(op: qtemps.subroutines.ModExp):
+    #     import pennylane as qml
+    #     gate_types = {}
+    #     x_wires = op.hyperparameters["x_wires"]
+    #     output_wires = op.hyperparameters["output_wires"]
+    #     base = op.hyperparameters["base"]
+    #     mod = op.hyperparameters["mod"]
+    #     work_wires = op.hyperparameters["work_wires"]
+    #     x_wires, output_wires, base, mod, work_wires = op.hyperparameters
+
+    #     controlled_sequence_multiplier = qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+    #     gate_types[controlled_sequence_multiplier] = 1
+
+    #     return gate_types
+
+    return _op_call_graph
+
+
+# pylint: disable=import-outside-toplevel, unused-argument
+@lru_cache
+def _map_to_bloq():
+    @singledispatch
+    def _to_qt_bloq(op):
+        return ToBloq(op)
+
+    # @_to_qt_bloq.register
+    # def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
+    #     from qualtran.bloqs.phase_estimation import RectangularWindowState
+    #     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+    #     if args and isinstance(args[0], dict) and args[0]:
+    #         try:
+    #             return args[0][type(op)]
+    #         except KeyError:
+    #             # ToDo: make this more robust of an error
+    #             return args[0][op]
+            
+    #     return TextbookQPE(
+    #         unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
+    #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+    #     )
+
+    # @_to_qt_bloq.register
+    # def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
+    #     from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+
+    #     dt = op.data[0]
+    #     n = op.hyperparameters["n"]
+    #     def _construct_suzuki_indices_coeffs(nterms: int, k: int):
+    #         """
+    #         Recursively construct the Suzuki product rule indices and coefficients for order `2 k`.
+    #         """
+    #         if k <= 0:
+    #             raise ValueError(f"`k` must be a positive integer, received {k}")
+    #         if k == 1:
+    #             indices = list(range(nterms)) + list(reversed(range(nterms)))
+    #             coeffs = (2*nterms) * (0.5,)
+    #         else:
+    #             uk = 1./(4 - 4**(1./(2*k-1)))
+    #             ik1, ck1 = _construct_suzuki_indices_coeffs(nterms, k - 1)
+    #             ck1_uk = [uk*c for c in ck1]
+    #             ck1_14uk = [(1 - 4*uk)*c for c in ck1]
+    #             indices = ik1 + ik1 + ik1 + ik1 + ik1
+    #             coeffs = ck1_uk + ck1_uk + ck1_14uk + ck1_uk + ck1_uk
+    #         return merge_layers(indices, coeffs)
+
+    #     def merge_layers(indices, coeffs):
+    #         """
+    #         Merge neighboring layers with the same index.
+    #         """
+    #         assert len(coeffs) == len(indices)
+    #         mindices = [indices[0]]
+    #         mcoeffs  = [coeffs[0]]
+    #         for i, c in zip(indices[1:], coeffs[1:]):
+    #             if mindices[-1] == i:
+    #                 mcoeffs[-1] += c
+    #             else:
+    #                 mindices.append(i)
+    #                 mcoeffs.append(c)
+    #         return mindices, mcoeffs
+        
+    #     indices, coeffs = _construct_suzuki_indices_coeffs()
+
+
+    #     return TrotterizedUnitary(
+    #         bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
+    #     )
+
+    @_to_qt_bloq.register
+    def _(op: qops.GlobalPhase):
+        from qualtran.bloqs.basic_gates import GlobalPhase
+
+        return GlobalPhase(exponent=op.data[0] / np.pi)
+
+    @_to_qt_bloq.register
+    def _(op: qops.CNOT):
+        from qualtran.bloqs.basic_gates import CNOT
+
+        return CNOT()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Hadamard):
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        return Hadamard()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Identity):
+        from qualtran.bloqs.basic_gates import Identity
+
+        return Identity()
+
+    @_to_qt_bloq.register
+    def _(op: qops.RX):
+        from qualtran.bloqs.basic_gates import Rx
+
+        return Rx(angle=float(op.data[0]))
+
+    @_to_qt_bloq.register
+    def _(op: qops.RY):
+        from qualtran.bloqs.basic_gates import Ry
+
+        return Ry(angle=float(op.data[0]))
+
+    @_to_qt_bloq.register
+    def _(op: qops.RZ):
+        from qualtran.bloqs.basic_gates import Rz
+
+        return Rz(angle=float(op.data[0]))
+
+    @_to_qt_bloq.register
+    def _(op: qops.S):
+        from qualtran.bloqs.basic_gates import SGate
+
+        return SGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.SWAP):
+        from qualtran.bloqs.basic_gates import TwoBitSwap
+
+        return TwoBitSwap()
+
+    @_to_qt_bloq.register
+    def _(op: qops.CSWAP):
+        from qualtran.bloqs.basic_gates import TwoBitCSwap
+
+        return TwoBitCSwap()
+
+    @_to_qt_bloq.register
+    def _(op: qops.T):
+        from qualtran.bloqs.basic_gates import TGate
+
+        return TGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Toffoli):
+        from qualtran.bloqs.basic_gates import Toffoli
+
+        return Toffoli()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Toffoli):
+        from qualtran.bloqs.basic_gates import Toffoli
+
+        return Toffoli()
+
+    @_to_qt_bloq.register
+    def _(op: qops.X):
+        from qualtran.bloqs.basic_gates import XGate
+
+        return XGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Y):
+        from qualtran.bloqs.basic_gates import YGate
+
+        return YGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.CY):
+        from qualtran.bloqs.basic_gates import CYGate
+
+        return CYGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Z):
+        from qualtran.bloqs.basic_gates import ZGate
+
+        return ZGate()
+
+    @_to_qt_bloq.register
+    def _(op: qops.CZ):
+        from qualtran.bloqs.basic_gates import CZ
+
+        return CZ()
+
+    return _to_qt_bloq
 
 
 @lru_cache
@@ -120,7 +606,7 @@ def _get_to_pl_op():
     return _to_pl_op
 
 
-def bloq_registers(bloq):
+def bloq_registers(bloq: "qt.Bloq"):
     """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
@@ -419,3 +905,351 @@ class FromBloq(Operation):
             raise MatrixUndefinedError
 
         return matrix
+
+
+def split_qubits(registers, qubits):  # type: ignore[type-var]
+    """Splits the flat list of qubits into a dictionary of appropriately shaped qubit arrays."""
+
+    qubit_regs = {}
+    base = 0
+    for reg in registers:
+        qubit_regs[reg.name] = np.array(qubits[base : base + reg.total_bits()]).reshape(
+            reg.shape + (reg.bitsize,)
+        )
+        base += reg.total_bits()
+    return qubit_regs
+
+
+def _ensure_in_reg_exists(
+    bb: "qt.BloqBuilder",
+    in_reg: "_QReg",
+    qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
+) -> None:
+    """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    from qualtran.cirq_interop._cirq_to_bloq import _QReg
+
+    all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
+    qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
+    if qubits_to_allocate:
+        n_alloc = len(qubits_to_allocate)
+        qreg_to_qvar[
+            _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
+        ] = bb.allocate(n_alloc)
+
+    if in_reg in qreg_to_qvar:
+        # This is the easy case when no split / joins are needed.
+        return
+
+    # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
+    in_reg_qubits = set(in_reg.qubits)
+
+    new_qreg_to_qvar: Dict[_QReg, qt.Soquet] = {}
+    for qreg, soq in qreg_to_qvar.items():
+        if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
+            new_qreg_to_qvar |= {
+                _QReg(q, qt.QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
+            }
+        else:
+            new_qreg_to_qvar[qreg] = soq
+    qreg_to_qvar.clear()
+
+    # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
+    soqs_to_join = {}
+    for qreg, soq in new_qreg_to_qvar.items():
+        if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
+            assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
+            # Cast single bit registers to QBit to preserve signature of later join.
+            if not isinstance(qreg.dtype, qt.QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.add(
+                    qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq
+                )
+            else:
+                soqs_to_join[qreg.qubits[0]] = soq
+        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
+            # Cast single QBit registers to the appropriate single-bit register dtype.
+            err_msg = (
+                "Found non-QBit type register which shouldn't happen: "
+                f"{soq.reg.name} {soq.reg.dtype}"
+            )
+            assert isinstance(soq.reg.dtype, qt.QBit), err_msg
+            if not isinstance(in_reg.dtype, qt.QBit):
+                qreg_to_qvar[in_reg] = bb.add(
+                    qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq
+                )
+            else:
+                qreg_to_qvar[qreg] = soq
+        else:
+            qreg_to_qvar[qreg] = soq
+    if soqs_to_join:
+        # A split is not necessarily matched with a join of the same size so we
+        # need to strip the data type of the parent split before assigning the correct bitsize.
+        qreg_to_qvar[in_reg] = bb.join(
+            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
+        )
+
+
+def _gather_input_soqs(
+    bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar  # type: ignore[type-var]
+):  # type: ignore[type-var]
+    qvars_in = {}  # type: ignore[type-var]
+    for reg_name, quregs in op_quregs.items():
+        flat_soqs: List[qt.Soquet] = []
+        for qureg in quregs.flatten():
+            _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
+            flat_soqs.append(qreg_to_qvar[qureg])
+        qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
+    return qvars_in
+
+
+def _inherit_from_bloq(cls):
+    if qualtran:
+
+        class ToBloq(qt.Bloq):
+            r"""
+            Adapter class to convert PennyLane operators into Qualtran Bloqs
+            """
+
+            def __init__(self, op, **kwargs):
+                self.op = op
+                self._kwargs = kwargs
+                super().__init__()
+
+            @cached_property
+            def signature(self) -> "qt.Signature":
+                from pennylane.workflow.qnode import QNode
+                from pennylane.workflow import construct_tape
+
+                if isinstance(self.op, QNode):
+                    num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
+                else:
+                    num_wires = len(self.op.wires)
+                return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+
+            def decompose_bloq(self):
+                from qualtran.cirq_interop._cirq_to_bloq import _QReg
+                from pennylane.workflow.qnode import QNode
+                from pennylane.workflow import construct_tape
+
+                try:
+                    if isinstance(self.op, QNode):
+                        tape = construct_tape(self.op)(**self._kwargs)
+                        ops = tape.circuit
+                        all_wires = list(tape.wires)
+                    else:
+                        ops = self.op.decomposition()
+                        all_wires = list(self.op.wires)
+
+                    signature = self.signature
+                    in_quregs = out_quregs = {
+                        "qubits": np.array(all_wires).reshape(len(all_wires), 1)
+                    }
+
+                    in_quregs = {
+                        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+                        for k, v in in_quregs.items()
+                    }
+
+                    out_quregs = {
+                        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
+                        for k, v in out_quregs.items()
+                    }
+                    bb, initial_soqs = qt.BloqBuilder.from_signature(
+                        signature, add_registers_allowed=False
+                    )
+
+                    # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
+                    qreg_to_qvar = {}
+                    for reg in signature.lefts():
+                        if reg.name not in in_quregs:
+                            raise ValueError(
+                                f"Register {reg.name} from signature must be present in in_quregs."
+                            )
+                        soqs = initial_soqs[reg.name]
+                        if isinstance(soqs, qt.Soquet):
+                            soqs = np.array(soqs)
+                        if in_quregs[reg.name].shape != soqs.shape:
+                            raise ValueError(
+                                f"Shape {in_quregs[reg.name].shape} of qubit register "
+                                f"{reg.name} should be {soqs.shape}."
+                            )
+                        qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
+
+                    # 2. Add each operation to the composite Bloq.
+                    for op in ops:
+                        bloq = _map_to_bloq()(op)
+                        if bloq.signature == qt.Signature([]):
+                            bb.add(bloq)
+                            continue
+
+                        reg_dtypes = [r.dtype for r in bloq.signature]
+                        # 3.1 Find input / output registers.
+                        all_op_quregs = {
+                            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+                            for i, (k, v) in enumerate(
+                                split_qubits(bloq.signature, op.wires).items()
+                            )
+                        }
+
+                        in_op_quregs = {
+                            reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
+                        }
+
+                        # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+                        # input `in_quregs` and updating the `qreg_to_qvar` mapping.
+                        qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+
+                        # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+                        qvars_out = bb.add_d(bloq, **qvars_in)
+
+                        # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+                        for reg in bloq.signature:
+                            # all_op_quregs should exist for both LEFT & RIGHT registers.
+                            assert reg.name in all_op_quregs
+                            quregs = all_op_quregs[reg.name]
+                            if reg.side == qt.Side.LEFT:
+                                # This register got de-allocated, update the `qreg_to_qvar` mapping.
+                                for q in quregs.flatten():
+                                    _ = qreg_to_qvar.pop(q)
+                            else:
+                                assert quregs.shape == np.array(qvars_out[reg.name]).shape
+                                qreg_to_qvar |= zip(
+                                    quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+                                )
+
+                    # 4. Combine Soquets to match the right signature.
+                    final_soqs_dict = _gather_input_soqs(
+                        bb,
+                        {reg.name: out_quregs[reg.name] for reg in signature.rights()},
+                        qreg_to_qvar,
+                    )
+                    final_soqs_set = set(
+                        soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
+                    )
+                    # 5. Free all dangling Soquets which are not part of the final soquets set.
+                    for qvar in qreg_to_qvar.values():
+                        if qvar not in final_soqs_set:
+                            bb.free(qvar)
+
+                    cbloq = bb.finalize(**final_soqs_dict)
+                    return cbloq
+                except DecompositionUndefinedError:
+                    raise qt.DecomposeNotImplementedError
+
+            def build_call_graph(self, ssa):
+                call_graph = _get_op_call_graph()(self.op)
+                if call_graph:
+                    return call_graph
+
+                return self.decompose_bloq().build_call_graph(ssa)
+
+            def __repr__(self):
+                if isinstance(self.op, Operation):
+                    return f"ToBloq({self.op.name})"
+                return "ToBloq(QNode)"
+            
+            def __str__(self):
+                return "PL" + self.op.name
+
+        return ToBloq
+    return cls
+
+
+@_inherit_from_bloq
+class ToBloq:
+    r"""
+    An adapter for using a PennyLane :class:`~.Operation as a
+    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+
+    Raises:
+        TypeError: operator must be an instance of :class:`~.Operation.
+
+    **Example**
+
+    This example shows how to use ``qml.ToBloq``:
+
+    >>> wrapped_op = qml.ToBloq(qml.CNOT([0, 1]))
+    >>> wrapped_op.tensor_contract()
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+
+    This example shows how to use ``qml.ToBloq`` for resource estimation:
+
+    >>> from qualtran.bloqs.basic_gates import CNOT
+    >>> dev = qml.device("default.qubit") # Execute on device
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.FromBloq(CNOT(), wires=[0, 1])
+    ...     return qml.state()
+    >>> circuit()
+    array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+    """
+
+    _dependency_missing = True
+    _error_message = (
+        "Optional dependency 'qualtran' is required "
+        "for ToBloq functionality but is not installed."
+    )
+
+    # Prevent instantiation if the dependency is missing
+    def __init__(self, *args, **kwargs):
+        raise ImportError(self._error_message)
+
+    def __getattr__(self, name):
+        raise ImportError(self._error_message)
+
+    def __call__(self, *args, **kwargs):
+        raise ImportError(self._error_message)
+
+def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
+    """
+    Converts the given circuit or :class:`~.Operation and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        circuit (QNode | Operation): a QNode or an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
+        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
+            as a `ToBloq`. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. A default mapping is used if not defined.
+
+    Returns:
+        Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation and
+            options.
+
+    **Example**
+
+    This example shows how to use ``qml.to_bloq``:
+
+    >>> qt_bloq = qml.to_bloq(qml.CNOT([0, 1]))
+    qt.CNOT()
+
+    .. details::
+        :title: Usage Details
+
+        Difference between mapping and wrapping:
+    """
+
+    if map_ops:
+        return _map_to_bloq()(circuit, custom_mapping, **kwargs)
+
+    return ToBloq(circuit, **kwargs)
