@@ -24,10 +24,6 @@ class DecompositionError(Exception):
     """Base class for decomposition errors."""
 
 
-class DecompositionNotApplicable(Exception):
-    """Exception raised when a decomposition is not applicable to the given operator."""
-
-
 OP_NAME_ALIASES = {
     "X": "PauliX",
     "Y": "PauliY",
@@ -41,7 +37,7 @@ def translate_op_alias(op_alias):
     """Translates an operator alias to its proper name."""
     if op_alias in OP_NAME_ALIASES:
         return OP_NAME_ALIASES[op_alias]
-    if match := re.match(r"C\((\w+)\)", op_alias):
+    if match := re.match(r"(?:C|Controlled)\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"C({translate_op_alias(base_op_name)})"
     if match := re.match(r"Adjoint\((\w+)\)", op_alias):
@@ -50,6 +46,11 @@ def translate_op_alias(op_alias):
     if match := re.match(r"Pow\((\w+)\)", op_alias):
         base_op_name = match.group(1)
         return f"Pow({translate_op_alias(base_op_name)})"
+    if match := re.match(r"(\w+)\(\w+\)", op_alias):
+        raise ValueError(
+            f"'{match.group(1)}' is not a valid name for a symbolic operator. Supported "
+            f'names include: "Adjoint", "C", "Controlled", "Pow".'
+        )
     return op_alias
 
 
