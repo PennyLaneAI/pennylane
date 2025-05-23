@@ -138,7 +138,103 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
         import pennylane as qml
-        pass
+
+        gate_types = defaultdict()
+        probs = qml.math.abs(state_vector) ** 2
+        phases = qml.math.angle(state_vector) % (2 * np.pi)
+        eps = 1e-15  # Small constant to avoid division by zero
+
+        decomp_ops = []
+        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+        rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
+
+        for i in range(num_iterations):
+
+            probs_aux = qml.math.reshape(probs, [1, -1])
+
+            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
+            for itx in range(i + 1):
+                probs_denominator = qml.math.sum(probs_aux, axis=1)
+                probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
+                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+
+            # Compute the binary representations of the angles θi
+            thetas_binary = [
+                _float_to_binary(
+                    2
+                    * qml.math.arccos(
+                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                    )
+                    / np.pi,
+                    len(precision_wires),
+                )
+                for j in range(qml.math.shape(probs_numerator)[0])
+            ]
+            # Apply the QROM operation to encode the thetas binary representation
+            decomp_ops.append(
+                qml.QROM(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires[:i],
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+            # Turn binary representation into proper rotation
+            for ind, wire in enumerate(precision_wires):
+                decomp_ops.append(qml.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
+
+            # Clean wires used to store the theta values
+            decomp_ops.append(
+                qml.adjoint(qml.QROM)(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires[:i],
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+        if not qml.math.allclose(phases, 0.0):
+            # Compute the binary representations of the phases
+
+            thetas_binary = [
+                _float_to_binary(phase / (2 * np.pi), len(precision_wires)) for phase in phases
+            ]
+
+            # Apply the QROM operation to encode the thetas binary representation
+            decomp_ops.append(
+                qml.QROM(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires,
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+
+            for ind, wire in enumerate(precision_wires):
+                decomp_ops.append(
+                    qml.ctrl(
+                        qml.GlobalPhase(
+                            (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
+                        ),
+                        control=wire,
+                    )
+                )
+
+            decomp_ops.append(
+                qml.adjoint(qml.QROM)(
+                    bitstrings=thetas_binary,
+                    target_wires=precision_wires,
+                    control_wires=input_wires,
+                    work_wires=work_wires,
+                    clean=False,
+                )
+            )
+        
+        return gate_types
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
@@ -205,7 +301,7 @@ def _get_op_call_graph():
             gate_types[_map_to_bloq()(qml.Select(new_ops, control=control_select_wires))] = 1
             for op in select_ops:
                 gate_types[op] *= 2
-                
+
         return gate_types
 
     @_op_call_graph.register
@@ -219,6 +315,7 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
+    
     # @_op_call_graph.register
     # def _(op: qtemps.subroutines.ModExp):
     #     import pennylane as qml
