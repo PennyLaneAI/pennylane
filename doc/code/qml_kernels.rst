@@ -12,7 +12,7 @@ matrices which can be used to mitigate device noise and sampling errors.
 
 .. currentmodule:: pennylane.kernels
 
-.. automodapi:: pennylane.kernels
+.. automodapi:: pennylane
     :no-heading:
     :no-main-docstr:
     :include-all-objects:
