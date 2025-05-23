@@ -1,6 +1,6 @@
 {{ fullname | replace("pennylane", "qml") }}
 {{ underline }}
-
+   
 .. autoclass:: {{ fullname }}
    :show-inheritance:
 

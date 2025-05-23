@@ -736,7 +736,8 @@ def _to_string(fermi_op, of=False):
 
 
 class FermiC(FermiWord):
-    r"""FermiC(orbital)
+    r"""    
+    FermiC(orbital)
     The fermionic creation operator :math:`a^{\dagger}`
 
     For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^{\dagger}_2`. This operator applied
@@ -763,6 +764,9 @@ class FermiC(FermiWord):
     >>> w = qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     >>> print(w)
     a⁺(0) a(1) a⁺(2) a(3)
+
+    .. autosummary::
+        :toctree: api
     """
 
     def __init__(self, orbital):

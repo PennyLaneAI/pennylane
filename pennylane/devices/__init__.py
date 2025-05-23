@@ -59,7 +59,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
-    Tracker
 
 Preprocessing Transforms
 ------------------------
