@@ -27,7 +27,7 @@ class Resources:
 
     Args:
         qubit_manager (QubitManager): A qubit tracker class which contains the number of available
-            work wires, catagorized as clean, dirty or algorithmic wires.
+            work wires, categorized as clean, dirty or algorithmic wires.
         gate_types (dict): A dictionary storing operations (ResourceOperator) as keys and the number
             of times they are used in the circuit (int) as values.
 
