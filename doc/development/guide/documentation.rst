@@ -502,7 +502,7 @@ Building the documentation
 To build the documentation, in addition to the standard PennyLane dependencies,
 the following additional packages are required:
 
-* `Sphinx <http://sphinx-doc.org/>`_ == 2.2.2
+* `Sphinx <http://sphinx-doc.org/>`_
 * `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`__
 * `pygments-github-lexers <https://github.com/liluo/pygments-github-lexers>`_
 * `m2r <https://github.com/miyakogi/m2r>`_
@@ -534,7 +534,7 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
 .. note::
 
-  If you are running Python3.8 on an M1 Mac you need to set the following environment variables
+  If you are running Python3.10 on an M1 Mac you need to set the following environment variables
   before installing the requirements to be able to install the grpcio package required by TensorFlow
   (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`):
 
