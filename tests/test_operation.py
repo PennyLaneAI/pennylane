@@ -22,6 +22,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -44,13 +45,13 @@ I_broadcasted = I[pnp.newaxis]
 def test_wires_enum_deprecation():
     """Test that WiresEnum, AllWires, and AnyWires are deprecated."""
 
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="is deprecated"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
         _ = qml.operation.WiresEnum
 
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="is deprecated"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
         _ = qml.operation.AllWires
 
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="is deprecated"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
         _ = qml.operation.AnyWires
 
 

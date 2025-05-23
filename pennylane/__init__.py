@@ -195,11 +195,12 @@ def __getattr__(name):
         "QuantumFunctionError",
         "ExperimentalWarning",
     }:
-        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
-        # warnings.warn(
-        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
-        #     pennylane.exceptions.PennyLaneDeprecationWarning,
-        # )
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible at top-level \
+                and must be imported as pennylane.exceptions.{name}. \
+                    Support for top-level access will be removed in v0.42.",
+            pennylane.exceptions.PennyLaneDeprecationWarning,
+        )
         return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
