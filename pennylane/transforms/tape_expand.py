@@ -15,11 +15,9 @@
 generate such functions from."""
 # pylint: disable=unused-argument,invalid-unary-operand-type
 import contextlib
-import warnings
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -359,7 +357,41 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
     return custom_decomp_expand
 
 
-def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
+def _modify_program(program, custom_decomps):
+    def decomposer(op):
+        if isinstance(op, qml.ops.Controlled) and type(op.base) in custom_decomps:
+            op.base.compute_decomposition = custom_decomps[type(op.base)]
+            return op.decomposition()
+        if op.name in custom_decomps:
+            return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
+        if type(op) in custom_decomps:
+            return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
+        return op.decomposition()
+
+    for container in program:
+        if container.transform == qml.devices.preprocess.decompose.transform:
+            container.kwargs["decomposer"] = decomposer
+
+            for cond in ["stopping_condition", "stopping_condition_shots"]:
+                # Devices that do not support native mid-circuit measurements
+                # will not have "stopping_condition_shots".
+                if cond in container.kwargs:
+                    original_stopping_condition = container.kwargs[cond]
+
+                    def stopping_condition(obj):
+                        if obj.name in custom_decomps or type(obj) in custom_decomps:
+                            return False
+                        # pylint: disable=cell-var-from-loop
+                        return original_stopping_condition(obj)
+
+                    container.kwargs[cond] = stopping_condition
+
+            break
+
+    return program
+
+
+def _create_decomp_preprocess(custom_decomps, dev):
     """Creates a custom preprocessing method for a device that applies
     a set of specified custom decompositions.
 
@@ -396,44 +428,29 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
     >>> dev.preprocess = new_preprocessing
     """
 
-    def decomposer(op):
-        if isinstance(op, qml.ops.Controlled) and type(op.base) in custom_decomps:
-            op.base.compute_decomposition = custom_decomps[type(op.base)]
-            return op.decomposition()
-        if op.name in custom_decomps:
-            return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
-        if type(op) in custom_decomps:
-            return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
-        return op.decomposition()
-
     original_preprocess = dev.preprocess
 
-    # pylint: disable=cell-var-from-loop
     def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
         program, config = original_preprocess(execution_config)
-
-        for container in program:
-            if container.transform == qml.devices.preprocess.decompose.transform:
-                container.kwargs["decomposer"] = decomposer
-
-                for cond in ["stopping_condition", "stopping_condition_shots"]:
-                    # Devices that do not support native mid-circuit measurements
-                    # will not have "stopping_condition_shots".
-                    if cond in container.kwargs:
-                        original_stopping_condition = container.kwargs[cond]
-
-                        def stopping_condition(obj):
-                            if obj.name in custom_decomps or type(obj) in custom_decomps:
-                                return False
-                            return original_stopping_condition(obj)
-
-                        container.kwargs[cond] = stopping_condition
-
-                break
-
-        return program, config
+        return _modify_program(program, custom_decomps), config
 
     return new_preprocess
+
+
+def _create_decomp_preprocess_transforms(custom_decomps, dev):
+    original_preprocess_transforms = dev.preprocess_transforms
+
+    def new_preprocess_transforms(execution_config=qml.devices.DefaultExecutionConfig):
+        program = original_preprocess_transforms(execution_config)
+        return _modify_program(program, custom_decomps)
+
+    return new_preprocess_transforms
+
+
+def _create_decomp_preprocessing(custom_decomps, dev, override_method):
+    if override_method == "preprocess":
+        return _create_decomp_preprocess(custom_decomps, dev)
+    return _create_decomp_preprocess_transforms(custom_decomps, dev)
 
 
 @contextlib.contextmanager
@@ -504,18 +521,18 @@ def set_decomposition(custom_decomps, dev):
             dev.custom_expand_fn = original_custom_expand_fn
 
     else:
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"max_expansion argument is deprecated",
-                category=PennyLaneDeprecationWarning,
-            )
-            original_preprocess = dev.preprocess
-            new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)
+        override_method = (
+            "preprocess_transforms"
+            if type(dev).preprocess == qml.devices.Device.preprocess
+            else "preprocess"
+        )
 
-            try:
-                dev.preprocess = new_preprocess
-                yield
+        original_method = getattr(dev, override_method)
 
-            finally:
-                dev.preprocess = original_preprocess
+        new_method = _create_decomp_preprocessing(custom_decomps, dev, override_method)
+        try:
+            setattr(dev, override_method, new_method)
+            yield
+
+        finally:
+            setattr(dev, override_method, original_method)
