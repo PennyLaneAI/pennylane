@@ -482,20 +482,17 @@ class TestControlledQubitUnitary:
         with pytest.warns(UserWarning, match="may not be unitary"):
             qml.ControlledQubitUnitary(not_unitary, wires=[0, 2, 1], unitary_check=True)
 
+
 class TestElbow:
     """Tests specific to the Elbow operation"""
 
-    @pytest.mark.parametrize("direction", ("left", "right"))
-    def test_standard_validity(self, direction):
+    def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
         op = qml.Elbow(
-            wires = [0,1,2],
-            direction= direction
+            wires=[0, 1, 2],
         )
-
         qml.ops.functions.assert_valid(op)
-
 
     def test_correctness(self):
         """Tests the correctness of the Elbow operator.
@@ -508,10 +505,10 @@ class TestElbow:
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
-                qml.Elbow([0,1,2], "left"),
-                qml.CNOT([2,3]),
+                qml.Elbow([0, 1, 2]),
+                qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
-                qml.Elbow([0, 1, 2], "right"),
+                qml.adjoint(qml.Elbow([0, 1, 2])),
             ],
             [qml.state()],
         )
@@ -536,19 +533,12 @@ class TestElbow:
         output_toffoli = dev.execute(tape[0])[0]
         assert np.allclose(output_toffoli, output_elbow)
 
-
-    @pytest.mark.parametrize(
-        "test_elbow",
-        [
-            qml.Elbow([0,1,2], "left"),
-            qml.Elbow([0,1,2], "right"),
-        ],
-    )
-    def test_elbow_decompositions(self, test_elbow):
+    def test_elbow_decompositions(self):
         """Tests that Elbow is decomposed properly."""
 
         for rule in qml.list_decomps(qml.Elbow):
-            _test_decomposition_rule(test_elbow, rule)
+            _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
+
 
 @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
 def test_map_wires_non_parametric(op_cls, _):

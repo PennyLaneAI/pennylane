@@ -2136,18 +2136,19 @@ add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _p
 
 SQISW = SISWAP
 
+
 class Elbow(Operation):
-    r"""Elbow(wires, direction)
+    r"""Elbow(wires)
 
     The Elbow operator is a three-qubit gate analogous to an AND or Toffoli gate that leverages extra information
-    in the target wire to enable more efficient circuit decompositions: the left Elbow assumes the target qubit
-    is initialized in :math:`|0\rangle`, while the right Elbow assumes the target output in :math:`|0\rangle`.
+    in the target wire to enable more efficient circuit decompositions: the ``Elbow`` assumes the target qubit
+    is initialized in :math:`|0\rangle`, while the ``Adjoint(Elbow)`` assumes the target output in :math:`|0\rangle`.
     For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
-        on the target wire when using the left or right Elbow respectively. Otherwise, the behavior could be
+        on the target wire when using ``Elbow`` or ``Adjoint(Elbow)`` respectively. Otherwise, the behavior could be
         different from the expected AND.
 
     **Details:**
@@ -2158,7 +2159,25 @@ class Elbow(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
             third one is the target wire.
-        direction (str): The type of elbow we are implementing. It can be ``left`` or ``right`.
+
+    **Example**
+
+    .. code-block::
+
+        dev = qml.device("default.qubit", shots=1)
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            qml.X(1)
+            qml.Elbow([0,1,2])
+            qml.CNOT([2,3])
+            qml.adjoint(qml.Elbow([0,1,2]))
+            return qml.sample(wires=[0,1,2,3])
+
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [1 1 0 1]
     """
 
     num_wires = 3
@@ -2170,44 +2189,35 @@ class Elbow(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set(["direction"])
+    resource_keys = set()
 
     name = "Elbow"
 
     @property
     def resource_params(self) -> dict:
-        print(self.resource_keys)
-        return {"direction": self.hyperparameters["direction"]}
+        return {}
 
     def _flatten(self):
-        return tuple(), (self.wires, self.hyperparameters["direction"])
+        return tuple(), (self.wires)
 
     @classmethod
     def _unflatten(cls, _, metadata):
-        return cls(wires = metadata[0], direction=metadata[1])
+        return cls(wires=metadata)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(self, wires, direction, id=None):
-
-        self.hyperparameters["direction"] = direction
-        super().__init__(wires = wires, id=id)
-
     def __repr__(self):
-        return f"Elbow(wires={self.wires.tolist()}, direction={self.hyperparameters["direction"]})"
-
+        return f"Elbow(wires={self.wires.tolist()})"
 
     def adjoint(self):
-        direction = self.hyperparameters["direction"]
-        if direction == "left":
-            return Elbow(self.wires, "right")
-        return Elbow(self.wires, "left")
+        # TODO: add efficient decomposition with MCM when supported by the pipeline
+        return qml.adjoint(Elbow(self.wires))
 
     @staticmethod
     @lru_cache()
-    def compute_matrix(direction):  # pylint: disable=arguments-differ
+    def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2218,7 +2228,7 @@ class Elbow(Operation):
 
         **Example**
 
-        >>> print(qml.Elbow.compute_matrix("left"))
+        >>> print(qml.Elbow.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 -1j 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0]
@@ -2229,40 +2239,23 @@ class Elbow(Operation):
          [0 0 0 0 0 0 1 0]]
         """
 
-        if direction == "left":
-            return np.array(
-                [
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, -1j, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, -1j, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 1j, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, -1j],
-                    [0, 0, 0, 0, 0, 0, 1, 0],
-                ]
-            )
         return np.array(
-                [
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1j, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1j, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, -1j, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 1],
-                    [0, 0, 0, 0, 0, 0, 1j, 0],
-                ]
-            )
-
-    def decomposition(self):
-        return self.compute_decomposition(self.wires, self.hyperparameters["direction"])
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, -1j, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, -1j, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1j, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, -1j],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+            ]
+        )
 
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-        direction: str,
-    ) :
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2273,14 +2266,13 @@ class Elbow(Operation):
         Args:
             wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
                 third one is the target wire.
-            direction (str): The type of elbow we are implementing. It can be ``left`` or ``right`.
 
         Returns:
             list[Operator]: decomposition into lower level operations
 
         **Example:**
 
-        >>> qml.Elbow.compute_decomposition((0,1,2), "left")
+        >>> qml.Elbow.compute_decomposition((0,1,2))
         [H(2),
         T(2),
         CNOT(wires=[1, 2]),
@@ -2293,22 +2285,7 @@ class Elbow(Operation):
         Adjoint(S(2))]
         """
 
-        if direction == "left":
-            return [
-                qml.Hadamard(wires=wires[2]),
-                qml.T(wires=wires[2]),
-                qml.CNOT(wires=[wires[1], wires[2]]),
-                qml.adjoint(qml.T(wires=wires[2])),
-                qml.CNOT(wires=[wires[0], wires[2]]),
-                qml.T(wires=wires[2]),
-                qml.CNOT(wires=[wires[1], wires[2]]),
-                qml.adjoint(qml.T(wires=wires[2])),
-                qml.Hadamard(wires=wires[2]),
-                qml.adjoint(qml.S(wires=wires[2])),
-                ]
-
         return [
-            qml.S(wires=wires[2]),
             qml.Hadamard(wires=wires[2]),
             qml.T(wires=wires[2]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -2318,51 +2295,33 @@ class Elbow(Operation):
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.adjoint(qml.T(wires=wires[2])),
             qml.Hadamard(wires=wires[2]),
+            qml.adjoint(qml.S(wires=wires[2])),
         ]
 
 
-def _elbow_resources(direction):
-    if direction == "left":
-        return {
-            qml.Hadamard: 2,
-            qml.CNOT: 3,
-            qml.T: 2,
-            qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
-            qml.decomposition.adjoint_resource_rep(qml.S, {}): 1,
-        }
-
+def _elbow_resources():
     return {
-            qml.Hadamard: 2,
-            qml.CNOT: 3,
-            qml.T: 2,
-            qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
-            qml.S: 1,
-        }
+        qml.Hadamard: 2,
+        qml.CNOT: 3,
+        qml.T: 2,
+        qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
+        qml.decomposition.adjoint_resource_rep(qml.S, {}): 1,
+    }
+
 
 @register_resources(_elbow_resources)
-def _elbow(wires: WiresLike, direction):
-    if direction == "left":
-        qml.Hadamard(wires=wires[2])
-        qml.T(wires=wires[2])
-        qml.CNOT(wires=[wires[1], wires[2]])
-        qml.adjoint(qml.T(wires=wires[2]))
-        qml.CNOT(wires=[wires[0], wires[2]])
-        qml.T(wires=wires[2])
-        qml.CNOT(wires=[wires[1], wires[2]])
-        qml.adjoint(qml.T(wires=wires[2]))
-        qml.Hadamard(wires=wires[2])
-        qml.adjoint(qml.S(wires=wires[2]))
+def _elbow(wires: WiresLike):
+    qml.Hadamard(wires=wires[2])
+    qml.T(wires=wires[2])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.CNOT(wires=[wires[0], wires[2]])
+    qml.T(wires=wires[2])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.adjoint(qml.T(wires=wires[2]))
+    qml.Hadamard(wires=wires[2])
+    qml.adjoint(qml.S(wires=wires[2]))
 
-    else:
-        qml.S(wires=wires[2])
-        qml.Hadamard(wires=wires[2])
-        qml.T(wires=wires[2])
-        qml.CNOT(wires=[wires[1], wires[2]])
-        qml.adjoint(qml.T(wires=wires[2]))
-        qml.CNOT(wires=[wires[0], wires[2]])
-        qml.T(wires=wires[2])
-        qml.CNOT(wires=[wires[1], wires[2]])
-        qml.adjoint(qml.T(wires=wires[2]))
-        qml.Hadamard(wires=wires[2])
 
 add_decomps(Elbow, _elbow)
+# TODO: add add_decomps("Adjoint(Elbow)", _adjoint_elbow) when MCMs supported by the pipeline
