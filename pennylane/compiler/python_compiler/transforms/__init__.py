@@ -15,10 +15,12 @@
 
 from xdsl.transforms.transform_interpreter import TransformInterpreterPass
 from .apply_transform_sequence import ApplyTransformSequence, register_pass
+from .cancel_inverses import IterativeCancelInversesPass
 
 
 __all__ = [
     "ApplyTransformSequence",
+    "IterativeCancelInversesPass",
     "TransformInterpreterPass",
     "register_pass",
 ]

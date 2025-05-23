@@ -287,6 +287,11 @@
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
+* A transform for applying `cancel_inverses` has been added that can be used with the experimental
+  xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
+  iteratively to cancel nested self-inverse operations.
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
