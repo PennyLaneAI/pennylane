@@ -9,7 +9,6 @@ from xdsl.context import Context
 from xdsl.dialects import arith, builtin, func, scf, tensor, transform
 from xdsl.dialects.arith import ConstantOp
 from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
-from xdsl.ir import BlockArgument, OpResult
 from xdsl.rewriter import InsertPoint
 from xdsl.utils import parse_pipeline
 
@@ -20,9 +19,7 @@ from pennylane.compiler.python_compiler.quantum_dialect import (
     QuantumDialect,
     QubitType,
     GlobalPhaseOp,
-    QubitUnitaryOp,
 )
-from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
 ctx = Context(allow_unregistered=True)
 ctx.load_dialect(arith.Arith)
@@ -49,15 +46,12 @@ class PrintModule(passes.ModulePass):
 @qml.qnode(qml.device("lightning.qubit", wires=3))
 def circuit():
     """A simple circuit to test the pass."""
+    qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
-    qml.Rot(0.1, 0.2, 0.3, wires=1)
-    qml.GlobalPhase(0.5)
-    # qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[0, 2])
-    # qml.Hadamard(wires=1)
-    qml.CNOT(wires=[1, 2])
-    qml.Rot(0.4, 0.5, 0.6, wires=2)
+    qml.RX(0.5, wires=1)
+    qml.RY(0.5, wires=2)
+    qml.RZ(0.5, wires=0)
+    qml.Rot(0.5, 0.5, 0.5, wires=1)
     return qml.state()
 
 
@@ -77,6 +71,7 @@ user_requested_pass = "print"  # just for example
 requested_by_user = passes.PipelinePass.build_pipeline_tuples(
     available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
 )
+
 schedule = tuple(pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user)
 pipeline = passes.PipelinePass(schedule)
 pipeline.apply(ctx, m)
@@ -93,6 +88,7 @@ from_str_to_PL_gate = {
 
 
 def flatten(nested):
+    """Flatten a nested list."""
     flat = []
     for item in nested:
         if isinstance(item, list):
@@ -103,6 +99,7 @@ def flatten(nested):
 
 
 def resolve_constant_params(op):
+    """Resolve the constant parameters that this operation originates from."""
 
     while hasattr(op, "owner"):
         op = op.owner
@@ -131,6 +128,10 @@ def resolve_constant_wire(operand):
         result_index = operand.index
         operand = operand.owner  # the producing Operation
 
+        # Since GlobalPhaseOp does not have a wire
+        if isinstance(operand, GlobalPhaseOp):
+            return
+
         if isinstance(operand, ConstantOp):
             val = operand.value
             if isinstance(val, IntegerAttr):
@@ -157,14 +158,19 @@ def resolve_constant_wire(operand):
 
 
 def get_parameters(op) -> list[float | int]:
+    """Get the parameters from the operation."""
     return [resolve_constant_params(p) for p in op.params if p is not None]
 
 
 def get_wires(op) -> list[int]:
+    """Get the wires from the operation."""
+    if not hasattr(op, "in_qubits"):
+        return []
     return [resolve_constant_wire(w) for w in op.in_qubits if w is not None]
 
 
 def get_op_name(op) -> str:
+    """Get the name of the operation from the properties."""
     return op.properties["gate_name"].data
 
 
@@ -176,6 +182,7 @@ def resolve_gate(name: str):
 
 
 def reconstruct_gate(op: CustomOp):
+    """Reconstruct the gate from the operation."""
     gate_name = get_op_name(op)
     parameters = get_parameters(op)
     wires = get_wires(op)
@@ -191,6 +198,7 @@ class DummyTransform(pattern_rewriter.RewritePattern):
 
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+        """Rewrite the function by replacing CustomOps with their decomposition."""
         for op in funcOp.body.walk():
 
             if not isinstance(op, CustomOp):
