@@ -247,8 +247,8 @@
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
-
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+    [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
 
   ```python
   @qml.register_resources({qml.RY: 1})
