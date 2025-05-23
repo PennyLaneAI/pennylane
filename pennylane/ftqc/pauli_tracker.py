@@ -249,7 +249,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     Returns:
         A list of `byproduct` ops and a list of `operations` in a reversed manner.
     """
-    # Copy is explicitly applied here to avoid changes made to the original tape 
+    # Copy is explicitly applied here to avoid changes made to the original tape
     ops = copy.copy(tape.operations)
 
     by_ops = []
