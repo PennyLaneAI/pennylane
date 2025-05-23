@@ -177,9 +177,9 @@ class TestResources:
         res1_copy = Resources(qubit_manager=qm1, gate_types=gt1)
         res2 = Resources(qubit_manager=qm2, gate_types=gt2)
 
-        assert (res1 == res1) is True
-        assert (res1 == res1_copy) is True
-        assert (res1 == res2) is False
+        assert res1 == res1
+        assert res1 == res1_copy
+        assert res1 != res2
 
     def test_arithmetic_raises_error(self):
         """Test that an assertion error is raised when arithmetic methods are used"""
