@@ -13,7 +13,8 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
-from pennylane._grad import grad as get_gradient
+from pennylane import math
+from pennylane.compiler import active_compiler
 
 
 class GradientDescentOptimizer:
@@ -41,13 +42,14 @@ class GradientDescentOptimizer:
     def __init__(self, stepsize=0.01):
         self.stepsize = stepsize
 
-    def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):
+    def step_and_cost(self, objective_fn, *args, argnums=None, grad_fn=None, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
         Args:
             objective_fn (function): the objective function for optimization
             *args : variable length argument list for objective function
+            argnums (Sequence[int] | int): which arguments to differentiate
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``*args``.
                 If ``None``, the gradient function is computed automatically.
@@ -60,24 +62,22 @@ class GradientDescentOptimizer:
             function output prior to the step.
             If single arg is provided, list [array] is replaced by array.
         """
+        argnums = self.argnums_dispath(args, argnums)
 
-        g, forward = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args)
+        grad = self.compute_grad(objective_fn, args, argnums, kwargs, grad_fn=grad_fn)
+        new_args = self.apply_grad(grad, args, argnums)
+        new_args = new_args[0] if len(new_args) == 1 else new_args
+        forward = objective_fn(*args, **kwargs)
 
-        if forward is None:
-            forward = objective_fn(*args, **kwargs)
-
-        # unwrap from list if one argument, cleaner return
-        if len(new_args) == 1:
-            return new_args[0], forward
         return new_args, forward
 
-    def step(self, objective_fn, *args, grad_fn=None, **kwargs):
+    def step(self, objective_fn, *args, argnums=None, grad_fn=None, **kwargs):
         """Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): the objective function for optimization
             *args : Variable length argument list for objective function
+            argnums (Sequence[int] | int): which arguments to differentiate
             grad_fn (function): optional gradient function of the
                 objective function with respect to the variables ``x``.
                 If ``None``, the gradient function is computed automatically.
@@ -89,18 +89,26 @@ class GradientDescentOptimizer:
             list [array]: the new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list [array] is replaced by array.
         """
+        argnums = self.argnums_dispath(args, argnums)
 
-        g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args)
-
-        # unwrap from list if one argument, cleaner return
-        if len(new_args) == 1:
-            return new_args[0]
+        grad = self.compute_grad(objective_fn, args, argnums, kwargs, grad_fn=grad_fn)
+        new_args = self.apply_grad(grad, args, argnums)
+        new_args = new_args[0] if len(new_args) == 1 else new_args
 
         return new_args
 
     @staticmethod
-    def compute_grad(objective_fn, args, kwargs, grad_fn=None):
+    def argnums_dispath(args, argnums):
+        """TODO"""
+        if argnums is None:
+            if math.get_interface(*args) == "autograd":
+                return tuple(sorted(math.get_trainable_indices(args)))
+            else:
+                return (0,)
+        return argnums if isinstance(argnums, tuple) else (argnums,)
+
+    @staticmethod
+    def compute_grad(objective_fn, args, argnums, kwargs, grad_fn=None):
         r"""Compute the gradient of the objective function at the given point and return it along with
         the objective function forward pass (if available).
 
@@ -108,6 +116,7 @@ class GradientDescentOptimizer:
             objective_fn (function): the objective function for optimization
             args (tuple): tuple of NumPy arrays containing the current parameters for the
                 objection function
+            argnums (Sequence[int] | int): which arguments to differentiate
             kwargs (dict): keyword arguments for the objective function
             grad_fn (function): optional gradient function of the objective function with respect to
                 the variables ``args``. If ``None``, the gradient function is computed automatically.
@@ -118,16 +127,18 @@ class GradientDescentOptimizer:
             objective function output. If ``grad_fn`` is provided, the objective function
             will not be evaluated and instead ``None`` will be returned.
         """
-        g = get_gradient(objective_fn) if grad_fn is None else grad_fn
-        grad = g(*args, **kwargs)
-        forward = getattr(g, "forward", None)
+        if grad_fn is not None:
+            grad = grad_fn
+        elif active_compiler() == "catalyst":
+            import catalyst
 
-        num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
-        grad = (grad,) if num_trainable_args == 1 else grad
+            grad = catalyst.grad(objective_fn, argnums=argnums)
+        else:
+            grad = math.grad(objective_fn, argnums=argnums)
 
-        return grad, forward
+        return grad(*args, **kwargs)
 
-    def apply_grad(self, grad, args):
+    def apply_grad(self, grad, args, argnums=None):
         r"""Update the variables to take a single optimization step. Flattens and unflattens
         the inputs to maintain nested iterables as the parameters of the optimization.
 
@@ -135,17 +146,22 @@ class GradientDescentOptimizer:
             grad (tuple [array]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
             args (tuple): the current value of the variables :math:`x^{(t)}`
+            argnums (Sequence[int] | int): which arguments to differentiate
 
         Returns:
             list [array]: the new values :math:`x^{(t+1)}`
         """
+        if not isinstance(grad, tuple):
+            grad = (grad,)
+        if not isinstance(args, tuple):
+            args = (args,)
+
+        argnums = self.argnums_dispath(args, argnums)
         args_new = list(args)
 
-        trained_index = 0
-        for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", False):
-                args_new[index] = arg - self.stepsize * grad[trained_index]
+        idx = 0
+        for train_idx in argnums:
+            args_new[train_idx] = args[train_idx] - self.stepsize * grad[idx]
+            idx += 1
 
-                trained_index += 1
-
-        return args_new
+        return tuple(args_new)
