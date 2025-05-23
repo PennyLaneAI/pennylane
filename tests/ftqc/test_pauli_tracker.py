@@ -38,7 +38,16 @@ class TestPauliTracker:
 
     @pytest.mark.parametrize(
         "op, expected",
-        [(qml.I(0), (0, 0)), (qml.X(1), (1, 0)), (qml.Y(0), (1, 1)), (qml.Z(0), (0, 1))],
+        [
+            (qml.I(0), (0, 0)),
+            (qml.X(1), (1, 0)),
+            (qml.Y(0), (1, 1)),
+            (qml.Z(0), (0, 1)),
+            (qml.I, (0, 0)),
+            (qml.X, (1, 0)),
+            (qml.Y, (1, 1)),
+            (qml.Z, (0, 1)),
+        ],
     )
     def test_pauli_to_xz(self, op, expected):
         xz = pauli_to_xz(op)
