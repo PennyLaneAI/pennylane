@@ -25,6 +25,7 @@ from pennylane import CNOT, H, I, S, X, Y, Z
 from pennylane.operation import Operator
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
+from pennylane import math
 
 _OPS_TO_XZ = {
     I: (0, 0),
@@ -299,8 +300,8 @@ def get_xz_record(num_wires: int, by_ops: List[Tuple[np.uint8, np.uint8]], ops: 
     Return:
         The final recorded x and z for each wire.
     """
-    x_record = np.zeros(num_wires, dtype=np.uint8)
-    z_record = np.zeros(num_wires, dtype=np.uint8)
+    x_record = math.zeros(num_wires, dtype=np.uint8)
+    z_record = math.zeros(num_wires, dtype=np.uint8)
 
     while len(by_ops) or len(ops):
         op = ops.pop()
@@ -319,12 +320,12 @@ def get_xz_record(num_wires: int, by_ops: List[Tuple[np.uint8, np.uint8]], ops: 
             # Step 2: Merge the new xz with the byproduct by_op
             by_op = by_ops.pop()
             for _by_op, _xz_comm in zip(by_op, xz_commutated):
-                new_xz.append(np.bitwise_xor(_by_op, _xz_comm))
+                new_xz.append(math.bitwise_xor(_by_op, _xz_comm))
 
         else:  # branch for Paulis
             # Commutate step is skipped.
             # Get the new xz by merging the recorded xz with the Pauli ops directly.
-            new_xz.append(np.bitwise_xor(pauli_to_xz(op), xz[0]))
+            new_xz.append(math.bitwise_xor(pauli_to_xz(op), xz[0]))
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
             x_record[wire], z_record[wire] = new_xz[idx]
@@ -351,7 +352,7 @@ def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
         return -1 if z == 1 else 1
 
     if isinstance(ob, Y):
-        return -1 if np.sum([x, z]) == 1 else 1
+        return -1 if math.sum([x, z]) == 1 else 1
 
     if isinstance(ob, I):
         return 1
@@ -359,13 +360,13 @@ def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
     raise NotImplementedError(f"{ob.name} is not supported.")
 
 
-def get_measurements_corrections(tape: QuantumScript, x_record: np.array, z_record: np.array):
+def get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_record: math.array):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
     is calculated based on the measurement observables with the corresponding recorded x an z.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
-            x_record (np.array): The array of recorded x for each wire.
-            z_record (np.array): The array of recorded z for each wire.
+            x_record (math.array): The array of recorded x for each wire.
+            z_record (math.array): The array of recorded z for each wire.
         Return:
             A list of phase correction factor for all measurements.
     """
