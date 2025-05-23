@@ -1,11 +1,10 @@
 """
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
-import pytest
 
+import pytest
 from openqasm3.parser import parse
 
-from pennylane.io.qasm_interpreter import QasmInterpreter
 from pennylane import (
     CH,
     CNOT,
@@ -34,6 +33,7 @@ from pennylane import (
     T,
     Toffoli,
 )
+from pennylane.io.qasm_interpreter import QasmInterpreter
 
 pytest.importorskip("openqasm3")
 
