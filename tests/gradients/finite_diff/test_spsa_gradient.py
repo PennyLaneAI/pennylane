@@ -104,7 +104,7 @@ class TestRademacherSampler:
         assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
     @pytest.mark.xfail(
-        reason="This test failed after rng salt updated to 0.41.0 https://github.com/PennyLaneAI/pennylane/pull/7306. Further investigation required."
+        reason="This test failed after rng salt updated to 0.41.0 https://github.com/PennyLaneAI/pennylane/pull/7306. Further investigation required. sc-90962."
     )
     @pytest.mark.parametrize("ids, num", [(list(range(5)), 5)])
     @pytest.mark.parametrize("N", [10000])
