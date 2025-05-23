@@ -85,30 +85,9 @@ class TestRademacherSampler:
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
 
-    @pytest.mark.parametrize("ids, num", [([0, 2, 4], 5), ([0], 1), ([2, 3], 5)])
+    @pytest.mark.parametrize("ids, num", [pytest.param(list(range(5)), 5, marks=pytest.mark.xfail(reason="Failure after updating rng salt to 0.41.0 [sc-90962]")), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)])
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N, seed):
-        """Test that the mean and variance of many produced samples are
-        close to the theoretical values."""
-        rng = np.random.default_rng(seed)
-        ids_mask = np.zeros(num, dtype=bool)
-        ids_mask[ids] = True
-        outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
-        # Test that the mean of non-zero entries is approximately right
-        assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
-        # Test that the variance of non-zero entries is approximately right
-        assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
-        # Test that the mean of zero entries is exactly 0, because all entries should be
-        assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
-        # Test that the variance of zero entries is exactly 0, because all entries are the same
-        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
-
-    @pytest.mark.xfail(
-        reason="This test failed after rng salt updated to 0.41.0 https://github.com/PennyLaneAI/pennylane/pull/7306. Further investigation required. sc-90962."
-    )
-    @pytest.mark.parametrize("ids, num", [(list(range(5)), 5)])
-    @pytest.mark.parametrize("N", [10000])
-    def test_mean_and_var_suspicious(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
         close to the theoretical values."""
         rng = np.random.default_rng(seed)
