@@ -78,6 +78,24 @@ class TestElbow:
         for rule in qml.list_decomps(qml.Elbow):
             _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
 
+    def test_matrix(self):
+
+        matrix = qml.Elbow([0, 1, 2]).compute_matrix()
+        matrix_target = qml.math.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, -1j, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, -1j, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1j, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, -1j],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+            ]
+        )
+
+        assert np.allclose(matrix, matrix_target)
+
     @pytest.mark.jax
     def test_jax_jit(self):
         """Tests that Elbow works with jax and jit"""

@@ -94,11 +94,8 @@ class Elbow(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def __repr__(self):
-        return f"Elbow(wires={self.wires.tolist()})"
-
     def adjoint(self):
-        # TODO: add efficient decomposition with MCM when supported by the pipeline
+        # TODO: add efficient decomposition with MCMs when supported by the pipeline
         return qml.adjoint(Elbow(self.wires))
 
     @staticmethod
@@ -110,7 +107,7 @@ class Elbow(Operation):
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         Returns:
-            ndarray: matrix
+            array_like: matrix
 
         **Example**
 
