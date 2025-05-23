@@ -50,7 +50,6 @@ from .non_parametric_ops import (
     ISWAP,
     SISWAP,
     SQISW,
-    Elbow,
 )
 from .observables import (
     Hermitian,
@@ -145,7 +144,6 @@ __ops__ = {
     "Barrier",
     "WireCut",
     "GlobalPhase",
-    "Elbow",
 }
 
 

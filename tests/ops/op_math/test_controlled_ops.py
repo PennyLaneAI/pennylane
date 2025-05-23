@@ -22,10 +22,8 @@ from scipy import sparse
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
-
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -481,63 +479,6 @@ class TestControlledQubitUnitary:
 
         with pytest.warns(UserWarning, match="may not be unitary"):
             qml.ControlledQubitUnitary(not_unitary, wires=[0, 2, 1], unitary_check=True)
-
-
-class TestElbow:
-    """Tests specific to the Elbow operation"""
-
-    def test_standard_validity(self):
-        """Check the operation using the assert_valid function."""
-
-        op = qml.Elbow(
-            wires=[0, 1, 2],
-        )
-        qml.ops.functions.assert_valid(op)
-
-    def test_correctness(self):
-        """Tests the correctness of the Elbow operator.
-        This is done by comparing the results with the Toffoli operator
-        """
-
-        dev = qml.device("default.qubit", wires=4)
-
-        qs_elbow = qml.tape.QuantumScript(
-            [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.Elbow([0, 1, 2]),
-                qml.CNOT([2, 3]),
-                qml.RX(1.2, 3),
-                qml.adjoint(qml.Elbow([0, 1, 2])),
-            ],
-            [qml.state()],
-        )
-
-        qs_toffoli = qml.tape.QuantumScript(
-            [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.Toffoli([0, 1, 2]),
-                qml.CNOT([2, 3]),
-                qml.RX(1.2, 3),
-                qml.Toffoli([0, 1, 2]),
-            ],
-            [qml.state()],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs_elbow])
-        output_elbow = dev.execute(tape[0])[0]
-
-        tape = program([qs_toffoli])
-        output_toffoli = dev.execute(tape[0])[0]
-        assert np.allclose(output_toffoli, output_elbow)
-
-    def test_elbow_decompositions(self):
-        """Tests that Elbow is decomposed properly."""
-
-        for rule in qml.list_decomps(qml.Elbow):
-            _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
 
 
 @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
