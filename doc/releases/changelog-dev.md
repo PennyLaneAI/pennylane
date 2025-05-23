@@ -368,7 +368,6 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
   :func:`parity_matrix <pennylane.labs.intermediate_reps.parity_matrix>` computes
@@ -380,10 +379,11 @@
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
-
-
-* `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
+* `pennylane.labs.QubitManager`, `pennylane.labs.AllocWires`, and `pennylane.labs.FreeWires` classes have been added to track and manage auxilliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
+* Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
+  [(#7406)](https://github.com/PennyLaneAI/pennylane/pull/7406)
 
 <h3>Breaking changes 💔</h3>
 
@@ -597,6 +597,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
@@ -607,6 +608,7 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Jay Soni,
 Kalman Szenes,
 David Wierichs,
 Jake Zaia
