@@ -507,6 +507,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* When using JAX interface, `jax.jit` the function `_givens_matrix`.
+  [(#7013)](https://github.com/PennyLaneAI/pennylane/pull/7013)
+
 <h3>Documentation 📝</h3>
 
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
