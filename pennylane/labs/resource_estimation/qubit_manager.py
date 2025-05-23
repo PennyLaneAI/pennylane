@@ -87,8 +87,7 @@ class QubitManager:
     @property
     def total_qubits(self):
         r"""Returns the number of total qubits."""
-        total_qubits = self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits
-        return total_qubits
+        return (self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits)
 
     @algo_qubits.setter
     def algo_qubits(self, count: int):  # these get set manually, the rest
