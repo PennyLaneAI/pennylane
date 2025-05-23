@@ -169,6 +169,7 @@ class AllocOp(IRDLOperation):
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
 
     def verify_(self):
+        """Verify operation when rewriting."""
         if self.nqubits_attr is None:
             return
 
@@ -561,6 +562,7 @@ class MeasureOp(IRDLOperation):
         )
 
     def verify_(self):
+        """Verify operation when rewriting."""
         if self.postselect is None:
             return
 
