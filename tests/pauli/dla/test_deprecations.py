@@ -17,21 +17,22 @@
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 def test_lie_closure_deprecation_warning():
     """Test deprecation warning when calling qml.pauli.lie_closure"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Please call"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Please call"):
         _ = qml.pauli.lie_closure([qml.X(0)])
 
 
 def test_structure_constants_deprecation_warning():
     """Test deprecation warning when calling qml.pauli.structure_constants"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Please call"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Please call"):
         _ = qml.pauli.structure_constants([qml.X(0)])
 
 
 def test_center_deprecation_warning():
     """Test deprecation warning when calling qml.pauli.center"""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Please call"):
+    with pytest.warns(PennyLaneDeprecationWarning, match="Please call"):
         _ = qml.pauli.center([qml.X(0)])

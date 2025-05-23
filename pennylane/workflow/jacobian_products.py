@@ -24,6 +24,7 @@ import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch, TensorLike
 
@@ -216,18 +217,18 @@ class NoGradients(JacobianProductCalculator):
     error_msg = "Derivatives cannot be calculated with diff_method=None"
 
     def compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jvp(
         self, tapes: QuantumScriptBatch, tangents: Sequence[Sequence[TensorLike]]
     ) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
