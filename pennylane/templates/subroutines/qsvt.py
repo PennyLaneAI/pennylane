@@ -1142,11 +1142,11 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
     r"""
-    Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
-    or quantum singular value transformation (QSVT).
+    Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),
+    quantum singular value transformation (QSVT) or generalized quantum signal processing (GQSP).
 
-    The polynomial :math:`P(x) = \sum_n a_n x^n` must satisfy :math:`|P(x)| \leq 1` for :math:`x \in [-1, 1]`, the
-    coefficients :math:`a_n` must be real and the exponents :math:`n` must be either all even or all odd.
+    The polynomial :math:`P(x) = \sum_n a_n x^n` must satisfy :math:`|P(x)| \leq 1` for :math:`x \in [-1, 1]`.
+    In QSP and QSVT, the coefficients :math:`a_n` must be real and the exponents :math:`n` must be either all even or all odd.
     For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
