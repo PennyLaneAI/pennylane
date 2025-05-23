@@ -269,7 +269,9 @@ from .templates import (
     ResourceMultiplexer,
     ResourceQROMStatePreparation,
     ResourceOutMultiplier,
-    ResourceOutOfPlaceSquare,   
+    ResourceOutOfPlaceSquare,
+    ResourceCarryOutAdder,
+    ResourceSquareAddThree,
 )
 
 from .compact import CompactState

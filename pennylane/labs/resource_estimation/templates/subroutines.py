@@ -438,6 +438,100 @@ class ResourceOutMultiplier(ResourceOperator):
         return gate_lst
 
 
+class ResourceSquareAddThree(ResourceOperator):
+
+    def __init__(self, max_register_size, wires=None):
+        self.max_register_size = max_register_size
+        self.num_wires = 3 * max_register_size
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        return {"max_register_size": self.max_register_size}
+
+    @classmethod
+    def resource_rep(cls, max_register_size):
+        return CompressedResourceOp(cls, {"max_register_size": max_register_size})
+
+    @staticmethod
+    def _resource_decomp(max_register_size, **kwargs):
+        toffili = re.ResourceToffoli.resource_rep() 
+        toffili_cost = 3*max_register_size**2 - max_register_size - 1
+
+        return [
+            AddQubits(3*max_register_size),
+            GateCount(toffili, toffili_cost),
+        ]
+
+
+class ResourceCarryOutAdder(ResourceOperator):
+
+    def __init__(self, max_register_size, wires=None):
+        self.max_register_size = max_register_size
+        self.num_wires = 3 * max_register_size
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        return {"max_register_size": self.max_register_size}
+
+    @classmethod
+    def resource_rep(cls, max_register_size):
+        return CompressedResourceOp(cls, {"max_register_size": max_register_size})
+
+    @staticmethod
+    def _resource_decomp(max_register_size, **kwargs):
+        cnot = re.ResourceCNOT.resource_rep()
+
+        if max_register_size == 1:
+            return [GateCount(cnot)]
+
+        x = re.ResourceX.resource_rep()
+        toff = re.ResourceToffoli.resource_rep()
+        if max_register_size == 2:
+            return [GateCount(cnot, 2), GateCount(x, 2), GateCount(toff)]
+
+        cnot_count = (6 * (max_register_size - 2)) + 3
+        elbow_count = max_register_size - 1
+
+        l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
+        r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
+        return [
+            AddQubits(max_register_size - 1),
+            GateCount(cnot, cnot_count),
+            GateCount(cnot, max_register_size), ## Copying register over cost: 
+            GateCount(l_elbow, elbow_count),
+            GateCount(r_elbow, elbow_count),
+            CutQubits(max_register_size - 1),
+        ]  # Obtained resource from Fig1 and Fig2 https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires, num_ctrl_values, max_register_size, **kwargs
+    ):
+        if (max_register_size > 2) and (num_ctrl_wires == 1):
+            cnot_count = (7 * (max_register_size - 2)) + 3
+            elbow_count = 2 * max_register_size
+
+            x = re.ResourceX.resource_rep()
+            cnot = re.ResourceCNOT.resource_rep()
+            l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
+            r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
+            gate_lst = [
+                AddQubits(2 * (max_register_size - 1)),
+                GateCount(cnot, cnot_count),
+                GateCount(l_elbow, elbow_count),
+                GateCount(r_elbow, elbow_count),
+                CutQubits(2 * (max_register_size - 1)),
+            ]
+
+            if num_ctrl_values:
+                gate_lst.append(GateCount(x, 2 * num_ctrl_values))
+            return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
+
+        raise re.ResourcesNotDefined
+
+
 class ResourceSemiAdder(ResourceOperator):
 
     def __init__(self, max_register_size, wires=None):
