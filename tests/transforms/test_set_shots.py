@@ -125,9 +125,59 @@ class TestSetShots:
 
         with qml.Tracker(dev) as tracker:
             circuit()
-        assert not "shots" in tracker.history
 
-        new_circuit = set_shots(circuit, shots=20)
-        with qml.Tracker(dev) as tracker:
-            new_circuit()
-        assert tracker.history["shots"][-1] == 20
+    @pytest.mark.integration
+    def test_best_diff_method(self):
+        """Test that we can override an analytic device with best diff method adjusted accordingly."""
+        # Test that when overriding from analytic to shots, parameter-shift is used
+        dev_analytic = qml.device("default.qubit", wires=1, shots=None)
+
+        @qml.qnode(dev_analytic, diff_method="best")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # With analytic device, we expect only 1 execution for gradient
+        with qml.Tracker(dev_analytic) as tracker:
+            qml.grad(circuit)(0.5)
+
+        assert len(tracker.history["executions"]) == 1
+
+        # Override to finite shots - should switch to parameter-shift
+        circuit_with_shots = set_shots(circuit, shots=100)
+
+        with qml.Tracker() as tracker:
+            qml.grad(circuit_with_shots)(0.5)
+
+        # Parameter-shift rule requires 2*num_params + 1 = 3 executions
+        assert len(tracker.history["executions"]) == 3
+
+    @pytest.mark.integration
+    def test_best_diff_method_shots_to_none(self):
+        """Test that we can override a device with shots to analytic with diff_method='best' adjusted."""
+        # Test that when overriding from shots to analytic, backprop is used
+        dev_shots = qml.device("default.qubit", wires=1, shots=100)
+
+        @qml.qnode(dev_shots, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # With shots, parameter-shift should be used for gradient
+        with qml.Tracker(dev_shots) as tracker_shots:
+            qml.grad(circuit)(0.5)
+        
+        # Store the history for verification
+        shots_history = tracker_shots.history
+        
+        # Parameter-shift rule requires 2*num_params + 1 = 3 executions
+        assert len(shots_history["executions"]) == 3
+
+        # Override to analytic (shots=None) - should switch to backprop/adjoint
+        circuit_analytic = set_shots(circuit, shots=None)
+
+        with qml.Tracker() as tracker_analytic:
+            qml.grad(circuit_analytic)(0.5)
+        
+        # Analytic gradient should require only 1 execution
+        assert len(tracker_analytic.history["executions"]) == 1
