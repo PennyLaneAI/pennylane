@@ -201,16 +201,13 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
 
         .. code-block:: python3
 
-            from pennylane.ftqc.pauli_tracker import apply_clifford_op
+            from pennylane.ftqc.pauli_tracker import commute_clifford_op
             from pennylane import I, CNOT
-            >>> apply_clifford_op(CNOT(wires=[0,1]), [(0, 0), (0, 0)])
+            >>> commute_clifford_op(CNOT(wires=[0,1]), [(0, 0), (0, 0)])
             [(0, 0), (0, 0)]
 
         A list of xz representation of Pauli operators is returned.
     """
-    if type(clifford_op) not in _CLIFFORD_OPS:
-        raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
-
     if len(xz) != clifford_op.num_wires:
         raise ValueError(
             "Please ensure that the length of xz matches the number of wires of the clifford_op."
@@ -238,3 +235,5 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
         _xc, _zc = xz[0]
         _xt, _zt = xz[1]
         return _commute_cnot(_xc, _zc, _xt, _zt)
+
+    raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
