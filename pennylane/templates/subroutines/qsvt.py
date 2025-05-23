@@ -1155,9 +1155,11 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
         angle_solver (str): The method used to calculate the angles; either ``"root-finding"`` or ``"iterative"``.
-            Default is ``"root-finding"``. ``"root-finding"`` is a method that works with all three routines, and
+            Default is ``"root-finding"``.
+            
+            - ``"root-finding"``: a method that works with all three routines, and
             is effective for polynomials of degree up to :math:`\sim 1000`.
-            ``"iterative"`` employs an optimization method allowing angle computation
+            - ``"iterative"``: employs an optimization method allowing angle computation
             for polynomials of higher degree (:math:`\gt 1000`) for the ``"QSP"`` and ``"QSVT"`` routines.
 
     Returns:
