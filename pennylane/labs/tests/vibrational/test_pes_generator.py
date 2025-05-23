@@ -176,7 +176,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
@@ -235,7 +235,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
@@ -304,7 +304,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
@@ -376,8 +376,14 @@ def test_dipole_order_error():
         (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "mpi4py_comm"),
     ],
 )
-def test_vibrational_pes(sym, geom, dipole_level, result_file, backend, max_workers):
+def test_vibrational_pes(
+    sym, geom, dipole_level, result_file, backend, max_workers, mpi4py_support
+):
     r"""Test that vibrational_pes returns correct object."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     vib_obj = vibrational.vibrational_pes(

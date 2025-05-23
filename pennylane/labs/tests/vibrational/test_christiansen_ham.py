@@ -145,8 +145,11 @@ def test_christiansen_dipole():
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_christiansen_integrals(pes, n_states, num_workers, backend):
+def test_christiansen_integrals(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that christiansen_integrals produces the expected integrals."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     one, two, three = christiansen_integrals(
         pes=pes, n_states=n_states, cubic=True, num_workers=num_workers, backend=backend
     )
@@ -165,8 +168,11 @@ def test_christiansen_integrals(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend):
+def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that christiansen_integrals_dipole produces the expected dipole integrals."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     one, two, three = christiansen_integrals_dipole(
         pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
     )
@@ -185,8 +191,11 @@ def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_onemode(pes, n_states, num_workers, backend):
+def test_cform_onemode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_onemode produces the expected one-body integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(H1),
         abs(_cform_onemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
@@ -204,8 +213,11 @@ def test_cform_onemode(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_onemode_dipole(pes, n_states, num_workers, backend):
+def test_cform_onemode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_onemode_dipole produces the expected one-body dipole integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(D1),
         abs(
@@ -227,8 +239,11 @@ def test_cform_onemode_dipole(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_threemode(pes, n_states, num_workers, backend):
+def test_cform_threemode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_threemode produces the expected three-body integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(H3),
         abs(_cform_threemode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
@@ -246,8 +261,11 @@ def test_cform_threemode(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_threemode_dipole(pes, n_states, num_workers, backend):
+def test_cform_threemode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_threemode_dipole produces the expected three-body dipole integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(D3),
         abs(
@@ -269,8 +287,11 @@ def test_cform_threemode_dipole(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_twomode(pes, n_states, num_workers, backend):
+def test_cform_twomode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_twomode produces the expected two-body integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(H2),
         abs(_cform_twomode(pes=pes, n_states=n_states, num_workers=num_workers, backend=backend)),
@@ -288,8 +309,11 @@ def test_cform_twomode(pes, n_states, num_workers, backend):
         (pes_object_3D, 4, 2, "mpi4py_comm"),
     ],
 )
-def test_cform_twomode_dipole(pes, n_states, num_workers, backend):
+def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_twomode_dipole produces the expected two-body dipole integral."""
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     assert np.allclose(
         abs(D2),
         abs(
