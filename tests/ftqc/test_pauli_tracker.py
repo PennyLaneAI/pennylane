@@ -14,6 +14,8 @@
 """Unit tests for the ftqc.pauli_tracker module"""
 
 import networkx as nx
+import random
+
 import numpy as np
 import pytest
 from flaky import flaky
@@ -28,7 +30,19 @@ from pennylane.ftqc import (
     measure_x,
     measure_y,
 )
-from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
+
+from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
+
+_PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
+
+
+def generate_pauli_list(wire: int, num_ops: int):
+    pauli_list = []
+
+    for _ in range(num_ops):
+        pauli_list.append(random.choice(_PAULIS)(wire))
+
+    return pauli_list
 
 RTOL = 2.5e-1
 ATOL = 5e-2
@@ -62,74 +76,66 @@ class TestPauliTracker:
         with pytest.raises(ValueError):
             _ = xz_to_pauli(x, z)
 
-    @pytest.mark.parametrize(
-        "ops, expected",
-        [
-            ([qml.I(0)], (0, 0)),
-            ([qml.X(1)], (1, 0)),
-            ([qml.Y(2)], (1, 1)),
-            ([qml.Z(3)], (0, 1)),
-            ([qml.I(0), qml.I(0)], (0, 0)),
-            ([qml.I(1), qml.X(1)], (1, 0)),
-            ([qml.I(2), qml.Y(2)], (1, 1)),
-            ([qml.I(3), qml.Z(3)], (0, 1)),
-            ([qml.X(0), qml.I(0)], (1, 0)),
-            ([qml.X(1), qml.X(1)], (0, 0)),
-            ([qml.X(2), qml.Y(2)], (0, 1)),
-            ([qml.X(3), qml.Z(3)], (1, 1)),
-            ([qml.Y(0), qml.I(0)], (1, 1)),
-            ([qml.Y(1), qml.X(1)], (0, 1)),
-            ([qml.Y(2), qml.Y(2)], (0, 0)),
-            ([qml.Y(3), qml.Z(3)], (1, 0)),
-            ([qml.Z(0), qml.I(0)], (0, 1)),
-            ([qml.Z(1), qml.X(1)], (1, 1)),
-            ([qml.Z(2), qml.Y(2)], (1, 0)),
-            ([qml.Z(3), qml.Z(3)], (0, 0)),
-            ([qml.X(4), qml.Y(4), qml.Z(4), qml.I(4), qml.Z(4)], (0, 1)),
-        ],
-    )
-    def test_pauli_prod(self, ops, expected):
-        op = pauli_prod(ops)
-        assert op == expected
+    @pytest.mark.parametrize("target_wire", [0, 10, 100, 1000])
+    @pytest.mark.parametrize("num_ops", [1, 10, 100, 1000])
+    def test_pauli_prod(self, target_wire, num_ops):
+        pauli_list = generate_pauli_list(target_wire, num_ops)
+
+        x, z = pauli_prod(pauli_list)
+
+        op = xz_to_pauli(x, z)(wires=target_wire)
+
+        op_simplify = qml.prod(*pauli_list).simplify()
+        expected_op = op_simplify if isinstance(op_simplify, _PAULIS) else op_simplify.terms()[1][0]
+
+        assert op == expected_op
 
     @pytest.mark.parametrize("ops", [[]])
     def test_pauli_prod_to_xz_unsupported_error(self, ops):
         with pytest.raises(ValueError):
             _ = pauli_prod(ops)
 
-    @pytest.mark.parametrize(
-        "clifford_op, xz, expected_xz",
-        [
-            (qml.S(0), [(0, 0)], [(0, 0)]),
-            (qml.S(1), [(1, 0)], [(1, 1)]),
-            (qml.S(2), [(1, 1)], [(1, 0)]),
-            (qml.S(3), [(0, 1)], [(0, 1)]),
-            (qml.H(0), [(0, 0)], [(0, 0)]),
-            (qml.H(1), [(1, 0)], [(0, 1)]),
-            (qml.H(2), [(1, 1)], [(1, 1)]),
-            (qml.H(3), [(0, 1)], [(1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0), (0, 0)], [(0, 0), (0, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(1, 0), (0, 0)], [(1, 0), (1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(1, 1), (0, 0)], [(1, 1), (1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 1), (0, 0)], [(0, 1), (0, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0), (1, 0)], [(0, 0), (1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(1, 0), (1, 0)], [(1, 0), (0, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(1, 1), (1, 0)], [(1, 1), (0, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 1), (1, 0)], [(0, 1), (1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0), (1, 1)], [(0, 1), (1, 1)]),
-            (qml.CNOT(wires=[0, 1]), [(1, 0), (1, 1)], [(1, 1), (0, 1)]),
-            (qml.CNOT(wires=[0, 2]), [(1, 1), (1, 1)], [(1, 0), (0, 1)]),
-            (qml.CNOT(wires=[0, 2]), [(0, 1), (1, 1)], [(0, 0), (1, 1)]),
-            (qml.CNOT(wires=[1, 2]), [(0, 0), (0, 1)], [(0, 1), (0, 1)]),
-            (qml.CNOT(wires=[1, 2]), [(1, 0), (0, 1)], [(1, 1), (1, 1)]),
-            (qml.CNOT(wires=[1, 2]), [(1, 1), (0, 1)], [(1, 0), (1, 1)]),
-            (qml.CNOT(wires=[1, 2]), [(0, 1), (0, 1)], [(0, 0), (0, 1)]),
-        ],
-    )
-    def test_apply_clifford_ops(self, clifford_op, xz, expected_xz):
-        new_xz = apply_clifford_op(clifford_op, xz)
+    @pytest.mark.parametrize("clifford_op", [qml.S, qml.H])
+    @pytest.mark.parametrize("wires", [0, 1, 10, 100])
+    @pytest.mark.parametrize("pauli", [qml.I, qml.X, qml.Y, qml.Z])
+    def test_apply_clifford_ops_one_wire(self, clifford_op, wires, pauli):
+        pauli = pauli(wires=wires)
+        clifford_op = clifford_op(wires=wires)
+        xz = [pauli_to_xz(pauli)]
+        new_xz = commute_clifford_op(clifford_op, xz)
+        new_x, new_z = new_xz[0]
+        new_pauli = xz_to_pauli(new_x, new_z)(wires=wires)
 
-        assert new_xz == expected_xz
+        new_xz_clifford_op = qml.prod(new_pauli, clifford_op).matrix()
+        clifford_op_xz = qml.prod(clifford_op, pauli).matrix()
+
+        assert np.allclose(new_xz_clifford_op, clifford_op_xz) | np.allclose(
+            new_xz_clifford_op, -clifford_op_xz
+        )
+
+    @pytest.mark.parametrize("clifford_op", [qml.CNOT])
+    @pytest.mark.parametrize("wires", [[0, 1], [1, 2], [10, 100]])
+    @pytest.mark.parametrize("pauli_control", [qml.I, qml.X, qml.Y, qml.Z])
+    @pytest.mark.parametrize("pauli_target", [qml.I, qml.X, qml.Y, qml.Z])
+    def test_apply_clifford_ops_two_wires(self, clifford_op, wires, pauli_control, pauli_target):
+        pauli_control = pauli_control(wires=wires[0])
+        pauli_target = pauli_target(wires=wires[1])
+        clifford_op = clifford_op(wires=wires)
+
+        xz = [pauli_to_xz(pauli_control), pauli_to_xz(pauli_target)]
+        new_xz = commute_clifford_op(clifford_op, xz)
+
+        _xc, _zc = new_xz[0]
+        new_pauli_control = xz_to_pauli(_xc, _zc)(wires=wires[0])
+        _xt, _zt = new_xz[1]
+        new_pauli_target = xz_to_pauli(_xt, _zt)(wires=wires[1])
+
+        new_xz_clifford_op = qml.prod(new_pauli_control, new_pauli_target, clifford_op).matrix()
+        clifford_op_xz = qml.prod(clifford_op, pauli_control, pauli_target).matrix()
+
+        assert np.allclose(new_xz_clifford_op, clifford_op_xz) | np.allclose(
+            new_xz_clifford_op, -clifford_op_xz
+        )
 
     @pytest.mark.parametrize(
         "clifford_op", [qml.X(0), qml.RZ(phi=0.123, wires=0), qml.RX(phi=0.123, wires=0)]
@@ -139,7 +145,7 @@ class TestPauliTracker:
         with pytest.raises(
             NotImplementedError, match="Only qml.H, qml.S and qml.CNOT are supported."
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -154,7 +160,7 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure that the length of xz matches the number of wires of the clifford_op.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -170,7 +176,7 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure there are 2 elements instead of in each tuple in the xz list.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
@@ -185,7 +191,7 @@ class TestPauliTracker:
             ValueError,
             match="Please ensure xz are either 0 or 1.",
         ):
-            _ = apply_clifford_op(clifford_op, xz)
+            _ = commute_clifford_op(clifford_op, xz)
 
 
 def generate_random_state(n, seed=0):
@@ -331,7 +337,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -374,7 +380,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state, num_iter):
@@ -392,7 +398,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -437,7 +443,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state, num_iter):
@@ -456,7 +462,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -501,7 +507,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state, num_iter):
@@ -519,7 +525,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -566,7 +572,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state):
@@ -584,7 +590,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -634,7 +640,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state):
@@ -657,7 +663,7 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        dev = qml.device("default.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -707,7 +713,7 @@ class TestOfflineCorrection:
         for i in range(len(measurements)):
             cor_res.append(np.sum(meas_res[i]) / num_shots)
 
-        dev_ref = qml.device("lightning.qubit")
+        dev_ref = qml.device("default.qubit")
 
         @qml.qnode(dev_ref)
         def circuit_ref(start_state):
