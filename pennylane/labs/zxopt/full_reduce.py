@@ -24,16 +24,16 @@ from .qasm_utils import _tape2pyzx
 def full_reduce(tape, verbose=False):
     r"""
 
-    A pipeline for using standard optimization techniques in pyzx described in [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
+    A pipeline for using standard optimization techniques in pyzx described in `the pyzx docs <https://pyzx.readthedocs.io/en/latest/simplify.html>`.
 
     This pipeline performs, in that order
 
-        * [full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)
-        * [normalize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.graph.base.BaseGraph.normalize)
-        * [extract_circuit](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit)
-        * [basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)
+        * `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
+        * `normalize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.graph.base.BaseGraph.normalize>`__
+        * `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
+        * `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
 
-    In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+    In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.

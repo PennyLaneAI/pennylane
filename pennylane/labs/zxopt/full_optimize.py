@@ -24,12 +24,12 @@ from .qasm_utils import _tape2pyzx
 def full_optimize(tape, verbose=False):
     r"""
 
-    Apply ``zx.full_optimize`` to a PennyLane [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuit.
+    Apply `zx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) basis.
+        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
         verbose (bool): whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
 
     Returns:

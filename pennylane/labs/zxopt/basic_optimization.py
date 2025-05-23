@@ -23,7 +23,7 @@ from .qasm_utils import _tape2pyzx
 def basic_optimization(tape, verbose=False):
     r"""
 
-    Apply [zx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization) to a PennyLane circuit.
+    Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane circuit.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
@@ -32,7 +32,7 @@ def basic_optimization(tape, verbose=False):
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
 
-    .. seealso:: :func:`~full_reduce` (arbitrary circuits), :func:`~full_optimize` ([(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits)
+    .. seealso:: :func:`~full_reduce` (arbitrary circuits), :func:`~full_optimize` (`(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits)
 
     **Example**
 

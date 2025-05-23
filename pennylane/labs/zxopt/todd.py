@@ -23,14 +23,14 @@ from .qasm_utils import _tape2pyzx
 def todd(tape, pre_optimize=True, verbose=False):
     r"""
 
-    Apply Third Order Duplicate and Destroy (TODD) by means of [zx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize) to a PennyLane [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuit.
+    Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
-    After [TODD](https://arxiv.org/abs/1712.01557), this pipeline uses [parity synthesis](https://arxiv.org/abs/1712.01859) to synthesize the optimized phase polynomial.
+    After `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) basis.
+        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
         pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is True.
         verbose (bool): Whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
 
