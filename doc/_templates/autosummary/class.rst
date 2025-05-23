@@ -24,6 +24,7 @@
    {% if attributes %}
 
    .. autosummary::
+      :no-index:
       :nosignatures:
    {% for item in attributes %}
       ~{{ name }}.{{ item }}
