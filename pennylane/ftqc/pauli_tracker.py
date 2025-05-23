@@ -131,13 +131,12 @@ def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
 
         A Pauli operator is returned for a list of Pauli operator up to a global phase.
     """
-
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-    res_x, res_z = pauli_to_xz(ops.pop())
+    res_x, res_z = pauli_to_xz(ops[0])
 
-    while len(ops) > 0:
-        x, z = pauli_to_xz(ops.pop())
+    for i in range(1, len(ops)):
+        x, z = pauli_to_xz(ops[i])
         res_x ^= x
         res_z ^= z
 
