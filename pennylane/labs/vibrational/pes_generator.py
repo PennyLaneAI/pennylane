@@ -577,7 +577,7 @@ def _local_pes_threemode(
         f.create_dataset("V3_PES", data=local_pes_threebody)
         if dipole:
             f.create_dataset("D3_DMS", data=local_dipole_threebody)
-    
+
     if dipole:
         return local_pes_threebody, local_dipole_threebody
 
