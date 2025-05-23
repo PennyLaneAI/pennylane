@@ -4,6 +4,7 @@ source = pennylane
 omit =
     pennylane/devices/tests*
     pennylane/labs/*
+    pennylane/compiler/python_compiler/*
 
 [report]
 # Regexes for lines to exclude from consideration

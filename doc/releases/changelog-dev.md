@@ -252,8 +252,8 @@
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
-
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+    [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
 
   ```python
   @qml.register_resources({qml.RY: 1})
@@ -292,6 +292,11 @@
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
+
+* A transform for applying `cancel_inverses` has been added that can be used with the experimental
+  xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
+  iteratively to cancel nested self-inverse operations.
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
@@ -434,6 +439,10 @@
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
+  [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
@@ -501,6 +510,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
