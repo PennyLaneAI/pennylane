@@ -1561,7 +1561,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
+    with pytest.raises(qml.wires.WireError, match=r"no free wire"):
         qml.metric_tensor(circuit)(x)
 
 

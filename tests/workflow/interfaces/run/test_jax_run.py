@@ -23,7 +23,6 @@ import pytest
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 jax = pytest.importorskip("jax")
@@ -48,10 +47,8 @@ class TestJaxRun:
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            resolved_config = _resolve_execution_config(
-                config, device, [tape1, tape2], TransformProgram()
-            )
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
         a = jnp.array(0.1)
@@ -82,8 +79,8 @@ class TestJaxRun:
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = jnp.array(0.1)
@@ -107,8 +104,8 @@ class TestJaxRun:
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
 
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = jnp.array(0.1)
