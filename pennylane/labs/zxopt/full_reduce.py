@@ -40,7 +40,11 @@ def full_reduce(tape, verbose=False):
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
 
+    .. seealso:: :func:`~full_optimize`
+
     **Example**
+
+    Let us optimize a circuit with :class:`~T` as well as :class:`~RZ` gates.
 
     .. code-block:: python
 
@@ -53,6 +57,7 @@ def full_reduce(tape, verbose=False):
             qml.T(1),
             qml.CNOT((1, 2)),
             qml.T(2),
+            qml.RZ(0.5, 1),
             qml.CNOT((1, 2)),
             qml.T(1),
             qml.CNOT((3, 2)),
@@ -71,16 +76,18 @@ def full_reduce(tape, verbose=False):
     .. code-block::
 
         Circuit before:
-        0: ─╭●──T──T──────────╭●─┤
-        1: ─╰X──T─╭●────╭●──T─╰X─┤
-        2: ─╭X────╰X──T─╰X─╭X────┤
-        3: ─╰●─────────────╰●────┤
+        0: ─╭●──T──T───────────╭●─┤
+        1: ─╰X──T─╭●──RZ─╭●──T─╰X─┤
+        2: ─╭X────╰X──T──╰X─╭X────┤
+        3: ─╰●──────────────╰●────┤
 
         Circuit after full_reduce:
-        0: ──S─╭●────────────────╭●─┤
-        1: ────╰X──S─╭●───────╭●─╰X─┤
-        2: ─╭●───────│─────╭●─│─────┤
-        3: ─╰X───────╰X──T─╰X─╰X────┤
+        0: ──S─╭●──────────────╭●─┤
+        1: ────╰X──RZ─╭●────╭●─╰X─┤
+        2: ─╭●────────│─────│──╭●─┤
+        3: ─╰X────────╰X──T─╰X─╰X─┤
+
+    The original circuit has five :class:`~T` gates which are reduced to just one.
     """
 
     pyzx_circ = _tape2pyzx(tape)
