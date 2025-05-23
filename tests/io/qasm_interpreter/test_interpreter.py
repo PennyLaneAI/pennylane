@@ -68,7 +68,7 @@ class TestInterpreter:
         with queuing.AnnotatedQueue() as q:
             context["callable"]()
 
-        assert q.queue[0] == PowOperation(RX(0.2, wires=[0]), 2)
+        assert q.queue[0] == PowOperation(RX(0.2, wires=['q0']), 2)
 
     def test_uninitialized_param(self):
 
@@ -200,13 +200,13 @@ class TestInterpreter:
             assert len(context["wires"]) == 2
 
         assert q.queue == [
-            PauliX(0),
-            CNOT(wires=[0, 1]),
-            RX(0.5, wires=[0]),
-            RY(0.2, wires=[0]),
-            Adjoint(RX(0.5, wires=[0])),
-            PowOpObs(PauliX(wires=[0]), 2),
-            CNOT(wires=[1, 0]),
+            PauliX('q0'),
+            CNOT(wires=['q0', 'q1']),
+            RX(0.5, wires=['q0']),
+            RY(0.2, wires=['q0']),
+            Adjoint(RX(0.5, wires=['q0'])),
+            PowOpObs(PauliX(wires=['q0']), 2),
+            CNOT(wires=['q1', 'q0']),
         ]
 
     def test_interprets_two_qubit_gates(self):
@@ -233,11 +233,11 @@ class TestInterpreter:
             context["callable"]()
 
         assert q.queue == [
-            CH(wires=[0, 1]),
-            CNOT(wires=[1, 0]),
-            CY(wires=[0, 1]),
-            CZ(wires=[1, 0]),
-            SWAP(wires=[0, 1]),
+            CH(wires=['q0', 'q1']),
+            CNOT(wires=['q1', 'q0']),
+            CY(wires=['q0', 'q1']),
+            CZ(wires=['q1', 'q0']),
+            SWAP(wires=['q0', 'q1']),
         ]
 
     def test_interprets_parameterized_two_qubit_gates(self):
@@ -264,11 +264,11 @@ class TestInterpreter:
             context["callable"]()
 
         assert q.queue == [
-            ControlledPhaseShift(0.4, wires=Wires([0, 1])),
-            ControlledPhaseShift(0.4, wires=Wires([0, 1])),
-            CRX(0.2, wires=[0, 1]),
-            CRY(0.1, wires=[0, 1]),
-            CRZ(0.3, wires=Wires([1, 0])),
+            ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
+            ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
+            CRX(0.2, wires=['q0', 'q1']),
+            CRY(0.1, wires=['q0', 'q1']),
+            CRZ(0.3, wires=Wires(['q1', 'q0'])),
         ]
 
     def test_interprets_multi_qubit_gates(self):
@@ -292,7 +292,7 @@ class TestInterpreter:
         with queuing.AnnotatedQueue() as q:
             context["callable"]()
 
-        assert q.queue == [Toffoli(wires=[0, 2, 1]), CSWAP(wires=[1, 2, 0])]
+        assert q.queue == [Toffoli(wires=['q0', 'q2', 'q1']), CSWAP(wires=['q1', 'q2', 'q0'])]
 
     def test_interprets_parameterized_single_qubit_gates(self):
 
@@ -322,14 +322,14 @@ class TestInterpreter:
             context["callable"]()
 
         assert q.queue == [
-            RX(0.9, wires=[0]),
-            RY(0.8, wires=[1]),
-            RZ(1.1, wires=[2]),
-            PhaseShift(8, wires=[0]),
-            PhaseShift(2.0, wires=[1]),
-            U1(3.3, wires=[0]),
-            U2(1.0, 2.0, wires=[1]),
-            U3(1.0, 2.0, 3.0, wires=[2]),
+            RX(0.9, wires=['q0']),
+            RY(0.8, wires=['q1']),
+            RZ(1.1, wires=['q2']),
+            PhaseShift(8, wires=['q0']),
+            PhaseShift(2.0, wires=['q1']),
+            U1(3.3, wires=['q0']),
+            U2(1.0, 2.0, wires=['q1']),
+            U3(1.0, 2.0, 3.0, wires=['q2']),
         ]
 
     def test_single_qubit_gates(self):
@@ -363,15 +363,15 @@ class TestInterpreter:
             context["callable"]()
 
         assert q.queue == [
-            Identity(0),
-            Hadamard(2),
-            PauliX(1),
-            PauliY(2),
-            PauliZ(0),
-            S(2),
-            T(1),
-            SX(0),
-            Controlled(Identity(1), control_wires=[0]),
-            Adjoint(Hadamard(2)),
-            T(1) ** 2,
+            Identity('q0'),
+            Hadamard('q2'),
+            PauliX('q1'),
+            PauliY('q2'),
+            PauliZ('q0'),
+            S('q2'),
+            T('q1'),
+            SX('q0'),
+            Controlled(Identity('q1'), control_wires=['q0']),
+            Adjoint(Hadamard('q2')),
+            T('q1') ** 2,
         ]

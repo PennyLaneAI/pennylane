@@ -321,11 +321,8 @@ class QasmInterpreter(QASMVisitor):
             gates_dict[node.name.name.upper()],
             *args,
             wires=[
-                context["wires"].index(
-                    node.qubits[q].name
-                    if isinstance(node.qubits[q].name, str)
-                    else node.qubits[q].name.name
-                )
+                # parser will sometimes represent as a str and sometimes as a Identifier
+                (node.qubits[q].name if isinstance(node.qubits[q].name, str) else node.qubits[q].name.name)
                 for q in range(len(node.qubits))
             ],
         )
