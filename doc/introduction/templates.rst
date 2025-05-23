@@ -370,7 +370,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Elbow <../code/api/pennylane.Elbow>`
-    :figure: _static/templates/select_pauli_rot/elbow.png
+    :figure: _static/templates/subroutines/elbow.png
 
 .. raw:: html
 
