@@ -220,7 +220,7 @@ def apply_clifford_op(
     return new_xz
 
 
-def _parse_mid_measurements(tape: QuantumScript, mid_meas: List) -> List:
+def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     r"""Parse a serial of mid-measurement results of a quantum tape with only Pauli operators (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
     set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`) and the Clifford gates mentioned above are measured in the way defined in `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
@@ -247,8 +247,9 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List) -> List:
         mid_meas (list): Mid-measurements results.
 
     Returns:
-        `byproduct` ops list and `operation` in a reversed manner.
+        A list of `byproduct` ops and a list of `operations` in a reversed manner.
     """
+    # Copy is explicitly applied here to avoid changes made to the original tape 
     ops = copy.copy(tape.operations)
 
     by_ops = []
@@ -287,7 +288,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List) -> List:
     return by_ops, ops
 
 
-def get_pauli_record(num_wires: int, by_ops: List, ops: List):
+def get_xz_record(num_wires: int, by_ops: List[Tuple[np.uint8, np.uint8]], ops: List[Operator]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
@@ -499,6 +500,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
 
     by_ops, ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, z_record = get_pauli_record(tape.num_wires, by_ops, ops)
+    x_record, z_record = get_xz_record(tape.num_wires, by_ops, ops)
 
     return get_measurements_corrections(tape, x_record, z_record)
