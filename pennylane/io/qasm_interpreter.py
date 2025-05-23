@@ -249,8 +249,7 @@ class QasmInterpreter(QASMVisitor):
             if context["vars"][name]["val"] is not None:
                 return context["vars"][name]["val"]
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        else:
-            raise NameError(f"Undeclared variable {name} encountered in QASM.")
+        raise NameError(f"Undeclared variable {name} encountered in QASM.")
 
     @staticmethod
     def modifiers(gate: Callable, node: QASMNode, context: dict):
@@ -282,7 +281,7 @@ class QasmInterpreter(QASMVisitor):
                 # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
                 # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
                 # `no viable alternative at input 'wop(power)@'`, long before we get here.
-                raise ValueError("Unsupported modifier encountered in QASM")
+                raise ValueError("Unsupported modifier encountered in QASM")  # pragma: no cover
 
             call_stack.append(wrapper)
 
