@@ -38,8 +38,6 @@ _XZ_TO_OPS = {
 
 _PAULIS = (X, Y, Z, I)
 
-_CLIFFORD_OPS = (CNOT, S, H)
-
 
 def pauli_to_xz(op: Operator) -> Tuple[int, int]:
     r"""
@@ -82,8 +80,8 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     Convert x, z to a Pauli operator class.
 
     Args:
-        x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
-        z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
+        x (int) : Exponent of :class:`~pennylane.X` in the Pauli record.
+        z (int) : Exponent of :class:`~pennylane.Z` in the Pauli record.
 
     Return:
         A Pauli operator class.
@@ -125,7 +123,7 @@ def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
             (0, 0)
 
-        A Pauli operator is returned for a list of Pauli operator up to a global phase.
+        The result is a new Pauli operator in the xz-encoding representation.
     """
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
@@ -184,9 +182,9 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
 
 
 def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    r"""Get a list of xz representing a list of Pauli ops commuting/moving through a given Clifford op.
-    Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = xz \cdot clifford\_op` to
-    move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
+    r"""Gets the list of xz-encoded bits representing the list of input Pauli ops after being commuted through the given Clifford op.
+    Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = clifford\_op \cdot xz`
+    up to a global phase to move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
     :math:`new\_xz` represent a list of Pauli operations.
 
     Args:
@@ -197,14 +195,14 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
         A list of new xz tuples that the clifford_op commute the xz to.
 
     **Example:**
-        The following example shows how the `pauli_prod` works.
+        The following example shows how the `commute_clifford_op` works.
 
         .. code-block:: python3
 
             from pennylane.ftqc.pauli_tracker import commute_clifford_op
             from pennylane import I, CNOT
-            >>> commute_clifford_op(CNOT(wires=[0,1]), [(0, 0), (0, 0)])
-            [(0, 0), (0, 0)]
+            >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
+            [(1, 1), (0, 0)]
 
         A list of xz representation of Pauli operators is returned.
     """
