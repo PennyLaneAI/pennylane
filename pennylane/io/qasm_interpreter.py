@@ -843,6 +843,7 @@ class QasmInterpreter(QASMVisitor):
         Handles when a break is encountered in the loop.
 
         Args:
+            loop (Callable): the loop function.
             execution_context (dict): the context passed at execution time with current variable values, etc.
         """
         try:
