@@ -20,6 +20,7 @@ from functools import partial
 from typing import Callable
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
@@ -219,7 +220,7 @@ def _get_ml_boundary_execute(
                     from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"{interface} not found. Please install the latest "
             f"version of {interface} to enable the '{interface}' interface."
         ) from e

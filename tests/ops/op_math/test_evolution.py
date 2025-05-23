@@ -16,6 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp
 
 
@@ -203,9 +204,7 @@ class TestEvolution:
         """Tests that an error is raised if the generator is not hermitian."""
         op = Evolution(qml.RX(np.pi / 3, 0), 1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
-        ):
+        with pytest.raises(QuantumFunctionError, match="of operation Evolution is not hermitian"):
             qml.generator(op)
 
     def test_generator_undefined_error(self):

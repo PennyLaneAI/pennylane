@@ -24,6 +24,7 @@ from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.qchem import givens_decomposition
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
@@ -283,7 +284,7 @@ def test_passing_shots_None():
 def test_passing_finite_shots_error():
     """Test that an error is raised if finite shots are passed on initialization."""
 
-    with pytest.raises(qml.DeviceError, match=r"only supports analytic simulations"):
+    with pytest.raises(DeviceError, match=r"only supports analytic simulations"):
         qml.device("default.tensor", shots=10)
 
 
@@ -537,9 +538,7 @@ class TestMCMs:
 
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
         config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
-        with pytest.raises(
-            qml.DeviceError, match=r"only supports the deferred measurement principle."
-        ):
+        with pytest.raises(DeviceError, match=r"only supports the deferred measurement principle."):
             qml.device("default.tensor").preprocess(config)
 
     def test_simple_mcm_present(self):

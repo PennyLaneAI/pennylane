@@ -23,6 +23,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
@@ -159,7 +160,7 @@ class QutritDevice(QubitDevice):
         # TODO: Add support for DensityMatrix return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable density matrix"
         )
 
@@ -179,7 +180,7 @@ class QutritDevice(QubitDevice):
         # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable Von Neumann entropy"
         )
 
@@ -203,7 +204,7 @@ class QutritDevice(QubitDevice):
         # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Unsupported return type specified for observable mutual information"
         )
 
@@ -223,9 +224,7 @@ class QutritDevice(QubitDevice):
             QuantumFunctionError: Classical shadow is currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for ClassicalShadowMP
-        raise qml.QuantumFunctionError(
-            "Qutrit devices don't support classical shadow measurements."
-        )
+        raise QuantumFunctionError("Qutrit devices don't support classical shadow measurements.")
 
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
@@ -243,7 +242,7 @@ class QutritDevice(QubitDevice):
             QuantumFunctionError: Shadow Expectation values are currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for ShadowExpvalMP
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "Qutrit devices don't support shadow expectation value measurements."
         )
 
