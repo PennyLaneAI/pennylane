@@ -29,6 +29,7 @@ Modules
     resource_estimation
     trotter_error
     intermediate_reps
+    zxopt
 
 """
 
