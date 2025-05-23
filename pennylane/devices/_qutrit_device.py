@@ -17,7 +17,7 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=bad-option-value,arguments-renamed
 import itertools
 
 import numpy as np
@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 from ._qubit_device import QubitDevice
 
 
-class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
+class QutritDevice(QubitDevice):
     """Abstract base class for PennyLane qutrit devices.
 
     The following abstract method **must** be defined:
@@ -433,7 +433,5 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     # TODO: Implement function. Currently unimplemented due to lack of decompositions available
     # for existing operations and lack of non-parametrized observables.
-    def adjoint_jacobian(
-        self, tape, starting_state=None, use_device_state=False
-    ):  # pylint: disable=missing-function-docstring
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         raise NotImplementedError
