@@ -113,12 +113,7 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
-        context.update({
-            "wires": [],
-            "vars": {},
-            "gates": [],
-            "callable": None
-        })
+        context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
         super().generic_visit(node, context)
@@ -322,7 +317,11 @@ class QasmInterpreter(QASMVisitor):
             *args,
             wires=[
                 # parser will sometimes represent as a str and sometimes as a Identifier
-                (node.qubits[q].name if isinstance(node.qubits[q].name, str) else node.qubits[q].name.name)
+                (
+                    node.qubits[q].name
+                    if isinstance(node.qubits[q].name, str)
+                    else node.qubits[q].name.name
+                )
                 for q in range(len(node.qubits))
             ],
         )
