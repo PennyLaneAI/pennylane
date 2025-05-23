@@ -18,7 +18,7 @@ Contains the Elbow template.
 from functools import lru_cache
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 

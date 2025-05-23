@@ -15,6 +15,8 @@
 Tests for the Elbow template.
 """
 
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -75,3 +77,24 @@ class TestElbow:
 
         for rule in qml.list_decomps(qml.Elbow):
             _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Tests that Elbow works with jax and jit"""
+        import jax
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.Elbow(wires=[0, 1, 2])
+            qml.CNOT(wires=[2, 3])
+            qml.RY(1.2, 3)
+            qml.adjoint(qml.Elbow([0, 1, 2]))
+            return qml.probs([0, 1, 2, 3])
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())

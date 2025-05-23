@@ -25,7 +25,6 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.wires import Wires
 
-
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.CY, CY),
     (qml.CZ, CZ),
