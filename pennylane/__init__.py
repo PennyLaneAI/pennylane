@@ -194,7 +194,7 @@ def __getattr__(name):
         "PennyLaneDeprecationWarning",
         "QuantumFunctionError",
         "ExperimentalWarning",
-    }:
+    }:  # pragma: no cover
         warnings.warn(
             f"pennylane.{name} is no longer accessible at top-level \
                 and must be imported as pennylane.exceptions.{name}. \
