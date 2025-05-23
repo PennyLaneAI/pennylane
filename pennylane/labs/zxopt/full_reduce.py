@@ -24,7 +24,7 @@ from .qasm_utils import _tape2pyzx
 def full_reduce(tape, verbose=False):
     r"""
 
-    A pipeline for using standard optimization techniques in pyzx described in `the pyzx docs <https://pyzx.readthedocs.io/en/latest/simplify.html>`.
+    A pipeline for using standard optimization techniques in pyzx described in `the pyzx docs <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
 
     This pipeline performs, in that order
 
