@@ -102,7 +102,12 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             gradient_keyword_arguments=qnode.gradient_kwargs,
             mcm_config=mcm_config,
         )
-
+        if type(qnode).__name__ == "TorchLayer":
+            # avoid triggering import of torch if its not needed.
+            x = args[0]
+            kwargs = {
+                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+            }
         if resolve:
             shots = kwargs.pop("shots", None)
             tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
