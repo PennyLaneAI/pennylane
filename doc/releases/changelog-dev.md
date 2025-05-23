@@ -90,6 +90,12 @@
   circuits to a limited gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
+  iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
+  matrices much more performant.
+  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
+  [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
+
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
@@ -241,8 +247,8 @@
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
-
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+    [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
 
   ```python
   @qml.register_resources({qml.RY: 1})
@@ -303,6 +309,9 @@
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
+
+* Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
+  [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
 
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
@@ -420,6 +429,10 @@
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
+  [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
@@ -487,6 +500,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
@@ -603,6 +617,7 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 Kalman Szenes,
 David Wierichs,
 Jake Zaia
