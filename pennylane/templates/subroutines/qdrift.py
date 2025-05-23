@@ -15,6 +15,7 @@
 import copy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import requires_grad, unwrap
 from pennylane.operation import Operation
 from pennylane.ops import LinearCombination, Sum
@@ -207,7 +208,7 @@ class QDrift(Operation):
             )
 
         if any(requires_grad(coeff) for coeff in coeffs):
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "The QDrift template currently doesn't support differentiation through the "
                 "coefficients of the input Hamiltonian."
             )
@@ -229,7 +230,7 @@ class QDrift(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument
+    def compute_decomposition(*args, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

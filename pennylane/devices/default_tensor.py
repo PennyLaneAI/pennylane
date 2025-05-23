@@ -34,6 +34,7 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -433,9 +434,7 @@ class DefaultTensor(Device):
 
         shots = kwargs.pop("shots", None)
         if shots is not None:
-            raise qml.DeviceError(
-                "default.tensor only supports analytic simulations with shots=None."
-            )
+            raise DeviceError("default.tensor only supports analytic simulations with shots=None.")
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -602,7 +601,7 @@ class DefaultTensor(Device):
                 new_device_options[option] = getattr(self, f"_{option}", None)
 
         if config.mcm_config.mcm_method not in {None, "deferred"}:
-            raise qml.DeviceError(
+            raise DeviceError(
                 f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
             )
 
@@ -843,7 +842,6 @@ class DefaultTensor(Device):
 
         return float(np.real(exp_val))
 
-    # pylint: disable=unused-argument
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -897,7 +895,6 @@ class DefaultTensor(Device):
             "The computation of derivatives has yet to be implemented for the default.tensor device."
         )
 
-    # pylint: disable=unused-argument
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,

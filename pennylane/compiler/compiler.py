@@ -74,7 +74,6 @@ def _refresh_compilers():
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.compilers")
     )
 

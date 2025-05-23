@@ -14,7 +14,7 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
-# pylint: disable=too-many-arguments
+
 import copy
 import math
 from functools import reduce
