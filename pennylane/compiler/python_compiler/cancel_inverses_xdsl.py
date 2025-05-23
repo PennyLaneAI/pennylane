@@ -20,7 +20,7 @@ from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
-from ..quantum_dialect import CustomOp
+from .quantum_dialect import CustomOp
 
 self_inverses = [
     "Identity",
@@ -58,7 +58,7 @@ class IterativeCancelInversesPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ,no-self-use
+    ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         self-inverse gates."""
         for op in funcOp.body.walk():
@@ -90,7 +90,7 @@ class IterativeCancelInversesPass(passes.ModulePass):
 
     name = "iterative-cancel-inverses"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=arguments-renamed
     def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
         """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
