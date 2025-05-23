@@ -30,7 +30,7 @@ from pennylane.labs.resource_estimation.resources_base import (
     mul_in_series,
 )
 
-# pylint: disable= no-self-use
+# pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
 
 
 class DummyResOp:
@@ -38,11 +38,11 @@ class DummyResOp:
 
     def __init__(self, name):
         """Initialize dummy class."""
-        self._name = name
+        self.name = name
 
     def __hash__(self):
         """Custom hash which only depends on instance name."""
-        return hash(self._name)
+        return hash(self.name)
 
 
 h = DummyResOp("Hadamard")
@@ -150,20 +150,20 @@ class TestResources:
 
             def __init__(self, name, parameter=None):
                 """Initialize dummy class."""
-                self._name = name
+                self.name = name
                 self.parameter = parameter
 
             def __hash__(self):
                 """Custom hash which only depends on instance name."""
-                return hash((self._name, self.parameter))
+                return hash((self.name, self.parameter))
 
         rx1 = DummyResOp2("RX", parameter=3.14)
         rx2 = DummyResOp2("RX", parameter=3.14 / 2)
-        cnot = DummyResOp2("CNOT")
+        cnots = DummyResOp2("CNOT")
         ry1 = DummyResOp2("RY", parameter=3.14)
         ry2 = DummyResOp2("RY", parameter=3.14 / 4)
 
-        gate_types = {rx1: 1, ry1: 2, cnot: 3, rx2: 4, ry2: 5}
+        gate_types = {rx1: 1, ry1: 2, cnots: 3, rx2: 4, ry2: 5}
         res = Resources(qubit_manager=qm1, gate_types=gate_types)
 
         expected_clean_gate_counts = {"RX": 5, "RY": 7, "CNOT": 3}

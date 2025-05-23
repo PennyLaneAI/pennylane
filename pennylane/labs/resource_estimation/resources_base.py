@@ -20,6 +20,7 @@ from decimal import Decimal
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
+# 
 
 class Resources:
     r"""A container to track and update the resources used throughout a quantum circuit.
@@ -27,7 +28,7 @@ class Resources:
 
     Args:
         qubit_manager (QubitManager): A qubit tracker class which contains the number of available
-            work wires, catagorized as clean, diry or algorithmic wires.
+            work wires, catagorized as clean, dirty or algorithmic wires.
         gate_types (dict): A dictionary storing operations (ResourceOperator) as keys and the number
             of times they are used in the circuit (int) as values.
 
@@ -56,7 +57,7 @@ class Resources:
     .. details::
         :title: Usage Details
 
-        The :class:`Resources` object supports arithmetic methods which allow for quick addition
+        The :class:`Resources` object supports arithmetic operations which allow for quick addition
         and multiplication of resources.
 
         .. code-block::
@@ -211,7 +212,7 @@ class Resources:
         clean_gate_counts = defaultdict(int)
 
         for cmp_res_op, counts in self.gate_types.items():
-            clean_gate_counts[cmp_res_op._name] += counts
+            clean_gate_counts[cmp_res_op.name] += counts
 
         return clean_gate_counts
 
@@ -276,7 +277,7 @@ def add_in_series(first: Resources, other) -> Resources:  # +
         work_wires={"clean": new_clean, "dirty": new_dirty}, tight_budget=new_budget
     )
 
-    new_qubit_manager._logic_qubit_counts = new_logic
+    new_qubit_manager.algo_qubits = new_logic
     new_gate_types = _combine_dict(first.gate_types, other.gate_types)
     return Resources(new_qubit_manager, new_gate_types)
 
@@ -303,7 +304,7 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
         tight_budget=new_budget,
     )
 
-    new_qubit_manager._logic_qubit_counts = new_logic
+    new_qubit_manager.algo_qubits = new_logic
     new_gate_types = _combine_dict(first.gate_types, other.gate_types)
     return Resources(new_qubit_manager, new_gate_types)
 
@@ -312,7 +313,7 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
-        first (Resources): first resource object to combine
+        first (Resources): first resource object to scale
         scalar (int): integer value to scale the resources by
 
     Returns:
@@ -330,7 +331,7 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
         tight_budget=new_budget,
     )
 
-    new_qubit_manager._logic_qubit_counts = new_logic
+    new_qubit_manager.algo_qubits = new_logic
     new_gate_types = _scale_dict(first.gate_types, scalar)
 
     return Resources(new_qubit_manager, new_gate_types)
@@ -340,7 +341,7 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
-        first (Resources): first resource object to combine
+        first (Resources): first resource object to scale
         scalar (int): integer value to scale the resources by
 
     Returns:
@@ -358,7 +359,7 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
         tight_budget=new_budget,
     )
 
-    new_qubit_manager._logic_qubit_counts = new_logic
+    new_qubit_manager.algo_qubits = new_logic
     new_gate_types = _scale_dict(first.gate_types, scalar)
 
     return Resources(new_qubit_manager, new_gate_types)
