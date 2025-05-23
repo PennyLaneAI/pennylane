@@ -249,13 +249,14 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     if isinstance(clifford_op, H):
         _x, _z = xz[0]
         return _commute_h(_x, _z)
-    
+
     if isinstance(clifford_op, CNOT):
         _xc, _zc = xz[0]
         _xt, _zt = xz[1]
         return _commute_cnot(_xc, _zc, _xt, _zt)
 
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
+
 
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     r"""Parse a serial of mid-measurement results of a quantum tape with only Pauli operators (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
