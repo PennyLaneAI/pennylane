@@ -202,6 +202,7 @@ class QasmInterpreter(QASMVisitor):
         for func in context["gates"]:
             func()
 
+    @staticmethod
     def _all_context_bound(quantum_function):
         """
         Checks whether a partial received all required context during compilation, or if
