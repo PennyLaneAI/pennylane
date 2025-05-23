@@ -26,6 +26,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.math import get_canonical_interface_name
 from pennylane.ops.channel import __qubit_channels__ as channels
@@ -304,7 +305,7 @@ class DefaultMixed(Device):
 
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:
