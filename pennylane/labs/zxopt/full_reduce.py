@@ -33,6 +33,8 @@ def full_reduce(tape, verbose=False):
         * [extract_circuit](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit)
         * [basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)
 
+    In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
         verbose (bool): whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
