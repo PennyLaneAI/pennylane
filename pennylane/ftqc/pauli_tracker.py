@@ -19,8 +19,6 @@ This module contains Pauli Tracking functions.
 import itertools
 from typing import List, Tuple
 
-import numpy as np
-
 from pennylane import CNOT, H, I, S, X, Y, Z
 from pennylane.operation import Operator
 
@@ -47,7 +45,7 @@ _CLIFFORD_TABLEAU = {
 }
 
 
-def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
+def pauli_to_xz(op: Operator) -> Tuple[int, int]:
     r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -83,7 +81,7 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
     raise NotImplementedError(f"{type(op)} gate does not support xz encoding.")
 
 
-def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
+def xz_to_pauli(x: int, z: int) -> Operator:
     """
     Convert x, z to a Pauli operator class.
 
@@ -110,9 +108,10 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: List[Operator]) -> Tuple[np.uint8, np.uint8]:
+def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
     """
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
+    Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
@@ -145,10 +144,11 @@ def pauli_prod(ops: List[Operator]) -> Tuple[np.uint8, np.uint8]:
     return (res_x, res_z)
 
 
-def apply_clifford_op(
-    clifford_op: Operator, xz: List[Tuple[np.uint8, np.uint8]]
-) -> List[Tuple[np.uint8, np.uint8]]:
-    """Commuting a list of Pauli ops to a list of new Pauli ops with a given Clifford op.
+def apply_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """Get a list of xz representing a list of Pauli ops commuting/moving through a given Clifford op.
+    Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = xz \cdot clifford\_op` to
+    move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
+    :math:`new\_xz` represent a list of Pauli operations.
 
     Args:
         clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
@@ -190,7 +190,7 @@ def apply_clifford_op(
     if all(element == (0, 0) for element in xz):
         return xz
 
-    # A Clifford gate conjugate non-Identify Pauli ops to a new Pauli ops
+    # A Clifford gate commutates non-Identify Pauli ops to new Pauli ops
     new_xz = []
     nonzero_indices = [idx for idx, element in enumerate(xz_flatten) if element == 1]
 
