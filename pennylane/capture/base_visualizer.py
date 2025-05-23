@@ -8,21 +8,11 @@ import pydot
 import pennylane as qml
 
 from .base_interpreter import PlxprInterpreter
-from .primitives import (
-    adjoint_transform_prim,
-    cond_prim,
-    ctrl_transform_prim,
-    for_loop_prim,
-    grad_prim,
-    jacobian_prim,
-    qnode_prim,
-    while_loop_prim,
-)
+from .primitives import for_loop_prim, qnode_prim
 
 
 class PlxprVisualizer:
     wires: dict
-    _env: dict
     _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
@@ -36,35 +26,41 @@ class PlxprVisualizer:
 
         return decorator
 
-    def make_id_into_ascii(self, id):
-        if "Var" not in id:
-            return id
-        import re
-
-        match = re.search(r"id=(\d+)", id)
-
-        id_str = match.group(1)
-        extracted_id = int(id_str)
+    def get_ascii(self, id):
 
         from string import ascii_lowercase as letters
 
-        if extracted_id == 0:
+        if id == 0:
             return "a"
 
         val = []
-        while extracted_id > 0:
-            extracted_id, r = divmod(extracted_id, 26)
+        while id > 0:
+            id, r = divmod(id, 26)
             val.append(r)
-
         return "".join([letters[v] for v in val[::-1]])
+
+    def get_unique_ascii_for_dynamic(self, id: str):
+
+        if "Var" not in id:
+            return id
+
+        if id not in self.seen_dynamic_ids:
+            # never seen before, record and increment
+            self.seen_dynamic_ids[id] = self.get_ascii(self.id_counter)
+            self.id_counter += 1
+            return self.seen_dynamic_ids[id]
+
+        else:
+            return self.seen_dynamic_ids[id]
 
     def __init__(self):
         self.interpreter = qml.capture.PlxprInterpreter()
 
         self.unique_id = 0
         self.wires = {}
-        self._env = {}
+        self.id_counter = 0
         self.wires_source = {}
+        self.seen_dynamic_ids = {}
         self.last_seen_dynamic_wire = None
 
         graph_attr = {
@@ -74,11 +70,7 @@ class PlxprVisualizer:
         self.graph = pydot.Dot(graph_type="digraph", **graph_attr)
         self.graph.set_node_defaults(shape="box", style="filled", fillcolor="white")
         self.graph.set_edge_defaults(color="black", arrowhead="normal", arrowsize=0.5)
-        self.last_seen_cluster = self.graph
         super().__init__()
-
-    def read(self, var):
-        return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
 
     def get_unique_id(self, name):
         self.unique_id += 1
@@ -87,28 +79,31 @@ class PlxprVisualizer:
     def parse(self, jaxpr, consts, *args, cluster=None) -> list:
         if not cluster:
             cluster = self.graph
-            self.last_seen_cluster = cluster
 
-        in_new_cluster = False
-        if cluster != self.last_seen_cluster:
-            print("not the same!!")
-            in_new_cluster = True
+        # for arg, invar in zip(args, jaxpr.invars, strict=True):
+        #     self.interpreter._env[invar] = arg
+        # for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+        #     self.interpreter._env[constvar] = const
 
         for eqn in jaxpr.eqns:
             primitive = eqn.primitive
             custom_handler = self._primitive_registrations.get(primitive, None)
 
             if custom_handler:
-                invals = [self.read(invar) for invar in eqn.invars]
+                invals = [self.interpreter.read(invar) for invar in eqn.invars]
                 custom_handler(self, cluster, *invals, **eqn.params)
             elif getattr(primitive, "prim_type", "") == "operator":
                 operator_uid = self.get_unique_id(primitive.name)
                 operator_wires = eqn.invars[-eqn.params["n_wires"] :]
-                str_operator_wires = map(str, operator_wires)
-                operator_wires_ascii = list(map(self.make_id_into_ascii, str_operator_wires))
+
+                operator_wires_ascii = list(
+                    map(self.get_unique_ascii_for_dynamic, map(str, operator_wires))
+                )
 
                 if str(eqn.outvars) != "[_]":
-                    # output wires most likely participates in measurement?
+                    # store information about the operator
+                    # and the wires it is connected to
+                    # and will be used to connect to the measurement
                     for outvar in eqn.outvars:
                         self.wires_source[str(outvar)] = {
                             "name": primitive.name,
@@ -126,40 +121,27 @@ class PlxprVisualizer:
                     )
                 )
 
-                # Figure out how to connect previous nodes to this node
                 for op_wire in operator_wires:
-                    encountered_dynamic_wire = False
+
                     if "Var" in str(op_wire):
-                        encountered_dynamic_wire = True
-                        self.last_seen_dynamic_wire = op_wire
-                    if encountered_dynamic_wire:
                         print("encountered dynamic wire", op_wire)
-                        # if in_new_cluster:
-                        # print("in a new cluster")
-                        # connect all wires to this operator
-                        print("Seen wires are ", self.wires)
+                        self.last_seen_dynamic_wire = op_wire
+
+                        # connect all seen nodes to this operator
                         for seen_wire, _ in self.wires.items():
-                            # if str(op_wire) == str(seen_wire):
-                            # continue
                             print("connecting", self.wires[str(seen_wire)], operator_uid)
-                            edge = pydot.Edge(
-                                self.wires[str(seen_wire)], operator_uid, style="dotted"
-                            )
+                            seen_node = self.wires[str(seen_wire)]
+                            edge = pydot.Edge(seen_node, operator_uid, style="dotted")
                             self.graph.add_edge(edge)
-                            # only need to draw one (bus of wires)
+
+                        # clear seen wires and replace with dynamic wire "bus"
                         self.wires.clear()
                         self.wires[str(op_wire)] = operator_uid
-                        print("cleared and new env is ", self.wires)
                         continue
 
                     last_dynamic_node = self.wires.get(str(self.last_seen_dynamic_wire), None)
                     previous_op = self.wires.get(str(op_wire), last_dynamic_node)
-                    print(
-                        "connecting",
-                        previous_op,
-                        operator_uid,
-                        f"inside cluster: {cluster.get_name()}",
-                    )
+                    print("connecting", previous_op, operator_uid)
                     edge = pydot.Edge(previous_op, operator_uid)
                     self.graph.add_edge(edge)
 
@@ -181,13 +163,28 @@ class PlxprVisualizer:
                     )
                 )
 
+                source_node = self.wires.get(str(eqn_op.invars[0]), None)
+                print(
+                    "connecting",
+                    source_node,
+                    measurement_uid,
+                )
+                if not source_node:
+                    # connect all seen nodes to this measurement
+                    for seen_wire, _ in self.wires.items():
+                        print("connecting", self.wires[str(seen_wire)], operator_uid)
+                        seen_node = self.wires[str(seen_wire)]
+                        edge = pydot.Edge(seen_node, measurement_uid, style="dotted")
+                        self.graph.add_edge(edge)
+                    continue
                 edge = pydot.Edge(
                     self.wires.get(str(eqn_op.invars[0]), list(self.wires.values())[-1]),
                     measurement_uid,
                 )
                 self.graph.add_edge(edge)
+
             else:
-                invals = [self.read(invar) for invar in eqn.invars]
+                invals = [self.interpreter.read(invar) for invar in eqn.invars]
                 subfuns, params = primitive.get_bind_params(eqn.params)
                 primitive.bind(*subfuns, *invals, **params)
 
@@ -242,7 +239,7 @@ def handle_qnode(
 
     new_qfunc_jaxpr = jaxpr_to_jaxpr(self.interpreter, qfunc_jaxpr, consts, *args)
 
-    self.parse(new_qfunc_jaxpr, new_qfunc_jaxpr.consts, *args, cluster=qnode_cluster)
+    self.parse(new_qfunc_jaxpr.jaxpr, new_qfunc_jaxpr.consts, *args, cluster=qnode_cluster)
 
     return qnode_prim.bind(
         *new_qfunc_jaxpr.consts,
@@ -279,7 +276,10 @@ def handle_for_loop(
     )
     uid = self.get_unique_id("for_loop")
     loop_var = str(new_jaxpr_body_fn.jaxpr.invars[0])
-    loop_var_ascii = self.make_id_into_ascii(loop_var)
+    print("loop var", loop_var)
+    loop_var_ascii = self.get_unique_ascii_for_dynamic(loop_var)
+
+    print(self.seen_dynamic_ids)
     for_loop_cluster = pydot.Cluster(
         uid,
         label=f"for {loop_var_ascii} in [{start}, {stop}, {step}]",
@@ -290,7 +290,8 @@ def handle_for_loop(
 
     cluster.add_subgraph(for_loop_cluster)
 
-    self.parse(new_jaxpr_body_fn, new_jaxpr_body_fn.consts, *args, cluster=for_loop_cluster)
+    print("args", args)
+    self.parse(new_jaxpr_body_fn.jaxpr, new_jaxpr_body_fn.consts, *args, cluster=for_loop_cluster)
 
     consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
     abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
