@@ -203,6 +203,33 @@ class CustomOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
 
+    # qubit = CustomOp("RX", [0.0], qubit.out_qubits[0]).results[0
+
+    #  def __init__(gate_name: str | StringAttr,
+    #              params: list[float | SSAValue],
+    #             in_qubits: list[SSAValue],
+    #              in_ctrl_qubits: list[SSAValue] | None = None,
+    #              in_ctrl_values: list[SSAValue] | None = None,
+    #              adjoint : bool | None = None):
+    #     if type(gate_name) is str:
+    #         gate_name = StringAttr(gate_name)
+    #     clean_params = []
+    #     for param in params:
+    #         if not isinstance(param, SSAValue):
+    #             ssa_val = arith.ConstantOp(param, type=Float64Type).result
+    #         else:
+    #             ssa_val = param
+    #         clean_params.append(ssa_val)
+    #     if adjoint is not None:
+    #         adjoint = builtin.UnitAttr()
+    #     if out_ctrl_qubits is None:
+    #         out_ctrl_qubits = [qubit.type for qubit in in_ctrl_qubits]
+    #     if out_qubits is None:
+    #         out_qubits = [qubit.type for qubit in in_qubits]
+    #     super().__init__(operands=[params, in_qubits, in_ctrl_qubits, in_ctrl_values],
+    #                      results=[out_qubits, out_ctrl_qubits],
+    #                      properties={"gate_name": gate_name, "adjoint": adjoint})
+
 
 @irdl_op_definition
 class DeallocOp(IRDLOperation):
