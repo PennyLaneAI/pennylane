@@ -31,6 +31,19 @@ def crit_0(op: qml.operation.Operator):
     )
 
 
+class PreprocessDevice(qml.devices.Device):
+
+    def __init__(self, wires=None, shots=None):
+        self.target_dev = qml.devices.DefaultQubit(wires=wires, shots=shots)
+        super().__init__(wires=wires, shots=shots)
+
+    def preprocess(self, execution_config=None):
+        return self.target_dev.preprocess(execution_config)
+
+    def execute(self, circuits, execution_config=None):
+        return self.target_dev.execute(circuits, execution_config)
+
+
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
@@ -785,12 +798,11 @@ class TestCreateCustomDecompExpandFn:
         assert ops[0].name == "CNOT"
         assert dev.custom_expand_fn is None
 
-    def test_custom_decomp_in_separate_context(self, mocker):
+    @pytest.mark.parametrize("device", (qml.devices.DefaultQubit, PreprocessDevice))
+    def test_custom_decomp_in_separate_context(self, mocker, device):
         """Test that the set_decomposition context manager works for the new device API."""
 
-        # pylint:disable=protected-access
-
-        dev = qml.device("default.qubit", wires=2)
+        dev = device(wires=2)
         spy = mocker.spy(dev, "execute")
 
         @qml.qnode(dev)
