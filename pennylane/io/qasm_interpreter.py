@@ -148,14 +148,24 @@ class QasmInterpreter(QASMVisitor):
         return context
 
     @staticmethod
-    def construct_callable(context: dict):
+    def _execute_all(context: dict):
+        """
+        Executes all the gates in the context.
+
+        Args:
+            context (dict): the current context populated with the gates.
+        """
+        for func in context["gates"]:
+            func()
+
+    def construct_callable(self, context: dict):
         """
         Constructs a callable that can be queued into a QNode.
 
         Args:
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
-        context["callable"] = lambda: [gate() for gate in context["gates"]]
+        context["callable"] = partial(self._execute_all, context)
 
     @staticmethod
     def qubit_declaration(node: QASMNode, context: dict):
