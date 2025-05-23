@@ -331,10 +331,7 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        if "shots" in inspect.signature(qnode.func).parameters:
-            shots = qnode.device.shots
-        else:
-            shots = kwargs.pop("shots", qnode.device.shots)
+        shots = kwargs.pop("shots", None)
 
         if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
