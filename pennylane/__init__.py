@@ -200,7 +200,7 @@ def __getattr__(name):
                 and must be imported as pennylane.exceptions.{name}. \
                     Support for top-level access will be removed in v0.42.",
             pennylane.exceptions.PennyLaneDeprecationWarning,
-        )
+        )  # pragma: no cover
         return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
