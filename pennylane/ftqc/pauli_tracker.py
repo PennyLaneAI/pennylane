@@ -288,7 +288,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List) -> List:
 
 
 def get_pauli_record(num_wires: int, by_ops: List, ops: List):
-    """Track the Pauli/byproduct ops represented in the xz encoding manner.
+    """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
         num_wires (int): Number of wires of the quantum state.
@@ -296,7 +296,7 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
         ops (list): List of Clifford/Pauli gates
 
     Return:
-        The final tracked Paulis for each wire.
+        The final recorded x and z for each wire.
     """
     x_record = np.zeros(num_wires, dtype=np.uint8)
     z_record = np.zeros(num_wires, dtype=np.uint8)
@@ -305,42 +305,39 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
         op = ops.pop()
         wires = list(op.wires)
 
-        # Get the recorded pauli
-        # paulis = [pauli_record[wire] for wire in wires]
+        # Get the recorded xz
         xz = [(x_record[wire], z_record[wire]) for wire in wires]
 
         # Updated xz
         new_xz = []
 
         if type(op) in _CLIFFORD_TABLEAU:
-            # Step 1: Conjugate recorded Paulis to new Paulis
+            # Step 1: Commutate the recorded xz with the Clifford gate to a new xz.
             xz_commutated = apply_clifford_op(op, xz)
 
-            # Step 2: Update the x, z record with the byproduct by_op
+            # Step 2: Merge the new xz with the byproduct by_op
             by_op = by_ops.pop()
-            for b_op, p_conj in zip(by_op, xz_commutated):
-                _xz = np.bitwise_xor(b_op, p_conj)
-                new_xz.append((_xz[0], _xz[1]))
+            for _by_op, _xz_comm in zip(by_op, xz_commutated):
+                new_xz.append(np.bitwise_xor(_by_op, _xz_comm))
 
         else:  # branch for Paulis
-            # Conjugate step is skipped. Update the x, z record with the Pauli
-            _xz = np.bitwise_xor(pauli_to_xz(op), xz[0])
-            new_xz.append((_xz[0], _xz[1]))
+            # Commutate step is skipped.
+            # Get the new xz by merging the recorded xz with the Pauli ops directly.
+            new_xz.append(np.bitwise_xor(pauli_to_xz(op), xz[0]))
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
-            _x, _z = new_xz[idx]
-            x_record[wire] = _x
-            z_record[wire] = _z
+            x_record[wire], z_record[wire] = new_xz[idx]
 
     return x_record, z_record
 
 
 def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
-    """Get the phase correction factor based on the Pauli recorded of the target wire and the corresponding
+    """Get the phase correction factor based on the recorded `x` an `z` of the target wire and the corresponding
     observable.
 
         Args:
-            pauli (Operator): Recorded Pauli at the target wire of ob.
+            x (np.uint8): Recorded x at the target wire of ob.
+            z (np.uint8): Recorded z at the target wire of ob.
             ob (Operator): Observable of the measurement.
 
         Return:
@@ -363,10 +360,11 @@ def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
 
 def get_measurements_corrections(tape: QuantumScript, x_record: np.array, z_record: np.array):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
-    is calculated based on the measurement observables with the corresponding recorded Paulis.
+    is calculated based on the measurement observables with the corresponding recorded x an z.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
-            pauli_record (list): Pauli record for each wire.
+            x_record (np.array): The array of recorded x for each wire.
+            z_record (np.array): The array of recorded z for each wire.
         Return:
             A list of phase correction factor for all measurements.
     """
@@ -394,10 +392,10 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
     r"""Get measurement correction coefficients offline with a quantum script and mid-measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     gates. Note that byproduct operations and ops are stored with list and used in a stack manner. The calculation iteratively
-    pops out the first operation in the tape and applies conjugate rules for the first byproduct ops in the byproduct stack and
+    pops out the first operation in the tape and applies commutate rules for the first byproduct ops in the byproduct stack and
     then the results are commutated to the byproduct of the current operations in the tape if it is a Clifford gate. The calculation
-    starts from applying conjugate rules for :class:`qml.I` gate or $encode\_xz(x,z)=(0,0)$ to the first gate in the tape. The
-    measurement corrections are returned based on the X operations in the xz encoding record.
+    starts from applying commutate rules for :class:`qml.I` gate or $encode\_xz(x,z)=(0,0)$ to the first gate in the tape. The
+    measurement corrections are returned based on the observable operators and the xz recorded.
 
     Args:
         tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with Paulis, qml.H, qml.S and qml.CNOT in the standard circuit formalism.
