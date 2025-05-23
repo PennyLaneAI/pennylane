@@ -204,7 +204,7 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
             >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
             [(1, 1), (0, 0)]
 
-        A list of xz representation of Pauli operators is returned.
+        A list of Pauli operators in the xz representation is returned.
     """
     if len(xz) != clifford_op.num_wires:
         raise ValueError(
