@@ -1,6 +1,8 @@
 {{ fullname | replace("pennylane", "qml") }}
 {{ underline }}
 
+.. currentmodule:: {{ module }}
+   
 .. autoclass:: {{ fullname }}
    :show-inheritance:
 
@@ -24,7 +26,6 @@
    {% if attributes %}
 
    .. autosummary::
-      :no-index:
       :nosignatures:
    {% for item in attributes %}
       ~{{ name }}.{{ item }}

@@ -90,12 +90,17 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
-autodoc_default_options = {
-    'no-index':'pennylane.bose.bosonic.BoseSentence,pennylane.bose.bosonic.BoseWord,pennylane.fermi.fermionic.FermiA,pennylane.fermi.fermionic.FermiC,pennylane.fermi.fermionic.FermiSentence,pennylane.fermi.fermionic.FermiWord,pennylane.io.qualtran_io.FromBloq'
-}
+# autodoc_default_options = {
+#     'no-index':'pennylane.bose.BoseSentence,pennylane.bose.BoseWord,pennylane.fermi.FermiA,pennylane.fermi.FermiC,pennylane.fermi.FermiSentence,pennylane.fermi.FermiWord,pennylane.qualtran_io.FromBloq'
+# }
 
 nitpick_ignore = {
     ('py:class', 'duplicate')
+}
+
+qualname_overrides = {
+    "pennylane.bose.bosonic.BoseSentence": "pennylane.bose.BoseSentence",  # fix qualname
+    "pennylane.bose.bosonic.BoseWord": "pennylane.bose.BoseWord", # fix role
 }
 
 mathjax_path = (
