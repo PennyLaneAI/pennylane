@@ -102,12 +102,12 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             mcm_config=mcm_config,
         )
         if resolve:
-                if type(qnode).__name__ == "TorchLayer":
-                    # avoid triggering import of torch if its not needed.
-                    x = args[0]
-                    kwargs = {
-                        **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
-                    }
+            if type(qnode).__name__ == "TorchLayer":
+                # avoid triggering import of torch if its not needed.
+                x = args[0]
+                kwargs = {
+                    **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+                }
             shots = kwargs.pop("shots", None)
             tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
             batch, _ = qnode.transform_program((tape,))
