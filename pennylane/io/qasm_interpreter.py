@@ -235,7 +235,8 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(gate)
 
-    def retrieve_variable(self, name: str, context: dict):
+    @staticmethod
+    def retrieve_variable(name: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
 
