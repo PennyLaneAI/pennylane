@@ -33,6 +33,10 @@ visibility = []
 path = "pennylane.labs"
 visibility = []
 
+[[modules]]
+path = "pennylane.compiler.python_compiler"
+visibility = []
+
 ## CORE modules
 # These modules are fundamental, and should not have any dependent modulesin lower levels.
 
