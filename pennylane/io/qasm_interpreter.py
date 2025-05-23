@@ -279,11 +279,13 @@ class QasmInterpreter(QASMVisitor):
                     wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
-            call_stack.append(wrapper)
+            else:
+                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+                # `no viable alternative at input 'wop(power)@'`, long before we get here.
+                raise ValueError("Unsupported modifier encountered in QASM")
 
-            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-            # `no viable alternative at input 'wop(power)@'`, long before we get here.
+            call_stack.append(wrapper)
 
         def call():
             res = None
