@@ -26,7 +26,7 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=protected-access,unused-argument
+# pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
 

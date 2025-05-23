@@ -14,7 +14,7 @@
 """
 This module contains the qml.generator function.
 """
-# pylint: disable=protected-access
+
 import inspect
 import warnings
 
@@ -25,7 +25,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionErr
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
-# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~ops.LinearCombination`."""
 

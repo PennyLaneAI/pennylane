@@ -16,7 +16,7 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
-# pylint: disable=not-callable, unused-argument
+# pylint: disable=not-callable
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
@@ -275,7 +275,6 @@ class LegacyDeviceFacade(Device):
             updated_values["grad_on_execution"] = True
         return replace(execution_config, **updated_values)
 
-    # pylint: disable=too-many-return-statements
     def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])

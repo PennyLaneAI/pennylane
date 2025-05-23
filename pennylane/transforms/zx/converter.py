@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
-# pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
+# pylint: disable=too-many-return-statements,too-many-arguments
 
 from collections import OrderedDict
 from fractions import Fraction
@@ -53,7 +53,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
+def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 

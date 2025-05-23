@@ -14,7 +14,7 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
+# pylint: disable=protected-access
 import copy
 from collections.abc import Sequence
 from threading import RLock
@@ -342,7 +342,6 @@ def expand_tape_state_prep(tape, skip_first=True):
     return new_tape
 
 
-# pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):
     r"""A quantum tape recorder, that records and stores variational quantum programs.
 
@@ -478,9 +477,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(
-        self, ops=None, measurements=None, shots=None, trainable_params=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, ops=None, measurements=None, shots=None, trainable_params=None):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)
 

@@ -74,7 +74,7 @@ def _get_target_name(op):
     }
     if op.name in _control_base_map:
         return _control_base_map[op.name]
-    if isinstance(op, qml.ops.op_math.Controlled):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.op_math.Controlled):
         return op.base.name
     return op.name
 
@@ -337,7 +337,7 @@ def is_commuting(operation1, operation2):
     >>> qml.is_commuting(qml.X(0), qml.Z(0))
     False
     """
-    # pylint: disable=too-many-branches
+
     # pylint: disable=too-many-return-statements
 
     if operation1.name in unsupported_operations or isinstance(

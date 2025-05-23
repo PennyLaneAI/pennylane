@@ -18,7 +18,7 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 """
 import collections
 
-# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import warnings
 

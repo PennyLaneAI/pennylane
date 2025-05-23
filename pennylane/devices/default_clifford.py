@@ -515,7 +515,6 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
         return results
 
-    # pylint:disable=no-member,too-many-branches
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
@@ -674,7 +673,6 @@ class DefaultClifford(Device):
 
         return samples, qml.math.array(coeffs)
 
-    # pylint:disable=protected-access
     def measure_statistical(self, circuit, stim_circuit, seed=None):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
@@ -897,7 +895,7 @@ class DefaultClifford(Device):
 
         return entropy / qml.math.log(log_base)
 
-    # pylint: disable=too-many-branches, too-many-statements
+    # pylint: disable=too-many-branches
     def _measure_probability(self, meas, _, **kwargs):
         r"""Measure the probability of each computational basis state.
 

@@ -842,7 +842,6 @@ class DefaultTensor(Device):
 
         return float(np.real(exp_val))
 
-    # pylint: disable=unused-argument
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -896,7 +895,6 @@ class DefaultTensor(Device):
             "The computation of derivatives has yet to be implemented for the default.tensor device."
         )
 
-    # pylint: disable=unused-argument
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,

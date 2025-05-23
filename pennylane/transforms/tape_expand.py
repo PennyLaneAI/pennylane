@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation, no-member
+# pylint: disable=unused-argument,invalid-unary-operand-type
 import contextlib
 import warnings
 
@@ -183,7 +183,6 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     if not use_tape_argnum:
         return expand_trainable_multipar
 
-    # pylint: disable=protected-access
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 
