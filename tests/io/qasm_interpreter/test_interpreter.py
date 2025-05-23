@@ -37,9 +37,11 @@ try:
     pytest.importorskip("openqasm3")
 
     from openqasm3.parser import parse
+
     from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
 
 @pytest.mark.external
 class TestInterpreter:
