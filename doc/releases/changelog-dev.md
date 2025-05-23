@@ -380,9 +380,7 @@
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
-
-
-* `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
+* `pennylane.labs.QubitManager`, `pennylane.labs.AllocWires`, and `pennylane.labs.FreeWires` classes have been added to track and manage auxilliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
 
 <h3>Breaking changes 💔</h3>
@@ -597,6 +595,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,

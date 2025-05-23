@@ -84,6 +84,12 @@ class QubitManager:
         r"""Returns the number of algorithmic qubits."""
         return self._logic_qubit_counts
 
+    @property
+    def total_qubits(self):
+        r"""Returns the number of total qubits."""
+        total_qubits = self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits
+        return total_qubits
+
     @algo_qubits.setter
     def algo_qubits(self, count: int):  # these get set manually, the rest
         r"""Setter for algorithmic qubits."""
@@ -141,7 +147,7 @@ class QubitManager:
         self._clean_qubit_counts += num_qubits
 
 
-class _WireAction:  # Using a leading underscore to suggest it's an internal base class
+class _WireAction:
     """Base class for operations that manage qubit resources."""
 
     _queue_category = "_resource_qubit_action"

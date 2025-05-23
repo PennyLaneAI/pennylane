@@ -218,7 +218,7 @@ class Resources:
     def __str__(self):
         """Generates a string representation of the Resources object."""
         qm = self.qubit_manager
-        total_qubits = qm.clean_qubits + qm.dirty_qubits + qm.algo_qubits
+        total_qubits = qm.total_qubits
         total_gates = sum(self.clean_gate_counts.values())
 
         total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
