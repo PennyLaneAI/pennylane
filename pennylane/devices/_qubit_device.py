@@ -1665,7 +1665,7 @@ class QubitDevice(Device):
             if not m.obs.has_matrix:
                 raise QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
-                )
+                )  # pragma: no cover
 
         if self.shot_vector is not None:
             raise QuantumFunctionError("Adjoint does not support shot vectors.")
