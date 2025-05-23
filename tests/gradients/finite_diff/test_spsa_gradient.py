@@ -85,7 +85,21 @@ class TestRademacherSampler:
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
 
-    @pytest.mark.parametrize("ids, num", [pytest.param(list(range(5)), 5, marks=pytest.mark.xfail(reason="Failure after updating rng salt to 0.41.0 [sc-90962]")), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)])
+    @pytest.mark.parametrize(
+        "ids, num",
+        [
+            pytest.param(
+                list(range(5)),
+                5,
+                marks=pytest.mark.xfail(
+                    reason="Failure after updating rng salt to 0.41.0 [sc-90962]"
+                ),
+            ),
+            ([0, 2, 4], 5),
+            ([0], 1),
+            ([2, 3], 5),
+        ],
+    )
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
