@@ -35,6 +35,8 @@ from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
+RTOL = 2.5e-1
+ATOL = 5e-2
 
 def generate_pauli_list(wire: int, num_ops: int):
     pauli_list = []
@@ -44,9 +46,140 @@ def generate_pauli_list(wire: int, num_ops: int):
 
     return pauli_list
 
-RTOL = 2.5e-1
-ATOL = 5e-2
+def generate_random_state(n, seed=0):
+    rng = np.random.default_rng(seed=seed)
+    input_state = rng.random(2**n) + 1j * rng.random(2**n)
+    return input_state / np.linalg.norm(input_state)
 
+
+def generate_rot_gate_graph():
+    lattice = generate_lattice([4], "chain")
+    return lattice.graph
+
+
+def generate_cnot_graph():
+    wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    g = nx.Graph()
+    g.add_nodes_from(wires)
+    g.add_edges_from(
+        [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (2, 6),
+            (6, 9),
+            (7, 8),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+        ]
+    )
+    return g
+
+
+def h_stencil(q_mgr, target_idx):
+    # Acquire 4 free qubit indices
+    graph_wires = q_mgr.acquire_qubits(4)
+
+    # Denote the index for the final output state
+    output_idx = graph_wires[-1]
+
+    # Prepare the state
+    qml.ftqc.GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
+
+    # entangle input and graph using first qubit
+    qml.CZ([target_idx, graph_wires[0]])
+
+    m = []
+    # MBQC Hadamard: X, Y, Y, Y
+    # Reset operations allow qubits to be returned to the pool
+    m0 = measure_x(target_idx, reset=True)
+    m1 = measure_y(graph_wires[0], reset=True)
+    m2 = measure_y(graph_wires[1], reset=True)
+    m3 = measure_y(graph_wires[2], reset=True)
+
+    m.extend([m0, m1, m2, m3])
+
+    # The input qubit can be freed and the output qubit becomes the next iteration's input
+    q_mgr.release_qubit(target_idx)
+    # We can now free all but the last qubit, which has become the new input_idx
+    q_mgr.release_qubits(graph_wires[0:-1])
+
+    return output_idx, m
+
+
+def s_stencil(q_mgr, target_idx):
+    # Acquire 4 free qubit indices
+    graph_wires = q_mgr.acquire_qubits(4)
+
+    # Denote the index for the final output state
+    output_idx = graph_wires[-1]
+
+    # Prepare the state
+    GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
+
+    # entangle input and graph using first qubit
+    qml.CZ([target_idx, graph_wires[0]])
+
+    m = []
+    # MBQC Z rotation: X, X, Y, X
+    # Reset operations allow qubits to be returned to the pool
+    m0 = measure_x(target_idx, reset=True)
+    m1 = measure_x(graph_wires[0], reset=True)
+    m2 = measure_y(graph_wires[1], reset=True)
+    m3 = measure_x(graph_wires[2], reset=True)
+
+    m.extend([m0, m1, m2, m3])
+
+    # The input qubit can be freed and the output qubit becomes the next iteration's input
+    q_mgr.release_qubit(target_idx)
+    # We can now free all but the last qubit, which has become the new input_idx
+    q_mgr.release_qubits(graph_wires[0:-1])
+
+    return output_idx, m
+
+
+def cnot_stencil(q_mgr, ctrl_idx, target_idx):
+    graph_wires = q_mgr.acquire_qubits(13)
+
+    # Denote the index for the final output state
+    output_ctrl_idx = graph_wires[5]
+    output_target_idx = graph_wires[12]
+
+    # Prepare the state
+    GraphStatePrep(generate_cnot_graph(), wires=graph_wires)
+
+    # entangle input and graph using first qubit
+    qml.CZ([ctrl_idx, graph_wires[0]])
+    qml.CZ([target_idx, graph_wires[7]])
+
+    m = []
+    m1 = qml.ftqc.measure_x(ctrl_idx, reset=True)
+    m2 = qml.ftqc.measure_y(graph_wires[0], reset=True)
+    m3 = qml.ftqc.measure_y(graph_wires[1], reset=True)
+    m4 = qml.ftqc.measure_y(graph_wires[2], reset=True)
+    m5 = qml.ftqc.measure_y(graph_wires[3], reset=True)
+    m6 = qml.ftqc.measure_y(graph_wires[4], reset=True)
+
+    m8 = qml.ftqc.measure_y(graph_wires[6], reset=True)
+
+    m9 = qml.ftqc.measure_x(target_idx, reset=True)
+    m10 = qml.ftqc.measure_x(graph_wires[7], reset=True)
+    m11 = qml.ftqc.measure_x(graph_wires[8], reset=True)
+    m12 = qml.ftqc.measure_y(graph_wires[9], reset=True)
+    m13 = qml.ftqc.measure_x(graph_wires[10], reset=True)
+    m14 = qml.ftqc.measure_x(graph_wires[11], reset=True)
+
+    m.extend([m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14])
+    q_mgr.release_qubit(ctrl_idx)
+    q_mgr.release_qubit(target_idx)
+
+    # We can now free all but the last qubit, which has become the new input_idx
+    q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
+    return output_ctrl_idx, output_target_idx, m
 
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
@@ -193,147 +326,10 @@ class TestPauliTracker:
         ):
             _ = commute_clifford_op(clifford_op, xz)
 
-
-def generate_random_state(n, seed=0):
-    rng = np.random.default_rng(seed=seed)
-    input_state = rng.random(2**n) + 1j * rng.random(2**n)
-    return input_state / np.linalg.norm(input_state)
-
-
-def generate_rot_gate_graph():
-    lattice = generate_lattice([4], "chain")
-    return lattice.graph
-
-
-def generate_cnot_graph():
-    wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    g = nx.Graph()
-    g.add_nodes_from(wires)
-    g.add_edges_from(
-        [
-            (0, 1),
-            (1, 2),
-            (2, 3),
-            (3, 4),
-            (4, 5),
-            (2, 6),
-            (6, 9),
-            (7, 8),
-            (8, 9),
-            (9, 10),
-            (10, 11),
-            (11, 12),
-        ]
-    )
-    return g
-
-
-def h_stencil(q_mgr, target_idx):
-    # Acquire 4 free qubit indices
-    graph_wires = q_mgr.acquire_qubits(4)
-
-    # Denote the index for the final output state
-    output_idx = graph_wires[-1]
-
-    # Prepare the state
-    qml.ftqc.GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([target_idx, graph_wires[0]])
-
-    m = []
-    # MBQC Hadamard: X, Y, Y, Y
-    # Reset operations allow qubits to be returned to the pool
-    m0 = measure_x(target_idx, reset=True)
-    m1 = measure_y(graph_wires[0], reset=True)
-    m2 = measure_y(graph_wires[1], reset=True)
-    m3 = measure_y(graph_wires[2], reset=True)
-
-    m.extend([m0, m1, m2, m3])
-
-    # The input qubit can be freed and the output qubit becomes the next iteration's input
-    q_mgr.release_qubit(target_idx)
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return output_idx, m
-
-
-def s_stencil(q_mgr, target_idx):
-    # Acquire 4 free qubit indices
-    graph_wires = q_mgr.acquire_qubits(4)
-
-    # Denote the index for the final output state
-    output_idx = graph_wires[-1]
-
-    # Prepare the state
-    GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([target_idx, graph_wires[0]])
-
-    m = []
-    # MBQC Z rotation: X, X, Y, X
-    # Reset operations allow qubits to be returned to the pool
-    m0 = measure_x(target_idx, reset=True)
-    m1 = measure_x(graph_wires[0], reset=True)
-    m2 = measure_y(graph_wires[1], reset=True)
-    m3 = measure_x(graph_wires[2], reset=True)
-
-    m.extend([m0, m1, m2, m3])
-
-    # The input qubit can be freed and the output qubit becomes the next iteration's input
-    q_mgr.release_qubit(target_idx)
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return output_idx, m
-
-
-def cnot_stencil(q_mgr, ctrl_idx, target_idx):
-    graph_wires = q_mgr.acquire_qubits(13)
-
-    # Denote the index for the final output state
-    output_ctrl_idx = graph_wires[5]
-    output_target_idx = graph_wires[12]
-
-    # Prepare the state
-    GraphStatePrep(generate_cnot_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([ctrl_idx, graph_wires[0]])
-    qml.CZ([target_idx, graph_wires[7]])
-
-    m = []
-    m1 = qml.ftqc.measure_x(ctrl_idx, reset=True)
-    m2 = qml.ftqc.measure_y(graph_wires[0], reset=True)
-    m3 = qml.ftqc.measure_y(graph_wires[1], reset=True)
-    m4 = qml.ftqc.measure_y(graph_wires[2], reset=True)
-    m5 = qml.ftqc.measure_y(graph_wires[3], reset=True)
-    m6 = qml.ftqc.measure_y(graph_wires[4], reset=True)
-
-    m8 = qml.ftqc.measure_y(graph_wires[6], reset=True)
-
-    m9 = qml.ftqc.measure_x(target_idx, reset=True)
-    m10 = qml.ftqc.measure_x(graph_wires[7], reset=True)
-    m11 = qml.ftqc.measure_x(graph_wires[8], reset=True)
-    m12 = qml.ftqc.measure_y(graph_wires[9], reset=True)
-    m13 = qml.ftqc.measure_x(graph_wires[10], reset=True)
-    m14 = qml.ftqc.measure_x(graph_wires[11], reset=True)
-
-    m.extend([m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14])
-    q_mgr.release_qubit(ctrl_idx)
-    q_mgr.release_qubit(target_idx)
-
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
-    return output_ctrl_idx, output_target_idx, m
-
-
 @flaky(max_runs=5)
 class TestOfflineCorrection:
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -394,7 +390,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -458,7 +454,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -522,7 +518,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("default.qubit", shots=num_shots)
@@ -587,7 +583,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("default.qubit", shots=num_shots)
@@ -660,7 +656,7 @@ class TestOfflineCorrection:
 
     @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
     @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [200])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("default.qubit", shots=num_shots)
