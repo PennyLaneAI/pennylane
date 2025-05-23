@@ -15,6 +15,7 @@
 Unit tests for the debugging module.
 """
 from contextlib import nullcontext
+from functools import partial
 from unittest.mock import patch
 
 import numpy as np
@@ -403,10 +404,11 @@ class TestSnapshotSupportedQNode:
         # TODO: not sure what to do with this test so leaving this here for now.
         np.random.seed(9872653)
 
-        dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
+        dev = qml.device("default.qutrit.mixed", wires=2)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(add_bad_snapshot: bool):
             qml.THadamard(wires=0)
@@ -555,8 +557,9 @@ class TestSnapshotSupportedQNode:
         # TODO: The fact that this entire test depends on a global seed is not good
         np.random.seed(9872653)
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1)
 
+        @partial(qml.set_shots, shots=10)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -634,8 +637,9 @@ class TestSnapshotUnsupportedQNode:
 
     @flaky(max_runs=3)
     def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=500)
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=500)
         @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.Hadamard(0)
