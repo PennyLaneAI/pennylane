@@ -84,7 +84,7 @@ class QasmInterpreter(QASMVisitor):
     so that the QNode can be called and the program will be executed at that time. During
     this first pass, any available values provided by the program like literals are used to
     optimize the compilation with as much detail as possible. A simulation does not occur
-    during the first pass which just queues Callables into a QNode. The second pass occurs
+    during the first pass which just creates a quantum function. The second pass occurs
     during the execution of the QNode and involves simulating everything. All remaining data
     flow and control flow is evaluated completely during this second pass. The control flow
     is handled using Pennylane provided qml.while_loop and qml.for_loop etc. to be compatible
