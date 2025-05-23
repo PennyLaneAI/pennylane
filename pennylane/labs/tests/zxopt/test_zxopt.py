@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce
+from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce, todd
 
 circ1 = qml.tape.QuantumScript(
     [
@@ -70,3 +70,9 @@ def test_full_optimize(circ):
 def test_basic_optimization(circ):
     """Test basic_optimization"""
     _ = basic_optimization(circ)
+
+
+@pytest.mark.parametrize("circ", [circ1_clifford_T])
+def test_todd(circ):
+    """Test TODD"""
+    _ = todd(circ)
