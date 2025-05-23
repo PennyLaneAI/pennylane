@@ -269,6 +269,11 @@ class QasmInterpreter(QASMVisitor):
         """
         call_stack = [gate]
         for mod in node.modifiers:
+            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+            # `no viable alternative at input 'wop(power)@'`, long before we get here.
+            assert mod.modifier.name in ('inv', 'pow', 'ctrl')
+
             if mod.modifier.name == "inv":
                 wrapper = adjoint
             elif mod.modifier.name == "pow":
@@ -278,11 +283,6 @@ class QasmInterpreter(QASMVisitor):
                     wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
-            else:
-                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-                # `no viable alternative at input 'wop(power)@'`, long before we get here.
-                raise ValueError("Unsupported modifier encountered in QASM")  # pragma: no cover
 
             call_stack.append(wrapper)
 
