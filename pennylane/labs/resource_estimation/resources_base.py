@@ -131,7 +131,7 @@ class Resources:
             Gate breakdown:
             {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5}
 
-        Similarly, users can scale up the resources for an operator my some integer factor using
+        Similarly, users can scale up the resources for an operator by some integer factor using
         the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
         circuits were executed in series or parallel respectively.
 
