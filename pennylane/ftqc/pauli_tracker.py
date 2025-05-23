@@ -16,11 +16,10 @@ r"""
 This module contains Pauli Tracking functions.
 """
 
+import itertools
 from typing import List, Tuple
 
-import numpy as np
-
-from pennylane import I, X, Y, Z
+from pennylane import CNOT, H, I, S, X, Y, Z
 from pennylane.operation import Operator
 
 _OPS_TO_XZ = {
@@ -37,10 +36,10 @@ _XZ_TO_OPS = {
     (0, 1): Z,
 }
 
-_PAULIS = frozenset({X, Y, Z, I})
+_PAULIS = (X, Y, Z, I)
 
 
-def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
+def pauli_to_xz(op: Operator) -> Tuple[int, int]:
     r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -67,18 +66,22 @@ def pauli_to_xz(op: Operator) -> Tuple[np.uint8, np.uint8]:
         A xz tuple representation is returned for a given Pauli operator.
     """
 
-    if type(op) in _PAULIS:
+    if isinstance(op, _PAULIS):
         return _OPS_TO_XZ[type(op)]
-    raise NotImplementedError(f"{op.name} gate does not support xz encoding.")
+
+    if op in _PAULIS:
+        return _OPS_TO_XZ[op]
+
+    raise NotImplementedError(f"{type(op)} gate does not support xz encoding.")
 
 
-def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
+def xz_to_pauli(x: int, z: int) -> Operator:
     """
     Convert x, z to a Pauli operator class.
 
     Args:
-        x (np.uint8) : Exponent of :class:`~pennylane.X` in the Pauli record.
-        z (np.uint8) : Exponent of :class:`~pennylane.Z` in the Pauli record.
+        x (int) : Exponent of :class:`~pennylane.X` in the Pauli record.
+        z (int) : Exponent of :class:`~pennylane.Z` in the Pauli record.
 
     Return:
         A Pauli operator class.
@@ -99,15 +102,16 @@ def xz_to_pauli(x: np.uint8, z: np.uint8) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: List[Operator]) -> Operator:
-    """
+def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
+    r"""
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
+    Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
 
     Args:
         ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
-        A new Pauli operator.
+        A xz tuple representing a new Pauli operator.
 
     **Example:**
         The following example shows how the `pauli_prod` works.
@@ -117,24 +121,117 @@ def pauli_prod(ops: List[Operator]) -> Operator:
             from pennylane.ftqc.pauli_tracker import pauli_prod
             from pennylane import I, X, Y, Z
             >>> pauli_prod([I(0),X(0),Y(0),Z(0)])
-            I(0)
+            (0, 0)
 
-        A Pauli operator is returned for a list of Pauli operator up to a global phase.
+        The result is a new Pauli operator in the xz-encoding representation.
     """
-
     if len(ops) == 0:
         raise ValueError("Please ensure that a valid list of operators are passed to the method.")
-    op0 = ops.pop()
-    res_x, res_z = pauli_to_xz(op0)
-    op0_wire = op0.wires
+    res_x, res_z = pauli_to_xz(ops[0])
 
-    while len(ops) > 0:
-        op = ops.pop()
-        wire = op.wires
-        if wire != op0_wire:
-            raise ValueError("All operators should target at the same wire.")
-        x, z = pauli_to_xz(op)
+    for i in range(1, len(ops)):
+        x, z = pauli_to_xz(ops[i])
         res_x ^= x
         res_z ^= z
 
-    return xz_to_pauli(res_x, res_z)(wires=op0_wire)
+    return (res_x, res_z)
+
+
+def _commute_h(x: int, z: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.H`.
+
+    Args:
+        x(int): Exponent of PauliX in the xz representation of a Pauli.
+        z(int): Exponent of PauliZ in the xz representation of a Pauli.
+
+    Return:
+        A list of a tuple of xz representing a new Pauli operation that the :class:`~pennylane.H` commutes to.
+    """
+    return [(z, x)]
+
+
+def _commute_s(x: int, z: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.S`.
+
+    Args:
+        x(int): Exponent of PauliX in the xz representation of a Pauli.
+        z(int): Exponent of PauliZ in the xz representation of a Pauli.
+
+    Return:
+        A list of a tuple of xz representing a new Pauli operation that the :class:`~pennylane.S` commutes to.
+    """
+    return [(x, x ^ z)]
+
+
+def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
+    r"""
+    Commute/move a Pauli represented by xz through :class:`~pennylane.CNOT`.
+
+    Args:
+        xc(int): Exponent of PauliX in the xz representation of a Pauli at the control wire.
+        zc(int): Exponent of PauliZ in the xz representation of a Pauli at the control wire.
+        xt(int): Exponent of PauliX in the xz representation of a Pauli at the target wire.
+        zt(int): Exponent of PauliZ in the xz representation of a Pauli at the target wire.
+
+    Return:
+        A list of xz tuples representing new Paulis operation that the :class:`~pennylane.cnot` commutes to.
+    """
+    return [(xc, zc ^ zt), (xc ^ xt, zt)]
+
+
+def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    r"""Gets the list of xz-encoded bits representing the list of input Pauli ops after being commuted through the given Clifford op.
+    Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = clifford\_op \cdot xz`
+    up to a global phase to move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
+    :math:`new\_xz` represent a list of Pauli operations.
+
+    Args:
+        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+        xz (list(tuple)): A list of xz tuples which map to Pauli operators
+
+    Return:
+        A list of new xz tuples that the clifford_op commute the xz to.
+
+    **Example:**
+        The following example shows how the `commute_clifford_op` works.
+
+        .. code-block:: python3
+
+            from pennylane.ftqc.pauli_tracker import commute_clifford_op
+            from pennylane import I, CNOT
+            >>> commute_clifford_op(CNOT(wires=[0,1]), [(1, 1), (1, 0)])
+            [(1, 1), (0, 0)]
+
+        A list of Pauli operators in the xz representation is returned.
+    """
+    if len(xz) != clifford_op.num_wires:
+        raise ValueError(
+            "Please ensure that the length of xz matches the number of wires of the clifford_op."
+        )
+
+    if not all(len(element) == 2 for element in xz):
+        raise ValueError(
+            "Please ensure there are 2 elements instead of in each tuple in the xz list."
+        )
+
+    xz_flatten = tuple(itertools.chain.from_iterable(xz))
+
+    if not all(element in [0, 1] for element in xz_flatten):
+        raise ValueError("Please ensure xz are either 0 or 1.")
+
+    if isinstance(clifford_op, S):
+        _x, _z = xz[0]
+        return _commute_s(_x, _z)
+
+    if isinstance(clifford_op, H):
+        _x, _z = xz[0]
+        return _commute_h(_x, _z)
+
+    if isinstance(clifford_op, CNOT):
+        _xc, _zc = xz[0]
+        _xt, _zt = xz[1]
+        return _commute_cnot(_xc, _zc, _xt, _zt)
+
+    raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
