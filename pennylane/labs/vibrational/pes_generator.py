@@ -168,7 +168,6 @@ def _local_pes_onemode(
             f.create_dataset("V1_PES", data=local_pes_onebody)
             if dipole:
                 f.create_dataset("D1_DMS", data=local_dipole_onebody)
-            f.close()
     if dipole:
         return (
             local_pes_onebody,
@@ -202,10 +201,11 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
     for mode in range(nmodes):
         init_chunk = 0
         for proc in range(num_proc):
-            f = h5py.File("v1data" + f"_{proc}" + ".hdf5", "r+")
-            local_pes_onebody = f["V1_PES"][()]
-            if dipole:
-                local_dipole_onebody = f["D1_DMS"][()]
+            file_path = Path("v1data" + f"_{proc}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_pes_onebody = f["V1_PES"][()]
+                if dipole:
+                    local_dipole_onebody = f["D1_DMS"][()]
 
             end_chunk = np.array(local_pes_onebody).shape[1]
             pes_onebody[mode][init_chunk : init_chunk + end_chunk] = local_pes_onebody[mode]
@@ -382,8 +382,6 @@ def _local_pes_twomode(
         f.create_dataset("V2_PES", data=local_pes_twobody)
         if dipole:
             f.create_dataset("D2_DMS", data=local_dipole_twobody)
-    f.close()
-
     if dipole:
         return local_pes_twobody, local_dipole_twobody
 
@@ -424,14 +422,16 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
             init_idx = 0
             end_idx = 0
             for proc in range(num_proc):
-                f = h5py.File("v2data" + f"_{proc}" + ".hdf5", "r+")
-                local_pes_twobody = f["V2_PES"][()]
-                pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
+                file_path = Path("v2data" + f"_{proc}" + ".hdf5")
+                with h5py.File(file_path, "r+") as f:
+                    local_pes_twobody = f["V2_PES"][()]
+                    if dipole:
+                        local_dipole_twobody = f["D2_DMS"][()]
 
+                pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
                 end_idx += len(pes_chunk)
                 local_pes[init_idx:end_idx] = pes_chunk
                 if dipole:
-                    local_dipole_twobody = f["D2_DMS"][()]
                     dipole_chunk = np.array_split(local_dipole_twobody, nmode_combos, axis=0)[
                         mode_combo
                     ]
@@ -572,12 +572,12 @@ def _local_pes_threemode(
                     - ref_dipole
                 )
 
-    f = h5py.File("v3data" + f"_{rank}" + ".hdf5", "w")
-    f.create_dataset("V3_PES", data=local_pes_threebody)
-    if dipole:
-        f.create_dataset("D3_DMS", data=local_dipole_threebody)
-    f.close()
-
+    filename = f"v3data_{rank}.hdf5"
+    with h5py.File(filename, "w") as f:
+        f.create_dataset("V3_PES", data=local_pes_threebody)
+        if dipole:
+            f.create_dataset("D3_DMS", data=local_dipole_threebody)
+    
     if dipole:
         return local_pes_threebody, local_dipole_threebody
 
@@ -703,14 +703,16 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
                 init_idx = 0
                 end_idx = 0
                 for proc in range(num_proc):
-                    f = h5py.File("v3data" + f"_{proc}" + ".hdf5", "r+")
-                    local_pes_threebody = f["V3_PES"][()]
-                    pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
+                    file_path = Path("v3data" + f"_{proc}" + ".hdf5")
+                    with h5py.File(file_path, "r+") as f:
+                        local_pes_threebody = f["V3_PES"][()]
+                        if local_dipole is not None:
+                            local_dipole_threebody = f["D3_DMS"][()]
 
+                    pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
                     end_idx += len(pes_chunk)
                     local_pes[init_idx:end_idx] = pes_chunk
                     if local_dipole is not None:
-                        local_dipole_threebody = f["D3_DMS"][()]
                         dipole_chunk = np.array_split(local_dipole_threebody, nmode_combos, axis=0)[
                             mode_combo
                         ]

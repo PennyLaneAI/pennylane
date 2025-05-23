@@ -151,7 +151,6 @@ def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
     file_path = Path(f"cform_H2Kdata_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H2", data=local_kin_cform_twobody)
-        # return local_kin_cform_twobody
 
 
 def _cform_onemode(pes, n_states, num_workers=1, backend="serial"):
@@ -699,8 +698,9 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_H1data" + f"_{rank}" + ".hdf5", "r+")
-            local_ham_cform_onebody = f["H1"][()]
+            file_path = Path("cform_H1data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_ham_cform_onebody = f["H1"][()]
             chunk = np.array_split(local_ham_cform_onebody, nmode_combos)[mode_combo]
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
@@ -739,8 +739,9 @@ def _load_cform_onemode_kinetic(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_H1Kdata" + f"_{rank}" + ".hdf5", "r+")
-            local_ham_cform_onebody = f["H1"][()]
+            file_path = Path("cform_H1Kdata" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_ham_cform_onebody = f["H1"][()]
             chunk = np.array_split(local_ham_cform_onebody, nmode_combos)[mode_combo]
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
@@ -779,8 +780,9 @@ def _load_cform_twomode(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_H2data" + f"_{rank}" + ".hdf5", "r+")
-            local_ham_cform_twobody = f["H2"][()]
+            file_path = Path("cform_H2data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_ham_cform_twobody = f["H2"][()]
             chunk = np.array_split(local_ham_cform_twobody, nmode_combos)[mode_combo]  #
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
@@ -819,8 +821,9 @@ def _load_cform_twomode_kinetic(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_H2Kdata" + f"_{rank}" + ".hdf5", "r+")
-            local_ham_cform_twobody = f["H2"][()]
+            file_path = Path("cform_H2Kdata" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_ham_cform_twobody = f["H2"][()]
             chunk = np.array_split(local_ham_cform_twobody, nmode_combos)[mode_combo]  #
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
@@ -869,8 +872,9 @@ def _load_cform_threemode(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_H3data" + f"_{rank}" + ".hdf5", "r+")
-            local_ham_cform_threebody = f["H3"][()]  # 64 * 4096
+            file_path = Path("cform_H3data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_ham_cform_threebody = f["H3"][()]  # 64 * 4096
             chunk = np.array_split(local_ham_cform_threebody, nmode_combos)[mode_combo]  #
             l1 += len(chunk)
             local_chunk[l0:l1] = chunk
@@ -909,8 +913,9 @@ def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_D1data" + f"_{rank}" + ".hdf5", "r+")
-            local_dipole_cform_onebody = f["D1"][()]
+            file_path = Path("cform_D1data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_dipole_cform_onebody = f["D1"][()]
             chunk = np.array_split(local_dipole_cform_onebody, nmode_combos, axis=0)[mode_combo]  #
             l1 += chunk.shape[0]
             local_chunk[l0:l1, :] = chunk
@@ -949,8 +954,9 @@ def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_D2data" + f"_{rank}" + ".hdf5", "r+")
-            local_dipole_cform_twobody = f["D2"][()]
+            file_path = Path("cform_D2data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_dipole_cform_twobody = f["D2"][()]
             chunk = np.array_split(local_dipole_cform_twobody, nmode_combos, axis=0)[mode_combo]  #
             l1 += chunk.shape[0]
             local_chunk[l0:l1, :] = chunk
@@ -999,8 +1005,9 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
         l0 = 0
         l1 = 0
         for rank in range(num_proc):
-            f = h5py.File("cform_D3data" + f"_{rank}" + ".hdf5", "r+")
-            local_dipole_cform_threebody = f["D3"][()]
+            file_path = Path("cform_D3data" + f"_{rank}" + ".hdf5")
+            with h5py.File(file_path, "r+") as f:
+                local_dipole_cform_threebody = f["D3"][()]
             chunk = np.array_split(local_dipole_cform_threebody, nmode_combos, axis=0)[
                 mode_combo
             ]  #
