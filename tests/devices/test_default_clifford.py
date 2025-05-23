@@ -23,6 +23,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
 
@@ -638,7 +639,7 @@ def test_meas_error():
         return qml.probs(op=qml.Hermitian(Amat + Amat.conj().T, wires=[0, 1]))
 
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="Hermitian is not supported for rotating probabilities on default.clifford.",
     ):
         circuit_herm()
@@ -658,7 +659,7 @@ def test_clifford_error(check):
         return qml.state()
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         circuit()
@@ -674,7 +675,7 @@ def test_meas_error_noisy():
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Channel not supported on default.clifford without finite shots.",
     ):
         circ_1()
@@ -686,7 +687,7 @@ def test_meas_error_noisy():
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
     ):
         circ_2()

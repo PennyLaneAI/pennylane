@@ -38,7 +38,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert qml.FromBloq(XGate(), 1).__repr__() == "FromBloq(XGate, wires=Wires([1]))"
+        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(XGate, wires=Wires([1]))"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
@@ -73,7 +73,7 @@ class TestFromBloq:
 
         op = qml.FromBloq(cbloq, wires=range(24))
 
-        qml.ops.functions.assert_valid(op, True, True)
+        qml.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
 
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
