@@ -22,6 +22,7 @@ import pennylane as qml
 
 class QubitManager:
     r"""Contains attributes which help track how auxiliary qubits are used in a circuit
+
     Args:
         work_wires (int or dict): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All work_wires are assumed to be clean when
@@ -86,7 +87,7 @@ class QubitManager:
     @property
     def total_qubits(self):
         r"""Returns the number of total qubits."""
-        return (self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits)
+        return self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits
 
     @algo_qubits.setter
     def algo_qubits(self, count: int):  # these get set manually, the rest
