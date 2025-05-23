@@ -105,7 +105,9 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
 
         if resolve:
             tape = construct_tape(qnode, level=0)(*args, **kwargs)
-            config = _resolve_execution_config(config, qnode.device, (tape,))
+            tape = qml.tape.make_qscript(qnode.func)(*args, **kwargs)
+            batch, _ = qnode.transform_program((tape,))
+            config = _resolve_execution_config(config, qnode.device, batch)
 
         return config
 
