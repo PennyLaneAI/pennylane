@@ -20,7 +20,7 @@ from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
-from .quantum_dialect import CustomOp
+from ..quantum_dialect import CustomOp
 
 self_inverses = [
     "Identity",
