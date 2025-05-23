@@ -6,37 +6,7 @@ import re
 from functools import partial
 from typing import Callable
 
-from pennylane.ops import (
-    CH,
-    CNOT,
-    CRX,
-    CRY,
-    CRZ,
-    CSWAP,
-    CY,
-    CZ,
-    RX,
-    RY,
-    RZ,
-    SWAP,
-    SX,
-    U1,
-    U2,
-    U3,
-    CPhase,
-    Hadamard,
-    Identity,
-    PauliX,
-    PauliY,
-    PauliZ,
-    PhaseShift,
-    S,
-    T,
-    Toffoli,
-    adjoint,
-    ctrl,
-    pow,
-)
+from pennylane import ops
 
 has_openqasm = True
 try:
@@ -45,37 +15,37 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
 NON_PARAMETERIZED_GATES = {
-    "ID": Identity,
-    "H": Hadamard,
-    "X": PauliX,
-    "Y": PauliY,
-    "Z": PauliZ,
-    "S": S,
-    "T": T,
-    "SX": SX,
-    "CX": CNOT,
-    "CY": CY,
-    "CZ": CZ,
-    "CH": CH,
-    "SWAP": SWAP,
-    "CCX": Toffoli,
-    "CSWAP": CSWAP,
+    "ID": ops.Identity,
+    "H": ops.Hadamard,
+    "X": ops.PauliX,
+    "Y": ops.PauliY,
+    "Z": ops.PauliZ,
+    "S": ops.S,
+    "T": ops.T,
+    "SX": ops.SX,
+    "CX": ops.CNOT,
+    "CY": ops.CY,
+    "CZ": ops.CZ,
+    "CH": ops.CH,
+    "SWAP": ops.SWAP,
+    "CCX": ops.Toffoli,
+    "CSWAP": ops.CSWAP,
 }
 
 PARAMETERIZED_GATES = {
-    "RX": RX,
-    "RY": RY,
-    "RZ": RZ,
-    "P": PhaseShift,
-    "PHASE": PhaseShift,
-    "U1": U1,
-    "U2": U2,
-    "U3": U3,
-    "CP": CPhase,
-    "CPHASE": CPhase,
-    "CRX": CRX,
-    "CRY": CRY,
-    "CRZ": CRZ,
+    "RX": ops.RX,
+    "RY": ops.RY,
+    "RZ": ops.RZ,
+    "P": ops.PhaseShift,
+    "PHASE": ops.PhaseShift,
+    "U1": ops.U1,
+    "U2": ops.U2,
+    "U3": ops.U3,
+    "CP": ops.CPhase,
+    "CPHASE": ops.CPhase,
+    "CRX": ops.CRX,
+    "CRY": ops.CRY,
+    "CRZ": ops.CRZ,
 }
 
 
@@ -276,14 +246,14 @@ class QasmInterpreter(QASMVisitor):
             assert mod.modifier.name in ("inv", "pow", "ctrl")
 
             if mod.modifier.name == "inv":
-                wrapper = adjoint
+                wrapper = ops.adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(pow, z=mod.argument.value)
+                    wrapper = partial(ops.pow, z=mod.argument.value)
                 elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(pow, z=context["vars"][mod.argument.name]["val"])
+                    wrapper = partial(ops.pow, z=context["vars"][mod.argument.name]["val"])
             elif mod.modifier.name == "ctrl":
-                wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
+                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
 
             call_stack.append(wrapper)
 
