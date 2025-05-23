@@ -48,7 +48,6 @@ class TestTensorFlowRun:
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
-            print(resolved_config.use_device_jacobian_product)
             inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
