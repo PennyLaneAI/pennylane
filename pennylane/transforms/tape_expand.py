@@ -18,7 +18,6 @@ import contextlib
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
