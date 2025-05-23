@@ -73,8 +73,10 @@ PARAMETERIZED_GATES = {
 class DirtyError(Exception):  # pragma: no cover
     """Exception raised when attempt is made to use a dirty variable in a compilation context."""
 
+
 class BreakException(Exception):  # pragma: no cover
     """Exception raised when encountering a break statement."""
+
 
 class ContinueException(Exception):  # pragma: no cover
     """Exception raised when encountering a continue statement."""
@@ -242,8 +244,10 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): the break QASMNode.
             context (dict): the current context.
         """
+
         def raiser():
             raise BreakException(f"Break statement encountered in {context['name']}")
+
         context["gates"].append(raiser)
 
     def continue_statement(self, node: QASMNode, context: dict):
@@ -254,8 +258,10 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): the continue QASMNode.
             context (dict): the current context.
         """
+
         def raiser():
             raise ContinueException(f"Continue statement encountered in {context['name']}")
+
         context["gates"].append(raiser)
 
     def classical_assignment(self, node: QASMNode, context: dict):
@@ -637,7 +643,9 @@ class QasmInterpreter(QASMVisitor):
                 if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
                     "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
                 ):
-                    raise NameError(f"Reference to an undeclared subroutine {name} in {context['name']}.")
+                    raise NameError(
+                        f"Reference to an undeclared subroutine {name} in {context['name']}."
+                    )
                 else:
                     if "scopes" in context and name in context["scopes"]["subroutines"]:
                         func_context = context["scopes"]["subroutines"][name]
@@ -844,7 +852,7 @@ class QasmInterpreter(QASMVisitor):
 
     def while_loop(self, node: QASMNode, context: dict):
         """
-        Registers a while loop. TODO: break and continue
+        Registers a while loop.
 
         Args:
             node (QASMNode): the loop node.
@@ -881,11 +889,13 @@ class QasmInterpreter(QASMVisitor):
 
             return execution_context
 
-        context["gates"].append(partial(self._handle_break, loop))  # bind compilation context now, leave execution context
+        context["gates"].append(
+            partial(self._handle_break, loop)
+        )  # bind compilation context now, leave execution context
 
     def for_in_loop(self, node: QASMNode, context: dict):
         """
-        Registers a for loop.  TODO: break and continue
+        Registers a for loop.
 
         Args:
             node (QASMNode): the loop node.
@@ -966,12 +976,17 @@ class QasmInterpreter(QASMVisitor):
                         node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                     )
                     try:
-                        for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"]:
+                        for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"][
+                            "gates"
+                        ]:
                             (
-                                gate(execution_context) if not self._all_context_bound(gate) else gate()
+                                gate(execution_context)
+                                if not self._all_context_bound(gate)
+                                else gate()
                             )  # updates vars in sub context if any measurements etc. occur
                     except ContinueException as e:
-                        pass # eval of current iteration stops and we continue
+                        pass  # eval of current iteration stops and we continue
+
             context["gates"].append(partial(self._handle_break, unrolled))
         elif (
             loop_params is None

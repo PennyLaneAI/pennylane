@@ -70,9 +70,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(
-            open("variables.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context, execution_context = QasmInterpreter(permissive=True).generic_visit(
@@ -117,9 +115,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(
-            open("classical.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(
@@ -227,9 +223,7 @@ class TestInterpreter:
         from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
-        ast = parse(
-            open("if_else.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
