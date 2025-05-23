@@ -272,18 +272,18 @@ def device(name, *args, **kwargs):
                     custom_decomps, dev
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
-            elif type(dev).preprocess != qml.devices.Device.preprocess:
-                custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev
-                )
-                dev.preprocess = custom_decomp_preprocess
+
             else:
-                custom_decomp_preprocess_transforms = (
-                    qml.transforms.tape_expand._create_decomp_preprocess_transforms(
-                        custom_decomps, dev
-                    )
+                override_method = (
+                    "preprocess_transforms"
+                    if type(dev).preprocess == qml.devices.Device.preprocess
+                    else "preprocess"
                 )
-                dev.preprocess_transforms = custom_decomp_preprocess_transforms
+
+                new_method = qml.transforms.tape_expand._create_decomp_preprocessing(
+                    custom_decomps, dev, override_method=override_method
+                )
+                setattr(dev, override_method, new_method)
 
         if isinstance(dev, qml.devices.LegacyDevice):
             dev = qml.devices.LegacyDeviceFacade(dev)

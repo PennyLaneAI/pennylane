@@ -536,15 +536,11 @@ class DefaultQubit(Device):
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+            execution_config (Optional[ExecutionConfig]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
-            unset specifications filled in.
-
-        This device supports any qubit operations that provide a matrix
+            TransformProgram:
 
         """
         config = execution_config or ExecutionConfig()
@@ -600,15 +596,6 @@ class DefaultQubit(Device):
     def setup_execution_config(
         self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
     ) -> ExecutionConfig:
-        """This is a private helper for ``preprocess`` that sets up the execution config.
-
-        Args:
-            execution_config (ExecutionConfig)
-
-        Returns:
-            ExecutionConfig: a preprocessed execution config
-
-        """
         config = config or ExecutionConfig()
         updated_values = {}
 
