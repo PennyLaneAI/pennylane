@@ -34,7 +34,14 @@ from xdsl.dialects.builtin import (
     StringAttr,
     UnitAttr,
 )
-from xdsl.ir import Dialect, ParametrizedAttribute, TypeAttribute
+from xdsl.ir import (
+    Dialect,
+    EnumAttribute,
+    ParametrizedAttribute,
+    SpacedOpaqueSyntaxAttribute,
+    StrEnum,
+    TypeAttribute,
+)
 from xdsl.irdl import (
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
@@ -82,8 +89,18 @@ class ResultType(ParametrizedAttribute, TypeAttribute):
     name = "quantum.res"
 
 
+class NamedObservable(StrEnum):
+    """Known named observables"""
+
+    Identity = "Identity"
+    PauliX = "PauliX"
+    PauliY = "PauliY"
+    PauliZ = "PauliZ"
+    Hadamard = "Hadamard"
+
+
 @irdl_attr_definition
-class NamedObservableAttr(ParametrizedAttribute):
+class NamedObservableAttr(EnumAttribute[NamedObservable], SpacedOpaqueSyntaxAttribute):
     """Known named observables"""
 
     name = "quantum.named_observable"
