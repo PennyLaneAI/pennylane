@@ -105,7 +105,7 @@ def xz_to_pauli(x: int, z: int) -> Operator:
 
 
 def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
-    """
+    r"""
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
     Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
 
@@ -184,7 +184,7 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
 
 
 def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    """Get a list of xz representing a list of Pauli ops commuting/moving through a given Clifford op.
+    r"""Get a list of xz representing a list of Pauli ops commuting/moving through a given Clifford op.
     Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = xz \cdot clifford\_op` to
     move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
     :math:`new\_xz` represent a list of Pauli operations.
