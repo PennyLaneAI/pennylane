@@ -21,11 +21,10 @@ from typing import List, Tuple
 
 import numpy as np
 
-from pennylane import CNOT, H, I, S, X, Y, Z
+from pennylane import CNOT, H, I, S, X, Y, Z, math
 from pennylane.operation import Operator
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
-from pennylane import math
 
 _OPS_TO_XZ = {
     I: (0, 0),
