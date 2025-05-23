@@ -22,9 +22,22 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
-from pennylane.ops.qubit.attributes import composable_rotations
-
 from ..quantum_dialect import CustomOp
+
+# Can handle all composible rotations except Rot... for now
+composable_rotations = [
+    "RX",
+    "RY",
+    "RZ",
+    "PhaseShift",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "ControlledPhaseShift",
+    "IsingXX",
+    "IsingYY",
+    "IsingZZ",
+]
 
 
 def _can_merge(op: CustomOp, next_op: Operation) -> bool:
@@ -55,8 +68,7 @@ class MergeRotationsPattern(
                 continue
 
             gate_name = op.gate_name.data
-            if gate_name not in composable_rotations or gate_name == "Rot":
-                # Can handle all composible rotations except Rot... for now
+            if gate_name not in composable_rotations:
                 continue
 
             param = op.operands[0]
