@@ -341,7 +341,7 @@ class TestPauliTracker:
 @flaky(max_runs=5)
 class TestOfflineCorrection:
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -400,7 +400,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -461,7 +461,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
@@ -522,7 +522,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -581,7 +581,7 @@ class TestOfflineCorrection:
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
@@ -649,7 +649,7 @@ class TestOfflineCorrection:
 
     @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
     @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [1000])
+    @pytest.mark.parametrize("num_shots", [250])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
