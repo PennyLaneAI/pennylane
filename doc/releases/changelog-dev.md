@@ -20,11 +20,10 @@
   def my_circuit():
       execute_qasm()
       return qml.expval(qml.Z(0))
-  
-  print(qml.draw(my_circuit)())
   ```
 
   ```pycon
+  >>> print(qml.draw(my_circuit)())
   0: ──RY(0.20)──X²─┤  <Z>
   1: ──RX(1.00)─────┤  
   ```
