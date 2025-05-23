@@ -141,7 +141,7 @@ class Elbow(Operation):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ):
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
