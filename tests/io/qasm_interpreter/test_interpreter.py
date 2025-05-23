@@ -90,7 +90,7 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Uninitialized variable phi encountered in QASM.",
+            match="Undeclared variable phi encountered in QASM.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
 

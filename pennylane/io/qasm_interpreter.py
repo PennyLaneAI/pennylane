@@ -248,10 +248,9 @@ class QasmInterpreter(QASMVisitor):
             # variables as evaluated in the correct (current) scope.
             if context["vars"][name]["val"] is not None:
                 return context["vars"][name]["val"]
-            else:
-                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         else:
-            raise NameError(f"Uninitialized variable {name} encountered in QASM.")
+            raise NameError(f"Undeclared variable {name} encountered in QASM.")
 
     @staticmethod
     def modifiers(gate: Callable, node: QASMNode, context: dict):
