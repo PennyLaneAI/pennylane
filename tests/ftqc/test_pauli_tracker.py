@@ -341,11 +341,11 @@ class TestPauliTracker:
 @flaky(max_runs=5)
 class TestOfflineCorrection:
 
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -390,23 +390,21 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state, num_iter):
-            qml.StatePrep(start_state, wires=[0, 1])
-            for _ in range(num_iter):
-                qml.CNOT(wires=[0, 1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        res_ref = circuit_ref(start_state, num_iter)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_h(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -453,24 +451,21 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state, num_iter):
-            qml.StatePrep(start_state, wires=[0, 1])
-            for _ in range(num_iter):
-                qml.H(wires=[0])
-                qml.H(wires=[1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        res_ref = circuit_ref(start_state, num_iter)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_s(self, num_shots, num_iter):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -517,23 +512,20 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state, num_iter):
-            qml.StatePrep(start_state, wires=[0, 1])
-            for _ in range(num_iter):
-                qml.S(wires=[0])
-                qml.S(wires=[1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        res_ref = circuit_ref(start_state, num_iter)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford(self, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -557,10 +549,7 @@ class TestOfflineCorrection:
             return [qml.sample(op=m) for m in mid_meas]
 
         res = circuit_mbqc(start_state)
-        ops = []
-        ops.extend([qml.CNOT(wires=[0, 1])])
-        ops.extend([qml.S(wires=[0])])
-        ops.extend([qml.H(wires=[1])])
+        ops = [qml.CNOT(wires=[0, 1]), qml.S(wires=[0]), qml.H(wires=[1])]
 
         measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
 
@@ -582,23 +571,20 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state):
-            qml.StatePrep(start_state, wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-            qml.S(wires=[0])
-            qml.H(wires=[1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        res_ref = circuit_ref(start_state)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis(self, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -622,13 +608,14 @@ class TestOfflineCorrection:
             return [qml.sample(op=m) for m in mid_meas]
 
         res = circuit_mbqc(start_state)
-        ops = []
-        ops.extend([qml.X(0)])
-        ops.extend([qml.CNOT(wires=[0, 1])])
-        ops.extend([qml.Y(1)])
-        ops.extend([qml.S(wires=[0])])
-        ops.extend([qml.Z(0)])
-        ops.extend([qml.H(wires=[1])])
+        ops = [
+            qml.X(0),
+            qml.CNOT(wires=[0, 1]),
+            qml.Y(1),
+            qml.S(wires=[0]),
+            qml.Z(0),
+            qml.H(wires=[1]),
+        ]
 
         measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
 
@@ -650,28 +637,22 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state):
-            qml.StatePrep(start_state, wires=[0, 1])
-            qml.X(0)
-            qml.CNOT(wires=[0, 1])
-            qml.Y(1)
-            qml.S(wires=[0])
-            qml.Z(0)
-            qml.H(wires=[1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-
-        res_ref = circuit_ref(start_state)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
 
     @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
     @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [500])
+    @pytest.mark.parametrize("num_shots", [1000])
     def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
         start_state = generate_random_state(2)
-        dev = qml.device("default.qubit", shots=num_shots)
+        dev = qml.device("lightning.qubit", shots=num_shots)
 
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method="one-shot")
@@ -695,13 +676,14 @@ class TestOfflineCorrection:
             return [qml.sample(op=m) for m in mid_meas]
 
         res = circuit_mbqc(start_state)
-        ops = []
-        ops.extend([qml.X(0)])
-        ops.extend([qml.CNOT(wires=[0, 1])])
-        ops.extend([qml.Y(1)])
-        ops.extend([qml.S(wires=[0])])
-        ops.extend([qml.Z(0)])
-        ops.extend([qml.H(wires=[1])])
+        ops = [
+            qml.X(0),
+            qml.CNOT(wires=[0, 1]),
+            qml.Y(1),
+            qml.S(wires=[0]),
+            qml.Z(0),
+            qml.H(wires=[1]),
+        ]
 
         measurements = [qml.sample(p0(0) @ p1(1))]
 
@@ -723,18 +705,12 @@ class TestOfflineCorrection:
 
         dev_ref = qml.device("default.qubit")
 
-        @qml.qnode(dev_ref)
-        def circuit_ref(start_state):
-            qml.StatePrep(start_state, wires=[0, 1])
-            qml.X(0)
-            qml.CNOT(wires=[0, 1])
-            qml.Y(1)
-            qml.S(wires=[0])
-            qml.Z(0)
-            qml.H(wires=[1])
+        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+        measurements_ref = []
+        for measurement in measurements:
+            measurements_ref.append(qml.expval(measurement.obs))
+        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
 
-            return qml.expval(p0(0) @ p1(1))
-
-        res_ref = circuit_ref(start_state)
+        res_ref = dev_ref.execute(script_ref)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
