@@ -159,8 +159,8 @@ def qsvt(
         angle_solver (str): Specifies the method used to calculate the angles of the routine
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
-            - ``"root-finding"``: effective in polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"``: useful in polynomials of higher degrees
+            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000`
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -893,7 +893,7 @@ def _grid_pts(degree, interface):
 
 def _qsp_optimization(degree, coeffs_target_func, interface=None):
     r"""
-    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid
+    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
 
     Args:
         degree (int): degree of polynomial function
@@ -922,7 +922,7 @@ def _qsp_optimization(degree, coeffs_target_func, interface=None):
     targets = qml.math.array(targets, like=interface)
 
     def obj_function(phi):
-        # Equation (23)
+        # Equation (23) in https://arxiv.org/pdf/2002.11649
 
         # pylint: disable=import-outside-toplevel
         try:
@@ -1150,17 +1150,14 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
-        poly (tensor-like): coefficients of the polynomial ordered from lowest to highest power
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
         routine (str): the routine for which the angles are computed. Must be either ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
-        angle_solver (str): The method used to calculate the angles; either ``"root-finding"`` or ``"iterative"``.
-            Default is ``"root-finding"``.
+        angle_solver (str): Specifies the method used to calculate the angles. Options include:
 
-            - ``"root-finding"``: a method that works with all three routines, and
-            is effective for polynomials of degree up to :math:`\sim 1000`.
-            - ``"iterative"``: employs an optimization method allowing angle computation
-            for polynomials of higher degree (:math:`\gt 1000`) for the ``"QSP"`` and ``"QSVT"`` routines.
+            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000`
 
     Returns:
         (tensor-like): computed angles for the specified routine
