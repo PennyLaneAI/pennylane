@@ -20,7 +20,6 @@ from decimal import Decimal
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
-# 
 
 class Resources:
     r"""A container to track and update the resources used throughout a quantum circuit.
