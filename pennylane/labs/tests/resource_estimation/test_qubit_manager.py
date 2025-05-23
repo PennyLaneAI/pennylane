@@ -28,14 +28,14 @@ class TestQubitManager:
 
     qm_quantities = (
         QubitManager(work_wires=2),
-        QubitManager(work_wires={"clean": 4, "dirty": 2}),
-        QubitManager({"clean": 2, "dirty": 2}, True),
+        QubitManager(work_wires={"clean": 4, "dirty": 2}, algo_wires=20),
+        QubitManager({"clean": 2, "dirty": 2}, algo_wires=10, tight_budget=True),
     )
 
     qm_parameters = (
         (2, 0, 0, False),
-        (4, 2, 0, False),
-        (2, 2, 0, True),
+        (4, 2, 20, False),
+        (2, 2, 10, True),
     )
 
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
@@ -52,10 +52,12 @@ class TestQubitManager:
     def test_equality(self, qm, attribute_tup):
         """Test that the equality methods behaves as expected"""
 
-        clean_qubits, dirty_qubits, _, tight_budget = attribute_tup
+        clean_qubits, dirty_qubits, algo_qubits, tight_budget = attribute_tup
 
         qm2 = QubitManager(
-            work_wires={"clean": clean_qubits, "dirty": dirty_qubits}, tight_budget=tight_budget
+            work_wires={"clean": clean_qubits, "dirty": dirty_qubits},
+            algo_wires=algo_qubits,
+            tight_budget=tight_budget,
         )
         assert qm == qm2
 

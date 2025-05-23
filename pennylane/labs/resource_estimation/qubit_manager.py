@@ -27,6 +27,7 @@ class QubitManager:
         work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All work_wires are assumed to be clean when
             `int` is provided.
+        algo_wires (int): Number of algorithmic wires, default value is 0.
         tight_budget (bool): flag to determine whether extra clean qubits are available
 
     **Example**
@@ -40,7 +41,7 @@ class QubitManager:
 
     """
 
-    def __init__(self, work_wires: Union[int, dict], tight_budget=False) -> None:
+    def __init__(self, work_wires: Union[int, dict], algo_wires=0, tight_budget=False) -> None:
 
         if isinstance(work_wires, dict):
             clean_wires = work_wires["clean"]
@@ -50,12 +51,13 @@ class QubitManager:
             dirty_wires = 0
 
         self.tight_budget = tight_budget
-        self._logic_qubit_counts = 0
+        self._logic_qubit_counts = algo_wires
         self._clean_qubit_counts = clean_wires
         self._dirty_qubit_counts = dirty_wires
 
     def __str__(self):
-        return f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+        return f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}"
+                              +f", logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -90,9 +92,9 @@ class QubitManager:
         return self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits
 
     @algo_qubits.setter
-    def algo_qubits(self, count: int):  # these get set manually, the rest
+    def algo_qubits(self, count: int):  # these get set manually, the rest are dynamically updated
         r"""Setter for algorithmic qubits."""
-        self._logic_qubit_counts = count  #  are dynamically updated
+        self._logic_qubit_counts = count
 
     def allocate_qubits(self, num_qubits: int):
         r"""Allocates extra clean qubits.
@@ -110,7 +112,8 @@ class QubitManager:
             num_qubits(int) : number of clean qubits to be grabbed
 
         Raises:
-            ValueError: If tight_budget is `True` number of qubits to be grabbed is greater than available clean qubits.
+            ValueError: If tight_budget is `True` number of qubits to be grabbed is greater than
+            available clean qubits.
 
         """
         available_clean = self.clean_qubits
