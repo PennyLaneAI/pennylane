@@ -17,7 +17,6 @@ import functools
 import pennylane as qml
 from pennylane.math import Interface
 
-from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
 
