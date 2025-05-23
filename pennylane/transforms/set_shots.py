@@ -14,6 +14,7 @@
 """
 Contains the set_shots transform, which sets the number of shots for a given tape.
 """
+from functools import partial
 from typing import Sequence, Union
 
 from pennylane.measurements import Shots
@@ -80,3 +81,11 @@ def set_shots(
     if tape.shots != Shots(shots):
         tape = tape.copy(shots=shots)
     return (tape,), null_postprocessing
+
+
+# Define some common aliases for the transform
+singleshot = partial(set_shots, shots=1)
+
+
+def with_shots(shots):
+    return partial(set_shots, shots=shots)
