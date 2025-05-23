@@ -49,13 +49,15 @@ from pennylane.fermi import (
     FermiA,
     FermiWord,
     FermiSentence,
+)
+from pennylane.fermi import (
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
 )
+from pennylane.bose import BoseWord
+from pennylane.bose import BoseSentence
 from pennylane.bose import (
-    BoseSentence,
-    BoseWord,
     binary_mapping,
     unary_mapping,
     christiansen_mapping,
@@ -75,6 +77,7 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
+from pennylane.io import FromBloq
 from pennylane.io import (
     from_pyquil,
     from_qasm,
@@ -84,7 +87,6 @@ from pennylane.io import (
     from_qiskit_op,
     from_quil,
     from_quil_file,
-    FromBloq,
     bloq_registers,
 )
 from pennylane.measurements import (
