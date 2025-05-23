@@ -71,13 +71,15 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
-    op_control_wires, control_values = unwrap_controls(op)
-
-    target_wires = (
-        [w for w in op.wires if w not in op_control_wires]
-        if len(op.wires) != 0
-        else list(range(drawer.n_wires))
-    )
+    op_control_wires, control_values, base = unwrap_controls(op)
+    is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
+    if len(op.wires) == 0 or is_global_op:
+        op_wires = list(range(drawer.n_wires))
+    else:
+        op_wires = op.wires
+    target_wires = [w for w in op_wires if w not in op_control_wires]
+    if is_global_op and len(target_wires) == 0:
+        raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
 
     if control_values is None:
         control_values = [True for _ in op_control_wires]

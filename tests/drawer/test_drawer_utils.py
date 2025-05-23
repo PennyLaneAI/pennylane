@@ -135,20 +135,22 @@ class TestUnwrapControls:
     # pylint:disable=too-few-public-methods
 
     @pytest.mark.parametrize(
-        "op,expected_control_wires,expected_control_values",
+        "op,expected_control_wires,expected_control_values,expected_base_cls",
         [
-            (qml.PauliX(wires="a"), Wires([]), None),
-            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True]),
-            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
+            (qml.X(wires="a"), Wires([]), None, qml.X),
+            (qml.CNOT(wires=["a", "b"]), Wires("a"), [True], qml.X),
+            (qml.ctrl(qml.X(wires="b"), control="a"), Wires("a"), [True], qml.X),
             (
-                qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
+                qml.ctrl(qml.X(wires="b"), control=["a", "c", "d"]),
                 Wires(["a", "c", "d"]),
                 [True, True, True],
+                qml.X,
             ),
             (
-                qml.ctrl(qml.PauliZ(wires="c"), control=["a", "d"], control_values=[True, False]),
+                qml.ctrl(qml.Z(wires="c"), control=["a", "d"], control_values=[True, False]),
                 Wires(["a", "d"]),
                 [True, False],
+                qml.Z,
             ),
             (
                 qml.ctrl(
@@ -158,16 +160,19 @@ class TestUnwrapControls:
                 ),
                 Wires(["a", "b", "d", "c"]),
                 [True, False, False, True],
+                qml.RX,
             ),
             (
                 qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]),
                 Wires(["a", "b", "c"]),
                 [True, True, True],
+                qml.X,
             ),
             (
                 qml.ctrl(qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]), control=["e"]),
                 Wires(["e", "a", "b", "c"]),
                 [True, True, True, True],
+                qml.X,
             ),
             (
                 qml.ctrl(
@@ -179,17 +184,19 @@ class TestUnwrapControls:
                 ),
                 Wires(["e", "a", "b", "c"]),
                 [False, False, True, True],
+                qml.X,
             ),
         ],
     )
     def test_multi_defined_control_values(
-        self, op, expected_control_wires, expected_control_values
+        self, op, expected_control_wires, expected_control_values, expected_base_cls
     ):
         """Test a multi-controlled single-qubit operation with defined control values."""
-        control_wires, control_values = unwrap_controls(op)
+        control_wires, control_values, base = unwrap_controls(op)
 
         assert control_wires == expected_control_wires
         assert control_values == expected_control_values
+        assert isinstance(base, expected_base_cls)
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison

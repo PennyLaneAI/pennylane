@@ -282,6 +282,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
+  The labels are grouped together like for other multi-qubit operations, and the drawing
+  no longer depends on the wires of `GlobalPhase` or `Identity`. Control nodes of controlled global phases
+  and identities no longer receive the operator label, which is in line with other controlled operations.
+  [(#7457)](https://github.com/PennyLaneAI/pennylane/pull/7457)
+  
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
