@@ -520,6 +520,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
