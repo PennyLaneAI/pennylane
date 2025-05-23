@@ -15,8 +15,8 @@ r"""Base class for storing resources."""
 from __future__ import annotations
 
 import copy
-from decimal import Decimal
 from collections import defaultdict
+from decimal import Decimal
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
@@ -26,14 +26,14 @@ class Resources:
     The resources tracked include number of gates, number of wires, and gate types.
 
     Args:
-        qubit_manager (QubitManager): A qubit tracker class which contains the number of available 
-            work wires, catagorized as clean, diry or algorithmic wires. 
+        qubit_manager (QubitManager): A qubit tracker class which contains the number of available
+            work wires, catagorized as clean, diry or algorithmic wires.
         gate_types (dict): A dictionary storing operations (ResourceOperator) as keys and the number
             of times they are used in the circuit (int) as values.
-    
+
     **Example**
 
-    The resources can be accessed as class attributes. Additionally, the :class:`~.Resources` 
+    The resources can be accessed as class attributes. Additionally, the :class:`~.Resources`
     instance can be nicely displayed in the console.
 
     >>> h = re.resource_rep(re.ResourceHadamard)
@@ -60,8 +60,8 @@ class Resources:
         and multiplication of resources.
 
         .. code-block::
-        
-            from collections import defaultdict    
+
+            from collections import defaultdict
 
             # Resource reps for each operator:
             h = re.resource_rep(re.ResourceHadamard)
@@ -80,11 +80,11 @@ class Resources:
             gt1 = defaultdict(int, {h: 10, x:5, cnot:2})
             gt2 = defaultdict(int, {h: 15, z:5, cnot:4})
 
-            # resources: 
+            # resources:
             res1 = re.Resources(qubit_manager=qm1, gate_types=gt1)
             res2 = re.Resources(qubit_manager=qm2, gate_types=gt2)
 
-            
+
         .. code-block:: pycon
 
             >>> print(res1)
@@ -94,7 +94,7 @@ class Resources:
             Qubit breakdown:
             clean qubits: 2, dirty qubits: 1, algorithmic qubits: 3
             Gate breakdown:
-            {'Hadamard': 10, 'X': 5, 'CNOT': 2} 
+            {'Hadamard': 10, 'X': 5, 'CNOT': 2}
 
             >>> print(res2)
             --- Resources: ---
@@ -105,8 +105,8 @@ class Resources:
             Gate breakdown:
             {'Hadamard': 15, 'Z': 5, 'CNOT': 4}
 
-        Specifically, users can add together two instances of resources using the :code:`+` and 
-        :code:`&` operators. These represent combining the resources assuming the circuits were 
+        Specifically, users can add together two instances of resources using the :code:`+` and
+        :code:`&` operators. These represent combining the resources assuming the circuits were
         executed in series or parallel respectively.
 
         .. code-block:: pycon
@@ -119,7 +119,7 @@ class Resources:
             Qubit breakdown:
             clean qubits: 2, dirty qubits: 3, algorithmic qubits: 4
             Gate breakdown:
-            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5} 
+            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5}
 
             >>> res_in_parallel = res1 & res2
             >>> print(res_in_parallel)
@@ -129,9 +129,9 @@ class Resources:
             Qubit breakdown:
             clean qubits: 2, dirty qubits: 3, algorithmic qubits: 7
             Gate breakdown:
-            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5} 
+            {'Hadamard': 25, 'X': 5, 'CNOT': 6, 'Z': 5}
 
-        Similarily, users can scale up the resources for an operator my some integer factor using 
+        Similarly, users can scale up the resources for an operator my some integer factor using
         the :code:`*` and :code:`@` operators. These represent scaling the resources assuming the
         circuits were executed in series or parallel respectively.
 
@@ -145,7 +145,7 @@ class Resources:
             Qubit breakdown:
             clean qubits: 2, dirty qubits: 5, algorithmic qubits: 3
             Gate breakdown:
-            {'Hadamard': 50, 'X': 25, 'CNOT': 10} 
+            {'Hadamard': 50, 'X': 25, 'CNOT': 10}
 
             >>> res_in_parallel = 5 @ res1
             >>> print(res_in_parallel)
@@ -155,7 +155,7 @@ class Resources:
             Qubit breakdown:
             clean qubits: 2, dirty qubits: 5, algorithmic qubits: 15
             Gate breakdown:
-            {'Hadamard': 50, 'X': 25, 'CNOT': 10} 
+            {'Hadamard': 50, 'X': 25, 'CNOT': 10}
 
     """
 
@@ -188,7 +188,7 @@ class Resources:
         """Scale a resources object in series"""
         assert isinstance(scalar, int)
         return mul_in_series(self, scalar)
-    
+
     def __matmul__(self, scalar: int) -> "Resources":
         """Scale a resources object in parallel"""
         assert isinstance(scalar, int)
@@ -201,8 +201,8 @@ class Resources:
 
     @property
     def clean_gate_counts(self):
-        r"""Produce a dictionary which stores the gate counts 
-        using the operator names as keys. 
+        r"""Produce a dictionary which stores the gate counts
+        using the operator names as keys.
 
         Returns:
             dict: A dictionary with operator names (str) as keys
@@ -221,8 +221,10 @@ class Resources:
         total_qubits = qm.clean_qubits + qm.dirty_qubits + qm.algo_qubits
         total_gates = sum(self.clean_gate_counts.values())
 
-        total_gates_str = str(total_gates) if total_gates < 999 else f"{Decimal(total_gates):.3E}"
-        total_qubits_str = str(total_qubits) if total_gates < 9999 else f"{Decimal(total_qubits):.3E}"
+        total_gates_str = str(total_gates) if total_gates <= 999 else f"{Decimal(total_gates):.3E}"
+        total_qubits_str = (
+            str(total_qubits) if total_qubits <= 9999 else f"{Decimal(total_qubits):.3E}"
+        )
 
         items = "--- Resources: ---\n"
         items += f" Total qubits: {total_qubits_str}\n"
@@ -230,9 +232,12 @@ class Resources:
 
         qubit_breakdown_str = f"clean qubits: {qm.clean_qubits}, dirty qubits: {qm.dirty_qubits}, algorithmic qubits: {qm.algo_qubits}"
         items += f" Qubit breakdown:\n  {qubit_breakdown_str}\n"
-        
+
         gate_type_str = ", ".join(
-            [f"'{gate_name}': {Decimal(count):.3E}" if count>999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
+            [
+                f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}"
+                for gate_name, count in self.clean_gate_counts.items()
+            ]
         )
         items += " Gate breakdown:\n  {" + gate_type_str + "}"
 
@@ -242,15 +247,15 @@ class Resources:
         """Compact string representation of the Resources object"""
         return {
             "qubit manager": self.qubit_manager,
-            "gate_types": self.gate_types,
+            "gate types": self.gate_types,
         }.__repr__()
 
-    def _ipython_display_(self):
+    def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
 
 
-def add_in_series(first: Resources, other) -> Resources:  # + 
+def add_in_series(first: Resources, other) -> Resources:  # +
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
@@ -261,15 +266,14 @@ def add_in_series(first: Resources, other) -> Resources:  # +
         Resources: combined resources
     """
     qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-    
+
     new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
     new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
     new_budget = qm1.tight_budget or qm2.tight_budget
     new_logic = max(qm1.algo_qubits, qm2.algo_qubits)
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
-        tight_budget=new_budget
+        work_wires={"clean": new_clean, "dirty": new_dirty}, tight_budget=new_budget
     )
 
     new_qubit_manager._logic_qubit_counts = new_logic
@@ -277,7 +281,7 @@ def add_in_series(first: Resources, other) -> Resources:  # +
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def add_in_parallel(first: Resources, other) -> Resources:  # & 
+def add_in_parallel(first: Resources, other) -> Resources:  # &
     r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
@@ -288,14 +292,14 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
         Resources: combined resources
     """
     qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-    
+
     new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
     new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
     new_budget = qm1.tight_budget or qm2.tight_budget
     new_logic = qm1.algo_qubits + qm2.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
@@ -304,7 +308,7 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_series(first: Resources, scalar: int) -> Resources:  # * 
+def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
@@ -315,14 +319,14 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
         Resources: scaled resources
     """
     qm = first.qubit_manager
-    
+
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
     new_budget = qm.tight_budget
     new_logic = qm.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
@@ -332,7 +336,7 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @ 
+def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
@@ -343,14 +347,14 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
         Resources: scaled resources
     """
     qm = first.qubit_manager
-    
+
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
     new_budget = qm.tight_budget
     new_logic = scalar * qm.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
@@ -372,9 +376,9 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict) -> defaultdict:
 
 def _scale_dict(dict1: defaultdict, scalar: int) -> defaultdict:
     r"""Private function which scales the values in a dictionary."""
-    combined_dict = copy.copy(dict1)
+    scaled_dict = copy.copy(dict1)
 
-    for k in combined_dict:
-        combined_dict[k] *= scalar
+    for k in scaled_dict:
+        scaled_dict[k] *= scalar
 
-    return combined_dict
+    return scaled_dict
