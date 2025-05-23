@@ -384,6 +384,9 @@
 
 * Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
   [(#7406)](https://github.com/PennyLaneAI/pennylane/pull/7406)
+  
+* `pennylane.labs.CompressedResourceOp` class has been added to store information about the operator type and parameters.
+  [(#7408)](https://github.com/PennyLaneAI/pennylane/pull/7408)
 
 <h3>Breaking changes 💔</h3>
 

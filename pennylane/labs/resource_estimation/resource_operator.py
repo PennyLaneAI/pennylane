@@ -14,23 +14,95 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
-from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type
+from inspect import signature
+from typing import Callable, Hashable, List, Optional, Type
 
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
-from pennylane.operation import classproperty
+import numpy as np
 
-from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.operation import classproperty
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 # pylint: disable=unused-argument
 
 
+class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+    r"""Instantiate the light weight class corresponding to the operator type and parameters.
+
+    Args:
+        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        params (dict): a dictionary containing the minimal pairs of parameter names and values
+                    required to compute the resources for the given operator
+
+    .. details::
+
+        This representation is the minimal amount of information required to estimate resources for the operator.
+
+        **Example**
+
+        >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
+        >>> print(op_tp)
+        Hadamard(num_wires=1)
+    """
+
+    def __init__(
+        self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None
+    ):
+
+        if not issubclass(op_type, ResourceOperator):
+            raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
+        self.op_type = op_type
+        self.params = params or {}
+        self._hashable_params = _make_hashable(params) if params else ()
+        self._name = name or op_type.tracking_name(**self.params)
+
+    def __hash__(self) -> int:
+        return hash((self.op_type, self._hashable_params))
+
+    def __eq__(self, other: CompressedResourceOp) -> bool:
+        return (
+            isinstance(other, CompressedResourceOp)
+            and self.op_type == other.op_type
+            and self.params == other.params
+        )
+
+    def __repr__(self) -> str:
+        return self._name
+
+
+def _make_hashable(d) -> tuple:
+    r"""Converts a potentially non-hashable object into a hashable tuple.
+
+    Args:
+        d : The object to potentially convert to a hashable tuple.
+           This can be a dictionary, list, set, or an array.
+
+    Returns:
+        A hashable tuple representation of the input.
+
+    """
+
+    if isinstance(d, Hashable):
+        return d
+
+    if isinstance(d, dict):
+        return tuple(sorted((_make_hashable(k), _make_hashable(v)) for k, v in d.items()))
+    if isinstance(d, (list, tuple)):
+        return tuple(_make_hashable(elem) for elem in d)
+    if isinstance(d, set):
+        return tuple(sorted(_make_hashable(elem) for elem in d))
+    if isinstance(d, np.ndarray):
+        return _make_hashable(d.tolist())
+
+    raise TypeError(f"Object of type {type(d)} is not hashable and cannot be converted.")
+
+
 class ResourceOperator(ABC):
-    r"""Abstract base class to represent quantum operators according to the 
+    r"""Abstract base class to represent quantum operators according to the
     information required for resource estimation.
     """
 
@@ -134,32 +206,32 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-		cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-	) -> List:
+        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+    ) -> List:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-		)
-    
+        )
+
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -169,7 +241,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -193,7 +265,9 @@ class ResourceOperator(ABC):
             _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys.union({"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"})
+            keys = cls.resource_keys.union(
+                {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
+            )
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
@@ -223,15 +297,15 @@ class ResourceOperator(ABC):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
-    
+
     def __and__(self, other):
         if isinstance(other, self.__class__):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     __radd__ = __add__
@@ -256,18 +330,18 @@ def _validate_signature(func: Callable, expected_args: set):
         func (Callable): function to match signature with
         expected_args (set): expected signature
     """
-    
+
     sig = signature(func)
     actual_args = set(sig.parameters)
 
-    if (extra_args := actual_args - expected_args):
+    if extra_args := actual_args - expected_args:
         raise ValueError(
             f"The function provided specifies addtional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
 
-    if (missing_args := expected_args - actual_args):
+    if missing_args := expected_args - actual_args:
         raise ValueError(
             f"The function is missing arguments ({missing_args}) which are expected. Please"
             + " update the function signature or modify the base class' `resource_keys` argument."
@@ -285,7 +359,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="ctrl")
 
-    
+
 def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="adj")
 
