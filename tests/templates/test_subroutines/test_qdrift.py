@@ -268,8 +268,8 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.skip(
-        reason="Suspicious test that seems to indicate bug. Skipped temporarily. sc-91298"
+    @pytest.mark.xfail(
+        reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
     )
     @pytest.mark.tf
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -301,8 +301,8 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.skip(
-        reason="Suspicious test that seems to indicate bug. Skipped temporarily. sc-91298"
+    @pytest.mark.xfail(
+        reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
     )
     @pytest.mark.jax
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
