@@ -56,8 +56,10 @@ class QubitManager:
         self._dirty_qubit_counts = dirty_wires
 
     def __str__(self):
-        return f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "\
-               f"logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+        return (
+            f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
+            f"logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+        )
 
     def __repr__(self) -> str:
         return str(self)
