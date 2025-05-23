@@ -441,6 +441,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* With program capture enabled, mcm method validation now happens on execution rather than setup.
+
 * `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
