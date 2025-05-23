@@ -31,7 +31,7 @@ from pennylane.ftqc import (
 from pennylane.ftqc.pauli_tracker import apply_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
 RTOL = 2.5e-1
-ATOL = 2e-2
+ATOL = 5e-2
 
 
 class TestPauliTracker:

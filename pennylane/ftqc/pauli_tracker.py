@@ -319,15 +319,18 @@ def get_pauli_record(num_wires: int, by_ops: List, ops: List):
             # Step 2: Update the x, z record with the byproduct by_op
             by_op = by_ops.pop()
             for b_op, p_conj in zip(by_op, xz_commutated):
-                new_xz.append(np.bitwise_xor(b_op, p_conj))
+                _xz = np.bitwise_xor(b_op, p_conj)
+                new_xz.append((_xz[0], _xz[1]))
 
         else:  # branch for Paulis
             # Conjugate step is skipped. Update the x, z record with the Pauli
-            new_xz.append(np.bitwise_xor(pauli_to_xz(op), by_ops.pop()))
-
+            _xz = np.bitwise_xor(pauli_to_xz(op), xz[0])
+            new_xz.append((_xz[0], _xz[1]))
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
-            x_record[wire], z_record[wire] = new_xz[idx]
+            _x, _z = new_xz[idx]
+            x_record[wire] = _x
+            z_record[wire] = _z
 
     return x_record, z_record
 
@@ -380,7 +383,7 @@ def get_measurements_corrections(tape: QuantumScript, x_record: np.array, z_reco
             obs = measurement.obs.decomposition()
             for ob in obs:
                 phase_cor[idx] *= _apply_measurement_correction_rule(
-                    x_record[obs.wires[0]], z_record[obs.wires[0]], ob
+                    x_record[ob.wires[0]], z_record[ob.wires[0]], ob
                 )
         else:
             raise NotImplementedError(f"{obs.name} is not supported.")
