@@ -146,9 +146,9 @@ def _commute_h(x: int, z: int):
         z(int): Exponent of PauliZ in the xz representation of a Pauli.
 
     Return:
-        A tuple of xz representing a new Pauli operation that the :class:`~pennylane.H` commutes to.
+        A list of a tuple of xz representing a new Pauli operation that the :class:`~pennylane.H` commutes to.
     """
-    return (z, x)
+    return [(z, x)]
 
 
 def _commute_s(x: int, z: int):
@@ -160,9 +160,9 @@ def _commute_s(x: int, z: int):
         z(int): Exponent of PauliZ in the xz representation of a Pauli.
 
     Return:
-        A tuple of xz representing a new Pauli operation that the :class:`~pennylane.S` commutes to.
+        A list of a tuple of xz representing a new Pauli operation that the :class:`~pennylane.S` commutes to.
     """
-    return (x, x ^ z)
+    return [(x, x ^ z)]
 
 
 def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
@@ -176,9 +176,9 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
         zt(int): Exponent of PauliZ in the xz representation of a Pauli at the target wire.
 
     Return:
-        xz tuples representing new Paulis operation that the :class:`~pennylane.cnot` commutes to.
+        A list of xz tuples representing new Paulis operation that the :class:`~pennylane.cnot` commutes to.
     """
-    return (xc, zc ^ zt), (xc ^ xt, zt)
+    return [(xc, zc ^ zt), (xc ^ xt, zt)]
 
 
 def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
