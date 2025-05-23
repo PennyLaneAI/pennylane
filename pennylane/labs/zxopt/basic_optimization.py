@@ -14,24 +14,16 @@
 """Parity matrix representation"""
 
 import pyzx as zx
-from pyzx.graph.base import BaseGraph
 
 import pennylane as qml
 
 from .qasm_utils import _tape2pyzx
 
 
-def full_reduce(tape, verbose=False):
+def basic_optimization(tape, verbose=False):
     r"""
 
-    A pipeline for using standard optimization techniques in pyzx described in [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
-
-    This pipeline performs, in that order
-
-        * [full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)
-        * [normalize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.graph.base.BaseGraph.normalize)
-        * [extract_circuit](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit)
-        * [basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)
+    Apply [zx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization) to a PennyLane circuit.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
@@ -40,15 +32,11 @@ def full_reduce(tape, verbose=False):
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
 
-    .. seealso:: :func:`~full_optimize`
+    .. seealso:: :func:`~full_reduce` (arbitrary circuits), :func:`~full_optimize` ([(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits)
 
     **Example**
 
-    Let us optimize a circuit with :class:`~T` as well as :class:`~RZ` gates.
-
     .. code-block:: python
-
-        from pennylane.labs.zxopt import full_reduce
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((0, 1)),
@@ -68,10 +56,9 @@ def full_reduce(tape, verbose=False):
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = full_reduce(circ)
-        print(f"Circuit after full_reduce:")
+        new_circ = basic_optimization(circ)
+        print(f"Circuit after basic_optimization:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
-
 
     .. code-block::
 
@@ -81,39 +68,17 @@ def full_reduce(tape, verbose=False):
         2: ─╭X────╰X──T──╰X─╭X────┤
         3: ─╰●──────────────╰●────┤
 
-        Circuit after full_reduce:
+        Circuit after basic_optimization:
         0: ──S─╭●──────────────╭●─┤
         1: ────╰X──RZ─╭●────╭●─╰X─┤
         2: ─╭●────────│─────│──╭●─┤
         3: ─╰X────────╰X──T─╰X─╰X─┤
 
-    The original circuit has five :class:`~T` gates which are reduced to just one.
     """
-
     pyzx_circ = _tape2pyzx(tape)
 
-    if verbose:
-        print(f"t count {zx.tcount(pyzx_circ)}, two qubit: {pyzx_circ.twoqubitcount()}")
+    pyzx_circ = zx.basic_optimization(pyzx_circ, quiet=not verbose)
 
-    if not isinstance(pyzx_circ, BaseGraph):
-        g = pyzx_circ.to_graph()
-    else:
-        g = pyzx_circ
+    pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
-    zx.hsimplify.from_hypergraph_form(g)
-
-    zx.full_reduce(
-        g, quiet=not verbose
-    )  # simplifies the Graph in-place, and show the rewrite steps taken.
-    g.normalize()  # Makes the graph more suitable for displaying
-    if verbose:
-        zx.draw(g)  # Display the resulting diagram
-    c_opt = zx.extract_circuit(g.copy())
-    if verbose:
-        zx.draw(c_opt)
-    c_opt2 = zx.basic_optimization(c_opt.to_basic_gates())
-    if verbose:
-        print(f"t after: {c_opt2.tcount()}, CNOT after: {c_opt2.twoqubitcount()}")
-
-    pl_circ = qml.transforms.from_zx(c_opt2.to_graph())
     return pl_circ

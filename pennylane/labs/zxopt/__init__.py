@@ -32,3 +32,4 @@ Circuit optimization passes using ZX calculus (i.e., [pyzx](https://github.com/z
 
 from .full_reduce import full_reduce
 from .full_optimize import full_optimize
+from .basic_optimization import basic_optimization

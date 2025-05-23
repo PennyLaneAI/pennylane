@@ -24,7 +24,7 @@ from .qasm_utils import _tape2pyzx
 def full_optimize(tape, verbose=False):
     r"""
 
-    Apply ``pyzx.full_optimize`` to a PennyLane [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuit.
+    Apply ``zx.full_optimize`` to a PennyLane [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuit.
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
@@ -101,27 +101,3 @@ def full_optimize(tape, verbose=False):
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
     return pl_circ
-
-    # if verbose:
-    #     print(f"t count {zx.tcount(pyzx_circ)}, two qubit: {pyzx_circ.twoqubitcount()}")
-
-    # if not isinstance(pyzx_circ, BaseGraph):
-    #     g = pyzx_circ.to_graph()
-    # else:
-    #     g = pyzx_circ
-
-    # zx.hsimplify.from_hypergraph_form(g)
-
-    # zx.full_reduce(g, quiet=not verbose) # simplifies the Graph in-place, and show the rewrite steps taken.
-    # g.normalize() # Makes the graph more suitable for displaying
-    # if verbose:
-    #     zx.draw(g) # Display the resulting diagram
-    # c_opt = zx.extract_circuit(g.copy())
-    # if verbose:
-    #     zx.draw(c_opt)
-    # c_opt2 = zx.basic_optimization(c_opt.to_basic_gates())
-    # if verbose:
-    #     print(f"t after: {c_opt2.tcount()}, CNOT after: {c_opt2.twoqubitcount()}")
-
-    # pl_circ = qml.transforms.from_zx(c_opt2.to_graph())
-    # return pl_circ
