@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/dense_util.py functionality"""
-# pylint: disable=no-self-use, unnecessary-lambda-assignment
+"""Tests for pennylane/labs/dla/zxopt"""
 import pytest
 
 import pennylane as qml
