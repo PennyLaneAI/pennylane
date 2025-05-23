@@ -254,20 +254,20 @@ class QasmInterpreter(QASMVisitor):
 
         def call():
             res = None
-            for callable in call_stack:
+            for func in call_stack:
                 # if there is a control in the stack
                 if (
                     call_stack[-1].__class__.__name__ == "partial"
                     and "control" in call_stack[-1].keywords
                 ):
                     # if we are processing the control now
-                    if "control" in callable.keywords:
+                    if "control" in func.keywords:
                         res.keywords["wires"] = [res.keywords["wires"][-1]]
                     # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
-                    res = callable(res.func)(**res.keywords) if res is not None else callable
+                    res = func(res.func)(**res.keywords) if res is not None else func
                 else:
                     # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
-                    res = callable(res) if res is not None else callable()
+                    res = func(res) if res is not None else func()
 
         return call
 
