@@ -1,3 +1,12 @@
+from copy import copy
+from functools import partial
+from typing import Callable
+
+import jax
+import pydot
+
+import pennylane as qml
+
 from .base_interpreter import PlxprInterpreter
 from .primitives import (
     adjoint_transform_prim,
@@ -9,14 +18,6 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
-
-from copy import copy
-from typing import Callable
-
-
-import pennylane as qml
-import pydot, jax
-from functools import partial
 
 
 class PlxprVisualizer:
@@ -64,6 +65,7 @@ class PlxprVisualizer:
         self.wires = {}
         self._env = {}
         self.wires_source = {}
+        self.last_seen_dynamic_wire = None
 
         graph_attr = {
             "rankdir": "TB",
@@ -103,7 +105,7 @@ class PlxprVisualizer:
                 operator_uid = self.get_unique_id(primitive.name)
                 operator_wires = eqn.invars[-eqn.params["n_wires"] :]
                 str_operator_wires = map(str, operator_wires)
-                operator_wires = list(map(self.make_id_into_ascii, str_operator_wires))
+                operator_wires_ascii = list(map(self.make_id_into_ascii, str_operator_wires))
 
                 if str(eqn.outvars) != "[_]":
                     # output wires most likely participates in measurement?
@@ -117,7 +119,7 @@ class PlxprVisualizer:
                 cluster.add_node(
                     pydot.Node(
                         operator_uid,
-                        label=f"{primitive.name} : {operator_wires}",
+                        label=f"{primitive.name} : {operator_wires_ascii}",
                         shape="ellipse",
                         style="filled",
                         fillcolor="lightgreen",
@@ -126,33 +128,42 @@ class PlxprVisualizer:
 
                 # Figure out how to connect previous nodes to this node
                 for op_wire in operator_wires:
-                    if str(op_wire) not in self.wires:
-                        print("wire not in env", op_wire)
-                        if in_new_cluster:
-                            print("in a new cluster")
-                            # connect all wires to this operator
-                            for seen_wire, _ in self.wires.items():
-                                print("connecting", self.wires[str(seen_wire)], operator_uid)
-                                edge = pydot.Edge(
-                                    self.wires[str(seen_wire)], operator_uid, style="dotted"
-                                )
-                                self.graph.add_edge(edge)
-                                # only need to draw one (bus of wires)
-                            self.wires.clear()
-                            self.wires[str(op_wire)] = operator_uid
-                            print("cleared and new env is ", self.wires)
-                            continue
-                        else:
-                            self.wires[str(op_wire)] = operator_uid
+                    encountered_dynamic_wire = False
+                    if "Var" in str(op_wire):
+                        encountered_dynamic_wire = True
+                        self.last_seen_dynamic_wire = op_wire
+                    if encountered_dynamic_wire:
+                        print("encountered dynamic wire", op_wire)
+                        # if in_new_cluster:
+                        # print("in a new cluster")
+                        # connect all wires to this operator
+                        print("Seen wires are ", self.wires)
+                        for seen_wire, _ in self.wires.items():
+                            # if str(op_wire) == str(seen_wire):
+                            # continue
+                            print("connecting", self.wires[str(seen_wire)], operator_uid)
+                            edge = pydot.Edge(
+                                self.wires[str(seen_wire)], operator_uid, style="dotted"
+                            )
+                            self.graph.add_edge(edge)
+                            # only need to draw one (bus of wires)
+                        self.wires.clear()
+                        self.wires[str(op_wire)] = operator_uid
+                        print("cleared and new env is ", self.wires)
+                        continue
 
+                    last_dynamic_node = self.wires.get(str(self.last_seen_dynamic_wire), None)
+                    previous_op = self.wires.get(str(op_wire), last_dynamic_node)
                     print(
                         "connecting",
-                        self.wires[str(op_wire)],
+                        previous_op,
                         operator_uid,
                         f"inside cluster: {cluster.get_name()}",
                     )
-                    edge = pydot.Edge(self.wires[str(op_wire)], operator_uid)
+                    edge = pydot.Edge(previous_op, operator_uid)
                     self.graph.add_edge(edge)
+
+                    # record this operator node as last seen on this wire
                     self.wires[str(op_wire)] = operator_uid
 
             elif getattr(primitive, "prim_type", "") == "measurement":
@@ -164,7 +175,7 @@ class PlxprVisualizer:
                     pydot.Node(
                         measurement_uid,
                         label=f"{primitive.name} : {name_op} : {eqn_op.invars}",
-                        shape="ellipse",
+                        shape="diamond",
                         style="filled",
                         fillcolor="lightblue",
                     )
@@ -211,7 +222,6 @@ def handle_qnode(
     wires_node = pydot.Node(
         wires_uid,
         label=f"{device.wires}",
-        shape="diamond",
         style="filled",
         fillcolor="red",
     )
