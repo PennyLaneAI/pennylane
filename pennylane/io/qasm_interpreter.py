@@ -144,11 +144,6 @@ class QasmInterpreter(QASMVisitor):
         if node.__class__ == list:
             for sub_node in node:
                 self.visit(sub_node, context)
-        elif node.__class__ == EndStatement:
-            raise InterruptedError(
-                f"The QASM program was terminated om line {node.span.start_line}."
-                f"There may be unprocessed QASM code."
-            )
         elif hasattr(self, handler_name):
             try:
                 getattr(self, handler_name)(node, context)
@@ -196,7 +191,6 @@ class QasmInterpreter(QASMVisitor):
             print(str(e))
         execution_context = self.construct_qfunc(context, init_context)
         return context, execution_context
-
 
     @staticmethod
     def _execute_all(context: dict):
@@ -253,6 +247,19 @@ class QasmInterpreter(QASMVisitor):
                 f"defined on line {context['vars'][name]['line']}"
             )
         context["vars"][name]["line"] = node.span.start_line
+
+    def end_statement(self, node: QASMNode, context: dict):
+        """
+        Ends the program.
+
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise InterruptedError(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
 
     def break_statement(self, node: QASMNode, context: dict):
         """
@@ -1342,7 +1349,9 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: If the context is missing a wire.
         """
-        if len(context["wires"]) == 0 and ("outer_wires" not in context or len(context["outer_wires"]) == 0):
+        if len(context["wires"]) == 0 and (
+            "outer_wires" not in context or len(context["outer_wires"]) == 0
+        ):
             raise NameError(
                 f"Attempt to reference wires that have not been declared in {context['name']}"
             )
@@ -1380,8 +1389,5 @@ class QasmInterpreter(QASMVisitor):
         return partial(
             gates_dict[node.name.name.upper()],
             *args,
-            wires=[
-                self.eval_expr(node.qubits[q], context)
-                for q in range(len(node.qubits))
-            ],
+            wires=[self.eval_expr(node.qubits[q], context) for q in range(len(node.qubits))],
         )

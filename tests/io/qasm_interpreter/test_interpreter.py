@@ -2,7 +2,6 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
-import numpy as np
 import pytest
 
 from pennylane import (
@@ -60,9 +59,6 @@ class TestInterpreter:
     @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
     def test_visits_each_node(self, qasm_program, count_nodes, program_name, mocker):
         """Tests that visitor is called on each element of the AST."""
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         ast = parse(qasm_program, permissive=True)
         spy = mocker.spy(QasmInterpreter, "visit")
@@ -70,9 +66,6 @@ class TestInterpreter:
         assert spy.call_count == count_nodes
 
     def test_variables(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
@@ -95,9 +88,6 @@ class TestInterpreter:
         assert execution_context["vars"]["a"]["val"] == 3.3333333
 
     def test_updating_constant(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(
@@ -115,9 +105,6 @@ class TestInterpreter:
             QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
 
     def test_classical_variables(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
@@ -133,9 +120,6 @@ class TestInterpreter:
         assert context["vars"]["c"]["val"] == 0
 
     def test_updating_variables(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(
@@ -162,9 +146,6 @@ class TestInterpreter:
         assert rx.call_count == 1
 
     def test_loops(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
@@ -198,9 +179,6 @@ class TestInterpreter:
         rz.assert_called_with(RZ(0.1, 0), 0.1, 0)
 
     def test_switch(self, mocker):
-        from openqasm3.parser import parse
-
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
@@ -275,7 +253,7 @@ class TestInterpreter:
             assert rx.call_count == 1  # RX calls PauliX under the hood
             rx.assert_called_with(RX(2, 0), 2, wires=0)
 
-            assert q.queue[0] == PowOperation(RX(0.2, wires=['q0']), 2)
+            assert q.queue[0] == PowOperation(RX(0.2, wires=["q0"]), 2)
 
     def test_uninitialized_param(self):
 
@@ -416,13 +394,13 @@ class TestInterpreter:
             assert ry.call_count == 1
 
             assert q.queue == [
-                PauliX('q0'),
-                CNOT(wires=['q0', 'q1']),
-                RX(0.5, wires=['q0']),
-                RY(0.2, wires=['q0']),
-                Adjoint(RX(0.5, wires=['q0'])),
-                PowOpObs(PauliX(wires=['q0']), 2),
-                CNOT(wires=['q1', 'q0']),
+                PauliX("q0"),
+                CNOT(wires=["q0", "q1"]),
+                RX(0.5, wires=["q0"]),
+                RY(0.2, wires=["q0"]),
+                Adjoint(RX(0.5, wires=["q0"])),
+                PowOpObs(PauliX(wires=["q0"]), 2),
+                CNOT(wires=["q1", "q0"]),
             ]
 
         x.assert_called_with(PauliX(0), wires=0)
@@ -468,11 +446,11 @@ class TestInterpreter:
             assert swap.call_count == 1
 
             assert q.queue == [
-                CH(wires=['q0', 'q1']),
-                CNOT(wires=['q1', 'q0']),
-                CY(wires=['q0', 'q1']),
-                CZ(wires=['q1', 'q0']),
-                SWAP(wires=['q0', 'q1']),
+                CH(wires=["q0", "q1"]),
+                CNOT(wires=["q1", "q0"]),
+                CY(wires=["q0", "q1"]),
+                CZ(wires=["q1", "q0"]),
+                SWAP(wires=["q0", "q1"]),
             ]
 
         ch.assert_called_with(CH([0, 1]), wires=[0, 1])
@@ -516,11 +494,11 @@ class TestInterpreter:
             assert crz.call_count == 1
 
             assert q.queue == [
-                ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
-                ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
-                CRX(0.2, wires=['q0', 'q1']),
-                CRY(0.1, wires=['q0', 'q1']),
-                CRZ(0.3, wires=Wires(['q1', 'q0'])),
+                ControlledPhaseShift(0.4, wires=Wires(["q0", "q1"])),
+                ControlledPhaseShift(0.4, wires=Wires(["q0", "q1"])),
+                CRX(0.2, wires=["q0", "q1"]),
+                CRY(0.1, wires=["q0", "q1"]),
+                CRZ(0.3, wires=Wires(["q1", "q0"])),
             ]
 
         cp.assert_called_with(CPhase(0.4, [0, 1]), 0.4, wires=[0, 1])
@@ -556,7 +534,7 @@ class TestInterpreter:
             assert ccx.call_count == 1
             assert cswap.call_count == 1
 
-            assert q.queue == [Toffoli(wires=['q0', 'q2', 'q1']), CSWAP(wires=['q1', 'q2', 'q0'])]
+            assert q.queue == [Toffoli(wires=["q0", "q2", "q1"]), CSWAP(wires=["q1", "q2", "q0"])]
 
         ccx.assert_called_with(Toffoli([0, 1, 2]), wires=[0, 1, 2])
         cswap.assert_called_with(CSWAP([1, 2, 0]), wires=[1, 2, 0])
@@ -608,14 +586,14 @@ class TestInterpreter:
             assert u3.call_count == 1
 
             assert q.queue == [
-                RX(0.9, wires=['q0']),
-                RY(0.8, wires=['q1']),
-                RZ(1.1, wires=['q2']),
-                PhaseShift(8, wires=['q0']),
-                PhaseShift(2.0, wires=['q1']),
-                U1(3.3, wires=['q0']),
-                U2(1.0, 2.0, wires=['q1']),
-                U3(1.0, 2.0, 3.0, wires=['q2']),
+                RX(0.9, wires=["q0"]),
+                RY(0.8, wires=["q1"]),
+                RZ(1.1, wires=["q2"]),
+                PhaseShift(8, wires=["q0"]),
+                PhaseShift(2.0, wires=["q1"]),
+                U1(3.3, wires=["q0"]),
+                U2(1.0, 2.0, wires=["q1"]),
+                U3(1.0, 2.0, 3.0, wires=["q2"]),
             ]
 
         rx.assert_called_with(RX(0.9, [0]), 0.9, wires=[0])
@@ -677,17 +655,17 @@ class TestInterpreter:
             assert sx.call_count == 1
 
             assert q.queue == [
-                Identity('q0'),
-                Hadamard('q2'),
-                PauliX('q1'),
-                PauliY('q2'),
-                PauliZ('q0'),
-                S('q2'),
-                T('q1'),
-                SX('q0'),
-                Controlled(Identity('q1'), control_wires=['q0']),
-                Adjoint(Hadamard('q2')),
-                T('q1') ** 2,
+                Identity("q0"),
+                Hadamard("q2"),
+                PauliX("q1"),
+                PauliY("q2"),
+                PauliZ("q0"),
+                S("q2"),
+                T("q1"),
+                SX("q0"),
+                Controlled(Identity("q1"), control_wires=["q0"]),
+                Adjoint(Hadamard("q2")),
+                T("q1") ** 2,
             ]
 
         id.assert_called_with(Identity(0), wires=0)
