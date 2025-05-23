@@ -24,7 +24,7 @@ class QubitManager:
     r"""Contains attributes which help track how auxiliary qubits are used in a circuit
 
     Args:
-        work_wires (int or dict): Number of work wires or a dictionary containing
+        work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All work_wires are assumed to be clean when
             `int` is provided.
         tight_budget (bool): flag to determine whether extra clean qubits are available
