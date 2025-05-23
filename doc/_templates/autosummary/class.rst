@@ -1,7 +1,5 @@
 {{ fullname | replace("pennylane", "qml") }}
 {{ underline }}
-
-.. currentmodule:: {{ module }}
    
 .. autoclass:: {{ fullname }}
    :show-inheritance:
