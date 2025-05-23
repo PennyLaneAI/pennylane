@@ -143,11 +143,12 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
-        # init context
-        context["wires"] = []
-        context["vars"] = dict()
-        context["gates"] = []
-        context["callable"] = None
+        context.update({
+            "wires": [],
+            "vars": {},
+            "gates": [],
+            "callable": None
+        })
 
         # begin recursive descent traversal
         super().generic_visit(node, context)
