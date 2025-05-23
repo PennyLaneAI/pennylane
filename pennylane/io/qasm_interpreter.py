@@ -139,8 +139,7 @@ class QasmInterpreter(QASMVisitor):
             NameError: When a (so far) unsupported node type is encountered.
             InterruptedError: When a QASM program is terminated by an end instruction.
         """
-        # CamelCase -> snake_case
-        handler_name = re.sub(r"(?<!^)(?=[A-Z])", "_", node.__class__.__name__).lower()
+        handler_name = 'visit_' + node.__class__.__name__
         if node.__class__ == list:
             for sub_node in node:
                 self.visit(sub_node, context)
@@ -248,7 +247,7 @@ class QasmInterpreter(QASMVisitor):
             )
         context["vars"][name]["line"] = node.span.start_line
 
-    def end_statement(self, node: QASMNode, context: dict):
+    def visit_EndStatement(self, node: QASMNode, context: dict):
         """
         Ends the program.
 
@@ -261,7 +260,7 @@ class QasmInterpreter(QASMVisitor):
             f"There may be unprocessed QASM code."
         )
 
-    def break_statement(self, node: QASMNode, context: dict):
+    def visit_BreakStatement(self, node: QASMNode, context: dict):
         """
         Registers a break statement.
 
@@ -275,7 +274,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(raiser)
 
-    def continue_statement(self, node: QASMNode, context: dict):
+    def visit_ContinueStatement(self, node: QASMNode, context: dict):
         """
         Registers a continue statement.
 
@@ -289,7 +288,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(raiser)
 
-    def classical_assignment(self, node: QASMNode, context: dict):
+    def visit_ClassicalAssignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
 
@@ -352,7 +351,7 @@ class QasmInterpreter(QASMVisitor):
             self.raise_if_dirty = False
             return True
 
-    def branching_statement(self, node: QASMNode, context: dict):
+    def visit_BranchingStatement(self, node: QASMNode, context: dict):
         """
         Registers a branching statement. Like switches, uses qml.cond.
 
@@ -420,7 +419,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(branch)
 
-    def switch_statement(self, node: QASMNode, context: dict):
+    def visit_SwitchStatement(self, node: QASMNode, context: dict):
         """
         Registers a switch statement.
 
@@ -514,7 +513,7 @@ class QasmInterpreter(QASMVisitor):
 
         context["gates"].append(switch)
 
-    def alias_statement(self, node: QASMNode, context: dict):
+    def visit_AliasStatement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.
 
@@ -527,7 +526,7 @@ class QasmInterpreter(QASMVisitor):
 
         # we append anything that needs to be computed at execution time to the gates list...
         # aliases can change throughout a program
-        context["gates"].append(partial(self.alias_statement, node))
+        context["gates"].append(partial(self.visit_AliasStatement, node))
 
     def retrieve_variable(self, name: str, context: dict):
         """
@@ -876,7 +875,7 @@ class QasmInterpreter(QASMVisitor):
         except BreakException as e:
             pass  # evaluation of the loop stops
 
-    def while_loop(self, node: QASMNode, context: dict):
+    def visit_WhileLoop(self, node: QASMNode, context: dict):
         """
         Registers a while loop.
 
@@ -919,7 +918,7 @@ class QasmInterpreter(QASMVisitor):
             partial(self._handle_break, loop)
         )  # bind compilation context now, leave execution context
 
-    def for_in_loop(self, node: QASMNode, context: dict):
+    def visit_ForInLoop(self, node: QASMNode, context: dict):
         """
         Registers a for loop.
 
@@ -1019,14 +1018,14 @@ class QasmInterpreter(QASMVisitor):
         ):  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
-    def return_statement(self, node: QASMNode, context: dict):
+    def visit_ReturnStatement(self, node: QASMNode, context: dict):
         """
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
         subroutine is called.
         """
         context["return"] = node.expression.name
 
-    def quantum_measurement_statement(self, node: QASMNode, context: dict):
+    def visit_QuantumMeasurementStatement(self, node: QASMNode, context: dict):
         """
         Registers a quantum measurement.
 
@@ -1065,7 +1064,7 @@ class QasmInterpreter(QASMVisitor):
         self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
-    def quantum_reset(self, node: QASMNode, context: dict):
+    def visit_QuantumReset(self, node: QASMNode, context: dict):
         """
         Registers a reset of a quantum gate.
 
@@ -1087,7 +1086,7 @@ class QasmInterpreter(QASMVisitor):
                 elif isinstance(qubit, IntegerLiteral):
                     context["gates"].append(partial(measure, qubit.value, reset=True))
 
-    def subroutine_definition(self, node: QASMNode, context: dict):
+    def visit_SubroutineDefinition(self, node: QASMNode, context: dict):
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
         its parameters.
@@ -1179,7 +1178,7 @@ class QasmInterpreter(QASMVisitor):
         return init_context
 
     @staticmethod
-    def qubit_declaration(node: QASMNode, context: dict):
+    def visit_QubitDeclaration(node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"].
@@ -1190,7 +1189,7 @@ class QasmInterpreter(QASMVisitor):
         """
         context["wires"].append(node.qubit.name)
 
-    def constant_declaration(self, node: QASMNode, context: dict):
+    def visit_ConstantDeclaration(self, node: QASMNode, context: dict):
         """
         Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
         Python type variables that can be readily used in expression eval, etc.
@@ -1199,9 +1198,9 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The constant QASMNode.
             context (dict): The current context.
         """
-        self.classical_declaration(node, context, constant=True)
+        self.visit_ClassicalDeclaration(node, context, constant=True)
 
-    def classical_declaration(self, node: QASMNode, context: dict, constant=False):
+    def visit_ClassicalDeclaration(self, node: QASMNode, context: dict, constant=False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -1257,9 +1256,9 @@ class QasmInterpreter(QASMVisitor):
 
         # runtime Callable
         self._init_gates_list(context)
-        context["gates"].append(partial(self.classical_declaration, node))
+        context["gates"].append(partial(self.visit_ClassicalDeclaration, node))
 
-    def quantum_gate(self, node: QASMNode, context: dict):
+    def visit_QuantumGate(self, node: QASMNode, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
