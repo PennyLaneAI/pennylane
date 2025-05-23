@@ -24,6 +24,7 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
 
@@ -213,7 +214,7 @@ class DefaultQutrit(QutritDevice):
         # be added later.
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, qml.QutritBasisState):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )

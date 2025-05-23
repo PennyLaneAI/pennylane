@@ -28,6 +28,7 @@ from pennylane.devices.default_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
+from pennylane.exceptions import DeviceError
 
 
 # pylint: disable=protected-access
@@ -91,7 +92,7 @@ class TestPreprocessing:
         dev = DefaultMixed()
 
         config = ExecutionConfig(device_options={"invalid_option": "val"})
-        with pytest.raises(qml.DeviceError, match="device option invalid_option"):
+        with pytest.raises(DeviceError, match="device option invalid_option"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -318,7 +319,7 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(
