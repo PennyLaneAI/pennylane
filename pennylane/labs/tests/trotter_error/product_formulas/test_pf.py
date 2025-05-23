@@ -104,14 +104,19 @@ def test_fourth_order_recursive(fragment_dict):
     assert np.allclose(eff_1, eff_2)
 
 
-@pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_fourth_order_recursive_three_frags(fragment_dict):
+def test_fourth_order_recursive_three_frags():
     """Test the recursive version on three fragments"""
+
+    fragment_dict = {
+        0: np.random.random(size=(3, 3)),
+        1: np.random.random(size=(3, 3)),
+        2: np.random.random(size=(3, 3)),
+    }
 
     u = 1 / (4 - 4 ** (1 / 3))
     v = 1 - 4 * u
 
-    frag_labels = ["X", "Y", "Z", "Y", "X"] * 5
+    frag_labels = [0, 1, 2, 1, 0] * 5
     frag_coeffs = (
         [u / 2, u / 2, u, u / 2, u / 2] * 2
         + [v / 2, v / 2, v, v / 2, v / 2]
@@ -121,7 +126,7 @@ def test_fourth_order_recursive_three_frags(fragment_dict):
     fourth_order1 = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
     second_order = ProductFormula(
-        ["X", "Y", "Z", "Y", "X"], coeffs=[1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], label="U"
+        [0, 1, 2, 1, 0], coeffs=[1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], label="U"
     )
     fourth_order2 = second_order(u) ** 2 @ second_order(1 - 4 * u) @ second_order(u) ** 2
 

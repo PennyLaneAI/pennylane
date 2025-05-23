@@ -13,13 +13,12 @@
 # limitations under the License.
 """Functions for retreiving effective error from fragments"""
 
+import copy
 import math
 from collections import defaultdict
 from collections.abc import Hashable
 from itertools import product
-from typing import Dict, List, Sequence
-
-import numpy as np
+from typing import Dict, List, Sequence, Tuple
 
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -169,7 +168,7 @@ def _add_dicts(d1, d2):
 
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: Sequence[Fragment],
+    fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     order: int = 3,
 ) -> List[float]:
@@ -218,7 +217,64 @@ def perturbation_error(
     [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
     """
 
-    eff = effective_hamiltonian(product_formula, fragments, order=order)
-    error = eff - (product_formula.timestep * 1j) * sum(fragments.values(), _AdditiveIdentity())
+    if not product_formula.fragments.issubset(fragments.keys()):
+        raise ValueError("Fragments do not match product formula")
 
-    return [error.expectation(state, state) for state in states]
+    bch = _recursive_bch(product_formula, order=order)
+    commutators = {
+        commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
+    }
+
+    expectations = []
+    for state in states:
+        new_state = _AdditiveIdentity()
+        for commutator, coeff in commutators.items():
+            new_state += coeff * _apply_commutator(commutator, fragments, state)
+
+        expectations.append(state.dot(new_state))
+
+    return expectations
+
+
+def _apply_commutator(
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
+) -> AbstractState:
+
+    new_state = _AdditiveIdentity()
+
+    for term, coeff in _op_list(commutator).items():
+        tmp_state = copy.copy(state)
+        for frag in reversed([fragments[x] for x in term]):
+            tmp_state = frag.apply(tmp_state)
+
+        new_state += coeff * tmp_state
+
+    return new_state
+
+
+def _op_list(commutator):
+    """assume right nested"""
+
+    commutator = tuple(commutator)
+
+    if len(commutator) == 0:
+        return {}
+
+    if len(commutator) == 1:
+        return {commutator: 1}
+
+    if len(commutator) == 2:
+        return {
+            (commutator[0], commutator[1]): 1,
+            (commutator[1], commutator[0]): -1,
+        }
+
+    head, *tail = commutator
+
+    ops1 = defaultdict(int, {(head,) + ops: coeff for ops, coeff in _op_list(tail).items()})
+    ops2 = defaultdict(int, {ops + (head,): -coeff for ops, coeff in _op_list(tail).items()})
+
+    for op, coeff in ops2.items():
+        ops1[op] += coeff
+
+    return ops1

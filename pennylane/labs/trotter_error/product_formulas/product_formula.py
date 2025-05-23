@@ -278,12 +278,6 @@ def _remove_redundancies(
         _delete(terms)
         _swap(terms, less_than)
 
-    if max_order < 3:
-        return _drop_zeros(term_dicts)
-
-    for terms in term_dicts[2]:
-        _jacobi(terms)
-
     if max_order < 4:
         return _drop_zeros(term_dicts)
 
@@ -400,10 +394,6 @@ def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
         commutators[comm] += coeff
 
     return commutators
-
-
-def _jacobi(terms):
-    pass
 
 
 def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
