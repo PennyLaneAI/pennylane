@@ -94,12 +94,12 @@ class MergeRotationsPattern(
                 rewriter.insert_op(addOp, InsertPoint.before(next_user))
                 param = addOp.result
                 new_op = CustomOp(
-                    operands=(param, next_user.in_qubits[0], None, None),
-                    properties=next_user.properties,
-                    attributes=next_user.attributes,
-                    successors=next_user.successors,
-                    regions=next_user.regions,
-                    result_types=(next_user.result_types, []),
+                    in_qubits=next_user.in_qubits,
+                    gate_name=next_user.gate_name,
+                    params=(param,),
+                    in_ctrl_qubits=next_user.in_ctrl_qubits,
+                    in_ctrl_values=next_user.in_ctrl_values,
+                    adjoint=getattr(next_user, "adjoint", False),
                 )
                 rewriter.replace_op(next_user, new_op)
                 op = new_op
