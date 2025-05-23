@@ -97,6 +97,10 @@
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* A new template :class:`~.Elbow` has been added. The Elbow operator is a three-qubit gate analogous to an AND or Toffoli gate that leverages extra information
+  in the target wire to enable more efficient a decomposition. It is useful in context such as efficient decomposition of the :class:`~.Select` gate. 
+  [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
+
 <h4>Resource-efficient Decompositions 🔎</h4>
 
 * The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
