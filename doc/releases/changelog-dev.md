@@ -288,6 +288,10 @@
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
 
+* A transform for applying `merge_rotations` has been added that can be used with the experimental
+  xDSL Python compiler integration.
+  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+
 * A transform for applying `cancel_inverses` has been added that can be used with the experimental
   xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
   iteratively to cancel nested self-inverse operations.
