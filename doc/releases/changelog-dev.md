@@ -260,6 +260,9 @@
 * `pennylane.labs.QubitManager` class has been added to track and manage auxilliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
 
+* `pennylane.labs.map_to_resource_op` class has been added to map PennyLane Operations to their resource equivalents.
+  [(#7434)](https://github.com/PennyLaneAI/pennylane/pull/7434)
+
 <h3>Breaking changes 💔</h3>
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
