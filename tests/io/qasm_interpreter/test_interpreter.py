@@ -3,7 +3,6 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 import pytest
-from openqasm3.parser import parse
 
 from pennylane import (
     CH,
@@ -33,10 +32,14 @@ from pennylane import (
     T,
     Toffoli,
 )
-from pennylane.io.qasm_interpreter import QasmInterpreter
 
-pytest.importorskip("openqasm3")
+try:
+    pytest.importorskip("openqasm3")
 
+    from openqasm3.parser import parse
+    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+except (ModuleNotFoundError, ImportError) as import_error:
+    pass
 
 @pytest.mark.external
 class TestInterpreter:
