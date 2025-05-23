@@ -63,7 +63,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_decorator(self):
@@ -97,7 +97,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4}
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_condition(self):
@@ -228,7 +228,19 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
-        _decompositions.pop(CustomOp)  # cleanup
+        _decompositions.pop("CustomOp")  # cleanup
+
+    def test_custom_symbolic_decomposition(self):
+        """Tests that custom decomposition rules for symbolic operators can be registered."""
+
+        @qml.register_resources({qml.RX: 1, qml.RZ: 1})
+        def my_adjoint_custom_op(theta, wires, **__):
+            qml.RX(theta, wires=wires[0])
+            qml.RZ(theta, wires=wires[1])
+
+        qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
+        assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
+        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""

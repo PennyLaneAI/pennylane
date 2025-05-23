@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import adjoint
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -30,7 +31,6 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-statements
 @transform
 def pattern_matching_optimization(
     tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
@@ -197,7 +197,7 @@ def pattern_matching_optimization(
     Exact and practical pattern matching for quantum circuit optimization.
     `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
     """
-    # pylint: disable=too-many-branches
+
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
     original_tape_meas = tape.measurements
@@ -205,21 +205,21 @@ def pattern_matching_optimization(
     for pattern in pattern_tapes:
         # Check the validity of the pattern
         if not isinstance(pattern, QuantumScript):
-            raise qml.QuantumFunctionError("The pattern is not a valid quantum tape.")
+            raise QuantumFunctionError("The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
         if pattern.measurements:
-            raise qml.QuantumFunctionError("The pattern contains measurements.")
+            raise QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
         if not np.allclose(
             qml.matrix(pattern, wire_order=pattern.wires), np.eye(2**pattern.num_wires)
         ):
-            raise qml.QuantumFunctionError("Pattern is not valid, it does not implement identity.")
+            raise QuantumFunctionError("Pattern is not valid, it does not implement identity.")
 
         # Verify that the pattern has less qubits or same number of qubits
         if tape.num_wires < pattern.num_wires:
-            raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
+            raise QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)
@@ -571,7 +571,7 @@ def _update_qubits(circuit_dag, qubits_conf):
         list(list(int)): Target wires
         list(list(int)): Control wires
     """
-    # pylint: disable=too-many-arguments
+
     wires = []
     control_wires = []
     target_wires = []
@@ -638,7 +638,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    # pylint: disable=too-many-instance-attributes, too-many-arguments
+    # pylint: disable=too-many-arguments
 
     control_base = {
         "CNOT": "PauliX",
@@ -684,7 +684,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_p (int): index of the first gate matched in the pattern.
         """
-        # pylint: disable=too-many-branches, too-many-arguments
+        # pylint: disable=too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -839,7 +839,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
         """Apply the forward match algorithm and returns the list of matches given an initial match
         and a qubits configuration.
         """
-        # pylint: disable=too-many-branches,too-many-nested-blocks
+        # pylint: disable=too-many-nested-blocks
 
         # Initialization
         self._init_successors_to_visit()

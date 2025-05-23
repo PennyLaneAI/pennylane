@@ -20,6 +20,7 @@ import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 # ==========================================================
 # pytest fixtures
@@ -120,7 +121,7 @@ def fixture_device(device_kwargs):
 
         try:
             dev = qml.device(**device_kwargs)
-        except qml.DeviceError:
+        except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
@@ -171,8 +172,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
@@ -278,7 +277,7 @@ def pytest_runtest_makereport(item, call):
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (
-                call.excinfo.type == qml.DeviceError
+                call.excinfo.type == DeviceError
                 and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):

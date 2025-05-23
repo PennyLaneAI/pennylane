@@ -788,13 +788,15 @@ class TestDecomposition:
                 qml.exp(qml.PauliZ(0), 0.5j / num_steps),
                 qml.exp(qml.PauliX(0), 0.5j / num_steps),
             ]
-        if order == 2:
+        elif order == 2:
             base_decomp = [
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
             ]
+        else:
+            assert False, "Order must be 1 or 2"
 
         true_decomp = base_decomp * num_steps
 
@@ -850,13 +852,15 @@ class TestIntegration:
                 qml.exp(qml.PauliZ(0), 0.5j / num_steps),
                 qml.exp(qml.PauliX(0), 0.5j / num_steps),
             ]
-        if order == 2:
+        elif order == 2:
             base_decomp = [
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
             ]
+        else:
+            assert False, "Order must be 1 or 2"
 
         true_decomp = base_decomp * num_steps
 

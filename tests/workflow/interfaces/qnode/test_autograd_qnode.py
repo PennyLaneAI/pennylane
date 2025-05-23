@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -459,7 +460,7 @@ class TestShotsIntegration:
             return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             res = circuit(a, b)
 
         # execute with shots=100
@@ -1629,9 +1630,7 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with requested"
-        ):
+        with pytest.raises(QuantumFunctionError, match="does not support backprop with requested"):
             circuit(shots=10)
 
     def test_sample_dimension(self):

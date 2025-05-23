@@ -12,8 +12,6 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 from collections.abc import Sequence
-
-# pylint:disable=inconsistent-return-statements
 from typing import NamedTuple, Union
 
 

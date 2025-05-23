@@ -77,7 +77,6 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, id=None):
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
@@ -116,11 +115,10 @@ class Evolution(Exp):
 
     def simplify(self):
         new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+        if isinstance(new_base, qml.ops.op_math.SProd):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
         return not qml.math.real(self.coeff)
