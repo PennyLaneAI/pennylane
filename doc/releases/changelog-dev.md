@@ -17,35 +17,31 @@
   from pennylane import device, wires
   from pennylane.io import from_qasm3
 
-  dev = device("default.qubit", wires=['q0', 'q1', 0])
+  execute_qasm, wires = from_qasm3(
+    """
+    qubit q0; 
+    qubit q1; 
+    float theta = 0.2;
+    if (theta < 1) {{
+        ry(theta) q0;
+    }} else {{ 
+        rz(1.0) q1;
+    }} 
+    rx(1.0) q1;
+    pow(2) @ x q0;
+    """)
+  dev = device("default.qubit", wires=[w for w in wires])
   
   @qml.qnode(dev)
-  def my_circuit(y, p):
-      execute_qasm, _ = from_qasm3(f"""
-          qubit q0;
-          qubit q1;
-          float theta = 0.5;
-          x q0;
-          cx q0, q1;
-          if (theta < 1) {{
-            rx(theta) q0;
-          }} else {{
-            ry({y}) q0;
-          }} 
-          inv @ rx(theta) q0;
-          pow({p}) @ x q0;
-          ctrl @ x q1, q0;
-          """
-      )
+  def my_circuit():
       execute_qasm()
       return qml.expval(qml.Z(0))
   ```
-  
+
   ```pycon
-  print(qml.draw(my_circuit)(0.2, 2))
-  Wires(['q0']): ──X─╭●──RX(0.50)──RY(0.20)──RX(0.50)†──X²─╭X─┤     
-  Wires(['q1']): ────╰X────────────────────────────────────╰●─┤     
-              0: ─────────────────────────────────────────────┤  <Z>
+  >>> print(qml.draw(my_circuit)())
+  0: ──RY(0.20)──X²─┤  <Z>
+  1: ──RX(1.00)─────┤  
   ```
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
@@ -354,6 +350,9 @@
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
 
+* Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
+  [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
+
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
@@ -653,6 +652,7 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 Kalman Szenes,
 David Wierichs,
 Jake Zaia
