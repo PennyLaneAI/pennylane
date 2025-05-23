@@ -346,11 +346,11 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-def remove_namedtuple_attrib_docstring(app, what, name, obj, skip, options):
-    if type(obj) is collections._tuplegetter:
-        return True
-    return skip
+# def remove_namedtuple_attrib_docstring(app, what, name, obj, skip, options):
+#     if type(obj) is collections._tuplegetter:
+#         return True
+#     return skip
 
 
-def setup(app):
-    app.connect('autodoc-skip-member', remove_namedtuple_attrib_docstring)
+# def setup(app):
+#     app.connect('autodoc-skip-member', remove_namedtuple_attrib_docstring)
