@@ -125,12 +125,12 @@ class TestSetShots:
 
         with qml.Tracker(dev) as tracker:
             circuit()
-            assert not "shots" in tracker.history
+        assert not "shots" in tracker.history
 
-            new_circuit = set_shots(circuit, shots=20)
-            with qml.Tracker(dev) as tracker:
-                new_circuit()
-            assert tracker.history["shots"][-1] == 20
+        new_circuit = set_shots(circuit, shots=20)
+        with qml.Tracker(dev) as tracker:
+            new_circuit()
+        assert tracker.history["shots"][-1] == 20
 
     @pytest.mark.integration
     def test_best_diff_method_shots_to_none(self):
