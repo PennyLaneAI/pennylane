@@ -24,7 +24,7 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane.ops.qubit.attributes import composable_rotations
 
-from .quantum_dialect import CustomOp
+from ..quantum_dialect import CustomOp
 
 
 def _can_merge(op: CustomOp, next_op: Operation) -> bool:
