@@ -15,7 +15,6 @@
 This module contains tests for functions needed to compute PES object.
 """
 import os
-import sys
 
 import numpy as np
 import pytest
@@ -30,17 +29,6 @@ h5py = pytest.importorskip("h5py")
 # pylint: disable=too-many-arguments, protected-access, too-many-positional-arguments
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
-
-
-def test_import_mpi4py(monkeypatch):
-    """Test if an ImportError is raised by _import_mpi4py function."""
-    # pylint: disable=protected-access
-
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "mpi4py", None)
-
-        with pytest.raises(ImportError, match="This feature requires mpi4py"):
-            pes_generator._import_mpi4py()
 
 
 @pytest.mark.parametrize(
@@ -188,7 +176,7 @@ def test_import_mpi4py(monkeypatch):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
@@ -247,7 +235,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
@@ -316,7 +304,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
@@ -378,18 +366,29 @@ def test_dipole_order_error():
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "dipole_level", "result_file"),
+    ("sym", "geom", "dipole_level", "result_file", "max_workers", "backend"),
     # Expected results were obtained using vibrant code
     [
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5"),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 1, "serial"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", 2, "mp_pool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "cf_procpool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5", 2, "mpi4py_pool"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "mpi4py_comm"),
     ],
 )
-def test_vibrational_pes(sym, geom, dipole_level, result_file):
+def test_vibrational_pes(
+    sym, geom, dipole_level, result_file, backend, max_workers, mpi4py_support
+):
     r"""Test that vibrational_pes returns correct object."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
-    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, cubic=True)
+    vib_obj = vibrational.vibrational_pes(
+        mol, dipole_level=dipole_level, cubic=True, num_workers=max_workers, backend=backend
+    )
 
     pes_file = os.path.join(ref_dir, result_file)
     with h5py.File(pes_file, "r") as f:

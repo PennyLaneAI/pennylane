@@ -393,6 +393,11 @@
   for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
+  
+* The `pennylane.labs.vibrational` module is upgraded to use features from the `concurrency` module
+  to perform multiprocess and multithreaded execution of workloads. 
+  [(#7401)](https://github.com/PennyLaneAI/pennylane/pull/7401)
+
 
 
 <h3>Breaking changes 💔</h3>
@@ -624,5 +629,6 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Kalman Szenes,
+Marc Vandelle,
 David Wierichs,
 Jake Zaia
