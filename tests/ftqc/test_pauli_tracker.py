@@ -102,7 +102,7 @@ class TestPauliTracker:
     @pytest.mark.parametrize("wires", [[0, 1], [1, 2], [10, 100]])
     @pytest.mark.parametrize("pauli_control", [qml.I, qml.X, qml.Y, qml.Z])
     @pytest.mark.parametrize("pauli_target", [qml.I, qml.X, qml.Y, qml.Z])
-    def test_apply_clifford_ops_one_wire(self, clifford_op, wires, pauli_control, pauli_target):
+    def test_apply_clifford_ops_two_wires(self, clifford_op, wires, pauli_control, pauli_target):
         pauli_control = pauli_control(wires=wires[0])
         pauli_target = pauli_target(wires=wires[1])
         clifford_op = clifford_op(wires=wires)
