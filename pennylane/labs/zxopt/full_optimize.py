@@ -26,6 +26,8 @@ def full_optimize(tape, verbose=False):
 
     Apply `zx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
+    This pass is basically a combination of :func:`~todd` and `~full_reduce`.
+
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
     Args:
