@@ -143,6 +143,13 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
+        # init context
+        context["wires"] = []
+        context["vars"] = dict()
+        context["gates"] = []
+        context["callable"] = None
+
+        # begin recursive descent traversal
         super().generic_visit(node, context)
         self.construct_callable(context)
         return context
@@ -177,8 +184,6 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QubitDeclaration QASMNode.
             context (dict): The current context.
         """
-        if "wires" not in context:
-            context["wires"] = []
         context["wires"].append(node.qubit.name)
 
     @staticmethod
@@ -191,8 +196,6 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The ClassicalDeclaration QASMNode.
             context (dict): The current context.
         """
-        if "vars" not in context:
-            context["vars"] = {}
         if node.init_expression is not None:
             context["vars"][node.identifier.name] = {
                 "ty": node.type.__class__.__name__,
@@ -216,8 +219,6 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         name = node.name.name.upper()
-        if "gates" not in context:
-            context["gates"] = []
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
                 raise TypeError(
@@ -292,7 +293,7 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: If the context is missing a wire.
         """
-        if "wires" not in context:
+        if len(context["wires"]) == 0:
             raise NameError(
                 f"Attempt to reference wires that have not been declared in {context['name']}"
             )
