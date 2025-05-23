@@ -3,9 +3,6 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 import pytest
-from pennylane.wires import Wires
-
-from pennylane.ops import Adjoint, ControlledPhaseShift, Controlled
 
 from pennylane import (
     CH,
@@ -34,9 +31,11 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    queuing
+    queuing,
 )
+from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
+from pennylane.wires import Wires
 
 try:
     pytest.importorskip("openqasm3")
@@ -275,7 +274,7 @@ class TestInterpreter:
                 CNOT(wires=[1, 0]),
                 CY(wires=[0, 1]),
                 CZ(wires=[1, 0]),
-                SWAP(wires=[0, 1])
+                SWAP(wires=[0, 1]),
             ]
 
         ch.assert_called_with(CH([0, 1]), wires=[0, 1])
@@ -323,7 +322,7 @@ class TestInterpreter:
                 ControlledPhaseShift(0.4, wires=Wires([0, 1])),
                 CRX(0.2, wires=[0, 1]),
                 CRY(0.1, wires=[0, 1]),
-                CRZ(0.3, wires=Wires([1, 0]))
+                CRZ(0.3, wires=Wires([1, 0])),
             ]
 
         cp.assert_called_with(CPhase(0.4, [0, 1]), 0.4, wires=[0, 1])
@@ -359,10 +358,7 @@ class TestInterpreter:
             assert ccx.call_count == 1
             assert cswap.call_count == 1
 
-            assert q.queue == [
-                Toffoli(wires=[0, 2, 1]),
-                CSWAP(wires=[1, 2, 0])
-            ]
+            assert q.queue == [Toffoli(wires=[0, 2, 1]), CSWAP(wires=[1, 2, 0])]
 
         ccx.assert_called_with(Toffoli([0, 1, 2]), wires=[0, 1, 2])
         cswap.assert_called_with(CSWAP([1, 2, 0]), wires=[1, 2, 0])
@@ -419,7 +415,7 @@ class TestInterpreter:
                 PhaseShift(2.0, wires=[1]),
                 U1(3.3, wires=[0]),
                 U2(1.0, 2.0, wires=[1]),
-                U3(1.0, 2.0, 3.0, wires=[2])
+                U3(1.0, 2.0, 3.0, wires=[2]),
             ]
 
         rx.assert_called_with(RX(0.9, [0]), 0.9, wires=[0])
@@ -491,7 +487,7 @@ class TestInterpreter:
                 SX(0),
                 Controlled(Identity(1), control_wires=[0]),
                 Adjoint(Hadamard(2)),
-                T(1)**2
+                T(1) ** 2,
             ]
 
         id.assert_called_with(Identity(0), wires=0)
