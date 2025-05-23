@@ -532,6 +532,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* In the :doc:`/development/guide/documentation` page, remove mention of old Sphinx version and outdated Python (v3.8 no longer supported).
+  [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
+
 <h3>Bug fixes 🐛</h3>
 
 * The documentation of `qml.pulse.drive` has been updated and corrected.
@@ -622,6 +625,7 @@ Anton Naim Ibrahim,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 Kalman Szenes,
 David Wierichs,
