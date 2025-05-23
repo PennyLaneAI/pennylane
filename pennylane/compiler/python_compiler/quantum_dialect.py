@@ -165,11 +165,10 @@ class AllocOp(IRDLOperation):
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
 
     def verify_(self):
-        nqubits = self.properties.get("nqubits_attr", None)
-        if nqubits is None:
+        if self.nqubits_attr is None:
             return
 
-        if nqubits < 0:
+        if self.nqubits_attr.value.data < 0:  # pylint: disable=no-member
             raise VerifyException("Cannot allocate less than zero qubits.")
 
 
@@ -552,11 +551,10 @@ class MeasureOp(IRDLOperation):
         )
 
     def verify_(self):
-        postselect = self.properties.get("postselect", None)
-        if postselect is None:
+        if self.postselect is None:
             return
 
-        if postselect.value not in [0, 1]:
+        if self.postselect.value.data not in [0, 1]:  # pylint: disable=no-member
             raise VerifyException("'postselect' must be 0 or 1.")
 
 
