@@ -281,6 +281,10 @@ class QasmInterpreter(QASMVisitor):
                 wrapper = partial(ctrl, control=gate.keywords["wires"][0:-1])
             call_stack.append(wrapper)
 
+            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+            # `no viable alternative at input 'wop(power)@'`, long before we get here.
+
         def call():
             res = None
             for func in call_stack:
