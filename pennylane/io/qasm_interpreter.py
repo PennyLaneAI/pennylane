@@ -395,8 +395,6 @@ class QasmInterpreter(QASMVisitor):
                 context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
             )
 
-        # TODO: need to propagate any qubit declarations to outer scope if and when the inner scope(s) are called
-
         def switch(execution_context: dict):
             target = self.eval_expr(
                 node.target,
@@ -405,7 +403,6 @@ class QasmInterpreter(QASMVisitor):
                 ),
             )
             ops.cond(
-                # TODO: support eval of lists, etc. to match
                 target
                 == self.eval_expr(
                     node.cases[0][0][0],
@@ -532,7 +529,6 @@ class QasmInterpreter(QASMVisitor):
             res = eval(f"{lhs}{node.op.name}{rhs}")  # TODO: don't use eval
         elif isinstance(node, UnaryExpression):
             res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
-        # TODO: aliasing should be possible when an index is not provided as well
         elif isinstance(node, IndexExpression):
 
             def _index_into_var(var):
@@ -595,7 +591,6 @@ class QasmInterpreter(QASMVisitor):
                         f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
         elif isinstance(node, FunctionCall):
-            # TODO: make subroutines from outer scopes available
             if (
                 "scopes" in context
                 and "subroutines" in context["scopes"]
@@ -608,8 +603,7 @@ class QasmInterpreter(QASMVisitor):
                 if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
                     "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
                 ):
-                    # TODO: make a warning
-                    print(f"Reference to an undeclared subroutine {name} in {context['name']}.")
+                    raise NameError(f"Reference to an undeclared subroutine {name} in {context['name']}.")
                 else:
                     if "scopes" in context and name in context["scopes"]["subroutines"]:
                         func_context = context["scopes"]["subroutines"][name]
@@ -620,7 +614,7 @@ class QasmInterpreter(QASMVisitor):
                     for arg in node.arguments:
                         self._init_vars(func_context)
                         evald_arg = self.eval_expr(arg, context)
-                        # TODO: maybe we want to have a class for classical and a class for quantum paramters
+                        # TODO: maybe we want to have a class for classical and a class for quantum parameters
                         if not isinstance(
                             evald_arg, str
                         ):  # this would indicate a quantum parameter
@@ -1126,10 +1120,10 @@ class QasmInterpreter(QASMVisitor):
         # compile time tracking of static variables
         self._init_vars(context)
         if node.init_expression is not None:
-            # TODO: store AST objects in context instead of these objects?
+            # TODO: store AST objects in context instead of these dicts?
 
             # Note: vars which are clean may be bound at compile time, dirty ones
-            # must be calculated during execution TODO: implement this behaviour
+            # must be calculated during execution
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
                     "ty": node.type.__class__.__name__,
