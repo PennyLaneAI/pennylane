@@ -382,7 +382,6 @@ def _check_pickle(op):
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
 
-# pylint: disable=no-member
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]

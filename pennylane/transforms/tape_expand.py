@@ -13,12 +13,13 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation, no-member
+# pylint: disable=unused-argument,invalid-unary-operand-type
 import contextlib
 import warnings
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -182,7 +183,6 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     if not use_tape_argnum:
         return expand_trainable_multipar
 
-    # pylint: disable=protected-access
     trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainable_ops = [info["op"] for info in trainable_par_info]
 
@@ -508,7 +508,7 @@ def set_decomposition(custom_decomps, dev):
             warnings.filterwarnings(
                 action="ignore",
                 message=r"max_expansion argument is deprecated",
-                category=qml.PennyLaneDeprecationWarning,
+                category=PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess
             new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)

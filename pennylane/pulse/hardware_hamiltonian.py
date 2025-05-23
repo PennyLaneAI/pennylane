@@ -43,7 +43,7 @@ def drive(amplitude, phase, wires):
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
-    To avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    To avoid numerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments.
     Read the usage details for more information on how to choose :math:`\Omega` and :math:`\phi`.
 
@@ -71,6 +71,8 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
+        import jax.numpy as jnp
+
         wires = [0, 1, 2, 3]
         H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
 
@@ -79,10 +81,12 @@ def drive(amplitude, phase, wires):
         H_d = qml.pulse.drive(amplitude, phase, wires)
 
     >>> H_int
-    (1) [X0 X1]
-    + (1) [X1 X2]
-    + (1) [X2 X3]
-    + (1) [X3 X0]
+    (
+    X(0) @ X(1)
+    + X(1) @ X(2)
+    + X(2) @ X(3)
+    + X(3) @ X(0)
+    )
     >>> H_d
     HardwareHamiltonian:: terms=2
 
@@ -96,6 +100,8 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
+        import jax
+
         jax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=wires)
@@ -107,9 +113,9 @@ def drive(amplitude, phase, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.32495208, dtype=float64)
+    Array(-0.17375104, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(1.31956098, dtype=float64, weak_type=True)]
+    [Array(13.66916253, dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -137,8 +143,8 @@ def drive(amplitude, phase, wires):
     Array(0.37385014, dtype=float64)
     >>> jax.grad(circuit_local)(params)
     (Array(-3.35835837, dtype=float64),
-     [Array(-3.35835837, dtype=float64, weak_type=True),
-      Array(-3.35835837, dtype=float64, weak_type=True)],
+     [Array(-1.02229985, dtype=float64, weak_type=True),
+      Array(2.82368978, dtype=float64, weak_type=True)],
      Array(0.1339487, dtype=float64))
 
     .. details::
@@ -165,7 +171,7 @@ def drive(amplitude, phase, wires):
         levels, is unaffected by this transformation.
 
         Further, note that the factor :math:`\frac{1}{2}` is a matter of convention. We keep it for ``drive()`` as well as :func:`~.rydberg_drive`,
-        but ommit it in :func:`~.transmon_drive`, as is common in the respective fields.
+        but omit it in :func:`~.transmon_drive`, as is common in the respective fields.
 
     .. details::
         **Neutral Atom Rydberg systems**
@@ -362,7 +368,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
 
-        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(other, qml.ops.SProd):
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
             return HardwareHamiltonian(

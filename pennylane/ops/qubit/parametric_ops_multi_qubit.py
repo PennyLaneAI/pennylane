@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
+
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+# pylint: disable=arguments-differ
 import functools
 from operator import matmul
 from typing import Optional, Union
@@ -87,9 +87,7 @@ class MultiRZ(Operation):
             )
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -130,9 +128,7 @@ class MultiRZ(Operation):
         return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -399,9 +395,7 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -474,9 +468,7 @@ class PauliRot(Operation):
         )
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
