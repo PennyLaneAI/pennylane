@@ -101,7 +101,7 @@
   [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
 * A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
-  allowing angle computation for polynomials of large degrees (:math:`\gt 1000`).
+  allowing angle computation for polynomials of large degrees (> 1000).
   Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
   (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
   [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
