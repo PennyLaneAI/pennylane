@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as qnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import allclose, isclose
 from pennylane.templates.subroutines.qdrift import _sample_decomposition
 
@@ -382,7 +383,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             qml.grad(circ)(time, coeffs)
 
     @pytest.mark.torch
@@ -403,7 +404,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             res_circ = circ(time, coeffs)
             res_circ.backward()
 
@@ -428,7 +429,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             with tf.GradientTape() as tape:
                 result = circ(time, coeffs)
             tape.gradient(result, coeffs)
@@ -452,7 +453,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             jax.grad(circ, argnums=[1])(time, coeffs)
 
     @pytest.mark.autograd

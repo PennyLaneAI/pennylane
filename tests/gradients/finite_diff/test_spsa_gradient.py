@@ -20,6 +20,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 
@@ -319,7 +320,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.torch
@@ -335,7 +336,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.tf
@@ -351,7 +352,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     @pytest.mark.jax
@@ -367,7 +368,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
