@@ -183,6 +183,12 @@ class QasmInterpreter(QASMVisitor):
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
+        # init context
+        context["wires"] = []
+        context["vars"] = dict()
+        context["gates"] = []
+        context["callable"] = None
+
         init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
         try:
             super().generic_visit(node, context)
@@ -190,6 +196,7 @@ class QasmInterpreter(QASMVisitor):
             print(str(e))
         execution_context = self.construct_qfunc(context, init_context)
         return context, execution_context
+
 
     @staticmethod
     def _execute_all(context: dict):
@@ -1174,8 +1181,6 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QubitDeclaration QASMNode.
             context (dict): The current context.
         """
-        if "wires" not in context:
-            context["wires"] = []
         context["wires"].append(node.qubit.name)
 
     def constant_declaration(self, node: QASMNode, context: dict):
@@ -1258,8 +1263,6 @@ class QasmInterpreter(QASMVisitor):
         """
         self._init_gates_list(context)
         name = node.name.name.upper()
-        if "gates" not in context:
-            context["gates"] = []
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
                 raise TypeError(
@@ -1295,13 +1298,18 @@ class QasmInterpreter(QASMVisitor):
                 wrapper = ops.adjoint
             elif mod.modifier.name == "pow":
                 if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(pow, exp=mod.argument.value)
+                    wrapper = partial(ops.pow, z=mod.argument.value)
                 elif "vars" in context and mod.argument.name in context["vars"]:
                     wrapper = partial(
-                        pow, exp=self.retrieve_variable(mod.argument.name, context)["val"]
+                        ops.pow, z=self.retrieve_variable(mod.argument.name, context)["val"]
                     )
             elif mod.modifier.name == "ctrl":
                 wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
+            else:
+                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+                # `no viable alternative at input 'wop(power)@'`, long before we get here.
+                raise ValueError("Unsupported modifier encountered in QASM")
             call_stack.append(wrapper)
 
         def call():
@@ -1334,7 +1342,7 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: If the context is missing a wire.
         """
-        if "wires" not in context:
+        if len(context["wires"]) == 0 and ("outer_wires" not in context or len(context["outer_wires"]) == 0):
             raise NameError(
                 f"Attempt to reference wires that have not been declared in {context['name']}"
             )
@@ -1360,24 +1368,20 @@ class QasmInterpreter(QASMVisitor):
         args = []
         for arg in node.arguments:
             if hasattr(arg, "name") and "vars" in context and arg.name in context["vars"]:
-                # the context at this point should reflect the states of the
-                # variables as evaluated in the correct (current) scope.
-                # But what about deferred evaluations?
                 val = self.retrieve_variable(arg.name, context)["val"]
                 if val is not None:
                     args.append(val)
                 else:
                     raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
-
             elif re.search("Literal", arg.__class__.__name__) is not None:
                 args.append(arg.value)
             else:
-                raise NameError("Uninitialized variable encountered in QASM.")
+                raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
         return partial(
             gates_dict[node.name.name.upper()],
             *args,
             wires=[
-                wires.Wires([self.eval_expr(node.qubits[q], context)])
+                self.eval_expr(node.qubits[q], context)
                 for q in range(len(node.qubits))
             ],
         )
