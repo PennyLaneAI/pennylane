@@ -73,6 +73,12 @@ PARAMETERIZED_GATES = {
 class DirtyError(Exception):  # pragma: no cover
     """Exception raised when attempt is made to use a dirty variable in a compilation context."""
 
+class BreakException(Exception):  # pragma: no cover
+    """Exception raised when encountering a break statement."""
+
+class ContinueException(Exception):  # pragma: no cover
+    """Exception raised when encountering a continue statement."""
+
 
 class QasmInterpreter(QASMVisitor):
     """
@@ -228,9 +234,37 @@ class QasmInterpreter(QASMVisitor):
             )
         context["vars"][name]["line"] = node.span.start_line
 
+    def break_statement(self, node: QASMNode, context: dict):
+        """
+        Registers a break statement.
+
+        Args:
+            node (QASMNode): the break QASMNode.
+            context (dict): the current context.
+        """
+        def raiser():
+            raise BreakException(f"Break statement encountered in {context['name']}")
+        context["gates"].append(raiser)
+
+    def continue_statement(self, node: QASMNode, context: dict):
+        """
+        Registers a continue statement.
+
+        Args:
+            node (QASMNode): the continue QASMNode.
+            context (dict): the current context.
+        """
+        def raiser():
+            raise ContinueException(f"Continue statement encountered in {context['name']}")
+        context["gates"].append(raiser)
+
     def classical_assignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
+
+        Args:
+            node (QASMNode): the assignment QASMNode.
+            context (dict): the current context.
         """
 
         def set_local_var(execution_context: dict):
@@ -795,6 +829,19 @@ class QasmInterpreter(QASMVisitor):
             context, f'{context["name"]}_{node.name.name}'
         )
 
+    @staticmethod
+    def _handle_break(loop: Callable, execution_context: dict):
+        """
+        Handles when a break is encountered in the loop.
+
+        Args:
+            execution_context (dict): the context passed at execution time with current variable values, etc.
+        """
+        try:
+            loop(execution_context)
+        except BreakException as e:
+            pass  # evaluation of the loop stops
+
     def while_loop(self, node: QASMNode, context: dict):
         """
         Registers a while loop. TODO: break and continue
@@ -823,15 +870,18 @@ class QasmInterpreter(QASMVisitor):
             inner_context = self.visit(
                 node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"]
             )
-            for gate in inner_context["gates"]:
-                # updates vars in context... need to propagate these to outer scope
-                gate(execution_context) if not self._all_context_bound(gate) else gate()
+            try:
+                for gate in inner_context["gates"]:
+                    # updates vars in context... need to propagate these to outer scope
+                    gate(execution_context) if not self._all_context_bound(gate) else gate()
+            except ContinueException as e:
+                pass  # evaluation of this iteration ends and we continue to the next
             context["vars"] = inner_context["vars"] if "vars" in inner_context else None
             context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
             return execution_context
 
-        context["gates"].append(loop)  # bind compilation context now, leave execution context
+        context["gates"].append(partial(self._handle_break, loop))  # bind compilation context now, leave execution context
 
     def for_in_loop(self, node: QASMNode, context: dict):
         """
@@ -876,17 +926,20 @@ class QasmInterpreter(QASMVisitor):
                 inner_context = self.visit(
                     node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                 )
-                for gate in inner_context[
-                    "gates"
-                ]:  # we only want to execute the gates in the loop's scope
-                    # updates vars in sub context... need to propagate these to outer context
-                    gate(execution_context) if not self._all_context_bound(gate) else gate()
+                try:
+                    for gate in inner_context[
+                        "gates"
+                    ]:  # we only want to execute the gates in the loop's scope
+                        # updates vars in sub context... need to propagate these to outer context
+                        gate(execution_context) if not self._all_context_bound(gate) else gate()
+                except ContinueException as e:
+                    pass  # evaluation of the current iteration stops and we continue
                 context["vars"] = inner_context["vars"] if "vars" in inner_context else None
                 context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
                 return execution_context
 
-            context["gates"].append(loop)
+            context["gates"].append(partial(self._handle_break, loop))
 
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
         # accepts (start, stop, step) and nto a list of values.
@@ -912,12 +965,14 @@ class QasmInterpreter(QASMVisitor):
                     self.visit(
                         node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                     )
-                    for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"]:
-                        (
-                            gate(execution_context) if not self._all_context_bound(gate) else gate()
-                        )  # updates vars in sub context if any measurements etc. occur
-
-            context["gates"].append(unrolled)
+                    try:
+                        for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"]:
+                            (
+                                gate(execution_context) if not self._all_context_bound(gate) else gate()
+                            )  # updates vars in sub context if any measurements etc. occur
+                    except ContinueException as e:
+                        pass # eval of current iteration stops and we continue
+            context["gates"].append(partial(self._handle_break, unrolled))
         elif (
             loop_params is None
         ):  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)

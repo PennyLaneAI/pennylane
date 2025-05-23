@@ -33,3 +33,14 @@ let alias = register[0:5];
 for bit b in alias {
     y q0;
 }
+
+for bit b in alias {
+    y q0;
+    break;
+}
+
+for bit b in alias {
+    z q0;
+    continue;
+    y q0;
+}
