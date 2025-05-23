@@ -1592,7 +1592,7 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @pytest.mark.local_salt(2)
+    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
