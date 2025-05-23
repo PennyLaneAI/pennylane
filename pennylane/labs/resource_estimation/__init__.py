@@ -23,7 +23,7 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 Qubit Management Classes:
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: api
 
