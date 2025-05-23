@@ -33,7 +33,6 @@ import pennylane.operation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
-    register_condition,
     add_decomps,
     list_decomps,
     resource_rep,
@@ -46,11 +45,17 @@ from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import (
+    FermiC,
+    FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
 )
 from pennylane.bose import (
+    BoseSentence,
+    BoseWord,
     binary_mapping,
     unary_mapping,
     christiansen_mapping,
@@ -70,7 +75,6 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-# from pennylane.io import FromBloq
 from pennylane.io import (
     from_pyquil,
     from_qasm,
@@ -80,6 +84,7 @@ from pennylane.io import (
     from_qiskit_op,
     from_quil,
     from_quil_file,
+    FromBloq,
     bloq_registers,
 )
 from pennylane.measurements import (
@@ -124,7 +129,6 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
-    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
@@ -170,7 +174,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
-# from pennylane.devices import Tracker
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
@@ -188,13 +192,12 @@ def __getattr__(name):
         "PennyLaneDeprecationWarning",
         "QuantumFunctionError",
         "ExperimentalWarning",
-    }:  # pragma: no cover
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible at top-level \
-                and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.42.",
-            pennylane.exceptions.PennyLaneDeprecationWarning,
-        )
+    }:
+        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
+        # warnings.warn(
+        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
+        #     pennylane.exceptions.PennyLaneDeprecationWarning,
+        # )
         return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
