@@ -2,6 +2,7 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -50,6 +51,205 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    qasm_programs = [
+        (open("adder.qasm", mode="r").read(), 22, "adder"),
+        (open("qec.qasm", mode="r").read(), 32, "qec"),
+        (open("teleport.qasm", mode="r").read(), 25, "teleport"),
+    ]
+
+    @pytest.mark.parametrize("qasm_program, count_nodes, program_name", qasm_programs)
+    def test_visits_each_node(self, qasm_program, count_nodes, program_name, mocker):
+        """Tests that visitor is called on each element of the AST."""
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        ast = parse(qasm_program, permissive=True)
+        spy = mocker.spy(QasmInterpreter, "visit")
+        QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
+        assert spy.call_count == count_nodes
+
+    def test_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "advanced-vars"}
+        )
+        context["callable"]()
+
+        # static vars are available in the compilation context
+        assert context["vars"]["f"]["val"] == 3.2
+        assert context["vars"]["g"]["val"] == 3
+        assert context["vars"]["h"]["val"] == 2
+        assert context["vars"]["k"]["val"] == 3
+
+        # classical logic is represented in the execution context after execution
+        assert execution_context["vars"]["l"]["val"] == True
+        assert execution_context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
+        assert execution_context["vars"]["a"]["val"] == 3.3333333
+
+    def test_updating_constant(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(
+            """
+            const int i = 2;
+            i = 3;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
+
+    def test_classical_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "basic-vars"}
+        )
+        context["callable"]()
+
+        assert context["vars"]["i"]["val"] == 4
+        assert context["vars"]["j"]["val"] == 4
+        assert context["vars"]["c"]["val"] == 0
+
+    def test_updating_variables(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(
+            open("updating_variables.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "updating-vars"}
+        )
+        context["callable"]()
+
+        # assertions
+        assert x.call_count == 1
+        assert y.call_count == 2
+        assert z.call_count == 0
+        assert rx.call_count == 1
+
+    def test_loops(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        ry = mocker.spy(RY, "__init__")
+        rx = mocker.spy(RX, "__init__")
+        rz = mocker.spy(RZ, "__init__")
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "loops"})
+        context["callable"]()
+
+        # assertions
+        assert x.call_count == 10
+        assert rx.call_count == 4294967306 - 4294967296
+        assert ry.call_count == 4
+        assert y.call_count == 6
+        assert z.call_count == 6
+        assert rz.call_count == 6
+
+        for i in range(4294967296, 4294967306):
+            rx.assert_called_with(RX(i, 0), i, 0)
+
+        for f in [1.2, -3.4, 0.5, 9.8]:
+            ry.assert_called_with(RY(f, 0), f, 0)
+
+        rz.assert_called_with(RZ(0.1, 0), 0.1, 0)
+
+    def test_switch(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+        rx = mocker.spy(RX, "__init__")
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "switch"})
+        context["callable"]()
+
+        # assertions
+        assert x.call_count == 1
+        assert y.call_count == 1
+        assert rx.call_count == 1
+        assert z.call_count == 0
+
+    def test_if_else(self, mocker):
+        from openqasm3.parser import parse
+
+        from pennylane import ops
+        from pennylane.io.qasm_interpreter import QasmInterpreter
+
+        # parse the QASM
+        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        cond = mocker.spy(ops, "cond")
+        x = mocker.spy(PauliX, "__init__")
+        y = mocker.spy(PauliY, "__init__")
+        z = mocker.spy(PauliZ, "__init__")
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "if_else"}
+        )
+        context["callable"]()
+
+        # assertions
+        assert cond.call_count == 3
+        assert x.call_count == 1
+        x.assert_called_with(PauliX(Wires(["q0"])), Wires(["q0"]))
+        assert y.call_count == 1
+        y.assert_called_with(PauliY(Wires(["q0"])), Wires(["q0"]))
+        assert z.call_count == 0
+
     def test_mod_with_declared_param(self, mocker):
 
         # parse the QASM program
@@ -63,7 +263,7 @@ class TestInterpreter:
             permissive=True,
         )
 
-        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
 
         # setup mocks
         rx = mocker.spy(RX, "__init__")
@@ -75,7 +275,7 @@ class TestInterpreter:
             assert rx.call_count == 1  # RX calls PauliX under the hood
             rx.assert_called_with(RX(2, 0), 2, wires=0)
 
-            assert q.queue[0] == PowOperation(RX(0.2, wires=[0]), 2)
+            assert q.queue[0] == PowOperation(RX(0.2, wires=['q0']), 2)
 
     def test_uninitialized_param(self):
 
@@ -94,23 +294,19 @@ class TestInterpreter:
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
 
-    def test_unsuppoted_node_type_raises(self):
+    def test_unsupported_node_type_raises(self):
 
         # parse the QASM program
         ast = parse(
             """
-            bit b;
-            qubit q0;
-            float theta = 0.2;
-            rx(theta) q0;
-            measure q0 -> b;
+            include "stdgates.inc";
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+            match="An unsupported QASM instruction Include was encountered on line 2, in unsupported-error.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
 
@@ -120,7 +316,7 @@ class TestInterpreter:
         ast = parse(
             """
             float theta;
-            rx(theta) q0;
+            x q0;
             """,
             permissive=True,
         )
@@ -129,7 +325,7 @@ class TestInterpreter:
             NameError,
             match="Attempt to reference wires that have not been declared in uninit-qubit",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "uninit-qubit"})
+            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
 
@@ -145,7 +341,9 @@ class TestInterpreter:
         )
 
         with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
-            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-gate"})
+            QasmInterpreter(permissive=False).generic_visit(
+                ast, context={"name": "unsupported-gate"}
+            )
 
     def test_missing_param(self):
 
@@ -162,7 +360,7 @@ class TestInterpreter:
         with pytest.raises(
             TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "missing-param"})
+            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "missing-param"})
 
     def test_uninitialized_var(self):
 
@@ -177,7 +375,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter().generic_visit(ast, context={"name": "uninit-param"})
+            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-param"})
 
     def test_parses_simple_qasm(self, mocker):
 
@@ -197,7 +395,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # setup mocks
         x = mocker.spy(PauliX, "__init__")
@@ -218,13 +416,13 @@ class TestInterpreter:
             assert ry.call_count == 1
 
             assert q.queue == [
-                PauliX(0),
-                CNOT(wires=[0, 1]),
-                RX(0.5, wires=[0]),
-                RY(0.2, wires=[0]),
-                Adjoint(RX(0.5, wires=[0])),
-                PowOpObs(PauliX(wires=[0]), 2),
-                CNOT(wires=[1, 0]),
+                PauliX('q0'),
+                CNOT(wires=['q0', 'q1']),
+                RX(0.5, wires=['q0']),
+                RY(0.2, wires=['q0']),
+                Adjoint(RX(0.5, wires=['q0'])),
+                PowOpObs(PauliX(wires=['q0']), 2),
+                CNOT(wires=['q1', 'q0']),
             ]
 
         x.assert_called_with(PauliX(0), wires=0)
@@ -248,7 +446,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         # setup mocks
 
@@ -270,11 +468,11 @@ class TestInterpreter:
             assert swap.call_count == 1
 
             assert q.queue == [
-                CH(wires=[0, 1]),
-                CNOT(wires=[1, 0]),
-                CY(wires=[0, 1]),
-                CZ(wires=[1, 0]),
-                SWAP(wires=[0, 1]),
+                CH(wires=['q0', 'q1']),
+                CNOT(wires=['q1', 'q0']),
+                CY(wires=['q0', 'q1']),
+                CZ(wires=['q1', 'q0']),
+                SWAP(wires=['q0', 'q1']),
             ]
 
         ch.assert_called_with(CH([0, 1]), wires=[0, 1])
@@ -298,7 +496,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
@@ -318,11 +516,11 @@ class TestInterpreter:
             assert crz.call_count == 1
 
             assert q.queue == [
-                ControlledPhaseShift(0.4, wires=Wires([0, 1])),
-                ControlledPhaseShift(0.4, wires=Wires([0, 1])),
-                CRX(0.2, wires=[0, 1]),
-                CRY(0.1, wires=[0, 1]),
-                CRZ(0.3, wires=Wires([1, 0])),
+                ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
+                ControlledPhaseShift(0.4, wires=Wires(['q0', 'q1'])),
+                CRX(0.2, wires=['q0', 'q1']),
+                CRY(0.1, wires=['q0', 'q1']),
+                CRZ(0.3, wires=Wires(['q1', 'q0'])),
             ]
 
         cp.assert_called_with(CPhase(0.4, [0, 1]), 0.4, wires=[0, 1])
@@ -343,7 +541,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
@@ -358,7 +556,7 @@ class TestInterpreter:
             assert ccx.call_count == 1
             assert cswap.call_count == 1
 
-            assert q.queue == [Toffoli(wires=[0, 2, 1]), CSWAP(wires=[1, 2, 0])]
+            assert q.queue == [Toffoli(wires=['q0', 'q2', 'q1']), CSWAP(wires=['q1', 'q2', 'q0'])]
 
         ccx.assert_called_with(Toffoli([0, 1, 2]), wires=[0, 1, 2])
         cswap.assert_called_with(CSWAP([1, 2, 0]), wires=[1, 2, 0])
@@ -382,7 +580,9 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(
+            ast, context={"name": "param-single-qubit-gates"}
+        )
 
         # setup mocks
 
@@ -408,14 +608,14 @@ class TestInterpreter:
             assert u3.call_count == 1
 
             assert q.queue == [
-                RX(0.9, wires=[0]),
-                RY(0.8, wires=[1]),
-                RZ(1.1, wires=[2]),
-                PhaseShift(8, wires=[0]),
-                PhaseShift(2.0, wires=[1]),
-                U1(3.3, wires=[0]),
-                U2(1.0, 2.0, wires=[1]),
-                U3(1.0, 2.0, 3.0, wires=[2]),
+                RX(0.9, wires=['q0']),
+                RY(0.8, wires=['q1']),
+                RZ(1.1, wires=['q2']),
+                PhaseShift(8, wires=['q0']),
+                PhaseShift(2.0, wires=['q1']),
+                U1(3.3, wires=['q0']),
+                U2(1.0, 2.0, wires=['q1']),
+                U3(1.0, 2.0, 3.0, wires=['q2']),
             ]
 
         rx.assert_called_with(RX(0.9, [0]), 0.9, wires=[0])
@@ -449,7 +649,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
@@ -477,17 +677,17 @@ class TestInterpreter:
             assert sx.call_count == 1
 
             assert q.queue == [
-                Identity(0),
-                Hadamard(2),
-                PauliX(1),
-                PauliY(2),
-                PauliZ(0),
-                S(2),
-                T(1),
-                SX(0),
-                Controlled(Identity(1), control_wires=[0]),
-                Adjoint(Hadamard(2)),
-                T(1) ** 2,
+                Identity('q0'),
+                Hadamard('q2'),
+                PauliX('q1'),
+                PauliY('q2'),
+                PauliZ('q0'),
+                S('q2'),
+                T('q1'),
+                SX('q0'),
+                Controlled(Identity('q1'), control_wires=['q0']),
+                Adjoint(Hadamard('q2')),
+                T('q1') ** 2,
             ]
 
         id.assert_called_with(Identity(0), wires=0)

@@ -4,16 +4,32 @@
 
 <h3>New features since last release</h3>
 
-* A new function :func:`~.from_qasm3` is provided that allows very simple circuits composed of series of basic
-  gate applications to be converted into callables that may be loaded into QNodes and executed. Most QASM 3.0 features
-  are not yet supported. [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+
+* A new function :func:`~.from_qasm3` is provided that allows simple circuits composed of
+  simple classical logic and gate applications to be converted into callables that may be loaded
+  into a QNode and executed.
+  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+  [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
+
 
   ```python
   import pennylane as qml
   from pennylane import device, wires
   from pennylane.io import from_qasm3
 
-  execute_qasm, wires = from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
+  execute_qasm, wires = from_qasm3(
+    """
+    qubit q0; 
+    qubit q1; 
+    float theta = 0.2;
+    if (theta < 1) {{
+        ry(theta) q0;
+    }} else {{ 
+        rz(1.0) q1;
+    }} 
+    rx(1.0) q1;
+    pow(2) @ x q0;
+    """)
   dev = device("default.qubit", wires=[w for w in wires])
   
   @qml.qnode(dev)
