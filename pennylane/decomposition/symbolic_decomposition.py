@@ -293,6 +293,45 @@ def flip_control_adjoint(*_, wires, control_wires, control_values, work_wires, b
     )
 
 
+def _controlled_decomp_with_work_wire_condition(num_control_wires, num_work_wires, **__):
+    return num_work_wires > 1 and num_control_wires > 1
+
+
+def _controlled_decomp_with_work_wire_resource(
+    base_class, base_params, num_control_wires, num_work_wires, **__
+):
+    return {
+        controlled_resource_rep(qml.X, {}, num_control_wires, num_work_wires=num_work_wires - 1): 2,
+        controlled_resource_rep(base_class, base_params, 1, 0): 1,
+    }
+
+
+# pylint: disable=protected-access,unused-argument
+@register_condition(_controlled_decomp_with_work_wire_condition)
+@register_resources(_controlled_decomp_with_work_wire_resource)
+def _controlled_decomp_with_work_wire(
+    *params, wires, control_wires, control_values, work_wires, base, **__
+):
+    """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
+    base_op = base._unflatten(*base._flatten())
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+    qml.ctrl(base_op, control=work_wires[0])
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+
+
+controlled_decomp_with_work_wire = flip_zero_control(_controlled_decomp_with_work_wire)
+
+
 def _to_controlled_qu_condition(base_class, **__):
     return base_class.has_matrix and base_class.num_wires == 1
 
