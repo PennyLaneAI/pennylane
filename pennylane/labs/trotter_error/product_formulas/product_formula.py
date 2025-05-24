@@ -107,15 +107,6 @@ class ProductFormula:
         return hash((terms, self.exponent))
 
     def __matmul__(self, other: ProductFormula) -> ProductFormula:
-        if self.recursive:
-            if other.recursive:
-                return ProductFormula(self.terms + other.terms, label=f"{self.label}@{other.label}")
-
-            return ProductFormula([*self.terms, other], label=f"{self.label}@{other.label}")
-
-        if other.recursive:
-            return ProductFormula([self, *other.terms], label=f"{self.label}@{other.label}")
-
         return ProductFormula([self, other], label=f"{self.label}@{other.label}")
 
     def __pow__(self, z: float) -> ProductFormula:
