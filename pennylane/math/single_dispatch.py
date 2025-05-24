@@ -735,8 +735,9 @@ def _coerce_types_torch(tensors):
         # Otherwise, automigrate data from CPU to GPU and carry on.
         dev_indices.remove(None)
         dev_id = dev_indices.pop()
+        gpu_name = 'mps' if 'mps' in device_set else 'cuda'
         tensors = [
-            torch.as_tensor(t, device=torch.device(f"cuda:{dev_id}"))
+            torch.as_tensor(t, device=torch.device(f"{gpu_name}:{dev_id}"))
             for t in tensors  # pragma: no cover
         ]
     else:
