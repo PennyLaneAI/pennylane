@@ -66,7 +66,7 @@ class TestControlledQubitUnitary:
     def test_flatten_unflatten(self):
         """Test that the operation can be flattened and unflattened"""
         op = qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3))
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""

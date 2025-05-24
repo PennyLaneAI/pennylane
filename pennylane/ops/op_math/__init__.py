@@ -106,7 +106,6 @@ from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .condition import Conditional, cond
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .controlled_ops import (
     CCZ,
     CH,
@@ -124,7 +123,13 @@ from .controlled_ops import (
     MultiControlledX,
     Toffoli,
 )
-from .decompositions import one_qubit_decomposition, sk_decomposition, two_qubit_decomposition
+from .decompositions import (
+    one_qubit_decomposition,
+    sk_decomposition,
+    two_qubit_decomposition,
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
+)
 from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination

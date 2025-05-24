@@ -37,6 +37,7 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    to_controlled_qubit_unitary,
 )
 from tests.decomposition.conftest import to_resources
 
@@ -701,6 +702,30 @@ class TestControlledDecomposition:
                         "num_zero_control_values": 0,
                         "num_work_wires": 0,
                     },
+                ): 1
+            }
+        )
+
+    def test_decompose_to_controlled_unitary(self):
+        """Tests the decomposition to controlled qubit unitary"""
+
+        op = qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
+        with queuing.AnnotatedQueue() as q:
+            to_controlled_qubit_unitary(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        assert q.queue == [
+            qml.ControlledQubitUnitary(
+                qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
+            )
+        ]
+        assert to_controlled_qubit_unitary.compute_resources(**op.resource_params) == Resources(
+            {
+                resource_rep(
+                    qml.ControlledQubitUnitary,
+                    num_target_wires=1,
+                    num_control_wires=3,
+                    num_zero_control_values=0,
+                    num_work_wires=2,
                 ): 1
             }
         )

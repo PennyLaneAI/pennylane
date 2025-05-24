@@ -209,7 +209,7 @@ def two_qubit_decomposition(U, wires):
 
         U, global_phase = math.convert_to_su4(U, return_global_phase=True)
 
-        if math.is_abstract(U) and not (capture.enabled() or compiler.active()):
+        if _is_jax_jit(U):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
@@ -226,7 +226,8 @@ def two_qubit_decomposition(U, wires):
                 ],
             )(U, wires, global_phase)
 
-        ops.GlobalPhase(-global_phase)
+        if _is_jax_jit(U) or not math.allclose(global_phase, 0):
+            ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     current_queue = queuing.QueuingManager.active_context()
@@ -737,8 +738,13 @@ def two_qubit_decomp_rule(U, wires, **__):
         ],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
-    ops.GlobalPhase(-total_phase)
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
 
 
 def _global_phase(phase):
     ops.GlobalPhase(-phase)
+
+
+def _is_jax_jit(U):
+    """Assume jax-jit if U is abstract and not in a capture or qjit context."""
+    return math.is_abstract(U) and not (capture.enabled() or compiler.active())

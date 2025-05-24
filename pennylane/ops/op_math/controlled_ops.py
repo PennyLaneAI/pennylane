@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+    flip_zero_control,
     pow_involutory,
     pow_rotation,
     self_adjoint,
@@ -36,6 +37,12 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+from .decompositions.controlled_decompositions import (
+    controlled_two_qubit_unitary_rule,
+    ctrl_decomp_bisect_rule,
+    multi_control_decomp_zyz_rule,
+    single_ctrl_decomp_zyz_rule,
+)
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -64,7 +71,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
-        control_values (List[int, bool]): a list providing the state of the control qubits to
+        control_values (List[int or bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
@@ -196,6 +203,15 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=values,
             work_wires=self.work_wires,
         )
+
+
+add_decomps(
+    ControlledQubitUnitary,
+    flip_zero_control(ctrl_decomp_bisect_rule),
+    flip_zero_control(single_ctrl_decomp_zyz_rule),
+    flip_zero_control(multi_control_decomp_zyz_rule),
+    controlled_two_qubit_unitary_rule,
+)
 
 
 class CH(ControlledOp):
