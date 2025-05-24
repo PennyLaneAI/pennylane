@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* A new function :func:`~.from_qasm3` is provided that allows very simple circuits composed of series of basic
+  gate applications to be converted into callables that may be loaded into QNodes and executed. Most QASM 3.0 features
+  are not yet supported. [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+
+  ```python
+  import pennylane as qml
+  from pennylane import device, wires
+  from pennylane.io import from_qasm3
+
+  execute_qasm, wires = from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
+  dev = device("default.qubit", wires=[w for w in wires])
+  
+  @qml.qnode(dev)
+  def my_circuit():
+      execute_qasm()
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(my_circuit)())
+  0: ──RY(0.20)──X²─┤  <Z>
+  1: ──RX(1.00)─────┤  
+  ```
+
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
 
