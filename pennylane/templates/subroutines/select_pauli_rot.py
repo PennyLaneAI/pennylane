@@ -21,19 +21,26 @@ from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotat
 
 
 class SelectPauliRot(Operation):
-    r"""Applies the multiplexer with Pauli rotations.
+    r"""Applies individual single-qubit Pauli rotations depending on the state of
+    designated control qubits.
 
-    This operator, also called a "multiplexed rotation", applies a sequence of uniformly controlled
-    rotations to a target qubit. The rotations are selected based on the values encoded in the control qubits.
+    This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
+    applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
+    The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
 
     .. math::
 
-       \sum_i | i \rangle \langle i | \otimes R(\alpha_i),
+       \sum_i | i \rangle \langle i | \otimes R_P(\alpha_i),
 
-    where :math:`| i \rangle` refers to the computational basis state of the control register
-    and :math:`R(\cdot)` denotes a Pauli rotation applied to the target qubit,
-    parametrized by :math:`\alpha_i`.
+    where :math:`| i \rangle` refers to the computational basis state of the control register,
+    the :math:`\{\alpha_i\}` are the rotation angles, and :math:`R_P` denotes a Pauli rotation
+    about the Pauli operator :math:`P` applied to the target qubit.
+
+    .. figure:: ../../../doc/_static/templates/subroutines/select_pauli_rot.png
+                    :align: center
+                    :width: 70%
+                    :target: javascript:void(0);
 
     For more details, see `Möttönen and Vartiainen (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_.
 
