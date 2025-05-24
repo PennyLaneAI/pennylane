@@ -31,6 +31,7 @@ from pennylane.decomposition import add_decomps, register_resources, resource_re
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    multi_qubit_decomp_rule,
     rot_decomp_rule,
     two_qubit_decomp_rule,
     xyx_decomp_rule,
@@ -244,11 +245,8 @@ class QubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        A decomposition is only defined for matrices that act on either one or two wires. For more
-        than two wires, this method raises a ``DecompositionUndefined``.
-
-        See :func:`~.ops.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
-        for more information on how the decompositions are computed.
+        See :func:`~.ops.one_qubit_decomposition`, :func:`~.ops.two_qubit_decomposition`
+        and :func:`~.ops.multi_qubit_decomposition` for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
@@ -286,9 +284,10 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit sparse QubitUnitary is undefined."
                 )
+
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
-        return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
+        return qml.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -349,6 +348,7 @@ add_decomps(
     xyx_decomp_rule,
     rot_decomp_rule,
     two_qubit_decomp_rule,
+    multi_qubit_decomp_rule,
 )
 
 

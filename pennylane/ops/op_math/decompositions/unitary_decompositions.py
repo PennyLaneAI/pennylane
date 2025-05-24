@@ -18,8 +18,9 @@ import warnings
 
 import numpy as np
 from scipy import sparse
+from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, queuing
+from pennylane import capture, compiler, math, ops, queuing, templates
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.math.decomposition import (
@@ -238,6 +239,52 @@ def two_qubit_decomposition(U, wires):
     return q.queue
 
 
+def multi_qubit_decomposition(U, wires):
+    r"""Decompose a multi-qubit unitary :math:`U` in terms of elementary operations.
+
+    The n-qubit unitary :math:`U`, with :math:`n > 1`, is decomposed into four (:math:`n-1`)-qubit
+    unitaries (:class:`~.QubitUnitary`) and three multiplexers (:class:`~.SelectPauliRot`)
+    using the cosine-sine decomposition.
+    This implementation is based on `arXiv:quant-ph/0504100 <https://arxiv.org/pdf/quant-ph/0504100>`__.
+
+    Args:
+        U (tensor): A :math:`2^n \times 2^n` unitary matrix with :math:`n > 1`.
+        wires (Union[Wires, Sequence[int] or int]): The wires on which to apply the operation.
+
+    Returns:
+        list[Operation]: A list of operations that represent the decomposition
+        of the matrix U.
+
+    **Example**
+
+    .. code-block:: pycon
+
+        >>> matrix_target = qml.matrix(qml.QFT([0,1,2]))
+        >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
+        >>> print([op.name for op in ops])
+        ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']
+        >>> print(np.allclose(matrix_decomposition, matrix_target))
+        True
+    """
+
+    with queuing.AnnotatedQueue() as q:
+        multi_qubit_decomp_rule(U, wires)
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    current_queue = queuing.QueuingManager.active_context()
+    if current_queue is not None:
+        for op in q.queue:  # pragma: no cover
+            queuing.apply(op, context=current_queue)
+
+    return q.queue
+
+
+#######################
+# Decomposition Rules #
+#######################
+
+
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
@@ -322,6 +369,93 @@ zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz
 xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource)
 xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource)
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource)
+
+
+def _two_qubit_resource(**_):
+    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
+    return {
+        resource_rep(ops.QubitUnitary, num_wires=1): 4,
+        ops.CNOT: 3,
+        ops.RZ: 1,
+        ops.RY: 2,
+        # The three-CNOT case does not involve an RX, but an RX must be accounted
+        # for in case the two-CNOT case is chosen at runtime.
+        ops.RX: 1,
+        ops.GlobalPhase: 1,
+    }
+
+
+@register_condition(lambda num_wires: num_wires == 2)
+@register_resources(_two_qubit_resource)
+def two_qubit_decomp_rule(U, wires, **__):
+    """The decomposition rule for a two-qubit unitary."""
+
+    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
+    num_cnots = _compute_num_cnots(U)
+    additional_phase = ops.cond(
+        num_cnots == 0,
+        _decompose_0_cnots,
+        _decompose_3_cnots,
+        elifs=[
+            (num_cnots == 1, _decompose_1_cnot),
+            (num_cnots == 2, _decompose_2_cnots),
+        ],
+    )(U, wires, initial_phase)
+    total_phase = initial_phase + additional_phase
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
+
+
+def _multi_qubit_decomp_resource(num_wires):
+    return {
+        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
+        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
+        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
+    }
+
+
+@register_condition(lambda num_wires: num_wires > 2)
+@register_resources(_multi_qubit_decomp_resource)
+def multi_qubit_decomp_rule(U, wires, **__):
+    """The decomposition rule for a multi-qubit unitary."""
+
+    # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
+    # a n-qubit unitary U with four (n-1)-qubit unitaries and three multiplexed rotations ( via `qml.SelectPauliRot`)
+    p = 2 ** (len(wires) - 1)
+
+    (u1, u2), theta, (v1_dagg, v2_dagg) = _cossin_decomposition(U, p)
+
+    v11_dagg, diag_v, v12_dagg = _compute_udv(v1_dagg, v2_dagg)
+    u11, diag_u, u12 = _compute_udv(u1, u2)
+
+    ops.QubitUnitary(v12_dagg, wires=wires[1:])
+
+    templates.SelectPauliRot(
+        -2 * math.angle(diag_v),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Z",
+    )
+
+    ops.QubitUnitary(v11_dagg, wires=wires[1:])
+
+    templates.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
+
+    ops.QubitUnitary(u12, wires=wires[1:])
+
+    templates.SelectPauliRot(
+        -2 * math.angle(diag_u),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Z",
+    )
+
+    ops.QubitUnitary(u11, wires=wires[1:])
+
+
+####################
+# Helper Functions #
+####################
+
 
 ###################################################################################
 # Developer notes:
@@ -707,38 +841,73 @@ def _decompose_3_cnots(U, wires, initial_phase):
     return math.cast_like(-np.pi / 4, initial_phase)
 
 
-def _two_qubit_resource(**_):
-    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    return {
-        resource_rep(ops.QubitUnitary, num_wires=1): 4,
-        ops.CNOT: 3,
-        ops.RZ: 1,
-        ops.RY: 2,
-        # The three-CNOT case does not involve an RX, but an RX must be accounted
-        # for in case the two-CNOT case is chosen at runtime.
-        ops.RX: 1,
-        ops.GlobalPhase: 1,
-    }
+def _compute_udv(a, b):
+    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
+    of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
+
+    .. math::
+
+        a = u d v \\
+        b = u d^{\dagger} v.
+    """
+
+    # Calculates u and d diagonalizing ab^dagger (Eq.39)
+    ab_dagger = a @ math.conj(b.T)
+    d_square, u = math.linalg.eig(ab_dagger)
+    u, _ = math.linalg.qr(u)
+
+    # complex square root of eigenvalues
+    d = math.exp(1j * math.angle(d_square) / 2)
+
+    # Calculates v using Eq.40
+    v = math.conj(math.diag(d).T) @ math.conj(u.T) @ a
+
+    return u, d, v
 
 
-@register_condition(lambda num_wires: num_wires == 2)
-@register_resources(_two_qubit_resource)
-def two_qubit_decomp_rule(U, wires, **__):
-    """The decomposition rule for a two-qubit unitary."""
+def _cossin_decomposition(U, p):
 
-    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
-    num_cnots = _compute_num_cnots(U)
-    additional_phase = ops.cond(
-        num_cnots == 0,
-        _decompose_0_cnots,
-        _decompose_3_cnots,
-        elifs=[
-            (num_cnots == 1, _decompose_1_cnot),
-            (num_cnots == 2, _decompose_2_cnots),
-        ],
-    )(U, wires, initial_phase)
-    total_phase = initial_phase + additional_phase
-    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
+    # pylint: disable=import-outside-toplevel
+    if math.get_interface(U) == "jax":
+        # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
+
+        import jax
+
+        def scipy_cossin_callback(U_flat, p):
+            dim = int(np.sqrt(U_flat.size))
+            U_np = U_flat.reshape((dim, dim))
+            (u1, u2), theta, (v1_dagg, v2_dagg) = cossin(U_np, p=p, q=p, separate=True)
+            return u1, u2, theta, v1_dagg, v2_dagg
+
+        def cossin_decomposition(U, p):
+            dtype = U.dtype
+            U_flat = U.reshape(-1)
+
+            def callback(U_flat):
+                return tuple(
+                    arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
+                )
+
+            u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
+                callback,
+                result_shape_dtypes=(
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p,), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                ),
+                U_flat=U_flat,
+            )
+
+            return (u1, u2), theta, (v1_dagg, v2_dagg)
+
+    else:
+
+        def cossin_decomposition(U, p):
+            return cossin(U, p=p, q=p, separate=True)
+
+    return cossin_decomposition(U, p)
 
 
 def _global_phase(phase):
