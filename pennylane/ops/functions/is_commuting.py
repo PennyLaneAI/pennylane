@@ -18,6 +18,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Prod, SProd, Sum
 
 
@@ -73,7 +74,7 @@ def _get_target_name(op):
     }
     if op.name in _control_base_map:
         return _control_base_map[op.name]
-    if isinstance(op, qml.ops.op_math.Controlled):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.op_math.Controlled):
         return op.base.name
     return op.name
 
@@ -160,7 +161,7 @@ def _check_opmath_operations(operation1, operation2):
             continue
 
         if isinstance(op, (SProd, Prod, Sum)):
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 f"Operation {op} currently not supported. Prod, Sprod, and Sum instances must have a valid Pauli representation."
             )
 
@@ -336,18 +337,18 @@ def is_commuting(operation1, operation2):
     >>> qml.is_commuting(qml.X(0), qml.Z(0))
     False
     """
-    # pylint: disable=too-many-branches
+
     # pylint: disable=too-many-return-statements
 
     if operation1.name in unsupported_operations or isinstance(
         operation1, (qml.operation.CVOperation, qml.operation.Channel)
     ):
-        raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
+        raise QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
     if operation2.name in unsupported_operations or isinstance(
         operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
-        raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+        raise QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:
         return _pword_is_commuting(operation1, operation2)

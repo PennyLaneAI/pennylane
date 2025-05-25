@@ -14,17 +14,17 @@
 """
 This module contains the qml.generator function.
 """
-# pylint: disable=protected-access
+
 import inspect
 import warnings
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
-# pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~ops.LinearCombination`."""
 
@@ -97,7 +97,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
     gen = op.generator
 
@@ -195,7 +195,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
             gen = _generator_backcompatibility(gen_op)
 
         if not gen.is_hermitian:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
             )
 

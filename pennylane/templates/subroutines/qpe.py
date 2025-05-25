@@ -14,10 +14,11 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
-# pylint: disable=too-many-arguments,arguments-differ
+# pylint: disable=arguments-differ
 import copy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
@@ -143,7 +144,6 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     grad_method = None
 
-    # pylint: disable=no-member
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
         metadata = (self.hyperparameters["estimation_wires"],)
@@ -161,14 +161,14 @@ class QuantumPhaseEstimation(ErrorOperation):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "The unitary is expressed as an operator, which already has target wires "
                     "defined, do not additionally specify target wires."
                 )
             target_wires = unitary.wires
 
         elif target_wires is None:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Target wires must be specified if the unitary is expressed as a matrix."
             )
 
@@ -178,16 +178,14 @@ class QuantumPhaseEstimation(ErrorOperation):
         # Estimation wires are required, but kept as an optional argument so that it can be
         # placed after target_wires for backwards compatibility.
         if estimation_wires is None:
-            raise qml.QuantumFunctionError("No estimation wires specified.")
+            raise QuantumFunctionError("No estimation wires specified.")
 
         target_wires = qml.wires.Wires(target_wires)
         estimation_wires = qml.wires.Wires(estimation_wires)
         wires = target_wires + estimation_wires
 
         if any(wire in target_wires for wire in estimation_wires):
-            raise qml.QuantumFunctionError(
-                "The target wires and estimation wires must not overlap."
-            )
+            raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
 
         self._hyperparameters = {
             "unitary": unitary,

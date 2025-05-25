@@ -740,7 +740,6 @@ class QuantumScript:
         >>> newer_qscript.get_parameters()
         [-0.1, 0.2, 0.5]
         """
-        # pylint: disable=no-member
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -1245,7 +1244,7 @@ class QuantumScript:
             operations += self.diagonalizing_gates
 
         # decompose the queue
-        # pylint: disable=no-member
+
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
             depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES

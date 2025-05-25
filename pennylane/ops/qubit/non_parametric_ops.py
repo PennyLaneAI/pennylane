@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
+# pylint: disable=arguments-differ
 import cmath
 from copy import copy
 from functools import lru_cache
@@ -27,8 +27,15 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane._deprecated_observable import Observable
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_condition,
+    register_resources,
+    resource_rep,
+)
 from pennylane.decomposition.symbolic_decomposition import (
+    flip_zero_control,
     make_pow_decomp_with_period,
     pow_involutory,
     self_adjoint,
@@ -213,6 +220,24 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
+H = Hadamard
+r"""H(wires)
+The Hadamard operator
+
+.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
+
+
 def _hadamard_rz_rx_resources():
     return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
 
@@ -241,22 +266,36 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
-H = Hadamard
-r"""H(wires)
-The Hadamard operator
+def _controlled_h_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CH: 1}
+    return {
+        qml.H: 2,
+        qml.RY: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
 
-.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+@register_resources(_controlled_h_resources)
+def _controlled_hadamard(wires, control_wires, work_wires, **__):
 
-**Details:**
+    if len(control_wires) == 1:
+        qml.CH(wires)
+        return
 
-* Number of wires: 1
-* Number of parameters: 0
+    qml.RY(-np.pi / 4, wires=wires[-1])
+    qml.H(wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.H(wires=wires[-1])
+    qml.RY(np.pi / 4, wires=wires[-1])
 
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
+
+add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
 class PauliX(Observable, Operation):
@@ -489,6 +528,49 @@ add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, _pow_x_to_rx, _pow_x_to_sx)
 
 
+def _controlled_x_resource(*_, num_control_wires, num_zero_control_values, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CNOT: 1, PauliX: num_zero_control_values}
+    if num_control_wires == 2:
+        return {qml.Toffoli: 1, PauliX: num_zero_control_values * 2}
+    return {
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_x_resource)
+def _controlled_x_decomp(*_, wires, control_wires, control_values, work_wires, **__):
+    """The decomposition rule for a controlled PauliX."""
+
+    if len(control_wires) == 1 and not control_values[0]:
+        qml.CNOT(wires=wires)
+        qml.X(wires[1])
+        return
+
+    if len(control_wires) == 1:
+        qml.CNOT(wires=wires)
+        return
+
+    if len(control_wires) > 2:
+        qml.MultiControlledX(wires=wires, control_values=control_values, work_wires=work_wires)
+        return
+
+    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    for w in zero_control_wires:
+        qml.PauliX(w)
+    qml.Toffoli(wires=wires)
+    for w in zero_control_wires:
+        qml.PauliX(w)
+
+
+add_decomps("C(PauliX)", _controlled_x_decomp)
+
+
 class PauliY(Observable, Operation):
     r"""
     The Pauli Y operator
@@ -712,6 +794,36 @@ add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
+def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CY: 1}
+    return {
+        qml.S: 1,
+        adjoint_resource_rep(qml.S): 1,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_y_resource)
+def _controlled_y_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CY(wires=wires)
+        return
+
+    qml.adjoint(qml.S(wires[-1]))
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.S(wires=wires[-1])
+
+
+add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
+
+
 class PauliZ(Observable, Operation):
     r"""
     The Pauli Z operator
@@ -827,8 +939,10 @@ class PauliZ(Observable, Operation):
         """
         return qml.pauli.pauli_eigs(1)
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(
         wires: WiresLike,
     ) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
@@ -949,6 +1063,41 @@ def _pow_z(wires, z, **_):
 add_decomps(PauliZ, _pauliz_to_ps)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, _pow_z, _pow_z_to_s, _pow_z_to_t)
+
+
+def _controlled_z_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CZ: 1}
+    if num_control_wires == 2:
+        return {qml.CCZ: 1}
+    return {
+        qml.H: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_z_resources)
+def _controlled_z_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CZ(wires=wires)
+        return
+
+    if len(control_wires) == 2:
+        qml.CCZ(wires=wires)
+        return
+
+    qml.H(wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.H(wires=wires[-1])
+
+
+add_decomps("C(PauliZ)", flip_zero_control(_controlled_z_decomp))
 
 
 class S(Operation):
@@ -1597,6 +1746,35 @@ def _swap_to_cnot(wires, **__):
 add_decomps(SWAP, _swap_to_cnot)
 add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
+
+
+def _controlled_swap_resources(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CSWAP: 1}
+    return {
+        qml.CNOT: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires + 1,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_swap_resources)
+def _controlled_swap_decomp(*_, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.CSWAP(wires=wires)
+        return
+
+    qml.CNOT(wires=[wires[-2], wires[-1]])
+    qml.MultiControlledX(wires=wires[:-2] + [wires[-1], wires[-2]], work_wires=work_wires)
+    qml.CNOT(wires=[wires[-2], wires[-1]])
+
+
+add_decomps("C(SWAP)", flip_zero_control(_controlled_swap_decomp))
 
 
 class ECR(Operation):
