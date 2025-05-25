@@ -18,15 +18,16 @@ utilize in the ``condition`` attribute.
 """
 from inspect import isclass, signature
 
-import pennylane as qml
+from pennylane import math, measurements
+from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
-from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
-from pennylane.operation import AnyWires
-from pennylane.ops import Adjoint, Controlled
+from pennylane.operation import Operation
+from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
+from pennylane.ops.functions import simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
-# pylint: disable = unnecessary-lambda, too-few-public-methods, too-many-statements, too-many-branches
+# pylint: disable = too-many-branches
 
 
 class WiresIn(BooleanFn):
@@ -80,8 +81,8 @@ def _get_wires(val):
     iters = val if isinstance(val, (list, tuple, set, Wires)) else getattr(val, "wires", [val])
     try:
         wires = set().union(*((getattr(w, "wires", None) or Wires(w)).tolist() for w in iters))
-    except (TypeError, WireError):
-        raise ValueError(f"Wires cannot be computed for {val}") from None
+    except (TypeError, WireError) as e:
+        raise ValueError(f"Wires cannot be computed for {val}") from e
     return wires
 
 
@@ -182,7 +183,7 @@ class OpIn(BooleanFn):
         self._cond = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in ops_
@@ -198,7 +199,7 @@ class OpIn(BooleanFn):
         xs = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in xs
@@ -221,11 +222,11 @@ class OpIn(BooleanFn):
                 )
                 for x, c in zip(xs, cs)
             )
-        except:  # pylint: disable = bare-except # pragma: no cover
+        except Exception as e:  # pragma: no cover
             raise ValueError(
                 "OpIn does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
-            ) from None
+            ) from e
 
 
 class OpEq(BooleanFn):
@@ -243,7 +244,7 @@ class OpEq(BooleanFn):
         self._cond = [
             (
                 op
-                if not isinstance(op, MeasurementProcess)
+                if not isinstance(op, measurements.MeasurementProcess)
                 else (getattr(op, "obs", None) or getattr(op, "H", None))
             )
             for op in ops_
@@ -265,7 +266,7 @@ class OpEq(BooleanFn):
             xs = [
                 (
                     op
-                    if not isinstance(op, MeasurementProcess)
+                    if not isinstance(op, measurements.MeasurementProcess)
                     else (getattr(op, "obs", None) or getattr(op, "H", None))
                 )
                 for op in xs
@@ -280,11 +281,11 @@ class OpEq(BooleanFn):
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
-        except:  # pylint: disable = bare-except # pragma: no cover
+        except Exception as e:  # pragma: no cover
             raise ValueError(
                 "OpEq does not support arithmetic operations "
                 "that cannot be converted to a linear combination"
-            ) from None
+            ) from e
 
 
 def _get_ops(val):
@@ -303,13 +304,15 @@ def _get_ops(val):
     op_names = []
     for _val in vals:
         if isinstance(_val, str):
-            op_names.append(getattr(qml.ops, _val, None) or getattr(qml, _val))
-        elif isclass(_val) and not issubclass(_val, MeasurementProcess):
+            op_names.append(getattr(qops, _val, None))
+        elif isclass(_val) and not issubclass(_val, measurements.MeasurementProcess):
             op_names.append(_val)
-        elif isinstance(_val, (MeasurementValue, MidMeasureMP)):
-            mid_measure = _val if isinstance(_val, MidMeasureMP) else _val.measurements[0]
+        elif isinstance(_val, (measurements.MeasurementValue, measurements.MidMeasureMP)):
+            mid_measure = (
+                _val if isinstance(_val, measurements.MidMeasureMP) else _val.measurements[0]
+            )
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
-        elif isinstance(_val, MeasurementProcess):
+        elif isinstance(_val, measurements.MeasurementProcess):
             obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
             if len(obs_name) == 1:
                 obs_name = obs_name[0]
@@ -332,13 +335,13 @@ def _check_arithmetic_ops(op1, op2):
             and _get_ops(op1.base) == _get_ops(op2.base)
         )
 
-    lc_cop = lambda op: qml.ops.LinearCombination(*op.terms())
+    lc_cop = lambda op: LinearCombination(*op.terms())
 
-    if isinstance(op1, qml.ops.Exp) or isinstance(op2, qml.ops.Exp):
+    if isinstance(op1, Exp) or isinstance(op2, Exp):
         if (
             not isinstance(op1, type(op2))
             or (op1.base.arithmetic_depth != op2.base.arithmetic_depth)
-            or not qml.math.allclose(op1.coeff, op2.coeff)
+            or not math.allclose(op1.coeff, op2.coeff)
             or (op1.num_steps != op2.num_steps)
         ):
             return False
@@ -346,7 +349,7 @@ def _check_arithmetic_ops(op1, op2):
             return _check_arithmetic_ops(op1.base, op2.base)
         return _get_ops(op1.base) == _get_ops(op2.base)
 
-    op1, op2 = qml.simplify(op1), qml.simplify(op2)
+    op1, op2 = simplify(op1), simplify(op2)
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -360,7 +363,7 @@ def _check_arithmetic_ops(op1, op2):
             present, p_index = False, -1
             while sprod in sprods[p_index + 1 :]:
                 p_index = sprods[p_index + 1 :].index(sprod) + (p_index + 1)
-                if qml.math.allclose(coeff, coeffs[p_index]):
+                if math.allclose(coeff, coeffs[p_index]):
                     coeffs.pop(p_index)
                     sprods.pop(p_index)
                     present = True
@@ -465,7 +468,7 @@ def op_eq(ops):
     return OpEq(ops)
 
 
-class MeasEq(qml.BooleanFn):
+class MeasEq(BooleanFn):
     """A conditional for evaluating if a given measurement process is of the same type
     as the specified measurement process.
 
@@ -481,7 +484,7 @@ class MeasEq(qml.BooleanFn):
         self.condition, self._cmps = [], []
         for mp in self._cond:
             if (callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None) or (
-                isclass(mp) and not issubclass(mp, MeasurementProcess)
+                isclass(mp) and not issubclass(mp, measurements.MeasurementProcess)
             ):
                 raise ValueError(
                     f"MeasEq should be initialized with a MeasurementProcess, got {mp}"
@@ -502,7 +505,7 @@ class MeasEq(qml.BooleanFn):
 
     def _check_meas(self, mp):
 
-        if isclass(mp) and not issubclass(mp, MeasurementProcess):
+        if isclass(mp) and not issubclass(mp, measurements.MeasurementProcess):
             return False
 
         if callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None:
@@ -563,19 +566,19 @@ def meas_eq(mps):
 
 
 _MEAS_FUNC_MAP = {
-    qml.expval: qml.measurements.ExpectationMP,
-    qml.var: qml.measurements.VarianceMP,
-    qml.state: qml.measurements.StateMP,
-    qml.density_matrix: qml.measurements.DensityMatrixMP,
-    qml.counts: qml.measurements.CountsMP,
-    qml.sample: qml.measurements.SampleMP,
-    qml.probs: qml.measurements.ProbabilityMP,
-    qml.vn_entropy: qml.measurements.VnEntropyMP,
-    qml.mutual_info: qml.measurements.MutualInfoMP,
-    qml.purity: qml.measurements.PurityMP,
-    qml.classical_shadow: qml.measurements.ClassicalShadowMP,
-    qml.shadow_expval: qml.measurements.ShadowExpvalMP,
-    qml.measure: qml.measurements.MidMeasureMP,
+    measurements.expval: measurements.ExpectationMP,
+    measurements.var: measurements.VarianceMP,
+    measurements.state: measurements.StateMP,
+    measurements.density_matrix: measurements.DensityMatrixMP,
+    measurements.counts: measurements.CountsMP,
+    measurements.sample: measurements.SampleMP,
+    measurements.probs: measurements.ProbabilityMP,
+    measurements.vn_entropy: measurements.VnEntropyMP,
+    measurements.mutual_info: measurements.MutualInfoMP,
+    measurements.purity: measurements.PurityMP,
+    measurements.classical_shadow: measurements.ClassicalShadowMP,
+    measurements.shadow_expval: measurements.ShadowExpvalMP,
+    measurements.measure: measurements.MidMeasureMP,
 }
 
 
@@ -598,13 +601,13 @@ def _process_instance(operation, *args, **kwargs):
         )
 
     op_class, op_type = type(operation), [] if kwargs else ["Mappable"]
-    if isinstance(operation, qml.measurements.MeasurementProcess):
+    if isinstance(operation, measurements.MeasurementProcess):
         op_type.append("MeasFunc")
-    elif isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled)):
+    elif isinstance(operation, (Adjoint, Controlled)):
         op_type.append("MetaFunc")
 
     args, metadata = getattr(operation, "_flatten")()
-    is_flat = "MeasFunc" in op_type or isinstance(operation, qml.ops.Controlled)
+    is_flat = "MeasFunc" in op_type or isinstance(operation, Controlled)
     if len(metadata) > 1:
         kwargs = {**dict(metadata[1] if not is_flat else metadata), **kwargs}
 
@@ -613,10 +616,10 @@ def _process_instance(operation, *args, **kwargs):
 
 def _process_callable(operation):
     """Process a callable of PennyLane operation to be used in ``partial_wires``."""
-    _cmap = {qml.adjoint: qml.ops.Adjoint, qml.ctrl: qml.ops.Controlled}
+    _cmap = {adjoint: Adjoint, ctrl: Controlled}
     if operation in _MEAS_FUNC_MAP:
         return _MEAS_FUNC_MAP[operation], ["MeasFunc"]
-    if operation in [qml.adjoint, qml.ctrl]:
+    if operation in [adjoint, ctrl]:
         return _cmap[operation], ["MetaFunc"]
 
     return operation, []
@@ -710,7 +713,7 @@ def partial_wires(operation, *args, **kwargs):
                 arg_params[val] = arg_params.pop("op")
                 break
 
-    if op_class == qml.ops.Controlled and "control" in arg_params:
+    if op_class == Controlled and "control" in arg_params:
         arg_params["control_wires"] = arg_params.pop("control")
 
     arg_wires = arg_params.pop("wires", None)
@@ -729,7 +732,7 @@ def partial_wires(operation, *args, **kwargs):
 
         if op_type:
             _name, _op = _fargs[op_type[0]], "op"
-            if op_class == qml.measurements.ShadowExpvalMP:
+            if op_class == measurements.ShadowExpvalMP:
                 _name = _op = "H"
 
             if not op_args.get(_name, None) and partial_kwargs.get(_op, None):
@@ -746,8 +749,8 @@ def partial_wires(operation, *args, **kwargs):
             if key in parameters:  # pragma: no cover
                 op_args[key] = val
 
-        if issubclass(op_class, qml.operation.Operation):
-            num_wires = getattr(op_class, "num_wires", AnyWires)
+        if issubclass(op_class, Operation):
+            num_wires = getattr(op_class, "num_wires", None)
             if "wires" in op_args and isinstance(num_wires, int):
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")

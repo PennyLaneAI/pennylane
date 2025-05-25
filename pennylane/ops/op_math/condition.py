@@ -23,7 +23,7 @@ from pennylane import QueuingManager
 from pennylane.capture import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
@@ -88,8 +88,6 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    num_wires = AnyWires
-
     def __init__(self, expr, then_op: Type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
@@ -140,7 +138,7 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-class CondCallable:  # pylint:disable=too-few-public-methods
+class CondCallable:
     """Base class to represent a conditional function with boolean predicates.
 
     Args:
@@ -248,8 +246,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-
-        return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=not-callable
+        return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
@@ -728,7 +727,7 @@ def _validate_abstract_values(
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
             for s1, s2 in zip(shape1, shape2, strict=True):
-                if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
+                if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
@@ -762,9 +761,9 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    cond_prim = NonInterpPrimitive("cond")
+    cond_prim = QmlPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
     qml.capture.register_custom_staging_rule(

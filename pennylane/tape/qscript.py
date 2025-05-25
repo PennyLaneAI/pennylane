@@ -22,12 +22,12 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, ParamSpec, TypeVar, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
-from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
@@ -270,11 +270,11 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> list[Union[MeasurementProcess, Observable]]:
+    def observables(self) -> list[Union[MeasurementProcess, Operator]]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.MeasurementProcess, .Observable]]: list of observables
+            list[.MeasurementProcess, .Operator]]: list of observables
 
         **Example**
 
@@ -491,7 +491,7 @@ class QuantumScript:
         i.e., that do not have their own unique set of wires.
 
         Returns:
-            list[~.Observable]: list of observables with shared wires.
+            list[~.Operator]: list of observables with shared wires.
 
         """
         if self._obs_sharing_wires is None:
@@ -516,7 +516,7 @@ class QuantumScript:
         identifying any observables that share wires.
 
         Sets:
-            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
+            _obs_sharing_wires (list[~.Operator]): Observables that share wires with
                 any other observable
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires
@@ -740,7 +740,6 @@ class QuantumScript:
         >>> newer_qscript.get_parameters()
         [-0.1, 0.2, 0.5]
         """
-        # pylint: disable=no-member
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -1245,7 +1244,7 @@ class QuantumScript:
             operations += self.diagonalizing_gates
 
         # decompose the queue
-        # pylint: disable=no-member
+
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
             depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
@@ -1342,10 +1341,12 @@ class QuantumScript:
         return fn(tapes)
 
 
-# TODO: Use "ParamSpecs" when min Python version is 3.10
-def make_qscript(
-    fn: Callable[..., Any], shots: Optional[ShotsLike] = None
-) -> Callable[..., QuantumScript]:
+# ParamSpec is used to preserve the exact signature of the input function `fn`
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def make_qscript(fn: Callable[P, T], shots: Optional[ShotsLike] = None) -> Callable[P, QS]:
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 

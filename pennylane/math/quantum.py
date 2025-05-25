@@ -13,8 +13,6 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 import functools
-
-# pylint: disable=import-outside-toplevel
 import itertools
 from string import ascii_letters
 
@@ -43,7 +41,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Args:
         prob (tensor_like): probability distribution
-        obs (list[.Observable]): a list of observables for which
+        obs (list[.Operator]): a list of observables for which
             to compute the covariance matrix
         diag_approx (bool): if True, return the diagonal approximation
         wires (.Wires): The wire register of the system. If not provided,
@@ -1204,7 +1202,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         state1 = math.cast_like(state1, state0)
 
     if check_state:
-        # pylint: disable=expression-not-assigned
+
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 

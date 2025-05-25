@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
-# pylint: disable=too-many-branches,cell-var-from-loop
+
 
 from inspect import signature
 
 import numpy as np
 import scipy as sp
 
-import pennylane as qml
+from pennylane import math
+from pennylane.fourier import reconstruct  # tach-ignore
+from pennylane.workflow import QNode
 
 
 def _brute_optimizer(fun, num_steps, bounds=None, **kwargs):
@@ -64,7 +66,7 @@ def _validate_inputs(requires_grad, args, nums_frequency, spectra):
             _spectra = spectra.get(arg_name, {})
             all_keys = set(_nums_frequency) | set(_spectra)
 
-            shape = qml.math.shape(arg)
+            shape = math.shape(arg)
             indices = np.ndindex(shape) if len(shape) > 0 else [()]
             for par_idx in indices:
                 if par_idx not in all_keys:
@@ -92,11 +94,11 @@ def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
         function is added to the marked parameter.
     """
     the_arg = args[arg_idx]
-    if len(qml.math.shape(the_arg)) == 0:
-        shift_vec = qml.math.ones_like(the_arg)
+    if len(math.shape(the_arg)) == 0:
+        shift_vec = math.ones_like(the_arg)
     else:
-        shift_vec = qml.math.zeros_like(the_arg)
-        shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
+        shift_vec = math.zeros_like(the_arg)
+        shift_vec = math.scatter_element_add(shift_vec, par_idx, 1.0)
 
     def _univariate_fn(x):
         return fn(*args[:arg_idx], the_arg + shift_vec * x, *args[arg_idx + 1 :], **kwargs)
@@ -330,8 +332,6 @@ class RotosolveOptimizer:
     dependence on the input arguments and still found the global minimum successfully.
     """
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):
         self.substep_kwargs = {} if substep_kwargs is None else substep_kwargs
         if substep_optimizer == "brute":
@@ -419,10 +419,10 @@ class RotosolveOptimizer:
 
         """
         # todo: does this signature call cover all cases?
-        sign_fn = objective_fn.func if isinstance(objective_fn, qml.QNode) else objective_fn
+        sign_fn = objective_fn.func if isinstance(objective_fn, QNode) else objective_fn
         arg_names = list(signature(sign_fn).parameters.keys())
         requires_grad = {
-            arg_name: qml.math.requires_grad(arg) for arg_name, arg in zip(arg_names, args)
+            arg_name: math.requires_grad(arg) for arg_name, arg in zip(arg_names, args)
         }
         nums_frequency = nums_frequency or {}
         spectra = spectra or {}
@@ -446,7 +446,7 @@ class RotosolveOptimizer:
             if not requires_grad[arg_name]:
                 before_args.append(arg)
                 continue
-            shape = qml.math.shape(arg)
+            shape = math.shape(arg)
             indices = np.ndindex(shape) if len(shape) > 0 else [()]
             for par_idx in indices:
                 _fun_at_zero = fun_at_zero if first_substep_in_step else None
@@ -463,7 +463,7 @@ class RotosolveOptimizer:
                     )
                     freq = 1.0 if num_freq is not None else spectrum[spectrum > 0][0]
                     x_min, y_min = self.min_analytic(univariate, freq, _fun_at_zero)
-                    arg = qml.math.scatter_element_add(arg, par_idx, x_min)
+                    arg = math.scatter_element_add(arg, par_idx, x_min)
 
                 else:
                     ids = {arg_name: (par_idx,)}
@@ -473,9 +473,7 @@ class RotosolveOptimizer:
                     _spectra = {arg_name: {par_idx: spectrum}} if spectrum is not None else None
 
                     # Set up the reconstruction function
-                    recon_fn = qml.fourier.reconstruct(
-                        objective_fn, ids, _nums_frequency, _spectra, shifts
-                    )
+                    recon_fn = reconstruct(objective_fn, ids, _nums_frequency, _spectra, shifts)
                     # Perform the reconstruction
                     recon = recon_fn(*before_args, arg, *after_args, f0=_fun_at_zero, **kwargs)[
                         arg_name
@@ -485,7 +483,7 @@ class RotosolveOptimizer:
                     x_min, y_min = self._min_numeric(recon, spectrum)
 
                     # Update the currently treated argument
-                    arg = qml.math.scatter_element_add(arg, par_idx, x_min - arg[par_idx])
+                    arg = math.scatter_element_add(arg, par_idx, x_min - arg[par_idx])
                 first_substep_in_step = False
 
                 if full_output:
@@ -612,8 +610,8 @@ class RotosolveOptimizer:
         """
         opt_kwargs = self.substep_kwargs.copy()
         if "bounds" not in self.substep_kwargs:
-            spectrum = qml.math.array(spectrum)
-            half_width = np.pi / qml.math.min(spectrum[spectrum > 0])
+            spectrum = math.array(spectrum)
+            half_width = np.pi / math.min(spectrum[spectrum > 0])
             opt_kwargs["bounds"] = ((-half_width, half_width),)
 
         x_min, y_min = self.substep_optimizer(objective_fn, **opt_kwargs)

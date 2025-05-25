@@ -181,9 +181,9 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
-qnode_prim: "jax.core.Primitive"
-PlxprInterpreter: type  # pylint: disable=redefined-outer-name
-expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
+qnode_prim: "jax.extend.core.Primitive"
+PlxprInterpreter: type
+expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
 
 

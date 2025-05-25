@@ -28,7 +28,7 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = math.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
@@ -678,7 +678,10 @@ def apply_snapshot(
         measurement = op.hyperparameters.get(
             "measurement", None
         )  # default: None, meaning no measurement, simply copy the state
-        shots = execution_kwargs.get("tape_shots", None)  # default: None, analytic
+        if op.hyperparameters["shots"] == "workflow":
+            shots = execution_kwargs.get("tape_shots")
+        else:
+            shots = op.hyperparameters["shots"]
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
@@ -690,7 +693,7 @@ def apply_snapshot(
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )
+            )[0]
 
         # Store snapshot with optional tag
         if op.tag:
@@ -701,7 +704,6 @@ def apply_snapshot(
     return state
 
 
-# pylint: disable=unused-argument
 @apply_operation.register
 def apply_density_matrix(
     op: qml.QubitDensityMatrix,

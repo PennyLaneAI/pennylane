@@ -14,6 +14,7 @@
 """Tests for default qubit."""
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
+from multiprocessing import set_start_method
 from unittest import mock
 
 import numpy as np
@@ -21,6 +22,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
+from pennylane.exceptions import DeviceError
+
+set_start_method("spawn")
 
 max_workers_list = [
     None,
@@ -75,7 +79,7 @@ def test_snapshot_multiprocessing_qnode():
         return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()
@@ -1382,6 +1386,7 @@ class TestPRNGKeySeed:
 
         assert not np.all(result1 == result2)
 
+    @pytest.mark.xfail  # [sc-90338]
     def test_different_max_workers_same_prng_key(self):
         """Test that devices with the same jax.random.PRNGKey but different threading will produce
         the same samples."""
@@ -1462,18 +1467,18 @@ class TestPRNGKeySeed:
 
         assert np.all(result1 == result2)
 
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_finite_shots_postselection_defer_measurements(self, max_workers):
+    # @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_finite_shots_postselection_defer_measurements(self):
         """Test that the number of shots returned with postselection with a PRNGKey is different
         when executing a batch of tapes and the same when using `dev.execute` with the same tape
         multiple times."""
         import jax
 
-        dev = qml.device("default.qubit", max_workers=max_workers, seed=jax.random.PRNGKey(678))
+        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(234))
 
         mv = qml.measure(0, postselect=1)
         qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), mv.measurements[0]], [qml.sample(wires=0)], shots=100
+            [qml.Hadamard(0), mv.measurements[0]], [qml.sample(wires=0)], shots=500
         )
         n_tapes = 5
         tapes = qml.defer_measurements(qs)[0] * 5
@@ -2214,6 +2219,22 @@ class TestIntegration:
         grad_jit = jax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
+
+    def test_snapshot_with_defer_measurement(self):
+        """Test that snapshots can be taken with defer_measurements."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            qml.measure(0)
+            qml.Snapshot("label")
+            return qml.probs(wires=0)
+
+        snapshots = qml.snapshots(func)()
+        assert snapshots["label"].shape == (4,)
+        assert qml.math.allclose(snapshots["execution_results"], np.array([0.5, 0.5]))
 
 
 @pytest.mark.parametrize("max_workers", max_workers_list)

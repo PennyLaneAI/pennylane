@@ -26,6 +26,7 @@ import scipy
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
+from pennylane.exceptions import DeviceError
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
@@ -111,7 +112,7 @@ simplify_LinearCombinations = [
     ),
     (
         qml.ops.LinearCombination([-1, 1, 1], [X(0) @ qml.Identity(1), X(0), X(1)]),
-        qml.ops.LinearCombination([1], [X(1)]),
+        qml.ops.LinearCombination([0, 1], [qml.X(0), X(1)]),
     ),
     (
         qml.ops.LinearCombination(
@@ -137,18 +138,18 @@ simplify_LinearCombinations = [
     # Simplifies to zero LinearCombination
     (
         qml.ops.LinearCombination([1, -0.5, -0.5], [X(0) @ qml.Identity(1), X(0), X(0)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0.0], [qml.X(0)]),
     ),
     (
         qml.ops.LinearCombination(
             [1, -1],
             [X(4) @ qml.Identity(0) @ X(1), X(4) @ X(1)],
         ),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0.0], [qml.X(4) @ qml.X(1)]),
     ),
     (
         qml.ops.LinearCombination([0], [qml.Identity(0)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination([0], [qml.I(0)]),
     ),
 ]
 
@@ -282,23 +283,33 @@ sub_LinearCombinations = [
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         X(0) @ qml.Identity(1),
-        qml.ops.LinearCombination([1.2, 0.1], [Z(1), X(2)]),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1.0], [qml.X(0), Z(1), qml.X(2), -1 * (qml.X(0) @ qml.I(1))]
+        ),
     ),
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
         X("b") @ qml.Identity(1),
-        qml.ops.LinearCombination([1.2, 0.1], [Z(3.1), X(1.6)]),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1], [X("b"), Z(3.1), X(1.6), -1 * (qml.X("b") @ qml.I(1))]
+        ),
     ),
     # The result is the zero LinearCombination
     (
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
         qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination(
+            [1, 1.2, 0.1, 1],
+            [X(0), Z(1), X(2), -1 * qml.ops.LinearCombination([1, 1.2, 0.1], [X(0), Z(1), X(2)])],
+        ),
     ),
     (
         qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
         qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)]),
-        qml.ops.LinearCombination([], []),
+        qml.ops.LinearCombination(
+            [1.0, 2.0, 1.0],
+            [qml.X(4), qml.Z(2), -1 * qml.ops.LinearCombination([1.0, 2.0], [X(4), Z(2)])],
+        ),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
@@ -585,10 +596,10 @@ class TestLinearCombination:
         H1, H2, true_res = (
             qml.ops.LinearCombination([1, 2], [X(4), Z(2)]),  # not failing with float coeffs
             qml.ops.LinearCombination([1, 2], [X(4), Z(2)]),
-            qml.ops.LinearCombination([], []),
+            qml.ops.LinearCombination([0, 0], [qml.X(4), qml.Z(2)]),
         )
         res = H1 - H2
-        assert res.compare(true_res)
+        qml.assert_equal(qml.simplify(res), true_res)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -670,7 +681,7 @@ class TestLinearCombination:
     def test_simplify(self, old_H, new_H):
         """Tests the simplify method"""
         old_H = old_H.simplify()
-        assert old_H.compare(new_H)
+        qml.assert_equal(old_H, new_H)
 
     def test_simplify_while_queueing(self):
         """Tests that simplifying a LinearCombination in a tape context
@@ -699,12 +710,14 @@ class TestLinearCombination:
 
     @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
     def test_compare_to_simple_ops(self, H, op):
-        assert H.compare(op)
+        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
+            assert H.compare(op)
 
     def test_compare_raises_error(self):
         op = qml.ops.LinearCombination([], [])
-        with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
-            _ = op.compare(0)
+        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
+                op.compare(0)
 
     @pytest.mark.xfail
     def test_compare_gell_mann(self):
@@ -719,50 +732,52 @@ class TestLinearCombination:
             [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
         )
 
-        assert H1.compare(qml.GellMann(wires=2, index=2)) is True
-        assert H1.compare(qml.GellMann(wires=2, index=1)) is False
-        assert H1.compare(H3) is False
-        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)) is True
-        assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
-        assert H2.compare(H4) is False
+        assert H1.compare(qml.GellMann(wires=2, index=2))
+        assert H1.compare(qml.GellMann(wires=2, index=1))
+        assert H1.compare(H3)
+        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
+        assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
+        assert not H2.compare(H4)
 
     def test_LinearCombination_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
         H = qml.ops.LinearCombination([1], [Z(0)])
-        with pytest.raises(
-            ValueError,
-            match=r"Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor.",
-        ):
-            H.compare([[1, 0], [0, -1]])
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(
+                ValueError,
+                match=r"Can only compare a LinearCombination and an Operator.",
+            ):
+                _ = H.compare([[1, 0], [0, -1]])
 
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_LinearCombinations)
     def test_LinearCombination_equal(self, H1, H2, res):
         """Tests that equality can be checked between LinearCombinations"""
-        assert H1.compare(H2) == res
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert H1.compare(H2) == res
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
     def test_LinearCombination_add(self, H1, H2, H):
         """Tests that LinearCombinations are added correctly"""
         res = H1 + H2
         assert isinstance(res, LinearCombination)
-        assert H.compare(res)
+        qml.assert_equal(H, qml.simplify(res))
 
     @pytest.mark.parametrize("H", add_zero_LinearCombinations)
     def test_LinearCombination_add_zero(self, H):
         """Tests that LinearCombinations can be added to zero"""
-        assert H.compare(H + 0)
-        assert H.compare(0 + H)
-        assert H.compare(H + 0.0)
-        assert H.compare(0.0 + H)
-        assert H.compare(H + 0e1)
-        assert H.compare(0e1 + H)
+        assert H == (H + 0)
+        assert H == (0 + H)
+        assert H == (H + 0.0)
+        assert H == (0.0 + H)
+        assert H == (H + 0e1)
+        assert H == (0e1 + H)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_LinearCombinations)
     def test_LinearCombination_mul(self, coeff, H, res):
         """Tests that scalars and LinearCombinations are multiplied correctly"""
-        assert res.compare(coeff * H)
-        assert res.compare(H * coeff)
+        assert res == (coeff * H)
+        assert res == (H * coeff)
 
     def test_LinearCombination_mul_coeff_cast(self):
         """Test that the coefficients are correct when the type of the existing
@@ -773,7 +788,7 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_LinearCombinations)
     def test_LinearCombination_sub(self, H1, H2, H):
         """Tests that LinearCombinations are subtracted correctly"""
-        assert H.compare(H1 - H2)
+        qml.assert_equal(H, H1 - H2)
 
     def test_LinearCombination_tensor_matmul(self):
         """Tests that a LinearCombination can be multiplied by a tensor."""
@@ -781,14 +796,7 @@ class TestLinearCombination:
         t = Z(1) @ Z(2)
         out = H @ t
 
-        expected = qml.ops.LinearCombination(
-            [1, 1],
-            [
-                X(0) @ Z(1) @ Z(2),
-                Y(0) @ Z(1) @ Z(2),
-            ],
-        )
-        assert expected.compare(out)
+        qml.assert_equal(qml.prod(H, t), out)
 
     def test_LinearCombination_matmul_overlapping_wires_raises_error(self):
         """Test that an error is raised when attempting to multiply two
@@ -806,17 +814,17 @@ class TestLinearCombination:
 
         res = H @ op
         assert res.pauli_rep is None
-        assert res.compare(qml.ops.LinearCombination([0.5], [X(0) @ qml.Hadamard(0)]))
+        assert res == (qml.ops.LinearCombination([0.5], [X(0) @ qml.Hadamard(0)]))
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly"""
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
     def test_LinearCombination_rmatmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -962,7 +970,7 @@ class TestLinearCombinationCoefficients:
         H1 = qml.ops.LinearCombination(coeffs, [X(0), Z(1)])
         H2 = qml.ops.LinearCombination(coeffs, [X(0), qml.Identity(0) @ Z(1)])
         H2 = H2.simplify()
-        assert H1.compare(H2)
+        assert H1 == (H2)
         assert qml.math.allclose(H1.data, H2.data)
 
     # TODO: increase coverage
@@ -986,7 +994,7 @@ class TestLinearCombinationArithmeticTF:
         obs2 = [Y(1), X(0)]
         H2 = qml.ops.LinearCombination(coeffs2, obs2)
 
-        assert H1.compare(H2)
+        assert H1 == (H2)
 
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
@@ -1000,7 +1008,7 @@ class TestLinearCombinationArithmeticTF:
         coeffs_expected = tf.Variable([1.0, -2.0])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 + H2)
+        assert H == (H1 + H2)
 
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
@@ -1014,7 +1022,7 @@ class TestLinearCombinationArithmeticTF:
         coeffs_expected = tf.constant([0.5, -1.5])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 - H2)
+        assert H == (H1 - H2)
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
@@ -1036,7 +1044,7 @@ class TestLinearCombinationArithmeticTF:
         ]
         H = qml.ops.LinearCombination(coeffs_expected, obs_expected)
 
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
 
 @pytest.mark.torch
@@ -1054,7 +1062,7 @@ class TestLinearCombinationArithmeticTorch:
         obs2 = [Y(1), X(0)]
         H2 = qml.ops.LinearCombination(coeffs2, obs2)
 
-        assert H1.compare(H2)
+        assert H1 == (H2)
 
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
@@ -1068,7 +1076,7 @@ class TestLinearCombinationArithmeticTorch:
         coeffs_expected = torch.tensor([1.0, -2.0])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 + H2)
+        assert H == (H1 + H2)
 
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
@@ -1082,10 +1090,10 @@ class TestLinearCombinationArithmeticTorch:
         coeffs_expected = torch.tensor([0.5, -1.6])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 - H2)
+        assert H == (H1 - H2)
 
         H1 -= H2
-        assert H.compare(H1)
+        assert H == (H1)
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
@@ -1107,7 +1115,7 @@ class TestLinearCombinationArithmeticTorch:
         ]
         H = qml.ops.LinearCombination(coeffs_expected, obs_expected)
 
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
 
 @pytest.mark.autograd
@@ -1125,7 +1133,7 @@ class TestLinearCombinationArithmeticAutograd:
         obs2 = [Y(1), X(0)]
         H2 = qml.ops.LinearCombination(coeffs2, obs2)
 
-        assert H1.compare(H2)
+        assert H1 == (H2)
 
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
@@ -1139,7 +1147,7 @@ class TestLinearCombinationArithmeticAutograd:
         coeffs_expected = pnp.array([1.0, -2.0])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 + H2)
+        assert H == (H1 + H2)
 
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
@@ -1153,7 +1161,7 @@ class TestLinearCombinationArithmeticAutograd:
         coeffs_expected = pnp.array([0.5, -1.5])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 - H2)
+        assert H == (H1 - H2)
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
@@ -1174,7 +1182,7 @@ class TestLinearCombinationArithmeticAutograd:
         ]
         H = qml.ops.LinearCombination(coeffs_expected, obs_expected)
 
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
 
 class TestLinearCombinationSparseMatrix:
@@ -1342,7 +1350,7 @@ class TestLinearCombinationArithmeticJax:
         obs2 = [Y(1), X(0)]
         H2 = qml.ops.LinearCombination(coeffs2, obs2)
 
-        assert H1.compare(H2)
+        assert H1 == (H2)
 
     def test_LinearCombination_add(self):
         """Tests that LinearCombinations are added correctly"""
@@ -1356,7 +1364,7 @@ class TestLinearCombinationArithmeticJax:
         coeffs_expected = jnp.array([1.0, -2.0])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 + H2)
+        assert H == (H1 + H2)
 
     def test_LinearCombination_sub(self):
         """Tests that LinearCombinations are subtracted correctly"""
@@ -1371,10 +1379,10 @@ class TestLinearCombinationArithmeticJax:
         coeffs_expected = jnp.array([0.5, -1.6])
         H = qml.ops.LinearCombination(coeffs_expected, obs)
 
-        assert H.compare(H1 - H2)
+        assert H == (H1 - H2)
 
         H1 -= H2
-        assert H.compare(H1)
+        assert H == (H1)
 
     def test_LinearCombination_matmul(self):
         """Tests that LinearCombinations are tensored correctly"""
@@ -1396,7 +1404,7 @@ class TestLinearCombinationArithmeticJax:
         ]
         H = qml.ops.LinearCombination(coeffs_expected, obs_expected)
 
-        assert H.compare(H1 @ H2)
+        assert H == (H1 @ H2)
 
 
 class TestGrouping:
@@ -1988,7 +1996,7 @@ class TestLinearCombinationDifferentiation:
 
         grad_fn = qml.grad(circuit)
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)

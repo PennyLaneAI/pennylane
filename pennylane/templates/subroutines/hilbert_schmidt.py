@@ -16,7 +16,8 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.exceptions import QuantumFunctionError
+from pennylane.operation import Operation
 
 
 class HilbertSchmidt(Operation):
@@ -97,7 +98,6 @@ class HilbertSchmidt(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -122,13 +122,13 @@ class HilbertSchmidt(Operation):
         self._num_params = len(params)
 
         if not isinstance(u_tape, qml.tape.QuantumScript):
-            raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
+            raise QuantumFunctionError("The argument u_tape must be a QuantumTape.")
 
         u_wires = u_tape.wires
         self.hyperparameters["u_tape"] = u_tape
 
         if not callable(v_function):
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "The argument v_function must be a callable quantum function."
             )
 
@@ -139,14 +139,14 @@ class HilbertSchmidt(Operation):
         self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
-            raise qml.QuantumFunctionError("U and V must have the same number of wires.")
+            raise QuantumFunctionError("U and V must have the same number of wires.")
 
         if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
-            raise qml.QuantumFunctionError("All wires in v_tape must be in v_wires.")
+            raise QuantumFunctionError("All wires in v_tape must be in v_wires.")
 
         # Intersection of wires
         if len(qml.wires.Wires.shared_wires([u_tape.wires, v_tape.wires])) != 0:
-            raise qml.QuantumFunctionError("u_tape and v_tape must act on distinct wires.")
+            raise QuantumFunctionError("u_tape and v_tape must act on distinct wires.")
 
         wires = qml.wires.Wires(u_wires + v_wires)
 
@@ -277,7 +277,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     @staticmethod
     def compute_decomposition(
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
+    ):  # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
         n_wires = len(u_tape.wires + v_tape.wires)

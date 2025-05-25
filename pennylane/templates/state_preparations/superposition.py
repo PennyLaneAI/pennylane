@@ -16,7 +16,7 @@ Contains the Superposition template.
 """
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def _assign_states(basis_list):
@@ -205,7 +205,6 @@ class Superposition(Operation):
         with the number of qubits.
     """
 
-    num_wires = AnyWires
     grad_method = None
     ndim_params = (1,)
 
@@ -259,7 +258,7 @@ class Superposition(Operation):
         hyperparams_dict = dict(metadata[1])
         return cls(*data, wires=metadata[0], **hyperparams_dict)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(
             *self.parameters,
             bases=self.hyperparameters["bases"],

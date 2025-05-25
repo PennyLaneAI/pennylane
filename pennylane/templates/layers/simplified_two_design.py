@@ -14,9 +14,11 @@
 r"""
 Contains the SimplifiedTwoDesign template.
 """
+from pennylane import math
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
+from pennylane.ops import CZ, RY
 
 
 class SimplifiedTwoDesign(Operation):
@@ -99,11 +101,10 @@ class SimplifiedTwoDesign(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, initial_layer_weights, weights, wires, id=None):
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
 
         if len(shape) > 1:
             if shape[1] != len(wires) - 1:
@@ -116,7 +117,7 @@ class SimplifiedTwoDesign(Operation):
                     f"Weights tensor must have third dimension of length 2; got {shape[2]}"
                 )
 
-        shape2 = qml.math.shape(initial_layer_weights)
+        shape2 = math.shape(initial_layer_weights)
         if shape2 != (len(wires),):
             raise ValueError(
                 f"Initial layer weights must be of shape {(len(wires),)}; got {shape2}"
@@ -164,27 +165,27 @@ class SimplifiedTwoDesign(Operation):
         RY(tensor(3.1416), wires=['b']), RY(tensor(0.), wires=['c'])]
         """
 
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = math.shape(weights)[0]
         op_list = []
 
         # initial rotations
         for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-            op_list.append(qml.RY(initial_layer_weights[i], wires=wires[i]))
+            op_list.append(RY(initial_layer_weights[i], wires=wires[i]))
 
         for layer in range(n_layers):
             # even layer of entanglers
             even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
             for i, wire_pair in enumerate(even_wires):
-                op_list.append(qml.CZ(wires=wire_pair))
-                op_list.append(qml.RY(weights[layer, i, 0], wires=wire_pair[0]))
-                op_list.append(qml.RY(weights[layer, i, 1], wires=wire_pair[1]))
+                op_list.append(CZ(wires=wire_pair))
+                op_list.append(RY(weights[layer, i, 0], wires=wire_pair[0]))
+                op_list.append(RY(weights[layer, i, 1], wires=wire_pair[1]))
 
             # odd layer of entanglers
             odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
             for i, wire_pair in enumerate(odd_wires):
-                op_list.append(qml.CZ(wires=wire_pair))
-                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0]))
-                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1]))
+                op_list.append(CZ(wires=wire_pair))
+                op_list.append(RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0]))
+                op_list.append(RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1]))
 
         return op_list
 

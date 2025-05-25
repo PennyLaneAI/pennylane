@@ -20,6 +20,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -40,7 +41,7 @@ def sample(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue): a quantum observable object. To get samples
+        op (Operator or MeasurementValue): a quantum observable object. To get samples
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
@@ -167,7 +168,7 @@ class SampleMP(SampleMeasurement):
             if not all(
                 isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
             ) and not all(qml.math.is_abstract(o) for o in obs):
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
                     "used when collecting statistics for a sequence of mid-circuit measurements."
@@ -302,8 +303,8 @@ class SampleMP(SampleMeasurement):
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1:
-                # If only one wire is sampled, flatten the list
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
                 outcome_sample = outcome_sample[0]
             samples.extend([outcome_sample] * count)
 
@@ -331,10 +332,8 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
-
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+            return eigvals[int(outcome, 2)]
 
-        return outcome_samples
+        return [int(bit) for bit in outcome]

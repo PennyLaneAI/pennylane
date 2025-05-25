@@ -21,6 +21,7 @@ from typing import Optional, Union, overload
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
@@ -42,19 +43,19 @@ def _get_interface(qnode, args, kwargs) -> str:
 
 
 def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
-    raise qml.QuantumFunctionError("No trainable parameters.")
+    raise QuantumFunctionError("No trainable parameters.")
 
 
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     return qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
 def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args):
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
 
     with tf.GradientTape() as tape:
@@ -65,7 +66,7 @@ def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLi
 # pylint: disable=import-outside-toplevel, unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args):
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian
 
     return jacobian(partial(classical_function, **kwargs), args)
@@ -118,21 +119,21 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     """
     import jax  # pylint: disable=import-outside-toplevel
 
-    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-        trace = jax.interpreters.ad.JVPTrace(main, 0)
+    tag = jax.core.TraceTag()
+    with jax.core.take_current_trace() as parent_trace:
+        trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
+        args_jvp = [
+            (
+                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                if i in argnums
+                else arg
+            )
+            for i, arg in enumerate(args)
+        ]
+        with jax.core.set_current_trace(trace):
+            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tapes, _ = program((tape,))
 
-    args_jvp = [
-        (
-            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-            if i in argnums
-            else arg
-        )
-        for i, arg in enumerate(args)
-    ]
-
-    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
-    tapes, _ = program((tape,))
-    del trace
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
 
@@ -511,7 +512,6 @@ class TransformProgram:
             i -= 1
         return found
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _get_classical_jacobian(self, index: int, tape_idx: int):
         if self.cotransform_cache is None or not self[index].classical_cotransform:
             return None
@@ -537,7 +537,7 @@ class TransformProgram:
             return None
 
         if "argnum" in self[index].kwargs:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
             )
 
@@ -545,7 +545,7 @@ class TransformProgram:
         argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
 
         if argnums is None and math.get_interface(args[0]) != "jax":
-            raise qml.QuantumFunctionError("No trainable parameters.")
+            raise QuantumFunctionError("No trainable parameters.")
 
         argnums = [0] if argnums is None else argnums
         # pylint: disable=protected-access
@@ -616,12 +616,12 @@ class TransformProgram:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr":
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr":
         # pylint: disable=import-outside-toplevel
         import jax
 
-        cur_jaxpr = jax.core.ClosedJaxpr(jaxpr, consts)
+        cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
@@ -630,8 +630,8 @@ class TransformProgram:
 
     @overload
     def __call__(
-        self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args
-    ) -> "jax.core.ClosedJaxpr": ...
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args
+    ) -> "jax.extend.core.ClosedJaxpr": ...
 
     @overload
     def __call__(

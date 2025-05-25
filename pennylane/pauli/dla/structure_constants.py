@@ -16,6 +16,7 @@ import warnings
 from typing import Union
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
@@ -59,7 +60,7 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`__
 
     **Example**
 
@@ -180,7 +181,7 @@ def structure_constants(
     warnings.warn(
         "Calling structure_constants via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
         "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
 
     return qml.structure_constants(g, pauli=pauli, matrix=matrix, is_orthogonal=is_orthogonal)

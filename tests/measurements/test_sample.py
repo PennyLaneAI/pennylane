@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementShapeError
 from pennylane.operation import EigvalsUndefinedError, Operator
 
@@ -195,7 +196,7 @@ class TestSample:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0, qml.PauliZ(0)])
@@ -208,7 +209,7 @@ class TestSample:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0 + m1, m2])
@@ -326,6 +327,8 @@ class TestSample:
             expected_type = np.float64
         elif res.numeric_type == complex:
             expected_type = np.complex64
+        else:
+            raise ValueError("unexpected numeric type for result")
 
         assert expected_type == eigval_type
 
@@ -543,15 +546,37 @@ class TestSampleProcessCounts:
 
         assert np.array_equal(result, np.array([0, 0, 1, 1, 1]))
 
-    def test_process_counts_with_eigen_values(self):
+    @pytest.mark.parametrize(
+        "wire_order, expected_result", [((0, 1), [1, 1, -1, -1, -1]), ((1, 0), [1, 1, 1, 1, 1])]
+    )
+    def test_process_counts_with_eigen_values(self, wire_order, expected_result):
         """Test process_counts method with eigen values."""
         sample_mp = qml.sample(qml.Z(0))
         counts = {"00": 2, "10": 3}
-        wire_order = qml.wires.Wires((0, 1))
+        wire_order = qml.wires.Wires(wire_order)
 
         result = sample_mp.process_counts(counts, wire_order)
 
-        assert np.array_equal(result, np.array([1, 1, -1, -1, -1]))
+        assert np.array_equal(result, np.array(expected_result))
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result",
+        [
+            ((0, 1, 2), [1, -1, -1, 1, 1]),
+            ((0, 2, 1), [1, 1, -1, -1, -1]),
+            ((1, 2, 0), [1, 1, -1, -1, -1]),
+            ((2, 0, 1), [1, -1, 1, -1, -1]),
+        ],
+    )
+    def test_process_counts_with_eigen_values_multiple_wires(self, wire_order, expected_result):
+        """Test process_counts method with eigen values."""
+        sample_mp = qml.sample(qml.Z(0) @ qml.Z(1))
+        counts = {"000": 1, "101": 1, "011": 1, "110": 2}
+        wire_order = qml.wires.Wires(wire_order)
+
+        result = sample_mp.process_counts(counts, wire_order)
+
+        assert np.array_equal(result, np.array(expected_result))
 
     def test_process_counts_with_inverted_wire_order(self):
         """Test process_counts method with inverted wire order."""

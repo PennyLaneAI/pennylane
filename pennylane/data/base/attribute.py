@@ -35,14 +35,15 @@ class AttributeInfo(MutableMapping):
     attribute. Is stored in the HDF5 object's ``attrs`` dict.
 
     Attributes:
-        attrs_bind: The HDF5 attrs dict that this instance is bound to,
-            or any mutable mapping
         **kwargs: Extra metadata to include. Must be a string, number
             or numpy array
     """
 
     attrs_namespace: ClassVar[str] = "qml.data"
     attrs_bind: MutableMapping[str, Any]
+    """The HDF5 attrs dict that this instance is bound to,
+        or any mutable mapping
+    """
 
     @overload
     def __init__(  # overload to specify known keyword args
@@ -157,13 +158,10 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     The DatasetAttribute class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
     DatasetAttribute, and Python types to compatible AttributeTypes.
-
-    Attributes:
-        type_id: Unique identifier for this DatasetAttribute class. Must be declared
-            in subclasses.
     """
 
     type_id: ClassVar[str]
+    """Unique identifier for this DatasetAttribute class. Must be declared in subclasses."""
 
     @abstractmethod
     def hdf5_to_value(self, bind: HDF5) -> ValueType:
@@ -374,9 +372,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     )
     """Maps types to their default DatasetAttribute"""
 
-    def __init_subclass__(  # pylint: disable=arguments-differ
-        cls, *, abstract: bool = False
-    ) -> None:
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
+    def __init_subclass__(cls, *, abstract: bool = False) -> None:
         if abstract:
             return super().__init_subclass__()
 

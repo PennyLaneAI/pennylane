@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 jax = pytest.importorskip("jax")
 
@@ -62,7 +63,7 @@ class TestRepeatedQubitDeviceErrors:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
@@ -76,7 +77,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=wire)
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)(1)
@@ -91,7 +92,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(qfunc)()
@@ -109,7 +110,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.ctrl(ctrl_fn, [2, 3])()
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
@@ -127,7 +128,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=1)
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)()
@@ -154,7 +155,7 @@ class TestRepeatedQubitDeviceErrors:
             cond_f()
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
@@ -181,7 +182,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
@@ -210,7 +211,7 @@ class TestRepeatedQubitDeviceErrors:
             qml.AmplitudeEmbedding(jax.numpy.array([0.0, 1.0]), wires=collision_wire)
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             jax.make_jaxpr(f)(3)
@@ -243,7 +244,7 @@ class TestRepeatedQubitDeviceErrors:
             cond_f()  # Also contains wires 0
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             args = (3,)
@@ -433,7 +434,7 @@ def test_plxpr_to_plxpr_transform():
 
     jaxpr = jax.make_jaxpr(qfunc)()
     transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 4
 
     collector = CollectOpsandMeas()

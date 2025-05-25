@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This file contains the ``ParametrizedEvolution`` operator.
@@ -23,7 +22,7 @@ from collections.abc import Sequence
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import functions
 from pennylane.typing import TensorLike
 
@@ -365,7 +364,6 @@ class ParametrizedEvolution(Operation):
     """
 
     _name = "ParametrizedEvolution"
-    num_wires = AnyWires
     grad_method = "A"
 
     # pylint: disable=too-many-arguments
@@ -509,7 +507,6 @@ class ParametrizedEvolution(Operation):
     def has_matrix(self):
         return self._has_matrix
 
-    # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
         if not has_jax:
             raise ImportError(

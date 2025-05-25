@@ -14,7 +14,7 @@
 """
 This module contains the :class:`OperationRecorder`.
 """
-# pylint: disable=too-many-arguments
+
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .tape import QuantumScript
@@ -39,7 +39,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
 
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly access the applied :class:`~.Operation` and :class:`~.Observable`
+    to directly access the applied :class:`~.Operation` and :class:`~.Operator`
     objects.
     """
 
@@ -48,7 +48,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
         ops=None,
         measurements=None,
         shots=None,
-    ):  # pylint: disable=unused-argument, too-many-arguments
+    ):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots)
         self.ops = None
