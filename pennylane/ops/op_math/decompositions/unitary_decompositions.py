@@ -391,7 +391,7 @@ def _compute_num_cnots(U):
     )()
 
 
-def _extract_su2su2_prefactors(U, V):
+def _extract_su2su2_prefactors(U, V, enable_fallback=True):
     r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
     similar as the 1-CNOT case, but there is no special form for one of the
     SO(4) operations.
@@ -464,7 +464,94 @@ def _extract_su2su2_prefactors(U, V):
     A, B = math.decomposition.su2su2_to_tensor_products(AB)
     C, D = math.decomposition.su2su2_to_tensor_products(CD)
 
+    if enable_fallback:
+        # Check if the decomposition is valid
+        is_valid, error = _check_decomposition_validity(U, V, A, B, C, D)
+        if not is_valid:
+            warnings.warn(
+                f"su2su2 extraction failed with error={error}. Attempting to optimize the decomposition.",
+                UserWarning,
+                stacklevel=2,
+            )
+            # If not valid, try to optimize the decomposition
+            A, B, C, D, error = _optimization_fallback(U, V)
+            warnings.warn(
+                f"Optimized decomposition succeeded with error={error}.",
+                UserWarning,
+                stacklevel=2,
+            )
+
     return A, B, C, D
+
+
+def _check_decomposition_validity(U, V, A, B, C, D, tol=1e-6):
+    """
+    Check if the decomposition is valid by reconstructing U.
+    Returns (is_valid, reconstruction_error)
+    """
+    try:
+        U_reconstructed = np.kron(A, B) @ V @ np.kron(C, D)
+        error = np.max(np.abs(U - U_reconstructed))
+
+        # Also check if the gates are unitary
+        for gate, name in [(A, "A"), (B, "B"), (C, "C"), (D, "D")]:
+            unitarity_error = np.max(np.abs(gate @ gate.conj().T - np.eye(2)))
+            if unitarity_error > tol:
+                return False, error
+
+        return error < tol, error
+    except Exception:
+        return False, float("inf")
+
+
+def _optimization_fallback(U, V, num_attempts=5):
+    """
+    Fallback method using direct optimization to find A, B, C, D.
+    """
+    from scipy.linalg import expm
+    from scipy.optimize import minimize
+
+    def parameterize_su2(params):
+        """Convert 3 real parameters to SU(2) using exponential map."""
+        a, b, c = params
+        X = np.array([[0, 1], [1, 0]], dtype=complex)
+        Y = np.array([[0, -1j], [1j, 0]], dtype=complex)
+        Z = np.array([[1, 0], [0, -1]], dtype=complex)
+        return expm(1j * (a * X + b * Y + c * Z))
+
+    def objective(params):
+        """Objective function: ||U - (A⊗B)V(C⊗D)||²"""
+        A = parameterize_su2(params[0:3])
+        B = parameterize_su2(params[3:6])
+        C = parameterize_su2(params[6:9])
+        D = parameterize_su2(params[9:12])
+
+        U_test = np.kron(A, B) @ V @ np.kron(C, D)
+        return np.real(np.sum(np.abs(U - U_test) ** 2))
+
+    # Try multiple random initializations
+    best_result = None
+    best_error = float("inf")
+
+    for _ in range(num_attempts):
+        # Random initialization
+        x0 = np.random.randn(12) * 0.5
+
+        # Optimize
+        result = minimize(objective, x0, method="BFGS", options={"maxiter": 1000, "gtol": 1e-10})
+
+        if result.fun < best_error:
+            best_error = result.fun
+            best_result = result
+
+    # Extract the best solution
+    params = best_result.x
+    A = parameterize_su2(params[0:3])
+    B = parameterize_su2(params[3:6])
+    C = parameterize_su2(params[6:9])
+    D = parameterize_su2(params[9:12])
+
+    return A, B, C, D, np.sqrt(best_error)
 
 
 def _decompose_0_cnots(U, wires, initial_phase):
