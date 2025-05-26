@@ -49,6 +49,80 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_variables(self, mocker):
+        # parse the QASM
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "advanced-vars"}
+        )
+        context["callable"]()
+
+        # static vars are available in the compilation context
+        assert context["vars"]["f"]["val"] == 3.2
+        assert context["vars"]["g"]["val"] == 3
+        assert context["vars"]["h"]["val"] == 2
+        assert context["vars"]["k"]["val"] == 3
+
+        # classical logic is represented in the execution context after execution
+        assert execution_context["vars"]["l"]["val"] == True
+        assert execution_context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
+        assert execution_context["vars"]["a"]["val"] == 3.3333333
+
+    def test_updating_constant(self, mocker):
+        # parse the QASM
+        ast = parse(
+            """
+            const int i = 2;
+            i = 3;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+                ValueError,
+                match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+        ):
+            QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
+
+    def test_classical_variables(self, mocker):
+        # parse the QASM
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "basic-vars"}
+        )
+        context["callable"]()
+
+        assert context["vars"]["i"]["val"] == 4
+        assert context["vars"]["j"]["val"] == 4
+        assert context["vars"]["c"]["val"] == 0
+
+    def test_updating_variables(self, mocker):
+        # parse the QASM
+        ast = parse(
+            open("updating_variables.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        context, _ = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "updating-vars"}
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
+
+        assert q.queue == [
+            RX(1, 'q0'),
+            RX(2, 'q0'),
+            RX(0, 'q0'),
+            RX(2, 'q0'),
+        ]
+
     def test_mod_with_declared_param(self):
 
         # parse the QASM program

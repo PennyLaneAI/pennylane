@@ -1,12 +1,17 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
-
+import copy
+import inspect
 import re
 from functools import partial
 from typing import Callable
 
+from openqasm3.ast import BitstringLiteral, ArrayLiteral, Cast, IndexExpression, RangeDefinition, Identifier, \
+    BinaryExpression, UnaryExpression
+
 from pennylane import ops
+from pennylane.control_flow.while_loop import WhileLoopCallable
 
 has_openqasm = True
 try:
@@ -49,6 +54,10 @@ PARAMETERIZED_GATES = {
 }
 
 
+class DirtyError(Exception):  # pragma: no cover
+    """Exception raised when attempt is made to use a dirty variable in a compilation context."""
+
+
 class QasmInterpreter(QASMVisitor):
     """
     Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
@@ -56,7 +65,7 @@ class QasmInterpreter(QASMVisitor):
     overriden visitor function on each node.
     """
 
-    def __init__(self):
+    def __init__(self, permissive=False):
         """
         Checks that the openqasm3 package is available, otherwise raises an error.
 
@@ -68,6 +77,9 @@ class QasmInterpreter(QASMVisitor):
                 "QASM interpreter requires openqasm3 to be installed"
             )  # pragma: no cover
         super().__init__()
+
+        self.permissive = permissive
+        self.raise_if_dirty = False
 
     def visit(self, node: QASMNode, context: dict):
         """
@@ -85,13 +97,29 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        handler_name = "visit_" + node.__class__.__name__
-        if hasattr(self, handler_name):
-            getattr(self, handler_name)(node, context)
+        handler_name = 'visit_' + node.__class__.__name__
+        if node.__class__ == list:
+            for sub_node in node:
+                self.visit(sub_node, context)
+        elif hasattr(self, handler_name):
+            try:
+                getattr(self, handler_name)(node, context)
+            except NotImplementedError as e:
+                if self.permissive:
+                    pass
+                else:
+                    raise NotImplementedError(str(e)) from e
+        elif self.permissive:
+            print(
+                f"An unrecognized QASM instruction {node.__class__.__name__} "
+                f"was encountered on line {node.span.start_line}, in {context['name']}."
+            )
         else:
             raise NotImplementedError(
-                f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
+                f"An unsupported QASM instruction {node.__class__.__name__} "
+                f"was encountered on line {node.span.start_line}, in {context['name']}."
             )
+
         return context
 
     def generic_visit(self, node: QASMNode, context: dict):
@@ -109,11 +137,277 @@ class QasmInterpreter(QASMVisitor):
         """
 
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
+        init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
 
         # begin recursive descent traversal
-        super().generic_visit(node, context)
-        self.construct_callable(context)
-        return context
+        try:
+            super().generic_visit(node, context)
+        except InterruptedError as e:
+            print(str(e))
+        execution_context = self.construct_qfunc(context, init_context)
+        return context, execution_context
+
+    @staticmethod
+    def _all_context_bound(quantum_function):
+        """
+        Checks whether a partial received all required context during compilation, or if
+        it requires execution context because it has parameters that are based on, for example,
+        the outcomes of mid-circuit measurements or subroutines.
+        Args:
+            partial_function (Callable): the partial with compilation context bound.
+        """
+        if hasattr(quantum_function, "func"):
+            if isinstance(quantum_function.func, WhileLoopCallable):
+                return False
+            else:
+                try:
+                    inspect.signature(quantum_function.func).bind(
+                        *quantum_function.args, **quantum_function.keywords
+                    )
+                    return True
+                except TypeError:
+                    return False
+        elif len(inspect.signature(quantum_function).parameters) > 0:
+            return False
+        return True
+
+    def _update_var(self, value: any, name: str, node: QASMNode, context: dict):
+        """
+        Updates a variable, or raises if it is constant.
+        Args:
+            value (any): the value to set.
+            name (str): the name of the variable.
+            node (QASMNode): the QASMNode that corresponds to the update.
+            context (dict): the current context.
+        """
+        context["vars"][name]["val"] = value
+        if not context["vars"][name]["constant"]:
+            context["vars"][name]["dirty"] = True
+        else:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"defined on line {context['vars'][name]['line']}"
+            )
+        context["vars"][name]["line"] = node.span.start_line
+
+    def visit_ClassicalAssignment(self, node: QASMNode, context: dict):
+        """
+        Registers a classical assignment.
+        Args:
+            node (QASMNode): the assignment QASMNode.
+            context (dict): the current context.
+        """
+
+        def set_local_var(execution_context: dict):
+            rhs = partial(self.eval_expr, node.rvalue, execution_context)
+            name = (
+                node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
+            )  # str or Identifier
+            res = rhs()
+            self._update_var(res, name, node, execution_context)
+            return res
+
+        # references to an unresolved value see a func for now
+        name = (
+            node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
+        )  # str or Identifier
+        self._update_var(set_local_var, name, node, context)
+        context["gates"].append(set_local_var)
+
+    def _choose_context(self, func: Callable, context: dict, execution_context: dict):
+        """
+        Executes the callable with the right context depending on whether it was bound at compile time or
+        needs execution context.
+        Args:
+            func (Callable): the callable to be executed.
+            context (dict): the context to be passed to the function.
+            execution_context (dict): the execution context to be passed to the function.
+        Returns:
+            dict: the context to use.
+        """
+        if not self._depends_on_dirty_vars(func):
+            return context
+        else:
+            return execution_context
+
+    def _depends_on_dirty_vars(self, func: Callable):
+        """
+        Checks if any state (variables) relevant to the node being processed is dirty.
+        Args:
+            func (Callable): the function which may use dirty state.
+            context (dict): the current compilation context.
+        Returns:
+            bool: whether the func depends on dirty state. If it does, the state should not be bound during compilation.
+        """
+        self.raise_if_dirty = True
+        try:
+            func()
+            self.raise_if_dirty = False
+            return False
+        except DirtyError:
+            self.raise_if_dirty = False
+            return True
+
+    def visit_AliasStatement(self, node: QASMNode, context: dict):
+        """
+        Registers an alias statement.
+        Args:
+            node (QASMNode): the alias QASMNode.
+            context (dict): the current context.
+        """
+        self._init_aliases(context)
+        context["aliases"][node.target.name] = self.eval_expr(node.value, context, aliasing=True)
+
+        # we append anything that needs to be computed at execution time to the gates list...
+        # aliases can change throughout a program
+        context["gates"].append(partial(self.visit_AliasStatement, node))
+
+    def retrieve_variable(self, name: str, context: dict):
+        """
+        Attempts to retrieve a variable from the current context by name.
+        Args:
+            name (str): the name of the variable to retrieve.
+            context (dict): the current context.
+        """
+
+        def _warning(context, name):
+            raise TypeError(
+                f"Attempt to use unevaluated variable {name} in {context['name']}, "
+                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
+            )
+
+        def _dirty(context, name):
+            raise DirtyError(
+                f"Attempt to use dirty variable {name} in compilation context {context['name']}."
+            )
+
+        if "vars" in context and context["vars"] is not None and name in context["vars"]:
+            if isinstance(context["vars"][name], Callable):
+                _warning(context, name)
+            else:
+                res = context["vars"][name]
+                if res["dirty"] == True and self.raise_if_dirty:
+                    _dirty(context, name)
+                return res
+        elif (
+            "wires" in context
+            and context["wires"] is not None
+            and name in context["wires"]
+            or "outer_wires" in context
+            and name in context["outer_wires"]
+        ):
+            return name
+        elif "aliases" in context and context["wires"] is not None and name in context["aliases"]:
+            res = context["aliases"][name](context)  # evaluate the alias and de-reference
+            if isinstance(res, str):
+                return res
+            else:
+                if res["dirty"] == True and self.raise_if_dirty:
+                    _dirty(context, name)
+            return res
+        else:
+            _warning(context, name)
+
+    def _init_vars(self, context: dict):
+        """
+        context["callable"] = partial(self._execute_all, context)
+        Inits the vars dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "vars" not in context:
+            context["vars"] = dict()
+
+    def _init_aliases(self, context: dict):
+        """
+        Inits the aliases dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "aliases" not in context:
+            context["aliases"] = dict()
+
+    def _init_gates_list(self, context: dict):
+        """
+        Inits the gates list on the current context.
+
+        Args:
+            context (dict): the current context.
+        """
+        if "gates" not in context:
+            context["gates"] = []
+
+    @staticmethod
+    def _get_bit_type_val(var):
+        return bin(var["val"])[2:].zfill(var["size"])
+
+    def visit_ConstantDeclaration(self, node: QASMNode, context: dict):
+        """
+        Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
+        Python type variables that can be readily used in expression eval, etc.
+        Args:
+            node (QASMNode): The constant QASMNode.
+            context (dict): The current context.
+        """
+        self.visit_ClassicalDeclaration(node, context, constant=True)
+
+    def visit_ClassicalDeclaration(self, node: QASMNode, context: dict, constant:bool=False):
+        """
+        Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
+        type variables that can be readily used in expression evaluation, for example.
+        Args:
+            node (QASMNode): The ClassicalDeclaration QASMNode.
+            context (dict): The current context.
+            constant (bool): Whether the classical variable is a constant.
+        """
+
+        # compile time tracking of static variables
+        self._init_vars(context)
+        if node.init_expression is not None:
+            # TODO: store AST objects in context instead of these dicts?
+
+            # Note: vars which are clean may be bound at compile time, dirty ones
+            # must be calculated during execution
+            if isinstance(node.init_expression, BitstringLiteral):
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": self.eval_expr(node.init_expression, context),
+                    "size": node.init_expression.width,
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
+                }
+            elif not isinstance(node.init_expression, ArrayLiteral):
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": self.eval_expr(node.init_expression, context),
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
+                }
+            else:
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": [
+                        self.eval_expr(literal, context) for literal in node.init_expression.values
+                    ],
+                    "line": node.init_expression.span.start_line,
+                    "dirty": False,
+                    "constant": constant,
+                }
+        else:
+            # the var is declared but uninitialized
+            context["vars"][node.identifier.name] = {
+                "ty": node.type.__class__.__name__,
+                "val": None,
+                "line": node.span.start_line,
+                "dirty": False,
+                "constant": constant,
+            }
+
+        # runtime Callable
+        self._init_gates_list(context)
+        context["gates"].append(partial(self.visit_ClassicalDeclaration, node))
 
     @staticmethod
     def _execute_all(context: dict):
@@ -135,6 +429,36 @@ class QasmInterpreter(QASMVisitor):
         """
         context["callable"] = partial(self._execute_all, context)
 
+    def _execute_all(self, context: dict, execution_context: dict):
+        """
+        Executes all the gates in the context.
+        Args:
+            context (dict): the context populated with the gates.
+            execution_context (dict): the execution context that handles dynamic variables, etc.
+        """
+        for gate in context["gates"]:
+            gate(execution_context) if not self._all_context_bound(gate) else gate()
+
+    def construct_qfunc(self, context: dict, init_context: dict):
+        """
+        Constructs a Callable quantum function that may be queued into a QNode.
+        Args:
+            context (dict): the final context resulting from the compilation pass.
+            init_context (dict): the initial context.
+        Returns:
+            dict: the final executed context.
+        """
+        if "device" not in context:
+            wires = [w for w in context["wires"]] if "wires" in context else []
+            curr = context
+            if "scopes" in curr:
+                wires = self._get_wires_helper(curr, wires)
+            context["wires"] = wires
+        # passes and modifies init_context through gate calls during second pass
+        # static variables are already bound in context["gates"]
+        context["callable"] = partial(self._execute_all, context, init_context)
+        return init_context
+
     @staticmethod
     def visit_QubitDeclaration(node: QASMNode, context: dict):
         """
@@ -146,29 +470,6 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         context["wires"].append(node.qubit.name)
-
-    @staticmethod
-    def visit_ClassicalDeclaration(node: QASMNode, context: dict):
-        """
-        Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
-        type variables that can be readily used in expression evaluation, for example.
-
-        Args:
-            node (QASMNode): The ClassicalDeclaration QASMNode.
-            context (dict): The current context.
-        """
-        if node.init_expression is not None:
-            context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": node.init_expression.value,
-                "line": node.init_expression.span.start_line,
-            }
-        else:
-            context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": None,
-                "line": node.span.start_line,
-            }
 
     def visit_QuantumGate(self, node: QASMNode, context: dict):
         """
@@ -212,6 +513,92 @@ class QasmInterpreter(QASMVisitor):
                 return context["vars"][name]["val"]
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         raise NameError(f"Undeclared variable {name} encountered in QASM.")
+
+    def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
+        """
+        Constructs a callable that can be queued into a QNode.
+        Evaluates an expression.
+        Args:
+            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
+            node (QASMNode): the expression QASMNode.
+            context (dict): the current context.
+            aliasing (bool): whether to use aliases or not.
+        """
+        res = None
+        if isinstance(node, Cast):
+            return self.retrieve_variable(node.argument.name, context)["val"]
+        elif isinstance(node, BinaryExpression):
+            lhs = self.eval_expr(node.lhs, context)
+            rhs = self.eval_expr(node.rhs, context)
+            res = eval(f"{lhs}{node.op.name}{rhs}")  # TODO: don't use eval
+        elif isinstance(node, UnaryExpression):
+            res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
+        elif isinstance(node, IndexExpression):
+            def _index_into_var(var):
+                if var["ty"] == "BitType":
+                    var = bin(var["val"])[2:].zfill(var["size"])
+                else:
+                    var = var["val"]
+                if isinstance(node.index[0], RangeDefinition):
+                    return var[node.index[0].start.value: node.index[0].end.value]
+                elif re.search("Literal", node.index[0].__class__.__name__):
+                    return var[node.index[0].value]
+                else:
+                    raise TypeError(
+                        f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+                    )
+
+            if aliasing:
+
+                def alias(context):
+                    try:
+                        var = self.retrieve_variable(node.collection.name, context)
+                        return _index_into_var(var)
+                    except NameError:
+                        raise NameError(
+                            f"Attempt to alias an undeclared variable "
+                            f"{node.collection.name} in {context['name']}."
+                        ) from e
+
+                res = alias
+            else:
+                var = self.retrieve_variable(node.collection.name, context)
+                return _index_into_var(var)
+        elif isinstance(node, Identifier):
+            if aliasing:
+
+                def alias(context):
+                    try:
+                        return self.retrieve_variable(node.collection.name, context)
+                    except NameError as e:
+                        raise NameError(
+                            f"Attempt to alias an undeclared variable "
+                            f"{node.name} in {context['name']}."
+                        ) from e
+
+                res = alias
+            else:
+                try:
+                    var = self.retrieve_variable(node.name, context)
+                    value = var["val"] if isinstance(var, dict) and "val" in var else var
+                    if isinstance(value, Callable):
+                        var["val"] = (
+                            value(context) if not self._all_context_bound(value) else value()
+                        )
+                        var["line"] = node.span.start_line
+                        var["dirty"] = True
+                        value = var["val"]
+                    return value
+                except NameError as e:
+                    raise NameError(
+                        f"Reference to an undeclared variable {node.name} in {context['name']}."
+                    ) from e
+        elif isinstance(node, Callable):
+            res = node()
+        elif re.search("Literal", node.__class__.__name__):
+            res = node.value
+        # TODO: include all other cases here
+        return res
 
     @staticmethod
     def modifiers(gate: Callable, node: QASMNode, context: dict):
