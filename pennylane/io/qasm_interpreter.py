@@ -914,6 +914,10 @@ class QasmInterpreter(QASMVisitor):
             partial(self._handle_break, loop)
         )  # bind compilation context now, leave execution context
 
+    @staticmethod
+    def _get_bit_type_val(var):
+        return bin(var["val"])[2:].zfill(var["size"])
+
     def visit_ForInLoop(self, node: QASMNode, context: dict):
         """
         Registers a for loop.
@@ -930,8 +934,11 @@ class QasmInterpreter(QASMVisitor):
         # de-referencing
         if isinstance(loop_params, Identifier):
             loop_params = self.retrieve_variable(loop_params.name, context)
-            if "ty" in loop_params and loop_params["ty"] == "ArrayType":
-                loop_params = loop_params["val"]
+            if isinstance(loop_params, dict) and "val" in loop_params and "ty" in loop_params:
+                if loop_params["ty"] == "BitType":
+                    loop_params = self._get_bit_type_val(loop_params)
+                else:
+                    loop_params = loop_params["val"]
 
         # TODO: support dynamic start, stop, step?
         if isinstance(loop_params, RangeDefinition):

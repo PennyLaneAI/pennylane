@@ -126,56 +126,42 @@ class TestInterpreter:
             permissive=True,
         )
 
-        # setup mocks
-        x = mocker.spy(PauliX, "__init__")
-        y = mocker.spy(PauliY, "__init__")
-        z = mocker.spy(PauliZ, "__init__")
-        rx = mocker.spy(RX, "__init__")
-
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(
             ast, context={"name": "updating-vars"}
         )
-        context["callable"]()
 
-        # assertions
-        assert x.call_count == 1
-        assert y.call_count == 2
-        assert z.call_count == 0
-        assert rx.call_count == 1
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
+
+        assert q.queue == [
+            PauliX('q0'),
+            PauliY('q0'),
+            RX(0.1, 'q0'),
+            PauliY('q0'),
+        ]
 
     def test_loops(self, mocker):
 
         # parse the QASM
         ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
 
-        # setup mocks
-        x = mocker.spy(PauliX, "__init__")
-        y = mocker.spy(PauliY, "__init__")
-        z = mocker.spy(PauliZ, "__init__")
-        ry = mocker.spy(RY, "__init__")
-        rx = mocker.spy(RX, "__init__")
-        rz = mocker.spy(RZ, "__init__")
-
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "loops"})
         context["callable"]()
 
-        # assertions
-        assert x.call_count == 10
-        assert rx.call_count == 4294967306 - 4294967296
-        assert ry.call_count == 4
-        assert y.call_count == 6
-        assert z.call_count == 6
-        assert rz.call_count == 6
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
 
-        for i in range(4294967296, 4294967306):
-            rx.assert_called_with(RX(i, 0), i, 0)
-
-        for f in [1.2, -3.4, 0.5, 9.8]:
-            ry.assert_called_with(RY(f, 0), f, 0)
-
-        rz.assert_called_with(RZ(0.1, 0), 0.1, 0)
+        assert q.queue == [PauliZ('q0')] + \
+            [PauliX('q0') for _ in range(10)] + \
+            [RX(phi, wires=['q0']) for phi in range(4294967296, 4294967306)] + \
+            [RY(phi, wires=['q0']) for phi in [1.2, -3.4, 0.5, 9.8]] + \
+            [RZ(0.1, wires=['q0']) for _ in range(6)] + \
+            [PauliY('q0') for _ in range(6)] + \
+            [PauliZ('q0') for _ in range(5)]
 
     def test_switch(self, mocker):
 
