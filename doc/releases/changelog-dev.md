@@ -402,6 +402,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Decompositions of two-qubit unitaries via `two_qubit_decomposition` now use 3 CNOTs even if
+  just 2 CNOTs would suffice theoretically. This is the price for guaranteeing correctness in
+  all edge cases, and will be improved in a later contribution.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
+
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
@@ -538,6 +543,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Implemented a new decomposition of two-qubit `QubitUnitary` operators in `two_qubit_decomposition`
+  based on a type-AI Cartan decomposition. It fixes previously faulty edge cases for unitaries
+  that require 2 or 3 CNOT gates. Now, 3 CNOTs are used for both cases, using one more
+  CNOT than theoretically required in the former case.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The documentation of `qml.pulse.drive` has been updated and corrected.
   [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
