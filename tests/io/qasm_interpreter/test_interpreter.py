@@ -168,50 +168,44 @@ class TestInterpreter:
         # parse the QASM
         ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
 
-        # setup mocks
-        x = mocker.spy(PauliX, "__init__")
-        y = mocker.spy(PauliY, "__init__")
-        z = mocker.spy(PauliZ, "__init__")
-        rx = mocker.spy(RX, "__init__")
-
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(ast, context={"name": "switch"})
-        context["callable"]()
 
-        # assertions
-        assert x.call_count == 1
-        assert y.call_count == 1
-        assert rx.call_count == 1
-        assert z.call_count == 0
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
+
+        assert q.queue == [
+            PauliX('q0'),
+            PauliY('q0'),
+            RX(0.1, wires=['q0'])
+        ]
 
     def test_if_else(self, mocker):
-        from openqasm3.parser import parse
-
         from pennylane import ops
-        from pennylane.io.qasm_interpreter import QasmInterpreter
 
         # parse the QASM
         ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
-        x = mocker.spy(PauliX, "__init__")
-        y = mocker.spy(PauliY, "__init__")
-        z = mocker.spy(PauliZ, "__init__")
 
         # run the program
         context, _ = QasmInterpreter(permissive=True).generic_visit(
             ast, context={"name": "if_else"}
         )
-        context["callable"]()
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
 
         # assertions
         assert cond.call_count == 3
-        assert x.call_count == 1
-        x.assert_called_with(PauliX(Wires(["q0"])), Wires(["q0"]))
-        assert y.call_count == 1
-        y.assert_called_with(PauliY(Wires(["q0"])), Wires(["q0"]))
-        assert z.call_count == 0
+
+        assert q.queue == [
+            PauliX('q0'),
+            PauliY('q0')
+        ]
 
     def test_mod_with_declared_param(self):
 
