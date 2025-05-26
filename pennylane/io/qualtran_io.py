@@ -226,75 +226,68 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
         import pennylane as qml
-        from qualtran.bloqs.basic_gates import CSwap, Hadamard
+        from qualtran.bloqs.basic_gates import CSwap, Hadamard, XGate, CNOT
 
-        # num_ctrl_wires = len(op.control_wires)
-        # control_wires = op.control_wires
-        # target_wires = op.hyperparameters["target_wires"]
+        gate_types = defaultdict(int)
+        bitstrings = op.hyperparameters["bitstrings"]
+        num_bitstrings = len(bitstrings)
 
-        # gate_types = defaultdict(int, {})
-        # if num_ctrl_wires == 0:
-        #     for bits in op.bitstrings:
-        #         gate_types[
-        #             _map_to_bloq()(qml.BasisEmbedding(int(bits, 2), wires=target_wires))
-        #         ] += 1
+        num_bit_flips = 0
+        for bit_string in bitstrings:
+            num_bit_flips += bit_string.count("1")
 
-        #     return gate_types
+        num_work_wires = len(op.hyperparameters["work_wires"])
+        size_bitstring = len(op.hyperparameters["target_wires"])
+        num_control_wires = len(op.hyperparameters["control_wires"])
+        clean = op.hyperparameters["clean"]
 
-        # swap_wires = target_wires + op.work_wires
+        if num_control_wires == 0:
+            gate_types[XGate()] = num_bit_flips
+            return gate_types
 
-        # # number of operators we store per column (power of 2)
-        # depth = len(swap_wires) // len(target_wires)
-        # depth = int(2 ** np.floor(np.log2(depth)))
-        # depth = min(depth, len(op.bitstrings))
+        cnot = CNOT()
+        hadamard = Hadamard()
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
 
-        # ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in op.bitstrings]
-        # ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(op.control_wires) - len(ops))
+        square_fact = qml.math.floor(
+            qml.math.sqrt(num_bitstrings)
+        )  # use a square scheme for rows and cloumns
+        num_parallel_computations = min(num_parallel_computations, square_fact)
 
-        # n_columns = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
-        # new_ops = []
-        # for i in range(n_columns):
-        #     column_ops = []
-        #     for j in range(depth):
-        #         dic_map = {
-        #             ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
-        #             for l in range(len(target_wires))
-        #         }
-        #         column_ops.append(qml.map_wires(ops_identity[i * depth + j], dic_map))
-        #     new_ops.append(qml.prod(*column_ops))
+        num_swap_wires = qml.math.floor(qml.math.log2(num_parallel_computations))
+        num_select_wires = qml.math.ceil(qml.math.log2(qml.math.ceil(num_bitstrings / (2**num_swap_wires))))
+        assert num_swap_wires + num_select_wires <= num_control_wires
 
-        # # Select block
-        # n_control_select_wires = int(
-        #     qml.math.ceil(qml.math.log2(2 ** len(op.control_wires) / depth))
-        # )
-        # control_select_wires = control_wires[:n_control_select_wires]
+        swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
+        free_work_wires = num_work_wires - swap_work_wires
 
-        # select_ops = []
-        # if control_select_wires:
-        #     select_op = _map_to_bloq()(qml.Select(new_ops, control=control_select_wires))
-        #     gate_types[select_op] = 1
-        #     select_ops.append(select_op)
-        # else:
-        #     for new_op in new_ops:
-        #         bloq = _map_to_bloq()(new_op)
-        #         gate_types[bloq] += 1
-        #         select_ops.append(bloq)
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
 
-        # # Swap block
-        # control_swap_wires = control_wires[n_control_select_wires:]
-        # gate_types[CSwap(len(target_wires))] = 2 ** len(control_swap_wires) - 1
+        if clean:
+            gate_types[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
 
-        # if not op.clean or depth == 1:
-        #     return gate_types
-        # else:
-        #     # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
-        #     gate_types[Hadamard()] = 2 * len(target_wires)
-        #     gate_types[CSwap(len(target_wires))] *= 4
-        #     gate_types[_map_to_bloq()(qml.Select(new_ops, control=control_select_wires))] = 1
-        #     for op in select_ops:
-        #         gate_types[op] *= 2
+        # SELECT cost:
+        gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
 
-        return {Hadamard() : 1}
+        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(num_select_wires + 1), control_values=[], work_wires=range(num_select_wires+1, num_select_wires + 1 + free_work_wires)))
+
+        num_total_ctrl_possibilities = 2**num_select_wires
+        gate_types[multi_x] = select_clean_prefactor * (
+            2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
+        )
+        num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
+        gate_types[XGate()] = select_clean_prefactor * (
+            num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
+        )
+        # SWAP cost:
+        ctrl_swap = CSwap()
+        gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+
+        return gate_types
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QFT):
