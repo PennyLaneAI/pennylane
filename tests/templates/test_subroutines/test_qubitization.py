@@ -198,12 +198,12 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        atol = 1e-5 if shots is None else 0.05
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
         assert qml.math.shape(jac) == (4,)
+        atol = 1e-5 if shots is None else 0.05
         assert qml.math.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.tf
