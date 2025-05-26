@@ -984,13 +984,14 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
+        # NOTE: Currently, we defer to the 3-CNOTs function for the 2-CNOTs case.
 
         U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 9
+        assert len(obtained_decomposition) == 11  #  9
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)

@@ -122,14 +122,10 @@ def two_qubit_decomposition(U, wires):
     where :math:`A, B, C, D` are :math:`SU(2)` operations, and the rotation angles are
     computed based on features of the input unitary :math:`U`.
 
-    For the 2-CNOT case, the decomposition is
+    For the 2-CNOT case, the decomposition is currently not supported and will
+    instead produce a 3-CNOT circuit like above.
 
-    .. figure:: ../../_static/two_qubit_decomposition_2_cnots.svg
-        :align: center
-        :width: 50%
-        :target: javascript:void(0);
-
-    For 1 CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
+    For a single CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each
     side.  The special case of no CNOTs simply returns a tensor product of two
     :math:`SU(2)` operations.
 
@@ -216,14 +212,13 @@ def two_qubit_decomposition(U, wires):
             global_phase += _decompose_3_cnots(U, wires, global_phase)
         else:
             num_cnots = _compute_num_cnots(U)
+            # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
+            # correct implementation of the 2-CNOT case right now.
             global_phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
                 _decompose_3_cnots,
-                elifs=[
-                    (num_cnots == 1, _decompose_1_cnot),
-                    (num_cnots == 2, _decompose_2_cnots),
-                ],
+                elifs=[(num_cnots == 1, _decompose_1_cnot)],
             )(U, wires, global_phase)
 
         ops.GlobalPhase(-global_phase)
@@ -349,8 +344,6 @@ E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / n
 E_dag = E.conj().T
 
 # Helpful to have static copies of these since they are needed in a few places.
-CNOT01 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 P_0 = np.kron(np.diag([1j, 1]), np.eye(2))
 P_0_dag = P_0.conj().T
@@ -391,82 +384,6 @@ def _compute_num_cnots(U):
             (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
         ],
     )()
-
-
-def _extract_su2su2_prefactors(U, V):
-    r"""This function is used for the case of 2 CNOTs and 3 CNOTs. It does something
-    similar as the 1-CNOT case, but there is no special form for one of the
-    SO(4) operations.
-
-    Suppose U, V are SU(4) matrices for which there exists A, B, C, D such that
-    (A \otimes B) V (C \otimes D) = U. The problem is to find A, B, C, D in SU(2)
-    in an analytic and fully differentiable manner.
-
-    This decomposition is possible when U and V are in the same double coset of
-    SU(4), meaning there exists G, H in SO(4) s.t. G (Edag V E) H = (Edag U
-    E). This is guaranteed here by how V was constructed in both the
-    _decomposition_2_cnots and _decomposition_3_cnots methods.
-
-    Then, we can use the fact that E SO(4) Edag gives us something in SU(2) x
-    SU(2) to give A, B, C, D.
-    """
-
-    # A lot of the work here happens in the magic basis. Essentially, we
-    # don't look explicitly at some U = G V H, but rather at
-    #     E^\dagger U E = G E^\dagger V E H
-    # so that we can recover
-    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D).
-    # There is some math in the paper explaining how when we define U in this way,
-    # we can simultaneously diagonalize functions of U and V to ensure they are
-    # in the same coset and recover the decomposition.
-    u = math.dot(math.cast_like(E_dag, V), math.dot(U, math.cast_like(E, V)))
-    v = math.dot(math.cast_like(E_dag, V), math.dot(V, math.cast_like(E, V)))
-
-    uuT = math.dot(u, math.T(u))
-    vvT = math.dot(v, math.T(v))
-
-    # Get the p and q in SO(4) that diagonalize uuT and vvT respectively (and
-    # their eigenvalues). We are looking for a simultaneous diagonalization,
-    # which we know exists because of how U and V were constructed. Furthermore,
-    # The way we will do this is by noting that, since uuT/vvT are complex and
-    # symmetric, so both their real and imaginary parts share a set of
-    # real-valued eigenvectors, which are also eigenvectors of uuT/vvT
-    # themselves. So we can use eigh, which orders the eigenvectors, and so we
-    # are guaranteed that the p and q returned will be "in the same order".
-    _, p = math.linalg.eigh(math.real(uuT) + math.imag(uuT))
-    _, q = math.linalg.eigh(math.real(vvT) + math.imag(vvT))
-
-    # If determinant of p/q is not 1, it is in O(4) but not SO(4), and has determinant
-    # We can transform it to SO(4) by simply negating one of the columns.
-    p = math.dot(p, math.diag([1, 1, 1, math.sign(math.linalg.det(p))]))
-    q = math.dot(q, math.diag([1, 1, 1, math.sign(math.linalg.det(q))]))
-
-    # Now, we should have p, q in SO(4) such that p^T u u^T p = q^T v v^T q.
-    # TODO: no you don't, the eigenvectors returned from math.linalg.eigh are not guaranteed to
-    #       be in any particular order, especially when there is degeneracy. This means that p
-    #       and q are not necessarily "in the same order" as claimed above. This may sometimes
-    #       lead to incorrect results (see https://github.com/PennyLaneAI/pennylane/issues/5308)
-    #       The current solution is to add a small perturbation to U and V to break the potential
-    #       degeneracy. We should probably find a better algorithm at some point. [sc-89460]
-
-    # Then (v^\dag q p^T u)(v^\dag q p^T u)^T = I.
-    # So we can set G = p q^T, H = v^\dag q p^T u to obtain G v H = u.
-    G = math.dot(math.cast_like(p, 1j), math.T(q))
-    H = math.dot(math.conj(math.T(v)), math.dot(math.T(G), u))
-
-    # These are still in SO(4) though - we want to convert things into SU(2) x SU(2)
-    # so use the entangler. Since u = E^\dagger U E and v = E^\dagger V E where U, V
-    # are the target matrices, we can reshuffle as in the docstring above,
-    #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
-    # where A, B, C, D are in SU(2) x SU(2).
-    AB = math.dot(math.cast_like(E, G), math.dot(G, math.cast_like(E_dag, G)))
-    CD = math.dot(math.cast_like(E, H), math.dot(H, math.cast_like(E_dag, H)))
-
-    # Now, we just need to extract the constituent tensor products.
-    A, B = math.decomposition.su2su2_to_tensor_products(AB)
-    C, D = math.decomposition.su2su2_to_tensor_products(CD)
-
-    return A, B, C, D
 
 
 def _decompose_0_cnots(U, wires, initial_phase):
@@ -563,61 +480,6 @@ def _decompose_1_cnot(U, wires, initial_phase):
     return math.cast_like(-np.pi / 4, initial_phase)
 
 
-def _decompose_2_cnots(U, wires, initial_phase):
-    r"""If 2 CNOTs are required, we can write the circuit as
-     -╭U- = -A--╭X--RZ(d)--╭X--C-
-     -╰U- = -B--╰C--RX(p)--╰C--D-
-    We need to find the angles for the Z and X rotations such that the inner
-    part has the same spectrum as U, and then we can recover A, B, C, D.
-    """
-
-    # Compute the rotation angles
-    u = math.dot(E_dag, math.dot(U, E))
-    gammaU = math.dot(u, math.T(u))
-    evs = math.linalg.eigvals(gammaU)
-
-    # These choices are based on Proposition III.3 of
-    # https://arxiv.org/abs/quant-ph/0308045
-
-    x = math.angle(evs[0])
-
-    # If it was the conjugate, grab a different eigenvalue.
-    y = math.cond(
-        math.allclose(evs[0], math.conj(evs[1])),
-        lambda: math.angle(evs[2]),
-        lambda: math.angle(evs[1]),
-        (),
-    )
-
-    delta = (x + y) / 2
-    phi = (x - y) / 2
-
-    # need to perturb x by 5 precision to avoid a discontinuity at a special case.
-    # see https://github.com/PennyLaneAI/pennylane/issues/5308
-    precision = math.finfo(delta.dtype).eps
-    RZd = ops.RZ.compute_matrix(math.cast_like(delta + 5 * precision, 1j))
-    RXp = ops.RX.compute_matrix(math.cast_like(phi + 5 * precision, 1j))
-    inner_u = math.kron(RZd, RXp)
-
-    # We need the matrix representation of this interior part, V, in order to
-    # decompose U = (A \otimes B) V (C \otimes D)
-    V = math.dot(math.cast_like(CNOT10, U), math.dot(inner_u, math.cast_like(CNOT10, U)))
-
-    # Now we find the A, B, C, D in SU(2), and return the decomposition
-    A, B, C, D = _extract_su2su2_prefactors(U, V)
-
-    ops.QubitUnitary(C, wires[0])
-    ops.QubitUnitary(D, wires[1])
-    ops.CNOT(wires=[wires[1], wires[0]])
-    ops.RZ(delta, wires=wires[0])
-    ops.RX(phi, wires=wires[1])
-    ops.CNOT(wires=[wires[1], wires[0]])
-    ops.QubitUnitary(A, wires[0])
-    ops.QubitUnitary(B, wires[1])
-
-    return math.cast_like(0, initial_phase)
-
-
 def _multidot(*matrices):
     mat = matrices[0]
     for m in matrices[1:]:
@@ -625,20 +487,23 @@ def _multidot(*matrices):
     return mat
 
 
-def ai_kak(u):
+def _ai_kak(u):
     """Compute a type-AI Cartan decomposition of ``u`` in the
     standard basis/representation."""
 
     Delta = math.dot(u, math.transpose(u))
     _, o1 = math.linalg.eigh(math.real(Delta) + math.imag(Delta))
     evals = _multidot(math.transpose(o1), Delta, o1)
+    # assert math.allclose(o1 @ evals @ math.transpose(o1), Delta)
 
     # This implements o1[:, 0] *= det(o1) to ensure det(o1) = 1 afterwards
     # No need to modify the eigenvalues or d because this change will be absorbed in o2
     o1 = math.transpose(math.set_index(math.transpose(o1), 0, math.linalg.det(o1) * o1[:, 0]))
 
-    d = math.diag(math.sqrt(evals))
+    d = math.diag(math.sqrt(math.diag(evals)))
     o2 = _multidot(math.conj(d), math.transpose(o1), u)
+
+    # assert math.allclose(o1 @ d @ o2, u)
 
     # Instead of guaranteeing the correct determinant while taking the square root,
     # we correct it after the fact
@@ -651,9 +516,26 @@ def ai_kak(u):
     return o1, d, o2
 
 
-def extract_abde(A):
+def _extract_abde(A):
     """Extract the parameters for the central part of a 3-CNOT circuit as well
-    as a global phase."""
+    as a global phase. See documentation of _decompose_3_cnots for details.
+
+    The math.cond calls are necessary in order to decide from which matrix entries to extract
+    the angles.
+    The input matrix is expected to be of the form (called C1 in _decompose_3_cnots)
+
+    exp(-i d') cos(a')           0                  0          -exp(-i d') sin(a')
+              0         exp(i e') sin(b')   exp(i e') cos(b')            0
+              0         exp(i e') cos(b')  -exp(i e') sin(b')            0
+    exp(-i d') sin(a')           0                  0           exp(-i d') cos(a')
+
+    and this function will return
+
+    a' + b'
+    a' - b'
+    d' + e'
+    (d' - e') / 2
+    """
     a_plus_b_half = math.cond(
         math.allclose(math.real(A[::3, 0]), math.zeros_like(A[::3, 0])),
         lambda: math.arctan2(math.imag(A[3, 0]), math.imag(A[0, 0])),
@@ -687,7 +569,7 @@ def extract_abde(A):
     return a, b, d, e
 
 
-def center_circuit(a, b, d, wires):
+def _central_circuit(a, b, d, wires):
     """Central part of 3-CNOT circuit."""
     ops.CNOT([wires[1], wires[0]])
     ops.RZ(d, wires[0])
@@ -698,43 +580,109 @@ def center_circuit(a, b, d, wires):
 
 
 def _decompose_3_cnots(U, wires, initial_phase):
-    """The derivation of this function needs to be added.
-    We basically just combine some basis changes with a type-AI Cartan decomposition.
+    """Decompose a unitary 4x4 matrix into a 3-CNOT circuit.
+
+    From a mathematical perspective, this decomposition mainly is from one matrix into
+    a product of three matrices, which is an instance of a Cartan, or KAK, decomposition.
+    The Cartan decomposition is of type AI, decomposing a (special) unitary matrix into
+    two special orthogonal matrices and a matrix from some representation of U(1)^r, with r=4
+    for unitary input (used here) and r=3 for special unitary input.
+    This Cartan decomposition is implemented in _ai_kak. In this function, we take care
+    of translating the input and output matrices of _ai_kak into the right representations
+    of SO(4) and U(1)^4.
+    The representations that we want are given by the fixed circuit structure that we are after:
+    An arbitrary special unitary single-qubit operation on each qubit necessarily is from
+    SU(2) x SU(2), which is isomorphic to SO(4) (a so-called accidental or exceptional
+    isomorphism). The central circuit part
+
+    0: ─╭X──RZ(d)─╭●────────╭X──GlobalPhase(e)─┤
+    1: ─╰●──RY(b)─╰X──RY(a)─╰●──GlobalPhase(e)─┤
+
+    forms a representation of U(1)^4, given by the matrix (call it C1)
+
+    exp(-i d') cos(a')           0                  0          -exp(-i d') sin(a')
+              0         exp(i e') sin(b')   exp(i e') cos(b')            0
+              0         exp(i e') cos(b')  -exp(i e') sin(b')            0
+    exp(-i d') sin(a')           0                  0           exp(-i d') cos(a')
+
+    where
+    a' = a/2 + b/2
+    b' = a/2 - b/2
+    d' = d/2 + e
+    e' = d/2 - e.
+
+    Now, as is used throughout the two-qubit decompositions in this file, the transformation
+    between the canonical representation of SO(4) (real matrices with OO^T = 1 and determinant 1)
+    and the representation as single-qubit unitaries on both qubits is given by the so-called
+    magic basis E. That is, for O in the canonical representation, E O E† is of the form A⊗B with
+    A and B 2x2 special unitary matrices.
+    Simultaneously, E transforms diagonal unitary matrices into matrices of the form
+
+      exp(i t) cos(r)         0                  0         i exp(i t) sin(r)
+              0         exp(i u) cos(s)  i exp(i u) sin(s)         0
+              0       i exp(i u) sin(s)    exp(i u) cos(s)         0
+    i exp(i t) sin(r)         0                  0           exp(i t) cos(r)
+
+    generated by the "Cartan coordinate" generators X⊗X, Y⊗Y, Z⊗Z (and I⊗I). Call this matrix C2.
+
+    Finally, note that C2 can be transformed into C1 via the following static gates:
+
+    C1 = SWAP S† C2 S.
+
+    (S is just `qml.S`)
+    Now, we "just" need to combine all of these basis changes with the type-AI Cartan
+    decomposition (_ai_kak) and a function that extracts the parameters a, b, d, e from a matrix
+    of the form C1 (_extract_abde). For this, let's compute (not necessarily obvious to come up
+    with but easy to verify).
+
+    V := S SWAP U S†    (bookkeeping un-transformation)
+    W := E† V E         (magic basis un-rotation)
+    W =: K_1 A_K K_2    (computed by _ai_kak; K_i∈SO(4), A_K diagonal)
+
+    L_1 := E K_1 E†             (L_1 is of form A⊗B)
+    L_2 := E K_2 E†             (L_2 is of form A⊗B)
+    A_L := E A_K E†             (A_L is of form C2)
+
+    M_1 := SWAP S† L_1 S SWAP   (M_1 is still of the form A⊗B, with new A, B)
+    M_2 := S† L_2 S             (M_2 is still of the form A⊗B, with new A, B)
+    A_M := SWAP S† A_L S        (A_M is of the form C1)
+
+    Now we can extract a, b, d, e from A_M because it is of form C1, implemented by the
+    central circuit part. Also, we can decompose M_1 and M_2 into two single-qubit
+    unitaries via _decompose_0_cnots.
+    To verify correctness, compute
+
+    M_1 A_M M_2
+    = (SWAP S† L_1 S SWAP) (SWAP S A_L S†) (S† L_2 S)
+    = (SWAP S† L_1 A_L L_2 S)
+    = (SWAP S† (E K_1 E†) (E A_K E†) (E K_2 E†) S)
+    = (SWAP S† E (K_1 A_K K_2) E† S)
+    = (SWAP S† E W E† S)
+    = (SWAP S† E (E† V E) E† S)
+    = (SWAP S† (S SWAP U S†) S)
+    = U
+
+    So we actually implemented U!
     """
-    U_tilde = _multidot(P_0_dag, SWAP, U, P_0)
-    # assert math.allclose(U, _multidot(SWAP, P_0, U_tilde, P_0_dag))
-    V = _multidot(E_dag, U_tilde, E)
-    # assert math.allclose(_multidot(E, V, E_dag), U_tilde)
+    W = _multidot(E_dag, P_0_dag, SWAP, U, P_0, E)
+    K_1, A_K, K_2 = _ai_kak(W)
+    L_1 = _multidot(E, K_1, E_dag)
+    A_L = _multidot(E, A_K, E_dag)
+    L_2 = _multidot(E, K_2, E_dag)
 
-    K_1, A, K_2 = ai_kak(V)
-    # assert math.allclose(_multidot(K_1, A, K_2), V)
+    M_1 = _multidot(SWAP, P_0, L_1, P_0_dag, SWAP)
+    M_2 = _multidot(P_0, L_2, P_0_dag)
+    A_M = _multidot(SWAP, P_0, A_L, P_0_dag)
 
-    K_1_tilde = _multidot(E, K_1, E_dag)
-    A_tilde = _multidot(E, A, E_dag)
-    K_2_tilde = _multidot(E, K_2, E_dag)
-    # assert math.allclose(_multidot(K_1_tilde, A_tilde, K_2_tilde), U_tilde)
+    a, b, d, e = _extract_abde(A_M)
 
-    K_1 = _multidot(SWAP, P_0, K_1_tilde, P_0_dag, SWAP)
-    K_2 = _multidot(P_0, K_2_tilde, P_0_dag)
-    A = _multidot(SWAP, P_0, A_tilde, P_0_dag)
-    # assert math.allclose(_multidot(P_0_dag, SWAP, K_1, A, K_2, P_0), U_tilde)
-    # assert math.allclose(U, _multidot(SWAP, P_0, P_0_dag, SWAP, K_1, A, K_2, P_0, P_0_dag))
-    # assert _compute_num_cnots(K_1) == 0
-    # assert _compute_num_cnots(K_2) == 0
+    gphase = _decompose_0_cnots(M_2, wires, 0.0)
+    _central_circuit(a, b, d, wires)
+    gphase += _decompose_0_cnots(M_1, wires, gphase)
+    # gphase is zero because we are guaranteed that M_1 and M_2 have unit determinant
 
-    a, b, d, e = extract_abde(A)
-    # center_matrix = ops.functions.matrix(center_circuit, wire_order=[0, 1])
-    # recon_A = center_matrix(a, b, d, wires)
-    # assert math.allclose(
-    # recon_A, A
-    # ), f"\n{math.round(A, 3)}\n{math.round(recon_A, 3)}\n{math.round(recon_A / A, 3)}"
-
-    gphase = 0.0
-    gphase += _decompose_0_cnots(K_2, wires, gphase)
-    center_circuit(a, b, d, wires)
-    gphase += _decompose_0_cnots(K_1, wires, gphase)
-    # assert math.allclose(gphase, 0.0)
-
+    # Return the global phase obtained from A_M. It will be combined with initial_phase
+    # in `two_qubit_decomposition`
     return math.cast_like(-e, initial_phase)
 
 
@@ -759,18 +707,19 @@ def two_qubit_decomp_rule(U, wires, **__):
 
     U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
     num_cnots = _compute_num_cnots(U)
+    # Use the 3-CNOT case for num_cnots=2 as well because we do not have a reliably
+    # correct implementation of the 2-CNOT case right now.
     additional_phase = ops.cond(
         num_cnots == 0,
         _decompose_0_cnots,
         _decompose_3_cnots,
-        elifs=[
-            (num_cnots == 1, _decompose_1_cnot),
-            (num_cnots == 2, _decompose_2_cnots),
-        ],
+        elifs=[(num_cnots == 1, _decompose_1_cnot)],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.GlobalPhase(-total_phase)
 
 
 def _global_phase(phase):
+    """Calls the GlobalPhase with a negative sign. Used in a ``cond`` call which requires
+    no variable to be returned."""
     ops.GlobalPhase(-phase)
