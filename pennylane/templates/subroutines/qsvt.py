@@ -1158,7 +1158,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
             - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000` for
-                the ``"QSP"`` and ``"QSVT"`` routines.
+              the ``"QSP"`` and ``"QSVT"`` routines.
 
     Returns:
         (tensor-like): computed angles for the specified routine
