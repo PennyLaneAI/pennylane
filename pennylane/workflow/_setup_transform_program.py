@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
 
-import warnings
 
 from cachetools import LRUCache
 
@@ -24,7 +23,6 @@ from pennylane.transforms.core import TransformProgram
 from ._cache_transform import _cache_transform
 
 
-# pylint: disable=protected-access
 def _prune_dynamic_transform(outer_transform, inner_transform):
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
@@ -49,21 +47,10 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
     inner_contains_one_shot = inner_transform.prune_dynamic_transform(type_to_keep)
     if inner_contains_one_shot:
         type_to_keep = 0
-    original_len = len(outer_transform)
     outer_transform.prune_dynamic_transform(type_to_keep)
-    outer_contained_one_shot = len(outer_transform) < original_len
-    if inner_contains_one_shot and outer_contained_one_shot:
-        warnings.warn(
-            "A dynamic_one_shot transform already exists in the preprocessing program of the "
-            "device. Therefore, the dynamic_one_shot applied on the qnode will be ignored. "
-            "See https://docs.pennylane.ai/en/stable/code/api/pennylane.dynamic_one_shot.html "
-            "for more information on the recommended way to use dynamic_one_shot.",
-            UserWarning,
-        )
 
 
 def _setup_transform_program(
-    user_transform_program: TransformProgram,
     device: "qml.devices.Device",
     resolved_execution_config: "qml.devices.ExecutionConfig",
     cache=None,
@@ -85,24 +72,22 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    full_transform_program = qml.transforms.core.TransformProgram(
-        user_transform_program, cotransform_cache=user_transform_program.cotransform_cache
-    )
+    outer_transform_program = qml.transforms.core.TransformProgram()
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary
     if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
-        full_transform_program.add_transform(
+        outer_transform_program.add_transform(
             qml.transform(resolved_execution_config.gradient_method.expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
     if resolved_execution_config.use_device_gradient:
-        full_transform_program += device_transform_program
+        outer_transform_program += device_transform_program
     else:
         inner_transform_program += device_transform_program
 
     # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
-    _prune_dynamic_transform(full_transform_program, inner_transform_program)
+    _prune_dynamic_transform(outer_transform_program, inner_transform_program)
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache is True:
@@ -124,4 +109,4 @@ def _setup_transform_program(
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
-    return full_transform_program, inner_transform_program
+    return outer_transform_program, inner_transform_program

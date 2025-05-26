@@ -19,7 +19,7 @@ from typing import Callable, Sequence, Union
 has_jax = True
 try:
     import jax
-    from jax._src.interpreters import partial_eval as pe
+    from jax.interpreters import partial_eval as pe
 except ImportError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -123,7 +123,7 @@ def determine_abstracted_axes(args):
     """
     if not has_jax:  # pragma: no cover
         raise ImportError("jax must be installed to use determine_abstracted_axes")
-    if not jax.config.jax_dynamic_shapes:  # pylint: disable=no-member
+    if not jax.config.jax_dynamic_shapes:
         return None, ()
 
     args, structure = jax.tree_util.tree_flatten(args)
@@ -142,15 +142,15 @@ def determine_abstracted_axes(args):
 
 
 def register_custom_staging_rule(
-    primitive, get_outvars_from_params: Callable[[dict], list["jax.core.Var"]]
+    primitive, get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]]
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
     ``get_outvars_from_params``.
 
     Args:
-        primitive (jax.core.Primitive): a jax primitive we want to register a custom staging rule for
-        get_outvars_from_params (Callable[[dict], list[jax.core.Var]]): A function that takes in the equation's ``params``
-            and returns ``jax.core.Var`` we need to mimic for the primitives return.
+        primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
+        get_outvars_from_params (Callable[[dict], list[jax.extend.core.Var]]): A function that takes in the equation's ``params``
+            and returns ``jax.extend.core.Var`` we need to mimic for the primitives return.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
@@ -168,9 +168,9 @@ def register_custom_staging_rule(
 
     def _tracer_and_outvar(
         jaxpr_trace: pe.DynamicJaxprTrace,
-        outvar: jax.core.Var,
-        env: dict[jax.core.Var, jax.core.Var],
-    ) -> tuple[pe.DynamicJaxprTracer, jax.core.Var]:
+        outvar: jax.extend.core.Var,
+        env: dict[jax.extend.core.Var, jax.extend.core.Var],
+    ) -> tuple[pe.DynamicJaxprTracer, jax.extend.core.Var]:
         """
         Create a new tracer and return var from the true branch outvar.
         Returned vars are cached in env for use in future shapes
@@ -183,7 +183,7 @@ def register_custom_staging_rule(
         out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
         new_var = jaxpr_trace.makevar(out_tracer)
 
-        if not isinstance(outvar, jax.core.Literal):
+        if not isinstance(outvar, jax.extend.core.Literal):
             env[outvar] = new_var
         return out_tracer, new_var
 
@@ -198,7 +198,7 @@ def register_custom_staging_rule(
             return jaxpr_trace.default_process_primitive(primitive, tracers, params)
         outvars = get_outvars_from_params(params)
 
-        env: dict[jax.core.Var, jax.core.Var] = {}  # branch var to new equation var
+        env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
         if outvars:
             out_tracers, returned_vars = tuple(
                 zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
@@ -207,7 +207,7 @@ def register_custom_staging_rule(
             out_tracers, returned_vars = (), ()
 
         invars = [jaxpr_trace.getvar(x) for x in tracers]
-        eqn = pe.new_jaxpr_eqn(
+        eqn = jax.core.new_jaxpr_eqn(
             invars,
             returned_vars,
             primitive,

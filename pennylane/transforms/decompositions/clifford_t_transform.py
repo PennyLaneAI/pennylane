@@ -199,7 +199,7 @@ def _rot_decompose(op):
         return d_ops
 
     (theta,), wires = op.data, op.wires
-    if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.Adjoint):
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.X(wires))
@@ -329,7 +329,6 @@ def _merge_param_gates(operations, merge_ops=None):
         merged_ops.append(curr_gate.__class__(*cumulative_angles, wires=curr_gate.wires))
 
     return merged_ops, number_ops
-
 
 class _CachedCallable:
     """A class to cache the decomposition of the operators.

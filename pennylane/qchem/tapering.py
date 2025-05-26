@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-# pylint: disable=unnecessary-lambda
+
 
 import functools
 import itertools
@@ -175,7 +175,7 @@ def symmetry_generators(h):
     return generators
 
 
-def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
+def paulix_ops(generators, num_qubits):
     r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry :math:`\tau_j`,
     such that it anti-commutes with :math:`\tau_j` and commutes with all others symmetries :math:`\tau_{k\neq j}`.
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
@@ -607,8 +607,8 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
-# pylint: disable=too-many-branches, too-many-arguments, too-many-positional-arguments
-# pylint: disable=inconsistent-return-statements, no-member
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=inconsistent-return-statements
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):

@@ -3,11 +3,17 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
 --------------------
+
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` has been deprecated 
+  and will be removed in v0.43. Please import these objects from the new `pennylane.exceptions` module.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from

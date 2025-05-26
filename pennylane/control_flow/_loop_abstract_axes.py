@@ -23,8 +23,6 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 from collections import namedtuple
 from typing import Any, Callable, Optional
 
-import numpy as np
-
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
@@ -97,11 +95,13 @@ def get_dummy_arg(arg):
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    return np.empty(shape=shape, dtype=arg.dtype)
+    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
+
+    return empty(shape=shape, dtype=arg.dtype)
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.core.Jaxpr",
+    jaxpr: "jax.extend.core.Jaxpr",
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
 ) -> Optional[str]:

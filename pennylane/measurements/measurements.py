@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
@@ -50,13 +51,11 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             where the instance has to be identified
     """
 
-    # pylint:disable=too-many-instance-attributes
-
     _shortname = None
 
-    _obs_primitive: Optional["jax.core.Primitive"] = None
-    _wires_primitive: Optional["jax.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.core.Primitive"] = None
+    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
+    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -145,7 +144,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Optional[
@@ -203,7 +201,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
@@ -232,7 +230,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ()
 
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 

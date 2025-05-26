@@ -710,7 +710,7 @@ def _is_valid_cut(
 
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
-    # pylint: disable=no-member
+
     all_fragments_fit = all(
         len(qml.qcut.graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )

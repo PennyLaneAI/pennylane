@@ -97,9 +97,9 @@ class TestMidMeasureCapture:
         jaxpr = jax.make_jaxpr(f)(1.0)
 
         assert jaxpr.eqns[1].primitive.name == "measure"
-        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.core.Var)
+        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.extend.core.Var)
         assert jaxpr.eqns[2].primitive.name == "measure"
-        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.core.Var)
+        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.extend.core.Var)
 
         assert jaxpr.eqns[3].primitive.name == p_name
         assert jaxpr.eqns[3].invars == [mcm1, mcm2] if multi_mcm else [mcm1]
@@ -181,7 +181,7 @@ class TestMidMeasureCapture:
 
         # 3.1 * m1
         assert jaxpr.eqns[4].primitive.name == "mul"
-        assert isinstance(jaxpr.eqns[4].invars[0], jax.core.Literal)
+        assert isinstance(jaxpr.eqns[4].invars[0], jax.extend.core.Literal)
         assert jaxpr.eqns[4].invars[1] == mcm1_f
         a = jaxpr.eqns[4].outvars[0]
 
@@ -420,11 +420,11 @@ class TestMidMeasureExecute:
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))

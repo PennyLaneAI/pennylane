@@ -271,9 +271,9 @@ def _get_for_loop_qfunc_prim():
     """Get the loop_for primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    for_loop_prim = NonInterpPrimitive("for_loop")
+    for_loop_prim = QmlPrimitive("for_loop")
     for_loop_prim.multiple_results = True
     for_loop_prim.prim_type = "higher_order"
     register_custom_staging_rule(for_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)

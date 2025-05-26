@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from itertools import product
 from typing import Optional, Union
 
 import numpy as np
@@ -26,19 +25,10 @@ from scipy.linalg import fractional_matrix_power
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.decomposition.decomposition_rule import add_decomps
-from pennylane.math import (
-    cast,
-    conj,
-    eye,
-    norm,
-    sqrt,
-    sqrt_matrix,
-    sqrt_matrix_sparse,
-    transpose,
-    zeros,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     rot_decomp_rule,
@@ -152,7 +142,7 @@ class QubitUnitary(Operation):
         wires: WiresLike,
         id: Optional[str] = None,
         unitary_check: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
@@ -362,6 +352,56 @@ add_decomps(
 )
 
 
+def _qubit_unitary_resource(base_class, base_params, **_):
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_qubit_unitary_resource)
+def _adjoint_qubit_unitary(U, wires, **_):
+    U = (
+        U.conjugate().transpose()
+        if sp.sparse.issparse(U)
+        else qml.math.moveaxis(qml.math.conj(U), -2, -1)
+    )
+    QubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
+
+
+def _matrix_pow(U, z):
+    if sp.sparse.issparse(U):
+        return sp.sparse.linalg.matrix_power(U, z)
+    if is_integer(z) and qml.math.get_deep_interface(U) != "tensorflow":
+        return qml.math.linalg.matrix_power(U, z)
+    return qml.math.convert_like(fractional_matrix_power(U, z), U)
+
+
+@register_resources(_qubit_unitary_resource)
+def _pow_qubit_unitary(U, wires, z, **_):
+    QubitUnitary(_matrix_pow(U, z), wires=wires)
+
+
+add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
+
+
+# pylint: disable=unused-argument
+def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
+        ): 1,
+    }
+
+
+@register_resources(_controlled_qubit_unitary_resource)
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, **__):
+    qml.ControlledQubitUnitary(U, wires, control_values=control_values, work_wires=work_wires)
+
+
+add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
+
+
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
@@ -386,6 +426,12 @@ class DiagonalQubitUnitary(Operation):
 
     grad_method = None
     """Gradient computation method."""
+
+    resource_keys = {"num_wires"}
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -480,49 +526,86 @@ class DiagonalQubitUnitary(Operation):
         Returns:
             list[Operator]: decomposition into lower level operations
 
+        Implements Theorem 7 of `Shende et al. <https://arxiv.org/abs/quant-ph/0406176>`__.
+        Decomposing a ``DiagonalQubitUnitary`` on :math:`n` wires (:math:`n>1`) yields a
+        uniformly-controlled :math:`R_Z` gate, or :class:`~.SelectPauliRot` gate, as well as a
+        ``DiagonalQubitUnitary`` on :math:`n-1` wires. For :math:`n=1` wires, the decomposition
+        yields a :class:`~.RZ` gate and a :class:`~.GlobalPhase`.
+        Resolving this recursion relationship, one would obtain :math:`n-1` ``SelectPauliRot``
+        gates with :math:`n, n-1, \dots, 1` controls each, a single ``RZ`` gate, and
+        a ``GlobalPhase``.
+
         **Example:**
 
         >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
         >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
-        [QubitUnitary(array([[0.36235775+0.93203909j, 0.        +0.j        ],
-         [0.        +0.j        , 0.36235775+0.93203909j]]), wires=[0]),
-         RZ(1.5000000000000002, wires=[1]),
-         RZ(-0.10000000000000003, wires=[0]),
-         IsingZZ(0.2, wires=[0, 1])]
+        [SelectPauliRot(array([1.7, 1.3]), wires=[0, 1]),
+         DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0])]
+
+        .. details::
+
+            :title: Finding the parameters
+
+            Theorem 7 referenced above only tells us the structure of the circuit, but not the
+            parameters for the ``SelectPauliRot`` and ``DiagonalQubitUnitary`` in the decomposition.
+            In the following, we will only write out the diagonals of all gates.
+            Consider a ``DiagonalQubitUnitary`` on :math:`n` qubits that we want to decompose:
+
+            .. math::
+
+                D(\theta) = (\exp(i\theta_0), \exp(i\theta_1), \dots,
+                \exp(i\theta_{N-2}), \exp(i\theta_{N-1})).
+
+            Here, :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits, which is
+            the same as the number of parameters in :math:`D`.
+
+            A ``SelectPauliRot`` gate using ``RZ`` rotations, or multiplexed ``RZ`` rotation, using
+            the first :math:`n-1` qubits as controls and the last qubit as target, takes the form
+
+            .. math::
+
+                UCR_Z(\phi) = (\exp(-\frac{i}{2}\phi_0), \exp(\frac{i}{2}\phi_0), \dots,
+                \exp(-\frac{i}{2}\phi_{N/2-1}), \exp(\frac{i}{2}\phi_{N/2-1})),
+
+            i.e., it moves the phase of neighbouring pairs of computational basis states by
+            the same amount, but in opposite direction. There are :math:`N/2` parameters
+            in this gate.
+            Similarly, a ``DiagonalQubitUnitary`` acting on the first :math:`n-1` qubits only (the
+            ones that were controls for ``SelectPauliRot``) takes the form
+
+            .. math::
+
+                D'(\theta') = (\exp(i\theta'_0), \exp(i\theta'_0), \dots,
+                \exp(i\theta'_{N/2-1}), \exp(i\theta'_{N/2-1})).
+
+            That is, :math:`D'` moves the phase of neighbouring pairs of basis states by the same
+            amount and in the same direction. It, too, has :math:`N/2` parameters.
+            Now, we see that we can compute the rotation angles, or phases, :math:`\phi` and
+            :math:`\theta'` quite easily from the original :math:`\theta`:
+
+            .. math::
+
+                (\exp(i\theta_{2i}), \exp(i\theta_{2i+1})) &=
+                (\exp(-\frac{i}{2}\phi_i)\exp(i\theta'_i), \exp(\frac{i}{2}\phi_i)\exp(i\theta'_i))\\
+                \Rightarrow \qquad \theta'_i &=\frac{1}{2}(\theta_{2i}+\theta_{2i+1})\\
+                \phi_i &=\theta_{2i+1}-\theta_{2i}.
+
+            So the phases for the new gates arise simply as difference and average of the
+            odd-indexed and even-indexed phases.
 
         """
-        n = len(wires)
-
-        # Cast the diagonal into a complex dtype so that the logarithm works as expected
-        D_casted = qml.math.cast(D, "complex128")
-
-        phases = qml.math.real(qml.math.log(D_casted) * (-1j))
-        coeffs = _walsh_hadamard_transform(phases, n).T
-        global_phase = qml.math.exp(1j * coeffs[0])
-        # For all other gates, there is a prefactor -1/2 to be compensated.
-        coeffs = coeffs * (-2.0)
-
-        # TODO: Replace the following by a GlobalPhase gate.
-        ops = [QubitUnitary(qml.math.tensordot(global_phase, qml.math.eye(2), axes=0), wires[0])]
-        for wire0 in range(n):
-            # Single PauliZ generators correspond to the coeffs at powers of two
-            ops.append(qml.RZ(coeffs[1 << wire0], wires[n - 1 - wire0]))
-            # Double PauliZ generators correspond to the coeffs at the sum of two powers of two
-            ops.extend(
-                qml.IsingZZ(
-                    coeffs[(1 << wire0) + (1 << wire1)],
-                    [wires[n - 1 - wire0], wires[n - 1 - wire1]],
-                )
-                for wire1 in range(wire0)
-            )
-
-        # Add all multi RZ gates that are not generated by single or double PauliZ generators
-        ops.extend(
-            qml.MultiRZ(c, [wires[k] for k in np.where(term)[0]])
-            for c, term in zip(coeffs, product((0, 1), repeat=n))
-            if sum(term) > 2
-        )
-        return ops
+        angles = qml.math.angle(D)
+        diff = angles[..., 1::2] - angles[..., ::2]
+        mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+        if len(wires) == 1:
+            return [  # Squeeze away non-broadcasting axis (there is just one angle for RZ/GPhase
+                qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires),
+                qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
+            ]
+        return [  # Note that we use the first qubits as control, the reference uses the last qubits
+            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
+        ]
 
     def adjoint(self) -> "DiagonalQubitUnitary":
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
@@ -544,6 +627,27 @@ class DiagonalQubitUnitary(Operation):
         cache: Optional[dict] = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_diagonal_qubit_unitary_resource)
+def _adjoint_diagonal_unitary(U, wires, **_):
+    U = qml.math.conj(U)
+    DiagonalQubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
+
+
+@register_resources(_diagonal_qubit_unitary_resource)
+def _pow_diagonal_unitary(U, wires, z, **_):
+    DiagonalQubitUnitary(qml.math.cast(U, np.complex128) ** z, wires=wires)
+
+
+add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary)
 
 
 class BlockEncode(Operation):
@@ -642,8 +746,8 @@ class BlockEncode(Operation):
                 shape_a = qml.math.shape(A)
 
             normalization = qml.math.maximum(
-                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
+                math.norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
+                math.norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
@@ -746,7 +850,7 @@ def _process_blockencode(A, subspace):
     n, m, k = subspace
     shape_a = qml.math.shape(A)
 
-    sqrtm = sqrt_matrix_sparse if sp.sparse.issparse(A) else sqrt_matrix
+    sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
         if like == "tensorflow":
@@ -757,19 +861,24 @@ def _process_blockencode(A, subspace):
     interface = qml.math.get_interface(A)
 
     if qml.math.sum(shape_a) <= 2:
-        col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
-        col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
+        col1 = _stack([A, math.sqrt(1 - A * math.conj(A))], like=interface)
+        col2 = _stack([math.sqrt(1 - A * math.conj(A)), -math.conj(A)], like=interface)
         u = _stack([col1, col2], h=True, like=interface)
     else:
         d1, d2 = shape_a
         col1 = _stack(
-            [A, sqrtm(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+            [
+                A,
+                sqrtm(
+                    math.cast(math.eye(d2, like=A), A.dtype) - qml.math.transpose(math.conj(A)) @ A
+                ),
+            ],
             like=interface,
         )
         col2 = _stack(
             [
-                sqrtm(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
-                -transpose(conj(A)),
+                sqrtm(math.cast(math.eye(d1, like=A), A.dtype) - A @ math.transpose(math.conj(A))),
+                -math.transpose(math.conj(A)),
             ],
             like=interface,
         )
@@ -777,8 +886,8 @@ def _process_blockencode(A, subspace):
 
     if n + m < k:
         r = k - (n + m)
-        col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
-        col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
+        col1 = _stack([u, math.zeros((r, n + m), like=A)], like=interface)
+        col2 = _stack([math.zeros((n + m, r), like=A), math.eye(r, like=A)], like=interface)
         u = _stack([col1, col2], h=True, like=interface)
 
     return u
