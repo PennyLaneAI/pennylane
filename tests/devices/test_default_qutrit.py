@@ -23,6 +23,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import DeviceError
 from pennylane.wires import WireError, Wires
 
 U_thadamard_01 = np.multiply(
@@ -42,16 +43,16 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(qml.DeviceError, match=msg):
+    with pytest.raises(DeviceError, match=msg):
         qml.device("default.qutrit", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(qml.DeviceError, match="Real datatype must be a floating point type."):
+    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qutrit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Complex datatype must be a complex floating point type.",
     ):
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
@@ -421,7 +422,7 @@ class TestApply:
             qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="Operation QutritBasisState cannot be used after other operations have already been applied "
             "on a default.qutrit device.",
         ):

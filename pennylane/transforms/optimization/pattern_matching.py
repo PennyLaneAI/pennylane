@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import adjoint
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -204,21 +205,21 @@ def pattern_matching_optimization(
     for pattern in pattern_tapes:
         # Check the validity of the pattern
         if not isinstance(pattern, QuantumScript):
-            raise qml.QuantumFunctionError("The pattern is not a valid quantum tape.")
+            raise QuantumFunctionError("The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
         if pattern.measurements:
-            raise qml.QuantumFunctionError("The pattern contains measurements.")
+            raise QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
         if not np.allclose(
             qml.matrix(pattern, wire_order=pattern.wires), np.eye(2**pattern.num_wires)
         ):
-            raise qml.QuantumFunctionError("Pattern is not valid, it does not implement identity.")
+            raise QuantumFunctionError("Pattern is not valid, it does not implement identity.")
 
         # Verify that the pattern has less qubits or same number of qubits
         if tape.num_wires < pattern.num_wires:
-            raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
+            raise QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)
