@@ -17,9 +17,9 @@ r"""
 This module provides abstractions around the Python ``concurrent.futures`` library and interface. This module directly offloads to the in-built executors for both multithreaded and multiprocess function execution.
 """
 
-from multiprocessing import get_context
-from functools import partial
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from functools import partial
+from multiprocessing import get_context
 from typing import Optional
 
 from ..base import ExecBackendConfig

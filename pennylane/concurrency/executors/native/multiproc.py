@@ -18,8 +18,8 @@ This module provides abstractions around the Python ``multiprocessing`` library,
 """
 
 import inspect
-from multiprocessing import get_context
 from collections.abc import Callable, Sequence
+from multiprocessing import get_context
 from typing import Any, Optional
 
 from ..base import ExecBackendConfig
