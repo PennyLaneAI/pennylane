@@ -22,6 +22,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -105,7 +106,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     _ = kwargs.get("device", None)
 
     if not tape.shots:
-        raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
+        raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
