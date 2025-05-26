@@ -537,13 +537,13 @@ def _extract_abde(A):
     (d' - e') / 2
     """
     a_plus_b_half = math.cond(
-        math.allclose(math.real(A[::3, 0]), math.zeros_like(A[::3, 0])),
+        math.allclose(math.real(A[::3, 0]), math.zeros_like(math.real(A[::3, 0]))),
         lambda: math.arctan2(math.imag(A[3, 0]), math.imag(A[0, 0])),
         lambda: math.arctan2(math.real(A[3, 0]), math.real(A[0, 0])),
         (),
     )
     a_minus_b_half = math.cond(
-        math.allclose(math.real(A[1:3, 1]), math.zeros_like(A[1:3, 1])),
+        math.allclose(math.real(A[1:3, 1]), math.zeros_like(math.real(A[1:3, 1]))),
         lambda: math.arctan2(math.imag(A[1, 1]), math.imag(A[2, 1])),
         lambda: math.arctan2(math.real(A[1, 1]), math.real(A[2, 1])),
         (),
@@ -553,19 +553,19 @@ def _extract_abde(A):
 
     apb_frac = math.cond(
         math.isclose(A[0, 0], math.zeros_like(A[0, 0])),
-        lambda: A[3, 0] / math.sin(a_plus_b_half),
-        lambda: A[0, 0] / math.cos(a_plus_b_half),
+        lambda: A[3, 0] / math.cast_like(math.sin(a_plus_b_half), A[3, 0]),
+        lambda: A[0, 0] / math.cast_like(math.cos(a_plus_b_half), A[0, 0]),
         (),
     )
     amb_frac = math.cond(
         math.isclose(A[2, 1], math.zeros_like(A[2, 1])),
-        lambda: A[1, 1] / math.sin(a_minus_b_half),
-        lambda: A[2, 1] / math.cos(a_minus_b_half),
+        lambda: A[1, 1] / math.cast_like(math.sin(a_minus_b_half), A[1, 1]),
+        lambda: A[2, 1] / math.cast_like(math.cos(a_minus_b_half), A[2, 1]),
         (),
     )
 
     d = math.angle(amb_frac * math.conj(apb_frac))
-    e = -math.angle(amb_frac * math.exp(-1j * d / 2))
+    e = -math.angle(amb_frac * math.exp(-1j * math.cast_like(d / 2, 1j)))
     return a, b, d, e
 
 

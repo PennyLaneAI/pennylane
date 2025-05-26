@@ -18,6 +18,7 @@ from itertools import product
 
 import pytest
 from gate_data import H, I, S, T, X, Z
+from scipy.stats import unitary_group
 from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qml
@@ -501,15 +502,18 @@ test_two_qubit_unitaries = [
 
 
 @pytest.mark.parametrize("num_reps", [1, 2, 3, 4, 5])
-def test_unitary_to_rot_multiple_two_qubit(num_reps):
+def test_unitary_to_rot_multiple_two_qubit(num_reps, seed):
     """Test that numerous two-qubit unitaries can be decomposed sequentially."""
 
     dev = qml.device("default.qubit", wires=2)
 
-    U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
+    Us = unitary_group.rvs(4, size=num_reps, random_state=seed)
+    if num_reps == 1:
+        # Batch dim is squeezed away by rvs() for size = 1
+        Us = [Us]
 
     def my_circuit():
-        for _ in range(num_reps):
+        for U in Us:
             qml.QubitUnitary(U, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
