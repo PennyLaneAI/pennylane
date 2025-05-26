@@ -13,8 +13,11 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
+import warnings
 from functools import lru_cache, partial
 
+from pennylane.math import is_abstract
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -29,7 +32,7 @@ from pennylane.wires import Wires
 from .optimization_utils import find_next_gate
 
 
-def _ops_equal(op1, op2):
+def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
@@ -39,7 +42,25 @@ def _ops_equal(op1, op2):
     )
 
 
-def _are_inverses(op1, op2):
+def _check_abstractness(op1: Operator, op2: Operator) -> bool:
+    """Checks if either of the operators has abstract wires, parameters, or hyperparameters"""
+
+    def is_any_abstract(iterable):
+        return any(is_abstract(x) for x in iterable)
+
+    return any(
+        [
+            is_any_abstract(op1.wires),
+            is_any_abstract(op2.wires),
+            is_any_abstract(op1.parameters),
+            is_any_abstract(op2.parameters),
+            is_any_abstract(op1.hyperparameters.values()),
+            is_any_abstract(op2.hyperparameters.values()),
+        ]
+    )
+
+
+def _are_inverses(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are inverses of each other
 
     Args:
@@ -52,6 +73,16 @@ def _are_inverses(op1, op2):
     # op1 is self-inverse and the next gate is also op1
     if op1 in self_inverses and op1.name == op2.name:
         return True
+
+    # If at least one of the operators has abstract wires, parameters, or hyperparameters,
+    # we cannot determine if they are inverses because we cannot compare them.
+    if _check_abstractness(op1, op2):
+        warnings.warn(
+            "At least one of the operators has abstract wires, parameters, or hyperparameters. "
+            "Cannot determine if they are inverses."
+        )
+
+        return False
 
     # op1 is an `Adjoint` class and its base is equal to op2
     if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
@@ -72,7 +103,6 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
-        from pennylane.operation import Operator
 
     except ImportError:  # pragma: no cover
         return None, None
