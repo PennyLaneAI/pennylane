@@ -589,21 +589,21 @@ def _ctrl_decomp_bisect_general(U, wires):
     c2t = math.matmul(b, h_matrix)
 
     mid = len(wires) // 2  # for odd n, make control_k1 bigger
-    control_k1 = wires[:mid]
-    control_k2 = wires[mid:-1]
+    ctrl_k1 = wires[:mid]
+    ctrl_k2 = wires[mid:-1]
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    _controlled_x(wires[-1], control_k1, control_k2, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
     ops.QubitUnitary(c1, wires[-1])
-    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -624,18 +624,18 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     a = _bisect_compute_a(U)
 
     mid = len(wires) // 2  # for odd n, make control_k1 bigger
-    control_k1 = wires[:mid]
-    control_k2 = wires[mid:-1]
+    ctrl_k1 = wires[:mid]
+    ctrl_k2 = wires[mid:-1]
 
     if not skip_initial_cx:
-        _controlled_x(wires[-1], control_k1, control_k2, "dirty")
+        _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
 
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    _controlled_x(wires[-1], control_k1, control_k2, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="dirty")
     ops.QubitUnitary(a, wires[-1])
-    _controlled_x(wires[-1], control_k2, control_k1, "dirty")
+    _controlled_x(wires[-1], control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="dirty")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
@@ -825,14 +825,14 @@ def _ctrl_global_phase(phase, control_wires):
     ops.ctrl(ops.GlobalPhase(-phase), control=control_wires)
 
 
-def _controlled_x(target_wire, control_wires, work_wires, work_wire_type):
-    if len(control_wires) == 1:
-        ops.CNOT([control_wires[0], target_wire])
-    elif len(control_wires) == 2:
-        ops.Toffoli([control_wires[0], control_wires[1], target_wire])
+def _controlled_x(target_wire, control, work_wires, work_wire_type):
+    if len(control) == 1:
+        ops.CNOT([control[0], target_wire])
+    elif len(control) == 2:
+        ops.Toffoli([control[0], control[1], target_wire])
     else:
         ops.MultiControlledX(
-            control_wires + [target_wire], work_wires=work_wires, work_wire_type=work_wire_type
+            control + [target_wire], work_wires=work_wires, work_wire_type=work_wire_type
         )
 
 
