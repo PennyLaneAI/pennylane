@@ -17,6 +17,7 @@ r"""
 This module provides abstractions around the Python ``concurrent.futures`` library and interface. This module directly offloads to the in-built executors for both multithreaded and multiprocess function execution.
 """
 
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from typing import Optional
 
@@ -44,7 +45,10 @@ class ProcPoolExec(PyNativeExec):
 
     @classmethod
     def _exec_backend(cls):
-        return ProcessPoolExecutor
+        ctx = multiprocessing.get_context("spawn")
+        return lambda max_workers=None, **kwargs: ProcessPoolExecutor(
+            max_workers=max_workers, mp_context=ctx, **kwargs
+        )
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
