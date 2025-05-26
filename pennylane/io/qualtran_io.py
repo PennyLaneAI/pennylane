@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 # pylint: disable=import-outside-toplevel, unused-argument
 @lru_cache
 def _get_op_call_graph():
-    # ToDo: implement build_call_graphs for each high level operation
     @singledispatch
     def _op_call_graph(op):
         return None
@@ -140,41 +139,36 @@ def _get_op_call_graph():
         from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
         gate_types = defaultdict(int, {})
+        state_vector = op.state_vector
+        positive_and_real = True
+
+        for c in state_vector:
+            if c.imag != 0 or c.real < 0:
+                positive_and_real = False
+                break
+
+        num_state_qubits = int(qml.math.log2(len(op.state_vector)))
         precision_wires = op.hyperparameters["precision_wires"]
-        work_wires = op.hyperparameters["work_wires"]
         input_wires = op.hyperparameters["input_wires"]
-        probs = qml.math.abs(op.state_vector) ** 2
-        phases = qml.math.angle(op.state_vector) % (2 * np.pi)
-        eps = 1e-15  # Small constant to avoid division by zero
+        work_wires = op.hyperparameters["work_wires"]
+        num_precision_wires = len(precision_wires)
 
-        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
-        rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
+        for i in range(num_state_qubits):
+            num_bit_flips = 2 ** (i - 1)
+            if i == 0:
+                num_bit_flips = 0
 
-        for i in range(num_iterations):
-
-            probs_aux = qml.math.reshape(probs, [1, -1])
-
-            # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
-            for itx in range(i + 1):
-                probs_denominator = qml.math.sum(probs_aux, axis=1)
-                probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
-                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
-
-            # Compute the binary representations of the angles θi
-            thetas_binary = [
-                _float_to_binary(
-                    2
-                    * qml.math.arccos(
-                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
-                    )
-                    / np.pi,
-                    len(precision_wires),
-                )
-                for j in range(qml.math.shape(probs_numerator)[0])
+            zero_string = "0" * num_precision_wires
+            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
+            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
+                one_string for _ in range(num_bit_flips)
             ]
 
+            if len(bitstrings) == 0:
+                bitstrings = ["0" * num_precision_wires]
+
             qrom_op = qml.QROM(
-                bitstrings=thetas_binary,
+                bitstrings=bitstrings,
                 target_wires=precision_wires,
                 control_wires=input_wires[:i],
                 work_wires=work_wires,
@@ -182,17 +176,24 @@ def _get_op_call_graph():
             )
             gate_types[_map_to_bloq()(qrom_op)] += 1
             gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
-            gate_types[
-                _map_to_bloq()(qml.CRY(np.pi * rotation_angles[0], wires=[0, 1]))
-            ] += len(precision_wires)
+        
+        gate_types[_map_to_bloq()(qml.CRY(0, wires=[0, 1]))] = (
+            num_precision_wires * num_state_qubits
+        )
 
-        if not qml.math.allclose(phases, 0.0):
-            thetas_binary = [
-                _float_to_binary(phase / (2 * np.pi), len(precision_wires)) for phase in phases
+        if not positive_and_real:
+            num_bit_flips = 2 ** (num_state_qubits - 1)
+            if i == 0:
+                num_bit_flips = 0
+
+            zero_string = "0" * num_precision_wires
+            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
+            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
+                one_string for _ in range(num_bit_flips)
             ]
 
             qrom_op = qml.QROM(
-                bitstrings=thetas_binary,
+                bitstrings=bitstrings,
                 target_wires=precision_wires,
                 control_wires=input_wires,
                 work_wires=work_wires,
@@ -204,14 +205,14 @@ def _get_op_call_graph():
             gate_types[
                 _map_to_bloq()(
                     qml.ctrl(
-                        qml.GlobalPhase((2 * np.pi) * (-rotation_angles[0]), wires=input_wires[0]),
+                        qml.GlobalPhase((2 * np.pi), wires=input_wires[0]),
                         control=0,
                     )
                 )
-            ] += len(precision_wires)
+            ] = num_precision_wires
 
         return gate_types
-    
+
     @_op_call_graph.register
     def _(op: qops.BasisState):
         import pennylane as qml
@@ -306,7 +307,7 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
-    
+
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QSVT):
         gate_types = defaultdict(int, {})
@@ -323,10 +324,10 @@ def _get_op_call_graph():
 
         return gate_types
 
-
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
         import pennylane as qml
+
         gate_types = {}
         x_wires = op.hyperparameters["x_wires"]
         output_wires = op.hyperparameters["output_wires"]
@@ -335,7 +336,9 @@ def _get_op_call_graph():
         work_wires = op.hyperparameters["work_wires"]
         x_wires, output_wires, base, mod, work_wires = op.hyperparameters
 
-        controlled_sequence_multiplier = qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+        controlled_sequence_multiplier = qml.ControlledSequence(
+            qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
+        )
         gate_types[controlled_sequence_multiplier] = 1
 
         return gate_types
@@ -349,10 +352,14 @@ def _map_to_bloq():
     @singledispatch
     def _to_qt_bloq(op):
         return ToBloq(op)
-    
+
     @_to_qt_bloq.register
     def _(op: qops.Adjoint):
         return _map_to_bloq()(op.base).adjoint()
+    
+    @_to_qt_bloq.register
+    def _(op: qops.Controlled):
+        return _map_to_bloq()(op.base).controlled()
 
     # @_to_qt_bloq.register
     # def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
