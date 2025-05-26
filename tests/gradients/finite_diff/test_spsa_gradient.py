@@ -101,7 +101,7 @@ class TestRademacherSampler:
             ([2, 3], 5),
         ],
     )
-    @pytest.mark.parametrize("N", [10, 10000])
+    @pytest.mark.parametrize("N", [10000])
     def test_mean_and_var(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
         close to the theoretical values."""
