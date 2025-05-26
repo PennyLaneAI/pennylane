@@ -51,10 +51,7 @@ def _get_op_call_graph():
 
         return {
             Hadamard(): len(op.estimation_wires),
-            ToBloq(op.hyperparameters["unitary"]).controlled(): (
-                2 ** len(op.estimation_wires)
-            )
-            - 1,
+            ToBloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires)) - 1,
             ToBloq(qops.adjoint(qtemps.QFT(wires=op.estimation_wires))): 1,
         }
 
@@ -79,7 +76,7 @@ def _get_op_call_graph():
 
                 qfunc = op.hyperparameters["qfunc"]
                 qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
-        
+
         call_graph = defaultdict(int, {})
         num_gates = 2 * n * (5 ** (k - 1))
         for op in q.queue:
@@ -99,7 +96,7 @@ def _get_op_call_graph():
         bases = op.hyperparameters["bases"]
         num_basis_states = len(bases)
         size_basis_state = len(bases[0])  # assuming they are all the same size
-        
+
         dic_state = dict(zip(bases, coeffs))
         perms = _assign_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
@@ -121,7 +118,9 @@ def _get_op_call_graph():
         num_zero_ctrls = size_basis_state // 2
         control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
 
-        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(size_basis_state+1), control_values=control_values))
+        multi_x = _map_to_bloq()(
+            qml.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values)
+        )
 
         basis_size = 2**size_basis_state
         prob_matching_basis_states = num_basis_states / basis_size
@@ -134,17 +133,21 @@ def _get_op_call_graph():
             gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
 
         return gate_types
-    
+
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
         import pennylane as qml
+        from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
-        gate_types = defaultdict()
-        probs = qml.math.abs(state_vector) ** 2
-        phases = qml.math.angle(state_vector) % (2 * np.pi)
+        gate_types = defaultdict(int, {})
+        print("here")
+        precision_wires = op.hyperparameters["precision_wires"]
+        work_wires = op.hyperparameters["work_wires"]
+        input_wires = op.hyperparameters["input_wires"]
+        probs = qml.math.abs(op.state_vector) ** 2
+        phases = qml.math.angle(op.state_vector) % (2 * np.pi)
         eps = 1e-15  # Small constant to avoid division by zero
 
-        decomp_ops = []
         num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
         rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
 
@@ -170,70 +173,44 @@ def _get_op_call_graph():
                 )
                 for j in range(qml.math.shape(probs_numerator)[0])
             ]
-            # Apply the QROM operation to encode the thetas binary representation
-            decomp_ops.append(
-                qml.QROM(
-                    bitstrings=thetas_binary,
-                    target_wires=precision_wires,
-                    control_wires=input_wires[:i],
-                    work_wires=work_wires,
-                    clean=False,
-                )
-            )
 
-            # Turn binary representation into proper rotation
-            for ind, wire in enumerate(precision_wires):
-                decomp_ops.append(qml.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
-
-            # Clean wires used to store the theta values
-            decomp_ops.append(
-                qml.adjoint(qml.QROM)(
-                    bitstrings=thetas_binary,
-                    target_wires=precision_wires,
-                    control_wires=input_wires[:i],
-                    work_wires=work_wires,
-                    clean=False,
-                )
+            qrom_op = qml.QROM(
+                bitstrings=thetas_binary,
+                target_wires=precision_wires,
+                control_wires=input_wires[:i],
+                work_wires=work_wires,
+                clean=False,
             )
+            gate_types[_map_to_bloq()(qrom_op)] += 1
+            gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
+            gate_types[
+                _map_to_bloq()(qml.CRY(np.pi * rotation_angles[0], wires=[0, op.wires[i]]))
+            ] += len(precision_wires)
 
         if not qml.math.allclose(phases, 0.0):
-            # Compute the binary representations of the phases
-
             thetas_binary = [
                 _float_to_binary(phase / (2 * np.pi), len(precision_wires)) for phase in phases
             ]
 
-            # Apply the QROM operation to encode the thetas binary representation
-            decomp_ops.append(
-                qml.QROM(
-                    bitstrings=thetas_binary,
-                    target_wires=precision_wires,
-                    control_wires=input_wires,
-                    work_wires=work_wires,
-                    clean=False,
-                )
+            qrom_op = qml.QROM(
+                bitstrings=thetas_binary,
+                target_wires=precision_wires,
+                control_wires=input_wires,
+                work_wires=work_wires,
+                clean=False,
             )
 
-            for ind, wire in enumerate(precision_wires):
-                decomp_ops.append(
+            gate_types[_map_to_bloq()(qrom_op)] += 1
+            gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
+            gate_types[
+                _map_to_bloq()(
                     qml.ctrl(
-                        qml.GlobalPhase(
-                            (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
-                        ),
-                        control=wire,
+                        qml.GlobalPhase((2 * np.pi) * (-rotation_angles[0]), wires=input_wires[0]),
+                        control=0,
                     )
                 )
+            ] += len(precision_wires)
 
-            decomp_ops.append(
-                qml.adjoint(qml.QROM)(
-                    bitstrings=thetas_binary,
-                    target_wires=precision_wires,
-                    control_wires=input_wires,
-                    work_wires=work_wires,
-                    clean=False,
-                )
-            )
-        
         return gate_types
 
     @_op_call_graph.register
@@ -244,13 +221,15 @@ def _get_op_call_graph():
         num_ctrl_wires = len(op.control_wires)
         control_wires = op.control_wires
 
-        gate_types = defaultdict()
+        gate_types = defaultdict(int, {})
         if num_ctrl_wires == 0:
             for bits in op.bitstrings:
-                gate_types[_map_to_bloq()(qml.BasisEmbedding(int(bits, 2), wires=op.target_wires))] += 1
+                gate_types[
+                    _map_to_bloq()(qml.BasisEmbedding(int(bits, 2), wires=op.target_wires))
+                ] += 1
 
             return gate_types
-        
+
         swap_wires = op.target_wires + op.work_wires
 
         # number of operators we store per column (power of 2)
@@ -274,7 +253,9 @@ def _get_op_call_graph():
             new_ops.append(qml.prod(*column_ops))
 
         # Select block
-        n_control_select_wires = int(qml.math.ceil(qml.math.log2(2 ** len(op.control_wires) / depth)))
+        n_control_select_wires = int(
+            qml.math.ceil(qml.math.log2(2 ** len(op.control_wires) / depth))
+        )
         control_select_wires = control_wires[:n_control_select_wires]
 
         select_ops = []
@@ -315,7 +296,7 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
-    
+
     # @_op_call_graph.register
     # def _(op: qtemps.subroutines.ModExp):
     #     import pennylane as qml
@@ -353,7 +334,7 @@ def _map_to_bloq():
     #         except KeyError:
     #             # ToDo: make this more robust of an error
     #             return args[0][op]
-            
+
     #     return TextbookQPE(
     #         unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
     #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
@@ -397,9 +378,8 @@ def _map_to_bloq():
     #                 mindices.append(i)
     #                 mcoeffs.append(c)
     #         return mindices, mcoeffs
-        
-    #     indices, coeffs = _construct_suzuki_indices_coeffs()
 
+    #     indices, coeffs = _construct_suzuki_indices_coeffs()
 
     #     return TrotterizedUnitary(
     #         bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
@@ -1143,7 +1123,7 @@ def _inherit_from_bloq(cls):
                 if isinstance(self.op, Operation):
                     return f"ToBloq({self.op.name})"
                 return "ToBloq(QNode)"
-            
+
             def __str__(self):
                 return "PL" + self.op.name
 
@@ -1209,6 +1189,7 @@ class ToBloq:
 
     def __call__(self, *args, **kwargs):
         raise ImportError(self._error_message)
+
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
