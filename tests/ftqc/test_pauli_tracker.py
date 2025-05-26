@@ -341,6 +341,23 @@ class TestPauliTracker:
 @flaky(max_runs=5)
 class TestOfflineCorrection:
 
+    def _measurements_corrections(self, script, num_shots, raw_res):
+        meas_res = raw_res[0 : len(script.measurements)]
+
+        mid_meas_res = raw_res[len(script.measurements) :]
+
+        for i in range(num_shots):
+            mid_meas = [row[i] for row in mid_meas_res]
+            phase_cor = get_byproduct_corrections(script, mid_meas)
+            for j in range(len(script.measurements)):
+                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
+
+        cor_res = []
+        for i in range(len(script.measurements)):
+            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        return cor_res
+
+
     @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
@@ -365,8 +382,9 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state, num_iter)
-        ops = []
+        raw_res = circuit_mbqc(start_state, num_iter)
+
+        ops = [qml.StatePrep(start_state, wires=[0, 1])]
         for _ in range(num_iter):
             ops.extend([qml.CNOT(wires=[0, 1])])
 
@@ -374,27 +392,14 @@ class TestOfflineCorrection:
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
-
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 
@@ -426,8 +431,9 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state, num_iter)
-        ops = []
+        raw_res = circuit_mbqc(start_state, num_iter)
+
+        ops = [qml.StatePrep(start_state, wires=[0, 1])]
         for _ in range(num_iter):
             ops.extend([qml.H(wires=[0]), qml.H(wires=[1])])
 
@@ -435,27 +441,15 @@ class TestOfflineCorrection:
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 
@@ -487,8 +481,8 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state, num_iter)
-        ops = []
+        raw_res = circuit_mbqc(start_state, num_iter)
+        ops = [qml.StatePrep(start_state, wires=[0, 1])]
         for _ in range(num_iter):
             ops.extend([qml.S(wires=[0]), qml.S(wires=[1])])
 
@@ -496,27 +490,14 @@ class TestOfflineCorrection:
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
-
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 
@@ -548,34 +529,21 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state)
-        ops = [qml.CNOT(wires=[0, 1]), qml.S(wires=[0]), qml.H(wires=[1])]
+        raw_res = circuit_mbqc(start_state)
+        ops = [qml.StatePrep(start_state, wires=[0, 1]), qml.CNOT(wires=[0, 1]), qml.S(wires=[0]), qml.H(wires=[1])]
 
         measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
-
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 
@@ -607,8 +575,8 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state)
-        ops = [
+        raw_res = circuit_mbqc(start_state)
+        ops = [qml.StatePrep(start_state, wires=[0, 1]),
             qml.X(0),
             qml.CNOT(wires=[0, 1]),
             qml.Y(1),
@@ -621,27 +589,14 @@ class TestOfflineCorrection:
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
-
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 
@@ -675,8 +630,9 @@ class TestOfflineCorrection:
 
             return [qml.sample(op=m) for m in mid_meas]
 
-        res = circuit_mbqc(start_state)
+        raw_res = circuit_mbqc(start_state)
         ops = [
+            qml.StatePrep(start_state, wires=[0, 1]),
             qml.X(0),
             qml.CNOT(wires=[0, 1]),
             qml.Y(1),
@@ -689,27 +645,14 @@ class TestOfflineCorrection:
 
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
-        meas_res = res[0 : len(measurements)]
-
-        mid_meas_res = res[len(measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(measurements)):
-                meas_res[j][i] = meas_res[j][i] * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
+        cor_res = self._measurements_corrections(script, num_shots, raw_res)
 
         dev_ref = qml.device("default.qubit")
 
-        ops_ref = [qml.StatePrep(start_state, wires=[0, 1])] + ops
         measurements_ref = []
         for measurement in measurements:
             measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops_ref, measurements_ref)
+        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
 
         res_ref = dev_ref.execute(script_ref)
 

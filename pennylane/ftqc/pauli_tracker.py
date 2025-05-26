@@ -21,7 +21,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from pennylane import CNOT, H, I, S, X, Y, Z, math
+from pennylane import CNOT, BasisState, H, I, S, StatePrep, X, Y, Z, math
 from pennylane.operation import Operator
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
@@ -358,7 +358,8 @@ def get_xz_record(num_wires: int, by_ops: List[Tuple[np.uint8, np.uint8]], ops: 
             by_op = by_ops.pop()
             for _by_op, _xz_comm in zip(by_op, xz_commutated):
                 new_xz.append(math.bitwise_xor(_by_op, _xz_comm))
-
+        elif isinstance(op, (StatePrep, BasisState)):
+            new_xz = xz
         else:  # branch for Paulis
             # Commutate step is skipped.
             # Get the new xz by merging the recorded xz with the Pauli ops directly.
@@ -530,7 +531,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
             print(res)
 
     """
-    if not all(isinstance(op, _GATE_SET_SUPPORTED) for op in tape.operations):
+    if not all(isinstance(op, _GATE_SET_SUPPORTED + (StatePrep, BasisState)) for op in tape.operations):
         raise NotImplementedError("Not all gate operations in the tape are supported.")
 
     if not all(res in [0, 1] for res in mid_meas):
