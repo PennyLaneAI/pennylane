@@ -111,7 +111,10 @@ class QasmInterpreter(QASMVisitor):
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        super().generic_visit(node, context)
+        try:
+            super().generic_visit(node, context)
+        except InterruptedError as e:
+            print(str(e))
         self.construct_callable(context)
         return context
 
@@ -134,6 +137,18 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
         """
         context["callable"] = partial(self._execute_all, context)
+
+    def visit_EndStatement(self, node: QASMNode, context: dict):
+        """
+        Ends the program.
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise InterruptedError(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
 
     @staticmethod
     def visit_QubitDeclaration(node: QASMNode, context: dict):
@@ -311,7 +326,7 @@ class QasmInterpreter(QASMVisitor):
             gates_dict[node.name.name.upper()],
             *args,
             wires=[
-                # parser will sometimes represent as a str and sometimes as a Identifier
+                # parser will sometimes represent as a str and sometimes as an Identifier
                 (
                     node.qubits[q].name
                     if isinstance(node.qubits[q].name, str)

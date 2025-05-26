@@ -49,6 +49,33 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_end_statement(self):
+
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            ch q0, q1;
+            cx q1, q0;
+            end;
+            cy q0, q1;
+            cz q1, q0;
+            swap q0, q1;
+            """,
+            permissive=True,
+        )
+        context = QasmInterpreter().generic_visit(ast, context={"name": "end-early"})
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
+
+        assert q.queue == [
+            CH(wires=["q0", "q1"]),
+            CNOT(wires=["q1", "q0"]),
+        ]
+
     def test_mod_with_declared_param(self):
 
         # parse the QASM program
