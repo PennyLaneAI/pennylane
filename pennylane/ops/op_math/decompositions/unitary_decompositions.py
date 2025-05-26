@@ -693,9 +693,6 @@ def _two_qubit_resource(**_):
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
-        # The three-CNOT case does not involve an RX, but an RX must be accounted
-        # for in case the two-CNOT case is chosen at runtime.
-        ops.RX: 1,
         ops.GlobalPhase: 1,
     }
 
