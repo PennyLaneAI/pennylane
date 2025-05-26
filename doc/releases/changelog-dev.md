@@ -6,6 +6,7 @@
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -286,6 +287,11 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Setting up the configuration of a workflow, including the determination of the best diff
+  method, is now done *after* user transforms have been applied. This allows transforms to
+  update the shots and change measurement processes with fewer issues.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
