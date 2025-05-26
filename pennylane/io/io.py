@@ -842,13 +842,16 @@ def from_qasm3(quantum_circuit: str):
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
 
-    >>> execute_qasm, wires = from_qasm3("qubit q0; ry(0.2) q0; pow(2) @ x q0;")
+    >>> execute_qasm, wires = from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
     >>> dev = device("default.qubit", wires=[w for w in wires] + [0])
     >>> @qml.qnode(dev)
     >>> def my_circuit():
     >>>   execute_qasm()
     >>>   return qml.expval(qml.Z(0))
-    >>> my_circuit()
+    >>> print(qml.draw(my_circuit)())
+
+    0: ──RY(0.20)──X²─┤  <Z>
+    1: ──RX(1.00)─────┤
 
     Args:
         quantum_circuit (str): a QASM string containing a simple quantum circuit.

@@ -87,7 +87,7 @@ class TestInterpreter:
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
 
-    def test_unsuppoted_node_type_raises(self):
+    def test_unsupported_node_type_raises(self):
 
         # parse the QASM program
         ast = parse(

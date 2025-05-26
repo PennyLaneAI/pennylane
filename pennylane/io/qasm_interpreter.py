@@ -234,7 +234,7 @@ class QasmInterpreter(QASMVisitor):
             # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
             # `no viable alternative at input 'wop(power)@'`, long before we get here.
             assert mod.modifier.name in ("inv", "pow", "ctrl")
-
+            wrapper = None
             if mod.modifier.name == "inv":
                 wrapper = ops.adjoint
             elif mod.modifier.name == "pow":
