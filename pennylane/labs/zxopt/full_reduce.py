@@ -24,7 +24,7 @@ from .qasm_utils import _tape2pyzx
 def full_reduce(tape, verbose=False):
     r"""
 
-    A pipeline for T-gate optimizations in `pyzx<https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
+    A pipeline for T-gate optimizations in `pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
 
     This pipeline performs, in that order
 
