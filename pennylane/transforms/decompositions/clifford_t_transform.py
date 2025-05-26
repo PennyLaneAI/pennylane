@@ -18,8 +18,6 @@ import warnings
 from functools import lru_cache, partial
 from itertools import product
 
-from tqdm import tqdm
-
 import pennylane as qml
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
@@ -357,12 +355,13 @@ class _CachedCallable:
         self.epsilon = epsilon
         self.method_kwargs = method_kwargs
         self.query = lru_cache(maxsize=10000)(self.cached_decompose)
+        self.map_wires = lru_cache(maxsize=1000)(self.wire_mapper)
 
-    def equal(self, method, epsilon, **method_kwargs):
+    def compatible(self, method, epsilon, **method_kwargs):
         """Check equality based on `method`, `epsilon` and `method_kwargs`."""
         return (
             self.method == method
-            and qml.math.allclose(self.epsilon, epsilon)
+            and self.epsilon <= epsilon
             and self.method_kwargs == method_kwargs
         )
 
@@ -373,6 +372,11 @@ class _CachedCallable:
             adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
             return adj[1:] + adj[:1]
         return seq
+
+    @staticmethod
+    def wire_mapper(op, wire):
+        """Maps the operator to the provided wire."""
+        return op.map_wires({0: wire})
 
 
 _CLIFFORD_T_CACHE = None
@@ -451,7 +455,7 @@ def clifford_t_decomposition(
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
-        for op in tqdm(compiled_tape.operations):
+        for op in compiled_tape.operations:
             # Check whether operation is to be skipped
             if isinstance(op, _SKIP_OP_TYPES):
                 decomp_ops.append(op)
@@ -505,20 +509,24 @@ def clifford_t_decomposition(
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
-        if _CLIFFORD_T_CACHE is None or _CLIFFORD_T_CACHE.equal(method, epsilon, **method_kwargs):
+        if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
+            method, epsilon, **method_kwargs
+        ):
             _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, **method_kwargs)
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
-        for op in tqdm(new_operations):
+        for op in new_operations:
             if isinstance(op, qml.RZ):
                 # Decompose the RZ operation with a default wire
                 clifford_ops = _CLIFFORD_T_CACHE.query(op.data[0])
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
-                mapped_ops = qml.map_wires(qml.prod(*clifford_ops[:-1]), {0: op.wires[0]})
-                decomp_ops.extend(getattr(mapped_ops, "operands", [mapped_ops]))
+                op_wire = op.wires[0]
+                decomp_ops.extend(
+                    [_CLIFFORD_T_CACHE.map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]]
+                )
             else:
                 decomp_ops.append(op)
 

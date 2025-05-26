@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
+    _CachedCallable,
     _merge_param_gates,
     _one_qubit_decompose,
     _rot_decompose,
@@ -507,3 +508,58 @@ class TestCliffordCompile:
         # Compare results
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
+
+
+def circuit_7(num_repeat, rand_angles):
+    """Circuit 7 with a repeated operations"""
+    for angle in rand_angles:
+        for idx in range(num_repeat):
+            qml.RZ(angle, idx)
+        for idx in range(num_repeat):
+            qml.CNOT([idx, (idx + 1) % num_repeat])
+    return qml.expval(qml.Z(0))
+
+
+class TestCliffordCached:
+    """Unit tests for clifford caching function."""
+
+    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    def test_clifford_cached(self):
+        """Test that the cached version of the circuit is equivalent to the original one."""
+
+        num_angles = 1
+        rand_angles = qml.math.random.random.rand(num_angles)
+        rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
+
+        num_repeat = 2
+        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        _ = clifford_t_decomposition(old_tape, epsilon=10)
+
+        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
+
+        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert cache_info.misses == 2 * num_angles
+        assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
+
+        num_repeat = 2
+        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        _ = clifford_t_decomposition(old_tape, epsilon=10)
+
+        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
+
+        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert cache_info.misses == 2 * num_angles
+        assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
+
+        num_repeat = 2
+        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        _ = clifford_t_decomposition(old_tape)
+
+        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
+
+        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert cache_info.misses == 2 * num_angles
+        assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
