@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -191,7 +192,7 @@ def adjoint_state_measurements(
         return (tape,), null_postprocessing
 
     if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
-        raise qml.DeviceError(
+        raise DeviceError(
             "adjoint diff supports either all expectation values or only measurements without observables."
         )
 
@@ -243,7 +244,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
         prog((circuit,))
     except (
         qml.operation.DecompositionUndefinedError,
-        qml.DeviceError,
+        DeviceError,
         AttributeError,
     ):
         return False
@@ -536,15 +537,11 @@ class DefaultQubit(Device):
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+            execution_config (Optional[ExecutionConfig]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
-            unset specifications filled in.
-
-        This device supports any qubit operations that provide a matrix
+            TransformProgram:
 
         """
         config = execution_config or ExecutionConfig()
@@ -596,18 +593,10 @@ class DefaultQubit(Device):
         return transform_program
 
     # pylint: disable = too-many-branches
+    @debug_logger
     def setup_execution_config(
         self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
     ) -> ExecutionConfig:
-        """This is a private helper for ``preprocess`` that sets up the execution config.
-
-        Args:
-            execution_config (ExecutionConfig)
-
-        Returns:
-            ExecutionConfig: a preprocessed execution config
-
-        """
         config = config or ExecutionConfig()
         updated_values = {}
 
@@ -637,11 +626,11 @@ class DefaultQubit(Device):
 
         for option, value in config.device_options.items():
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
             if qml.capture.enabled():
                 if option == "max_workers" and value is not None:
-                    raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
+                    raise DeviceError("Cannot set 'max_workers' if program capture is enabled.")
 
         gradient_method = config.gradient_method
         if config.gradient_method == "best":
@@ -999,9 +988,9 @@ class DefaultQubit(Device):
             )
 
         if self.wires is None:
-            raise qml.DeviceError("Device wires are required for jaxpr execution.")
+            raise DeviceError("Device wires are required for jaxpr execution.")
         if self.shots.has_partitioned_shots:
-            raise qml.DeviceError("Shot vectors are unsupported with jaxpr execution.")
+            raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
         else:
