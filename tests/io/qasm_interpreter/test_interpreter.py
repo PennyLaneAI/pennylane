@@ -81,8 +81,8 @@ class TestInterpreter:
         )
 
         with pytest.raises(
-                ValueError,
-                match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+            ValueError,
+            match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
 
@@ -117,10 +117,10 @@ class TestInterpreter:
             context["callable"]()
 
         assert q.queue == [
-            RX(1, 'q0'),
-            RX(2, 'q0'),
-            RX(0, 'q0'),
-            RX(2, 'q0'),
+            RX(1, "q0"),
+            RX(2, "q0"),
+            RX(0, "q0"),
+            RX(2, "q0"),
         ]
 
     def test_mod_with_declared_param(self):
@@ -136,7 +136,7 @@ class TestInterpreter:
             permissive=True,
         )
 
-        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -156,8 +156,8 @@ class TestInterpreter:
         )
 
         with pytest.raises(
-            NameError,
-            match="Undeclared variable phi encountered in QASM.",
+            TypeError,
+            match="Attempt to use unevaluated variable phi in name-error, last updated on line unknown.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
 
@@ -177,7 +177,8 @@ class TestInterpreter:
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+            match="An unsupported QASM instruction QuantumMeasurementStatement was "
+                  "encountered on line 6, in unsupported-error.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
 
@@ -260,11 +261,11 @@ class TestInterpreter:
             ry(0.2) q0;
             inv @ rx(theta) q0;
             pow(2) @ x q0;
-            ctrl @ x q1, q0;
+            ctrl @ id q0, q1;
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -280,7 +281,7 @@ class TestInterpreter:
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
             PowOpObs(PauliX(wires=["q0"]), 2),
-            CNOT(wires=["q1", "q0"]),
+            Controlled(Identity("q1"), control_wires=["q0"]),
         ]
 
     def test_interprets_two_qubit_gates(self):
@@ -298,7 +299,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         # setup mocks
 
@@ -329,7 +330,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
@@ -358,7 +359,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
@@ -387,7 +388,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         # setup mocks
 
@@ -428,7 +429,7 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
