@@ -212,6 +212,16 @@ def _get_op_call_graph():
             ] += len(precision_wires)
 
         return gate_types
+    
+    @_op_call_graph.register
+    def _(op: qops.BasisState):
+        import pennylane as qml
+        from qualtran.bloqs.basic_gates import XGate
+
+        gate_types = {}
+        gate_types[XGate()] = sum(op.parameters[0])
+
+        return gate_types
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
@@ -297,21 +307,23 @@ def _get_op_call_graph():
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
 
-    # @_op_call_graph.register
-    # def _(op: qtemps.subroutines.ModExp):
-    #     import pennylane as qml
-    #     gate_types = {}
-    #     x_wires = op.hyperparameters["x_wires"]
-    #     output_wires = op.hyperparameters["output_wires"]
-    #     base = op.hyperparameters["base"]
-    #     mod = op.hyperparameters["mod"]
-    #     work_wires = op.hyperparameters["work_wires"]
-    #     x_wires, output_wires, base, mod, work_wires = op.hyperparameters
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.ModExp):
+        import pennylane as qml
+        gate_types = {}
+        x_wires = op.hyperparameters["x_wires"]
+        output_wires = op.hyperparameters["output_wires"]
+        base = op.hyperparameters["base"]
+        mod = op.hyperparameters["mod"]
+        work_wires = op.hyperparameters["work_wires"]
+        x_wires, output_wires, base, mod, work_wires = op.hyperparameters
 
-    #     controlled_sequence_multiplier = qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
-    #     gate_types[controlled_sequence_multiplier] = 1
+        controlled_sequence_multiplier = qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+        gate_types[controlled_sequence_multiplier] = 1
 
-    #     return gate_types
+        return gate_types
+    
+
 
     return _op_call_graph
 
