@@ -140,7 +140,6 @@ def _get_op_call_graph():
         from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
         gate_types = defaultdict(int, {})
-        print("here")
         precision_wires = op.hyperparameters["precision_wires"]
         work_wires = op.hyperparameters["work_wires"]
         input_wires = op.hyperparameters["input_wires"]
@@ -306,6 +305,23 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
+    
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QSVT):
+        gate_types = defaultdict(int, {})
+        UA = op.hyperparameters["UA"]
+        projectors = op.hyperparameters["projectors"]
+        num_projectors = len(projectors)
+
+        for idx, op in enumerate(projectors[:-1]):
+            gate_types[_map_to_bloq()(op)] += 1
+
+        gate_types[_map_to_bloq()(UA)] = num_projectors // 2 + 1
+        gate_types[_map_to_bloq()(UA)] = num_projectors // 2
+        gate_types[_map_to_bloq()(projectors[-1])] += 1
+
+        return gate_types
+
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
@@ -322,8 +338,6 @@ def _get_op_call_graph():
         gate_types[controlled_sequence_multiplier] = 1
 
         return gate_types
-    
-
 
     return _op_call_graph
 
