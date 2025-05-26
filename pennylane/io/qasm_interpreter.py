@@ -85,7 +85,7 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        handler_name = 'visit_' + node.__class__.__name__
+        handler_name = "visit_" + node.__class__.__name__
         if hasattr(self, handler_name):
             getattr(self, handler_name)(node, context)
         else:
