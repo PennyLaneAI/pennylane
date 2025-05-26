@@ -229,7 +229,7 @@ class TestCompressedResourceOp:
         [
             (resource_rep(qml.RX), "RX"),
             (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qml.RX, {}, 1, 0, 0), "C(RX)"),
+            (controlled_resource_rep(qml.T, {}, 1, 0, 0), "C(T)"),
             (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
         ],
     )
@@ -322,28 +322,6 @@ class TestControlledResourceRep:
             },
         )
 
-    def test_resource_rep_dispatch_to_controlled_resource_rep(self, mocker):
-        """Tests that resource_rep dispatches to controlled_resource_rep for Controlled."""
-
-        expected_fn = mocker.patch("pennylane.decomposition.resources.controlled_resource_rep")
-        _ = resource_rep(
-            qml.ops.Controlled,
-            **{
-                "base_class": qml.CRX,
-                "base_params": {},
-                "num_control_wires": 2,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-            },
-        )
-        expected_fn.assert_called_once_with(
-            base_class=qml.CRX,
-            base_params={},
-            num_control_wires=2,
-            num_zero_control_values=1,
-            num_work_wires=1,
-        )
-
     def test_controlled_resource_op_base_param_mismatch(self):
         """Tests that an error is raised when base op and base params mismatch."""
 
@@ -371,13 +349,37 @@ class TestControlledResourceRep:
             1,
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.MultiControlledX,
             {
-                "base_class": qml.X,
-                "base_params": {},
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+            },
+        )
+
+    def test_controlled_qubit_unitary(self):
+        """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.QubitUnitary,
+                "base_params": {"num_wires": 2},
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+            },
+            1,
+            1,
+            1,
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.ControlledQubitUnitary,
+            {
+                "num_target_wires": 2,
+                "num_control_wires": 2,
+                "num_zero_control_values": 2,
+                "num_work_wires": 2,
             },
         )
 
@@ -403,10 +405,9 @@ class TestControlledResourceRep:
             1,
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.ControlledQubitUnitary,
             {
-                "base_class": qml.QubitUnitary,
-                "base_params": {"num_wires": 1},
+                "num_target_wires": 1,
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
@@ -447,39 +448,6 @@ class TestSymbolicResourceRep:
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             qml.decomposition.adjoint_resource_rep(DummyOp, {})
-
-    def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
-        """Tests that the adjoint of a nested controlled op is flattened."""
-
-        rep = qml.decomposition.adjoint_resource_rep(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Controlled,
-                "base_params": {
-                    "base_class": qml.CRX,
-                    "base_params": {},
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
-                },
-            },
-        )
-        assert rep == CompressedResourceOp(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Adjoint,
-                "base_params": {
-                    "base_class": qml.ops.Controlled,
-                    "base_params": {
-                        "base_class": qml.RX,
-                        "base_params": {},
-                        "num_control_wires": 3,
-                        "num_zero_control_values": 1,
-                        "num_work_wires": 1,
-                    },
-                },
-            },
-        )
 
     def test_adjoint_custom_controlled_ops(self):
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
