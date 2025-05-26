@@ -609,6 +609,49 @@ class TestDecomposition:
         matrix = qml.prod(*op.decomposition()).matrix()
         assert qml.math.allclose(matrix, op.matrix())
 
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (3j, qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (-1j, qml.Y(1) + 3 * qml.PauliX(0) @ qml.PauliZ(2)),
+            (-1, 1j * qml.PauliY(1) + 3j * qml.PauliX(0) @ qml.PauliZ(2)),
+        ],
+    )
+    def test_trotter_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the trotter decomposition works in the new graph-based system."""
+
+        op = qml.exp(hamiltonian, coeff, num_steps=100)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (0.3j, qml.Z(0) @ qml.Y(1)),
+            (0.5, 0.1j * qml.Y(0) @ qml.I(1) @ qml.Z(2)),
+        ],
+    )
+    def test_pauli_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the pauli decomposition works in the new graph-based system."""
+
+        op = qml.exp(hamiltonian, coeff)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        assert len(decomp_tape) == 1
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
 
 class TestMiscMethods:
     """Test other representation methods."""
