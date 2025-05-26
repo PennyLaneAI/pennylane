@@ -16,7 +16,6 @@ import os
 import re
 import sys
 from datetime import datetime
-import collections
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(".")), "doc"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "8.0"
+needs_sphinx = "8.1"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -62,7 +61,6 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
-autoapi_dirs = ['code/api']
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
@@ -73,7 +71,6 @@ if os.environ.get("READTHEDOCS", "") == "True":
 os.environ["SPHINX_BUILD"] = "1"
 
 autosummary_generate = True
-autosummary_generate_overwrite = True
 autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
@@ -90,28 +87,11 @@ intersphinx_mapping = {
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
-# autodoc_default_options = {
-#     'no-index':'pennylane.bose.BoseSentence,pennylane.bose.BoseWord,pennylane.fermi.FermiA,pennylane.fermi.FermiC,pennylane.fermi.FermiSentence,pennylane.fermi.FermiWord,pennylane.qualtran_io.FromBloq'
-# }
-
-nitpick_ignore = {
-    ('py:class', 'duplicate')
-}
-
-qualname_overrides = {
-    "pennylane.bose.bosonic.BoseSentence": "pennylane.bose.BoseSentence",  # fix qualname
-    "pennylane.bose.bosonic.BoseWord": "pennylane.bose.BoseWord", # fix role
-}
-
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
-suppress_warnings = ['None','duplicate_declaration.c,duplicate_declaration.cpp, epub.duplicated_toc_entry','toc.duplicate_entry']
-intersphinx_disabled_reftypes = ['*']
-autodoc_type_aliases = {'pennylane.BoseWord':'pennylane.bose.bosonic.BoseWord'}
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -350,12 +330,3 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
-
-# def remove_namedtuple_attrib_docstring(app, what, name, obj, skip, options):
-#     if type(obj) is collections._tuplegetter:
-#         return True
-#     return skip
-
-
-# def setup(app):
-#     app.connect('autodoc-skip-member', remove_namedtuple_attrib_docstring)

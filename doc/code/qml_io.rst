@@ -9,7 +9,7 @@ into PennyLane circuits and operators.
 
 .. currentmodule:: pennylane.io
 
-.. automodapi:: pennylane
+.. automodapi:: pennylane.io.qualtran_io
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:

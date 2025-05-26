@@ -19,8 +19,7 @@ from pennylane.typing import TensorLike
 
 
 class BoseWord(dict):
-    r"""
-    Dictionary used to represent a Bose word, a product of bosonic creation and
+    r"""Dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
 
     The keys of the dictionary are tuples of two integers. The first integer represents the
@@ -416,8 +415,7 @@ class BoseWord(dict):
 
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
-    r"""
-    Dictionary used to represent a Bose sentence, a linear combination of Bose words,
+    r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
     >>> w1 = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
