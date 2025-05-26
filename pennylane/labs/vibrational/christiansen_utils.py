@@ -80,6 +80,7 @@ def _local_onemode_kinetic(rank, boscombos_on_rank, freqs, all_mode_combos):
             elif ki == hi - 2:
                 local_K_mat[ind] -= m_const * np.sqrt((hi - 1) * hi)
 
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_H1Kdata_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H1", data=local_K_mat)
@@ -148,6 +149,7 @@ def _local_cform_twomode_kinetic(rank, boscombos_on_rank, pes, all_mode_combos):
             for condition, value in conditions.items():
                 if condition:
                     local_kin_cform_twobody[ind] += value
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_H2Kdata_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H2", data=local_kin_cform_twobody)
@@ -215,7 +217,7 @@ def _local_cform_onemode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
             full_coeff = sqrt * quadrature
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_onebody[ind] += full_coeff
-
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_H1data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H1", data=local_ham_cform_onebody)
@@ -285,7 +287,7 @@ def _local_cform_onemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
                 )
                 full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
                 local_dipole_cform_onebody[ind, alpha] += full_coeff
-
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_D1data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("D1", data=local_dipole_cform_onebody)
@@ -377,7 +379,7 @@ def _local_cform_twomode(rank, boscombos_on_rank, n_states, pes, all_mode_combos
             full_coeff = sqrt * quadrature  # * 219475 for cm^-1 conversion
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_twobody[ind] += full_coeff
-
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_H2data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H2", data=local_ham_cform_twobody)
@@ -465,7 +467,7 @@ def _local_cform_twomode_dipole(rank, boscombos_on_rank, n_states, pes, all_mode
                 )
                 full_coeff = sqrt * quadrature
                 local_dipole_cform_twobody[ind, alpha] += full_coeff
-
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_D2data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("D2", data=local_dipole_cform_twobody)
@@ -565,6 +567,7 @@ def _local_cform_threemode(rank, boscombos_on_rank, n_states, pes, all_mode_comb
             ind = nn * len(boscombos_on_rank) + mm
             full_coeff = sqrt * quadrature
             local_ham_cform_threebody[ind] = full_coeff
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_H3data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("H3", data=local_ham_cform_threebody)
@@ -669,6 +672,7 @@ def _local_cform_threemode_dipole(rank, boscombos_on_rank, n_states, pes, all_mo
                 )
                 full_coeff = sqrt * quadrature
                 local_dipole_cform_threebody[ind, alpha] = full_coeff
+    # May be clobbered after multiple execution
     file_path = Path(f"cform_D3data_{rank}.hdf5")
     with h5py.File(file_path, "w") as f:
         f.create_dataset("D3", data=local_dipole_cform_threebody)
