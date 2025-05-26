@@ -22,7 +22,7 @@ from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
 
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-arguments
 
 
 def transverse_ising(
