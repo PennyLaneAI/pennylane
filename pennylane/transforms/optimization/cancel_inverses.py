@@ -52,10 +52,11 @@ def _check_abstractness(op1: Operator, op2: Operator) -> bool:
         [
             is_any_abstract(op1.wires),
             is_any_abstract(op2.wires),
-            is_any_abstract(op1.parameters),
-            is_any_abstract(op2.parameters),
-            is_any_abstract(op1.hyperparameters.values()),
-            is_any_abstract(op2.hyperparameters.values()),
+            # Mid-circuit measurements don't have parameters or hyperparameters
+            hasattr(op1, "parameters") and is_any_abstract(op1.parameters),
+            hasattr(op2, "parameters") and is_any_abstract(op2.parameters),
+            hasattr(op1, "hyperparameters") and is_any_abstract(op1.hyperparameters.values()),
+            hasattr(op2, "hyperparameters") and is_any_abstract(op2.hyperparameters.values()),
         ]
     )
 
