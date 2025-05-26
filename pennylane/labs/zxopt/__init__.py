@@ -15,7 +15,7 @@ r"""
 Optimization passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Circuit optimization passes using ZX calculus (i.e., [pyzx](https://github.com/zxcalc/pyzx))
+Circuit optimization passes using ZX calculus (i.e., `pyzx <https://github.com/zxcalc/pyzx>`__)
 
 .. currentmodule:: pennylane.labs.zxopt
 
