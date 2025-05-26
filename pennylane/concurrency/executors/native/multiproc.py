@@ -18,7 +18,7 @@ This module provides abstractions around the Python ``multiprocessing`` library,
 """
 
 import inspect
-import multiprocessing
+from multiprocessing import get_context
 from collections.abc import Callable, Sequence
 from typing import Any, Optional
 
@@ -43,7 +43,7 @@ class MPPoolExec(PyNativeExec):
 
     @classmethod
     def _exec_backend(cls):
-        return multiprocessing.get_context("spawn").Pool
+        return get_context("spawn").Pool
 
     def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
