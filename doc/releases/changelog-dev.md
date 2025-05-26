@@ -547,6 +547,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
+  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+  ``tree-traversal`` supports analytic mode.
+  [(#7420)](https://github.com/PennyLaneAI/pennylane/pull/7420)
+
+
 <h3>Bug fixes 🐛</h3>
 
 * The documentation of `qml.pulse.drive` has been updated and corrected.
