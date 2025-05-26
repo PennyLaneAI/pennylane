@@ -531,7 +531,9 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
             print(res)
 
     """
-    if not all(isinstance(op, _GATE_SET_SUPPORTED + (StatePrep, BasisState)) for op in tape.operations):
+    if not all(
+        isinstance(op, _GATE_SET_SUPPORTED + (StatePrep, BasisState)) for op in tape.operations
+    ):
         raise NotImplementedError("Not all gate operations in the tape are supported.")
 
     if not all(res in [0, 1] for res in mid_meas):

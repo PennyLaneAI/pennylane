@@ -357,7 +357,6 @@ class TestOfflineCorrection:
             cor_res.append(np.sum(meas_res[i]) / num_shots)
         return cor_res
 
-
     @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize("num_iter", [1, 2, 3])
     def test_cnot(self, num_shots, num_iter):
@@ -442,7 +441,6 @@ class TestOfflineCorrection:
         script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
         cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
 
         dev_ref = qml.device("default.qubit")
 
@@ -530,7 +528,12 @@ class TestOfflineCorrection:
             return [qml.sample(op=m) for m in mid_meas]
 
         raw_res = circuit_mbqc(start_state)
-        ops = [qml.StatePrep(start_state, wires=[0, 1]), qml.CNOT(wires=[0, 1]), qml.S(wires=[0]), qml.H(wires=[1])]
+        ops = [
+            qml.StatePrep(start_state, wires=[0, 1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.S(wires=[0]),
+            qml.H(wires=[1]),
+        ]
 
         measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
 
@@ -576,7 +579,8 @@ class TestOfflineCorrection:
             return [qml.sample(op=m) for m in mid_meas]
 
         raw_res = circuit_mbqc(start_state)
-        ops = [qml.StatePrep(start_state, wires=[0, 1]),
+        ops = [
+            qml.StatePrep(start_state, wires=[0, 1]),
             qml.X(0),
             qml.CNOT(wires=[0, 1]),
             qml.Y(1),
