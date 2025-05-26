@@ -548,6 +548,7 @@ def _trotter_decomp_resource(base, num_steps):
 @register_condition(_pauli_rot_decomp_condition)
 @register_resources(_pauli_rot_decomp_resource)
 def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+    """Decompose the operator into a single PauliRot operator."""
     with qml.queuing.QueuingManager.stop_recording():
         base = base.simplify()
     base_coeffs, base_ops = base.terms()
