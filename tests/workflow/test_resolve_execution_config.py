@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, MCMConfig
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow.resolution import _resolve_execution_config
 
@@ -141,5 +142,5 @@ def test_no_device_vjp_if_not_supported():
     config_parameter_shift = ExecutionConfig(
         use_device_jacobian_product=True, gradient_method="parameter-shift"
     )
-    with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+    with pytest.raises(QuantumFunctionError, match="device_vjp=True is not supported"):
         _resolve_execution_config(config_parameter_shift, DummyDev(), (tape,))

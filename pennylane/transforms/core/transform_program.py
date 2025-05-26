@@ -21,6 +21,7 @@ from typing import Optional, Union, overload
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
@@ -42,19 +43,19 @@ def _get_interface(qnode, args, kwargs) -> str:
 
 
 def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
-    raise qml.QuantumFunctionError("No trainable parameters.")
+    raise QuantumFunctionError("No trainable parameters.")
 
 
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     return qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
 def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args):
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
 
     with tf.GradientTape() as tape:
@@ -65,7 +66,7 @@ def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLi
 # pylint: disable=import-outside-toplevel, unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
     if not math.get_trainable_indices(args):
-        raise qml.QuantumFunctionError("No trainable parameters.")
+        raise QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian
 
     return jacobian(partial(classical_function, **kwargs), args)
@@ -536,7 +537,7 @@ class TransformProgram:
             return None
 
         if "argnum" in self[index].kwargs:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
             )
 
@@ -544,7 +545,7 @@ class TransformProgram:
         argnums = self[-1].kwargs.get("argnums", None)  # pylint: disable=no-member
 
         if argnums is None and math.get_interface(args[0]) != "jax":
-            raise qml.QuantumFunctionError("No trainable parameters.")
+            raise QuantumFunctionError("No trainable parameters.")
 
         argnums = [0] if argnums is None else argnums
         # pylint: disable=protected-access
