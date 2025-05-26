@@ -548,6 +548,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
+  [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
+
 * The documentation of `qml.pulse.drive` has been updated and corrected.
   [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
 
