@@ -177,11 +177,7 @@ class QasmInterpreter(QASMVisitor):
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
-        # init context
-        context["wires"] = []
-        context["vars"] = dict()
-        context["gates"] = []
-        context["callable"] = None
+        context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
         try:
@@ -1303,7 +1299,7 @@ class QasmInterpreter(QASMVisitor):
             # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
             # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
             # `no viable alternative at input 'wop(power)@'`, long before we get here.
-            assert mod.modifier.name in ('inv', 'pow', 'ctrl')
+            assert mod.modifier.name in ("inv", "pow", "ctrl")
 
             if mod.modifier.name == "inv":
                 wrapper = ops.adjoint

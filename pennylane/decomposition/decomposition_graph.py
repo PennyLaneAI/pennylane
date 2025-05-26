@@ -33,21 +33,16 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.operation import Operator
 
-from .controlled_decomposition import (
-    ControlledBaseDecomposition,
-    CustomControlledDecomposition,
-    base_to_custom_ctrl_op,
-    controlled_global_phase_decomp,
-    controlled_x_decomp,
-)
 from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
     decompose_to_base,
+    flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
+    make_controlled_decomp,
     merge_powers,
     pow_involutory,
     pow_rotation,
@@ -296,25 +291,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     ) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
-        base_class = op_node.params["base_class"]
-        num_control_wires = op_node.params["num_control_wires"]
+        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
 
-        # Handle controlled global phase
-        if base_class is qml.GlobalPhase:
-            return [controlled_global_phase_decomp]
+        # Special case: control of an adjoint
+        if issubclass(base_class, qml.ops.Adjoint):
+            return [flip_control_adjoint]
 
-        # Handle controlled-X gates
-        if base_class is qml.X:
-            return [controlled_x_decomp]
-
-        # Handle custom controlled ops
-        if (base_class, num_control_wires) in base_to_custom_ctrl_op():
-            custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
-            return [CustomControlledDecomposition(custom_op_type)]
-
-        # General case
-        base_rep = resource_rep(base_class, **op_node.params["base_params"])
-        return [ControlledBaseDecomposition(rule) for rule in self._get_decompositions(base_rep)]
+        # General case: apply control to the base op's decomposition rules.
+        base = resource_rep(base_class, **base_params)
+        return [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
 
     def solve(self, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.
