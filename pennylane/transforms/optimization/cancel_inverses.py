@@ -43,22 +43,28 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
 
 
 def _check_abstractness(op1: Operator, op2: Operator) -> bool:
-    """Checks if either of the operators has abstract wires, parameters, or hyperparameters"""
+    """Checks if either of the operators has abstract wires, parameters, or hyperparameters."""
 
-    def is_any_abstract(iterable):
-        return any(is_abstract(x) for x in iterable)
+    def contains_abstract(items):
+        """Checks if any item in the iterable is abstract."""
+        for item in items:
+            if is_abstract(item):
+                return True
+            if isinstance(item, Wires) and any(is_abstract(w) for w in item):
+                return True
+        return False
 
-    return any(
-        [
-            is_any_abstract(op1.wires),
-            is_any_abstract(op2.wires),
-            # Mid-circuit measurements don't have parameters or hyperparameters
-            hasattr(op1, "parameters") and is_any_abstract(op1.parameters),
-            hasattr(op2, "parameters") and is_any_abstract(op2.parameters),
-            hasattr(op1, "hyperparameters") and is_any_abstract(op1.hyperparameters.values()),
-            hasattr(op2, "hyperparameters") and is_any_abstract(op2.hyperparameters.values()),
-        ]
-    )
+    def op_has_abstract(op):
+        """Checks if the operator has abstract wires, parameters, or hyperparameters."""
+        return any(
+            [
+                contains_abstract(op.wires),
+                hasattr(op, "parameters") and contains_abstract(op.parameters),
+                hasattr(op, "hyperparameters") and contains_abstract(op.hyperparameters.values()),
+            ]
+        )
+
+    return op_has_abstract(op1) or op_has_abstract(op2)
 
 
 def _are_inverses(op1: Operator, op2: Operator) -> bool:
@@ -80,7 +86,8 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     if _check_abstractness(op1, op2):
         warnings.warn(
             "At least one of the operators has abstract wires, parameters, or hyperparameters. "
-            "Cannot determine if they are inverses."
+            "The cancel_inverses transform will not be applied to these operators. ",
+            UserWarning,
         )
 
         return False
