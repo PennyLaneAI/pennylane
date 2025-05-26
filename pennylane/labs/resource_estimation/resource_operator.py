@@ -30,8 +30,62 @@ from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 
 
 class ResourceOperator(ABC):
-    r"""Abstract base class to represent quantum operators according to the 
-    information required for resource estimation.
+    r"""Base class to represent quantum operators according to the set of information 
+    required for resource estimation.
+
+    Operators defined for the purpose of resource estimation require less detailed information.
+    This is because the cost of a quantum gate can be well approximated without a full description
+    of its parameters. For example two :class:`~.RX` gates have the same cost regardless
+    of their rotation angle parameters. 
+
+    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its 
+    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally, 
+
+    .. details::
+
+        **Example**
+
+        A PennyLane Operator can be extended for resource estimation by creating a new class that
+        inherits from both the ``Operator`` and ``ResourceOperator``. Here is an example showing how to
+        extend ``qml.QFT`` for resource estimation.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+
+            class ResourceQFT(qml.QFT, ResourceOperator):
+
+                @staticmethod
+                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
+                    gate_types = {}
+                    hadamard = ResourceHadamard.resource_rep()
+                    swap = ResourceSWAP.resource_rep()
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
+
+                    gate_types[hadamard] = num_wires
+                    gate_types[swap] = num_wires // 2
+                    gate_types[ctrl_phase_shift] = num_wires*(num_wires - 1) // 2
+
+                    return gate_types
+
+                @property
+                def resource_params(self, num_wires) -> dict:
+                    return {"num_wires": num_wires}
+
+                @classmethod
+                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                    params = {"num_wires": num_wires}
+                    return CompressedResourceOp(cls, params)
+
+        Which can be instantiated as a normal operation, but now contains the resources:
+
+        .. code-block:: bash
+
+            >>> op = ResourceQFT(range(3))
+            >>> op.resources(**op.resource_params)
+            {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
+
     """
 
     num_wires = 0
