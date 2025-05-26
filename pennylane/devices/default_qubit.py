@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -191,7 +192,7 @@ def adjoint_state_measurements(
         return (tape,), null_postprocessing
 
     if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
-        raise qml.DeviceError(
+        raise DeviceError(
             "adjoint diff supports either all expectation values or only measurements without observables."
         )
 
@@ -243,7 +244,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
         prog((circuit,))
     except (
         qml.operation.DecompositionUndefinedError,
-        qml.DeviceError,
+        DeviceError,
         AttributeError,
     ):
         return False
@@ -635,11 +636,11 @@ class DefaultQubit(Device):
 
         for option, value in execution_config.device_options.items():
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
             if qml.capture.enabled():
                 if option == "max_workers" and value is not None:
-                    raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
+                    raise DeviceError("Cannot set 'max_workers' if program capture is enabled.")
 
         gradient_method = execution_config.gradient_method
         if execution_config.gradient_method == "best":
@@ -672,7 +673,7 @@ class DefaultQubit(Device):
                 "single-branch-statistics",
                 None,
             ):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"mcm_method='{mcm_method}' is not supported with default.qubit "
                     "when program capture is enabled."
                 )
@@ -994,9 +995,9 @@ class DefaultQubit(Device):
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
         if self.wires is None:
-            raise qml.DeviceError("Device wires are required for jaxpr execution.")
+            raise DeviceError("Device wires are required for jaxpr execution.")
         if self.shots.has_partitioned_shots:
-            raise qml.DeviceError("Shot vectors are unsupported with jaxpr execution.")
+            raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
         else:

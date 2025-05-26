@@ -19,6 +19,7 @@ import warnings
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -507,7 +508,7 @@ def set_decomposition(custom_decomps, dev):
             warnings.filterwarnings(
                 action="ignore",
                 message=r"max_expansion argument is deprecated",
-                category=qml.PennyLaneDeprecationWarning,
+                category=PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess
             new_preprocess = _create_decomp_preprocessing(custom_decomps, dev)
