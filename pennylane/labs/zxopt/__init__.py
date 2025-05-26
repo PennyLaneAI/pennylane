@@ -22,10 +22,11 @@ Circuit optimization passes using ZX calculus (i.e., [pyzx](https://github.com/z
 .. autosummary::
     :toctree: api
 
-    ~full_optimize
     ~full_reduce
-    ~basic_optimization
+    ~full_optimize
     ~todd
+    ~basic_optimization
+    
 
 
 """
