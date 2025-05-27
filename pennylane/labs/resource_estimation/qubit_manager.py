@@ -28,7 +28,7 @@ class QubitManager:
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             `int` is provided.
         algo_wires (int): Number of algorithmic wires, default value is 0.
-        tight_budget (bool): flag to determine whether extra clean qubits are available
+        tight_budget (bool): Determines whether extra clean qubits can be allocated when they exceed the available amount. The default is ``False``.
 
     **Example**
 
