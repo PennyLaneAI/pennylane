@@ -14,8 +14,8 @@
 """
 This module contains tests for the Resources container class.
 """
-
 from collections import defaultdict
+from dataclasses import dataclass
 
 import pytest
 
@@ -33,16 +33,11 @@ from pennylane.labs.resource_estimation.resources_base import (
 # pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself
 
 
+@dataclass(frozen=True)
 class DummyResOp:
     """A dummy class to populate the gate types dictionary for testing."""
 
-    def __init__(self, name):
-        """Initialize dummy class."""
-        self.name = name
-
-    def __hash__(self):
-        """Custom hash which only depends on instance name."""
-        return hash(self.name)
+    name: str
 
 
 h = DummyResOp("Hadamard")
@@ -67,10 +62,8 @@ gate_types_data = (
 )
 
 qm1 = QubitManager(work_wires=5)
-qm2 = QubitManager(work_wires={"clean": 8753, "dirty": 2347})
-qm2.algo_qubits = 22
-qm3 = QubitManager(work_wires={"clean": 400, "dirty": 222})
-qm3.algo_qubits = 108
+qm2 = QubitManager(work_wires={"clean": 8753, "dirty": 2347}, algo_wires=22)
+qm3 = QubitManager(work_wires={"clean": 400, "dirty": 222}, algo_wires=108)
 
 qubit_manager_data = (qm1, qm2, qm3)
 
@@ -139,7 +132,7 @@ class TestResources:
 
         expected_qm = qm
         expected_gt = defaultdict(int, {}) if gt is None else gt
-        assert repr(resources) == repr({"qubit manager": expected_qm, "gate types": expected_gt})
+        assert repr(resources) == repr({"qubit_manager": expected_qm, "gate_types": expected_gt})
 
     def test_clean_gate_counts(self):
         """Test that this function correctly simplifies the gate types

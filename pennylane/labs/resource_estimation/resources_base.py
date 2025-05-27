@@ -76,11 +76,9 @@ class Resources:
             CNOT = re.resource_rep(re.ResourceCNOT)
 
             # state of qubits:
-            qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1})
-            qm1.algo_qubits = 3
+            qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
 
-            qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2})
-            qm2.algo_qubits = 4
+            qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
 
             # state of gates:
             gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
@@ -252,8 +250,8 @@ class Resources:
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return {
-            "qubit manager": self.qubit_manager,
-            "gate types": self.gate_types,
+            "qubit_manager": self.qubit_manager,
+            "gate_types": self.gate_types,
         }.__repr__()
 
     def _ipython_display_(self):  # pragma: no cover
