@@ -14,14 +14,12 @@
 r"""Resource operators for parametric multi qubit operations."""
 from typing import Dict
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
 from pennylane.labs.resource_estimation.resource_operator import (
-    AddQubits,
-    CutQubits,
+    CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ
@@ -56,34 +54,11 @@ class ResourceMultiRZ(ResourceOperator):
     {CNOT: 4, RZ: 1}
     """
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, num_wires, wires=None) -> None:
         self.num_wires = num_wires
         super().__init__(wires=wires)
-
-    @staticmethod
-    def _resource_decomp(num_wires, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Args:
-            num_wires (int): the number of qubits the operation acts upon
-
-        Resources:
-            The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
-            quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
-
-            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
-            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
-            the gate acts on.
-        """
-        cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
-
-        gate_types = {}
-        gate_types[cnot] = 2 * (num_wires - 1)
-        gate_types[rz] = 1
-
-        return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(rz)]
 
     @property
     def resource_params(self):
@@ -109,7 +84,28 @@ class ResourceMultiRZ(ResourceOperator):
         return CompressedResourceOp(cls, {"num_wires": num_wires})
 
     @classmethod
-    def adjoint_resource_decomp(cls, num_wires) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, num_wires, **kwargs):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+
+        Resources:
+            The resources come from Section VIII (Figure 3) of `The Bravyi-Kitaev transformation for
+            quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+
+            Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
+            :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
+            the gate acts on.
+        """
+        cnot = resource_rep(re.ResourceCNOT)
+        rz = resource_rep(re.ResourceRZ)
+
+        return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(rz)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls, num_wires) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
@@ -125,10 +121,11 @@ class ResourceMultiRZ(ResourceOperator):
         """
         return [GateCount(cls.resource_rep(num_wires=num_wires))]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
         num_wires,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -154,21 +151,20 @@ class ResourceMultiRZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rz = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRZ,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
+        cnot = resource_rep(re.ResourceCNOT)
+        ctrl_rz = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceRZ),
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
 
-            return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(ctrl_rz)]
-
-        raise re.ResourcesNotDefined
+        return [GateCount(cnot, 2 * (num_wires - 1)), GateCount(ctrl_rz)]
 
     @classmethod
-    def pow_resource_decomp(cls, z, num_wires) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, num_wires) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -229,13 +225,40 @@ class ResourcePauliRot(ResourceOperator):
     {Hadamard: 4, S: 1, Adjoint(S): 1, RZ: 1, CNOT: 4}
     """
 
+    resource_keys = {"pauli_string"}
+
     def __init__(self, pauli_string, wires=None) -> None:
         self.pauli_string = pauli_string
         self.num_wires = len(pauli_string)
         super().__init__(wires=wires)
 
-    @staticmethod
-    def _resource_decomp(pauli_string, **kwargs):
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * pauli_string (str): a string describing the pauli operators that define the rotation
+        """
+        return {
+            "pauli_string": self.pauli_string,
+        }
+
+    @classmethod
+    def resource_rep(cls, pauli_string):
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            pauli_string (str): a string describing the pauli operators that define the rotation
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"pauli_string": pauli_string})
+
+    @classmethod
+    def default_resource_decomp(cls, pauli_string, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -264,23 +287,23 @@ class ResourcePauliRot(ResourceOperator):
             conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
         """
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
-            gp = re.ResourceGlobalPhase.resource_rep()
+            gp = resource_rep(re.ResourceGlobalPhase)
             return [GateCount(gp)]
 
         if pauli_string == "X":
-            return [GateCount(re.ResourceRX.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceRX))]
         if pauli_string == "Y":
-            return [GateCount(re.ResourceRY.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceRY))]
         if pauli_string == "Z":
-            return [GateCount(re.ResourceRZ.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceRZ))]
 
         active_wires = len(pauli_string.replace("I", ""))
 
-        h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.resource_rep()
+        h = resource_rep(re.ResourceHadamard)
+        s = resource_rep(re.ResourceS)
+        rz = resource_rep(re.ResourceRZ)
+        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+        cnot = resource_rep(re.ResourceCNOT)
 
         h_count = 0
         s_count = 0
@@ -305,33 +328,8 @@ class ResourcePauliRot(ResourceOperator):
 
         return gate_types
 
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * pauli_string (str): a string describing the pauli operators that define the rotation
-        """
-        return {
-            "pauli_string": self.pauli_string,
-        }
-
     @classmethod
-    def resource_rep(cls, pauli_string):
-        """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            pauli_string (str): a string describing the pauli operators that define the rotation
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        return CompressedResourceOp(cls, {"pauli_string": pauli_string})
-
-    @classmethod
-    def adjoint_resource_decomp(cls, pauli_string) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls, pauli_string) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
@@ -348,10 +346,10 @@ class ResourcePauliRot(ResourceOperator):
         return [GateCount(cls.resource_rep(pauli_string=pauli_string))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def default_controlled_resource_decomp(
         cls,
-        num_ctrl_wires,
-        num_ctrl_values,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
         pauli_string,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
@@ -385,60 +383,63 @@ class ResourcePauliRot(ResourceOperator):
         """
 
         if (set(pauli_string) == {"I"}) or (len(pauli_string) == 0):
-            ctrl_gp = re.ResourceControlled.resource_rep(
-                re.ResourceGlobalPhase,
-                {},
-                num_ctrl_wires,
-                num_ctrl_values,
+            ctrl_gp = resource_rep(
+                re.ResourceControlled,
+                {
+                    "base_cmpr_op": resource_rep(re.ResourceGlobalPhase),
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
             )
             return [GateCount(ctrl_gp)]
 
         if pauli_string == "X":
-            return [
-                GateCount(
-                    re.ResourceControlled.resource_rep(
-                        re.ResourceRX,
-                        {},
-                        num_ctrl_wires,
-                        num_ctrl_values,
-                    )
-                )
-            ]
+            ctrl_rx = resource_rep(
+                re.ResourceControlled,
+                {
+                    "base_cmpr_op": resource_rep(re.ResourceRX),
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
+            )
+            return [GateCount(ctrl_rx)]
+
         if pauli_string == "Y":
-            return [
-                GateCount(
-                    re.ResourceControlled.resource_rep(
-                        re.ResourceRY,
-                        {},
-                        num_ctrl_wires,
-                        num_ctrl_values,
-                    )
-                )
-            ]
+            ctrl_ry = resource_rep(
+                re.ResourceControlled,
+                {
+                    "base_cmpr_op": resource_rep(re.ResourceRY),
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
+            )
+            return [GateCount(ctrl_ry)]
+
         if pauli_string == "Z":
-            return [
-                GateCount(
-                    re.ResourceControlled.resource_rep(
-                        re.ResourceRZ,
-                        {},
-                        num_ctrl_wires,
-                        num_ctrl_values,
-                    )
-                )
-            ]
+            ctrl_rz = resource_rep(
+                re.ResourceControlled,
+                {
+                    "base_cmpr_op": resource_rep(re.ResourceRZ),
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
+            )
+            return [GateCount(ctrl_rz)]
 
         active_wires = len(pauli_string.replace("I", ""))
 
-        h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()
-        crz = re.ResourceControlled.resource_rep(
-            re.ResourceRZ,
-            {},
-            num_ctrl_wires,
-            num_ctrl_values,
+        h = resource_rep(re.ResourceHadamard)
+        s = resource_rep(re.ResourceS)
+        ctrl_rz = resource_rep(
+            re.ResourceControlled,
+            {
+                "base_cmpr_op": resource_rep(re.ResourceRZ),
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
         )
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        cnot = re.ResourceCNOT.resource_rep()
+        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+        cnot = resource_rep(re.ResourceCNOT)
 
         h_count = 0
         s_count = 0
@@ -458,13 +459,13 @@ class ResourcePauliRot(ResourceOperator):
             gate_types.append(GateCount(s, s_count))
             gate_types.append(GateCount(s_dagg, s_count))
 
-        gate_types.append(GateCount(crz))
+        gate_types.append(GateCount(ctrl_rz))
         gate_types.append(GateCount(cnot, 2 * (active_wires - 1)))
 
         return gate_types
 
     @classmethod
-    def pow_resource_decomp(cls, z, pauli_string) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, pauli_string) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -482,772 +483,772 @@ class ResourcePauliRot(ResourceOperator):
         return [GateCount(cls.resource_rep(pauli_string=pauli_string))]
 
 
-class ResourceIsingXX(ResourceOperator):
-    r"""Resource class for the IsingXX gate.
+# class ResourceIsingXX(ResourceOperator):
+#     r"""Resource class for the IsingXX gate.
 
-    Args:
-        phi (float): the phase angle
-        wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
+#     Args:
+#         phi (float): the phase angle
+#         wires (int): the subsystem the gate acts on
+#         id (str or None): String representing the operation (optional)
 
-    Resources:
-        Ising XX coupling gate
-
-        .. math:: XX(\phi) = \exp\left(-i \frac{\phi}{2} (X \otimes X)\right) =
-            \begin{bmatrix} =
-                \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
-                0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-                0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-            \end{bmatrix}.
+#     Resources:
+#         Ising XX coupling gate
+
+#         .. math:: XX(\phi) = \exp\left(-i \frac{\phi}{2} (X \otimes X)\right) =
+#             \begin{bmatrix} =
+#                 \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+#                 0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+#                 0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                 -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+#             \end{bmatrix}.
 
-        The circuit implementing this transformation is given by:
+#         The circuit implementing this transformation is given by:
 
-        .. code-block:: bash
-
-            0: ─╭●─────RX────╭●─┤
-            1: ─╰X───────────╰X─┤
-
-    .. seealso:: :class:`~.IsingXX`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceIsingXX.resources()
-    {CNOT: 2, RX: 1}
-    """
-
-    num_wires = 2
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            Ising XX coupling gate
-
-            .. math:: XX(\phi) = \exp\left(-i \frac{\phi}{2} (X \otimes X)\right) =
-                \begin{bmatrix} =
-                    \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
-                    0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-                    0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                    -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-                \end{bmatrix}.
-
-            The cost for implementing this transformation is given by:
-
-            .. code-block:: bash
-
-                0: ─╭●─────RX────╭●─┤
-                1: ─╰X───────────╰X─┤
-
-        """
-        cnot = re.ResourceCNOT.resource_rep()
-        rx = re.ResourceRX.resource_rep()
-        return [GateCount(cnot, 2), GateCount(rx)]
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
-    @classmethod
-    def resource_rep(cls):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
+#         .. code-block:: bash
+
+#             0: ─╭●─────RX────╭●─┤
+#             1: ─╰X───────────╰X─┤
+
+#     .. seealso:: :class:`~.IsingXX`
+
+#     **Example**
+
+#     The resources for this operation are computed using:
+
+#     >>> re.ResourceIsingXX.resources()
+#     {CNOT: 2, RX: 1}
+#     """
+
+#     num_wires = 2
+
+#     @staticmethod
+#     def _resource_decomp(**kwargs):
+#         r"""Returns a dictionary representing the resources of the operator. The
+#         keys are the operators and the associated values are the counts.
+
+#         Resources:
+#             Ising XX coupling gate
+
+#             .. math:: XX(\phi) = \exp\left(-i \frac{\phi}{2} (X \otimes X)\right) =
+#                 \begin{bmatrix} =
+#                     \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
+#                     0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+#                     0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                     -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+#                 \end{bmatrix}.
+
+#             The cost for implementing this transformation is given by:
+
+#             .. code-block:: bash
+
+#                 0: ─╭●─────RX────╭●─┤
+#                 1: ─╰X───────────╰X─┤
+
+#         """
+#         cnot = re.ResourceCNOT.resource_rep()
+#         rx = re.ResourceRX.resource_rep()
+#         return [GateCount(cnot, 2), GateCount(rx)]
+
+#     @property
+#     def resource_params(self):
+#         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+#         Returns:
+#             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+#         """
+#         return {}
+
+#     @classmethod
+#     def resource_rep(cls):
+#         r"""Returns a compressed representation containing only the parameters of
+#         the Operator that are needed to compute a resource estimation."""
+#         return CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+#     @classmethod
+#     def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
-        Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus
-            the resources of the adjoint operation results in the original operation.
+#         Resources:
+#             The adjoint of this operator just changes the sign of the phase angle, thus
+#             the resources of the adjoint operation results in the original operation.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+#     @staticmethod
+#     def controlled_resource_decomp(
+#         num_ctrl_wires,
+#         num_ctrl_values,
+#     ) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
-        Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+#         Args:
+#             num_ctrl_wires (int): the number of qubits the operation is controlled on
+#             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+#             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
-        Resources:
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
+#         Resources:
+#             The resources are derived from the following identity. If an operation :math:`\hat{A}`
+#             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+#             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+#             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
-            Specifically, the resources are one multi-controlled RX-gate and a pair of
-            :class:`~.ResourceCNOT` gates.
+#             Specifically, the resources are one multi-controlled RX-gate and a pair of
+#             :class:`~.ResourceCNOT` gates.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rx = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRX,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         if num_ctrl_values == 0:
+#             cnot = re.ResourceCNOT.resource_rep()
+#             ctrl_rx = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceRX,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
 
-            return [GateCount(cnot, 2), GateCount(ctrl_rx)]
-        raise re.ResourcesNotDefined
+#             return [GateCount(cnot, 2), GateCount(ctrl_rx)]
+#         raise re.ResourcesNotDefined
 
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+#     @classmethod
+#     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
-        Args:
-            z (int): the power that the operator is being raised to
+#         Args:
+#             z (int): the power that the operator is being raised to
 
-        Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations.
-            The resources simplify to just one total Ising rotation.
+#         Resources:
+#             Taking arbitrary powers of a rotation produces a sum of rotations.
+#             The resources simplify to just one total Ising rotation.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
 
 
-class ResourceIsingYY(ResourceOperator):
-    r"""Resource class for the IsingYY gate.
+# class ResourceIsingYY(ResourceOperator):
+#     r"""Resource class for the IsingYY gate.
 
-    Args:
-        phi (float): the phase angle
-        wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
+#     Args:
+#         phi (float): the phase angle
+#         wires (int): the subsystem the gate acts on
+#         id (str or None): String representing the operation (optional)
 
-    Resources:
-        Ising YY coupling gate
+#     Resources:
+#         Ising YY coupling gate
 
-        .. math:: \mathtt{YY}(\phi) = \exp\left(-i \frac{\phi}{2} (Y \otimes Y)\right) =
-            \begin{bmatrix}
-                \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
-                0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-                0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-            \end{bmatrix}.
+#         .. math:: \mathtt{YY}(\phi) = \exp\left(-i \frac{\phi}{2} (Y \otimes Y)\right) =
+#             \begin{bmatrix}
+#                 \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+#                 0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+#                 0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                 i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+#             \end{bmatrix}.
 
-        The cost for implementing this transformation is given by:
+#         The cost for implementing this transformation is given by:
 
-        .. code-block:: bash
+#         .. code-block:: bash
 
-            0: ─╭●─────RY────╭●─┤
-            1: ─╰Y───────────╰Y─┤
+#             0: ─╭●─────RY────╭●─┤
+#             1: ─╰Y───────────╰Y─┤
 
-    .. seealso:: :class:`~.IsingYY`
+#     .. seealso:: :class:`~.IsingYY`
 
-    **Example**
+#     **Example**
 
-    The resources for this operation are computed using:
-
-    >>> re.ResourceIsingYY.resources()
-    {CY: 2, RY: 1}
-    """
-
-    num_wires = 2
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            Ising YY coupling gate
-
-            .. math:: \mathtt{YY}(\phi) = \exp\left(-i \frac{\phi}{2} (Y \otimes Y)\right) =
-                \begin{bmatrix}
-                    \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
-                    0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-                    0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                    i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
-                \end{bmatrix}.
-
-            The cost for implementing this transformation is given by:
-
-            .. code-block:: bash
+#     The resources for this operation are computed using:
+
+#     >>> re.ResourceIsingYY.resources()
+#     {CY: 2, RY: 1}
+#     """
+
+#     num_wires = 2
+
+#     @staticmethod
+#     def _resource_decomp(**kwargs):
+#         r"""Returns a dictionary representing the resources of the operator. The
+#         keys are the operators and the associated values are the counts.
+
+#         Resources:
+#             Ising YY coupling gate
+
+#             .. math:: \mathtt{YY}(\phi) = \exp\left(-i \frac{\phi}{2} (Y \otimes Y)\right) =
+#                 \begin{bmatrix}
+#                     \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+#                     0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+#                     0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                     i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+#                 \end{bmatrix}.
+
+#             The cost for implementing this transformation is given by:
+
+#             .. code-block:: bash
 
-                0: ─╭●─────RY────╭●─┤
-                1: ─╰Y───────────╰Y─┤
+#                 0: ─╭●─────RY────╭●─┤
+#                 1: ─╰Y───────────╰Y─┤
 
-        """
-
-        cy = re.ops.ResourceCY.resource_rep()
-        ry = re.ops.ResourceRY.resource_rep()
+#         """
+
+#         cy = re.ops.ResourceCY.resource_rep()
+#         ry = re.ops.ResourceRY.resource_rep()
 
-        gate_types = {}
-        gate_types[cy] = 2
-        gate_types[ry] = 1
+#         gate_types = {}
+#         gate_types[cy] = 2
+#         gate_types[ry] = 1
 
-        return [GateCount(cy, 2), GateCount(ry)]
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
+#         return [GateCount(cy, 2), GateCount(ry)]
+
+#     @property
+#     def resource_params(self):
+#         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+#         Returns:
+#             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+#         """
+#         return {}
 
-    @classmethod
-    def resource_rep(cls):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
+#     @classmethod
+#     def resource_rep(cls):
+#         r"""Returns a compressed representation containing only the parameters of
+#         the Operator that are needed to compute a resource estimation."""
+#         return CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+#     @classmethod
+#     def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
-        Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus
-            the resources of the adjoint operation results in the original operation.
+#         Resources:
+#             The adjoint of this operator just changes the sign of the phase angle, thus
+#             the resources of the adjoint operation results in the original operation.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+#     @staticmethod
+#     def controlled_resource_decomp(
+#         num_ctrl_wires,
+#         num_ctrl_values,
+#     ) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
-        Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+#         Args:
+#             num_ctrl_wires (int): the number of qubits the operation is controlled on
+#             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+#             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
-        Resources:
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
+#         Resources:
+#             The resources are derived from the following identity. If an operation :math:`\hat{A}`
+#             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+#             then the controlled operation :math:`C\hat{A}` can be expressed as:
 
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+#             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
 
-            Specifically, the resources are one multi-controlled RY-gate and a pair of
-            :class:`~.ResourceCY` gates.
+#             Specifically, the resources are one multi-controlled RY-gate and a pair of
+#             :class:`~.ResourceCY` gates.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        if num_ctrl_values == 0:
-            cy = re.ops.ResourceCY.resource_rep()
-            ctrl_ry = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRY,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         if num_ctrl_values == 0:
+#             cy = re.ops.ResourceCY.resource_rep()
+#             ctrl_ry = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceRY,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
 
-            return [GateCount(cy, 2), GateCount(ctrl_ry)]
-        raise re.ResourcesNotDefined
+#             return [GateCount(cy, 2), GateCount(ctrl_ry)]
+#         raise re.ResourcesNotDefined
 
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+#     @classmethod
+#     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
-        Args:
-            z (int): the power that the operator is being raised to
+#         Args:
+#             z (int): the power that the operator is being raised to
 
-        Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations.
-            The resources simplify to just one total Ising rotation.
+#         Resources:
+#             Taking arbitrary powers of a rotation produces a sum of rotations.
+#             The resources simplify to just one total Ising rotation.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
 
 
-class ResourceIsingXY(ResourceOperator):
-    r"""Resource class for the IsingXY gate.
+# class ResourceIsingXY(ResourceOperator):
+#     r"""Resource class for the IsingXY gate.
 
-    Args:
-        phi (float): the phase angle
-        wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
+#     Args:
+#         phi (float): the phase angle
+#         wires (int): the subsystem the gate acts on
+#         id (str or None): String representing the operation (optional)
 
-    Resources:
-        Ising (XX + YY) coupling gate
-
-        .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
-            \begin{bmatrix}
-                1 & 0 & 0 & 0 \\
-                0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
-                0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                0 & 0 & 0 & 1
-            \end{bmatrix}.
-
-        The cost for implementing this transformation is given by:
-
-        .. code-block:: bash
-
-            0: ──H─╭●─────RY────╭●──H─┤
-            1: ────╰Y─────RX────╰Y────┤
-
-    .. seealso:: :class:`~.IsingXY`
+#     Resources:
+#         Ising (XX + YY) coupling gate
+
+#         .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
+#             \begin{bmatrix}
+#                 1 & 0 & 0 & 0 \\
+#                 0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+#                 0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                 0 & 0 & 0 & 1
+#             \end{bmatrix}.
+
+#         The cost for implementing this transformation is given by:
+
+#         .. code-block:: bash
+
+#             0: ──H─╭●─────RY────╭●──H─┤
+#             1: ────╰Y─────RX────╰Y────┤
+
+#     .. seealso:: :class:`~.IsingXY`
 
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceIsingXY.resources()
-    {Hadamard: 2, CY: 2, RY: 1, RX: 1}
-    """
-
-    num_wires = 2
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            IsingXY coupling gate
-
-            .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
-                \begin{bmatrix}
-                    1 & 0 & 0 & 0 \\
-                    0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
-                    0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-                    0 & 0 & 0 & 1
-                \end{bmatrix}.
-
-            The cost for implementing this transformation is given by:
-
-            .. code-block:: bash
-
-                0: ──H─╭●─────RY────╭●──H─┤
-                1: ────╰Y─────RX────╰Y────┤
-
-        """
-        h = re.ResourceHadamard.resource_rep()
-        cy = re.ResourceCY.resource_rep()
-        ry = re.ResourceRY.resource_rep()
-        rx = re.ResourceRX.resource_rep()
-
-        gate_types = {}
-        gate_types[h] = 2
-        gate_types[cy] = 2
-        gate_types[ry] = 1
-        gate_types[rx] = 1
-
-        return [GateCount(h, 2), GateCount(cy, 2), GateCount(ry), GateCount(rx)]
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
-    @classmethod
-    def resource_rep(cls):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
-
-        Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus
-            the resources of the adjoint operation results in the original operation.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
-
-        Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
-        Resources:
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
-
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
-
-            Specifically, the resources are one multi-controlled RY-gate, one multi-controlled RX-gate,
-            a pair of :class:`~.ResourceCY` gates and a pair of :class:`~.ResourceHadamard` gates.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        if num_ctrl_values == 0:
-            h = re.ResourceHadamard.resource_rep()
-            cy = re.ResourceCY.resource_rep()
-            ctrl_rx = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRX,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
-            ctrl_ry = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRY,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
-
-            return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_rx), GateCount(ctrl_ry)]
-        raise re.ResourcesNotDefined
+#     **Example**
+
+#     The resources for this operation are computed using:
+
+#     >>> re.ResourceIsingXY.resources()
+#     {Hadamard: 2, CY: 2, RY: 1, RX: 1}
+#     """
+
+#     num_wires = 2
+
+#     @staticmethod
+#     def _resource_decomp(**kwargs):
+#         r"""Returns a dictionary representing the resources of the operator. The
+#         keys are the operators and the associated values are the counts.
+
+#         Resources:
+#             IsingXY coupling gate
+
+#             .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
+#                 \begin{bmatrix}
+#                     1 & 0 & 0 & 0 \\
+#                     0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+#                     0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+#                     0 & 0 & 0 & 1
+#                 \end{bmatrix}.
+
+#             The cost for implementing this transformation is given by:
+
+#             .. code-block:: bash
+
+#                 0: ──H─╭●─────RY────╭●──H─┤
+#                 1: ────╰Y─────RX────╰Y────┤
+
+#         """
+#         h = re.ResourceHadamard.resource_rep()
+#         cy = re.ResourceCY.resource_rep()
+#         ry = re.ResourceRY.resource_rep()
+#         rx = re.ResourceRX.resource_rep()
+
+#         gate_types = {}
+#         gate_types[h] = 2
+#         gate_types[cy] = 2
+#         gate_types[ry] = 1
+#         gate_types[rx] = 1
+
+#         return [GateCount(h, 2), GateCount(cy, 2), GateCount(ry), GateCount(rx)]
+
+#     @property
+#     def resource_params(self):
+#         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+#         Returns:
+#             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+#         """
+#         return {}
+
+#     @classmethod
+#     def resource_rep(cls):
+#         r"""Returns a compressed representation containing only the parameters of
+#         the Operator that are needed to compute a resource estimation."""
+#         return CompressedResourceOp(cls, {})
+
+#     @classmethod
+#     def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+#         Resources:
+#             The adjoint of this operator just changes the sign of the phase angle, thus
+#             the resources of the adjoint operation results in the original operation.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
+
+#     @staticmethod
+#     def controlled_resource_decomp(
+#         num_ctrl_wires,
+#         num_ctrl_values,
+#     ) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+#         Args:
+#             num_ctrl_wires (int): the number of qubits the operation is controlled on
+#             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+#             num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+#         Resources:
+#             The resources are derived from the following identity. If an operation :math:`\hat{A}`
+#             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+#             then the controlled operation :math:`C\hat{A}` can be expressed as:
+
+#             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+
+#             Specifically, the resources are one multi-controlled RY-gate, one multi-controlled RX-gate,
+#             a pair of :class:`~.ResourceCY` gates and a pair of :class:`~.ResourceHadamard` gates.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         if num_ctrl_values == 0:
+#             h = re.ResourceHadamard.resource_rep()
+#             cy = re.ResourceCY.resource_rep()
+#             ctrl_rx = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceRX,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
+#             ctrl_ry = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceRY,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
+
+#             return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_rx), GateCount(ctrl_ry)]
+#         raise re.ResourcesNotDefined
 
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
-
-        Args:
-            z (int): the power that the operator is being raised to
-
-        Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations.
-            The resources simplify to just one total Ising rotation.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
-
-
-class ResourceIsingZZ(ResourceOperator):
-    r"""Resource class for the IsingZZ gate.
-
-    Args:
-        phi (float): the phase angle
-        wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
-
-    Resources:
-        Ising ZZ coupling gate
-
-        .. math:: ZZ(\phi) = \exp\left(-i \frac{\phi}{2} (Z \otimes Z)\right) =
-            \begin{bmatrix}
-                e^{-i \phi / 2} & 0 & 0 & 0 \\
-                0 & e^{i \phi / 2} & 0 & 0 \\
-                0 & 0 & e^{i \phi / 2} & 0 \\
-                0 & 0 & 0 & e^{-i \phi / 2}
-            \end{bmatrix}.
-
-        The cost for implmenting this transformation is given by:
-
-        .. code-block:: bash
-
-            0: ─╭●───────────╭●─┤
-            1: ─╰X─────RZ────╰X─┤
-
-    .. seealso:: :class:`~.IsingZZ`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceIsingZZ.resources()
-    {CNOT: 2, RZ: 1}
-    """
-
-    num_wires = 2
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            Ising ZZ coupling gate
-
-            .. math:: ZZ(\phi) = \exp\left(-i \frac{\phi}{2} (Z \otimes Z)\right) =
-                \begin{bmatrix}
-                    e^{-i \phi / 2} & 0 & 0 & 0 \\
-                    0 & e^{i \phi / 2} & 0 & 0 \\
-                    0 & 0 & e^{i \phi / 2} & 0 \\
-                    0 & 0 & 0 & e^{-i \phi / 2}
-                \end{bmatrix}.
-
-            The cost for implmenting this transformation is given by:
-
-            .. code-block:: bash
-
-                0: ─╭●───────────╭●─┤
-                1: ─╰X─────RZ────╰X─┤
-
-        """
-        cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
-
-        gate_types = {}
-        gate_types[cnot] = 2
-        gate_types[rz] = 1
-
-        return [GateCount(cnot, 2), GateCount(rz)]
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
-    @classmethod
-    def resource_rep(cls):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
-
-        Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus
-            the resources of the adjoint operation results in the original operation.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
-
-        Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
-        Resources:
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
-
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
-
-            Specifically, the resources are one multi-controlled RZ-gate and a pair of
-            :class:`~.ResourceCNOT` gates.
+#     @classmethod
+#     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+#         Args:
+#             z (int): the power that the operator is being raised to
+
+#         Resources:
+#             Taking arbitrary powers of a rotation produces a sum of rotations.
+#             The resources simplify to just one total Ising rotation.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
+
+
+# class ResourceIsingZZ(ResourceOperator):
+#     r"""Resource class for the IsingZZ gate.
+
+#     Args:
+#         phi (float): the phase angle
+#         wires (int): the subsystem the gate acts on
+#         id (str or None): String representing the operation (optional)
+
+#     Resources:
+#         Ising ZZ coupling gate
+
+#         .. math:: ZZ(\phi) = \exp\left(-i \frac{\phi}{2} (Z \otimes Z)\right) =
+#             \begin{bmatrix}
+#                 e^{-i \phi / 2} & 0 & 0 & 0 \\
+#                 0 & e^{i \phi / 2} & 0 & 0 \\
+#                 0 & 0 & e^{i \phi / 2} & 0 \\
+#                 0 & 0 & 0 & e^{-i \phi / 2}
+#             \end{bmatrix}.
+
+#         The cost for implmenting this transformation is given by:
+
+#         .. code-block:: bash
+
+#             0: ─╭●───────────╭●─┤
+#             1: ─╰X─────RZ────╰X─┤
+
+#     .. seealso:: :class:`~.IsingZZ`
+
+#     **Example**
+
+#     The resources for this operation are computed using:
+
+#     >>> re.ResourceIsingZZ.resources()
+#     {CNOT: 2, RZ: 1}
+#     """
+
+#     num_wires = 2
+
+#     @staticmethod
+#     def _resource_decomp(**kwargs):
+#         r"""Returns a dictionary representing the resources of the operator. The
+#         keys are the operators and the associated values are the counts.
+
+#         Resources:
+#             Ising ZZ coupling gate
+
+#             .. math:: ZZ(\phi) = \exp\left(-i \frac{\phi}{2} (Z \otimes Z)\right) =
+#                 \begin{bmatrix}
+#                     e^{-i \phi / 2} & 0 & 0 & 0 \\
+#                     0 & e^{i \phi / 2} & 0 & 0 \\
+#                     0 & 0 & e^{i \phi / 2} & 0 \\
+#                     0 & 0 & 0 & e^{-i \phi / 2}
+#                 \end{bmatrix}.
+
+#             The cost for implmenting this transformation is given by:
+
+#             .. code-block:: bash
+
+#                 0: ─╭●───────────╭●─┤
+#                 1: ─╰X─────RZ────╰X─┤
+
+#         """
+#         cnot = re.ResourceCNOT.resource_rep()
+#         rz = re.ResourceRZ.resource_rep()
+
+#         gate_types = {}
+#         gate_types[cnot] = 2
+#         gate_types[rz] = 1
+
+#         return [GateCount(cnot, 2), GateCount(rz)]
+
+#     @property
+#     def resource_params(self):
+#         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+#         Returns:
+#             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+#         """
+#         return {}
+
+#     @classmethod
+#     def resource_rep(cls):
+#         r"""Returns a compressed representation containing only the parameters of
+#         the Operator that are needed to compute a resource estimation."""
+#         return CompressedResourceOp(cls, {})
+
+#     @classmethod
+#     def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+#         Resources:
+#             The adjoint of this operator just changes the sign of the phase angle, thus
+#             the resources of the adjoint operation results in the original operation.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
+
+#     @staticmethod
+#     def controlled_resource_decomp(
+#         num_ctrl_wires,
+#         num_ctrl_values,
+#     ) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+#         Args:
+#             num_ctrl_wires (int): the number of qubits the operation is controlled on
+#             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+#             num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+#         Resources:
+#             The resources are derived from the following identity. If an operation :math:`\hat{A}`
+#             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+#             then the controlled operation :math:`C\hat{A}` can be expressed as:
+
+#             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+
+#             Specifically, the resources are one multi-controlled RZ-gate and a pair of
+#             :class:`~.ResourceCNOT` gates.
 
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_rz = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceRZ,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
-            return [GateCount(cnot, 2), GateCount(ctrl_rz)]
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
-
-        Args:
-            z (int): the power that the operator is being raised to
-
-        Resources:
-            Taking arbitrary powers of a rotation produces a sum of rotations.
-            The resources simplify to just one total Ising rotation.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
-
-
-class ResourcePSWAP(ResourceOperator):
-    r"""Resource class for the PSWAP gate.
-
-    Args:
-        phi (float): the phase angle
-        wires (int): the subsystem the gate acts on
-        id (str or None): String representing the operation (optional)
-
-    Resources:
-        The :code:`PSWAP` gate is defined as:
-
-        .. math:: PSWAP(\phi) = \begin{bmatrix}
-                1 & 0 & 0 & 0 \\
-                0 & 0 & e^{i \phi} & 0 \\
-                0 & e^{i \phi} & 0 & 0 \\
-                0 & 0 & 0 & 1
-            \end{bmatrix}.
-
-        The cost for implementing this transformation is given by:
-
-        .. code-block:: bash
-
-            0: ─╭SWAP─╭●───────────╭●─┤
-            1: ─╰SWAP─╰X─────Rϕ────╰X─┤
-
-    .. seealso:: :class:`~.PSWAP`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourcePSWAP.resources()
-    {SWAP: 1, CNOT: 2, PhaseShift: 1}
-    """
-
-    num_wires = 2
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The :code:`PSWAP` gate is defined as:
-
-            .. math:: PSWAP(\phi) = \begin{bmatrix}
-                    1 & 0 & 0 & 0 \\
-                    0 & 0 & e^{i \phi} & 0 \\
-                    0 & e^{i \phi} & 0 & 0 \\
-                    0 & 0 & 0 & 1
-                \end{bmatrix}.
-
-            The cost for implementing this transformation is given by:
-
-            .. code-block:: bash
-
-                0: ─╭SWAP─╭●───────────╭●─┤
-                1: ─╰SWAP─╰X─────Rϕ────╰X─┤
-
-        """
-        swap = re.ResourceSWAP.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-        phase = re.ResourcePhaseShift.resource_rep()
-
-        return [GateCount(swap), GateCount(phase), GateCount(cnot, 2)]
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
-    @classmethod
-    def resource_rep(cls):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
-
-        Resources:
-            The adjoint of this operator just changes the sign of the phase angle, thus
-            the resources of the adjoint operation results in the original operation.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return [GateCount(cls.resource_rep())]
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires,
-        num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
-
-        Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
-
-        Resources:
-            The resources are derived from the following identity. If an operation :math:`\hat{A}`
-            can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
-            then the controlled operation :math:`C\hat{A}` can be expressed as:
-
-            .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
-
-            Specifically, the resources are one multi-controlled phase shift gate, one multi-controlled
-            SWAP gate and a pair of :class:`~.ResourceCNOT` gates.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        if num_ctrl_values == 0:
-            cnot = re.ResourceCNOT.resource_rep()
-            ctrl_swap = re.ResourceControlled.resource_rep(
-                base_class=re.ResourceSWAP,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
-            ctrl_ps = re.ResourceControlled.resource_rep(
-                base_class=re.ResourcePhaseShift,
-                base_params={},
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-            )
-
-            return [GateCount(ctrl_swap), GateCount(cnot, 2), GateCount(ctrl_ps)]
-
-        raise re.ResourcesNotDefined
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         if num_ctrl_values == 0:
+#             cnot = re.ResourceCNOT.resource_rep()
+#             ctrl_rz = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceRZ,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
+#             return [GateCount(cnot, 2), GateCount(ctrl_rz)]
+#         raise re.ResourcesNotDefined
+
+#     @classmethod
+#     def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+#         Args:
+#             z (int): the power that the operator is being raised to
+
+#         Resources:
+#             Taking arbitrary powers of a rotation produces a sum of rotations.
+#             The resources simplify to just one total Ising rotation.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
+
+
+# class ResourcePSWAP(ResourceOperator):
+#     r"""Resource class for the PSWAP gate.
+
+#     Args:
+#         phi (float): the phase angle
+#         wires (int): the subsystem the gate acts on
+#         id (str or None): String representing the operation (optional)
+
+#     Resources:
+#         The :code:`PSWAP` gate is defined as:
+
+#         .. math:: PSWAP(\phi) = \begin{bmatrix}
+#                 1 & 0 & 0 & 0 \\
+#                 0 & 0 & e^{i \phi} & 0 \\
+#                 0 & e^{i \phi} & 0 & 0 \\
+#                 0 & 0 & 0 & 1
+#             \end{bmatrix}.
+
+#         The cost for implementing this transformation is given by:
+
+#         .. code-block:: bash
+
+#             0: ─╭SWAP─╭●───────────╭●─┤
+#             1: ─╰SWAP─╰X─────Rϕ────╰X─┤
+
+#     .. seealso:: :class:`~.PSWAP`
+
+#     **Example**
+
+#     The resources for this operation are computed using:
+
+#     >>> re.ResourcePSWAP.resources()
+#     {SWAP: 1, CNOT: 2, PhaseShift: 1}
+#     """
+
+#     num_wires = 2
+
+#     @staticmethod
+#     def _resource_decomp(**kwargs):
+#         r"""Returns a dictionary representing the resources of the operator. The
+#         keys are the operators and the associated values are the counts.
+
+#         Resources:
+#             The :code:`PSWAP` gate is defined as:
+
+#             .. math:: PSWAP(\phi) = \begin{bmatrix}
+#                     1 & 0 & 0 & 0 \\
+#                     0 & 0 & e^{i \phi} & 0 \\
+#                     0 & e^{i \phi} & 0 & 0 \\
+#                     0 & 0 & 0 & 1
+#                 \end{bmatrix}.
+
+#             The cost for implementing this transformation is given by:
+
+#             .. code-block:: bash
+
+#                 0: ─╭SWAP─╭●───────────╭●─┤
+#                 1: ─╰SWAP─╰X─────Rϕ────╰X─┤
+
+#         """
+#         swap = re.ResourceSWAP.resource_rep()
+#         cnot = re.ResourceCNOT.resource_rep()
+#         phase = re.ResourcePhaseShift.resource_rep()
+
+#         return [GateCount(swap), GateCount(phase), GateCount(cnot, 2)]
+
+#     @property
+#     def resource_params(self):
+#         r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+#         Returns:
+#             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+#         """
+#         return {}
+
+#     @classmethod
+#     def resource_rep(cls):
+#         r"""Returns a compressed representation containing only the parameters of
+#         the Operator that are needed to compute a resource estimation."""
+#         return CompressedResourceOp(cls, {})
+
+#     @classmethod
+#     def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+#         Resources:
+#             The adjoint of this operator just changes the sign of the phase angle, thus
+#             the resources of the adjoint operation results in the original operation.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         return [GateCount(cls.resource_rep())]
+
+#     @staticmethod
+#     def controlled_resource_decomp(
+#         num_ctrl_wires,
+#         num_ctrl_values,
+#     ) -> Dict[CompressedResourceOp, int]:
+#         r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+#         Args:
+#             num_ctrl_wires (int): the number of qubits the operation is controlled on
+#             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+#             num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+#         Resources:
+#             The resources are derived from the following identity. If an operation :math:`\hat{A}`
+#             can be expressed as :math:`\hat{A} \ = \ \hat{U} \cdot \hat{B} \cdot \hat{U}^{\dagger}`
+#             then the controlled operation :math:`C\hat{A}` can be expressed as:
+
+#             .. math:: C\hat{A} \ = \ \hat{U} \cdot C\hat{B} \cdot \hat{U}^{\dagger}
+
+#             Specifically, the resources are one multi-controlled phase shift gate, one multi-controlled
+#             SWAP gate and a pair of :class:`~.ResourceCNOT` gates.
+
+#         Returns:
+#             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
+#                 values are the counts.
+#         """
+#         if num_ctrl_values == 0:
+#             cnot = re.ResourceCNOT.resource_rep()
+#             ctrl_swap = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourceSWAP,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
+#             ctrl_ps = re.ResourceControlled.resource_rep(
+#                 base_class=re.ResourcePhaseShift,
+#                 base_params={},
+#                 num_ctrl_wires=num_ctrl_wires,
+#                 num_ctrl_values=num_ctrl_values,
+#             )
+
+#             return [GateCount(ctrl_swap), GateCount(cnot, 2), GateCount(ctrl_ps)]
+
+#         raise re.ResourcesNotDefined
