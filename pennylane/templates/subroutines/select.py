@@ -15,9 +15,9 @@
 Contains the Select template.
 """
 
-
 import copy
 import itertools
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane import math
@@ -229,8 +229,7 @@ class Select(Operation):
 
 
 def _target(target_rep, num_control_wires, state):
-    return qml.resource_rep(
-        qml.ops.Controlled,
+    return qml.decomposition.resources.controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
@@ -242,15 +241,15 @@ def _target(target_rep, num_control_wires, state):
 def _select_resources(op_reps, num_control_wires):
     state_iterator = itertools.product([0, 1], repeat=num_control_wires)
 
-    resources = {
-        _target(rep, num_control_wires, state): 1 for rep, state in zip(op_reps, state_iterator)
-    }
-    return resources
+    resources = defaultdict(int)
+    for rep, state in zip(op_reps, state_iterator):
+        resources[_target(rep, num_control_wires, state)] += 1
+    return dict(resources)
 
 
 # pylint: disable=unused-argument
 @qml.register_resources(_select_resources)
-def _select_decomp(*_, wires, ops, control, target_wires):
+def _select_decomp(*_, wires=None, ops, control, target_wires=None):
     state_iterator = itertools.product([0, 1], repeat=len(control))
     return [qml.ctrl(op, control, control_values=state) for state, op in zip(state_iterator, ops)]
 

@@ -215,6 +215,67 @@ class TestSelect:
 
         qml.assert_equal(op, op_copy)
 
+    def test_resources(self):
+        """Test the resources property"""
+
+        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires"))
+
+        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+
+        op = qml.Select(ops, control=(0, 1))
+
+        resources = op.resource_params
+        assert resources["num_control_wires"] == 2
+
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.Y),
+        )
+
+        assert resources["op_reps"] == op_reps
+
+    def test_new_decomposition(self):
+        """Test that the decomposition is properly register."""
+
+        decomp = qml.list_decomps(qml.Select)[0]
+
+        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.Y),
+        )
+        control = (0, 1)
+
+        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2)
+
+        assert resource_obj.num_gates == 4
+
+        c_resource = qml.decomposition.resources.controlled_resource_rep
+
+        kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
+
+        expected_counts = {
+            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=2): 1,
+            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=1): 2,
+            c_resource(base_class=qml.Y, **kwargs, num_zero_control_values=0): 1,
+        }
+        assert resource_obj.gate_counts == expected_counts
+
+        op = qml.Select(ops, control)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+
+        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+
+        qml.assert_equal(decomp_ops[0], qml.ctrl(qml.X(2), (0, 1), control_values=[0, 0]))
+        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[False, True]))
+        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[True, False]))
+        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[True, True]))
+
 
 class TestErrorMessages:
     """Test that the correct errors are raised"""
