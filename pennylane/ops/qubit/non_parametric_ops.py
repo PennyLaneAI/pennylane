@@ -782,9 +782,16 @@ def _pauliy_to_ry_gp(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
+@register_resources(lambda **_: {qml.RY: 1, qml.GlobalPhase: 1})
+def _pow_y(wires, z, **_):
+    z_mod2 = z % 2
+    qml.RY(np.pi * z_mod2, wires=wires)
+    qml.GlobalPhase(-np.pi / 2 * z_mod2, wires=wires)
+
+
 add_decomps(PauliY, _pauliy_to_ry_gp)
 add_decomps("Adjoint(PauliY)", self_adjoint)
-add_decomps("Pow(PauliY)", pow_involutory)
+add_decomps("Pow(PauliY)", pow_involutory, _pow_y)
 
 
 def _controlled_y_resource(*_, num_control_wires, num_work_wires, **__):
