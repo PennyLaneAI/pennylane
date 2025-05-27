@@ -1,8 +1,10 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
-
+import functools
 import re
+
+from openqasm3.ast import QubitDeclaration, QuantumGate, ClassicalDeclaration
 
 from pennylane import ops
 
@@ -67,6 +69,7 @@ class QasmInterpreter(QASMVisitor):
             )  # pragma: no cover
         super().__init__()
 
+    @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
@@ -83,14 +86,9 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        handler_name = "visit_" + node.__class__.__name__
-        if hasattr(self, handler_name):
-            getattr(self, handler_name)(node, context)
-        else:
-            raise NotImplementedError(
-                f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
-            )
-        return context
+        raise NotImplementedError(
+            f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
+        )
 
     def generic_visit(self, node: QASMNode, context: dict):
         """
@@ -112,8 +110,8 @@ class QasmInterpreter(QASMVisitor):
         super().generic_visit(node, context)
         return context
 
-    @staticmethod
-    def visit_QubitDeclaration(node: QASMNode, context: dict):
+    @visit.register(QubitDeclaration)
+    def visit_qubit_declaration(self, node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
@@ -124,8 +122,8 @@ class QasmInterpreter(QASMVisitor):
         """
         context["wires"].append(node.qubit.name)
 
-    @staticmethod
-    def visit_ClassicalDeclaration(node: QASMNode, context: dict):
+    @visit.register(ClassicalDeclaration)
+    def visit_classical_declaration(self, node: QASMNode, context: dict):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -147,7 +145,8 @@ class QasmInterpreter(QASMVisitor):
                 "line": node.span.start_line,
             }
 
-    def visit_QuantumGate(self, node: QASMNode, context: dict):
+    @visit.register(QuantumGate)
+    def visit_quantum_gate(self, node: QASMNode, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
