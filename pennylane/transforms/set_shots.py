@@ -14,10 +14,8 @@
 """
 Contains the set_shots transform, which sets the number of shots for a given tape.
 """
-import warnings
-from typing import Callable, Sequence, Union
+from typing import Sequence, Union
 
-from pennylane.exceptions import PennyLaneUserWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
@@ -79,33 +77,6 @@ def set_shots(
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    # Check if we're dealing with a QNode (using duck typing)
-    is_qnode = hasattr(tape, "__call__") and hasattr(tape, "device")
-    
-    if is_qnode:
-        # For QNodes, we need to create a wrapped function that warns about overrides
-        # First, copy the QNode with the new shots
-        qnode = tape.copy(shots=shots)
-        
-        # Store the original __call__ method
-        orig_call = qnode.__call__
-        
-        # Create a wrapped function that checks for shots in kwargs
-        def wrapped_call(*args, **kwargs):
-            if "shots" in kwargs and kwargs["shots"] is not None:
-                warnings.warn(
-                    f"The shots value of the QNode is being overridden from {shots} to {kwargs['shots']}",
-                    PennyLaneUserWarning,
-                )
-            return orig_call(*args, **kwargs)
-        
-        # Replace the __call__ method with our wrapped version
-        qnode.__call__ = wrapped_call
-        
-        return (qnode,), null_postprocessing
-    else:
-        # Regular tape processing
-        if hasattr(tape, "shots") and tape.shots != Shots(shots):
-            tape = tape.copy(shots=shots)
-        
-        return (tape,), null_postprocessing
+    if tape.shots != Shots(shots):
+        tape = tape.copy(shots=shots)
+    return (tape,), null_postprocessing
