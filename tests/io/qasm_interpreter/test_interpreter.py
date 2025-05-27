@@ -49,6 +49,21 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_subroutines(self, mocker):
+        # parse the QASM
+        ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
+            ast, context={"name": "subroutines"}
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            context["callable"]()
+
+        assert q.queue == []
+
     def test_variables(self, mocker):
         # parse the QASM
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
@@ -178,7 +193,7 @@ class TestInterpreter:
         with pytest.raises(
             NotImplementedError,
             match="An unsupported QASM instruction QuantumMeasurementStatement was "
-                  "encountered on line 6, in unsupported-error.",
+            "encountered on line 6, in unsupported-error.",
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
 
@@ -388,7 +403,9 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+        context, _ = QasmInterpreter().generic_visit(
+            ast, context={"name": "param-single-qubit-gates"}
+        )
 
         # setup mocks
 

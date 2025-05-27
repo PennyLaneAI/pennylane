@@ -13,8 +13,10 @@ from openqasm3.ast import (
     BinaryExpression,
     BitstringLiteral,
     Cast,
+    FunctionCall,
     Identifier,
     IndexExpression,
+    QuantumArgument,
     RangeDefinition,
     UnaryExpression,
 )
@@ -324,6 +326,37 @@ class QasmInterpreter(QASMVisitor):
         else:
             _warning(context, name)
 
+    def _init_clause_in_same_namespace(self, outer_context: dict, name: str):
+        """
+        Initializes a clause that shares the namespace of the outer scope, but contains its own
+        set of gates, operations, expressions, logic, etc.
+        Args:
+            outer_context (dict): the context of the outer scope.
+            name (str): the name of the clause.
+        Returns:
+            dict: the inner context.
+        """
+        # we want wires declared in outer scopes to be available
+        outer_wires = outer_context["wires"] if "wires" in outer_context else None
+        if "outer_wires" in outer_context:
+            outer_wires = outer_context["outer_wires"]
+        context = {
+            "vars": outer_context["vars"] if "vars" in outer_context else None,  # same namespace
+            "outer_wires": outer_wires,
+            "wires": [],
+            "name": name,
+        }
+        # we want subroutines declared in outer scopes to be available
+        if "scopes" in outer_context and "subroutines" in outer_context["scopes"]:
+            context["outer_scopes"] = {
+                # no recursion here please! hence the filter
+                "subroutines": {
+                    k: v for k, v in outer_context["scopes"]["subroutines"].items() if k != name
+                }
+            }
+
+        return context
+
     def _init_vars(self, context: dict):
         """
         context["callable"] = partial(self._execute_all, context)
@@ -353,9 +386,43 @@ class QasmInterpreter(QASMVisitor):
         if "gates" not in context:
             context["gates"] = []
 
+    def _init_outer_wires_list(self, context: dict):
+        """
+        Inits the outer wires list on a sub context.
+        Args:
+            context (dict): the current context.
+        """
+        if "outer_wires" not in context:
+            context["outer_wires"] = []
+
+    def _init_subroutine_scope(self, node: QASMNode, context: dict):
+        """
+        Inits the subroutine scope on the current context.
+        Args:
+            node (QASMNode): the subroutine node.
+            context (dict): the current context.
+        """
+        if not "scopes" in context:
+            context["scopes"] = {"subroutines": dict()}
+        elif "subroutines" not in context["scopes"]:
+            context["scopes"]["subroutines"] = dict()
+
+        # outer scope variables are available to inner scopes... but not vice versa!
+        # names prefixed with outer scope names for specificity
+        context["scopes"]["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+            context, f'{context["name"]}_{node.name.name}'
+        )
+
     @staticmethod
     def _get_bit_type_val(var):
         return bin(var["val"])[2:].zfill(var["size"])
+
+    def visit_ReturnStatement(self, node: QASMNode, context: dict):
+        """
+        Registers a return statement. Points to the var that needs to be set in an outer scope when this
+        subroutine is called.
+        """
+        context["return"] = node.expression.name
 
     def visit_ConstantDeclaration(self, node: QASMNode, context: dict):
         """
@@ -444,6 +511,38 @@ class QasmInterpreter(QASMVisitor):
         for gate in context["gates"]:
             gate(execution_context) if not self._all_context_bound(gate) else gate()
 
+    def _get_wires_helper(self, curr: dict, wires: list):
+        """
+        We need a device with enough wires to support all the qubit declarations in every sub-context.
+        We need to instantiate a device with enough wires to support all qubit declarations, with names
+        that give enough specificity to identify them when they are in different scopes but share the same
+        name in the QASM file, for example.
+        Args:
+            curr (dict): the current context in our recursive descent.
+            wires (list): the wires list we are building.
+        Returns:
+            list: the list of wires we have found.
+        """
+        if "scopes" in curr:  # TODO: raise warning when a variable is shadowed
+            contexts = curr["scopes"]
+            for context_type, typed_contexts in contexts.items():
+                for typed_context_name, typed_context in typed_contexts.items():
+                    if context_type != "switches" and context_type != "branches":
+                        wires += [
+                            f'{contexts[context_type][typed_context_name]["name"]}_{w}'
+                            for w in contexts[context_type][typed_context_name]["wires"]
+                        ]
+                        wires = self._get_wires_helper(typed_context, wires)
+                    else:
+                        # TODO: account for: we don't need new wires for scopes that don't have their own namespaces
+                        for cond in typed_context.keys():
+                            wires += [
+                                f'{typed_context[cond]["name"]}_{w}'
+                                for w in typed_context[cond]["wires"]
+                            ]
+                            wires = self._get_wires_helper(typed_context[cond], wires)
+        return wires
+
     def construct_qfunc(self, context: dict, init_context: dict):
         """
         Constructs a Callable quantum function that may be queued into a QNode.
@@ -463,6 +562,40 @@ class QasmInterpreter(QASMVisitor):
         # static variables are already bound in context["gates"]
         context["callable"] = partial(self._execute_all, context, init_context)
         return init_context
+
+    def visit_SubroutineDefinition(self, node: QASMNode, context: dict):
+        """
+        Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
+        its parameters.
+        Args:
+            node (QASMNode): the subroutine node.
+            context (dict): the current context.
+        """
+        self._init_subroutine_scope(node, context)
+
+        # register the params
+        for param in node.arguments:
+            if not isinstance(param, QuantumArgument):
+                context["scopes"]["subroutines"][node.name.name]["vars"][param.name.name] = {
+                    "ty": param.__class__.__name__,
+                    "val": None,
+                    "line": param.span.start_line,
+                    "dirty": False,
+                }
+            else:
+                context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
+
+        # process the subroutine body. Note we don't call the gates in the outer context until the subroutine is called.
+        context["scopes"]["subroutines"][node.name.name] = self.visit(
+            node.body, context["scopes"]["subroutines"][node.name.name]
+        )
+
+        # Should we visit now or when the function is called with arguments?
+        # Now is fine b/c we evaluate vars at the end, and visit only constructs partials that
+        # reference them during a visit.
+
+        if not self.executing:
+            context["gates"].append(partial(self.visit_SubroutineDefinition, node))
 
     @staticmethod
     def visit_QubitDeclaration(node: QASMNode, context: dict):
@@ -592,8 +725,49 @@ class QasmInterpreter(QASMVisitor):
                     return value
                 except NameError as e:
                     raise NameError(
-                        str(e) or f"Reference to an undeclared variable {node.name} in {context['name']}."
+                        str(e)
+                        or f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
+        elif isinstance(node, FunctionCall):
+            if (
+                "scopes" in context
+                and "subroutines" in context["scopes"]
+                or "outer_scopes" in context
+                and "subroutines" in context["outer_scopes"]
+            ):
+                name = (
+                    node.name if isinstance(node.name, str) else node.name.name
+                )  # str or Identifier
+                if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
+                    "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
+                ):
+                    raise NameError(
+                        f"Reference to an undeclared subroutine {name} in {context['name']}."
+                    )
+                else:
+                    if "scopes" in context and name in context["scopes"]["subroutines"]:
+                        func_context = context["scopes"]["subroutines"][name]
+                    else:
+                        func_context = context["outer_scopes"]["subroutines"][name]
+
+                    # bind subroutine arguments
+                    for arg in node.arguments:
+                        self._init_vars(func_context)
+                        evald_arg = self.eval_expr(arg, context)
+                        # TODO: maybe we want to have a class for classical and a class for quantum parameters
+                        if not isinstance(
+                            evald_arg, str
+                        ):  # this would indicate a quantum parameter
+                            func_context["vars"][arg.name] = evald_arg
+
+                    # execute the subroutine
+                    [
+                        gate(func_context) if not self._all_context_bound(gate) else gate()
+                        for gate in func_context["gates"]
+                    ]
+
+                    # the return value
+                    return self.retrieve_variable(func_context["return"], func_context)
         elif isinstance(node, Callable):
             res = node()
         elif re.search("Literal", node.__class__.__name__):
@@ -645,15 +819,15 @@ class QasmInterpreter(QASMVisitor):
                     # if we are processing the control now
                     if "control" in func.keywords:
                         res.keywords["wires"] = [res.keywords["wires"][-1]]
+
                     # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
                     def _needs_context(fn, **kwargs):
                         try:
-                            inspect.signature(fn).bind(
-                                **kwargs
-                            )
+                            inspect.signature(fn).bind(**kwargs)
                             return False
                         except TypeError:
                             return True
+
                     if res is not None:
                         res = (
                             func(res.func)(**res.keywords, context=execution_context)
