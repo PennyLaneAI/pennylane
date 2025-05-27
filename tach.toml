@@ -26,7 +26,7 @@ path = "pennylane"
 layer = "ui"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
-## CLOSED modules
+## CLOSED module(s)
 # No module can define dependencies to the following set of modules in this tach.toml file.
 
 # NOTE: visibility = [] just means no module in this file can declare 
