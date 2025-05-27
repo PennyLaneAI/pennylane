@@ -190,11 +190,6 @@ path = "pennylane.templates.layer"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
-[[modules]]
-path = "pennylane.debugging"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
-
 # Bottom two must be addressed in another PR, too large of an effort
 
 # [[modules]]
@@ -257,6 +252,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 
 [[modules]]
 path = "pennylane.noise"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
+[[modules]]
+path = "pennylane.debugging"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
