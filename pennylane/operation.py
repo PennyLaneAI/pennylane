@@ -1538,14 +1538,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I
-        # Hence we define 0 and 1 special cases here.
+        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
         if z == 0:
             return []
-        if z == 1:
+        if isinstance(z, int):
             if QueuingManager.recording():
-                return [qml.apply(self)]
-            return [copy.copy(self)]
+                return [qml.apply(self) for _ in range(z)]
+            return [copy.copy(self) for _ in range(z)]
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
