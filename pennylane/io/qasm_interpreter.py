@@ -5,7 +5,7 @@ This submodule contains the interpreter for QASM 3.0.
 import functools
 import re
 
-from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration
+from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration, EndStatement
 
 from pennylane import ops
 
@@ -108,8 +108,24 @@ class QasmInterpreter(QASMVisitor):
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        super().generic_visit(node, context)
+        try:
+            super().generic_visit(node, context)
+        except InterruptedError as e:
+            print(str(e))
         return context
+
+    @visit.register(EndStatement)
+    def visit_end_statement(self, node: QASMNode, context: dict):
+        """
+        Ends the program.
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise InterruptedError(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
 
     @visit.register(QubitDeclaration)
     def visit_qubit_declaration(self, node: QASMNode, context: dict):
