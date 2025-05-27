@@ -6,6 +6,7 @@
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -287,6 +288,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Setting up the configuration of a workflow, including the determination of the best diff
+  method, is now done *after* user transforms have been applied. This allows transforms to
+  update the shots and change measurement processes with fewer issues.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
@@ -303,6 +309,7 @@
   but it is coded in Python instead of C++.
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
+  [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -466,6 +473,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
+  [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
 * Fix subset of `pylint` errors in the `tests` folder.
   [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
