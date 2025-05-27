@@ -209,6 +209,6 @@ class TestSetShots:
 
         with pytest.warns(
             qml.exceptions.PennyLaneUserWarning,
-            match=r"Both 'shots=' parameter and 'set_shots' transform are specified\. The 'shots=' parameter will take precedence and override the transform\.",
+            match=r"The transform will take precedence",
         ):
             set_shots(c, shots=10)(shots=20)

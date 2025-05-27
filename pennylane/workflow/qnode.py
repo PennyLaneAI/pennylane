@@ -901,18 +901,11 @@ class QNode:
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         # Check for conflicting shots configuration
         if "shots" in kwargs:
-            # Check if there's a set_shots transform in the transform program
-            has_set_shots_transform = any(
-                hasattr(transform_container.transform, "__name__")
-                and transform_container.transform.__name__ == "set_shots"
-                for transform_container in self._transform_program
-            )
-
-            if has_set_shots_transform:
+            if qml.set_shots in self.transform_program
                 warnings.warn(
                     "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                    "The 'shots=' parameter will take precedence and override the transform.",
-                    PennyLaneUserWarning,
+                    "The transform will take precedence over 'shots='",
+                    UserWarning,
                     stacklevel=2,
                 )
         if qml.capture.enabled():
