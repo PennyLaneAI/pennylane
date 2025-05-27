@@ -91,10 +91,13 @@ class ProductFormula:
         return ret
 
     def __eq__(self, other: ProductFormula) -> bool:
+        if self.recursive != other.recursive:
+            return False
+
         if self.terms != other.terms:
             return False
 
-        if not self.recursive and self.coeffs != other.coeffs:
+        if self.coeffs != other.coeffs:
             return False
 
         return self.exponent == other.exponent
