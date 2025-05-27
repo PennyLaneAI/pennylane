@@ -1,3 +1,4 @@
+# Defines layered software architecture of PennyLane
 layers = ["ui", "tertiary", "auxiliary", "core"]
 
 exclude = [
