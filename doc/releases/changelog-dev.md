@@ -288,7 +288,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* A new `PennyLaneUserWarning` has been added to `exceptions` to warn users about special PennyLane tricks that might confuse them.
+* Add `PennyLaneUserWarning` to `pennylane.exceptions` to provide specific warnings to users regarding improper package usage.
   [(#7496)](https://github.com/PennyLaneAI/pennylane/pull/7496)
 
 * Setting up the configuration of a workflow, including the determination of the best diff
