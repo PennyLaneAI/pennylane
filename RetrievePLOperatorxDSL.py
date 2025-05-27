@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable
 
-import numpy as np
 import xdsl
 from catalyst.compiler import _quantum_opt
 from xdsl import context, passes, pattern_rewriter
@@ -16,10 +15,11 @@ import pennylane as qml
 from pennylane.compiler.python_compiler.quantum_dialect import (
     CustomOp,
     ExtractOp,
+    GlobalPhaseOp,
     QuantumDialect,
     QubitType,
-    GlobalPhaseOp,
 )
+from pennylane.operation import Operator
 
 ctx = Context(allow_unregistered=True)
 ctx.load_dialect(arith.Arith)
@@ -34,11 +34,14 @@ ctx.load_dialect(QuantumDialect)
 @dataclass(frozen=True)
 # All passes inherit from passes.ModulePass
 class PrintModule(passes.ModulePass):
+    """A simple pass that prints the module."""
+
     # All passes require a name field
     name = "print"
 
     # All passes require an apply method with this signature.
     def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+        """Print the module."""
         print("Hello from inside the pass\n", module)
 
 
@@ -98,7 +101,7 @@ def flatten(nested):
     return flat
 
 
-def resolve_constant_params(op):
+def resolve_constant_params(op: Operator):
     """Resolve the constant parameters that this operation originates from."""
 
     while hasattr(op, "owner"):
@@ -115,13 +118,7 @@ def resolve_constant_params(op):
 
 
 def resolve_constant_wire(operand):
-    """
-    Resolve the integer wire index that this operand originates from.
-    The operand may be:
-    - A constant (ConstantOp)
-    - The result of an ExtractOp
-    - The result of a CustomOp (e.g., a gate applied to one or more wires)
-    """
+    """Resolve the integer wire index that this operand originates from."""
 
     # Traverse to producing op if this is a result
     while hasattr(operand, "owner"):
@@ -157,28 +154,29 @@ def resolve_constant_wire(operand):
     raise TypeError(f"Operand {operand} is not a result or constant-producing op")
 
 
-def get_parameters(op) -> list[float | int]:
+def get_parameters(op: Operator) -> list[float | int]:
     """Get the parameters from the operation."""
     return [resolve_constant_params(p) for p in op.params if p is not None]
 
 
-def get_wires(op) -> list[int]:
+def get_wires(op: Operator) -> list[int]:
     """Get the wires from the operation."""
     if not hasattr(op, "in_qubits"):
         return []
     return [resolve_constant_wire(w) for w in op.in_qubits if w is not None]
 
 
-def get_op_name(op) -> str:
+def get_op_name(op: Operator) -> str:
     """Get the name of the operation from the properties."""
     return op.properties["gate_name"].data
 
 
 def resolve_gate(name: str):
+    """Resolve the gate from the name."""
     try:
         return from_str_to_PL_gate[name]
-    except KeyError:
-        raise ValueError(f"Unsupported gate: {name}")
+    except KeyError as exc:
+        raise ValueError(f"Unsupported gate: {name}") from exc
 
 
 def reconstruct_gate(op: CustomOp):
@@ -187,15 +185,17 @@ def reconstruct_gate(op: CustomOp):
     parameters = get_parameters(op)
     wires = get_wires(op)
     wires = flatten(wires)
-    print(f"Reconstructing gate: {gate_name} with parameters: {parameters} and wires: {wires}")
     return resolve_gate(gate_name)(*parameters, wires=wires)
 
 
-class DummyTransform(pattern_rewriter.RewritePattern):
+class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
+    """A pattern that rewrites CustomOps to their decomposition."""
+
     def __init__(self, module):
         self.module = module
         super().__init__()
 
+    # pylint:disable=arguments-differ
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Rewrite the function by replacing CustomOps with their decomposition."""
@@ -210,7 +210,6 @@ class DummyTransform(pattern_rewriter.RewritePattern):
                 continue
 
             decomp_ops = concrete_op.decomposition()
-
             last_custom_op = None
 
             for qml_op in decomp_ops:
@@ -238,10 +237,7 @@ class DummyTransform(pattern_rewriter.RewritePattern):
                     rewriter.insert_op(wire_const_op, InsertPoint.before(op))
                     wires_xdsl.append(wire_const_op.result)
 
-                print(f"qml.op: {qml_op}")
-                print(f"parameters_xdsl: {parameters_xdsl}")
-                print(f"wires_xdsl: {wires_xdsl}")
-
+                # At this stage, this is the only 'special' operator we handle (GlobalPhase does not have wires)
                 if qml_op.name == "GlobalPhase":
 
                     custom_op = GlobalPhaseOp(
@@ -286,22 +282,24 @@ class DummyTransform(pattern_rewriter.RewritePattern):
 
 
 @dataclass(frozen=True)
-class DummyTransformPass(passes.ModulePass):
-    name = "dummy-transform"
+class DummyDecompositionTransformPass(passes.ModulePass):
+    """A pass that applies the DummyTransform pattern to a module."""
+
+    name = "dummy-decomposition-transform"
 
     def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        pattern = DummyTransform(module)
+        pattern = DummyDecompositionTransform(module)
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([pattern])
         ).rewrite_module(module)
 
 
-print(f"\n\n\n\n\n\n\n\n")
-print(f"Running the pass")
+print("\n\n\n\n\n\n\n\n")
+print("Running the pass")
 
 
-available_passes["dummy-transform"] = lambda: DummyTransformPass
-user_requested_pass = "dummy-transform"
+available_passes["dummy-decomposition-transform"] = lambda: DummyDecompositionTransformPass
+user_requested_pass = "dummy-decomposition-transform"
 requested_by_user = passes.PipelinePass.build_pipeline_tuples(
     available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
 )
