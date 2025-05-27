@@ -17,12 +17,12 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    resource_rep,
-    ResourceOperator,
     CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments
@@ -57,6 +57,7 @@ class ResourceCH(ResourceOperator):
     >>> re.ResourceCH.resources()
     {Hadamard: 2, RY: 2, CNOT: 1}
     """
+
     num_wires = 2
 
     @property
@@ -114,7 +115,9 @@ class ResourceCH(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -190,6 +193,7 @@ class ResourceCY(ResourceOperator):
     >>> re.ResourceCY.resources()
     {CNOT: 1, S: 1, Adjoint(S): 1}
     """
+
     num_wires = 2
 
     @property
@@ -243,7 +247,9 @@ class ResourceCY(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -317,6 +323,7 @@ class ResourceCZ(ResourceOperator):
     >>> re.ResourceCZ.resources()
     {CNOT: 1, Hadamard: 2}
     """
+
     num_wires = 2
 
     @property
@@ -440,6 +447,7 @@ class ResourceCSWAP(ResourceOperator):
     .. seealso:: :class:`~.CSWAP`
 
     """
+
     num_wires = 3
 
     @property
@@ -518,7 +526,7 @@ class ResourceCSWAP(ResourceOperator):
                 "base_cmpr_op": resource_rep(re.ResourceSWAP),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(ctrl_swap)]
 
@@ -568,6 +576,7 @@ class ResourceCCZ(ResourceOperator):
     >>> re.ResourceCCZ.resources()
     {Toffoli: 1, Hadamard: 2}
     """
+
     num_wires = 3
 
     @property
@@ -619,7 +628,9 @@ class ResourceCCZ(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -643,7 +654,7 @@ class ResourceCCZ(ResourceOperator):
                 "base_cmpr_op": resource_rep(re.ResourceZ),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "ctrl_num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
 
         return [GateCount(ctrl_z)]
@@ -683,6 +694,7 @@ class ResourceCNOT(ResourceOperator):
     .. seealso:: :class:`~.CNOT`
 
     """
+
     num_wires = 2
 
     @property
@@ -730,7 +742,9 @@ class ResourceCNOT(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -754,7 +768,7 @@ class ResourceCNOT(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [
             GateCount(mcx),
@@ -816,6 +830,7 @@ class ResourceToffoli(ResourceOperator):
     >>> re.ResourceToffoli.resources()
     {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
     """
+
     num_wires = 3
     resource_keys = {"elbow"}
 
@@ -947,7 +962,7 @@ class ResourceToffoli(ResourceOperator):
     def resource_rep(cls, elbow=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"elbow":elbow})
+        return CompressedResourceOp(cls, {"elbow": elbow})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, elbow=None) -> Dict[CompressedResourceOp, int]:
@@ -991,9 +1006,9 @@ class ResourceToffoli(ResourceOperator):
         mcx = resource_rep(
             re.ResourceMultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires + 2, 
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(mcx)]
 
@@ -1057,6 +1072,7 @@ class ResourceMultiControlledX(ResourceOperator):
     >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2, num_work_wires=3)
     {X: 4, CNOT: 69}
     """
+
     resource_keys = {"num_ctrl_wires", "num_ctrl_values"}
 
     def __init__(self, num_ctrl_wires, num_ctrl_values, wires=None) -> None:
@@ -1292,6 +1308,7 @@ class ResourceCRX(ResourceOperator):
     >>> re.ResourceCRX.resources()
     {CNOT: 2, RZ: 2, Hadamard: 2}
     """
+
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1428,6 +1445,7 @@ class ResourceCRY(ResourceOperator):
     >>> re.ResourceCRY.resources()
     {CNOT: 2, RY: 2}
     """
+
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1562,6 +1580,7 @@ class ResourceCRZ(ResourceOperator):
     >>> re.ResourceCRZ.resources()
     {CNOT: 2, RZ: 2}
     """
+
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1600,7 +1619,7 @@ class ResourceCRZ(ResourceOperator):
             and two :class:`~.ResourceRZ` gates.
         """
         cnot = resource_rep(ResourceCNOT)
-        rz = resource_rep(re.ResourceRZ, {"eps":eps})
+        rz = resource_rep(re.ResourceRZ, {"eps": eps})
         return [GateCount(cnot, 2), GateCount(rz, 2)]
 
     @classmethod
@@ -1706,6 +1725,7 @@ class ResourceCRot(ResourceOperator):
     >>> re.ResourceCRot.resources()
     {CNOT: 2, RZ: 3, RY: 2}
     """
+
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1851,6 +1871,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
     >>> re.ResourceControlledPhaseShift.resources()
     {CNOT: 2, RZ: 3}
     """
+
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:

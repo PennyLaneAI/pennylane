@@ -16,15 +16,14 @@ from functools import singledispatch
 from typing import Dict, List, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
 from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
     GateCount,
-    resource_rep,
     ResourceOperator,
     ResourcesNotDefined,
-    CompressedResourceOp,
+    resource_rep,
 )
-
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -423,7 +422,10 @@ class ResourceControlled(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values,
+        cls,
+        base_cmpr_op,
+        num_ctrl_wires,
+        num_ctrl_values,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -541,11 +543,13 @@ class ResourceControlled(ResourceOperator):
             {Hadamard: 2, CNOT: 1}
 
         """
-        
+
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         try:
             return base_class.controlled_resource_decomp(
-                ctrl_num_ctrl_wires = num_ctrl_wires, ctrl_num_ctrl_values = num_ctrl_values, **base_params
+                ctrl_num_ctrl_wires=num_ctrl_wires,
+                ctrl_num_ctrl_values=num_ctrl_values,
+                **base_params,
             )
         except re.ResourcesNotDefined:
             pass
@@ -560,7 +564,9 @@ class ResourceControlled(ResourceOperator):
             if isinstance(action, GateCount):
                 gate = action.gate
                 c_gate = cls.resource_rep(
-                    gate, num_ctrl_wires, num_ctrl_values,
+                    gate,
+                    num_ctrl_wires,
+                    num_ctrl_values,
                 )
                 gate_lst.append(GateCount(c_gate, action.count))
 
@@ -572,7 +578,7 @@ class ResourceControlled(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
-        ctrl_num_ctrl_wires, 
+        ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         base_cmpr_op,
         num_ctrl_wires,
@@ -616,7 +622,9 @@ class ResourceControlled(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_ctrl_values: int,
+        base_cmpr_op: CompressedResourceOp,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
     ):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
@@ -758,14 +766,10 @@ class ResourcePow(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(
-            cls, {"base_cmpr_op": base_cmpr_op, "z": z}
-        )
+        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "z": z})
 
     @classmethod
-    def default_resource_decomp(
-        cls, base_cmpr_op, z, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -843,7 +847,7 @@ class ResourcePow(ResourceOperator):
 
         """
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
-        
+
         if z == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
 
@@ -933,13 +937,14 @@ class ResourceProd(ResourceOperator):
     defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
 
     """
+
     resource_keys = {"cmpr_factors"}
-    
+
     def __init__(self, res_ops: List[ResourceOperator], wires=None) -> None:
         self.queue(res_ops)
 
         try:
-            cmpr_ops = tuple(op.resource_rep_from_op() for op in res_ops)  
+            cmpr_ops = tuple(op.resource_rep_from_op() for op in res_ops)
             self.cmpr_ops = cmpr_ops
         except AttributeError as error:
             raise ValueError(
@@ -1024,15 +1029,16 @@ class ResourceProd(ResourceOperator):
 
 
 class ResourceChangeBasisOp(ResourceOperator):
-    """Change of Basis resource operator """
+    """Change of Basis resource operator"""
+
     resource_keys = {"cmpr_compute_op", "cmpr_base_op", "cmpr_uncompute_op"}
-    
+
     def __init__(
-        self, 
-        compute_op: ResourceOperator, 
-        base_op: ResourceOperator, 
-        uncompute_op: Union[None, ResourceOperator] = None, 
-        wires = None,
+        self,
+        compute_op: ResourceOperator,
+        base_op: ResourceOperator,
+        uncompute_op: Union[None, ResourceOperator] = None,
+        wires=None,
     ) -> None:
         uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
         ops_to_remove = [compute_op, base_op, uncompute_op]
@@ -1083,7 +1089,9 @@ class ResourceChangeBasisOp(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1094,13 +1102,15 @@ class ResourceChangeBasisOp(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(ResourceAdjoint, {"base_cmpr_op": cmpr_compute_op})
+        cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(
+            ResourceAdjoint, {"base_cmpr_op": cmpr_compute_op}
+        )
         return CompressedResourceOp(
-            cls, 
+            cls,
             {
-            "cmpr_compute_op": cmpr_compute_op,
-            "cmpr_base_op": cmpr_base_op,
-            "cmpr_uncompute_op": cmpr_uncompute_op,                
+                "cmpr_compute_op": cmpr_compute_op,
+                "cmpr_base_op": cmpr_base_op,
+                "cmpr_uncompute_op": cmpr_uncompute_op,
             },
         )
 

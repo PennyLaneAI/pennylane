@@ -17,13 +17,14 @@ from typing import Dict
 import numpy as np
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    resource_rep,
-    ResourceOperator,
     CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
 )
+
 # pylint: disable=arguments-differ
 
 
@@ -129,7 +130,10 @@ class ResourcePhaseShift(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, eps=None,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
+        eps=None,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -153,7 +157,7 @@ class ResourcePhaseShift(ResourceOperator):
                 values are the counts.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(re.ResourceControlledPhaseShift, {"eps":eps}))]
+            gate_types = [GateCount(resource_rep(re.ResourceControlledPhaseShift, {"eps": eps}))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(re.ResourceX), 2))
@@ -312,7 +316,7 @@ class ResourceRX(ResourceOperator):
                 values are the counts.
         """
         if ctrl_num_ctrl_wires == 1:
-            
+
             gate_types = [GateCount(resource_rep(re.ResourceCRX, {"eps": eps}))]
 
             if ctrl_num_ctrl_values:
@@ -327,7 +331,7 @@ class ResourceRX(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(mcx, 2), GateCount(rz, 2), GateCount(h, 2)]
 
@@ -488,7 +492,7 @@ class ResourceRY(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
 
         return [GateCount(ry, 2), GateCount(mcx, 2)]

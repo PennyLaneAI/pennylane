@@ -15,12 +15,12 @@ r"""Resource operators for identity operations."""
 from typing import Dict
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    resource_rep,
-    ResourceOperator,
     CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
@@ -89,7 +89,9 @@ class ResourceIdentity(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int,
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -191,7 +193,9 @@ class ResourceGlobalPhase(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int,
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -229,7 +233,7 @@ class ResourceGlobalPhase(ResourceOperator):
             },
         )
 
-        return [GrabWires(1), GateCount(ps), GateCount(mcx,2), FreeWires(1)]
+        return [GrabWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:

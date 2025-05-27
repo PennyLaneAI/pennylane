@@ -16,11 +16,12 @@ from typing import Dict
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    resource_rep,
-    ResourceOperator,
     CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
 )
+
 # pylint: disable=arguments-differ
 
 
@@ -37,6 +38,7 @@ class ResourceHadamard(ResourceOperator):
     .. seealso:: :class:`~.Hadamard`
 
     """
+
     num_wires = 1
 
     @property
@@ -84,7 +86,9 @@ class ResourceHadamard(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int,
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -134,8 +138,7 @@ class ResourceHadamard(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
-
+            },
         )
 
         gate_lst.append(GateCount(h, 2))
@@ -181,6 +184,7 @@ class ResourceS(ResourceOperator):
     >>> re.ResourceS.resources()
     {T: 2}
     """
+
     num_wires = 1
 
     @property
@@ -226,7 +230,9 @@ class ResourceS(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -264,7 +270,7 @@ class ResourceS(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(cs, 1), GateCount(mcx, 2)]
 
@@ -335,6 +341,7 @@ class ResourceSWAP(ResourceOperator):
     >>> re.ResourceSWAP.resources()
     {CNOT: 3}
     """
+
     num_wires = 2
 
     @property
@@ -444,7 +451,7 @@ class ResourceSWAP(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(cnot, 2), GateCount(mcx)]
 
@@ -481,6 +488,7 @@ class ResourceT(ResourceOperator):
     .. seealso:: :class:`~.T`
 
     """
+
     num_wires = 1
 
     @property
@@ -529,9 +537,7 @@ class ResourceT(ResourceOperator):
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
-    def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ):
+    def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -568,7 +574,7 @@ class ResourceT(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(ct), GateCount(mcx, 2)]
 
@@ -590,16 +596,16 @@ class ResourceT(ResourceOperator):
         """
         if (mod_8 := pow_z % 8) == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
-        
+
         gate_lst = []
-        if mod_8 >= 4: 
+        if mod_8 >= 4:
             gate_lst.append(GateCount(resource_rep(ResourceZ)))
             mod_8 -= 4
-        
+
         if mod_8 >= 2:
             gate_lst.append(GateCount(resource_rep(ResourceS)))
             mod_8 -= 2
-        
+
         if mod_8 >= 1:
             gate_lst.append(GateCount(cls.resource_rep()))
 
@@ -634,6 +640,7 @@ class ResourceX(ResourceOperator):
     >>> re.ResourceX.resources()
     {S: 2, Hadamard: 2}
     """
+
     num_wires = 1
 
     @property
@@ -690,7 +697,9 @@ class ResourceX(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -715,9 +724,9 @@ class ResourceX(ResourceOperator):
             mcx = resource_rep(
                 re.ResourceMultiControlledX,
                 {
-                    "num_ctrl_wires": ctrl_num_ctrl_wires, 
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
                     "num_ctrl_values": ctrl_num_ctrl_values,
-                }
+                },
             )
 
             return [GateCount(mcx)]
@@ -785,8 +794,9 @@ class ResourceY(ResourceOperator):
     >>> re.ResourceY.resources()
     {S: 6, Hadamard: 2}
     """
+
     num_wires = 1
-    
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -887,7 +897,7 @@ class ResourceY(ResourceOperator):
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
-            }
+            },
         )
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
 
@@ -933,6 +943,7 @@ class ResourceZ(ResourceOperator):
     >>> re.ResourceZ.resources()
     {S: 2}
     """
+
     num_wires = 1
 
     @property
@@ -981,7 +992,9 @@ class ResourceZ(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -1016,7 +1029,7 @@ class ResourceZ(ResourceOperator):
                 {
                     "num_ctrl_wires": ctrl_num_ctrl_wires,
                     "num_ctrl_values": ctrl_num_ctrl_values,
-                }
+                },
             )
             return [GateCount(h, 2), GateCount(mcx)]
 
