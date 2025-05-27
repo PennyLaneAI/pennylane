@@ -118,7 +118,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_wires (int): the number of qubits the operation is controlled on\
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
@@ -956,18 +956,13 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
 
-        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceToffoli` gate.
+        * If there are three control qubits, the resources are three :code:`Toffoli` gates.
 
-        * If there are more than three control qubits (:math:`n`), the resources are defined as :math:`36n - 111` :class:`~.ResourceCNOT` gates.
-
-    .. seealso:: :class:`~.MultiControlledX`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2, num_work_wires=3)
-    {X: 4, CNOT: 69}
+        * If there are more than three control qubits (:math:`n`), the resources are given by
+          :math:`36n - 111` :code:`CNOT` gates if there is one work wire. Otherwise, we use
+          the waterfall construction described in `Encoding Electronic Spectra in Quantum
+          Circuits with Linear T Complexity <https://arxiv.org/pdf/1805.03662>`_. The resources
+          are given as :math:`2n - 3` :code:`Toffoli` gates  if there is one clean work wire.
     """
 
     @staticmethod
@@ -982,13 +977,13 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_ctrl_values (int): the number of control qubits, that are controlled when off
             num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
-            The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
-            <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
-            resources are defined as the following rules:
+            The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
+            without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+            resources are given by the following rules:
 
             * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
 
@@ -999,7 +994,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
             one :class:`~.ResourceToffoli` gate.
 
-            * If there are more than three control qubits (:math:`n`), the resources are defined as
+            * If there are more than three control qubits (:math:`n`), the resources are given by
             :math:`36n - 111` :class:`~.ResourceCNOT` gates.
         """
         gate_types = defaultdict(int)
@@ -1022,13 +1017,24 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 1
             return gate_types
 
-        if num_ctrl_wires == 3:
-            gate_types[cnot] = 2
-            gate_types[toffoli] = 1
+        if num_ctrl_wires == 3 and num_work_wires >= 1:
+            gate_types[toffoli] = 3
+            return gate_types
+
+        if num_ctrl_wires > 3 and num_work_wires >= 1:
+            # if num_work_wires >= (num_ctrl_wires - 2):  
+            #     gate_types[toffoli] = 2 * num_ctrl_wires - 3
+            #     return gate_types
+
+            # gate_types[cnot] = 36 * num_ctrl_wires - 111
+            # return gate_types
+            
+            gate_types[toffoli] = 2 * num_ctrl_wires - 3  # rise of conditionally clean ancilla 
             return gate_types
 
         gate_types[cnot] = 36 * num_ctrl_wires - 111
         return gate_types
+        # raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
