@@ -84,14 +84,20 @@ class PlxprVisualizer:
         self.unique_id += 1
         return uid
 
-    def parse(self, jaxpr, consts, *args, cluster=None) -> list:
+    def parse(self, jaxpr, consts, *args, cluster=None, interpreter=None) -> list:
+        if not interpreter:
+            interpreter = self.interpreter
+
         if not cluster:
             cluster = self.graph
 
-        # for arg, invar in zip(args, jaxpr.invars, strict=True):
-        #     self.interpreter._env[invar] = arg
-        # for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-        #     self.interpreter._env[constvar] = const
+        interpreter._env = {}
+        interpreter.setup()
+
+        for arg, invar in zip(args, jaxpr.invars, strict=True):
+            interpreter._env[invar] = arg
+        for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+            interpreter._env[constvar] = const
 
         for eqn in jaxpr.eqns:
 
@@ -99,7 +105,7 @@ class PlxprVisualizer:
             custom_handler = self._primitive_registrations.get(primitive, None)
 
             if custom_handler:
-                invals = [self.interpreter.read(invar) for invar in eqn.invars]
+                invals = [interpreter.read(invar) for invar in eqn.invars]
                 custom_handler(self, cluster, *invals, **eqn.params)
 
             elif getattr(primitive, "prim_type", "") == "operator":
@@ -177,7 +183,7 @@ class PlxprVisualizer:
                 if not source_node:
                     # connect all seen nodes to this measurement
                     for seen_wire, _ in self.wires.items():
-                        print("connecting", self.wires[str(seen_wire)], operator_uid)
+                        print("connecting", self.wires[str(seen_wire)], measurement_uid)
                         seen_node = self.wires[str(seen_wire)]
                         edge = pydot.Edge(seen_node, measurement_uid, style="dotted")
                         self.graph.add_edge(edge)
@@ -189,7 +195,7 @@ class PlxprVisualizer:
                 self.graph.add_edge(edge)
 
             else:
-                invals = [self.interpreter.read(invar) for invar in eqn.invars]
+                invals = [interpreter.read(invar) for invar in eqn.invars]
                 subfuns, params = primitive.get_bind_params(eqn.params)
                 primitive.bind(*subfuns, *invals, **params)
 
@@ -213,14 +219,11 @@ def handle_qnode(
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    # device_cluster = pydot.Cluster(
-    #     name="Device" + str(len(cluster.get_nodes())),
-    #     label=f"{device.name}",
-    #     style="filled",
-    #     fillcolor="lightgrey",
-    #     color="black",
-    # )
-    wires_uid = self.convert_name_to_uid("wires")
+    copied_interpreter = copy(self.interpreter)
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(copied_interpreter, qfunc_jaxpr, consts, *args)
+
+    # Visualization part
+    wires_uid = self.convert_name_to_uid("device_wires")
     wires_node = pydot.Node(
         wires_uid,
         label=f"{device.wires}",
@@ -228,8 +231,6 @@ def handle_qnode(
         fillcolor="red",
     )
     cluster.add_node(wires_node)
-    # cluster.add_subgraph(device_cluster)
-
     for wire in device.wires:
         self.wires[str(wire)] = wires_uid
 
@@ -242,9 +243,13 @@ def handle_qnode(
     )
     cluster.add_subgraph(qnode_cluster)
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(self.interpreter, qfunc_jaxpr, consts, *args)
-
-    self.parse(new_qfunc_jaxpr.jaxpr, new_qfunc_jaxpr.consts, *args, cluster=qnode_cluster)
+    self.parse(
+        new_qfunc_jaxpr.jaxpr,
+        new_qfunc_jaxpr.consts,
+        *args,
+        cluster=qnode_cluster,
+        interpreter=copied_interpreter,
+    )
 
     return qnode_prim.bind(
         *new_qfunc_jaxpr.consts,
@@ -276,27 +281,29 @@ def handle_for_loop(
     init_state = args[args_slice]
     abstract_shapes = args[abstract_shapes_slice]
 
+    copied_interpreter = copy(self.interpreter)
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        self.interpreter, jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
+        copied_interpreter, jaxpr_body_fn, consts, *abstract_shapes, start, *init_state
     )
+
+    # Visualization part
     uid = self.convert_name_to_uid("for_loop")
     loop_var = str(new_jaxpr_body_fn.jaxpr.invars[0])
-    print("loop var", loop_var)
-    loop_var_ascii = self.convert_id_to_ascii(loop_var)
-
-    print(self.seen_dynamic_ids)
     for_loop_cluster = pydot.Cluster(
         uid,
-        label=f"for {loop_var_ascii} in [{start}, {stop}, {step}]",
+        label=f"for {self.convert_id_to_ascii(loop_var)} in [{start}, {stop}, {step}]",
         style="filled",
         fillcolor="lightgrey",
         color="black",
     )
-
     cluster.add_subgraph(for_loop_cluster)
-
-    print("args", args)
-    self.parse(new_jaxpr_body_fn.jaxpr, new_jaxpr_body_fn.consts, *args, cluster=for_loop_cluster)
+    self.parse(
+        new_jaxpr_body_fn.jaxpr,
+        new_jaxpr_body_fn.consts,
+        *args,
+        cluster=for_loop_cluster,
+        interpreter=copied_interpreter,
+    )
 
     consts_slice = slice(0, len(new_jaxpr_body_fn.consts))
     abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
