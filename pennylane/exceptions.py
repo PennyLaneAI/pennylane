@@ -28,5 +28,9 @@ class PennyLaneDeprecationWarning(UserWarning):  # pragma: no cover
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
+class PennyLaneUserWarning(UserWarning):  # pragma: no cover
+    """Warning raised for user-facing issues or potential sources of confusion in PennyLane."""
+
+
 class ExperimentalWarning(UserWarning):  # pragma: no cover
     """Warning raised to indicate experimental/non-stable feature or support."""
