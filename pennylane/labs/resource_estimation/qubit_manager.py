@@ -25,7 +25,7 @@ class QubitManager:
 
     Args:
         work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
-            number of clean and dirty work wires. All work_wires are assumed to be clean when
+            number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             `int` is provided.
         algo_wires (int): Number of algorithmic wires, default value is 0.
         tight_budget (bool): flag to determine whether extra clean qubits are available
