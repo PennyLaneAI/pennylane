@@ -193,6 +193,7 @@ class QasmInterpreter(QASMVisitor):
         ]
 
         if len(node.modifiers) > 0:
+            num_control = sum(mod.modifier.name == "ctrl" for mod in node.modifiers)
             for mod in node.modifiers:
                 # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
                 # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
@@ -209,7 +210,7 @@ class QasmInterpreter(QASMVisitor):
                             gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"]
                         )
                 elif mod.modifier.name == "ctrl":
-                    ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires[-1])
+                    ops.ctrl(gate, control=wires[0:-num_control])(*args, wires=wires[-num_control:])
         else:
             gate(*args, wires=wires)
 
