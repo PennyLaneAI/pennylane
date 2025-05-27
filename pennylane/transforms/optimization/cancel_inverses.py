@@ -54,18 +54,17 @@ def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
 
 
 def _op_has_abstract(op: Operator) -> bool:
-    """Checks if an operator has abstract wires, parameters, or hyperparameters."""
+    """Checks if an operator has abstract wires or parameters."""
     return any(
         [
             _contains_abstract(op.wires),
             hasattr(op, "parameters") and _contains_abstract(op.parameters),
-            hasattr(op, "hyperparameters") and _contains_abstract(op.hyperparameters.values()),
         ]
     )
 
 
 def _check_abstractness(op1: Operator, op2: Operator) -> bool:
-    """Checks if either of the operators has abstract wires, parameters, or hyperparameters."""
+    """Checks if either of the operators has abstract wires or parameters."""
     return _op_has_abstract(op1) or _op_has_abstract(op2)
 
 

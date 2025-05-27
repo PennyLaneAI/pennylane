@@ -352,27 +352,6 @@ class TestCancelInversesInterfaces:
 
         assert qml.math.allclose(res, 1.0)
 
-    @pytest.mark.jax
-    def test_cancel_inverses_abstract_hyperparameters(self):
-        """Test that the transform works with abstract hyperparameters."""
-        import jax
-
-        n_wires = 3
-
-        @jax.jit
-        @cancel_inverses
-        @qml.qnode(dev)
-        def GroverOp(work_wires):
-            qml.adjoint(qml.templates.GroverOperator(list(range(n_wires)), work_wires))
-            qml.templates.GroverOperator(list(range(n_wires)), work_wires)
-            return qml.expval(qml.Z(0))
-
-        with pytest.warns(
-            UserWarning,
-            match="At least one of the operators has abstract wires, parameters, or hyperparameters",
-        ):
-            GroverOp([n_wires - 1])
-
 
 ### Tape
 with qml.queuing.AnnotatedQueue() as q:
