@@ -65,13 +65,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     There are also two types of directed edges: edges that connect operators to the decomposition
     rules that contain them, and edges that connect decomposition rules to the operators that they
-    decompose. The edge weights represent the difference in the gate count between the two states.
-    Edges that connect decomposition rules to operators have a weight of 0 because an operator can
-    be replaced with its decomposition at no additional cost.
+    decompose. The edge weights represent the difference in the total weights of the gates between
+    the two states. Edges that connect decomposition rules to operators have a weight of 0 because
+    an operator can be replaced with its decomposition at no additional cost.
 
     On the other hand, edges that connect operators to the decomposition rule that contains them
     will have a weight that is the total resource estimate of the decomposition minus the resource
-    estimate of the operator. For example, the edge that connects a ``CNOT`` to the following
+    estimate of the operator. Edges that connect an operator node to a decomposition node have a weight
+    calculated by the difference of the sum of the gate counts multiplied by their respective gate
+    weights in the decomposition, minus the weight of the operator of the operator node.
+
+    For example, if the graph was initialized with ``{qml.CNOT: 10.0, qml.H: 1.0}`` as the gate set, the edge that connects a ``CNOT`` to the following
     decomposition rule:
 
     .. code-block:: python
@@ -84,16 +88,19 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             qml.CNOT(wires=wires)
             qml.H(wires=wires[1])
 
-    will have a weight of 2, because the decomposition rule contains 2 additional ``H`` gates.
-    Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't supported
-    and is in turn decomposed to two ``RZ`` gates and one ``RX`` gate, the weight of this edge
-    becomes 2 * 3 = 6. This way, the total distance from the basis gate set to a high-level gate is
-    conveniently the total number of basis gates required to decompose this high-level gate, which
-    allows us to use Dijkstra's algorithm to find the most efficient decomposition.
+    will have a weight of (10.0 + 2 * 1.0) - 10.0 = 2, because the decomposition rule contains 2 additional
+    ``H`` gates. Note that this gate count is in terms of gates in the target gate set. If ``H`` isn't
+    supported and is in turn decomposed to two ``RZ`` gates and one ``RX`` gate, the weight of this edge
+    becomes 2 * 3 = 6, if ``RZ`` and ``RX`` have weights of 1.0 (the default). This way, the total distance
+    from the basis gate set to a high-level gate is by default the total number of basis gates required to
+    decompose this high-level gate, which allows us to use Dijkstra's algorithm to find the most efficient
+    decomposition. By specifying weights in the target gate set, the total distance calculation involves
+    a sum of weighted gate counts, which can represent the relative cost of executing a particular element
+    of the target gate set on the target hardware i.e. a ``T`` gate.
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str]): The names of the gates in the target gate set.
+        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
 
@@ -125,12 +132,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[str],
+        gate_set: set[type | str] | dict[type | str, float],
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
-        # The names of the gates in the target gate set.
-        self._gate_set: set[str] = {translate_op_alias(op) for op in gate_set}
+        if isinstance(gate_set, set):
+            # The names of the gates in the target gate set.
+            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
+        else:
+            # the gate_set is a dict
+            self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
@@ -213,8 +224,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._graph.add_node(op_node)
         self._all_op_indices[op_node] = op_node_idx
 
-        if op_node.name in self._gate_set:
-            self._graph.add_edge(self._start, op_node_idx, 1)
+        if op_node.name in self._weights:
+            self._graph.add_edge(self._start, op_node_idx, self._weights[op_node.name])
             return op_node_idx
 
         for decomposition in self._get_decompositions(op_node):
@@ -306,7 +317,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 entire graph will be explored.
 
         """
-        self._visitor = _DecompositionSearchVisitor(self._graph, self._original_ops_indices, lazy)
+        self._visitor = _DecompositionSearchVisitor(
+            self._graph,
+            self._weights,
+            self._original_ops_indices,
+            lazy,
+        )
         rx.dijkstra_search(
             self._graph,
             source=[self._start],
@@ -317,7 +333,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
             op_names = set(op.name for op in unsolved_ops)
             raise DecompositionError(
-                f"Decomposition not found for {op_names} to the gate set {self._gate_set}"
+                f"Decomposition not found for {op_names} to the gate set {set(self._weights)}"
             )
 
     def is_solved_for(self, op):
@@ -418,7 +434,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 class _DecompositionSearchVisitor(DijkstraVisitor):
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
-    def __init__(self, graph: rx.PyDiGraph, original_op_indices: set[int], lazy: bool = True):
+    def __init__(
+        self,
+        graph: rx.PyDiGraph,
+        gate_set: dict,
+        original_op_indices: set[int],
+        lazy: bool = True,
+    ):
         self._graph = graph
         self._lazy = lazy
         # maps node indices to the optimal resource estimates
@@ -427,13 +449,15 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
         self._num_edges_examined: dict[int, int] = {}  # keys are decomposition node indices
+        self._gate_weights = gate_set
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
+
         op_node_idx, d_node_idx = edge_obj
-        return self.distances[d_node_idx].num_gates - self.distances[op_node_idx].num_gates
+        return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
 
     def discover_vertex(self, v, _):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
@@ -468,7 +492,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
-            self.distances[target_idx] = Resources({target_node: 1})
+            self.distances[target_idx] = Resources(
+                {target_node: 1}, self._gate_weights[_to_name(target_node)]
+            )
         elif isinstance(target_node, CompressedResourceOp):
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]

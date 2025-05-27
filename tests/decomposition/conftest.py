@@ -34,9 +34,16 @@ from pennylane.ops.qubit.parametric_ops_single_qubit import _controlled_phase_sh
 decompositions = defaultdict(list)
 
 
-def to_resources(gate_count: dict) -> Resources:
+def to_resources(gate_count: dict, weighted_cost: float = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""
-    return Resources({_auto_wrap(op): count for op, count in gate_count.items() if count >= 0})
+    return Resources(
+        {_auto_wrap(op): count for op, count in gate_count.items() if count >= 0},
+        (
+            sum(count for gate, count in gate_count.items())
+            if weighted_cost is None
+            else weighted_cost
+        ),
+    )
 
 
 @qml.register_resources({qml.Hadamard: 2, qml.CNOT: 1})
@@ -93,7 +100,12 @@ def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-decompositions["CRX"] = [_crx_to_rx_cz]
+@qml.register_resources({qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4})
+def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRX"] = [_crx_to_rx_cz, _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz]
 
 
 @qml.register_resources({qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1})

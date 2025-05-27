@@ -226,7 +226,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     def get_snapshots(*args, **kwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
-            # pylint: disable=protected-access
+
             results = qnode(*args, **kwargs)
 
         dbg.snapshots["execution_results"] = results

@@ -16,6 +16,7 @@ import warnings
 from typing import Union
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -123,6 +124,6 @@ def center(
     warnings.warn(
         "Calling center via qml.pauli.center is deprecated. center has moved to pennylane.liealg. "
         "Please call center from top level as qml.center or from the liealg module via qml.liealg.center.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
     return qml.center(g, pauli)

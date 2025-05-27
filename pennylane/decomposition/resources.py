@@ -25,20 +25,24 @@ import pennylane as qml
 from pennylane.operation import Operator
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Resources:
     r"""Stores resource estimates.
 
     Args:
         gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-
+        weighted_cost (float): the cumulative weight of the gates.
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
+    weighted_cost: Optional[float] = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for gate, count in self.gate_counts.items())
+        assert self.weighted_cost >= 0.0
 
     @cached_property
     def num_gates(self) -> int:
@@ -48,15 +52,18 @@ class Resources:
     def __add__(self, other: Resources):
         return Resources(
             _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost,
         )
 
     def __mul__(self, scalar: int):
-        return Resources(_scale_dict(self.gate_counts, scalar))
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
 
     __rmul__ = __mul__
 
     def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}>"
+        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -291,8 +298,9 @@ def controlled_resource_rep(
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
     This function mirrors the custom logic in ``qml.ctrl`` which does the following:
+
     - Flattens nested controlled operations.
-    - Dispatches to custom controlled operations when applicable.
+    - Dispatches to custom-controlled operations when applicable.
 
     Args:
         base_class: the base operator type

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
-
 # pylint: disable=protected-access,no-name-in-module
 
 from unittest.mock import patch
@@ -40,6 +39,51 @@ from pennylane.decomposition.decomposition_graph import _to_name
     side_effect=lambda x: decompositions[_to_name(x)],
 )
 class TestDecompositionGraph:
+
+    def test_weighted_graph_solve(self, _):
+        """Tests solving a simple graph for the optimal decompositions with weighted gates."""
+
+        op = qml.CRX(2.5, wires=[0, 1])
+
+        # the RZ CZ RX CZ decomp is chosen when the RZ and CNOT weights are large.
+        gate_weights = {
+            "RX": 1.0,
+            "RY": 3.0,
+            "RZ": 10.0,
+            "GlobalPhase": 1.0,
+            "CNOT": 20.0,
+            "CZ": 1.0,
+        }
+
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set=gate_weights,
+        )
+        graph.solve()
+
+        expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
+        assert graph.resource_estimate(op) == expected_resource
+
+        # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
+        gate_weights = {
+            "RX": 1.0,
+            "RY": 1.0,
+            "RZ": 1.0,
+            "GlobalPhase": 1.0,
+            "CNOT": 1.0,
+            "CZ": 100.0,
+        }
+
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set=gate_weights,
+        )
+        graph.solve()
+
+        expected_resource = to_resources(
+            {qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4}
+        )
+        assert graph.resource_estimate(op) == expected_resource
 
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
@@ -86,7 +130,10 @@ class TestDecompositionGraph:
         """Tests constructing a graph from a single Hadamard."""
 
         op = qml.Hadamard(wires=[0])
-        graph = DecompositionGraph(operations=[op], gate_set={"RX", "RZ", "GlobalPhase"})
+
+        graph = DecompositionGraph(
+            operations=[op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0}
+        )
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY) and 1 dummy starting node
         assert len(graph._graph.nodes()) == 9
         # 8 edges from ops to decompositions, 3 from decompositions to ops, and 3 from the
@@ -191,9 +238,12 @@ class TestDecompositionGraph:
         graph.solve()
 
         # verify that the better decomposition rule is chosen when both are valid.
-        expected_resource = to_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
-        assert graph.resource_estimate(op) == expected_resource
-        assert graph.decomposition(op).compute_resources() == expected_resource
+        assert graph.resource_estimate(op) == to_resources(
+            {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
+        )
+        assert graph.decomposition(op).compute_resources() == to_resources(
+            {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
+        )
 
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
@@ -294,16 +344,16 @@ class TestDecompositionGraph:
 
         graph.solve()
         assert graph.resource_estimate(op) == to_resources(
-            {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28}
+            {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28},
         )
         assert graph.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
                 qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
                 qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
-            }
+            },
         )
         assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
-            {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
+            {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1},
         )
 
 
@@ -347,8 +397,8 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        assert len(graph._graph.nodes()) == 31
-        assert len(graph._graph.edges()) == 43
+        assert len(graph._graph.nodes()) == 32
+        assert len(graph._graph.edges()) == 49
 
         # Verify the decompositions
         graph.solve()
@@ -531,7 +581,7 @@ class TestSymbolicDecompositions:
             qml.adjoint(qml.H(wires=0)),
         ]
         assert graph.resource_estimate(op) == to_resources(
-            {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1}
+            {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1},
         )
 
     def test_nested_powers(self, _):
