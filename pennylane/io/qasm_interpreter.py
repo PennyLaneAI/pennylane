@@ -489,8 +489,9 @@ class QasmInterpreter(QASMVisitor):
             }
 
         # runtime Callable
-        self._init_gates_list(context)
-        context["gates"].append(partial(self.visit_ClassicalDeclaration, node))
+        if not self.executing:
+            self._init_gates_list(context)
+            context["gates"].append(partial(self.visit_ClassicalDeclaration, node))
 
     def construct_callable(self, context: dict):
         """
@@ -597,8 +598,7 @@ class QasmInterpreter(QASMVisitor):
         if not self.executing:
             context["gates"].append(partial(self.visit_SubroutineDefinition, node))
 
-    @staticmethod
-    def visit_QubitDeclaration(node: QASMNode, context: dict):
+    def visit_QubitDeclaration(self, node: QASMNode, context: dict):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
@@ -608,6 +608,9 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         context["wires"].append(node.qubit.name)
+
+        if not self.executing:
+            context["gates"].append(partial(self.visit_QubitDeclaration, node))
 
     def visit_QuantumGate(self, node: QASMNode, context: dict):
         """
@@ -619,6 +622,7 @@ class QasmInterpreter(QASMVisitor):
             context (dict): The current context.
         """
         self._require_wires(context)
+        self._init_gates_list(context)
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
@@ -761,13 +765,15 @@ class QasmInterpreter(QASMVisitor):
                             func_context["vars"][arg.name] = evald_arg
 
                     # execute the subroutine
+                    self.executing = True
                     [
                         gate(func_context) if not self._all_context_bound(gate) else gate()
                         for gate in func_context["gates"]
                     ]
+                    self.executing = False
 
                     # the return value
-                    return self.retrieve_variable(func_context["return"], func_context)
+                    return self.retrieve_variable(func_context["return"], func_context)["val"]
         elif isinstance(node, Callable):
             res = node()
         elif re.search("Literal", node.__class__.__name__):

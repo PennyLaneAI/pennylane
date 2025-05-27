@@ -62,7 +62,7 @@ class TestInterpreter:
         with queuing.AnnotatedQueue() as q:
             context["callable"]()
 
-        assert q.queue == []
+        assert q.queue == [Hadamard('q0'), Hadamard('q0'), Hadamard('q0')]
 
     def test_variables(self, mocker):
         # parse the QASM
