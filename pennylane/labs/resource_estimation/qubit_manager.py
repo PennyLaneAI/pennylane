@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 class QubitManager:
-    r"""Contains attributes which help track how auxiliary qubits are used in a circuit
+    r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
     Args:
         work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
