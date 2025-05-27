@@ -9,6 +9,7 @@ from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration
 from openqasm3.visitor import QASMNode, QASMVisitor
 
 from pennylane import ops
+from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -194,26 +195,45 @@ class QasmInterpreter(QASMVisitor):
         ]
 
         if len(node.modifiers) > 0:
-            num_control = sum(mod.modifier.name == "ctrl" for mod in node.modifiers)
-            for mod in node.modifiers:
-                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-                # `no viable alternative at input 'wop(power)@'`, long before we get here.
-                assert mod.modifier.name in ("inv", "pow", "ctrl")
+            if node.modifiers[0].modifier.name == "ctrl":
+                prev = self.apply_modifier(
+                    node.modifiers[0], gate(*args, wires=wires[1:]), context, wires
+                )
+                wires = wires[1:]
+            else:
+                prev = self.apply_modifier(
+                    node.modifiers[0], gate(*args, wires=wires), context, wires
+                )
 
-                if mod.modifier.name == "inv":
-                    ops.adjoint(gate(*args, wires=wires))
-                elif mod.modifier.name == "pow":
-                    if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                        ops.pow(gate(*args, wires=wires), z=mod.argument.value)
-                    elif "vars" in context and mod.argument.name in context["vars"]:
-                        ops.pow(
-                            gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"]
-                        )
-                elif mod.modifier.name == "ctrl":
-                    ops.ctrl(gate, control=wires[0:-num_control])(*args, wires=wires[-num_control:])
+            for mod in node.modifiers[1:]:
+                self.apply_modifier(mod, prev, context, wires)
         else:
             gate(*args, wires=wires)
+
+    def apply_modifier(self, mod: QASMNode, previous: Operator, context: dict, wires: list):
+        """
+        Applies a modifier to the previous gate or modified gate.
+
+        Args:
+            mod (QASMNode): The modifier QASMNode.
+            previous (Operator): The previous (called) operator.
+            context (dict): The current context.
+            wires (list): The wires that the operator is applied to.
+        """
+        # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+        # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+        # `no viable alternative at input 'wop(power)@'`, long before we get here.
+        assert mod.modifier.name in ("inv", "pow", "ctrl")
+
+        if mod.modifier.name == "inv":
+            ops.adjoint(previous)
+        elif mod.modifier.name == "pow":
+            if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                ops.pow(previous, z=mod.argument.value)
+            elif "vars" in context and mod.argument.name in context["vars"]:
+                ops.pow(previous, z=context["vars"][mod.argument.name]["val"])
+        elif mod.modifier.name == "ctrl":
+            ops.ctrl(previous, control=wires[0])
 
     @staticmethod
     def retrieve_variable(name: str, context: dict):
