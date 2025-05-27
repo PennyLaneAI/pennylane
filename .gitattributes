@@ -12,6 +12,5 @@ CODEOWNERS      text
 *.png           binary
 *.jpg           binary
 *.jpeg          binary
-*.svg           binary
 *.pdf           binary
 *.gif           binary
