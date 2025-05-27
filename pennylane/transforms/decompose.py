@@ -15,7 +15,6 @@
 A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 
-# pylint: disable=unnecessary-lambda-assignment,protected-access
 
 from __future__ import annotations
 
@@ -30,6 +29,65 @@ from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
+
+
+def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None):
+    """
+    From the provided gate_set dict, set (or None) resolves a standardized form for the gate_set,
+    as well as a tuple target_gate_types and set target_gate_names, and a function that
+    returns whether the gate set contains a given operator.
+
+    Args:
+        gate_set (set[type | str] | dict[type | str, float]): The gate_set to be resolved.
+
+    Returns:
+        gate_set (set[type | str] | dict[type | str, float]): The standardized gate_set.
+        target_gate_types tuple[type]: The types of the gates in the gate_set.
+        target_gate_names set[str]: The names of the gates in the gate_set.
+        gate_set_contains (Callable): A function that checks for the membership of a gate in the gate_set.
+    """
+    target_gate_types = tuple()
+    target_gate_names = set()
+
+    if gate_set is None:
+        gate_set: set[Type[Operator] | str] = set(qml.ops.__all__)
+
+    if isinstance(gate_set, (str, type)):
+        gate_set = {gate_set}
+
+    if isinstance(gate_set, dict):
+        for v in gate_set.values():
+            if v < 0.0:
+                raise ValueError(
+                    "Negative gate weights provided to gate_set in decompose" "are not supported."
+                )
+
+        if not qml.decomposition.enabled_graph():
+            raise TypeError(
+                "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
+                "with the new experimental graph-based decomposition system. Enable the new system "
+                "using qml.decomposition.enable_graph()"
+            )
+
+    if isinstance(gate_set, Iterable):
+        target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+        target_gate_names = set(
+            translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
+        )
+
+        def gate_set_contains(op):
+            return (op.name in target_gate_names) or isinstance(op, target_gate_types)
+
+    else:  # if isinstance(gate_set, Callable):
+        gate_set_contains = gate_set
+
+        if qml.decomposition.enabled_graph():
+            raise TypeError(
+                "Specifying gate_set as a function is not supported with the new "
+                "graph-based decomposition system enabled."
+            )
+
+    return gate_set, target_gate_types, target_gate_names, gate_set_contains
 
 
 def null_postprocessing(results):
@@ -96,38 +154,26 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # The name is different from the _env in the parent class (a dictionary) to avoid confusion.
             self._env_map = ChainMap()
 
-            if gate_set is None:
-                gate_set: set[Type[Operator] | str] = set(qml.ops.__all__)
-
-            if isinstance(gate_set, (str, type)):
-                gate_set: set[Type[Operator] | str] = {gate_set}
+            gate_set, target_gate_types, target_gate_names, _in_gate_set = _resolve_gate_set(
+                gate_set
+            )
 
             if isinstance(gate_set, Iterable):
-
-                target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-                target_gate_names = set(
-                    translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
-                )
-
-                def _in_gate_set(op: Operator) -> bool:
-                    return (op.name in target_gate_names) or isinstance(op, target_gate_types)
 
                 self.gate_set_contains = _in_gate_set
 
                 if qml.decomposition.enabled_graph():
 
                     type_to_names = {op_type.__name__ for op_type in target_gate_types}
-                    self._target_gate_names = target_gate_names | type_to_names
+                    self._gate_set = (
+                        gate_set
+                        if isinstance(gate_set, dict)
+                        else target_gate_names | type_to_names
+                    )
 
             else:  # isinstance(gate_set, Callable)
 
                 self.gate_set_contains: Callable[[Operator], bool] = gate_set
-
-                if qml.decomposition.enabled_graph():
-                    raise TypeError(
-                        "Specifying gate_set as a function is not supported with the new "
-                        "graph-based decomposition system enabled."
-                    )
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -145,7 +191,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def read(self, var):
             """Extract the value corresponding to a variable."""
-            return var.val if isinstance(var, jax.core.Literal) else self._env_map[var]
+            return var.val if isinstance(var, jax.extend.core.Literal) else self._env_map[var]
 
         def stopping_condition(self, op: qml.operation.Operator) -> bool:
             """Function to determine whether an operator needs to be decomposed or not.
@@ -243,12 +289,12 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             return out
 
         # pylint: disable=too-many-branches
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
             """
             Evaluates a jaxpr, which can also be generated by a dynamic decomposition.
 
             Args:
-                jaxpr_decomp (jax.core.Jaxpr): the Jaxpr to evaluate
+                jaxpr_decomp (jax.extend.core.Jaxpr): the Jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args: the arguments to use in the evaluation
             """
@@ -271,7 +317,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 if operations:
                     self._decomp_graph = _construct_and_solve_decomp_graph(
                         operations,
-                        self._target_gate_names,
+                        self._gate_set,
                         self._fixed_decomps,
                         self._alt_decomps,
                     )
@@ -313,14 +359,14 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             return outvals
 
-        def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+        def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
             """Interpret an equation corresponding to an operator.
 
             If the operator has a dynamic decomposition defined, this method will
             create and evaluate the jaxpr of the decomposition using the :meth:`~.eval` method.
 
             Args:
-                eqn (jax.core.JaxprEqn): a jax equation for an operator.
+                eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
 
             See also: :meth:`~.interpret_operation`.
 
@@ -403,11 +449,12 @@ def decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
-            either (1) a sequence of operator types and/or names or (2) a function that returns
-            ``True`` if the operator belongs to the target gate set. Defaults to ``None``, in which
-            case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
-        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
+        gate_set (Iterable[str or type], Dict[type or str, float], or Callable, optional): The target gate
+            set specified as either (1) a sequence of operator types and/or names, (2) a function that returns
+            ``True`` if the operator belongs to the target gate set or (3) a dictionary of operator
+            types and/or names with weights. Defaults to ``None``, in which case the gate set is
+            considered to be all available :doc:`quantum operators </introduction/operations>`.
+        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
@@ -580,6 +627,52 @@ def decompose(
             >>> new_tape.operations
             [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
+        **Weighted Gate Sets**
+
+        With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. For example:
+
+        .. code-block:: python
+
+            @partial(
+                qml.transforms.decompose,
+                gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+            )
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit():
+                qml.CRX(0.1, wires=[0, 1])
+                qml.Toffoli(wires=[0, 1, 2])
+                return qml.expval(qml.Z(0))
+
+        .. code-block:: pycon
+
+            >>> print(qml.draw(circuit)())
+            0: ───────────╭●────────────╭●─╭●─┤  <Z>
+            1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
+            2: ────────────────────────────╰X─┤
+
+        .. code-block:: python
+
+            @partial(
+                qml.transforms.decompose,
+                gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+            )
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit():
+                qml.CRX(0.1, wires=[0, 1])
+                qml.Toffoli(wires=[0, 1, 2])
+                return qml.expval(qml.Z(0))
+
+        .. code-block:: pycon
+
+            >>> print(qml.draw(circuit)())
+            0: ────╭●───────────╭●─┤  <Z>
+            1: ──H─╰RZ(0.10)──H─├●─┤
+            2: ─────────────────╰X─┤
+
+
+        Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
+        *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
+        efficient.
 
         **Customizing Decompositions**
 
@@ -646,36 +739,7 @@ def decompose(
 
     _decomp_graph_kwargs_checks(fixed_decomps, alt_decomps)
 
-    if isinstance(gate_set, (str, type)):
-        gate_set = {gate_set}
-
-    if isinstance(gate_set, Iterable):
-        target_gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-        target_gate_names = set(
-            translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)
-        )
-
-        def gate_set_contains(op):
-            return (op.name in target_gate_names) or isinstance(op, target_gate_types)
-
-    # If the gate_set is None, we don't need to iterate over
-    # all the ops to construct `target_gate_types` or `target_gate_names`
-    elif gate_set is None:
-
-        target_gate_types = tuple()
-        target_gate_names = set(qml.ops.__all__)
-
-        def gate_set_contains(op):
-            return op.name in target_gate_names
-
-    else:
-        gate_set_contains = gate_set
-
-        if qml.decomposition.enabled_graph():
-            raise TypeError(
-                "Specifying gate_set as a function is not supported with the new "
-                "graph-based decomposition system enabled."
-            )
+    gate_set, target_gate_types, target_gate_names, gate_set_contains = _resolve_gate_set(gate_set)
 
     def stopping_condition(op):
 
@@ -710,7 +774,7 @@ def decompose(
 
         decomp_graph = _construct_and_solve_decomp_graph(
             tape.operations,
-            target_gate_names,
+            target_gate_names if not isinstance(gate_set, dict) else gate_set,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
         )
@@ -783,13 +847,13 @@ def _decomp_graph_kwargs_checks(fixed_decomps, alt_decomps):
         )
 
 
-def _construct_and_solve_decomp_graph(operations, target_gate_names, fixed_decomps, alt_decomps):
+def _construct_and_solve_decomp_graph(operations, target_gates, fixed_decomps, alt_decomps):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
     # Create the decomposition graph
     decomp_graph = DecompositionGraph(
         operations,
-        target_gate_names,
+        target_gates,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
     )

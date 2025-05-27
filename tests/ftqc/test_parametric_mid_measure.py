@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ftqc import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -458,7 +459,7 @@ class TestMeasureFunctions:
         """Test that a QuanutmFunctionError is raised if too many wires are passed"""
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             func([0, 1])
@@ -472,7 +473,7 @@ class TestMeasureFunctions:
         """Test that a QuanutmFunctionError is raised if too many wires are passed when using capture"""
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             func([0, 1])
@@ -916,3 +917,41 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.03)
         else:
             assert np.allclose(circ(), [np.cos(2.345), -1])
+
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_diagonalize_mcms_returns_parametrized_mcms(self, mcm_method, shots):
+        """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
+        by the QNode"""
+
+        dev = qml.device("default.qubit", shots=shots)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            m0 = measure_x(0)
+            m1 = measure_y(1)
+            m2 = measure_arbitrary_basis(2, angle=1.23, plane="XY")
+
+            return qml.expval(m0), qml.expval(m1), qml.expval(m2)
+
+        circ()
+
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_diagonalize_mcms_returns_cond_measure_result(self, mcm_method, shots):
+        """Test that when diagonalizing, the MeasurementValue output by cond_measure can be returned
+        by the QNode"""
+
+        if mcm_method == "one-shot":
+            pytest.xfail(reason="not implemented yet")  # sc-90607
+
+        dev = qml.device("default.qubit", shots=shots)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            qml.H(0)
+            m0 = measure_x(0)
+            m1 = cond_measure(m0, measure_x, measure_y)(1)
+            return qml.expval(m1)
+
+        circ()

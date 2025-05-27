@@ -25,6 +25,7 @@ from scipy.stats import ttest_ind
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -152,7 +153,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
@@ -164,7 +165,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
@@ -659,7 +660,7 @@ class TestSnapshotUnsupportedQNode:
         dev = qml.device("lightning.qubit", wires=2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=f"does not support {diff_method} with requested circuit",
         ):
 
@@ -703,8 +704,9 @@ class TestSnapshotUnsupportedQNode:
             circuit = qml.snapshots(circuit)
 
         result = circuit()
+        analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
         expected = {
-            0: np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
+            0: analytic_result,
             "execution_results": np.array([1 / 3, 1 / 3, 1 / 3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         }
 
@@ -717,10 +719,11 @@ class TestSnapshotUnsupportedQNode:
 
         # Make sure shots are overridden correctly
         result = circuit(shots=200)
-        assert np.allclose(
-            result[0],
-            np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0]),
-            atol=0.1,
+        finite_shot_result = result[0]
+        assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
+            finite_shot_result,
+            analytic_result,
+            atol=np.finfo(np.float64).eps,
             rtol=0,
         )
 

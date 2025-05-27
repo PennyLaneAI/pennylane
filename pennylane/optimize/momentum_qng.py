@@ -13,8 +13,7 @@
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
+
 from pennylane import numpy as pnp
 
 from .qng import QNGOptimizer, _flatten_np, _unflatten_np

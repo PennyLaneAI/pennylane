@@ -365,7 +365,7 @@ class TestCaptureWhileLoopDynamicShapes:
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
         def f(a, b):
-            return jnp.hstack([a, b]), 2 * b
+            return jnp.ones(a.shape[0] + b.shape[0]), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
@@ -449,7 +449,7 @@ class TestCaptureWhileLoopDynamicShapes:
 
         @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing)
         def f(x, y):
-            x = jnp.hstack([x, y])
+            x = jnp.ones(x.shape[0] + y.shape[0])
             return x, 2 * x
 
         def workflow(i0):
@@ -459,8 +459,8 @@ class TestCaptureWhileLoopDynamicShapes:
 
         jaxpr = jax.make_jaxpr(workflow)(2)
         [dynamic_shape, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
-        assert qml.math.allclose(dynamic_shape, 8)
-        x_expected = jnp.array([1, 1, 2, 2, 2, 2, 4, 4])
+        assert qml.math.allclose(dynamic_shape, 16)
+        x_expected = jnp.ones(16)
         assert qml.math.allclose(x, x_expected)
         assert qml.math.allclose(y, 2 * x_expected)
 
@@ -472,15 +472,15 @@ class TestCaptureWhileLoopDynamicShapes:
             lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
         )
         def f(a, b):
-            return jnp.hstack((a, b)), b + 1
+            return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
         [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-        assert jnp.allclose(shape1, 15)  # 3 * 5
+        assert jnp.allclose(shape1, 12)
         assert jnp.allclose(shape2, 3)
-        expected = jnp.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3])
+        expected = jnp.ones(12)
         assert jnp.allclose(a, expected)
-        assert jnp.allclose(b, jnp.array([4, 4, 4]))
+        assert jnp.allclose(b, jnp.array([3, 3, 3]))

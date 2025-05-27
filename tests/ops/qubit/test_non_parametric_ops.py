@@ -841,6 +841,7 @@ period_two_ops = (
 
 
 class TestPowMethod:
+
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):

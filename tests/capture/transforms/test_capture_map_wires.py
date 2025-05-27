@@ -367,7 +367,7 @@ def test_map_wires_plxpr_to_plxpr():
     tkwargs = {}
     jaxpr = jax.make_jaxpr(circuit)()
     transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
 
     def assert_wires(orig_eqn, transformed_eqn):

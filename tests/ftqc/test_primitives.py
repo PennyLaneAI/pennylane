@@ -17,7 +17,7 @@ import pytest
 pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.custom_primitives import NonInterpPrimitive
+from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.ftqc.primitives import measure_in_basis_prim
 
 
@@ -25,4 +25,4 @@ def test_importing_primitive():
     """Test that the measure_in_basis_prim is accessible from pennylane.ftqc.primitives.
     This is mostly for CodeCov."""
 
-    assert isinstance(measure_in_basis_prim, NonInterpPrimitive)
+    assert isinstance(measure_in_basis_prim, QmlPrimitive)

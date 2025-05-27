@@ -435,7 +435,8 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
-        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+        qml.assert_equal(spy.call_args_list[0].args[0], qs)
+        assert spy.call_args_list[0].args[1] == {2: 0, 1: 1, 0: 2}
 
 
 class TestPostselection:
