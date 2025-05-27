@@ -1,10 +1,11 @@
 """
 This submodule contains the interpreter for QASM 3.0.
 """
+
 import functools
 import re
 
-from openqasm3.ast import QubitDeclaration, QuantumGate, ClassicalDeclaration
+from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration
 
 from pennylane import ops
 
