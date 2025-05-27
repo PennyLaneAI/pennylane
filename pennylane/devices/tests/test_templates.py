@@ -27,6 +27,7 @@ from scipy.stats import norm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -41,7 +42,7 @@ def check_op_supported(op, dev):
         tape = qml.tape.QuantumScript([op])
         try:
             prog((tape,))
-        except qml.DeviceError:
+        except DeviceError:
             pytest.skip("operation not supported on the device")
 
 

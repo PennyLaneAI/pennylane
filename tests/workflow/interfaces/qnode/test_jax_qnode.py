@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+from pennylane.exceptions import DeviceError
 
 
 def get_device(device_name, wires, seed):
@@ -743,7 +744,7 @@ class TestShotsIntegration:
             return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             circuit(a, b)
 
         # execute with shots=100
