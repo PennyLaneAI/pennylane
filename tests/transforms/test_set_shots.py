@@ -195,3 +195,20 @@ class TestSetShots:
 
         # Parameter-shift rule requires 2*num_params + 1 = 3 executions
         assert len(tracker_shots.history["executions"]) == 3
+
+    @pytest.mark.system
+    def test_userwarnings(self):
+        """
+        Test that using set_shots with a QNode that has a shots value
+        raises a UserWarning.
+        """
+
+        @qml.qnode(qml.device("default.qubit"))
+        def c():
+            return qml.sample(wires=0)
+
+        with pytest.warns(
+            qml.exceptions.PennyLaneUserWarning,
+            match="The shots value of the QNode is being overridden",
+        ):
+            set_shots(c, 10)(shots=20)
