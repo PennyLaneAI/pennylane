@@ -343,7 +343,7 @@ class _CachedCallable:
     def __init__(self, method, epsilon, **method_kwargs):
         match method:
             case "sk":
-                self.decompose_fn = lru_cache(maxsize=10000)(
+                self.decompose_fn = lru_cache(maxsize=1000)(
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
             case _:
@@ -354,7 +354,7 @@ class _CachedCallable:
         self.method = method
         self.epsilon = epsilon
         self.method_kwargs = method_kwargs
-        self.query = lru_cache(maxsize=10000)(self.cached_decompose)
+        self.query = lru_cache(maxsize=1000)(self.cached_decompose)
         self.map_wires = lru_cache(maxsize=1000)(self.wire_mapper)
 
     def compatible(self, method, epsilon, **method_kwargs):
@@ -365,9 +365,9 @@ class _CachedCallable:
             and self.method_kwargs == method_kwargs
         )
 
-    def cached_decompose(self, angle):
+    def cached_decompose(self, op):
         """Decomposes the angle into a sequence of gates."""
-        seq = self.decompose_fn(qml.RZ(abs(angle), [0]))
+        seq, angle = self.decompose_fn(op), op.data[0]
         if angle != abs(angle):
             adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
             return adj[1:] + adj[:1]
@@ -519,7 +519,7 @@ def clifford_t_decomposition(
         for op in new_operations:
             if isinstance(op, qml.RZ):
                 # Decompose the RZ operation with a default wire
-                clifford_ops = _CLIFFORD_T_CACHE.query(op.data[0])
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op.data[0], [0]))
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires

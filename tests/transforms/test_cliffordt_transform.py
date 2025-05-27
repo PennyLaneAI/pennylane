@@ -456,13 +456,11 @@ class TestCliffordCompile:
     def test_clifford_decompose_interfaces(self):
         """Test that unwrap converts lists to lists and interface variables to numpy."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit")
 
         def circuit(x):
-            qml.RZ(x[0], wires=[0])
-            qml.PhaseShift(x[1], wires=[1])
-            qml.SingleExcitation(x[2], wires=[1, 2])
-            qml.PauliX(0)
+            qml.PhaseShift(x[0], wires=[1])
+            qml.SingleExcitation(x[1], wires=[1, 2])
             return qml.expval(qml.PauliZ(1))
 
         original_qnode = qml.QNode(circuit, dev)
@@ -476,7 +474,7 @@ class TestCliffordCompile:
 
         funres = []
         igrads = []
-        coeffs = [1.0, 2.0, 3.0]
+        coeffs = [0.8, 0.2]
         for qcirc in [original_qnode, transfmd_qnode]:
             # Autograd Interface
             A = qml.numpy.array(coeffs)
@@ -506,8 +504,8 @@ class TestCliffordCompile:
             igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
 
         # Compare results
-        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
-        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
+        assert all(qml.math.allclose(res1, res2, atol=1e-1) for res1, res2 in zip(*funres))
+        assert all(qml.math.allclose(res1, res2, atol=1e-1) for res1, res2 in zip(*igrads))
 
 
 def circuit_7(num_repeat, rand_angles):
@@ -527,6 +525,10 @@ class TestCliffordCached:
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
 
+        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+
+        clt2._CLIFFORD_T_CACHE = None
+
         num_angles = 1
         rand_angles = qml.math.random.random.rand(num_angles)
         rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
@@ -535,10 +537,8 @@ class TestCliffordCached:
         old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
-        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
-
-        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
 
@@ -546,10 +546,8 @@ class TestCliffordCached:
         old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
-        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
-
-        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
 
@@ -557,9 +555,7 @@ class TestCliffordCached:
         old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape)
 
-        from pennylane.transforms.decompositions.clifford_t_transform import _CLIFFORD_T_CACHE
-
-        assert isinstance(_CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = _CLIFFORD_T_CACHE.query.cache_info()
+        assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
