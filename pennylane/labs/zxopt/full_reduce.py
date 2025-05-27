@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Parity matrix representation"""
+"""Optimization pass ``full_reduce`` from pyzx using ZX calculus."""
 
 import pyzx as zx
 from pyzx.graph.base import BaseGraph
@@ -24,7 +24,7 @@ from .qasm_utils import _tape2pyzx
 def full_reduce(tape, verbose=False):
     r"""
 
-    A pipeline for T-gate optimizations in `pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
+    A pipeline for T gate optimizations in `pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
 
     This pipeline performs, in that order
 
@@ -37,7 +37,7 @@ def full_reduce(tape, verbose=False):
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
-        verbose (bool): whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
+        verbose (bool): whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -95,7 +95,7 @@ def full_reduce(tape, verbose=False):
     pyzx_circ = _tape2pyzx(tape)
 
     if verbose:
-        print(f"t count {zx.tcount(pyzx_circ)}, two qubit: {pyzx_circ.twoqubitcount()}")
+        print(f"T count {zx.tcount(pyzx_circ)}, two qubit: {pyzx_circ.twoqubitcount()}")
 
     if not isinstance(pyzx_circ, BaseGraph):
         g = pyzx_circ.to_graph()
@@ -104,9 +104,8 @@ def full_reduce(tape, verbose=False):
 
     zx.hsimplify.from_hypergraph_form(g)
 
-    zx.full_reduce(
-        g, quiet=not verbose
-    )  # simplifies the Graph in-place, and show the rewrite steps taken.
+    # simplify the Graph in-place, and show the rewrite steps taken.
+    zx.full_reduce(g, quiet=not verbose)  
     g.normalize()  # Makes the graph more suitable for displaying
     if verbose:
         zx.draw(g)  # Display the resulting diagram

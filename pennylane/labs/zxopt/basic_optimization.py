@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Parity matrix representation"""
+"""Optimization pass ``basic_optimization`` from pyzx using ZX calculus."""
 
 import pyzx as zx
 
@@ -27,7 +27,7 @@ def basic_optimization(tape, verbose=False):
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
-        verbose (bool): whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
+        verbose (bool): whether or not to print new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -37,7 +37,7 @@ def basic_optimization(tape, verbose=False):
     **Example**
 
     .. code-block:: python
-
+        from pennylane.labs.zxopt import basic_optimization
         circ = qml.tape.QuantumScript([
             qml.CNOT((0, 1)),
             qml.T(0),

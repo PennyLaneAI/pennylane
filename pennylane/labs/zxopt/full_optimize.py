@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Parity matrix representation"""
+"""Optimization pass ``full_optimize`` from pyzx using ZX calculus."""
 import warnings
 
 import pyzx as zx
@@ -31,21 +31,21 @@ def full_optimize(tape, verbose=False):
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
-        verbose (bool): whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
+        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
+        verbose (bool): whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
 
-    .. seealso:: :func:`~full_reduce`
+    .. seealso:: :func:`~full_reduce`, :func:`~todd`
 
     **Example**
 
-    Let us optimize a circuit with :class:`~T`.
+    Let us optimize a circuit with :class:`~T` gates.
 
     .. code-block:: python
 
-        from pennylane.labs.zxopt import full_reduce
+        from pennylane.labs.zxopt import full_optimize
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((0, 1)),
