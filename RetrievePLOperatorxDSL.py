@@ -10,6 +10,7 @@ from xdsl.dialects.arith import ConstantOp
 from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
 from xdsl.rewriter import InsertPoint
 from xdsl.utils import parse_pipeline
+from typing import Iterable
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.quantum_dialect import (
@@ -90,11 +91,11 @@ from_str_to_PL_gate = {
 }
 
 
-def flatten(nested):
-    """Flatten a nested list."""
+def flatten(nested: Iterable):
+    """Recursively flatten an arbitrarily nested iterable (except strings)."""
     flat = []
     for item in nested:
-        if isinstance(item, list):
+        if isinstance(item, Iterable) and not isinstance(item, (str, bytes)):
             flat.extend(flatten(item))
         else:
             flat.append(item)
@@ -102,7 +103,7 @@ def flatten(nested):
 
 
 def resolve_constant_params(op: Operator):
-    """Resolve the constant parameters that this operation originates from."""
+    """Walk back to the producing op and resolve the constant parameters."""
 
     while hasattr(op, "owner"):
         op = op.owner
