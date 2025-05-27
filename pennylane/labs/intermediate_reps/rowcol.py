@@ -600,17 +600,27 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
         for a more extensive explanation of this example and here simply list the remaining gates.
 
         *Step 1:* Select vertex :math:`i=2`
+
         *Step 2.b:* :math:`\text{CNOT}_{4 3}`
+
         *Step 2.c:* :math:`\text{CNOT}_{3 4}\text{CNOT}_{2 3}`
+
         *Step 3.a:* no gate
+
         *Step 3.c:* :math:`\text{CNOT}_{4 3}\text{CNOT}_{3 2}`
+
         *Step 4:* Delete :math:`i=2`
 
         *Step 1:* Select vertex :math:`i=3`
+
         *Step 2.b:* no gate
+
         *Step 2.c:* no gate
+
         *Step 3.a:* no gate
+
         *Step 3.c:* :math:`\text{CNOT}_{4 3}`
+
         *Step 4:* Delete :math:`i=3`
 
         *Step 1:* :math:`|V|=|\{4\}|=1`, terminate.
