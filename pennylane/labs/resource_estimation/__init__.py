@@ -32,7 +32,8 @@ Resource Estimation Base Classes:
     ~Resources
 
 Qubit Management Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
