@@ -400,10 +400,10 @@
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
-  passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuit.
+  passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
     * :func:`basic_optimization <pennylane.labs.zxopt.basic_optimization>` performs peephole optimizations on the circuit and is a useful subroutine for other optimization passes.
-    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` lets us optimize [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` optimizes [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
     * :func:`full_reduce <pennylane.labs.zxopt.full_reduce>` can optimize arbitrary PennyLane circuits and follows the pipeline described in the [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)

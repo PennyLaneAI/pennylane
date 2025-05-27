@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Parity matrix representation"""
+"""Third order duplicate and destroy (TODD) optimization method from pyzx, using ZX calculus."""
 
 import pyzx as zx
 
@@ -23,7 +23,8 @@ from .qasm_utils import _tape2pyzx
 def todd(tape, pre_optimize=True, verbose=False):
     r"""
 
-    Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
+    Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
+     to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     After `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
 
@@ -32,7 +33,7 @@ def todd(tape, pre_optimize=True, verbose=False):
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
         pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is True.
-        verbose (bool): Whether or not to print reduced T-gate and two-qubit gate count, as well as drawing the diagram before and after the optimization. Default is `False`.
+        verbose (bool): Whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -41,11 +42,11 @@ def todd(tape, pre_optimize=True, verbose=False):
 
     **Example**
 
-    Let us optimize a circuit with :class:`~T`.
+    Let us optimize a circuit with :class:`~T` gates.
 
     .. code-block:: python
 
-        from pennylane.labs.zxopt import phase_block_optimize
+        from pennylane.labs.zxopt import todd
 
         circ = qml.tape.QuantumScript([
             qml.CNOT((0, 1)),
@@ -64,7 +65,7 @@ def todd(tape, pre_optimize=True, verbose=False):
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = phase_block_optimize(circ)
+        new_circ = todd(circ)
         print(f"Circuit after phase_block_optimize:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
 
