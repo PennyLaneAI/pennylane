@@ -40,10 +40,13 @@ from xdsl.dialects.builtin import (
 from xdsl.ir import (
     Block,
     Dialect,
+    EnumAttribute,
     Operation,
     ParametrizedAttribute,
+    SpacedOpaqueSyntaxAttribute,
     Region,
     SSAValue,
+    StrEnum,
     TypeAttribute,
 )
 from xdsl.irdl import (
@@ -98,8 +101,18 @@ class ResultType(ParametrizedAttribute, TypeAttribute):
     name = "quantum.res"
 
 
+class NamedObservable(StrEnum):
+    """Known named observables"""
+
+    Identity = "Identity"
+    PauliX = "PauliX"
+    PauliY = "PauliY"
+    PauliZ = "PauliZ"
+    Hadamard = "Hadamard"
+
+
 @irdl_attr_definition
-class NamedObservableAttr(ParametrizedAttribute):
+class NamedObservableAttr(EnumAttribute[NamedObservable], SpacedOpaqueSyntaxAttribute):
     """Known named observables"""
 
     name = "quantum.named_observable"
