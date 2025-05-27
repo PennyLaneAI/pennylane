@@ -27,8 +27,9 @@ class QubitManager:
         work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
             number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             `int` is provided.
-        algo_wires (int): Number of algorithmic wires, default value is 0.
-        tight_budget (bool): Determines whether extra clean qubits can be allocated when they exceed the available amount. The default is ``False``.
+        algo_wires (int): Number of algorithmic wires, default value is ``0``.
+        tight_budget (bool): Determines whether extra clean qubits can be allocated when they
+            exceed the available amount. The default is ``False``.
 
     **Example**
 
@@ -58,11 +59,17 @@ class QubitManager:
     def __str__(self):
         return (
             f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
-            f"logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+            f"algorithmic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
         )
 
     def __repr__(self) -> str:
-        return str(self)
+        work_wires_str = repr(
+            {"clean": self._clean_qubit_counts, "dirty": self._dirty_qubit_counts}
+        )
+        return (
+            f"QubitManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
+            f"tight_budget={self.tight_budget})"
+        )
 
     def __eq__(self, other: object) -> bool:
         return (

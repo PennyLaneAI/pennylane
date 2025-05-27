@@ -89,12 +89,30 @@ class TestQubitManager:
 
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
+        work_wires_str = repr({"clean": clean_qubits, "dirty": dirty_qubits})
         expected_string = (
-            f"QubitManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
-            f"logic qubits={logic_qubits}, tight budget={tight_budget})"
+            f"QubitManager(work_wires={work_wires_str}, algo_wires={logic_qubits}, "
+            f"tight_budget={tight_budget})"
         )
+
         qm.algo_qubits = algo_q
         assert repr(qm) == expected_string
+
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_str(self, qm, attribute_tup, algo_q):
+        """Test that the QubitManager string is correct."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        expected_string = (
+            f"QubitManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
+            f"algorithmic qubits={logic_qubits}, tight budget={tight_budget})"
+        )
+        qm.algo_qubits = algo_q
+        assert str(qm) == expected_string
 
     @pytest.mark.parametrize(
         "qm, attribute_tup, algo_q",
