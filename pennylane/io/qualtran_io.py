@@ -176,7 +176,7 @@ def _get_op_call_graph():
             )
             gate_types[_map_to_bloq()(qrom_op)] += 1
             gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
-        
+
         gate_types[_map_to_bloq()(qml.CRY(0, wires=[0, 1]))] = (
             num_precision_wires * num_state_qubits
         )
@@ -256,7 +256,9 @@ def _get_op_call_graph():
         num_parallel_computations = min(num_parallel_computations, square_fact)
 
         num_swap_wires = qml.math.floor(qml.math.log2(num_parallel_computations))
-        num_select_wires = qml.math.ceil(qml.math.log2(qml.math.ceil(num_bitstrings / (2**num_swap_wires))))
+        num_select_wires = qml.math.ceil(
+            qml.math.log2(qml.math.ceil(num_bitstrings / (2**num_swap_wires)))
+        )
         assert num_swap_wires + num_select_wires <= num_control_wires
 
         swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
@@ -274,7 +276,13 @@ def _get_op_call_graph():
         gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
 
         num_select_wires = int(num_select_wires)
-        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(num_select_wires + 1), control_values=[True] * num_select_wires, work_wires=range(num_select_wires+1, num_select_wires + 1 + free_work_wires)))
+        multi_x = _map_to_bloq()(
+            qml.MultiControlledX(
+                wires=range(num_select_wires + 1),
+                control_values=[True] * num_select_wires,
+                work_wires=range(num_select_wires + 1, num_select_wires + 1 + free_work_wires),
+            )
+        )
 
         num_total_ctrl_possibilities = 2**num_select_wires
         gate_types[multi_x] = select_clean_prefactor * (
@@ -324,7 +332,6 @@ def _get_op_call_graph():
         from qualtran.bloqs.basic_gates import CNOT
 
         mod = op.hyperparameters["mod"]
-        num_output_wires = len(op.hyperparameters["output_wires"])
         num_work_wires = len(op.hyperparameters["work_wires"])
         num_x_wires = len(op.hyperparameters["x_wires"])
 
@@ -339,7 +346,11 @@ def _get_op_call_graph():
         qft = _map_to_bloq()(qml.QFT(wires=range(num_aux_wires)))
         qft_dag = qft.adjoint()
 
-        sequence = _map_to_bloq()(qml.ControlledSequence(qml.PhaseAdder(k=3, x_wires=range(1, num_x_wires+1)), control=[0]))
+        sequence = _map_to_bloq()(
+            qml.ControlledSequence(
+                qml.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
+            )
+        )
 
         sequence_dag = sequence.adjoint()
 
@@ -374,13 +385,13 @@ def _get_op_call_graph():
 @lru_cache
 def _map_to_bloq():
     @singledispatch
-    def _to_qt_bloq(op):
-        return ToBloq(op)
+    def _to_qt_bloq(op, **kwargs):
+        return ToBloq(op, **kwargs)
 
     @_to_qt_bloq.register
     def _(op: qops.Adjoint):
         return _map_to_bloq()(op.base).adjoint()
-    
+
     @_to_qt_bloq.register
     def _(op: qops.Controlled):
         return _map_to_bloq()(op.base).controlled()
@@ -1290,6 +1301,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     """
 
     if map_ops:
-        return _map_to_bloq()(circuit, custom_mapping, **kwargs)
+        if custom_mapping:
+            return _map_to_bloq()(circuit, custom_mapping, **kwargs)
+        return _map_to_bloq()(circuit, **kwargs)
 
     return ToBloq(circuit, **kwargs)

@@ -333,3 +333,8 @@ class TestFromBloq:
         actual = qml.bloq_registers(circuit_bloq)
 
         assert actual == expected
+
+
+class TestToBloq:
+    """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
+    pass
