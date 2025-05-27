@@ -60,16 +60,13 @@ class TransformFunctionsExt(TransformFunctions):
         """Try to run the pass in xDSL, if it can't run on catalyst"""
 
         pass_name = op.pass_name.data  # pragma: no cover
-        requested_by_user = PipelinePass.build_pipeline_tuples(
-            self.passes, parse_pipeline.parse_pipeline(pass_name)
-        )
-
         try:
             # pragma: no cover
-            schedule = tuple(
-                pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user
+            pipeline = PipelinePass(
+                tuple(
+                    PipelinePass.iter_passes(self.passes, parse_pipeline.parse_pipeline(pass_name))
+                )
             )
-            pipeline = PipelinePass(schedule)
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
         except:  # pylint: disable=bare-except
