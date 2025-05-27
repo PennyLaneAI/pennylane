@@ -14,10 +14,5 @@
 r"""This module contains classes which integrate arithemtic operators with
 resource estimation."""
 
-from .symbolic import (
-    ResourceAdjoint,
-    ResourceChangeBasisOp,
-    ResourceControlled,
-    ResourcePow,
-    ResourceProd,
-)
+from .symbolic import *
+from .controlled_ops import *

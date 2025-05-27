@@ -383,7 +383,7 @@ class GateCount:
 
 
 def resource_rep(
-    resource_op: Type[ResourceOperator], resource_params: Dict,
+    resource_op: Type[ResourceOperator], resource_params: Dict = None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
@@ -395,4 +395,7 @@ def resource_rep(
     Returns:
         CompressedResourceOp: A compressed representation of a resource operator
     """
-    return resource_op.resource_rep(**resource_params)
+    if resource_params:
+        return resource_op.resource_rep(**resource_params)
+
+    return resource_params.resource_rep()  # don't need to provide empty dict 

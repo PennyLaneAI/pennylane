@@ -14,15 +14,13 @@
 r"""Resource operators for non parametric single qubit operations."""
 from typing import Dict
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
+    resource_rep,
     ResourceOperator,
     CompressedResourceOp,
 )
-
 # pylint: disable=arguments-differ
 
 
@@ -39,22 +37,7 @@ class ResourceHadamard(ResourceOperator):
     .. seealso:: :class:`~.Hadamard`
 
     """
-
     num_wires = 1
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
-
-        Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
-        """
-        raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -72,7 +55,21 @@ class ResourceHadamard(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+        """
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -83,11 +80,11 @@ class ResourceHadamard(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return [GateCount(cls.resource_rep(), 1)]
+        return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -120,31 +117,34 @@ class ResourceHadamard(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1:
-            gate_lst = [GateCount(re.ResourceCH.resource_rep(), 1)]
+        if ctrl_num_ctrl_wires == 1:
+            gate_lst = [GateCount(resource_rep(re.ResourceCH))]
 
-            if num_ctrl_values:
-                gate_lst.append(GateCount(re.ResourceX.resource_rep(), 2))
+            if ctrl_num_ctrl_values:
+                gate_lst.append(GateCount(resource_rep(re.ResourceX), 2))
 
             return gate_lst
 
         gate_lst = []
 
-        ry = re.ResourceRY.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        ry = resource_rep(re.ResourceRY)
+        h = cls.resource_rep()
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            }
+
         )
 
         gate_lst.append(GateCount(h, 2))
         gate_lst.append(GateCount(ry, 2))
-        gate_lst.append(GateCount(mcx, 1))
+        gate_lst.append(GateCount(mcx))
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -158,8 +158,8 @@ class ResourceHadamard(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -181,19 +181,7 @@ class ResourceS(ResourceOperator):
     >>> re.ResourceS.resources()
     {T: 2}
     """
-
     num_wires = 1
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The S-gate decomposes into two T-gates.
-        """
-        t = ResourceT.resource_rep()
-        return [GateCount(t, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -211,7 +199,18 @@ class ResourceS(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The S-gate decomposes into two T-gates.
+        """
+        t = resource_rep(ResourceT)
+        return [GateCount(t, 2)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -222,10 +221,13 @@ class ResourceS(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        return [GateCount(cls.resource_rep(), 3)]
+        z = resource_rep(ResourceZ)
+        return [GateCount(z), GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+    ):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -248,24 +250,26 @@ class ResourceS(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1:
-            gate_lst = [GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)]
+        if ctrl_num_ctrl_wires == 1:
+            gate_lst = [GateCount(resource_rep(re.ResourceControlledPhaseShift))]
 
-            if num_ctrl_values:
-                gate_lst.append(GateCount(re.ResourceX.resource_rep(), 2))
+            if ctrl_num_ctrl_values:
+                gate_lst.append(GateCount(resource_rep(re.ResourceX), 2))
 
             return gate_lst
 
-        cs = re.ResourceControlledPhaseShift.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        cs = resource_rep(re.ResourceControlledPhaseShift)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            }
         )
         return [GateCount(cs, 1), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -280,8 +284,8 @@ class ResourceS(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if (mod_4 := z % 4) == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if (mod_4 := pow_z % 4) == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep(), mod_4)]
 
 
@@ -331,11 +335,25 @@ class ResourceSWAP(ResourceOperator):
     >>> re.ResourceSWAP.resources()
     {CNOT: 3}
     """
-
     num_wires = 2
 
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -370,27 +388,11 @@ class ResourceSWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        cnot = re.ResourceCNOT.resource_rep()
-
+        cnot = resource_rep(re.ResourceCNOT)
         return [GateCount(cnot, 3)]
 
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -403,9 +405,9 @@ class ResourceSWAP(ResourceOperator):
         """
         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -428,24 +430,26 @@ class ResourceSWAP(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1:
-            gate_types = [GateCount(re.ResourceCSWAP.resource_rep())]
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(re.ResourceCSWAP))]
 
-            if num_ctrl_values:
-                gate_types.append(GateCount(re.ResourceX.resource_rep(), 2))
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(ResourceX), 2))
 
             return gate_types
 
-        cnot = re.ResourceCNOT.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        cnot = resource_rep(re.ResourceCNOT)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            }
         )
         return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -459,8 +463,8 @@ class ResourceSWAP(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -477,22 +481,7 @@ class ResourceT(ResourceOperator):
     .. seealso:: :class:`~.T`
 
     """
-
     num_wires = 1
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
-
-        Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
-        """
-        raise re.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -510,7 +499,21 @@ class ResourceT(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+        """
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -521,11 +524,14 @@ class ResourceT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
+        z = resource_rep(ResourceZ)
+        s = resource_rep(ResourceS)
+        return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
-        return [GateCount(cls.resource_rep()), GateCount(ResourceX.resource_rep(), 2)]
-
-    @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
+    ):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -548,24 +554,26 @@ class ResourceT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1:
-            gate_types = [GateCount(re.ResourceControlledPhaseShift.resource_rep())]
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(re.ResourceControlledPhaseShift))]
 
-            if num_ctrl_values:
-                gate_types.append(GateCount(re.ResourceX.resource_rep(), 2))
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(ResourceX), 2))
 
             return gate_types
 
-        ct = re.ResourceControlledPhaseShift.resource_rep()
-        mcx = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        ct = resource_rep(re.ResourceControlledPhaseShift)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            }
         )
         return [GateCount(ct), GateCount(mcx, 2)]
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -580,9 +588,22 @@ class ResourceT(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if (mod_8 := z % 8) == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
-        return {cls.resource_rep(): mod_8}
+        if (mod_8 := pow_z % 8) == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
+        
+        gate_lst = []
+        if mod_8 >= 4: 
+            gate_lst.append(GateCount(resource_rep(ResourceZ)))
+            mod_8 -= 4
+        
+        if mod_8 >= 2:
+            gate_lst.append(GateCount(resource_rep(ResourceS)))
+            mod_8 -= 2
+        
+        if mod_8 >= 1:
+            gate_lst.append(GateCount(cls.resource_rep()))
+
+        return gate_lst
 
 
 class ResourceX(ResourceOperator):
@@ -613,31 +634,7 @@ class ResourceX(ResourceOperator):
     >>> re.ResourceX.resources()
     {S: 2, Hadamard: 2}
     """
-
     num_wires = 1
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The X-gate can be decomposed according to the following identities:
-
-            .. math::
-
-                \begin{align}
-                    \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
-                    \hat{Z} &= \hat{S}^{2}.
-                \end{align}
-
-            Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
-            two :class:`~.ResourceHadamard` gates.
-        """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
-
-        return [GateCount(h, 2), GateCount(s, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -655,7 +652,30 @@ class ResourceX(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The X-gate can be decomposed according to the following identities:
+
+            .. math::
+
+                \begin{align}
+                    \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                    \hat{Z} &= \hat{S}^{2}.
+                \end{align}
+
+            Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
+            two :class:`~.ResourceHadamard` gates.
+        """
+        s = resource_rep(ResourceS)
+        h = resource_rep(ResourceHadamard)
+
+        return [GateCount(h, 2), GateCount(s, 2)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -668,8 +688,10 @@ class ResourceX(ResourceOperator):
         """
         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
+    ):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -689,29 +711,32 @@ class ResourceX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires > 2:
-            return [
-                GateCount(
-                    re.ResourceMultiControlledX.resource_rep(
-                        num_ctrl_wires, num_ctrl_values, num_work_wires
-                    )
-                )
-            ]
+        if ctrl_num_ctrl_wires > 2:
+            mcx = resource_rep(
+                re.ResourceMultiControlledX,
+                {
+                    "num_ctrl_wires": ctrl_num_ctrl_wires, 
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                }
+            )
+
+            return [GateCount(mcx)]
 
         gate_lst = []
-        if num_ctrl_values:
-            gate_lst.append(GateCount(re.ResourceX.resource_rep(), 2 * num_ctrl_values))
+        if ctrl_num_ctrl_values:
+            gate_lst.append(GateCount(resource_rep(ResourceX), 2 * ctrl_num_ctrl_values))
 
-        if num_ctrl_wires == 1:
-            gate_lst.append(GateCount(re.ResourceCNOT.resource_rep()))
-
-        if num_ctrl_wires == 2:
-            gate_lst.append(GateCount(re.ResourceToffoli.resource_rep()))
+        if ctrl_num_ctrl_wires == 0:
+            gate_lst.append(GateCount(resource_rep(ResourceX)))
+        elif ctrl_num_ctrl_wires == 1:
+            gate_lst.append(GateCount(resource_rep(re.ResourceCNOT)))
+        else:
+            gate_lst.append(GateCount(resource_rep(re.ResourceToffoli)))
 
         return gate_lst
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -725,8 +750,8 @@ class ResourceX(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -760,11 +785,25 @@ class ResourceY(ResourceOperator):
     >>> re.ResourceY.resources()
     {S: 6, Hadamard: 2}
     """
-
     num_wires = 1
+    
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -783,28 +822,15 @@ class ResourceY(ResourceOperator):
             Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        z = resource_rep(ResourceZ)
+        s = resource_rep(ResourceS)
+        s_adj = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+        h = resource_rep(ResourceHadamard)
 
-        return [GateCount(s, 6), GateCount(h, 2)]
-
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
+        return [GateCount(s), GateCount(z), GateCount(s_adj), GateCount(h, 2)]
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -817,9 +843,9 @@ class ResourceY(ResourceOperator):
         """
         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -846,31 +872,27 @@ class ResourceY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires == 1:
-            gate_types = [GateCount(re.ResourceCY.resource_rep())]
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(re.ResourceCY))]
 
-            if num_ctrl_values:
-                gate_types.append(GateCount(re.ResourceX.resource_rep(), 2))
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(ResourceX), 2))
 
             return gate_types
 
-        gate_types = {}
-
-        s = re.ResourceS.resource_rep()
-        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
-        mcx = re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires=num_ctrl_wires,
-            num_ctrl_values=num_ctrl_values,
-            num_work_wires=num_work_wires,
+        s = resource_rep(ResourceS)
+        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            }
         )
-
-        gate_types[s] = 1
-        gate_types[s_dagg] = 1
-        gate_types[mcx] = 1
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -884,8 +906,8 @@ class ResourceY(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -911,23 +933,7 @@ class ResourceZ(ResourceOperator):
     >>> re.ResourceZ.resources()
     {S: 2}
     """
-
     num_wires = 1
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The Z-gate can be decomposed according to the following identities:
-
-            .. math:: \hat{Z} = \hat{S}^{2},
-
-            thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
-        """
-        s = re.ResourceS.resource_rep()
-        return [GateCount(s, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -945,7 +951,22 @@ class ResourceZ(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Z-gate can be decomposed according to the following identities:
+
+            .. math:: \hat{Z} = \hat{S}^{2},
+
+            thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
+        """
+        s = resource_rep(ResourceS)
+        return [GateCount(s, 2)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -958,9 +979,9 @@ class ResourceZ(ResourceOperator):
         """
         return [GateCount(cls.resource_rep())]
 
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values,
     ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
@@ -988,29 +1009,31 @@ class ResourceZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if num_ctrl_wires > 2:
-            h = re.ResourceHadamard.resource_rep()
-            mcx = re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires=num_ctrl_wires,
-                num_ctrl_values=num_ctrl_values,
-                num_work_wires=num_work_wires,
+        if ctrl_num_ctrl_wires > 2:
+            h = resource_rep(ResourceHadamard)
+            mcx = resource_rep(
+                re.ResourceMultiControlledX,
+                {
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                }
             )
             return [GateCount(h, 2), GateCount(mcx)]
 
         gate_list = []
-        if num_ctrl_wires == 1:
-            gate_list.append(GateCount(re.ResourceCZ.resource_rep()))
+        if ctrl_num_ctrl_wires == 1:
+            gate_list.append(GateCount(resource_rep(re.ResourceCZ)))
 
-        if num_ctrl_wires == 2:
-            gate_list.append(GateCount(re.ResourceCCZ.resource_rep()))
+        if ctrl_num_ctrl_wires == 2:
+            gate_list.append(GateCount(resource_rep(re.ResourceCCZ)))
 
-        if num_ctrl_values:
-            gate_list.append(GateCount(re.ResourceX.resource_rep(), 2 * num_ctrl_values))
+        if ctrl_num_ctrl_values:
+            gate_list.append(GateCount(resource_rep(ResourceX), 2 * ctrl_num_ctrl_values))
 
         return gate_list
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -1024,6 +1047,6 @@ class ResourceZ(ResourceOperator):
             Dict[CompressedResourceOp, int]: The keys are the operators and the associated
                 values are the counts.
         """
-        if z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]

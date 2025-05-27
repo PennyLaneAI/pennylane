@@ -19,6 +19,7 @@ import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
+    resource_rep,
     ResourceOperator,
     ResourcesNotDefined,
     CompressedResourceOp,
@@ -116,7 +117,6 @@ class ResourceAdjoint(ResourceOperator):
     def __init__(self, base_op: ResourceOperator, wires=None) -> None:
         self.queue(remove_op=base_op)
         base_cmpr_op = base_op.resource_rep_from_op()
-        self.queue()
 
         self.base_op = base_cmpr_op
 
@@ -244,8 +244,8 @@ class ResourceAdjoint(ResourceOperator):
                 gate_lst.append(_apply_adj(gate))
             return gate_lst
 
-    @staticmethod
-    def default_adjoint_resource_decomp(base_cmpr_op: CompressedResourceOp):
+    @classmethod
+    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp):
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Args:
@@ -552,7 +552,7 @@ class ResourceControlled(ResourceOperator):
 
         gate_lst = []
         if num_ctrl_values != 0:
-            x = re.resource_rep(re.ResourceX, {})
+            x = resource_rep(re.ResourceX)
             gate_lst.append(GateCount(x, 2 * num_ctrl_values))
 
         decomp = base_class.resource_decomp(**base_params, **kwargs)
@@ -845,7 +845,7 @@ class ResourcePow(ResourceOperator):
         base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
         
         if z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
 
         if z == 1:
             return [GateCount(base_cmpr_op)]
@@ -989,8 +989,8 @@ class ResourceProd(ResourceOperator):
         """
         return CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
 
-    @staticmethod
-    def default_resource_decomp(cmpr_factors, **kwargs):
+    @classmethod
+    def default_resource_decomp(cls, cmpr_factors, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -1094,7 +1094,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        cmpr_uncompute_op = cmpr_uncompute_op or ResourceAdjoint.resource_rep(cmpr_compute_op)
+        cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(ResourceAdjoint, {"base_cmpr_op": cmpr_compute_op})
         return CompressedResourceOp(
             cls, 
             {
@@ -1104,8 +1104,8 @@ class ResourceChangeBasisOp(ResourceOperator):
             },
         )
 
-    @staticmethod
-    def default_resource_decomp(cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, **kwargs):
+    @classmethod
+    def default_resource_decomp(cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -1150,7 +1150,7 @@ def _apply_adj(action):
 @_apply_adj.register
 def _(action: GateCount):
     gate = action.gate
-    return GateCount(ResourceAdjoint.resource_rep(gate.op_type, gate.params), action.count)
+    return GateCount(resource_rep(ResourceAdjoint, {"base_cmpr_op": gate}), action.count)
 
 
 @_apply_adj.register
