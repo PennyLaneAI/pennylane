@@ -383,7 +383,7 @@ class TorchLayer(Module):
         } != set(sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
-    def forward(self, inputs):  # pylint: disable=arguments-differ
+    def forward(self, inputs):
         """Evaluates a forward pass through the QNode based upon input data and the initialized
         weights.
 

@@ -220,13 +220,8 @@ class TestOperations:
             return qml.state()
 
         def _get_expected_state(phase, dim, size):
-            return (
-                np.array(
-                    [np.exp(1j * phase) if i < dim else np.exp(-1j * phase) for i in range(size)]
-                )
-                * 1
-                / 2
-            )
+            phase = np.exp(1j * phase)
+            return np.concatenate([phase * np.ones(dim), phase.conj() * np.ones(size - dim)]) / 2
 
         assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
 
@@ -654,26 +649,30 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "op", (qml.PCPhase(1.23, dim=1, wires=[0]), qml.PCPhase(1.23, dim=5, wires=[0, 1, 2]))
-    )
-    def test_pc_phase_decomposition(self, op):
+    two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
+    five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
+    other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
+
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition(self, dim, wires):
         """Test that the PCPhase decomposition produces the same unitary"""
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) > 1 else decomp_ops[0]
 
-        expected_mat = qml.matrix(op)
-        decomp_mat = qml.matrix(decomp_op)
+        expected_mat = qml.matrix(op, wire_order=wires)
+        decomp_mat = qml.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
-    def test_pc_phase_decomposition_broadcasted(self):
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
-        op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
+        op = qml.PCPhase(np.random.random(3), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
 
-        expected_mats = qml.matrix(op)
-        decomp_mats = qml.matrix(decomp_op)
+        expected_mats = qml.matrix(op, wire_order=wires)
+        decomp_mats = qml.matrix(decomp_op, wire_order=wires)
 
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
