@@ -58,13 +58,14 @@ class TestInterpreter:
             ast, context={"name": "subroutines"}
         )
 
+        spy = mocker.spy(Hadamard, "__init__")
+
         # execute the callable
-        with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+        context["callable"]()
 
-        assert q.queue == [Hadamard('q0'), Hadamard('q0'), Hadamard('q0')]
+        spy.assert_called_with(Hadamard('q0'), 'q0')
 
-    def test_variables(self, mocker):
+    def test_variables(self):
         # parse the QASM
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
@@ -85,7 +86,7 @@ class TestInterpreter:
         assert execution_context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
         assert execution_context["vars"]["a"]["val"] == 3.3333333
 
-    def test_updating_constant(self, mocker):
+    def test_updating_constant(self):
         # parse the QASM
         ast = parse(
             """
@@ -101,7 +102,7 @@ class TestInterpreter:
         ):
             QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
 
-    def test_classical_variables(self, mocker):
+    def test_classical_variables(self):
         # parse the QASM
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
@@ -115,7 +116,7 @@ class TestInterpreter:
         assert context["vars"]["j"]["val"] == 4
         assert context["vars"]["c"]["val"] == 0
 
-    def test_updating_variables(self, mocker):
+    def test_updating_variables(self):
         # parse the QASM
         ast = parse(
             open("updating_variables.qasm", mode="r").read(),

@@ -412,6 +412,7 @@ class QasmInterpreter(QASMVisitor):
         context["scopes"]["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
             context, f'{context["name"]}_{node.name.name}'
         )
+        context["scopes"]["subroutines"][node.name.name]["sub"] = True
 
     @staticmethod
     def _get_bit_type_val(var):
@@ -765,12 +766,11 @@ class QasmInterpreter(QASMVisitor):
                             func_context["vars"][arg.name] = evald_arg
 
                     # execute the subroutine
-                    self.executing = True
-                    [
-                        gate(func_context) if not self._all_context_bound(gate) else gate()
-                        for gate in func_context["gates"]
-                    ]
-                    self.executing = False
+                    if self.executing:
+                        [
+                            gate(func_context) if not self._all_context_bound(gate) else gate()
+                            for gate in func_context["gates"]
+                        ]
 
                     # the return value
                     return self.retrieve_variable(func_context["return"], func_context)["val"]
@@ -906,6 +906,6 @@ class QasmInterpreter(QASMVisitor):
             for q in range(len(node.qubits))
         ]
 
-        if self.executing:
+        if self.executing and not "sub" in context:
             func(gate=gates_dict[node.name.name.upper()], wires=wires)
         return partial(func, gate=gates_dict[node.name.name.upper()], wires=wires)
