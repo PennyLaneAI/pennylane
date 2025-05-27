@@ -364,7 +364,6 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
            :math:`i\in V` that is not a cut vertex, i.e. a vertex that we can remove without
            disconnecting the graph.
         #. Eliminate column ``P[:, i]``
-
             a. Construct :math:`S = \{j | P_{ji} \neq 0\} \cup \{i\}` and find a Steiner tree
                :math:`T \supseteq S`.
             b. `Post-order traverse <https://en.wikipedia.org/wiki/Tree_traversal#Post-order,_LRN>`__
@@ -374,9 +373,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
             c. Post-order traverse :math:`T` again starting from :math:`i`. For each node :math:`p`
                in the traversal, add row ``P[p]`` to row ``P[c]``, where :math:`c` is the child node
                of :math:`p`, and append ``CNOT([p, c])`` to ``L``.
-
         #. Eliminate row ``P[i]``
-
             a. Construct :math:`S'` such that the corresponding rows of :math:`P` add up to the
                :math:`i`\ th basis vector, :math:`\sum_{j\in S'} P[j] = e_i`. Find a Steiner tree
                :math:`T' \supseteq S'`.
@@ -387,7 +384,6 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
             c. Post-order traverse :math:`T` starting from :math:`i`. For each node :math:`c`
                in the traversal, add row ``P[c]`` to row ``P[p]``, where :math:`p` is the parent node
                of :math:`c`, and append ``CNOT([c, p])`` to ``L``.
-
         #. Delete vertex :math:`i` from :math:`G` and ignore row and column with index :math:`i` in
            the following. Go to step 1.
         #. Revert the list ``L`` of CNOT gates in order to go from the circuit that transforms
