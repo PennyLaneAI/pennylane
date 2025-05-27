@@ -24,6 +24,7 @@ resource estimation.
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
