@@ -80,12 +80,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     4: ────────├●────────────────├●───────────────────├●───────────────────├● ···
     5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰● ···
 
-    0: ··· ──U(M0)†GlobalPhase(-1.57)─┤  
-    1: ··· ─╭●GlobalPhase(-1.57)──────┤  
-    2: ··· ─├●GlobalPhase(-1.57)──────┤  
-    3: ··· ─├●GlobalPhase(-1.57)──────┤  
-    4: ··· ─├●GlobalPhase(-1.57)──────┤  
-    5: ··· ─╰●GlobalPhase(-1.57)──────┤  
+    0: ··· ──U(M0)†GlobalPhase(-1.57)─┤
+    1: ··· ─╭●GlobalPhase(-1.57)──────┤
+    2: ··· ─├●GlobalPhase(-1.57)──────┤
+    3: ··· ─├●GlobalPhase(-1.57)──────┤
+    4: ··· ─├●GlobalPhase(-1.57)──────┤
+    5: ··· ─╰●GlobalPhase(-1.57)──────┤
 
     """
     if len(target_operation.wires) > 1:
