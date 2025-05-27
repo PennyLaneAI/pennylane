@@ -70,6 +70,22 @@ class TestElbow:
         output_toffoli = dev.execute(tape[0])[0]
         assert np.allclose(output_toffoli, output_elbow)
 
+        # Compare the contracted isometries with the third qubit fixed to |0>
+        M_elbow = qml.matrix(qml.Elbow(wires=[0, 1, 2]))
+        M_elbow_adj = qml.matrix(qml.adjoint(qml.Elbow(wires=[0, 1, 2])))
+        M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
+
+        # When the third qubit starts in |0>, we only check the odd columns
+        iso_elbow = M_elbow[:, ::2]
+        iso_toffoli = M_toffoli[:, ::2]
+
+        # When the third qubit ends in |0>, we only check the odd rows
+        iso_M_elbow_adj = M_elbow_adj[::2, :]
+        iso_toffoli_adj = M_toffoli[::2, :]
+
+        assert np.allclose(iso_elbow, iso_toffoli)
+        assert np.allclose(iso_M_elbow_adj, iso_toffoli_adj)
+
     def test_elbow_decompositions(self):
         """Tests that Elbow is decomposed properly."""
 
