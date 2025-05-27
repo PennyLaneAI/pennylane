@@ -16,11 +16,8 @@
 from __future__ import annotations
 
 import copy
-import math
-from collections import defaultdict
 from collections.abc import Hashable
-from itertools import permutations
-from typing import Dict, Generator, List, Sequence, Tuple, Union
+from typing import Dict, Sequence, Union
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
