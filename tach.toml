@@ -12,6 +12,8 @@ source_roots = [
     ".",
 ]
 
+# Forbids circular dependencies to be defined WITHIN this tach.toml.
+# NOTE: This does not check anything inside the source code for problems.
 forbid_circular_dependencies = true
 
 ## UI module(s)
