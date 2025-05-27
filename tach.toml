@@ -12,7 +12,7 @@ source_roots = [
     ".",
 ]
 
-forbid_circular_dependencies = false
+forbid_circular_dependencies = true
 
 ## TOP LEVEL MODULE
 # Users should only be importing from this module. Nothing in the source code should!
