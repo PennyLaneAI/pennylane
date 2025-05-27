@@ -551,9 +551,11 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     """Decompose the operator into a single PauliRot operator."""
     with qml.queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    base_coeffs, base_ops = base.terms()
-    coeff = 2j * params[0] * base_coeffs[0]  # The 2j cancels the coefficient added by PauliRot
-    pauli_word = qml.pauli.pauli_word_to_string(base_ops[0])
+    coeff = params[0]
+    if isinstance(base, qml.ops.SProd):
+        coeff, base = params[0] * base.scalar, base.base
+    coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
+    pauli_word = qml.pauli.pauli_word_to_string(base)
     if pauli_word != "I" * len(base.wires):
         qml.PauliRot(coeff, pauli_word, base.wires)
 
