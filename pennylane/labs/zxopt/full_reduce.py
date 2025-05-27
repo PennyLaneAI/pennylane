@@ -18,7 +18,7 @@ from pyzx.graph.base import BaseGraph
 
 import pennylane as qml
 
-from .qasm_utils import _tape2pyzx
+from .zx_conversion import _tape2pyzx
 
 
 def full_reduce(tape, verbose=False):
@@ -105,7 +105,7 @@ def full_reduce(tape, verbose=False):
     zx.hsimplify.from_hypergraph_form(g)
 
     # simplify the Graph in-place, and show the rewrite steps taken.
-    zx.full_reduce(g, quiet=not verbose)  
+    zx.full_reduce(g, quiet=not verbose)
     g.normalize()  # Makes the graph more suitable for displaying
     if verbose:
         zx.draw(g)  # Display the resulting diagram

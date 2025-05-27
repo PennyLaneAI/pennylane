@@ -18,7 +18,7 @@ import pyzx as zx
 
 import pennylane as qml
 
-from .qasm_utils import _tape2pyzx
+from .zx_conversion import _tape2pyzx
 
 
 def full_optimize(tape, verbose=False):
