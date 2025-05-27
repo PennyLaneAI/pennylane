@@ -64,8 +64,8 @@ class GradientDescentOptimizer:
         """
         argnums = self.argnums_dispath(args, argnums)
 
-        grad = self.compute_grad(objective_fn, args, argnums, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(grad, args, argnums)
+        grad = self.compute_grad(objective_fn, args, kwargs, argnums=argnums, grad_fn=grad_fn)
+        new_args = self.apply_grad(grad, args, argnums=argnums)
         new_args = new_args[0] if len(new_args) == 1 else new_args
         forward = objective_fn(*args, **kwargs)
 
@@ -91,8 +91,8 @@ class GradientDescentOptimizer:
         """
         argnums = self.argnums_dispath(args, argnums)
 
-        grad = self.compute_grad(objective_fn, args, argnums, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(grad, args, argnums)
+        grad = self.compute_grad(objective_fn, args, kwargs, argnums=argnums, grad_fn=grad_fn)
+        new_args = self.apply_grad(grad, args, argnums=argnums)
         new_args = new_args[0] if len(new_args) == 1 else new_args
 
         return new_args
@@ -108,7 +108,7 @@ class GradientDescentOptimizer:
         return argnums if isinstance(argnums, tuple) else (argnums,)
 
     @staticmethod
-    def compute_grad(objective_fn, args, argnums, kwargs, grad_fn=None):
+    def compute_grad(objective_fn, args, kwargs, argnums=None, grad_fn=None):
         r"""Compute the gradient of the objective function at the given point and return it along with
         the objective function forward pass (if available).
 
@@ -116,8 +116,8 @@ class GradientDescentOptimizer:
             objective_fn (function): the objective function for optimization
             args (tuple): tuple of NumPy arrays containing the current parameters for the
                 objection function
-            argnums (Sequence[int] | int): which arguments to differentiate
             kwargs (dict): keyword arguments for the objective function
+            argnums (Sequence[int] | int): which arguments to differentiate
             grad_fn (function): optional gradient function of the objective function with respect to
                 the variables ``args``. If ``None``, the gradient function is computed automatically.
                 Must return the same shape of tuple [array] as the autograd derivative.
