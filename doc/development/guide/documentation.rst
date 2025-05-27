@@ -508,12 +508,8 @@ the following additional packages are required:
 * `m2r <https://github.com/miyakogi/m2r>`_
 * `sphinx-copybutton <https://github.com/ExecutableBookProject/sphinx-copybutton>`_
 
-In addition, some pages in the documentation have additional dependencies:
-
-* The latest version of PyTorch and TensorFlow are required to build the interface documentation,
-* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation.
-
-These can all be installed via ``pip``:
+In addition, some pages in the documentation have additional dependencies, including PyTorch, 
+TensorFlow and TensorNetwork. These can all be installed via ``pip``:
 
 .. code-block:: console
 
