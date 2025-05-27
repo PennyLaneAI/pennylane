@@ -62,11 +62,9 @@ class TestInterpreter:
             permissive=True,
         )
 
-        context = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
 
         assert q.queue[0] == PowOperation(RX(0.2, wires=["q0"]), 2)
 
@@ -190,14 +188,10 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
-
-            # asserts
-            assert len(context["wires"]) == 2
+            QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         assert q.queue == [
             PauliX("q0"),
@@ -224,13 +218,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
 
         assert q.queue == [
             CH(wires=["q0", "q1"]),
@@ -255,13 +248,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
 
         assert q.queue == [
             ControlledPhaseShift(0.4, wires=Wires(["q0", "q1"])),
@@ -284,13 +276,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
 
         assert q.queue == [Toffoli(wires=["q0", "q2", "q1"]), CSWAP(wires=["q1", "q2", "q0"])]
 
@@ -313,13 +304,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
 
         assert q.queue == [
             RX(0.9, wires=["q0"]),
@@ -354,13 +344,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         assert q.queue == [
             Identity("q0"),

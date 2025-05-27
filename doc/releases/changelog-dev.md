@@ -13,19 +13,18 @@
   from pennylane import device, wires
   from pennylane.io import from_qasm3
 
-  execute_qasm, wires = from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
-  dev = device("default.qubit", wires=[w for w in wires])
+  dev = device("default.qubit", wires=['q0', 'q1'])
   
   @qml.qnode(dev)
   def my_circuit():
-      execute_qasm()
+      from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
       return qml.expval(qml.Z(0))
   ```
 
   ```pycon
   >>> print(qml.draw(my_circuit)())
-  0: ──RY(0.20)──X²─┤  <Z>
-  1: ──RX(1.00)─────┤  
+  q0: ──RY(0.20)──X²─┤  <Z>
+  q1: ──RX(1.00)─────┤  
   ```
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.

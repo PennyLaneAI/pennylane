@@ -3,8 +3,6 @@ This submodule contains the interpreter for QASM 3.0.
 """
 
 import re
-from functools import partial
-from typing import Callable
 
 from pennylane import ops
 
@@ -209,7 +207,7 @@ class QasmInterpreter(QASMVisitor):
                     elif "vars" in context and mod.argument.name in context["vars"]:
                         ops.pow(gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"])
                 elif mod.modifier.name == "ctrl":
-                    ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires)
+                    ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires[-1])
         else:
             gate(*args, wires=wires)
 
