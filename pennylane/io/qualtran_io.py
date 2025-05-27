@@ -226,7 +226,7 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
         import pennylane as qml
-        from qualtran.bloqs.basic_gates import CSwap, Hadamard, XGate, CNOT
+        from qualtran.bloqs.basic_gates import Hadamard, XGate, CNOT, TwoBitCSwap
 
         gate_types = defaultdict(int)
         bitstrings = op.hyperparameters["bitstrings"]
@@ -273,7 +273,8 @@ def _get_op_call_graph():
         # SELECT cost:
         gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
 
-        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(num_select_wires + 1), control_values=[], work_wires=range(num_select_wires+1, num_select_wires + 1 + free_work_wires)))
+        num_select_wires = int(num_select_wires)
+        multi_x = _map_to_bloq()(qml.MultiControlledX(wires=range(num_select_wires + 1), control_values=[True] * num_select_wires, work_wires=range(num_select_wires+1, num_select_wires + 1 + free_work_wires)))
 
         num_total_ctrl_possibilities = 2**num_select_wires
         gate_types[multi_x] = select_clean_prefactor * (
@@ -284,7 +285,7 @@ def _get_op_call_graph():
             num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
         )
         # SWAP cost:
-        ctrl_swap = CSwap()
+        ctrl_swap = TwoBitCSwap()
         gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
 
         return gate_types
