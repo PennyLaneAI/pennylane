@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* A new `PennyLaneUserWarning` has been added to `exceptions` to warn users about special PennyLane tricks that might confuse them.
+  [(#7496)](https://github.com/PennyLaneAI/pennylane/pull/7496)
+
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
