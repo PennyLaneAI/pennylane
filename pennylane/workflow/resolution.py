@@ -17,7 +17,7 @@ from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import Literal, Optional, Union, get_args
+from typing import Literal, Union, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -27,7 +27,7 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
     None,
@@ -269,7 +269,6 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -277,7 +276,6 @@ def _resolve_execution_config(
         execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
         device (qml.devices.Device): a Pennylane device
         tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
 
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
@@ -288,14 +286,6 @@ def _resolve_execution_config(
         execution_config.gradient_method, Callable
     ):
         updated_values["grad_on_execution"] = False
-
-    if (
-        "lightning" in device.name
-        and transform_program
-        and qml.metric_tensor in transform_program
-        and execution_config.gradient_method == "best"
-    ):
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
