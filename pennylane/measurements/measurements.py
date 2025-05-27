@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
@@ -200,7 +201,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
@@ -229,7 +230,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ()
 
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 

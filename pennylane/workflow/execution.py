@@ -195,7 +195,7 @@ def execute(
     if not tapes:
         return user_post_processing(())
 
-    ### Specifying and preprocessing variables ####
+    ### Specifying and preprocessing variables ###
     interface = _resolve_interface(interface, tapes)
 
     config = qml.devices.ExecutionConfig(
