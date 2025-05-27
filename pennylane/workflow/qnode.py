@@ -27,7 +27,11 @@ from cachetools import Cache, LRUCache
 import pennylane as qml
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.debugging import pldb_device_manager
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import (
+    PennyLaneDeprecationWarning,
+    PennyLaneUserWarning,
+    QuantumFunctionError,
+)
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
@@ -895,6 +899,22 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        # Check for conflicting shots configuration
+        if "shots" in kwargs:
+            # Check if there's a set_shots transform in the transform program
+            has_set_shots_transform = any(
+                hasattr(transform_container.transform, "__name__")
+                and transform_container.transform.__name__ == "set_shots"
+                for transform_container in self._transform_program
+            )
+
+            if has_set_shots_transform:
+                warnings.warn(
+                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                    "The 'shots=' parameter will take precedence and override the transform.",
+                    PennyLaneUserWarning,
+                    stacklevel=2,
+                )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 

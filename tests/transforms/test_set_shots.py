@@ -209,6 +209,6 @@ class TestSetShots:
 
         with pytest.warns(
             qml.exceptions.PennyLaneUserWarning,
-            match="The shots value of the QNode is being overridden",
+            match=r"Both 'shots=' parameter and 'set_shots' transform are specified\. The 'shots=' parameter will take precedence and override the transform\.",
         ):
-            set_shots(c, 10)(shots=20)
+            set_shots(c, shots=10)(shots=20)
