@@ -192,22 +192,26 @@ class QasmInterpreter(QASMVisitor):
             for q in range(len(node.qubits))
         ]
 
-        op = gate(*args, wires=wires)
-        for mod in node.modifiers:
-            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-            # `no viable alternative at input 'wop(power)@'`, long before we get here.
-            assert mod.modifier.name in ("inv", "pow", "ctrl")
-  
-            if mod.modifier.name == "inv":
-                ops.adjoint(op)
-            elif mod.modifier.name == "pow":
-                if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    ops.pow(op, z=mod.argument.value)
-                elif "vars" in context and mod.argument.name in context["vars"]:
-                    ops.pow(op, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == "ctrl":
-                ops.ctrl(op, control=wires[0:-1])
+        if len(node.modifiers) > 0:
+            for mod in node.modifiers:
+                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+                # `no viable alternative at input 'wop(power)@'`, long before we get here.
+                assert mod.modifier.name in ("inv", "pow", "ctrl")
+
+                if mod.modifier.name == "inv":
+                    ops.adjoint(gate(*args, wires=wires))
+                elif mod.modifier.name == "pow":
+                    if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                        ops.pow(gate(*args, wires=wires), z=mod.argument.value)
+                    elif "vars" in context and mod.argument.name in context["vars"]:
+                        ops.pow(
+                            gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"]
+                        )
+                elif mod.modifier.name == "ctrl":
+                    ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires[-1])
+        else:
+            gate(*args, wires=wires)
 
     @staticmethod
     def retrieve_variable(name: str, context: dict):
