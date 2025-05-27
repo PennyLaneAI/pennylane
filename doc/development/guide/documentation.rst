@@ -536,7 +536,7 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
   If you are running Python3.10 on an M1 Mac you need to set the following environment variables
   before installing the requirements to be able to install the grpcio package required by TensorFlow
-  (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`):
+  (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`__):
 
   .. code-block:: bash
 
