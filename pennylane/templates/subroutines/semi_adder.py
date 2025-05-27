@@ -20,6 +20,27 @@ from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 
+def left_operator(wires):
+    op_list = []
+    # notation from figure 2 in https://arxiv.org/pdf/1709.06648
+    ck, ik, tk, aux = wires
+    op_list.append(qml.CNOT([ck, ik]))
+    op_list.append(qml.CNOT([ck, tk]))
+    op_list.append(qml.Elbow([ik, tk, aux]))
+    op_list.append(qml.CNOT([ck, aux]))
+    return op_list
+
+def right_operator(wires):
+    op_list = []
+    # notation from figure 2 in https://arxiv.org/pdf/1709.06648
+    ck, ik, tk, aux = wires
+    op_list.append(qml.CNOT([ck, aux]))
+    op_list.append(qml.adjoint(qml.Elbow([ik, tk, aux])))
+    op_list.append(qml.CNOT([ck, ik]))
+    op_list.append(qml.CNOT([ik, tk]))
+    return op_list
+
+
 class SemiAdder(Operation):
     r"""Performs the semi-out-place modular addition operation.
     More specifically, the operation is an in-place quantum-quantum modular addition.
@@ -110,19 +131,20 @@ class SemiAdder(Operation):
         self,
         x_wires: WiresLike,
         y_wires: WiresLike,
-        mod=None,
-        work_wires: WiresLike = (),
+        work_wires,
         id=None,
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
-
+        work_wires = qml.wires.Wires(work_wires)
         num_work_wires = len(work_wires)
 
+        """
         if mod is None:
             mod = 2 ** (len(y_wires))
+
+      
         if mod > 2 ** len(y_wires):
             raise ValueError(
                 "SemiAdder must have enough wires to represent mod. The maximum mod "
@@ -139,6 +161,7 @@ class SemiAdder(Operation):
                 raise ValueError("None of the wires in work_wires should be included in y_wires.")
         if any(wire in y_wires for wire in x_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
+        """
         for key in ["x_wires", "y_wires", "work_wires"]:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
 
@@ -149,7 +172,7 @@ class SemiAdder(Operation):
         if num_work_wires != 0:
             all_wires += self.hyperparameters["work_wires"]
 
-        self.hyperparameters["mod"] = mod
+        #self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -174,7 +197,7 @@ class SemiAdder(Operation):
         return SemiAdder(
             new_dict["x_wires"],
             new_dict["y_wires"],
-            self.hyperparameters["mod"],
+            #self.hyperparameters["mod"],
             new_dict["work_wires"],
         )
 
@@ -188,7 +211,7 @@ class SemiAdder(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, y_wires, mod, work_wires
+        x_wires, y_wires, work_wires
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -209,18 +232,37 @@ class SemiAdder(Operation):
         Adjoint(QFT(wires=[2, 3]))]
         """
         op_list = []
-        if mod != 2 ** len(y_wires) and mod is not None:
-            qft_wires = work_wires[:1] + y_wires
-            work_wire = work_wires[1:]
-        else:
-            qft_wires = y_wires
-            work_wire = ()
-        op_list.append(qml.QFT(wires=qft_wires))
-        op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_wires, mod, work_wire), control=x_wires
-            )
-        )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_wires))
+
+        # revert wires to follow PennyLane convention
+
+        x_wires_pl = x_wires[::-1][:len(y_wires)]
+        y_wires_pl = y_wires[::-1]
+        work_wires_pl = work_wires[::-1]
+        op_list.append(qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+
+        for i in range(1, len(y_wires_pl)-1):
+            if i < len(x_wires_pl):
+                op_list += left_operator([work_wires_pl[i-1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
+            else:
+                op_list.append(qml.CNOT([work_wires_pl[i-1], y_wires_pl[i]]))
+                op_list.append(qml.Elbow([work_wires_pl[i-1], y_wires_pl[i], work_wires_pl[i]]))
+                op_list.append(qml.CNOT([work_wires_pl[i-1], work_wires_pl[i]]))
+
+
+        op_list.append(qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]]))
+
+        if len(x_wires_pl) >= len(y_wires_pl):
+            op_list.append(qml.CNOT([x_wires_pl[-1], y_wires_pl[-1]]))
+
+        for i in range(len(y_wires_pl)-2,0,-1):
+            if i < len(x_wires_pl):
+                op_list += right_operator([work_wires_pl[i-1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
+            else:
+                op_list.append(qml.CNOT([work_wires_pl[i-1], work_wires_pl[i]]))
+                op_list.append(qml.adjoint(qml.Elbow([work_wires_pl[i-1], y_wires_pl[i], work_wires_pl[i]])))
+
+        op_list.append(qml.adjoint(qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])))
+
+        op_list.append(qml.CNOT([x_wires_pl[0], y_wires_pl[0]]))
 
         return op_list
