@@ -92,11 +92,11 @@ class TestLogging:
             ),
             (
                 "pennylane.devices.default_qubit",
-                ["Calling <preprocess(self=<default.qubit device (wires=2)"],
+                ["Calling <setup_execution_config(self=<default.qubit device (wires=2)"],
             ),
             (
                 "pennylane.devices.default_qubit",
-                ["Calling <preprocess(self=<default.qubit device (wires=2)"],
+                ["Calling <preprocess_transforms(self=<default.qubit device (wires=2)"],
             ),
         ]
 

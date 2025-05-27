@@ -385,6 +385,23 @@ def _pow_qubit_unitary(U, wires, z, **_):
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 
+# pylint: disable=unused-argument
+def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
+        ): 1,
+    }
+
+
+@register_resources(_controlled_qubit_unitary_resource)
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, **__):
+    qml.ControlledQubitUnitary(U, wires, control_values=control_values, work_wires=work_wires)
+
+
+add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
+
+
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
