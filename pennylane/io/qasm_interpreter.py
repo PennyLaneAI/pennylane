@@ -112,28 +112,7 @@ class QasmInterpreter(QASMVisitor):
 
         # begin recursive descent traversal
         super().generic_visit(node, context)
-        self.construct_callable(context)
         return context
-
-    @staticmethod
-    def _execute_all(context: dict):
-        """
-        Executes all the gates in the context.
-
-        Args:
-            context (dict): the current context populated with the gates.
-        """
-        for func in context["gates"]:
-            func()
-
-    def construct_callable(self, context: dict):
-        """
-        Constructs a callable that can be queued into a QNode.
-
-        Args:
-            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
-        """
-        context["callable"] = partial(self._execute_all, context)
 
     @staticmethod
     def visit_QubitDeclaration(node: QASMNode, context: dict):
@@ -179,22 +158,60 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
+        self._require_wires(context)
+
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
                 raise TypeError(
                     f"Missing required argument(s) for parameterized gate {node.name.name}"
                 )
-            gate = self.gate(PARAMETERIZED_GATES, node, context)
+            gates_dict = PARAMETERIZED_GATES
         elif name in NON_PARAMETERIZED_GATES:
-            gate = self.gate(NON_PARAMETERIZED_GATES, node, context)
+            gates_dict = NON_PARAMETERIZED_GATES
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
-        if len(node.modifiers) > 0:
-            gate = self.modifiers(gate, node, context)
+        # setup arguments
+        args = []
+        for arg in node.arguments:
+            if re.search("Literal", arg.__class__.__name__) is not None:
+                args.append(arg.value)
+            else:
+                args.append(self.retrieve_variable(arg.name, context))
 
-        context["gates"].append(gate)
+        # retrieve gate method
+        gate = gates_dict[node.name.name.upper()]
+
+        # setup wires
+        wires=[
+            # parser will sometimes represent as a str and sometimes as an Identifier
+            (
+                node.qubits[q].name
+                if isinstance(node.qubits[q].name, str)
+                else node.qubits[q].name.name
+            )
+            for q in range(len(node.qubits))
+        ]
+
+        if len(node.modifiers) > 0:
+            for mod in node.modifiers:
+                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+                # `no viable alternative at input 'wop(power)@'`, long before we get here.
+                assert mod.modifier.name in ("inv", "pow", "ctrl")
+
+                if mod.modifier.name == "inv":
+                    ops.adjoint(gate(*args, wires=wires))
+                elif mod.modifier.name == "pow":
+                    if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                        ops.pow(gate(*args, wires=wires), z=mod.argument.value)
+                    elif "vars" in context and mod.argument.name in context["vars"]:
+                        ops.pow(gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"])
+                elif mod.modifier.name == "ctrl":
+                    ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires)
+        else:
+            gate(*args, wires=wires)
 
     @staticmethod
     def retrieve_variable(name: str, context: dict):
@@ -214,59 +231,6 @@ class QasmInterpreter(QASMVisitor):
         raise NameError(f"Undeclared variable {name} encountered in QASM.")
 
     @staticmethod
-    def modifiers(gate: Callable, node: QASMNode, context: dict):
-        """
-        Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
-        depending on the type of modifier. We build a Callable that applies the modifier appropriately
-        at execution time, evaluating the gate Callable appropriately as well.
-
-        Args:
-            gate (Callable): The Callable partial built for the gate we wish to modify.
-            node (QASMNode): The original QquantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The callable which will appropriately apply the modifier and execute the gate.
-        """
-        call_stack = [gate]
-        for mod in node.modifiers:
-            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-            # `no viable alternative at input 'wop(power)@'`, long before we get here.
-            assert mod.modifier.name in ("inv", "pow", "ctrl")
-            wrapper = None
-            if mod.modifier.name == "inv":
-                wrapper = ops.adjoint
-            elif mod.modifier.name == "pow":
-                if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(ops.pow, z=mod.argument.value)
-                elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(ops.pow, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == "ctrl":
-                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
-
-            call_stack.append(wrapper)
-
-        def call():
-            res = None
-            for func in call_stack:
-                # if there is a control in the stack
-                if (
-                    call_stack[-1].__class__.__name__ == "partial"
-                    and "control" in call_stack[-1].keywords
-                ):
-                    # if we are processing the control now
-                    if "control" in func.keywords:
-                        res.keywords["wires"] = [res.keywords["wires"][-1]]
-                    # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
-                    res = func(res.func)(**res.keywords) if res is not None else func
-                else:
-                    # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
-                    res = func(res) if res is not None else func()
-
-        return call
-
-    @staticmethod
     def _require_wires(context):
         """
         Simple helper that checks if we have wires in the current context.
@@ -281,42 +245,3 @@ class QasmInterpreter(QASMVisitor):
             raise NameError(
                 f"Attempt to reference wires that have not been declared in {context['name']}"
             )
-
-    def gate(self, gates_dict: dict, node: QASMNode, context: dict):
-        """
-        Registers a gate application. Builds a Callable partial
-        that can be executed when the QNode is called. The gate will be executed at that time
-        with the appropriate arguments.
-        TODO: a robust method for retrieving vars from context will be provided in follow-up PR according to [sc-90383]
-
-        Args:
-            node (QASMNode): The QuantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The Callable partial that will execute the gate with the appropriate arguments at
-                "runtime".
-
-        Raises:
-            NameError: If an argument is not found in the current context.
-        """
-        self._require_wires(context)
-        args = []
-        for arg in node.arguments:
-            if re.search("Literal", arg.__class__.__name__) is not None:
-                args.append(arg.value)
-            else:
-                args.append(self.retrieve_variable(arg.name, context))
-        return partial(
-            gates_dict[node.name.name.upper()],
-            *args,
-            wires=[
-                # parser will sometimes represent as a str and sometimes as a Identifier
-                (
-                    node.qubits[q].name
-                    if isinstance(node.qubits[q].name, str)
-                    else node.qubits[q].name.name
-                )
-                for q in range(len(node.qubits))
-            ],
-        )
