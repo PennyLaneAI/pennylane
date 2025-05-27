@@ -113,7 +113,7 @@ def ctrl_decomp_zyz(
 
     This function decomposes both single and multiple controlled single-qubit
     target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
-    for single `controlled_wires`, and Lemma 7.9 for multiple `controlled_wires`
+    for single ``controlled_wires``, and Lemma 7.9 for multiple ``controlled_wires``
     from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
