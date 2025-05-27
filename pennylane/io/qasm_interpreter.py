@@ -182,7 +182,7 @@ class QasmInterpreter(QASMVisitor):
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
-        wires=[
+        wires = [
             # parser will sometimes represent as a str and sometimes as an Identifier
             (
                 node.qubits[q].name
@@ -205,7 +205,9 @@ class QasmInterpreter(QASMVisitor):
                     if re.search("Literal", mod.argument.__class__.__name__) is not None:
                         ops.pow(gate(*args, wires=wires), z=mod.argument.value)
                     elif "vars" in context and mod.argument.name in context["vars"]:
-                        ops.pow(gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"])
+                        ops.pow(
+                            gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"]
+                        )
                 elif mod.modifier.name == "ctrl":
                     ops.ctrl(gate, control=wires[0:-1])(*args, wires=wires[-1])
         else:
