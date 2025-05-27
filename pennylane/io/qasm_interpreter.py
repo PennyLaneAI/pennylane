@@ -6,14 +6,9 @@ import functools
 import re
 
 from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration
+from openqasm3.visitor import QASMNode, QASMVisitor
 
 from pennylane import ops
-
-has_openqasm = True
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_openqasm = False  # pragma: no cover
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -64,10 +59,6 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             ImportError: if the openqasm3 package is not available.
         """
-        if not has_openqasm:  # pragma: no cover
-            raise ImportError(
-                "QASM interpreter requires openqasm3 to be installed"
-            )  # pragma: no cover
         super().__init__()
 
     @functools.singledispatchmethod
