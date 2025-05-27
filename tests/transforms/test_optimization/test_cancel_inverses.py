@@ -346,7 +346,7 @@ class TestCancelInversesInterfaces:
 
         with pytest.warns(
             UserWarning,
-            match="At least one of the operators has abstract wires, parameters, or hyperparameters",
+            match="At least one of the operators has abstract wires or parameters. ",
         ):
             res = circuit(jax.numpy.array(0))
 

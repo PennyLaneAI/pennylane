@@ -82,11 +82,11 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     if op1 in self_inverses and op1.name == op2.name:
         return True
 
-    # If at least one of the operators has abstract wires, parameters, or hyperparameters,
+    # If at least one of the operators has abstract wires or parameters,
     # we cannot determine if they are inverses because we cannot compare them.
     if _check_abstractness(op1, op2):
         warnings.warn(
-            "At least one of the operators has abstract wires, parameters, or hyperparameters. "
+            "At least one of the operators has abstract wires or parameters. "
             "The cancel_inverses transform will not be applied to these operators. ",
             UserWarning,
         )
