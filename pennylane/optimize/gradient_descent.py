@@ -62,7 +62,7 @@ class GradientDescentOptimizer:
             function output prior to the step.
             If single arg is provided, list [array] is replaced by array.
         """
-        argnums = self.argnums_dispath(args, argnums)
+        argnums = self.argnums_dispatch(args, argnums)
 
         grad = self.compute_grad(objective_fn, args, kwargs, argnums=argnums, grad_fn=grad_fn)
         new_args = self.apply_grad(grad, args, argnums=argnums)
@@ -89,7 +89,7 @@ class GradientDescentOptimizer:
             list [array]: the new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list [array] is replaced by array.
         """
-        argnums = self.argnums_dispath(args, argnums)
+        argnums = self.argnums_dispatch(args, argnums)
 
         grad = self.compute_grad(objective_fn, args, kwargs, argnums=argnums, grad_fn=grad_fn)
         new_args = self.apply_grad(grad, args, argnums=argnums)
@@ -98,7 +98,7 @@ class GradientDescentOptimizer:
         return new_args
 
     @staticmethod
-    def argnums_dispath(args, argnums):
+    def argnums_dispatch(args, argnums):
         """TODO"""
         if argnums is None:
             if math.get_interface(*args) == "autograd":
@@ -156,7 +156,7 @@ class GradientDescentOptimizer:
         if not isinstance(args, tuple):
             args = (args,)
 
-        argnums = self.argnums_dispath(args, argnums)
+        argnums = self.argnums_dispatch(args, argnums)
         args_new = list(args)
 
         idx = 0
