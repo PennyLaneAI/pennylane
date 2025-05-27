@@ -837,7 +837,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str):
+def from_qasm3(quantum_circuit: str, qubit_mapping: dict = None):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
@@ -854,10 +854,10 @@ def from_qasm3(quantum_circuit: str):
 
     Args:
         quantum_circuit (str): a QASM string containing a simple quantum circuit.
+        qubit_mapping Optional[dict]:  the mapping from QASM 3.0 qubit names to Pennylane qubits.
 
     Returns:
         function: a function created based on the QASM string that can be queued into a QNode.
-        Wires: the wires required to execute the QASM.
 
     """
     if not has_openqasm:  # pragma: no cover
@@ -866,6 +866,11 @@ def from_qasm3(quantum_circuit: str):
         )  # pragma: no cover
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
+    if qubit_mapping is not None:
+        context = QasmInterpreter().generic_visit(
+            ast, context={"name": "global", "qubit_mapping": qubit_mapping}
+        )
+    else:
+        context = QasmInterpreter().generic_visit(ast, context={"name": "global"})
 
     return context["callable"]

@@ -185,9 +185,19 @@ class QasmInterpreter(QASMVisitor):
         wires = [
             # parser will sometimes represent as a str and sometimes as an Identifier
             (
-                node.qubits[q].name
-                if isinstance(node.qubits[q].name, str)
-                else node.qubits[q].name.name
+                context["qubit_mapping"][
+                    (
+                        node.qubits[q].name
+                        if isinstance(node.qubits[q].name, str)
+                        else node.qubits[q].name.name
+                    )
+                ]
+                if "qubit_mapping" in context
+                else (
+                    node.qubits[q].name
+                    if isinstance(node.qubits[q].name, str)
+                    else node.qubits[q].name.name
+                )
             )
             for q in range(len(node.qubits))
         ]
