@@ -196,6 +196,7 @@ def execute(
         return user_post_processing(())
 
     ### Specifying and preprocessing variables ###
+
     interface = _resolve_interface(interface, tapes)
 
     config = qml.devices.ExecutionConfig(
