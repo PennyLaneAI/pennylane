@@ -321,19 +321,49 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
         import pennylane as qml
+        from qualtran.bloqs.basic_gates import CNOT
+
+        mod = op.hyperparameters["mod"]
+        num_output_wires = len(op.hyperparameters["output_wires"])
+        num_work_wires = len(op.hyperparameters["work_wires"])
+        num_x_wires = len(op.hyperparameters["x_wires"])
+
+        mult_resources = {}
+        if mod == 2**num_x_wires:
+            num_aux_wires = num_x_wires
+            num_aux_swap = num_x_wires
+        else:
+            num_aux_wires = num_work_wires - 1
+            num_aux_swap = num_aux_wires - 1
+
+        qft = _map_to_bloq()(qml.QFT(wires=range(num_aux_wires)))
+        qft_dag = qft.adjoint()
+
+        sequence = _map_to_bloq()(qml.ControlledSequence(qml.PhaseAdder(k=3, x_wires=range(1, num_x_wires+1)), control=[0]))
+
+        sequence_dag = sequence.adjoint()
+
+        cnot = CNOT()
+
+        mult_resources = {}
+        mult_resources[qft] = 2
+        mult_resources[qft_dag] = 2
+        mult_resources[sequence] = 1
+        mult_resources[sequence_dag] = 1
+        mult_resources[cnot] = min(num_x_wires, num_aux_swap)
 
         gate_types = {}
-        x_wires = op.hyperparameters["x_wires"]
-        output_wires = op.hyperparameters["output_wires"]
-        base = op.hyperparameters["base"]
-        mod = op.hyperparameters["mod"]
-        work_wires = op.hyperparameters["work_wires"]
-        x_wires, output_wires, base, mod, work_wires = op.hyperparameters
-
-        controlled_sequence_multiplier = qml.ControlledSequence(
-            qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
-        )
-        gate_types[controlled_sequence_multiplier] = 1
+        for comp_rep, _ in mult_resources.items():
+            new_rep = comp_rep.controlled()
+            # cancel out QFTs from consecutive Multipliers
+            if hasattr(comp_rep, "op"):
+                if comp_rep.op.name in ("QFT"):
+                    gate_types[new_rep] = 1
+            elif hasattr(comp_rep, "subbloq"):
+                if comp_rep.subbloq.op.name in ("QFT"):
+                    gate_types[new_rep] = 1
+            else:
+                gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
 
         return gate_types
 
