@@ -458,7 +458,7 @@ to be used with certain limitations:
 
 .. warning::
 
-    Transforming a circuit with dynamic wires using tape transorms may not raise an error, potentially
+    Transforming a circuit with dynamic wires using tape transforms may not raise an error, potentially
     leading to incorrect results.
 
 Here is an example a toy transform called ``shift_rx_to_end``, which just moves 

@@ -92,7 +92,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
 
             if self.dynamic_wires_encountered:
                 raise TransformError(
-                    "Cannot use qml.AmplitudeEmbedding after operators with dynamic wires."
+                    "Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires as it "
+                    "is indeterminable if the wires overlap."
                 )
 
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
