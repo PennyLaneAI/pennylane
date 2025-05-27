@@ -32,10 +32,6 @@ def bch_expansion(product_formula: ProductFormula, order: int) -> Dict[Tuple[int
     This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
     """
 
-    return _recursive_bch(product_formula, order)
-
-
-def _recursive_bch(product_formula: ProductFormula, order: int):
     bch = _bch(
         product_formula.terms,
         [coeff * product_formula.timestep for coeff in product_formula.coeffs],
@@ -46,7 +42,7 @@ def _recursive_bch(product_formula: ProductFormula, order: int):
     if not product_formula.recursive:
         return _apply_exponent(bch, product_formula.exponent)
 
-    terms = {pf: _recursive_bch(pf, order) for pf in product_formula.terms}
+    terms = {pf: bch_expansion(pf, order) for pf in product_formula.terms}
     merged_bch = [defaultdict(complex) for _ in range(order)]
 
     for ith_order_commutators in bch:

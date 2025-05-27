@@ -79,6 +79,7 @@ Functions for computing Trotter error estimates.
 .. autosummary::
     :toctree: api
 
+    ~bch_expansion
     ~effective_hamiltonian
     ~perturbation_error
 
@@ -96,6 +97,7 @@ from .abstract import AbstractState, Fragment
 from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
 from .product_formulas import (
     ProductFormula,
+    bch_expansion,
     effective_hamiltonian,
     perturbation_error,
 )
