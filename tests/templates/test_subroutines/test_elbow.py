@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ class TestElbow:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.Elbow(
-            wires=[0, 1, 2],
-        )
+        op = qml.Elbow(wires=[0, 1, 2])
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
@@ -78,7 +76,7 @@ class TestElbow:
         for rule in qml.list_decomps(qml.Elbow):
             _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
 
-    def test_matrix(self):
+    def test_compute_matrix(self):
 
         matrix = qml.Elbow([0, 1, 2]).compute_matrix()
         matrix_target = qml.math.array(

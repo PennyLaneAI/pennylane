@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,15 +26,15 @@ from pennylane.wires import WiresLike
 class Elbow(Operation):
     r"""Elbow(wires)
 
-    The Elbow operator is a three-qubit gate analogous to an AND or Toffoli gate that leverages extra information
-    in the target wire to enable more efficient circuit decompositions: the ``Elbow`` assumes the target qubit
-    is initialized in :math:`|0\rangle`, while the ``Adjoint(Elbow)`` assumes the target output in :math:`|0\rangle`.
+    The Elbow operator is a three-qubit gate equivalent to an AND, or Toffoli, gate that leverages extra information
+    about the target wire to enable more efficient circuit decompositions: the ``Elbow`` assumes the target qubit
+    to be initialized in :math:`|0\rangle`, while the ``Adjoint(Elbow)`` assumes the target output to be :math:`|0\rangle`.
     For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
-        on the target wire when using ``Elbow`` or ``Adjoint(Elbow)`` respectively. Otherwise, the behavior could be
+        on the target wire when using ``Elbow`` or ``Adjoint(Elbow)``, respectively. Otherwise, the behavior could be
         different from the expected AND.
 
     **Details:**
@@ -108,14 +108,14 @@ class Elbow(Operation):
         **Example**
 
         >>> print(qml.Elbow.compute_matrix())
-        [[1 0 0 0 0 0 0 0]
-         [0 -1j 0 0 0 0 0 0]
-         [0 0 1 0 0 0 0 0]
-         [0 0 0 -1j 0 0 0 0]
-         [0 0 0 0 1 0 0 0]
-         [0 0 0 0 0 1j 0 0]
-         [0 0 0 0 0 0 0 -1j]
-         [0 0 0 0 0 0 1 0]]
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+1.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  1.+0.j  0.+0.j]]
         """
 
         return qml.math.array(
@@ -132,9 +132,7 @@ class Elbow(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        wires: WiresLike,
-    ):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -1190,9 +1190,7 @@ class TestModifiedTemplates:
     def test_elbow(self):
         """Test the primitive bind call of Elbow."""
 
-        kwargs = {
-            "wires": [0, 1, 2],
-        }
+        kwargs = {"wires": [0, 1, 2]}
 
         def qfunc():
             qml.Elbow(**kwargs)
