@@ -303,6 +303,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 
 [[modules]]
 path = "pennylane.debugging"
+layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 [[modules]]
