@@ -92,7 +92,7 @@ class TestRepeatedQubitDeviceErrors:
 
         with pytest.raises(
             qml.transforms.core.TransformError,
-            match="Cannot use qml.AmplitudeEmbedding after operators with dynamic wires.",
+            match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
         ):
             jax.make_jaxpr(qfunc)(1)
 
@@ -467,7 +467,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
 
         with pytest.raises(
             qml.transforms.core.TransformError,
-            match="Cannot use qml.AmplitudeEmbedding after " "operators with dynamic wires.",
+            match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
         ):
             _ = jax.make_jaxpr(f)(2)
 
