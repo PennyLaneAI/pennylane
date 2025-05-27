@@ -37,6 +37,14 @@ visibility = []
 path = "pennylane.compiler.python_compiler"
 visibility = []
 
+## UTILITY modules
+
+[[modules]]
+path = "pennylane.exceptions"
+utility = true
+depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
 ## CORE modules
 # These modules are fundamental, and should not have any dependent modulesin lower levels.
 
