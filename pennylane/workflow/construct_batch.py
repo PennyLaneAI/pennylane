@@ -331,7 +331,10 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        shots = kwargs.pop("shots", qnode.shots)
+        if "shots" in inspect.signature(qnode.func).parameters:
+            shots = qnode.device.shots
+        else:
+            shots = kwargs.pop("shots", qnode.device.shots)
 
         if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
@@ -344,6 +347,18 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        # Apply user t ransforms first, if any, just as execution.execute()
+        user_program = qnode.transform_program
+        if level in ("user", "top") or (isinstance(level, int) and level <= len(user_program)):
+            # Apply only user transforms up to the specified level
+            limited_program = user_program[:level] if isinstance(level, int) else user_program
+            tapes, user_post_processing = limited_program((initial_tape,))
+            if limited_program.is_informative:
+                return user_post_processing(tapes)
+        else:
+            tapes = (initial_tape,)
+            user_post_processing = null_postprocessing
+
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_execution_config(
@@ -352,6 +367,13 @@ def construct_batch(
         gradient_fn = config.gradient_method
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
-        return program((initial_tape,))
+        # Apply the remaining transforms
+        final_tapes, final_post_processing = program(tapes)
+
+        # Combine post-processing functions
+        def combined_post_processing(results):
+            return user_post_processing(final_post_processing(results))
+
+        return final_tapes, combined_post_processing
 
     return batch_constructor
