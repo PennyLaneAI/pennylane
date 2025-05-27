@@ -28,6 +28,7 @@ import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
+from pennylane.measurements import MeasurementValue
 from pennylane.operation import Operator
 from pennylane.ops import Conditional
 from pennylane.ops.functions.equal import (
@@ -2857,12 +2858,33 @@ def test_ops_with_abstract_parameters_not_equal():
         ),
     ],
 )
+
 def test_not_equal_prep_sel_prep(op, other_op):
     """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
     assert not qml.equal(op, other_op)
 
-def test_expval_observable_mismatch():
+def test_equal_observables():
+    m1 = qml.expval(qml.Z(0))
+    m2 = qml.expval(qml.Z(0))
+    assert qml.equal(m1, m2) is True
+    qml.assert_equal(m1, m2)
+
+def test_different_observables():
     m1 = qml.expval(qml.Z(0))
     m2 = qml.expval(qml.X(0))
-    with pytest.raises(AssertionError, match="observables differ"):
+    with pytest.raises(AssertionError, match="Observables"):
         qml.assert_equal(m1, m2)
+
+def test_equal_measurement_value():
+    mv1 = MeasurementValue(0.5)
+    mv2 = MeasurementValue(0.5)
+    m1 = qml.apply(mv1)
+    m2 = qml.apply(mv2)
+    assert qml.equal(m1, m2)
+
+def test_measurement_wire_mismatch():
+    m1 = qml.measure(0)
+    m2 = qml.measure(1)
+    with pytest.raises(AssertionError, match="Measurement wires differ"):
+        qml.assert_equal(m1, m2)
+
