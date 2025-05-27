@@ -15,10 +15,11 @@ r"""Base class for storing resources."""
 from __future__ import annotations
 
 import copy
-from decimal import Decimal
 from collections import defaultdict
+from decimal import Decimal
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+
 
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, and gate types.
@@ -76,7 +77,7 @@ class Resources:
         """Scale a resources object in series"""
         assert isinstance(scalar, int)
         return mul_in_series(self, scalar)
-    
+
     def __matmul__(self, scalar: int) -> "Resources":
         """Scale a resources object in parallel"""
         assert isinstance(scalar, int)
@@ -99,7 +100,10 @@ class Resources:
     def __str__(self):
         """String representation of the Resources object."""
         gate_type_str = ", ".join(
-            [f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}" for gate_name, count in self.clean_gate_counts.items()]
+            [
+                f"'{gate_name}': {Decimal(count):.3E}" if count > 999 else f"'{gate_name}': {count}"
+                for gate_name, count in self.clean_gate_counts.items()
+            ]
         )
 
         items = "--- Resources: ---\n"
@@ -107,7 +111,7 @@ class Resources:
 
         if (total_gates := sum(self.clean_gate_counts.values())) > 999:
             items += f" total gates: {Decimal(total_gates):.3E}\n"
-        else: 
+        else:
             items += f" total gates: {total_gates}\n"
 
         items += " gate_types:\n  {" + gate_type_str + "}"
@@ -125,7 +129,7 @@ class Resources:
         print(str(self))
 
 
-def add_in_series(first: Resources, other) -> Resources:  # + 
+def add_in_series(first: Resources, other) -> Resources:  # +
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
@@ -136,15 +140,14 @@ def add_in_series(first: Resources, other) -> Resources:  # +
         Resources: combined resources
     """
     qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-    
+
     new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
     new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
     new_budget = qm1.tight_budget or qm2.tight_budget
     new_logic = max(qm1.algo_qubits, qm2.algo_qubits)
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
-        tight_budget=new_budget
+        work_wires={"clean": new_clean, "dirty": new_dirty}, tight_budget=new_budget
     )
 
     new_qubit_manager._logic_qubit_counts = new_logic
@@ -152,7 +155,7 @@ def add_in_series(first: Resources, other) -> Resources:  # +
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def add_in_parallel(first: Resources, other) -> Resources:  # & 
+def add_in_parallel(first: Resources, other) -> Resources:  # &
     r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
@@ -163,14 +166,14 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
         Resources: combined resources
     """
     qm1, qm2 = (first.qubit_manager, other.qubit_manager)
-    
+
     new_clean = max(qm1.clean_qubits, qm2.clean_qubits)
     new_dirty = qm1.dirty_qubits + qm2.dirty_qubits
     new_budget = qm1.tight_budget or qm2.tight_budget
     new_logic = qm1.algo_qubits + qm2.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
@@ -179,7 +182,7 @@ def add_in_parallel(first: Resources, other) -> Resources:  # &
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_series(first: Resources, scalar: int) -> Resources:  # * 
+def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
@@ -190,14 +193,14 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
         Resources: combined resources
     """
     qm = first.qubit_manager
-    
+
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
     new_budget = qm.tight_budget
     new_logic = qm.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 
@@ -207,7 +210,7 @@ def mul_in_series(first: Resources, scalar: int) -> Resources:  # *
     return Resources(new_qubit_manager, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @ 
+def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
     r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
@@ -218,14 +221,14 @@ def mul_in_parallel(first: Resources, scalar: int) -> Resources:  # @
         Resources: combined resources
     """
     qm = first.qubit_manager
-    
+
     new_clean = qm.clean_qubits
     new_dirty = scalar * qm.dirty_qubits
     new_budget = qm.tight_budget
     new_logic = scalar * qm.algo_qubits
 
     new_qubit_manager = QubitManager(
-        work_wires={"clean": new_clean, "dirty": new_dirty}, 
+        work_wires={"clean": new_clean, "dirty": new_dirty},
         tight_budget=new_budget,
     )
 

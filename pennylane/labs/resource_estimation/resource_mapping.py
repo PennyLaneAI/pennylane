@@ -13,6 +13,7 @@
 # limitations under the License.
 r"""Mapping PL operations to their ResourceOperator."""
 from __future__ import annotations
+
 from functools import singledispatch
 
 from pennylane.operation import Operation

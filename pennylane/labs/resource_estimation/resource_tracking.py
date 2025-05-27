@@ -17,22 +17,17 @@ from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires, QubitManager
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
+from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
-
-from pennylane.labs.resource_estimation.qubit_manager import (
-    QubitManager,
-    GrabWires,
-    FreeWires,
-)
-from pennylane.labs.resource_estimation.resources_base import Resources
-from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
-from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    ResourceOperator,
-    CompressedResourceOp,
-)
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -188,7 +183,7 @@ def resources_from_qfunc(
     def wrapper(*args, **kwargs):
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
-        
+
         qm = QubitManager(work_wires, tight_budget)
         # Get algorithm wires:
         num_algo_qubits = 0
@@ -234,17 +229,22 @@ def resources_from_resource(
         else:
             clean_wires = work_wires
             dirty_wires = 0
-    
+
         existing_qm._clean_qubit_counts = max(clean_wires, existing_qm._clean_qubit_counts)
         existing_qm._dirty_qubit_counts = max(dirty_wires, existing_qm._dirty_qubit_counts)
 
     if tight_budget is not None:
         existing_qm.tight_budget = tight_budget
-    
+
     gate_counts = defaultdict(int)
     for cmpr_rep_op, count in obj.gate_types.items():
         _counts_from_compressed_res_op(
-            cmpr_rep_op, gate_counts, qbit_mngr=existing_qm, gate_set=gate_set, scalar=count, config=config
+            cmpr_rep_op,
+            gate_counts,
+            qbit_mngr=existing_qm,
+            gate_set=gate_set,
+            scalar=count,
+            config=config,
         )
 
     # Update:
@@ -290,12 +290,12 @@ def _counts_from_compressed_res_op(
             continue
 
         if isinstance(action, GrabWires):
-            if qubit_alloc_sum !=0 and scalar > 1:
+            if qubit_alloc_sum != 0 and scalar > 1:
                 qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
             else:
                 qbit_mngr.grab_clean_qubits(action.num_wires)
         if isinstance(action, FreeWires):
-            if qubit_alloc_sum !=0 and scalar > 1:
+            if qubit_alloc_sum != 0 and scalar > 1:
                 qbit_mngr.free_qubits(action.num_wires * scalar)
             else:
                 qbit_mngr.free_qubits(action.num_wires)

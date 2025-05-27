@@ -17,10 +17,11 @@ Test the base and abstract Resource class
 import pytest
 
 import pennylane as qml
+from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 from pennylane.operation import Operator
-from pennylane.labs.resource_estimation import ResourceOperator, CompressedResourceOp
 
 # pylint: disable=protected-access
+
 
 class ResourceDummyX(Operator, ResourceOperator):
     """Dummy testing class representing X gate"""
