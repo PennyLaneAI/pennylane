@@ -15,6 +15,7 @@
 
 import warnings
 from functools import lru_cache, partial
+from typing import Union
 
 from pennylane.math import is_abstract
 from pennylane.operation import Operator
@@ -26,7 +27,7 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
@@ -42,29 +43,30 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
     )
 
 
+def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
+    """Checks if any item in the iterable is abstract."""
+    for item in items:
+        if is_abstract(item):
+            return True
+        if isinstance(item, Wires) and any(is_abstract(w) for w in item):
+            return True
+    return False
+
+
+def _op_has_abstract(op: Operator) -> bool:
+    """Checks if an operator has abstract wires, parameters, or hyperparameters."""
+    return any(
+        [
+            _contains_abstract(op.wires),
+            hasattr(op, "parameters") and _contains_abstract(op.parameters),
+            hasattr(op, "hyperparameters") and _contains_abstract(op.hyperparameters.values()),
+        ]
+    )
+
+
 def _check_abstractness(op1: Operator, op2: Operator) -> bool:
     """Checks if either of the operators has abstract wires, parameters, or hyperparameters."""
-
-    def contains_abstract(items):
-        """Checks if any item in the iterable is abstract."""
-        for item in items:
-            if is_abstract(item):
-                return True
-            if isinstance(item, Wires) and any(is_abstract(w) for w in item):
-                return True
-        return False
-
-    def op_has_abstract(op):
-        """Checks if the operator has abstract wires, parameters, or hyperparameters."""
-        return any(
-            [
-                contains_abstract(op.wires),
-                hasattr(op, "parameters") and contains_abstract(op.parameters),
-                hasattr(op, "hyperparameters") and contains_abstract(op.hyperparameters.values()),
-            ]
-        )
-
-    return op_has_abstract(op1) or op_has_abstract(op2)
+    return _op_has_abstract(op1) or _op_has_abstract(op2)
 
 
 def _are_inverses(op1: Operator, op2: Operator) -> bool:

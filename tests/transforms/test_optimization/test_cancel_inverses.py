@@ -346,7 +346,7 @@ class TestCancelInversesInterfaces:
 
         with pytest.warns(
             UserWarning,
-            match="At least one of the operators",
+            match="At least one of the operators has abstract wires, parameters, or hyperparameters",
         ):
             res = circuit(jax.numpy.array(0))
 
@@ -369,7 +369,7 @@ class TestCancelInversesInterfaces:
 
         with pytest.warns(
             UserWarning,
-            match="At least one of the operators",
+            match="At least one of the operators has abstract wires, parameters, or hyperparameters",
         ):
             GroverOp([n_wires - 1])
 
