@@ -50,6 +50,35 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_integer_qubit_mappings(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            qubit q2;
+            id q0;
+            h q2;
+            x q1;
+            y q2;
+            """,
+            permissive=True,
+        )
+
+        dev = device("default.qubit", wires=[0, 1, 2])
+
+        # execute the callables
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().generic_visit(
+                ast,
+                context={
+                    "name": "single-qubit-gates",
+                    "qubit_mapping": {"q0": 0, "q1": 1, "q2": 2},
+                },
+            )
+
+        assert q.queue == [Identity(0), Hadamard(2), PauliX(1), PauliY(2)]
+
     def test_qubit_mappings(self):
         # parse the QASM program
         ast = parse(
