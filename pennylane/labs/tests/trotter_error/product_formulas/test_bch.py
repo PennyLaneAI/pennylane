@@ -21,6 +21,7 @@ from scipy.linalg import expm, logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import commutator, nested_commutator
+from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 
 deltas = [1, 0.1, 0.01]
 
@@ -229,9 +230,8 @@ Z = "Z"
 def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     """Test against BCH expansion. The expected values come from Sections 4 and 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
 
-    actual = ProductFormula(frag_labels, coeffs=frag_coeffs, include_i=False).bch_approx(
-        max_order=max_order
-    )
+    product_formula = ProductFormula(frag_labels, coeffs=frag_coeffs, include_i=False)
+    actual = bch_expansion(product_formula, max_order)
 
     for i, order in enumerate(actual):
         for comm in order:

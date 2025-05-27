@@ -14,18 +14,14 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
-import math
 from collections import defaultdict
 from collections.abc import Hashable
-from itertools import product
 from typing import Dict, List, Sequence, Tuple
 
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
-from pennylane.labs.trotter_error.product_formulas.product_formula import (
-    ProductFormula,
-    _remove_redundancies,
-)
+from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
 class _AdditiveIdentity:
@@ -39,7 +35,7 @@ class _AdditiveIdentity:
 
 
 def effective_hamiltonian(
-    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int = 3
+    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int
 ):
     """Compute the effective Hamiltonian according to the product formula
 
@@ -72,7 +68,7 @@ def effective_hamiltonian(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = _recursive_bch(product_formula, order)
+    bch = bch_expansion(product_formula, order)
     eff = _AdditiveIdentity()
 
     for ith_order in bch:
@@ -93,84 +89,11 @@ def _insert_fragments(commutator, fragments):
     return ret
 
 
-def _recursive_bch(product_formula: ProductFormula, order: int = 3):
-    bch = product_formula.bch_approx(order)
-
-    if not product_formula.recursive:
-        return bch
-
-    terms = {pf: _recursive_bch(pf, order) for pf in product_formula.terms}
-    merged_bch = [defaultdict(complex) for _ in range(order)]
-
-    for ith_order_commutators in bch:
-        for commutator, coeff in ith_order_commutators.items():
-            for j, merged in enumerate(_merge_commutators(commutator, terms, order, coeff)):
-                merged_bch[j] = _add_dicts(merged_bch[j], merged)
-
-    return _remove_redundancies(merged_bch, product_formula.ordered_fragments())
-
-
-def _merge_commutators(commutator, terms, order, bch_coeff):
-    merged = [defaultdict(complex) for _ in range(order)]
-
-    for x in _commutator_terms(commutator, terms, order):
-        new_commutator = tuple(y[0] for y in x)
-        term_coeff = math.prod(y[1] for y in x) * bch_coeff
-        commutator_order = _commutator_order(new_commutator)
-
-        merged[commutator_order - 1][new_commutator] += term_coeff
-
-    return merged
-
-
-def _commutator_terms(commutator, terms, order):
-    for i in range(order):
-        for partition in _partitions(len(commutator), i + 1):
-            kept_terms = [
-                terms[term][partition[j] - 1].items() for j, term in enumerate(commutator)
-            ]
-            yield from product(*kept_terms)
-
-
-def _partitions(m: int, n: int):
-    """number of ways to sum m positive integers to n"""
-
-    if m == 1:
-        yield (n,)
-    elif m == n:
-        yield (1,) * m
-    elif n < m:
-        yield from []
-    else:
-        for i in range(1, n - m + 2):
-            for partition in _partitions(m - 1, n - i):
-                yield (i,) + partition
-
-
-def _commutator_order(commutator):
-    order = 0
-
-    for term in commutator:
-        if isinstance(term, tuple):
-            order += _commutator_order(term)
-        else:
-            order += 1
-
-    return order
-
-
-def _add_dicts(d1, d2):
-    for key, value in d2.items():
-        d1[key] += value
-
-    return d1
-
-
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    order: int = 3,
+    order: int,
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
@@ -220,7 +143,7 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = _recursive_bch(product_formula, order=order)
+    bch = bch_expansion(product_formula, order)
     commutators = {
         commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
     }
