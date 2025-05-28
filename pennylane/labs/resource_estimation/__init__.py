@@ -44,3 +44,19 @@ from .resource_tracking import (
     resource_config,
     estimate_resources,
 )
+
+from .ops import (
+    ResourceHadamard,
+    ResourceS,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceT,
+    ResourcePhaseShift,
+    ResourceGlobalPhase,
+    ResourceRot,
+    ResourceIdentity
+)

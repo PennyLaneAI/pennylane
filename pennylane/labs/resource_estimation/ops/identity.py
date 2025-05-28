@@ -1,0 +1,210 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""Resource operators for identity operations."""
+
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
+
+# pylint: disable=arguments-differ,no-self-use,too-many-ancestors
+
+
+class ResourceIdentity(ResourceOperator):
+    r"""Resource class for the Identity gate.
+
+    Args:
+        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
+    Resources:
+        The Identity gate is treated as a free gate and thus it cannot be decomposed
+        further. Requesting the resources of this gate returns an empty list.
+
+    .. seealso:: :class:`~.Identity`
+
+    """
+
+    def __init__(self, wires=None):
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Identity gate is treated as a free gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate returns an empty list.
+
+        Returns:
+            list: empty list
+        """
+        return []
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Resources:
+            This operation is self-adjoint, so the resources of the adjoint operation is also an empty list.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Resources:
+            The Identity gate acts trivially when controlled. The resources of this operation are
+            the original (un-controlled) operation.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
+
+        Args:
+            z (int): the power that the operator is being raised to
+
+        Resources:
+            The Identity gate acts trivially when raised to a power. The resources of this
+            operation are the original operation.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]
+
+
+class ResourceGlobalPhase(ResourceOperator):
+    r"""Resource class for the GlobalPhase gate.
+
+    Args:
+        phi (TensorLike): the global phase
+        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
+    Resources:
+        The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+        further. Requesting the resources of this gate returns an empty list.
+
+    .. seealso:: :class:`~.GlobalPhase`
+
+    """
+
+    def __init__(self, wires=None):
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate returns an empty list.
+
+        Returns:
+            list: empty list
+        """
+        return []
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Resources:
+            The adjoint of a global phase operator changes the sign of the phase, thus
+            the resources of the adjoint operation is the original operation.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
+
+        Args:
+            z (int): the power that the operator is being raised to
+
+        Resources:
+            Taking arbitrary powers of a global phase produces a sum of global phases.
+            The resources simplify to just one total global phase operator.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]

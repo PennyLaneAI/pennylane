@@ -14,19 +14,19 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
-from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type, Optional, Hashable, Dict, Union
+from inspect import signature
+from typing import Callable, Dict, Hashable, List, Optional, Type, Union
 
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
-from pennylane.operation import classproperty
-
-from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.operation import classproperty
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 # pylint: disable=unused-argument
+
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
@@ -57,6 +57,10 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
         self._name = name or op_type.tracking_name(**self.params)
+
+    @property
+    def name(self):
+        return self._name
 
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))
@@ -91,7 +95,7 @@ def _make_hashable(d) -> tuple:
 
 
 class ResourceOperator(ABC):
-    r"""Abstract base class to represent quantum operators according to the 
+    r"""Abstract base class to represent quantum operators according to the
     information required for resource estimation.
     """
 
@@ -254,7 +258,9 @@ class ResourceOperator(ABC):
             _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys.union({"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"})
+            keys = cls.resource_keys.union(
+                {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
+            )
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
@@ -284,15 +290,15 @@ class ResourceOperator(ABC):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
-    
+
     def __and__(self, other):
         if isinstance(other, self.__class__):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     __radd__ = __add__
@@ -317,18 +323,18 @@ def _validate_signature(func: Callable, expected_args: set):
         func (Callable): function to match signature with
         expected_args (set): expected signature
     """
-    
+
     sig = signature(func)
     actual_args = set(sig.parameters)
 
-    if (extra_args := actual_args - expected_args):
+    if extra_args := actual_args - expected_args:
         raise ValueError(
             f"The function provided specifies addtional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
 
-    if (missing_args := expected_args - actual_args):
+    if missing_args := expected_args - actual_args:
         raise ValueError(
             f"The function is missing arguments ({missing_args}) which are expected. Please"
             + " update the function signature or modify the base class' `resource_keys` argument."
@@ -357,11 +363,11 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 class GateCount:
     """A class to represent a gate and the amount of times it was repeated."""
-    
+
     def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
         self.gate = gate
         self.count = count
-    
+
     def __mul__(self, other):
         if isinstance(other, int):
             return self.__class__(self.gate, self.count * other)
@@ -374,21 +380,30 @@ class GateCount:
 
     __rmul__ = __mul__
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, GateCount):
+            return False
+        return self.gate == other.gate and self.count == other.count
+
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"
 
 
 def resource_rep(
-    resource_op: Type[ResourceOperator], resource_params: Dict,
+    resource_op: Type[ResourceOperator],
+    resource_params: Dict = None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
 
     Args:
-        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify 
+        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify
         resource_params (Dict): The required set of parameters to specify the operator
 
     Returns:
         CompressedResourceOp: A compressed representation of a resource operator
     """
-    return resource_op.resource_rep(**resource_params)
+    if resource_params:
+        return resource_op.resource_rep(**resource_params)
+
+    return resource_op.resource_rep()  # don't need to provide empty dict
