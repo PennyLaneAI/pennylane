@@ -850,7 +850,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         qubit_mapping Optional[dict]:  the mapping from QASM 3.0 qubit names to Pennylane qubits.
 
     Returns:
-        function: a function created based on the QASM string that can be queued into a QNode.
+        context: the context resulting from the execution.
 
     >>> dev = device("default.qubit", wires=[0, 1])
     >>> @qml.qnode(dev)
@@ -872,4 +872,4 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
     context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
-    return context["callable"]
+    return context
