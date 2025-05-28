@@ -76,6 +76,12 @@ class TestConstructor:
         op_new = qml.pow(op, 2, lazy=False)
         qml.assert_equal(op_new, qml.Identity(op.wires))
 
+    def test_simplify_with_pow_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.pow method."""
+        op = Pow(qml.U2(1, 1, 0), z=1.23)
+        simplified_op = op.simplify()
+        qml.assert_equal(simplified_op, op)
+
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
