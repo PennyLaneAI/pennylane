@@ -14,7 +14,7 @@
 """
 Contains the batch dimension transform.
 """
-# pylint: disable=import-outside-toplevel
+
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -28,6 +28,7 @@ def _nested_stack(res):
     Given a list of identical nested tuple structures, stack the arrays at the leaves
     """
     # for some reason pylint thinks qml.numpy.builtins is a dict
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=no-member
     if not isinstance(res[0], (tuple, qml.numpy.builtins.SequenceBox)):
         return qml.math.stack(res)
@@ -56,7 +57,7 @@ def _split_operations(ops, params, split_indices, num_tapes):
         num_tapes (int): the number of new tapes to create, which is also equal to the batch size.
     """
     # for some reason pylint thinks "qml.ops" is a set
-    # pylint: disable=no-member
+
     new_ops = [[] for _ in range(num_tapes)]
     idx = 0
 
@@ -173,7 +174,7 @@ def batch_params(
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.30262974103192636
     """
-    # pylint: disable=protected-access
+
     params = tape.get_parameters(trainable_only=False)
     indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
 
