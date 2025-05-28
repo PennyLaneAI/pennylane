@@ -485,6 +485,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
   [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
 
+* Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
+  repository.
+  [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
+
 * `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
