@@ -162,10 +162,7 @@ class QasmInterpreter:
         # setup arguments
         args = []
         for arg in node.arguments:
-            if re.search("Literal", arg.__class__.__name__) is not None:
-                args.append(arg.value)
-            else:
-                args.append(self.retrieve_variable(arg.name, context))
+            args.append(self.evaluate_argument(arg, context))
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -246,7 +243,7 @@ class QasmInterpreter:
         return next, wires
 
     @staticmethod
-    def retrieve_variable(name: str, context: dict):
+    def evaluate_argument(arg: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
 
@@ -254,13 +251,15 @@ class QasmInterpreter:
             name (str): the name of the variable to retrieve.
             context (dict): the current context.
         """
-        if name in context["vars"]:
+        if re.search("Literal", arg.__class__.__name__) is not None:
+            return arg.value
+        elif arg.name in context["vars"]:
             # the context at this point should reflect the states of the
             # variables as evaluated in the correct (current) scope.
-            if context["vars"][name]["val"] is not None:
-                return context["vars"][name]["val"]
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        raise NameError(f"Undeclared variable {name} encountered in QASM.")
+            if context["vars"][arg.name]["val"] is not None:
+                return context["vars"][arg.name]["val"]
+            raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
+        raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
 
     @staticmethod
     def _require_wires(wires, context):
