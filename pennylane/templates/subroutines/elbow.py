@@ -26,8 +26,8 @@ from pennylane.wires import WiresLike
 class Elbow(Operation):
     r"""Elbow(wires)
 
-    The Elbow operator is a three-qubit gate equivalent to an AND, or Toffoli, gate that leverages extra information
-    about the target wire to enable more efficient circuit decompositions: the ``Elbow`` assumes the target qubit
+    The Elbow operator is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
+    about the target wire to enable more efficient circuit decompositions. The ``Elbow`` assumes the target qubit
     to be initialized in :math:`|0\rangle`, while the ``Adjoint(Elbow)`` assumes the target output to be :math:`|0\rangle`.
     For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
 
@@ -35,7 +35,7 @@ class Elbow(Operation):
 
         For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
         on the target wire when using ``Elbow`` or ``Adjoint(Elbow)``, respectively. Otherwise, the behavior could be
-        different from the expected AND.
+        different from the expected ``AND``.
 
     **Details:**
 
