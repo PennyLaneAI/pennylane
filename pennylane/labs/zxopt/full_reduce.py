@@ -24,7 +24,7 @@ from .zx_conversion import _tape2pyzx
 def full_reduce(tape):
     r"""
 
-    ZX-based T-gate reduction on an arbitrary PennyLane circuit.
+    ZX-based T gate reduction on an arbitrary PennyLane circuit.
 
     This implements the full `pipeline for T gate optimizations in pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
 
@@ -40,7 +40,7 @@ def full_reduce(tape):
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
 
     Returns:
-        qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
+        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
 
     .. seealso:: :func:`~full_optimize`
 

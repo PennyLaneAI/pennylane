@@ -24,7 +24,7 @@ from .zx_conversion import _tape2pyzx
 def full_optimize(tape):
     r"""
 
-    Full optimization pipeline applying TODD and ZX-based T-gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
+    Full optimization pipeline applying TODD and ZX-based T gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     This function applies `zx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ and is basically a combination of :func:`~todd` and `~full_reduce`.
 
@@ -34,7 +34,7 @@ def full_optimize(tape):
         tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
 
     Returns:
-        qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
+        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
 
     .. seealso:: :func:`~full_reduce`, :func:`~todd`
 

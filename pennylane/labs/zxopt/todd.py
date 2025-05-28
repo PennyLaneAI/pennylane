@@ -35,7 +35,7 @@ def todd(tape, pre_optimize=True):
         pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is ``True``.
 
     Returns:
-        qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
+        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
 
     .. seealso:: :func:`~full_reduce`, :func:`~full_optimize`, :func:`~basic_optimization`
 

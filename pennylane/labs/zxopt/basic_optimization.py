@@ -29,7 +29,7 @@ def basic_optimization(tape):
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
 
     Returns:
-        qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
+        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
 
     .. seealso:: :func:`~full_reduce` (arbitrary circuits), :func:`~full_optimize` (`(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits)
 
