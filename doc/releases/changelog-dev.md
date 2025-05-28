@@ -483,7 +483,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
   be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
-  [(#)]()
+  [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
 
 * `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
