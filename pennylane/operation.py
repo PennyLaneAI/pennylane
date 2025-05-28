@@ -1541,7 +1541,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
         if z == 0:
             return []
-        if isinstance(z, int):
+        if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
                 return [qml.apply(self) for _ in range(z)]
             return [copy.copy(self) for _ in range(z)]
