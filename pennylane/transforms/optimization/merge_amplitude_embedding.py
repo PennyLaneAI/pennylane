@@ -50,14 +50,21 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             self._env = {}
             self.dynamic_wires_encountered = False
             self.previous_ops = []
-            self.state = {"visited_wires": set()}
+            # * visited_wires (set): tracks all wires we have encountered so far.
+            # * dynamic_wires_found (bool): True if we have encountered any non-AmplitudeEmbedding
+            #   ops that have dynamic wires so far.
+            # * ops_found (bool): True if we have encountered any non-AmplitudeEmbedding ops so far.
+            self.state = {"visited_wires": set(), "dynamic_wires_found": False, "ops_found": False}
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
 
         def setup(self) -> None:
             """Setup the interpreter for a new evaluation."""
-            self.dynamic_wires_encountered = False
             self.previous_ops = []
             self.input_wires, self.input_vectors, self.input_batch_size = [], [], []
+
+        def cleanup(self) -> None:
+            """Clean up the interpreter after evaluation."""
+            self.state = {"visited_wires": set(), "dynamic_wires_found": False, "ops_found": False}
 
         def interpret_operation(self, op: Operator) -> None:
             """Interpret a PennyLane operation instance.
@@ -84,20 +91,27 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                     if self.input_wires:
                         self._merge_and_insert_at_the_start()
                     self.interpret_all_previous_ops()
-                    self.dynamic_wires_encountered = True
+                    self.state["dynamic_wires_found"] = True
 
+                self.state["ops_found"] = True
                 self.previous_ops.append(op)
                 self.state["visited_wires"] = self.state["visited_wires"].union(set(op.wires))
                 return
 
-            if self.dynamic_wires_encountered:
+            if self.state["dynamic_wires_found"]:
                 raise TransformError(
                     "Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires as it "
                     "is indeterminable if the wires overlap."
                 )
 
+            if self.state["ops_found"] and any(is_abstract(w) for w in op.wires):
+                raise TransformError(
+                    "Cannot apply qml.AmplitudeEmbedding with dynamic wires after other operators "
+                    "as it is indeterminable if the wires overlap."
+                )
+
             if len(self.state["visited_wires"].intersection(set(op.wires))) > 0:
-                raise DeviceError(
+                raise TransformError(
                     "qml.AmplitudeEmbedding cannot be applied on wires already used by other operations."
                 )
 
@@ -221,10 +235,19 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         new_consts_slices = []
         end_const_ind = len(jaxpr_branches)
 
-        # Store seen wires before we begin to process the branches
-        # (create copies as to not accidently mutate the original state)
+        # Store state before we begin to process the branches
+        # (create copies as to not accidently mutate the original state).
+        # We cannot just copy self.state because a shallow copy would not
+        # create a copy of `visited_wires`, which is a set.
+        # We cannot use deepcopy as `visited_wires` may have tracers inside,
+        # which have hashes specific to the instance. Copying these will cause
+        # the dynamic wires in the original and copy to be different.
         initial_wires = copy(self.state["visited_wires"])
-        visited_wires = copy(initial_wires)
+        curr_wires = copy(self.state["visited_wires"])
+        initial_dynamic_wires_found = self.state["dynamic_wires_found"]
+        curr_dynamic_wires_found = self.state["dynamic_wires_found"]
+        initial_ops_found = self.state["ops_found"]
+        curr_ops_found = self.state["ops_found"]
 
         for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
             consts = invals[const_slice]
@@ -234,14 +257,20 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             else:
                 new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
-                # Update wires we've seen so far so collisions with
-                # newly seen wires from the branches continue to be
+                # Update state so far so collisions with
+                # newly seen states from the branches continue to be
                 # detected after the cond
-                visited_wires |= self.state["visited_wires"]
+                curr_wires |= self.state["visited_wires"]
+                curr_dynamic_wires_found = self.state["dynamic_wires_found"]
+                curr_ops_found = self.state["ops_found"]
 
-                # Reset visited wires for the next branch so we don't get false positive collisions
-                # (copy so if state mutates we preserved true initial wires)
-                self.state["visited_wires"] = copy(initial_wires)
+                # Reset state for the next branch so we don't get false positive collisions
+                # (copy so if state mutates we preserved true initial state)
+                self.state = {
+                    "visited_wires": copy(initial_wires),
+                    "dynamic_wires_found": initial_dynamic_wires_found,
+                    "ops_found": initial_ops_found,
+                }
 
                 new_jaxprs.append(new_jaxpr.jaxpr)
                 new_consts.extend(new_jaxpr.consts)
@@ -250,8 +279,12 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
                 )
                 end_const_ind += len(new_jaxpr.consts)
 
-        # Reset visited wires to all wires encountered in the cond
-        self.state["visited_wires"] = visited_wires
+        # Reset state to all updates from all branches in the cond
+        self.state = {
+            "visited_wires": curr_wires,
+            "dynamic_wires_found": curr_dynamic_wires_found,
+            "ops_found": curr_ops_found,
+        }
 
         new_args_slice = slice(end_const_ind, None)
         return cond_prim.bind(
@@ -268,6 +301,9 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
         # Make sure to record that we have visited the wires on this measurement
         # in order to be able to detect potential wire collisions with future AE gates
         self.state["visited_wires"] = self.state["visited_wires"].union(set(invals))
+        self.state["dynamic_wires_found"] = any(is_abstract(w) for w in invals)
+        self.state["ops_found"] = True
+
         # pylint: disable=protected-access
         if len(self.input_wires) > 0:
             self._merge_and_insert_at_the_start()
