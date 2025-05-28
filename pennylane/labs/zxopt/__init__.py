@@ -26,7 +26,7 @@ Circuit optimization passes using ZX calculus (i.e., `pyzx <https://github.com/z
     ~full_reduce
     ~todd
     ~basic_optimization
-    
+
 
 
 """
