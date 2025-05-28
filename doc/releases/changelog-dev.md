@@ -331,6 +331,10 @@
 * Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
 
+* Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc.pauli_tracker` module,
+  accessible via the `commute_clifford_op` function.
+  [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
+
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
