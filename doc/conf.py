@@ -108,7 +108,7 @@ project = "PennyLane"
 copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
-add_module_names = False
+add_module_names = True
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
