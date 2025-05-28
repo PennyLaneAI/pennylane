@@ -28,7 +28,7 @@ class TestElbow:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.Elbow(wires=[0, 1, 2])
+        op = qml.Elbow(wires=[0, "a", 2])
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
@@ -94,7 +94,7 @@ class TestElbow:
 
     def test_compute_matrix(self):
 
-        matrix = qml.Elbow([0, 1, 2]).compute_matrix()
+        matrix = qml.Elbow([0, 1, "v"]).compute_matrix()
         matrix_target = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
