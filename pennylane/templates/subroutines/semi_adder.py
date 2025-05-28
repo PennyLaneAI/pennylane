@@ -129,15 +129,13 @@ class SemiAdder(Operation):
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
         work_wires = qml.wires.Wires(work_wires)
-        num_work_wires = len(work_wires)
 
         if len(work_wires) != len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
-        else:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        if any(wire in work_wires for wire in x_wires):
+            raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        if any(wire in work_wires for wire in y_wires):
+            raise ValueError("None of the wires in work_wires should be included in y_wires.")
         if any(wire in y_wires for wire in x_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
 
@@ -219,6 +217,8 @@ class SemiAdder(Operation):
                     [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
                 )
             else:
+                # If the number of qubits in |x> is smaller than |y>, we can conceptually complete the |x> state
+                # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the left operator.
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], y_wires_pl[i]]))
                 op_list.append(qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
@@ -234,6 +234,8 @@ class SemiAdder(Operation):
                     [work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]]
                 )
             else:
+                # If the number of qubits in |x> is smaller than |y>, we can conceptually complete the |x> state
+                # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the right operator.
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
                 op_list.append(
                     qml.adjoint(qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
@@ -256,7 +258,7 @@ def _semiadder_resources(num_y_wires):
 
 
 @register_resources(_semiadder_resources)
-def _semiadder(x_wires, y_wires, work_wires, **kwargs):
+def _semiadder(x_wires, y_wires, work_wires, **_):
     x_wires_pl = x_wires[::-1][: len(y_wires)]
     y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
