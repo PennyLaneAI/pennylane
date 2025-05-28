@@ -204,7 +204,7 @@ class TestInterpreter:
         # parse the QASM program
         ast = parse(
             """
-            float theta;
+            float theta = 0.1;
             rx(theta) q0;
             """,
             permissive=True,
@@ -212,7 +212,7 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Attempt to reference wires that have not been declared in uninit-qubit",
+            match="Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-qubit"})
 

@@ -147,8 +147,6 @@ class QasmInterpreter:
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
-        self._require_wires(context)
-
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
@@ -182,6 +180,8 @@ class QasmInterpreter:
             )
             for q in range(len(node.qubits))
         ]
+
+        self._require_wires(wires, context)
 
         if context["wire_map"] is not None:
             wires = list(map(lambda wire: context["wire_map"][wire], wires))
@@ -263,17 +263,22 @@ class QasmInterpreter:
         raise NameError(f"Undeclared variable {name} encountered in QASM.")
 
     @staticmethod
-    def _require_wires(context):
+    def _require_wires(wires, context):
         """
         Simple helper that checks if we have wires in the current context.
 
         Args:
             context (dict): The current context.
+            wires (list): The wires that are required.
 
         Raises:
             NameError: If the context is missing a wire.
         """
-        if len(context["wires"]) == 0:
+        missing_wires = []
+        for wire in wires:
+            if wire not in context["wires"]:
+                missing_wires.append(wire)
+        if len(missing_wires) > 0:
             raise NameError(
-                f"Attempt to reference wires that have not been declared in {context['name']}"
+                f"Attempt to reference wire(s): {[w for w in missing_wires]} that have not been declared in {context['name']}"
             )
