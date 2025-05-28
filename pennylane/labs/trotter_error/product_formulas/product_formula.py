@@ -100,11 +100,15 @@ class ProductFormula:
         if self.coeffs != other.coeffs:
             return False
 
+        if self.timestep != other.timestep:
+            return False
+
         return self.exponent == other.exponent
 
     def __hash__(self) -> int:
         terms = tuple(self.terms)
-        return hash((terms, self.exponent))
+        coeffs = tuple(self.coeffs)
+        return hash((terms, coeffs, self.timestep, self.exponent))
 
     def __matmul__(self, other: ProductFormula) -> ProductFormula:
         return ProductFormula([self, other], label=f"{self.label}@{other.label}")

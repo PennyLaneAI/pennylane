@@ -66,7 +66,7 @@ def _bch_expansion(
 
 
 def _bch(
-    fragments: Sequence[Fragment],
+    fragments: Sequence[Hashable],
     coeffs: Sequence[complex],
     term_order: Dict[Hashable, int],
     order: int,
