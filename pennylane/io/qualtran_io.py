@@ -16,7 +16,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 """
 from collections import defaultdict
 from functools import cached_property, lru_cache, singledispatch
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 
@@ -957,8 +957,9 @@ class FromBloq(Operation):
         return matrix
 
 
-def split_qubits(registers, qubits):  # type: ignore[type-var]
-    """Splits the flat list of qubits into a dictionary of appropriately shaped qubit arrays."""
+def _split_qubits(registers, qubits):  # type: ignore[type-var]
+    """Function from the Qualtran-Cirq interop module that splits the flat list of qubits into
+    a dictionary of appropriately shaped qubit arrays."""
 
     qubit_regs = {}
     base = 0
@@ -975,7 +976,8 @@ def _ensure_in_reg_exists(
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
 ) -> None:
-    """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    """Modified function from the Qualtran-Cirq interop module that takes care of qubit allocations,
+    split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
@@ -1041,6 +1043,7 @@ def _ensure_in_reg_exists(
 def _gather_input_soqs(
     bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar  # type: ignore[type-var]
 ):  # type: ignore[type-var]
+    """Modified function from Qualtran-Cirq interop module that collects input Soquets."""
     qvars_in = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[qt.Soquet] = []
@@ -1052,6 +1055,7 @@ def _gather_input_soqs(
 
 
 def _inherit_from_bloq(cls):
+    """Decorator for ToBloq to import qualtran only when qualtran is available."""
     if qualtran:
 
         class ToBloq(qt.Bloq):
@@ -1060,6 +1064,11 @@ def _inherit_from_bloq(cls):
             """
 
             def __init__(self, op, **kwargs):
+                from pennylane.workflow.qnode import QNode
+
+                if not isinstance(op, Operation) and not isinstance(op, QNode):
+                    raise TypeError(f"Input must be either an instance of {Operation} or {QNode}.")
+
                 self.op = op
                 self._kwargs = kwargs
                 super().__init__()
@@ -1136,7 +1145,7 @@ def _inherit_from_bloq(cls):
                         all_op_quregs = {
                             k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
                             for i, (k, v) in enumerate(
-                                split_qubits(bloq.signature, op.wires).items()
+                                _split_qubits(bloq.signature, op.wires).items()
                             )
                         }
 

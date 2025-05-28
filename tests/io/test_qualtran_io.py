@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_to_pl_op
+from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -337,4 +337,70 @@ class TestFromBloq:
 
 class TestToBloq:
     """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
-    pass
+
+    def test_to_bloq_init(self):
+        """Tests that ToBloq's __init__() functions as intended"""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+
+        assert qml.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
+        assert qml.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.ToBloq(qml.H(0)).__str__() == "PLHadamard"
+        with pytest.raises(TypeError, match="Input must be either an instance of"):
+            qml.ToBloq("123")
+
+    def test_to_bloq(self):
+        """Tests that to_bloq functions as intended"""
+
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+
+        assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
+        assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.to_bloq(qml.Hadamard(0), False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+
+    def test_map_to_bloq(self):
+        """Tests that _map_to_bloq produces the correct Qualtran equivalent"""
+        from qualtran.bloqs.basic_gates import (
+            CZ,
+            CYGate,
+            GlobalPhase,
+            Identity,
+            Rx,
+            Ry,
+            Rz,
+            SGate,
+            TGate,
+            TwoBitCSwap,
+            XGate,
+            YGate,
+            ZGate,
+        )
+
+        to_bloq = _map_to_bloq
+
+        assert GlobalPhase(exponent=1) == to_bloq()(
+            qml.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
+        )
+        assert Identity() == to_bloq()(qml.Identity(0))
+        assert Ry(angle=np.pi / 2) == to_bloq()(qml.RY(np.pi / 2, 0))
+        assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
+        assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
+        assert SGate() == to_bloq()(qml.S(0))
+        assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
+        assert TGate() == to_bloq()(qml.T(0))
+        assert XGate() == to_bloq()(qml.PauliX(0))
+        assert YGate() == to_bloq()(qml.PauliY(0))
+        assert CYGate() == to_bloq()(qml.CY([0, 1]))
+        assert ZGate() == to_bloq()(qml.PauliZ(0))
+        assert CZ() == to_bloq()(qml.CZ([0, 1]))
