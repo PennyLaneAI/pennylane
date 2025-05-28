@@ -1,85 +1,40 @@
-from dataclasses import dataclass
-from typing import Callable
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
-import xdsl
-from catalyst.compiler import _quantum_opt
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""This file contains the implementation of the decompose transform,
+written using xDSL."""
+
+from dataclasses import dataclass
+from typing import Iterable
+
 from xdsl import context, passes, pattern_rewriter
-from xdsl.context import Context
-from xdsl.dialects import arith, builtin, func, scf, tensor, transform
+from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
 from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
 from xdsl.rewriter import InsertPoint
-from xdsl.utils import parse_pipeline
-from typing import Iterable
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.quantum_dialect import (
     CustomOp,
     ExtractOp,
     GlobalPhaseOp,
-    QuantumDialect,
     QubitType,
 )
 from pennylane.operation import Operator
 
-ctx = Context(allow_unregistered=True)
-ctx.load_dialect(arith.Arith)
-ctx.load_dialect(builtin.Builtin)
-ctx.load_dialect(func.Func)
-ctx.load_dialect(scf.Scf)
-ctx.load_dialect(tensor.Tensor)
-ctx.load_dialect(transform.Transform)
-ctx.load_dialect(QuantumDialect)
+from ..quantum_dialect import CustomOp
 
-
-@dataclass(frozen=True)
-# All passes inherit from passes.ModulePass
-class PrintModule(passes.ModulePass):
-    """A simple pass that prints the module."""
-
-    # All passes require a name field
-    name = "print"
-
-    # All passes require an apply method with this signature.
-    def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        """Print the module."""
-        print("Hello from inside the pass\n", module)
-
-
-@qml.qjit(target="mlir")
-@qml.qnode(qml.device("lightning.qubit", wires=3))
-def circuit():
-    """A simple circuit to test the pass."""
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RX(0.5, wires=1)
-    qml.RY(0.5, wires=2)
-    qml.RZ(0.5, wires=0)
-    qml.Rot(0.5, 0.5, 0.5, wires=1)
-    return qml.state()
-
-
-mlir_string = circuit.mlir
-print(mlir_string)
-
-generic = _quantum_opt(
-    ("--pass-pipeline", "builtin.module(canonicalize)"), "-mlir-print-op-generic", stdin=mlir_string
-)
-m = xdsl.parser.Parser(ctx, generic).parse_module()
-print(m)
-
-
-available_passes: dict[str, Callable[[], type[passes.ModulePass]]] = {}
-available_passes["print"] = lambda: PrintModule
-user_requested_pass = "print"  # just for example
-requested_by_user = passes.PipelinePass.build_pipeline_tuples(
-    available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
-)
-
-schedule = tuple(pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user)
-pipeline = passes.PipelinePass(schedule)
-pipeline.apply(ctx, m)
-
+# This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 from_str_to_PL_gate = {
     "RX": qml.RX,
     "RY": qml.RY,
@@ -107,28 +62,32 @@ def resolve_constant_params(op: Operator):
 
     while hasattr(op, "owner"):
         op = op.owner
+
     if isinstance(op, ConstantOp):
         val = op.value
+
         if isinstance(val, (FloatAttr, IntegerAttr)):
             return val.value.data
+
     if isinstance(op, ExtractOp):
         return op.idx_attr.parameters[0].data
+
     if isinstance(op, CustomOp):
+
         raise NotImplementedError("Cannot resolve params from CustomOp")
+
     raise NotImplementedError(f"Cannot resolve params from {op}")
 
 
 def resolve_constant_wire(operand):
     """Resolve the integer wire index that this operand originates from."""
 
-    # Traverse to producing op if this is a result
     while hasattr(operand, "owner"):
         result_index = operand.index
-        operand = operand.owner  # the producing Operation
+        operand = operand.owner
 
-        # Since GlobalPhaseOp does not have a wire
         if isinstance(operand, GlobalPhaseOp):
-            return
+            return None
 
         if isinstance(operand, ConstantOp):
             val = operand.value
@@ -139,15 +98,13 @@ def resolve_constant_wire(operand):
             return operand.idx_attr.parameters[0].data
 
         elif isinstance(operand, CustomOp):
-            # CustomOp result[i] is assumed to correspond to in_qubits[i]
-            # so we use the index of the result to retrieve the right input
             if result_index < len(operand.in_qubits):
                 input_operand = operand.in_qubits[result_index]
                 return resolve_constant_wire(input_operand)
-            else:
-                raise IndexError(
-                    f"Result index {result_index} out of bounds for CustomOp with {len(operand.in_qubits)} in_qubits."
-                )
+
+            raise IndexError(
+                f"Result index {result_index} out of bounds for CustomOp with {len(operand.in_qubits)} in_qubits."
+            )
 
         else:
             raise NotImplementedError(f"Cannot resolve wires from operation type: {type(operand)}")
@@ -184,12 +141,12 @@ def reconstruct_gate(op: CustomOp):
     """Reconstruct the gate from the operation."""
     gate_name = get_op_name(op)
     parameters = get_parameters(op)
-    wires = get_wires(op)
-    wires = flatten(wires)
+    wires = flatten(get_wires(op))
     return resolve_gate(gate_name)(*parameters, wires=wires)
 
 
-class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
+# pylint: disable=too-few-public-methods
+class DecompositionTransform(pattern_rewriter.RewritePattern):
     """A pattern that rewrites CustomOps to their decomposition."""
 
     def __init__(self, module):
@@ -217,7 +174,6 @@ class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
                 parameters_xdsl = []
                 wires_xdsl = []
 
-                # We convert the parameters to xDSL constants
                 for param in qml_op.parameters:
                     val = param.item() if hasattr(param, "item") else param
                     if isinstance(val, int):
@@ -231,7 +187,6 @@ class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
                     rewriter.insert_op(const_op, InsertPoint.before(op))
                     parameters_xdsl.append(const_op.result)
 
-                # We convert the wires to xDSL constants
                 for wire in qml_op.wires:
                     wire_attr = IntegerAttr(wire, IntegerType(64))
                     wire_const_op = ConstantOp(value=wire_attr)
@@ -259,7 +214,6 @@ class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
 
                     custom_op = CustomOp(
                         operands=(*parameters_xdsl, *wires_xdsl, None, None),
-                        # operands=(angle_const_op.result, wire_const_op.result, None, None),
                         properties={
                             "gate_name": StringAttr(qml_op.name),
                             # Do we need to pass more properties here?
@@ -283,28 +237,14 @@ class DummyDecompositionTransform(pattern_rewriter.RewritePattern):
 
 
 @dataclass(frozen=True)
-class DummyDecompositionTransformPass(passes.ModulePass):
-    """A pass that applies the DummyTransform pattern to a module."""
+class DecompositionTransformPass(passes.ModulePass):
+    """A pass that applies the Transform pattern to a module."""
 
-    name = "dummy-decomposition-transform"
+    name = "decomposition-transform"
 
-    def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        pattern = DummyDecompositionTransform(module)
+    # pylint: disable=arguments-renamed,no-self-use, arguments-differ
+    def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+        pattern = DecompositionTransform(module)
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([pattern])
         ).rewrite_module(module)
-
-
-print("\n\n\n\n\n\n\n\n")
-print("Running the pass")
-
-
-available_passes["dummy-decomposition-transform"] = lambda: DummyDecompositionTransformPass
-user_requested_pass = "dummy-decomposition-transform"
-requested_by_user = passes.PipelinePass.build_pipeline_tuples(
-    available_passes, parse_pipeline.parse_pipeline(user_requested_pass)
-)
-schedule = tuple(pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user)
-pipeline = passes.PipelinePass(schedule)
-pipeline.apply(ctx, m)
-print(m)
