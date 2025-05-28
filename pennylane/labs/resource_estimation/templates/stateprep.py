@@ -12,18 +12,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane state preparation templates."""
-# import math
-# from collections import defaultdict
-# from typing import Dict
+import math
+from collections import defaultdict
+from typing import Dict
 
-# import pennylane as qml
-# from pennylane.labs import resource_estimation as re
-# from pennylane.labs.resource_estimation.resource_container import CompressedResourceOp
-# from pennylane.labs.resource_estimation.resource_operator import ResourceOperator, GateCount, AddQubits, CutQubits
-# from pennylane.labs.resource_estimation.qubit_manager import clean_qubits, tight_qubit_budget
-# from pennylane.operation import Operation
+import pennylane as qml
+from pennylane.labs import resource_estimation as re
+from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.resource_operator import (
+    ResourceOperator, 
+    GateCount,
+    resource_rep,
+    CompressedResourceOp,
+)
 
-# # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
+# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
+
+
+class ResourceSumOfSlatersStatePrep(ResourceOperator):
+    r"""Resource class for preparing states using the Sum of Slaters method"""
+    resource_keys = {"num_wires", "num_slaters"}
+
+    def __init__(self, num_wires, num_slaters, wires=None):
+        self.num_wires = num_wires
+        self.num_slaters = num_slaters
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        return {
+            "num_wires": self.num_wires,
+            "num_slaters": self.num_slaters,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_wires, num_slaters):
+        return CompressedResourceOp(
+            cls,
+            {
+                "num_wires": num_wires,
+                "num_slaters": num_slaters,
+            },
+        )
+
+    @staticmethod
+    def sos_toffoli_cost(D):
+        return math.ceil((2 * math.log2(D) - 2)*D + 2**(math.log2(D)+1) + D)
+    
+    @staticmethod
+    def sos_qubit_cost(D):
+        return math.ceil(5*math.log2(D)-3)
+
+    @classmethod
+    def default_resource_decomp(cls, num_wires, num_slaters, **kwargs):
+        toffoli = resource_rep(re.ResourceToffoli)
+        aux_wires = cls.sos_qubit_cost(num_slaters)
+        num_toffolis = cls.sos_toffoli_cost(num_slaters)
+
+        gate_lst = [
+            GrabWires(aux_wires),
+            GateCount(toffoli, num_toffolis),
+            FreeWires(aux_wires),
+        ]
+        return gate_lst
 
 
 # class ResourceStatePrep(ResourceOperator):
