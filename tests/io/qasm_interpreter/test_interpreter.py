@@ -50,6 +50,30 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_nested_modifiers(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            qubit q2;
+            ctrl @ ctrl @ x q2, q1, q0;
+            inv @ ctrl @ x q0, q1;
+            pow(2) @ ctrl @ x q1, q0;
+            """,
+            permissive=True,
+        )
+
+        # execute
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().generic_visit(ast, context={"name": "nested-modifiers"})
+
+        assert q.queue == [
+            Toffoli(wires=['q2', 'q1', 'q0']),
+            Adjoint(CNOT(wires=['q0', 'q1'])),
+            (CNOT(wires=['q1', 'q0']))**2
+        ]
+
     def test_integer_qubit_mappings(self):
         # parse the QASM program
         ast = parse(
@@ -67,7 +91,7 @@ class TestInterpreter:
 
         dev = device("default.qubit", wires=[0, 1, 2])
 
-        # execute the callables
+        # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().generic_visit(
                 ast,
@@ -96,7 +120,7 @@ class TestInterpreter:
 
         dev = device("default.qubit", wires=["0q", "1q", "2q"])
 
-        # execute the callables
+        # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().generic_visit(
                 ast,

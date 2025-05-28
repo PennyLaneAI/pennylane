@@ -195,18 +195,20 @@ class QasmInterpreter(QASMVisitor):
         ]
 
         if len(node.modifiers) > 0:
-            if node.modifiers[0].modifier.name == "ctrl":
-                prev = self.apply_modifier(
-                    node.modifiers[0], gate(*args, wires=wires[1:]), context, wires
+            num_control = sum(mod.modifier.name == "ctrl" for mod in node.modifiers)
+            op_wires = wires[num_control:]
+            control_wires = wires[:num_control]
+            if node.modifiers[-1].modifier.name == "ctrl":
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
                 )
-                wires = wires[1:]
             else:
-                prev = self.apply_modifier(
-                    node.modifiers[0], gate(*args, wires=wires), context, wires
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=wires), context, wires
                 )
 
-            for mod in node.modifiers[1:]:
-                self.apply_modifier(mod, prev, context, wires)
+            for mod in node.modifiers[::-1][1:]:
+                prev, wires = self.apply_modifier(mod, prev, context, wires)
         else:
             gate(*args, wires=wires)
 
@@ -224,16 +226,20 @@ class QasmInterpreter(QASMVisitor):
         # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
         assert mod.modifier.name in ("inv", "pow", "ctrl")
+        next = None
 
         if mod.modifier.name == "inv":
-            ops.adjoint(previous)
+            next = ops.adjoint(previous)
         elif mod.modifier.name == "pow":
             if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                ops.pow(previous, z=mod.argument.value)
+                next = ops.pow(previous, z=mod.argument.value)
             elif "vars" in context and mod.argument.name in context["vars"]:
-                ops.pow(previous, z=context["vars"][mod.argument.name]["val"])
+                next = ops.pow(previous, z=context["vars"][mod.argument.name]["val"])
         elif mod.modifier.name == "ctrl":
-            ops.ctrl(previous, control=wires[0])
+            next = ops.ctrl(previous, control=wires[-1])
+            wires = wires[:-1]
+
+        return next, wires
 
     @staticmethod
     def retrieve_variable(name: str, context: dict):
