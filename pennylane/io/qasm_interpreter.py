@@ -280,5 +280,5 @@ class QasmInterpreter:
                 missing_wires.append(wire)
         if len(missing_wires) > 0:
             raise NameError(
-                f"Attempt to reference wire(s): {[w for w in missing_wires]} that have not been declared in {context['name']}"
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
             )
