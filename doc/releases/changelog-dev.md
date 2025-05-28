@@ -559,6 +559,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The `Operator.pow` method has been fixed to raise to the power of 2 the qutrit operators `~.TShift`, `~.TClock`, and `~.TAdd`.
+  [(#7505)](https://github.com/PennyLaneAI/pennylane/pull/7505)
+
 * The documentation of `qml.pulse.drive` has been updated and corrected.
   [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
 
