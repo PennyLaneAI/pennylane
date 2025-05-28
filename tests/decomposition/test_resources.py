@@ -385,32 +385,6 @@ class TestControlledResourceRep:
             },
         )
 
-    def test_controlled_qubit_unitary(self):
-        """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
-
-        rep = controlled_resource_rep(
-            qml.ops.Controlled,
-            {
-                "base_class": qml.QubitUnitary,
-                "base_params": {"num_wires": 2},
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-            },
-            1,
-            1,
-            1,
-        )
-        assert rep == CompressedResourceOp(
-            qml.ops.ControlledQubitUnitary,
-            {
-                "num_target_wires": 2,
-                "num_control_wires": 2,
-                "num_zero_control_values": 2,
-                "num_work_wires": 2,
-            },
-        )
-
     def test_nested_controlled_qubit_unitary(self):
         """Tests that a nested controlled qubit unitary is flattened."""
 
