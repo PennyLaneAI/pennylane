@@ -253,7 +253,7 @@ class QasmInterpreter:
         """
         if re.search("Literal", arg.__class__.__name__) is not None:
             return arg.value
-        elif arg.name in context["vars"]:
+        if arg.name in context["vars"]:
             # the context at this point should reflect the states of the
             # variables as evaluated in the correct (current) scope.
             if context["vars"][arg.name]["val"] is not None:
