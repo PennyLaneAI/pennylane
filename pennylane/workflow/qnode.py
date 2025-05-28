@@ -897,12 +897,12 @@ class QNode:
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         # Check for conflicting shots configuration
         if "shots" in kwargs and qml.set_shots in self.transform_program:
-                warnings.warn(
-                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                    "The transform will take precedence over 'shots='",
-                    UserWarning,
-                    stacklevel=2,
-                )
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over 'shots='",
+                UserWarning,
+                stacklevel=2,
+            )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 
