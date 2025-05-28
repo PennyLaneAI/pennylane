@@ -23,7 +23,6 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import concurrency
-from pennylane.data.base._lazy_modules import h5py
 from pennylane.labs.vibrational.christiansen_utils import _read_data, _write_data
 from pennylane.qchem import VibrationalPES, localize_normal_modes, optimize_geometry
 from pennylane.qchem.vibrational.vibrational_class import (
