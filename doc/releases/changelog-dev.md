@@ -18,7 +18,7 @@
   @qml.qnode(dev)
   def my_circuit():
       from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;")
-      return qml.expval(qml.Z(0))
+      return qml.expval(qml.Z('q0'))
   ```
 
   ```pycon
