@@ -896,8 +896,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         # Check for conflicting shots configuration
-        if "shots" in kwargs:
-            if qml.set_shots in self.transform_program:
+        if "shots" in kwargs and qml.set_shots in self.transform_program:
                 warnings.warn(
                     "Both 'shots=' parameter and 'set_shots' transform are specified. "
                     "The transform will take precedence over 'shots='",
