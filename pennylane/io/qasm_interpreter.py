@@ -194,14 +194,13 @@ class QasmInterpreter:
 
         if len(node.modifiers) > 0:
             num_control = sum(
-                mod.modifier.name == "ctrl" or mod.modifier.name == "negctrl"
+                "ctrl" in mod.modifier.name
                 for mod in node.modifiers
             )
             op_wires = wires[num_control:]
             control_wires = wires[:num_control]
             if (
-                node.modifiers[-1].modifier.name == "ctrl"
-                or node.modifiers[-1].modifier.name == "negctrl"
+                "ctrl" in node.modifiers[-1].modifier.name
             ):
                 prev, wires = self.apply_modifier(
                     node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
