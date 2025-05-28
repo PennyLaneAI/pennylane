@@ -352,3 +352,21 @@ class TestOfflineCorrection:
             x = 1
             z = 1
             _ = _apply_measurement_correction_rule(x, z, obs[0])
+
+        with pytest.raises(
+            NotImplementedError, match="Not all gate operations in the tape are supported."
+        ):
+            script = qml.tape.QuantumScript(
+                ops=[qml.RX(0.1, wires=[0])], measurements=[qml.sample(qml.X(0))], shots=10
+            )
+            mid_res = [0, 1, 1, 0]
+            _ = get_byproduct_corrections(script, mid_res)
+
+        with pytest.raises(
+            ValueError, match="The mid-measure value should be either 0 or 1."
+        ):
+            script = qml.tape.QuantumScript(
+                ops=[qml.H(0)], measurements=[qml.sample(qml.X(0))], shots=10
+            )
+            mid_res = [2, 1, 1, 2]
+            _ = get_byproduct_corrections(script, mid_res)
