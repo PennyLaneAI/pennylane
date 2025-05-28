@@ -184,7 +184,7 @@ class QasmInterpreter(QASMVisitor):
                         else node.qubits[q].name.name
                     )
                 ]
-                if "qubit_mapping" in context
+                if context["qubit_mapping"] is not None
                 else (
                     node.qubits[q].name
                     if isinstance(node.qubits[q].name, str)

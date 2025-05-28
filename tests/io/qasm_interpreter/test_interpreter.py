@@ -68,7 +68,7 @@ class TestInterpreter:
 
         # execute
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "nested-modifiers"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "nested-modifiers"})
         assert q.queue == [
             Toffoli(wires=['q2', 'q1', 'q0']),
             Adjoint(CNOT(wires=['q0', 'q1'])),
@@ -150,7 +150,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "parameterized-gate"})
 
         assert q.queue[0] == PowOperation(RX(0.2, wires=["q0"]), 2)
 
@@ -169,7 +169,7 @@ class TestInterpreter:
             NameError,
             match="Undeclared variable phi encountered in QASM.",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "name-error"})
 
     def test_unsupported_node_type_raises(self):
 
@@ -189,7 +189,7 @@ class TestInterpreter:
             NotImplementedError,
             match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "unsupported-error"})
 
     def test_no_qubits(self):
 
@@ -206,7 +206,7 @@ class TestInterpreter:
             NameError,
             match="Attempt to reference wires that have not been declared in uninit-qubit",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "uninit-qubit"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
 
@@ -222,7 +222,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
-            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-gate"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "unsupported-gate"})
 
     def test_missing_param(self):
 
@@ -239,7 +239,7 @@ class TestInterpreter:
         with pytest.raises(
             TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "missing-param"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "missing-param"})
 
     def test_uninitialized_var(self):
 
@@ -254,7 +254,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter().generic_visit(ast, context={"name": "uninit-param"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "uninit-param"})
 
     def test_parses_simple_qasm(self):
 
@@ -277,7 +277,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "gates"})
 
         assert q.queue == [
             PauliX("q0"),
@@ -309,7 +309,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "two-qubit-gates"})
 
         assert q.queue == [
             CH(wires=["q0", "q1"]),
@@ -339,7 +339,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "param-two-qubit-gates"})
 
         assert q.queue == [
             ControlledPhaseShift(0.4, wires=Wires(["q0", "q1"])),
@@ -367,7 +367,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "multi-qubit-gates"})
 
         assert q.queue == [Toffoli(wires=["q0", "q2", "q1"]), CSWAP(wires=["q1", "q2", "q0"])]
 
@@ -395,7 +395,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "param-single-qubit-gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "param-single-qubit-gates"})
 
         assert q.queue == [
             RX(0.9, wires=["q0"]),
@@ -435,7 +435,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
+            QasmInterpreter().generic_visit(ast, context={"qubit_mapping": None, "name": "single-qubit-gates"})
 
         assert q.queue == [
             Identity("q0"),
