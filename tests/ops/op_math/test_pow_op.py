@@ -60,13 +60,13 @@ class TestConstructor:
         assert op.z == 2
         qml.assert_equal(op.base, qml.PauliX(0))
 
-    def test_nonlazy_no_simplification(self):
-        """Test that if lazy=False, but no decomposition exists, then the operator is simply
-        wrapped in a Pow class."""
+    def test_nonlazy_product_expansion(self):
+        """Test that nonlazy pow returns an expanded product of operators"""
 
-        op = qml.pow(TempOperator(0), 2, lazy=False)
-        assert isinstance(op, Pow)
-        assert isinstance(op.base, TempOperator)
+        op = TempOperator(0)
+        op_pow = qml.pow(op, 2, lazy=False)
+        op_prod = qml.prod(op, op)
+        qml.assert_equal(op_pow, op_prod)
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
@@ -507,12 +507,6 @@ class TestSimplify:
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 
-    def test_simplify_with_pow_not_defined(self):
-        """Test the simplify method with an operator that has not defined the op.pow method."""
-        op = Pow(qml.U2(1, 1, 0), z=3)
-        simplified_op = op.simplify()
-        qml.assert_equal(simplified_op, op)
-
 
 class TestMiscMethods:
     """Test miscellaneous minor Pow methods."""
@@ -944,10 +938,6 @@ class TestDecompositionExpand:
         base = qml.prod(*base_ops)
         z = 2
         op = Pow(base, z)
-
-        # if this fails, someone must have implemented it! will need a new operator to use
-        with pytest.raises(qml.operation.PowUndefinedError):
-            base.pow(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
