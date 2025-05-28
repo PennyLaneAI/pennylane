@@ -21,7 +21,7 @@ import pennylane as qml
 from .zx_conversion import _tape2pyzx
 
 
-def full_optimize(tape, verbose=False):
+def full_optimize(tape):
     r"""
 
     Full optimization pipeline applying TODD and ZX-based T-gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
@@ -32,7 +32,6 @@ def full_optimize(tape, verbose=False):
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
-        verbose (bool): whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -88,7 +87,7 @@ def full_optimize(tape, verbose=False):
     try:
         pyzx_circ = _tape2pyzx(tape)
 
-        pyzx_circ = zx.full_optimize(pyzx_circ, quiet=not verbose)
+        pyzx_circ = zx.full_optimize(pyzx_circ)
 
     except TypeError:
         warnings.warn(
@@ -97,7 +96,7 @@ def full_optimize(tape, verbose=False):
         (tape,), _ = qml.clifford_t_decomposition(tape)
         pyzx_circ = _tape2pyzx(tape)
 
-        pyzx_circ = zx.full_optimize(pyzx_circ, quiet=not verbose)
+        pyzx_circ = zx.full_optimize(pyzx_circ)
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 

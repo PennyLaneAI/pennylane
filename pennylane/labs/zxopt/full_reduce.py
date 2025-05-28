@@ -21,7 +21,7 @@ import pennylane as qml
 from .zx_conversion import _tape2pyzx
 
 
-def full_reduce(tape, verbose=False):
+def full_reduce(tape):
     r"""
 
     ZX-based T-gate reduction on an arbitrary PennyLane circuit.
@@ -33,13 +33,11 @@ def full_reduce(tape, verbose=False):
         * `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
         * `normalize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.graph.base.BaseGraph.normalize>`__
         * `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
-        * `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
 
     In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
-        verbose (bool): whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -96,9 +94,6 @@ def full_reduce(tape, verbose=False):
 
     pyzx_circ = _tape2pyzx(tape)
 
-    if verbose:
-        print(f"T count {zx.tcount(pyzx_circ)}, two qubit: {pyzx_circ.twoqubitcount()}")
-
     if not isinstance(pyzx_circ, BaseGraph):
         g = pyzx_circ.to_graph()
     else:
@@ -107,16 +102,12 @@ def full_reduce(tape, verbose=False):
     zx.hsimplify.from_hypergraph_form(g)
 
     # simplify the Graph in-place, and show the rewrite steps taken.
-    zx.full_reduce(g, quiet=not verbose)
+    zx.full_reduce(g)
     g.normalize()  # Makes the graph more suitable for displaying
-    if verbose:
-        zx.draw(g)  # Display the resulting diagram
+
     c_opt = zx.extract_circuit(g.copy())
-    if verbose:
-        zx.draw(c_opt)
-    c_opt2 = zx.basic_optimization(c_opt.to_basic_gates())
-    if verbose:
-        print(f"t after: {c_opt2.tcount()}, CNOT after: {c_opt2.twoqubitcount()}")
+
+    c_opt2 = c_opt.to_basic_gates()
 
     pl_circ = qml.transforms.from_zx(c_opt2.to_graph())
     return pl_circ

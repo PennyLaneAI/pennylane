@@ -20,14 +20,13 @@ import pennylane as qml
 from .zx_conversion import _tape2pyzx
 
 
-def basic_optimization(tape, verbose=False):
+def basic_optimization(tape):
     r"""
     Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit with :class:`~Hadamard` gates.
     This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize` by moving :class:`~Hadamard` to create big and few phase polynomial blocks.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
-        verbose (bool): whether or not to print new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -87,7 +86,7 @@ def basic_optimization(tape, verbose=False):
 
     pyzx_circ = pyzx_circ.to_basic_gates()
 
-    pyzx_circ = zx.basic_optimization(pyzx_circ, quiet=not verbose)
+    pyzx_circ = zx.basic_optimization(pyzx_circ)
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 

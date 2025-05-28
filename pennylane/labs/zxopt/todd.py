@@ -20,7 +20,7 @@ import pennylane as qml
 from .zx_conversion import _tape2pyzx
 
 
-def todd(tape, pre_optimize=True, verbose=False):
+def todd(tape, pre_optimize=True):
     r"""
 
     Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
@@ -32,8 +32,7 @@ def todd(tape, pre_optimize=True, verbose=False):
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
-        pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is True.
-        verbose (bool): Whether or not to print the new T gate and two-qubit gate count, as well as draw the diagram before and after the optimization. Default is `False`.
+        pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is ``True``.
 
     Returns:
         qml.tape.QuantumScript: T-gate optimized PennyLane circuit.
@@ -89,7 +88,7 @@ def todd(tape, pre_optimize=True, verbose=False):
 
     pyzx_circ = _tape2pyzx(tape)
 
-    pyzx_circ = zx.phase_block_optimize(pyzx_circ, pre_optimize=pre_optimize, quiet=not verbose)
+    pyzx_circ = zx.phase_block_optimize(pyzx_circ, pre_optimize=pre_optimize)
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
