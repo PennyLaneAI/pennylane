@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import itertools
 import pickle
 from collections import defaultdict
 from string import ascii_lowercase
@@ -121,6 +122,16 @@ def _check_decomposition_new(op, heuristic_resources=False):
             pow_op = qml.ops.Pow(op, z)
             _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"C({type(op).__name__})"):
+        for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
+            ctrl_op = qml.ops.Controlled(
+                op,
+                control_wires=[i + len(op.wires) for i in range(n_ctrl_wires)],
+                control_values=[c_value] * n_ctrl_wires,
+                work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
+            )
+            _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
@@ -148,9 +159,17 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts
 
+    # Add projector to the additional wires (work wires) on the tape
+    work_wires = tape.wires - op.wires
+    all_wires = op.wires + work_wires
+    if work_wires:
+        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
     # Tests that the decomposition produces the same matrix
-    op_matrix = qml.matrix(op)
-    decomp_matrix = qml.matrix(tape, wire_order=op.wires)
+    op_matrix = qml.matrix(op, wire_order=all_wires)
+
+    decomp_matrix = qml.matrix(tape, wire_order=all_wires)
     assert qml.math.allclose(
         op_matrix, decomp_matrix
     ), "decomposition must produce the same matrix as the operator."

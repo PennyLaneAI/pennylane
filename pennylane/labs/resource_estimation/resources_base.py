@@ -36,12 +36,11 @@ class Resources:
     The resources can be accessed as class attributes. Additionally, the :class:`~.Resources`
     instance can be nicely displayed in the console.
 
-    >>> h = re.resource_rep(re.ResourceHadamard)
-    >>> x = re.resource_rep(re.ResourceX)
-    >>> y = re.resource_rep(re.ResourceY)
-    >>>
+    >>> H = re.resource_rep(re.ResourceHadamard)
+    >>> X = re.resource_rep(re.ResourceX)
+    >>> Y = re.resource_rep(re.ResourceY)
     >>> qm = re.QubitManager(work_wires=3)
-    >>> gt = defaultdict(int, {h: 10, x:7, y:3})
+    >>> gt = defaultdict(int, {H: 10, X:7, Y:3})
     >>>
     >>> res = re.Resources(qubit_manager=qm, gate_types=gt)
     >>> print(res)
@@ -57,28 +56,33 @@ class Resources:
         :title: Usage Details
 
         The :class:`Resources` object supports arithmetic operations which allow for quick addition
-        and multiplication of resources.
+        and multiplication of resources. When combining resources, we can make a simplifying
+        assumption about they are applied in a quantum circuit (in series or in parallel).
+
+        When assuming the circuits were executed in series, the number of algorithmic qubits add
+        together. When assuming the circuits were executed in parallel, the maximum of each set of
+        algorithmic qubits is used. The clean auxiliary qubits can be reused between the circuits,
+        and thus we always use the maximum of each set when combining the resources. Finally, the
+        dirty qubits cannot be reused between circuits, thus we always add them together.
 
         .. code-block::
 
             from collections import defaultdict
 
             # Resource reps for each operator:
-            h = re.resource_rep(re.ResourceHadamard)
-            x = re.resource_rep(re.ResourceX)
-            z = re.resource_rep(re.ResourceZ)
-            cnot = re.resource_rep(re.ResourceCNOT)
+            H = re.resource_rep(re.ResourceHadamard)
+            X = re.resource_rep(re.ResourceX)
+            Z = re.resource_rep(re.ResourceZ)
+            CNOT = re.resource_rep(re.ResourceCNOT)
 
             # state of qubits:
-            qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1})
-            qm1.algo_qubits = 3
+            qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
 
-            qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2})
-            qm2.algo_qubits = 4
+            qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
 
             # state of gates:
-            gt1 = defaultdict(int, {h: 10, x:5, cnot:2})
-            gt2 = defaultdict(int, {h: 15, z:5, cnot:4})
+            gt1 = defaultdict(int, {H: 10, X:5, CNOT:2})
+            gt2 = defaultdict(int, {H: 15, Z:5, CNOT:4})
 
             # resources:
             res1 = re.Resources(qubit_manager=qm1, gate_types=gt1)
@@ -246,8 +250,8 @@ class Resources:
     def __repr__(self):
         """Compact string representation of the Resources object"""
         return {
-            "qubit manager": self.qubit_manager,
-            "gate types": self.gate_types,
+            "qubit_manager": self.qubit_manager,
+            "gate_types": self.gate_types,
         }.__repr__()
 
     def _ipython_display_(self):  # pragma: no cover

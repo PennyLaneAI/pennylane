@@ -28,14 +28,14 @@ class TestQubitManager:
 
     qm_quantities = (
         QubitManager(work_wires=2),
-        QubitManager(work_wires={"clean": 4, "dirty": 2}),
-        QubitManager({"clean": 2, "dirty": 2}, True),
+        QubitManager(work_wires={"clean": 4, "dirty": 2}, algo_wires=20),
+        QubitManager({"clean": 2, "dirty": 2}, algo_wires=10, tight_budget=True),
     )
 
     qm_parameters = (
         (2, 0, 0, False),
-        (4, 2, 0, False),
-        (2, 2, 0, True),
+        (4, 2, 20, False),
+        (2, 2, 10, True),
     )
 
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
@@ -52,10 +52,12 @@ class TestQubitManager:
     def test_equality(self, qm, attribute_tup):
         """Test that the equality methods behaves as expected"""
 
-        clean_qubits, dirty_qubits, _, tight_budget = attribute_tup
+        clean_qubits, dirty_qubits, algo_qubits, tight_budget = attribute_tup
 
         qm2 = QubitManager(
-            work_wires={"clean": clean_qubits, "dirty": dirty_qubits}, tight_budget=tight_budget
+            work_wires={"clean": clean_qubits, "dirty": dirty_qubits},
+            algo_wires=algo_qubits,
+            tight_budget=tight_budget,
         )
         assert qm == qm2
 
@@ -87,12 +89,30 @@ class TestQubitManager:
 
         clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
 
+        work_wires_str = repr({"clean": clean_qubits, "dirty": dirty_qubits})
         expected_string = (
-            f"QubitManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
-            f"logic qubits={logic_qubits}, tight budget={tight_budget})"
+            f"QubitManager(work_wires={work_wires_str}, algo_wires={logic_qubits}, "
+            f"tight_budget={tight_budget})"
         )
+
         qm.algo_qubits = algo_q
         assert repr(qm) == expected_string
+
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_str(self, qm, attribute_tup, algo_q):
+        """Test that the QubitManager string is correct."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        expected_string = (
+            f"QubitManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
+            f"algorithmic qubits={logic_qubits}, tight budget={tight_budget})"
+        )
+        qm.algo_qubits = algo_q
+        assert str(qm) == expected_string
 
     @pytest.mark.parametrize(
         "qm, attribute_tup, algo_q",
