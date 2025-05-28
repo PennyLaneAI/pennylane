@@ -94,7 +94,8 @@ class TestInterpreter:
             permissive=True,
         )
 
-        dev = device("default.qubit", wires=[0, 1, 2])
+        # we would initialize the device like so
+        device("default.qubit", wires=[0, 1, 2])
 
         # execute
         with queuing.AnnotatedQueue() as q:
@@ -123,7 +124,8 @@ class TestInterpreter:
             permissive=True,
         )
 
-        dev = device("default.qubit", wires=["0q", "1q", "2q"])
+        # we would initialize the device like so
+        device("default.qubit", wires=["0q", "1q", "2q"])
 
         # execute
         with queuing.AnnotatedQueue() as q:
