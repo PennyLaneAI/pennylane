@@ -178,13 +178,11 @@ class TestIntegration:
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
 
-        # if shots is None:
         assert np.allclose(res, self.exp_result, atol=0.005)
 
         res = qml.jacobian(qnode)(x)
         assert np.shape(res) == (8,)
 
-        # if shots is None:
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
     @pytest.mark.local_salt(1)

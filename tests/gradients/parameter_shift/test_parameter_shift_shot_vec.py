@@ -1384,7 +1384,7 @@ class TestParameterShiftRule:
         a = 0.54
 
         if not broadcast:
-            pytest.xfail("This test fails with broadcasting enabled. See [sc-91487] for tracking.")
+            pytest.xfail("This test fails with broadcasting disabled. See [sc-91487] for tracking.")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
