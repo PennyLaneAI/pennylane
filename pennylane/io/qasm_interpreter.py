@@ -194,7 +194,7 @@ class QasmInterpreter:
 
         if len(node.modifiers) > 0:
             num_control = sum(
-                mod.modifier.name == "ctrl" or mod.modifier.name == "negctrl"
+                "ctrl" in mod.modifier.name
                 for mod in node.modifiers
             )
             op_wires = wires[num_control:]
