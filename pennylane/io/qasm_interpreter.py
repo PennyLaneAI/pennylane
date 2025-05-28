@@ -6,7 +6,7 @@ import functools
 import re
 
 from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration
-from openqasm3.visitor import QASMNode, QASMVisitor
+from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.operation import Operator
@@ -52,15 +52,6 @@ class QasmInterpreter:
     top level node of the AST as a parameter and recursively descends the AST, calling the
     overriden visitor function on each node.
     """
-
-    def __init__(self):
-        """
-        Checks that the openqasm3 package is available, otherwise raises an error.
-
-        Raises:
-            ImportError: if the openqasm3 package is not available.
-        """
-        super().__init__()
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
@@ -119,7 +110,8 @@ class QasmInterpreter:
         context["wires"].append(node.qubit.name)
 
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict):
+                                                                           # needs to have same params as visit()
+    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -142,7 +134,8 @@ class QasmInterpreter:
             }
 
     @visit.register(QuantumGate)
-    def visit_quantum_gate(self, node: QASMNode, context: dict):
+                                                                  # needs to have same params as visit()
+    def visit_quantum_gate(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
@@ -215,7 +208,8 @@ class QasmInterpreter:
         else:
             gate(*args, wires=wires)
 
-    def apply_modifier(self, mod: QASMNode, previous: Operator, context: dict, wires: list):
+    @staticmethod
+    def apply_modifier(mod: QASMNode, previous: Operator, context: dict, wires: list):
         """
         Applies a modifier to the previous gate or modified gate.
 
