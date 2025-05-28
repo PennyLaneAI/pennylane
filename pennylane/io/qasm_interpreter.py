@@ -48,9 +48,8 @@ PARAMETERIZED_GATES = {
 
 class QasmInterpreter:
     """
-    Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
-    top level node of the AST as a parameter and recursively descends the AST, calling the
-    overriden visitor function on each node.
+    Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
+    visitor function on each node.
     """
 
     @functools.singledispatchmethod
