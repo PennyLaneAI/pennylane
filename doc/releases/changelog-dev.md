@@ -295,6 +295,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
 * Setting up the configuration of a workflow, including the determination of the best diff
   method, is now done *after* user transforms have been applied. This allows transforms to
   update the shots and change measurement processes with fewer issues.
