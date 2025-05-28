@@ -866,8 +866,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         )  # pragma: no cover
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().interpret(
-        ast, context={"name": "global", "wire_map": wire_map}
-    )
+    context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
     return context["callable"]

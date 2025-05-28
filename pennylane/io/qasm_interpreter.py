@@ -98,7 +98,9 @@ class QasmInterpreter:
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(self, node: QubitDeclaration, context: dict):  # pylint: disable=no-self-use
+    def visit_qubit_declaration(
+        self, node: QubitDeclaration, context: dict
+    ):  # pylint: disable=no-self-use
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. Note: Qubit declarations must be global.
@@ -174,22 +176,15 @@ class QasmInterpreter:
         wires = [
             # parser will sometimes represent as a str and sometimes as an Identifier
             (
-                context["wire_map"][
-                    (
-                        node.qubits[q].name
-                        if isinstance(node.qubits[q].name, str)
-                        else node.qubits[q].name.name
-                    )
-                ]
-                if context["wire_map"] is not None
-                else (
-                    node.qubits[q].name
-                    if isinstance(node.qubits[q].name, str)
-                    else node.qubits[q].name.name
-                )
+                node.qubits[q].name
+                if isinstance(node.qubits[q].name, str)
+                else node.qubits[q].name.name
             )
             for q in range(len(node.qubits))
         ]
+
+        if context["wire_map"] is not None:
+            wires = list(map(lambda wire: context["wire_map"][wire], wires))
 
         if len(node.modifiers) > 0:
             num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
@@ -237,7 +232,9 @@ class QasmInterpreter:
             elif "vars" in context and mod.argument.name in context["vars"]:
                 power = context["vars"][mod.argument.name]["val"]
             else:
-                raise NotImplementedError(f"Unable to handle expression {mod.argument} at this time")
+                raise NotImplementedError(
+                    f"Unable to handle expression {mod.argument} at this time"
+                )
             next = ops.pow(previous, z=power)
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
