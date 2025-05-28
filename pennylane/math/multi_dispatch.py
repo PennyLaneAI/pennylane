@@ -710,7 +710,9 @@ def scatter(indices, array, new_dims, like=None):
 
 
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(tensor, index, value, like=None):
+def scatter_element_add(
+    tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
+):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
@@ -719,6 +721,13 @@ def scatter_element_add(tensor, index, value, like=None):
         index (tuple or list[tuple]): Indices to which to add the value
         value (float or tensor_like[float]): Value to add to ``tensor``
         like (str): Manually chosen interface to dispatch to.
+
+    Keyword Args:
+        indices_are_sorted=False (bool): If ``True``, jax will assume that the indices are in
+            ascending order. Required to be ``True`` with catalyst.
+        unique_indices=False (bool): If ``True``, jax will assume each index is unique.
+            Required to be ``True`` with catalyst.
+
     Returns:
         tensor_like[float]: The tensor with the value added at the given indices.
 
@@ -743,7 +752,14 @@ def scatter_element_add(tensor, index, value, like=None):
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 
-    return np.scatter_element_add(tensor, index, value, like=like)
+    return np.scatter_element_add(
+        tensor,
+        index,
+        value,
+        like=like,
+        indices_are_sorted=indices_are_sorted,
+        unique_indices=unique_indices,
+    )
 
 
 def unwrap(values, max_depth=None):

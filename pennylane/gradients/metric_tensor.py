@@ -737,9 +737,16 @@ def _metric_tensor_hadamard(
         first_term = math.zeros_like(diag_mt)
         if ids:
             off_diag_res = math.stack(off_diag_res, 1)[0]
-            inv_ids = [_id[::-1] for _id in ids]
-            first_term = math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
-            first_term = math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
+
+            first_term = math.scatter_element_add(
+                first_term,
+                list(zip(*ids)),
+                off_diag_res,
+                indices_are_sorted=True,
+                unique_indices=True,
+            )
+            for loc, r in zip(ids, off_diag_res):
+                first_term = math.scatter_element_add(first_term, (loc[1], loc[0]), r)
 
         # Second terms of off block-diagonal metric tensor
         expvals = math.zeros_like(first_term[0])
