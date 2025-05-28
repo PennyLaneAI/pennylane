@@ -230,9 +230,12 @@ class QasmInterpreter:
             next = ops.adjoint(previous)
         elif mod.modifier.name == "pow":
             if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                next = ops.pow(previous, z=mod.argument.value)
+                power = mod.argument.value
             elif "vars" in context and mod.argument.name in context["vars"]:
-                next = ops.pow(previous, z=context["vars"][mod.argument.name]["val"])
+                power = context["vars"][mod.argument.name]["val"]
+           else:
+                raise NotImplementedError(f"Unable to handle expression {mod.argument} at this time")
+           next = ops.pow(previous, z=power)
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
             wires = wires[:-1]
