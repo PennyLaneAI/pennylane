@@ -1308,8 +1308,8 @@ class ResourceCRX(ResourceOperator):
     >>> re.ResourceCRX.resources()
     {CNOT: 2, RZ: 2, Hadamard: 2}
     """
-
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1445,8 +1445,8 @@ class ResourceCRY(ResourceOperator):
     >>> re.ResourceCRY.resources()
     {CNOT: 2, RY: 2}
     """
-
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1580,8 +1580,9 @@ class ResourceCRZ(ResourceOperator):
     >>> re.ResourceCRZ.resources()
     {CNOT: 2, RZ: 2}
     """
-
     num_wires = 2
+    resource_keys = {"eps"}
+
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1725,8 +1726,8 @@ class ResourceCRot(ResourceOperator):
     >>> re.ResourceCRot.resources()
     {CNOT: 2, RZ: 3, RY: 2}
     """
-
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1871,8 +1872,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
     >>> re.ResourceControlledPhaseShift.resources()
     {CNOT: 2, RZ: 3}
     """
-
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps

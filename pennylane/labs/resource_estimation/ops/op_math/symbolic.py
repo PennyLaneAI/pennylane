@@ -1151,6 +1151,30 @@ class ResourceChangeBasisOp(ResourceOperator):
             GateCount(cmpr_uncompute_op),
         ]
 
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, 
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+        cmpr_compute_op: CompressedResourceOp, 
+        cmpr_base_op: CompressedResourceOp, 
+        cmpr_uncompute_op: CompressedResourceOp,
+    ) -> List:
+        return [
+            GateCount(cmpr_compute_op),
+            GateCount(
+                resource_rep(
+                    re.ResourceControlled,
+                    {
+                        "base_cmpr_op": cmpr_base_op,
+                        "num_ctrl_wires": ctrl_num_ctrl_wires,
+                        "num_ctrl_values": ctrl_num_ctrl_values,
+                    },
+                )
+            ),
+            GateCount(cmpr_uncompute_op),
+        ]
+
 
 @singledispatch
 def _apply_adj(action):

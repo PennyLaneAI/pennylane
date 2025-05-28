@@ -401,4 +401,4 @@ def resource_rep(
     if resource_params:
         return resource_op.resource_rep(**resource_params)
 
-    return resource_params.resource_rep()  # don't need to provide empty dict
+    return resource_op.resource_rep()  # don't need to provide empty dict

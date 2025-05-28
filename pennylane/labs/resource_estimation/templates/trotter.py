@@ -114,10 +114,10 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            ops_wires = [op.wires for op in self.cmpr_fragments if op.wires is not None]
+            ops_wires = [op.wires for op in fragments if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max((op.num_wires for op in self.cmpr_fragments))
+                self.num_wires = max((op.num_wires for op in fragments))
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
