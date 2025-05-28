@@ -33,7 +33,7 @@ from pennylane import (
     device,
     queuing,
 )
-from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift
+from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
 
@@ -57,6 +57,7 @@ class TestInterpreter:
             qubit q0;
             qubit q1;
             qubit q2;
+            inv @ negctrl @ x q0, q1;
             ctrl @ ctrl @ x q2, q1, q0;
             inv @ ctrl @ x q0, q1;
             pow(2) @ ctrl @ x q1, q0;
@@ -72,6 +73,7 @@ class TestInterpreter:
                 ast, context={"qubit_mapping": None, "name": "nested-modifiers"}
             )
         assert q.queue == [
+            Adjoint(MultiControlledX(wires=['q0', 'q1'], control_values=[False])),
             Toffoli(wires=["q2", "q1", "q0"]),
             Adjoint(CNOT(wires=["q0", "q1"])),
             (CNOT(wires=["q1", "q0"])) ** 2,

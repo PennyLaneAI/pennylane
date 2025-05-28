@@ -97,9 +97,9 @@ class QasmInterpreter:
                     self.visit(item, context)
         return context
 
+    # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
-                                                            # disable no-self-use, needs to have same params as visit()
-    def visit_qubit_declaration(self, node: QASMNode, context: dict):  # pylint: disable=R0201
+    def visit_qubit_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
@@ -110,9 +110,9 @@ class QasmInterpreter:
         """
         context["wires"].append(node.qubit.name)
 
+    # needs to have same signature as visit()
     @visit.register(ClassicalDeclaration)
-                                                                           # needs to have same params as visit()
-    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=R0201
+    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -191,10 +191,10 @@ class QasmInterpreter:
         ]
 
         if len(node.modifiers) > 0:
-            num_control = sum(mod.modifier.name == "ctrl" for mod in node.modifiers)
+            num_control = sum(mod.modifier.name == "ctrl" or mod.modifier.name == "negctrl" for mod in node.modifiers)
             op_wires = wires[num_control:]
             control_wires = wires[:num_control]
-            if node.modifiers[-1].modifier.name == "ctrl":
+            if node.modifiers[-1].modifier.name == "ctrl" or node.modifiers[-1].modifier.name == "negctrl":
                 prev, wires = self.apply_modifier(
                     node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
                 )
@@ -222,7 +222,7 @@ class QasmInterpreter:
         # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
         # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
-        assert mod.modifier.name in ("inv", "pow", "ctrl")
+        assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
         next = None
 
         if mod.modifier.name == "inv":
@@ -234,6 +234,9 @@ class QasmInterpreter:
                 next = ops.pow(previous, z=context["vars"][mod.argument.name]["val"])
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
+            wires = wires[:-1]
+        elif mod.modifier.name == "negctrl":
+            next = ops.ctrl(previous, control=wires[-1], control_values=[0])
             wires = wires[:-1]
 
         return next, wires
