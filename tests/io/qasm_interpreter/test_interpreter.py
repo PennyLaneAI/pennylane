@@ -60,6 +60,8 @@ class TestInterpreter:
             ctrl @ ctrl @ x q2, q1, q0;
             inv @ ctrl @ x q0, q1;
             pow(2) @ ctrl @ x q1, q0;
+            pow(2) @ inv @ y q0;
+            inv @ pow(2) @ ctrl @ y q0, q1;
             """,
             permissive=True,
         )
@@ -67,11 +69,12 @@ class TestInterpreter:
         # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().generic_visit(ast, context={"name": "nested-modifiers"})
-
         assert q.queue == [
             Toffoli(wires=['q2', 'q1', 'q0']),
             Adjoint(CNOT(wires=['q0', 'q1'])),
-            (CNOT(wires=['q1', 'q0']))**2
+            (CNOT(wires=['q1', 'q0']))**2,
+            (Adjoint(PauliY('q0')))**2,
+            Adjoint((CY(wires=['q0', 'q1']))**2)
         ]
 
     def test_integer_qubit_mappings(self):
