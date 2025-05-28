@@ -284,7 +284,7 @@ class QasmInterpreter:
         raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
 
     @staticmethod
-    def _require_wires(wires, context):
+    def _require_wires(wires: list, context: dict):
         """
         Simple helper that checks if we have wires in the current context.
 

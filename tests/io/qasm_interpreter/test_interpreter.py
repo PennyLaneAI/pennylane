@@ -62,7 +62,7 @@ class TestInterpreter:
         )
         with pytest.raises(
             NotImplementedError,
-            match=f"Unable to handle BinaryExpression expression at this time",
+            match="Unable to handle BinaryExpression expression at this time",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "expression-not-implemented"}
