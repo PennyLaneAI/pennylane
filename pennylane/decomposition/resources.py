@@ -299,8 +299,9 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
     This function mirrors the custom logic in ``qml.ctrl`` which does the following:
+
     - Flattens nested controlled operations.
-    - Dispatches to custom controlled operations when applicable.
+    - Dispatches to custom-controlled operations when applicable.
 
     Args:
         base_class: the base operator type

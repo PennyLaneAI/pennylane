@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Shot adaptive optimizer"""
-# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
+# pylint: disable=too-many-instance-attributes,too-many-arguments
+
+
 from copy import copy
 
 import numpy as np
@@ -261,7 +263,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             if s > 1:
 
                 def cost(*args, **kwargs):
-                    # pylint: disable=cell-var-from-loop
+
                     return math.stack(qnode(*args, **kwargs))
 
             else:
@@ -345,9 +347,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return grads
 
-    def compute_grad(
-        self, objective_fn, args, kwargs
-    ):  # pylint: disable=signature-differs,arguments-differ,arguments-renamed
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
+    def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=arguments-renamed
         r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 

@@ -142,7 +142,7 @@ class QubitUnitary(Operation):
         wires: WiresLike,
         id: Optional[str] = None,
         unitary_check: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
