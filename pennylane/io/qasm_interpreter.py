@@ -210,7 +210,7 @@ class QasmInterpreter:
             gate(*args, wires=wires)
 
     @staticmethod
-    def apply_modifier(mod: QASMNode, previous: Operator, context: dict, wires: list):
+    def apply_modifier(mod: QuantumGate, previous: Operator, context: dict, wires: list):
         """
         Applies a modifier to the previous gate or modified gate.
 
