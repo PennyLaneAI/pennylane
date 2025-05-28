@@ -331,6 +331,51 @@ class TestCancelInversesInterfaces:
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
+    def test_cancel_inverses_abstract_params(self):
+        """Test that the transform does not fail with abstract parameters."""
+        import jax
+
+        @jax.jit
+        @cancel_inverses
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.adjoint(qml.RX(x, 0))
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="At least one of the operators has abstract wires or parameters. ",
+        ):
+            res = circuit(jax.numpy.array(0))
+
+        assert qml.math.allclose(res, 1.0)
+
+    # In this case, we manually construct the tape in a jit context,
+    # so that the check for abstract wires in the pre-processing step is bypassed.
+    @pytest.mark.jax
+    def test_cancel_inverses_abstract_wire(self):
+        """Test that the transform does not fail with abstract wires."""
+        import jax
+
+        @jax.jit
+        def qfunc(w):
+
+            def inner_qfunc():
+                qml.adjoint(qml.RX)(0.1, w)
+                qml.RX(0.1, w)
+
+            transformed_qfunc = cancel_inverses(inner_qfunc)
+            new_tape = qml.tape.make_qscript(transformed_qfunc)()
+            assert len(new_tape.operations) == 2
+
+        with pytest.warns(
+            UserWarning,
+            match="At least one of the operators has abstract wires or parameters. ",
+        ):
+            qfunc(0)
+
 
 ### Tape
 with qml.queuing.AnnotatedQueue() as q:

@@ -13,8 +13,12 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
+import warnings
 from functools import lru_cache, partial
+from typing import Union
 
+from pennylane.math import is_abstract
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -23,13 +27,13 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
 
 
-def _ops_equal(op1, op2):
+def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
@@ -39,7 +43,27 @@ def _ops_equal(op1, op2):
     )
 
 
-def _are_inverses(op1, op2):
+def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
+    """Checks if any item in the iterable is abstract."""
+    return any(is_abstract(item) for item in items)
+
+
+def _op_has_abstract(op: Operator) -> bool:
+    """Checks if an operator has abstract wires or parameters."""
+    return any(
+        [
+            _contains_abstract(op.wires),
+            hasattr(op, "parameters") and _contains_abstract(op.parameters),
+        ]
+    )
+
+
+def _check_abstractness(op1: Operator, op2: Operator) -> bool:
+    """Checks if either of the operators has abstract wires or parameters."""
+    return _op_has_abstract(op1) or _op_has_abstract(op2)
+
+
+def _are_inverses(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are inverses of each other
 
     Args:
@@ -52,6 +76,17 @@ def _are_inverses(op1, op2):
     # op1 is self-inverse and the next gate is also op1
     if op1 in self_inverses and op1.name == op2.name:
         return True
+
+    # If at least one of the operators has abstract wires or parameters,
+    # we cannot determine if they are inverses because we cannot compare them.
+    if _check_abstractness(op1, op2):
+        warnings.warn(
+            "At least one of the operators has abstract wires or parameters. "
+            "The cancel_inverses transform will not be applied to these operators. ",
+            UserWarning,
+        )
+
+        return False
 
     # op1 is an `Adjoint` class and its base is equal to op2
     if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
@@ -72,7 +107,6 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
-        from pennylane.operation import Operator
 
     except ImportError:  # pragma: no cover
         return None, None
