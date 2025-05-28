@@ -83,15 +83,12 @@ class SemiAdder(Operation):
             qml.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qml.sample(wires=wires["y"])
 
-        print(circuit())
-
     .. code-block:: pycon
 
         >>> print(circuit())
         [0 0 0 1 1 1]
 
-    The result :math:`[0 0 0 1 1 1]`, is the binary representation of
-    :math:`3 + 4 = 7`.
+    The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
 
     .. details::
         :title: Usage Details
@@ -104,13 +101,11 @@ class SemiAdder(Operation):
 
         The second one is ``y_wires`` which is used
         to encode the integer :math:`y` in the computational basis. Therefore, ``y_wires`` must contain
-        at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`.
-        ``y_wires`` is also used
+        at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. ``y_wires`` is also used
         to encode the integer :math:`x+y` in the computational basis.
 
         The fourth set of wires is ``work_wires`` which consist of :math:`m-1` auxiliary qubits used to perform the addition operation,
         where :math:`m` is the number of ``y_wires``.
-
     """
 
     grad_method = None
@@ -192,14 +187,13 @@ class SemiAdder(Operation):
         r"""Representation of the operator as a product of other operators.
 
         Args:
-        x_wires (Sequence[int]): the wires that store the integer :math:`x`
-        y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) . 1`` work
-            wires should be provided.
+            x_wires (Sequence[int]): the wires that store the integer :math:`x`
+            y_wires (Sequence[int]): the wires that store the integer :math:`y`
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) . 1`` work
+                wires should be provided.
 
         Returns:
             list[.Operator]: Decomposition of the operator
-
         """
         op_list = []
 
