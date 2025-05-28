@@ -66,10 +66,10 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
         # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "nested-modifiers"})
+
         assert q.queue == [
             Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
             Toffoli(wires=["q2", "q1", "q0"]),
@@ -78,6 +78,41 @@ class TestInterpreter:
             (Adjoint(PauliY("q0"))) ** 2,
             Adjoint((CY(wires=["q0", "q1"])) ** 2),
         ]
+
+    def test_variables(self, mocker):
+        # parse the QASM
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context = QasmInterpreter(permissive=True).interpret(
+            ast, context={"wire_map": None, "name": "advanced-vars"}
+        )
+
+        # static vars are available in the compilation context
+        assert context["vars"]["f"]["val"] == 3.2
+        assert context["vars"]["g"]["val"] == 3
+        assert context["vars"]["h"]["val"] == 2
+        assert context["vars"]["k"]["val"] == 3
+
+        # classical logic is represented in the execution context after execution
+        assert context["vars"]["l"]["val"] == True
+        assert context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
+        assert context["vars"]["a"]["val"] == 3.3333333
+
+    def test_updating_constant(self, mocker):
+        # parse the QASM
+        ast = parse(
+            """
+            const int i = 2;
+            i = 3;
+            """,
+            permissive=True,
+        )
+        with pytest.raises(
+                ValueError,
+                match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
     def test_integer_wire_maps(self):
         # parse the QASM program
@@ -139,6 +174,39 @@ class TestInterpreter:
 
         assert q.queue == [Identity("0q"), Hadamard("2q"), PauliX("1q"), PauliY("2q")]
 
+    def test_classical_variables(self, mocker):
+        # parse the QASM
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        context = QasmInterpreter(permissive=True).interpret(
+            ast, context={"wire_map": None, "name": "basic-vars"}
+        )
+
+        assert context["vars"]["i"]["val"] == 4
+        assert context["vars"]["j"]["val"] == 4
+        assert context["vars"]["c"]["val"] == 0
+
+    def test_updating_variables(self, mocker):
+        # parse the QASM
+        ast = parse(
+            open("updating_variables.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter(permissive=True).interpret(
+                ast, context={"wire_map": None, "name": "updating-vars"}
+            )
+
+        assert q.queue == [
+            RX(1, 'q0'),
+            RX(2, 'q0'),
+            RX(0, 'q0'),
+            RX(2, 'q0'),
+        ]
+
     def test_mod_with_declared_param(self):
 
         # parse the QASM program
@@ -193,7 +261,8 @@ class TestInterpreter:
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+            match="An unsupported QASM instruction QuantumMeasurementStatement "
+                  "was encountered on line 6, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
