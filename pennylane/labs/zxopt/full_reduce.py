@@ -24,7 +24,9 @@ from .zx_conversion import _tape2pyzx
 def full_reduce(tape, verbose=False):
     r"""
 
-    A pipeline for T gate optimizations in `pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
+    ZX-based T-gate reduction on an arbitrary PennyLane circuit.
+
+    This implements the full `pipeline for T gate optimizations in pyzx <https://pyzx.readthedocs.io/en/latest/simplify.html>`__.
 
     This pipeline performs, in that order
 

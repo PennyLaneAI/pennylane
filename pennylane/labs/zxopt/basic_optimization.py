@@ -23,7 +23,7 @@ from .zx_conversion import _tape2pyzx
 def basic_optimization(tape, verbose=False):
     r"""
 
-    Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit.
+    Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit (may contain Hadamards).
     This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize`.
 
     Args:
@@ -37,19 +37,27 @@ def basic_optimization(tape, verbose=False):
 
     **Example**
 
+    This pass tried to push :class:`~Hadamard` gates as far as possible to the side to allow better phase polynomial optimization via, e.g., :func:`~todd`.
+
     .. code-block:: python
+
         from pennylane.labs.zxopt import basic_optimization
         circ = qml.tape.QuantumScript([
             qml.CNOT((0, 1)),
             qml.T(0),
             qml.CNOT((3, 2)),
+            qml.Hadamard(0),
             qml.T(1),
+            qml.Hadamard(1),
             qml.CNOT((1, 2)),
+            qml.Hadamard(2),
             qml.T(2),
+            qml.Hadamard(2),
             qml.RZ(0.5, 1),
             qml.CNOT((1, 2)),
             qml.T(1),
             qml.CNOT((3, 2)),
+            qml.Hadamard(1),
             qml.T(0),
             qml.CNOT((0, 1)),
         ], [])
@@ -64,16 +72,16 @@ def basic_optimization(tape, verbose=False):
     .. code-block::
 
         Circuit before:
-        0: ─╭●──T──T───────────╭●─┤
-        1: ─╰X──T─╭●──RZ─╭●──T─╰X─┤
-        2: ─╭X────╰X──T──╰X─╭X────┤
-        3: ─╰●──────────────╰●────┤
+        0: ─╭●──T──H──T────────────────────╭●─┤
+        1: ─╰X──T──H─╭●──RZ───────╭●──T──H─╰X─┤
+        2: ─╭X───────╰X──H───T──H─╰X─╭X───────┤
+        3: ─╰●───────────────────────╰●───────┤
 
         Circuit after basic_optimization:
-        0: ──S─╭●──────────────╭●─┤
-        1: ────╰X──RZ─╭●────╭●─╰X─┤
-        2: ─╭●────────│─────│──╭●─┤
-        3: ─╰X────────╰X──T─╰X─╰X─┤
+        0: ──T─╭●───────────╭X──H──T─┤
+        1: ────╰X──T──H──RZ─╰●──H────┤
+        2: ─╭●───────╭Z──────────────┤
+        3: ─╰X──H──T─╰●──H───────────┤
 
     """
     pyzx_circ = _tape2pyzx(tape)

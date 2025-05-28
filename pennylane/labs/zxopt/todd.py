@@ -24,7 +24,7 @@ def todd(tape, pre_optimize=True, verbose=False):
     r"""
 
     Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
-     to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
+    to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     After `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
 
@@ -91,7 +91,6 @@ def todd(tape, pre_optimize=True, verbose=False):
 
     pyzx_circ = zx.phase_block_optimize(pyzx_circ, pre_optimize=pre_optimize, quiet=not verbose)
 
-    pyzx_circ = zx.basic_optimization(pyzx_circ)
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
     return pl_circ
