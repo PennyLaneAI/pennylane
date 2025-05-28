@@ -16,6 +16,7 @@ per normal modes on a grid."""
 
 import itertools
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import scipy as sp
@@ -23,6 +24,7 @@ import scipy as sp
 import pennylane as qml
 from pennylane import concurrency
 from pennylane.data.base._lazy_modules import h5py
+from pennylane.labs.vibrational.christiansen_utils import _read_data, _write_data
 from pennylane.qchem import VibrationalPES, localize_normal_modes, optimize_geometry
 from pennylane.qchem.vibrational.vibrational_class import (
     _get_dipole,
@@ -54,6 +56,7 @@ def _pes_onemode(
     dipole=False,
     num_workers=1,
     backend="serial",
+    path=None,
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
@@ -69,6 +72,7 @@ def _pes_onemode(
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backend.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
+        path (string): the path to the directory where results will be saved. Default value is set to None.
     Returns:
         tuple: A tuple containing the following:
          - TensorLike[float]: one-mode potential energy surface
@@ -76,27 +80,31 @@ def _pes_onemode(
            if dipole is set to ``False``
 
     """
+    use_temp_dir = path is None
+    tmpdir = TemporaryDirectory() if use_temp_dir else None
+    path = Path(tmpdir.name) if use_temp_dir else Path(path)
+
     quad_order = len(grid)
     all_jobs = range(quad_order)
     jobs_on_rank = np.array_split(all_jobs, num_workers)
 
     arguments = [
-        (j, i, molecule, scf_result, freqs, vectors, grid, method, dipole)
+        (j, i, molecule, scf_result, freqs, vectors, grid, path, method, dipole)
         for j, i in enumerate(jobs_on_rank)
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=num_workers)
-    executor.starmap(_local_pes_onemode, arguments)
+    with executor_class(max_workers=num_workers) as executor:
+        executor.starmap(_local_pes_onemode, arguments)
 
     pes_onebody = None
     dipole_onebody = None
     pes_onebody, dipole_onebody = _load_pes_onemode(
-        num_workers, len(freqs), len(grid), dipole=dipole
+        num_workers, len(freqs), len(grid), path, dipole=dipole
     )
-    current_directory = Path.cwd()
-    for file_path in current_directory.glob("v1data*"):
-        file_path.unlink(missing_ok=False)
+
+    if use_temp_dir:
+        tmpdir.cleanup()
 
     if dipole:
         return pes_onebody, dipole_onebody
@@ -105,7 +113,7 @@ def _pes_onemode(
 
 
 def _local_pes_onemode(
-    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False
+    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by
     displacement vectors for each thread.
@@ -118,6 +126,7 @@ def _local_pes_onemode(
         freqs (list[float]): list of normal mode frequencies in ``cm^-1``
         vectors (TensorLike[float]): list of displacement vectors for each normal mode
         grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        path (string): the path to the directory where results will be saved.
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
@@ -163,20 +172,12 @@ def _local_pes_onemode(
             if dipole:
                 local_dipole_onebody[mode, job_idx, :] = _get_dipole(displ_scf, method) - ref_dipole
 
-        filename = f"v1data_{rank}.hdf5"
-        with h5py.File(filename, "w") as f:
-            f.create_dataset("V1_PES", data=local_pes_onebody)
-            if dipole:
-                f.create_dataset("D1_DMS", data=local_dipole_onebody)
+    _write_data(path, rank, "v1data", "V1_PES", local_pes_onebody)
     if dipole:
-        return (
-            local_pes_onebody,
-            local_dipole_onebody,
-        )
-    return local_pes_onebody, None
+        _write_data(path, rank, "v1data", "D1_DMS", local_dipole_onebody)
 
 
-def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
+def _load_pes_onemode(num_proc, nmodes, quad_order, path, dipole=False):
     """
     Loader to combine pes_onebody and dipole_onebody from multiple processors.
 
@@ -184,6 +185,7 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
+        path (string): the path to the directory where results are saved.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
@@ -201,11 +203,9 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
     for mode in range(nmodes):
         init_chunk = 0
         for proc in range(num_proc):
-            file_path = Path("v1data" + f"_{proc}" + ".hdf5")
-            with h5py.File(file_path, "r+") as f:
-                local_pes_onebody = f["V1_PES"][()]
-                if dipole:
-                    local_dipole_onebody = f["D1_DMS"][()]
+            local_pes_onebody = _read_data(path, proc, "v1data", "V1_PES")
+            if dipole:
+                local_dipole_onebody = _read_data(path, proc, "v1data", "D1_DMS")
 
             end_chunk = np.array(local_pes_onebody).shape[1]
             pes_onebody[mode][init_chunk : init_chunk + end_chunk] = local_pes_onebody[mode]
@@ -232,6 +232,7 @@ def _pes_twomode(
     dipole=False,
     num_workers=1,
     backend="serial",
+    path=None,
 ):
     r"""Computes the two-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -250,6 +251,7 @@ def _pes_twomode(
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
+        path (string): the path to the directory where results will be saved. Default value is set to None.
 
     Returns:
         tuple: A tuple containing the following:
@@ -258,6 +260,10 @@ def _pes_twomode(
            if dipole is set to ``False``
 
     """
+    use_temp_dir = path is None
+    tmpdir = TemporaryDirectory() if use_temp_dir else None
+    path = Path(tmpdir.name) if use_temp_dir else Path(path)
+
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2]
         for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
@@ -265,23 +271,35 @@ def _pes_twomode(
 
     jobs_on_rank = np.array_split(all_jobs, num_workers)
     arguments = [
-        (j, i, molecule, scf_result, freqs, vectors, pes_onebody, dipole_onebody, method, dipole)
+        (
+            j,
+            i,
+            molecule,
+            scf_result,
+            freqs,
+            vectors,
+            pes_onebody,
+            dipole_onebody,
+            path,
+            method,
+            dipole,
+        )
         for j, i in enumerate(jobs_on_rank)
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=num_workers)
-    executor.starmap(_local_pes_twomode, arguments)
+    with executor_class(max_workers=num_workers) as executor:
+        executor.starmap(_local_pes_twomode, arguments)
 
     pes_twobody = None
     dipole_twobody = None
 
     pes_twobody, dipole_twobody = _load_pes_twomode(
-        num_workers, len(freqs), len(grid), dipole=dipole
+        num_workers, len(freqs), len(grid), path, dipole=dipole
     )
-    current_directory = Path.cwd()
-    for file_path in current_directory.glob("v2data*"):
-        file_path.unlink(missing_ok=False)
+
+    if use_temp_dir:
+        tmpdir.cleanup()
 
     if dipole:
 
@@ -298,6 +316,7 @@ def _local_pes_twomode(
     vectors,
     pes_onebody,
     dipole_onebody,
+    path,
     method="rhf",
     dipole=False,
 ):
@@ -314,6 +333,7 @@ def _local_pes_twomode(
         grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
         pes_onebody (TensorLike[float]): one-mode PES
         dipole_onebody (TensorLike[float]): one-mode dipole
+        path (string): the path to the directory where results will be saved.
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
@@ -377,18 +397,12 @@ def _local_pes_twomode(
                     - ref_dipole
                 )
 
-    filename = f"v2data_{rank}.hdf5"
-    with h5py.File(filename, "w") as f:
-        f.create_dataset("V2_PES", data=local_pes_twobody)
-        if dipole:
-            f.create_dataset("D2_DMS", data=local_dipole_twobody)
+    _write_data(path, rank, "v2data", "V2_PES", local_pes_twobody)
     if dipole:
-        return local_pes_twobody, local_dipole_twobody
-
-    return local_pes_twobody, None  # pragma: no cover
+        _write_data(path, rank, "v2data", "D2_DMS", local_dipole_twobody)
 
 
-def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
+def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
     """
     Loader to combine pes_twobody and dipole_twobody from multiple processors.
 
@@ -396,6 +410,7 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
+        path (string): the path to the directory where results are saved.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
@@ -422,11 +437,14 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
             init_idx = 0
             end_idx = 0
             for proc in range(num_proc):
-                file_path = Path("v2data" + f"_{proc}" + ".hdf5")
-                with h5py.File(file_path, "r+") as f:
-                    local_pes_twobody = f["V2_PES"][()]
-                    if dipole:
-                        local_dipole_twobody = f["D2_DMS"][()]
+                # file_path = Path("v2data" + f"_{proc}" + ".hdf5")
+                # with h5py.File(file_path, "r+") as f:
+                #     local_pes_twobody = f["V2_PES"][()]
+                #     if dipole:
+                #         local_dipole_twobody = f["D2_DMS"][()]
+                local_pes_twobody = _read_data(path, proc, "v2data", "V2_PES")
+                if dipole:
+                    local_dipole_twobody = _read_data(path, proc, "v2data", "D2_DMS")
 
                 pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
                 end_idx += len(pes_chunk)
@@ -461,6 +479,7 @@ def _local_pes_threemode(
     pes_twobody,
     dipole_onebody,
     dipole_twobody,
+    path,
     method="rhf",
     dipole=False,
 ):
@@ -479,6 +498,7 @@ def _local_pes_threemode(
         pes_twobody (TensorLike[float]): two-mode PES
         dipole_onebody (TensorLike[float]): one-mode dipole
         dipole_twobody (TensorLike[float]): one-mode dipole
+        path (string): the path to the directory where results will be saved.
         method (str): Electronic structure method that can be either restricted and unrestricted
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
         dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
@@ -572,16 +592,9 @@ def _local_pes_threemode(
                     - ref_dipole
                 )
 
-    filename = f"v3data_{rank}.hdf5"
-    with h5py.File(filename, "w") as f:
-        f.create_dataset("V3_PES", data=local_pes_threebody)
-        if dipole:
-            f.create_dataset("D3_DMS", data=local_dipole_threebody)
-
+    _write_data(path, rank, "v3data", "V3_PES", local_pes_threebody)
     if dipole:
-        return local_pes_threebody, local_dipole_threebody
-
-    return local_pes_threebody, None  # pragma: no cover
+        _write_data(path, rank, "v3data", "D3_DMS", local_dipole_threebody)
 
 
 def _pes_threemode(
@@ -598,6 +611,7 @@ def _pes_threemode(
     dipole=False,
     num_workers=1,
     backend="serial",
+    path=None,
 ):
     r"""Computes the three-mode potential energy surface on a grid along directions defined by
     displacement vectors.
@@ -618,6 +632,7 @@ def _pes_threemode(
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
+        path (string): the path to the directory where results will be saved. Default value is set to None.
 
 
     Returns:
@@ -627,6 +642,10 @@ def _pes_threemode(
            if dipole is set to ``False``
 
     """
+    use_temp_dir = path is None
+    tmpdir = TemporaryDirectory() if use_temp_dir else None
+    path = Path(tmpdir.name) if use_temp_dir else Path(path)
+
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
         for (i, gridpoint_1), (j, gridpoint_2), (k, gridpoint_3) in itertools.product(
@@ -646,6 +665,7 @@ def _pes_threemode(
             pes_twobody,
             dipole_onebody,
             dipole_twobody,
+            path,
             method,
             dipole,
         )
@@ -653,17 +673,17 @@ def _pes_threemode(
     ]
 
     executor_class = concurrency.backends.get_executor(backend)
-    executor = executor_class(max_workers=num_workers)
-    executor.starmap(_local_pes_threemode, arguments)
+    with executor_class(max_workers=num_workers) as executor:
+        executor.starmap(_local_pes_threemode, arguments)
 
     pes_threebody = None
 
     pes_threebody, dipole_threebody = _load_pes_threemode(
-        num_workers, len(freqs), len(grid), dipole
+        num_workers, len(freqs), len(grid), path, dipole
     )
-    current_directory = Path.cwd()
-    for file_path in current_directory.glob("v3data*"):
-        file_path.unlink(missing_ok=False)
+
+    if use_temp_dir:
+        tmpdir.cleanup()
 
     if dipole:
         return pes_threebody, dipole_threebody
@@ -671,7 +691,7 @@ def _pes_threemode(
     return pes_threebody, None  # pragma: no cover
 
 
-def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
+def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     """
     Loader to combine pes_threebody and dipole_threebody from multiple processors.
 
@@ -680,6 +700,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
         nmodes: number of normal modes
         quad_order: order for Gauss-Hermite quadratures
         dipole: Flag to calculate the dipole elements. Default is ``False``.
+        path (string): the path to the directory where results are saved.
 
     Returns:
         tuple: A tuple containing the following:
@@ -703,11 +724,9 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
                 init_idx = 0
                 end_idx = 0
                 for proc in range(num_proc):
-                    file_path = Path("v3data" + f"_{proc}" + ".hdf5")
-                    with h5py.File(file_path, "r+") as f:
-                        local_pes_threebody = f["V3_PES"][()]
-                        if local_dipole is not None:
-                            local_dipole_threebody = f["D3_DMS"][()]
+                    local_pes_threebody = _read_data(path, proc, "v3data", "V3_PES")
+                    if dipole:
+                        local_dipole_threebody = _read_data(path, proc, "v3data", "D3_DMS")
 
                     pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
                     end_idx += len(pes_chunk)
@@ -779,99 +798,104 @@ def vibrational_pes(
          2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
 
     """
-    if bins is None:
-        bins = [2600]
+    with TemporaryDirectory() as path:
+        if bins is None:
+            bins = [2600]
 
-    if dipole_level > 3 or dipole_level < 1:
-        raise ValueError(
-            "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
-            "between 1 and 3."
+        if dipole_level > 3 or dipole_level < 1:
+            raise ValueError(
+                "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
+                "between 1 and 3."
+            )
+        if quad_order < 1:
+            raise ValueError("Number of sample points cannot be less than 1.")
+
+        geom_eq = optimize_geometry(molecule, method)
+
+        mol_eq = qml.qchem.Molecule(
+            molecule.symbols,
+            geom_eq,
+            unit=molecule.unit,
+            basis_name=molecule.basis_name,
+            charge=molecule.charge,
+            mult=molecule.mult,
+            load_data=molecule.load_data,
         )
-    if quad_order < 1:
-        raise ValueError("Number of sample points cannot be less than 1.")
 
-    geom_eq = optimize_geometry(molecule, method)
+        scf_result = _single_point(mol_eq, method)
 
-    mol_eq = qml.qchem.Molecule(
-        molecule.symbols,
-        geom_eq,
-        unit=molecule.unit,
-        basis_name=molecule.basis_name,
-        charge=molecule.charge,
-        mult=molecule.mult,
-        load_data=molecule.load_data,
-    )
+        freqs = None
+        uloc = None
+        vectors = None
 
-    scf_result = _single_point(mol_eq, method)
+        freqs, vectors = _harmonic_analysis(scf_result, method)
+        if localize:
+            freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
 
-    freqs = None
-    uloc = None
-    vectors = None
+        grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
 
-    freqs, vectors = _harmonic_analysis(scf_result, method)
-    if localize:
-        freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
+        dipole = True
 
-    grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
+        pes_onebody, dipole_onebody = _pes_onemode(
+            mol_eq,
+            scf_result,
+            freqs,
+            vectors,
+            grid,
+            method=method,
+            dipole=dipole,
+            num_workers=num_workers,
+            backend=backend,
+            path=path,
+        )
 
-    dipole = True
-    pes_onebody, dipole_onebody = _pes_onemode(
-        mol_eq,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        method=method,
-        dipole=dipole,
-        num_workers=num_workers,
-        backend=backend,
-    )
-
-    # build PES -- two-body
-    if dipole_level < 2:
-        dipole = False
-
-    pes_twobody, dipole_twobody = _pes_twomode(
-        mol_eq,
-        scf_result,
-        freqs,
-        vectors,
-        grid,
-        pes_onebody,
-        dipole_onebody,
-        method=method,
-        dipole=dipole,
-        num_workers=num_workers,
-        backend=backend,
-    )
-
-    pes_data = [pes_onebody, pes_twobody]
-    dipole_data = [dipole_onebody, dipole_twobody]
-
-    if cubic:
-        if dipole_level < 3:
+        # build PES -- two-body
+        if dipole_level < 2:
             dipole = False
 
-        pes_threebody, dipole_threebody = _pes_threemode(
+        pes_twobody, dipole_twobody = _pes_twomode(
             mol_eq,
             scf_result,
             freqs,
             vectors,
             grid,
             pes_onebody,
-            pes_twobody,
             dipole_onebody,
-            dipole_twobody,
             method=method,
             dipole=dipole,
             num_workers=num_workers,
             backend=backend,
+            path=path,
         )
 
-        pes_data = [pes_onebody, pes_twobody, pes_threebody]
-        dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
+        pes_data = [pes_onebody, pes_twobody]
+        dipole_data = [dipole_onebody, dipole_twobody]
 
-    freqs = freqs * CM_TO_AU
-    return VibrationalPES(
-        freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
-    )
+        if cubic:
+            if dipole_level < 3:
+                dipole = False
+
+            pes_threebody, dipole_threebody = _pes_threemode(
+                mol_eq,
+                scf_result,
+                freqs,
+                vectors,
+                grid,
+                pes_onebody,
+                pes_twobody,
+                dipole_onebody,
+                dipole_twobody,
+                method=method,
+                dipole=dipole,
+                num_workers=num_workers,
+                backend=backend,
+                path=path,
+            )
+
+            pes_data = [pes_onebody, pes_twobody, pes_threebody]
+            dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
+
+        freqs = freqs * CM_TO_AU
+        return VibrationalPES(
+            freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
+        )

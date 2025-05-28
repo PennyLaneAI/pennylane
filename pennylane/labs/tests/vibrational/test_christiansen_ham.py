@@ -14,6 +14,7 @@
 """Unit Tests for the Christiansen Hamiltonian construction functions."""
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import pytest
@@ -37,6 +38,8 @@ from pennylane.labs.vibrational.christiansen_utils import (
     _cform_threemode_dipole,
     _cform_twomode,
     _cform_twomode_dipole,
+    _read_data,
+    _write_data,
     christiansen_integrals,
     christiansen_integrals_dipole,
 )
@@ -323,3 +326,16 @@ def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
         ),
         atol=1e-8,
     )
+
+
+def test_write_and_read_data():
+    """Test that _read_data return the data written using _write_data with the same args."""
+    with TemporaryDirectory() as tmpdirname:
+        path = Path(tmpdirname)
+        rank = 0
+        file_name = "testfile"
+        dataset_name = "testdata"
+        original_data = np.array([1, 2, 3, 4, 5])
+        _write_data(path, rank, file_name, dataset_name, original_data)
+        read_data = _read_data(path, rank, file_name, dataset_name)
+        np.testing.assert_array_equal(original_data, read_data)
