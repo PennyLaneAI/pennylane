@@ -967,6 +967,28 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
             _ = jax.make_jaxpr(circuit)(1.5, 0)
 
+    @pytest.mark.parametrize("embedding_location", ["loop", "after"])
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_for_loop_op_before(self, dynamic_wires, embedding_location):
+        """Test that an error is raised if an op is applied before a for loop with an embedding inside or after
+        the loop where either can have dynamic wires"""
+
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_for_loop_op_inside_embedding_after(self, dynamic_wires):
+        """Test that an error is raised if an op is applied inside a for loop with an embedding after
+        the loop where either can have dynamic wires"""
+
+    @pytest.mark.parametrize("embedding_location", ["loop", "after"])
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_while_loop_op_before(self, dynamic_wires):
+        """Test that an error is raised if an op is applied before a while loop with an embedding inside or after
+        the loop where either can have dynamic wires"""
+
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_while_loop_op_inside_embedding_after(self, dynamic_wires):
+        """Test that an error is raised if an op is applied inside a while loop with an embedding after
+        the loop where either can have dynamic wires"""
+
 
 class TestExpandPlxprTransformIntegration:
     """Test that the transform works with expand_plxpr_transform"""
