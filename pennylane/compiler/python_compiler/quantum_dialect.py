@@ -40,10 +40,13 @@ from xdsl.dialects.builtin import (
 from xdsl.ir import (
     Block,
     Dialect,
+    EnumAttribute,
     Operation,
     ParametrizedAttribute,
     Region,
+    SpacedOpaqueSyntaxAttribute,
     SSAValue,
+    StrEnum,
     TypeAttribute,
 )
 from xdsl.irdl import (
@@ -98,8 +101,18 @@ class ResultType(ParametrizedAttribute, TypeAttribute):
     name = "quantum.res"
 
 
+class NamedObservable(StrEnum):
+    """Known named observables"""
+
+    Identity = "Identity"
+    PauliX = "PauliX"
+    PauliY = "PauliY"
+    PauliZ = "PauliZ"
+    Hadamard = "Hadamard"
+
+
 @irdl_attr_definition
-class NamedObservableAttr(ParametrizedAttribute):
+class NamedObservableAttr(EnumAttribute[NamedObservable], SpacedOpaqueSyntaxAttribute):
     """Known named observables"""
 
     name = "quantum.named_observable"
@@ -169,6 +182,7 @@ class AllocOp(IRDLOperation):
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
 
     def verify_(self):
+        """Verify operation when rewriting."""
         if self.nqubits_attr is None:
             return
 
@@ -291,8 +305,8 @@ class CustomOp(IRDLOperation):
         if isinstance(gate_name, str):
             gate_name = StringAttr(data=gate_name)
 
-        out_qubits = (QubitType() for _ in in_qubits)
-        out_ctrl_qubits = (QubitType() for _ in in_ctrl_qubits)
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
         properties = {"gate_name": gate_name}
         if adjoint:
             properties["adjoint"] = UnitAttr()
@@ -561,6 +575,7 @@ class MeasureOp(IRDLOperation):
         )
 
     def verify_(self):
+        """Verify operation when rewriting."""
         if self.postselect is None:
             return
 

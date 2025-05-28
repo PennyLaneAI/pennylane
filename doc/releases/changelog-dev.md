@@ -6,6 +6,7 @@
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -88,7 +89,7 @@
 
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
 * Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
   iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
@@ -98,10 +99,21 @@
 
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
+  allowing angle computation for polynomials of large degrees (> 1000).
+  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
+  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
+  [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
+  expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
+  relevant gate-set with the `convert_to_mbqc_gateset` transform.
+  [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
@@ -164,10 +176,11 @@
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
-  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
-  decompose into will be chosen based on the target gate set.
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
+  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
+  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
 
   ```python
   from functools import partial
@@ -282,6 +295,15 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
+* Setting up the configuration of a workflow, including the determination of the best diff
+  method, is now done *after* user transforms have been applied. This allows transforms to
+  update the shots and change measurement processes with fewer issues.
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
@@ -303,6 +325,7 @@
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
   [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
+  [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -322,6 +345,10 @@
 
 * Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
+
+* Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc.pauli_tracker` module,
+  accessible via the `commute_clifford_op` function.
+  [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
 
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
@@ -463,6 +490,17 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
+  be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
+  [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
+
+* Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
+  repository.
+  [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
+
+* `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
+  [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
 * Fix subset of `pylint` errors in the `tests` folder.
   [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
@@ -624,6 +662,7 @@ Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
