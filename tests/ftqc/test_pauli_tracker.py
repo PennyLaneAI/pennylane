@@ -26,7 +26,14 @@ from pennylane.ftqc import (
     diagonalize_mcms,
     get_byproduct_corrections,
 )
-from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
+from pennylane.ftqc.pauli_tracker import (
+    _apply_measurement_correction_rule,
+    _get_measurements_corrections,
+    commute_clifford_op,
+    pauli_prod,
+    pauli_to_xz,
+    xz_to_pauli,
+)
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
@@ -47,6 +54,7 @@ def generate_random_state(n, seed=0):
     rng = np.random.default_rng(seed=seed)
     input_state = rng.random(2**n) + 1j * rng.random(2**n)
     return input_state / np.linalg.norm(input_state)
+
 
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
@@ -202,10 +210,13 @@ class TestPauliTracker:
         ):
             _ = commute_clifford_op(clifford_op, xz)
 
+
 @flaky(max_runs=5)
 class TestOfflineCorrection:
+    """Tests for byproduct operation offline corrections."""
 
     def _measurements_corrections(self, script, num_shots, raw_res):
+        """Helper function for correcting the measurement results with recorded MidMeasure results."""
         meas_res = raw_res[0 : len(script.measurements)]
 
         mid_meas_res = raw_res[len(script.measurements) :]
@@ -222,6 +233,7 @@ class TestOfflineCorrection:
         return cor_res
 
     def _get_mbqc_tape(self, ops, obs, num_shots):
+        """Helper function for creating a MBQC tape with a list of ops and obs."""
         measurements = []
         for ob in obs:
             measurements.append(qml.sample(ob))
@@ -315,3 +327,27 @@ class TestOfflineCorrection:
         cor_res = self._measurements_corrections(script_ref, num_shots, mbqc_res)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
+
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qml.CNOT(wires=[0, 1])],
+            [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
+        ],
+    )
+    @pytest.mark.parametrize("obs", [[qml.Hermitian(A=np.array([[1, 1], [1, 1]]), wires=[0])]])
+    def test_unsupported_obs(self, ops, obs):
+        start_state = generate_random_state(2)
+        ops = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+
+        _, script_ref = self._get_ref_res_tape(ops, obs)
+
+        with pytest.raises(NotImplementedError):
+            x = np.zeros(script_ref.num_wires, dtype=np.uint8)
+            z = np.zeros(script_ref.num_wires, dtype=np.uint8)
+            _ = _get_measurements_corrections(script_ref, x, z)
+
+        with pytest.raises(NotImplementedError):
+            x = 1
+            z = 1
+            _ = _apply_measurement_correction_rule(x, z, obs[0])

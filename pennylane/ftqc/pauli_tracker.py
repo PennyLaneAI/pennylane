@@ -326,7 +326,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops, ops
 
 
-def get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Operator]):
+def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Operator]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
@@ -395,13 +395,10 @@ def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
     if isinstance(ob, I):
         return 1
 
-    if ob is None:
-        return -1 if x == 1 else 1
-
     raise NotImplementedError(f"{ob.name} is not supported.")
 
 
-def get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_record: math.array):
+def _get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_record: math.array):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
     is calculated based on the measurement observables with the corresponding recorded x an z.
         Args:
@@ -419,18 +416,6 @@ def get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_re
             phase_cor[idx] *= _apply_measurement_correction_rule(
                 x_record[obs.wires[0]], z_record[obs.wires[0]], obs
             )
-        elif isinstance(obs, Prod):
-            # branch for TensorProd
-            obs = measurement.obs.decomposition()
-            for ob in obs:
-                phase_cor[idx] *= _apply_measurement_correction_rule(
-                    x_record[ob.wires[0]], z_record[ob.wires[0]], ob
-                )
-        elif obs is None:
-            for wire in measurement.wires:
-                phase_cor[idx] *= _apply_measurement_correction_rule(
-                    x_record[wire], z_record[wire], obs
-                )
         else:
             raise NotImplementedError(f"{obs.name} is not supported.")
     return phase_cor
@@ -549,6 +534,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
 
     by_ops, ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, z_record = get_xz_record(tape.num_wires, by_ops, ops)
+    x_record, z_record = _get_xz_record(tape.num_wires, by_ops, ops)
 
-    return get_measurements_corrections(tape, x_record, z_record)
+    return _get_measurements_corrections(tape, x_record, z_record)
