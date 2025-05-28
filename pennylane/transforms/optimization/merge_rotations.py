@@ -78,7 +78,7 @@ def _get_plxpr_merge_rotations():
             for prev_op in previous_ops_on_wires:
                 super().interpret_operation(prev_op)
 
-        # pylint: disable=inconsistent-return-statements
+        # pylint: disable=inconsistent-return-statements,too-many-branches
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
