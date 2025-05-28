@@ -871,7 +871,7 @@ class TestHadamardGrad:
         (cost4, [4, 3], np.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
-        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
+        (cost10, [8, 3], np.ndarray),  # Note that the shape here depends on the device
         (cost11, [2, 32, 3], tuple),
         (cost12, [8, 3], np.ndarray),
     ]
@@ -882,7 +882,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit", wires=6)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
