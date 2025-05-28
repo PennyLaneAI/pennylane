@@ -315,7 +315,17 @@ class TestOfflineCorrection:
         ],
     )
     @pytest.mark.parametrize(
-        "obs", [[qml.X(0)], [qml.X(1)], [qml.Y(0)], [qml.Y(1)], [qml.Z(0)], [qml.Z(1)]]
+        "obs",
+        [
+            [qml.I(0)],
+            [qml.I(1)],
+            [qml.X(0)],
+            [qml.X(1)],
+            [qml.Y(0)],
+            [qml.Y(1)],
+            [qml.Z(0)],
+            [qml.Z(1)],
+        ],
     )
     def test_clifford_circuit_offline(self, num_shots, ops, obs):
         start_state = generate_random_state(2)
@@ -362,9 +372,7 @@ class TestOfflineCorrection:
             mid_res = [0, 1, 1, 0]
             _ = get_byproduct_corrections(script, mid_res)
 
-        with pytest.raises(
-            ValueError, match="The mid-measure value should be either 0 or 1."
-        ):
+        with pytest.raises(ValueError, match="The mid-measure value should be either 0 or 1."):
             script = qml.tape.QuantumScript(
                 ops=[qml.H(0)], measurements=[qml.sample(qml.X(0))], shots=10
             )
