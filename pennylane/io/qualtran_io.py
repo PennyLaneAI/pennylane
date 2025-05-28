@@ -211,8 +211,9 @@ def _preprocess_bloq(bloq):
 
 
 class FromBloq(Operation):
-    r"""An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
-    as a PennyLane :class:`~.Operation`.
+    r"""
+    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the main

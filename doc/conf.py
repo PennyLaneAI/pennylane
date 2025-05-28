@@ -72,7 +72,7 @@ os.environ["SPHINX_BUILD"] = "1"
 
 autosummary_generate = True
 autosummary_imported_members = False
-automodapi_toctreedirnm = "api"
+automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
 
@@ -108,7 +108,7 @@ project = "PennyLane"
 copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
-add_module_names = True
+add_module_names = False
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
