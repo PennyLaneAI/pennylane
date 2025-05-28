@@ -148,6 +148,30 @@
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
+* A new template :class:`~.SemiAdder` has been added. This operator performs the addition of two integers in the computational basis.
+  [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
+
+  ```python
+  x = 3
+  y = 4
+
+  wires = qml.registers({"x":3, "y":6, "work":5})
+
+  dev = qml.device("default.qubit", shots=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisEmbedding(x, wires=wires["x"])
+      qml.BasisEmbedding(y, wires=wires["y"])
+      qml.SemiAdder(wires["x"], wires["y"], wires["work"])
+      return qml.sample(wires=wires["y"])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0 0 0 1 1 1]
+  ```
+
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
