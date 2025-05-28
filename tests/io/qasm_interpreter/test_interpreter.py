@@ -50,6 +50,24 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_raises_on_expressions(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            int p = 1;
+            pow(p * 2) @ x q0;
+            """,
+            permissive=True,
+        )
+        with pytest.raises(
+            NotImplementedError,
+            match=f"Unable to handle BinaryExpression expression at this time",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "expression-not-implemented"}
+            )
+
     def test_nested_modifiers(self):
         # parse the QASM program
         ast = parse(
