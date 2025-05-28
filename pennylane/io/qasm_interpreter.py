@@ -491,7 +491,7 @@ class QasmInterpreter:
 
     def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
         """
-        Helper to setup the a quantum gate call, also resolving arguments and wires.
+        Helper to setup the quantum gate call, also resolving arguments and wires.
 
         Args:
             node (QuantumGate): The QuantumGate QASMNode.
@@ -573,11 +573,13 @@ class QasmInterpreter:
     @staticmethod
     def evaluate_argument(arg: str, context: dict):
         """
-        Attempts to retrieve a variable from the current context by name.
-
+        Constructs a callable that can be queued into a QNode.
+        Evaluates an expression.
         Args:
-            name (str): the name of the variable to retrieve.
+            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
+            node (QASMNode): the expression QASMNode.
             context (dict): the current context.
+            aliasing (bool): whether to use aliases or not.
         """
         if re.search("Literal", arg.__class__.__name__) is not None:
             return arg.value
@@ -675,76 +677,6 @@ class QasmInterpreter:
             res = node.value
         # TODO: include all other cases here
         return res
-
-    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
-        """
-        Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
-        depending on the type of modifier. We build a Callable that applies the modifier appropriately
-        at execution time, evaluating the gate Callable appropriately as well.
-
-        Args:
-            gate (Callable): The Callable partial built for the gate we wish to modify.
-            node (QASMNode): The original QquantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The callable which will appropriately apply the modifier and execute the gate.
-        """
-        call_stack = [gate]
-        for mod in node.modifiers:
-            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-            # `no viable alternative at input 'wop(power)@'`, long before we get here.
-            assert mod.modifier.name in ("inv", "pow", "ctrl")
-            wrapper = None
-            if mod.modifier.name == "inv":
-                wrapper = ops.adjoint
-            elif mod.modifier.name == "pow":
-                if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(ops.pow, z=mod.argument.value)
-                elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(ops.pow, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == "ctrl":
-                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
-
-            call_stack.append(wrapper)
-
-        def call(execution_context):
-            res = None
-            for func in call_stack:
-                # if there is a control in the stack
-                if (
-                    call_stack[-1].__class__.__name__ == "partial"
-                    and "control" in call_stack[-1].keywords
-                ):
-                    # if we are processing the control now
-                    if "control" in func.keywords:
-                        res.keywords["wires"] = [res.keywords["wires"][-1]]
-                    # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
-                    def _needs_context(fn, **kwargs):
-                        try:
-                            inspect.signature(fn).bind(
-                                **kwargs
-                            )
-                            return False
-                        except TypeError:
-                            return True
-                    if res is not None:
-                        res = (
-                            func(res.func)(**res.keywords, context=execution_context)
-                            if _needs_context(res.func, **res.keywords)
-                            else func(res.func)(**res.keywords)
-                        )
-                    else:
-                        res = func
-                else:
-                    # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
-                    if res is not None:
-                        res = func(res)
-                    else:
-                        res = func() if self._all_context_bound(func) else func(execution_context)
-
-        return call
 
     @staticmethod
     def _require_wires(wires, context):
