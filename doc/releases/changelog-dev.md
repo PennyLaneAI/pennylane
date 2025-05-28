@@ -177,10 +177,11 @@
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
-  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
-  decompose into will be chosen based on the target gate set.
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
+  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
+  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
 
   ```python
   from functools import partial
@@ -295,8 +296,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* Add `PennyLaneUserWarning` to `pennylane.exceptions` to provide specific warnings to users regarding improper package usage.
-  [(#7496)](https://github.com/PennyLaneAI/pennylane/pull/7496)
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
 
 * Setting up the configuration of a workflow, including the determination of the best diff
   method, is now done *after* user transforms have been applied. This allows transforms to
@@ -319,6 +321,7 @@
   but it is coded in Python instead of C++.
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
+  [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
 
 * PennyLane supports `JAX` version 0.6.0.
@@ -484,6 +487,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
+  repository.
+  [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
 
 * `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
