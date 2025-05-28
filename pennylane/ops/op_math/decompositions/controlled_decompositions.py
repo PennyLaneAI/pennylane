@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
     Automatically selects the best algorithm based on the matrix (uses specialized more efficient
     algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).
-    These algorithms are defined in section 3.1 and 3.2 of
+    These algorithms are defined in sections 3.1 and 3.2 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
 
     .. warning:: This method will add a global phase for target operations that do not
@@ -54,6 +54,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
     **Example:**
 
+    >>> from pennylane.ops.op_math import ctrl_decomp_bisect
     >>> op = qml.T(0) # uses OD algorithm
     >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─┤
@@ -72,12 +73,19 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qml.Hadamard(0) # uses general algorithm
     >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)─┤
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│─────────┤
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●────────┤
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●────────┤
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X ···
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│─ ···
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│─ ···
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│─ ···
+    4: ────────├●────────────────├●───────────────────├●───────────────────├● ···
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰● ···
+    <BLANKLINE>
+    0: ··· ──U(M0)†GlobalPhase(-1.57)─┤
+    1: ··· ─╭●GlobalPhase(-1.57)──────┤
+    2: ··· ─├●GlobalPhase(-1.57)──────┤
+    3: ··· ─├●GlobalPhase(-1.57)──────┤
+    4: ··· ─├●GlobalPhase(-1.57)──────┤
+    5: ··· ─╰●GlobalPhase(-1.57)──────┤
 
     """
     if len(target_operation.wires) > 1:
@@ -105,7 +113,7 @@ def ctrl_decomp_zyz(
 
     This function decomposes both single and multiple controlled single-qubit
     target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
-    for single `controlled_wires`, and Lemma 7.9 for multiple `controlled_wires`
+    for single ``controlled_wires``, and Lemma 7.9 for multiple ``controlled_wires``
     from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
@@ -121,8 +129,8 @@ def ctrl_decomp_zyz(
 
     **Example**
 
-    We can create a controlled operation using `qml.ctrl`, or by creating the
-    decomposed controlled version of using `qml.ctrl_decomp_zyz`.
+    We can create a controlled operation using ``qml.ctrl``, or by creating the
+    decomposed controlled version using ``qml.ctrl_decomp_zyz``.
 
     .. code-block:: python
 

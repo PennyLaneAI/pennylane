@@ -707,6 +707,7 @@ class TestControlledDecomposition:
             }
         )
 
+<<<<<<< HEAD
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11)."""
@@ -732,6 +733,8 @@ class TestControlledDecomposition:
         op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
         assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
+=======
+>>>>>>> 4138d18d4e42e9cac3072099ce96d464cfe97169
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 

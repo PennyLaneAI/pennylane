@@ -138,7 +138,7 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-class CondCallable:  # pylint:disable=too-few-public-methods
+class CondCallable:
     """Base class to represent a conditional function with boolean predicates.
 
     Args:
@@ -246,8 +246,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-
-        return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=not-callable
+        return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel

@@ -16,7 +16,7 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+# pylint: disable=arguments-differ
 import functools
 from typing import Optional, Union
 
@@ -878,7 +878,7 @@ class Rot(Operation):
         phi: TensorLike,
         theta: TensorLike,
         omega: TensorLike,
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1255,9 +1255,7 @@ class U2(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, delta: TensorLike
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1439,9 +1437,7 @@ class U3(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
