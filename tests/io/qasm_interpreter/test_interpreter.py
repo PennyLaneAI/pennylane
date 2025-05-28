@@ -70,7 +70,7 @@ class TestInterpreter:
         # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "nested-modifiers"}
+                ast, context={"wire_map": None, "name": "nested-modifiers"}
             )
         assert q.queue == [
             Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
@@ -81,7 +81,7 @@ class TestInterpreter:
             Adjoint((CY(wires=["q0", "q1"])) ** 2),
         ]
 
-    def test_integer_qubit_mappings(self):
+    def test_integer_wire_maps(self):
         # parse the QASM program
         ast = parse(
             """
@@ -105,13 +105,13 @@ class TestInterpreter:
                 ast,
                 context={
                     "name": "single-qubit-gates",
-                    "qubit_mapping": {"q0": 0, "q1": 1, "q2": 2},
+                    "wire_map": {"q0": 0, "q1": 1, "q2": 2},
                 },
             )
 
         assert q.queue == [Identity(0), Hadamard(2), PauliX(1), PauliY(2)]
 
-    def test_qubit_mappings(self):
+    def test_wire_maps(self):
         # parse the QASM program
         ast = parse(
             """
@@ -135,7 +135,7 @@ class TestInterpreter:
                 ast,
                 context={
                     "name": "single-qubit-gates",
-                    "qubit_mapping": {"q0": "0q", "q1": "1q", "q2": "2q"},
+                    "wire_map": {"q0": "0q", "q1": "1q", "q2": "2q"},
                 },
             )
 
@@ -157,7 +157,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "parameterized-gate"}
+                ast, context={"wire_map": None, "name": "parameterized-gate"}
             )
 
         assert q.queue[0] == PowOperation(RX(0.2, wires=["q0"]), 2)
@@ -177,7 +177,7 @@ class TestInterpreter:
             NameError,
             match="Undeclared variable phi encountered in QASM.",
         ):
-            QasmInterpreter().interpret(ast, context={"qubit_mapping": None, "name": "name-error"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})
 
     def test_unsupported_node_type_raises(self):
 
@@ -198,7 +198,7 @@ class TestInterpreter:
             match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
         ):
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "unsupported-error"}
+                ast, context={"wire_map": None, "name": "unsupported-error"}
             )
 
     def test_no_qubits(self):
@@ -217,7 +217,7 @@ class TestInterpreter:
             match="Attempt to reference wires that have not been declared in uninit-qubit",
         ):
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "uninit-qubit"}
+                ast, context={"wire_map": None, "name": "uninit-qubit"}
             )
 
     def test_unsupported_gate(self):
@@ -235,7 +235,7 @@ class TestInterpreter:
 
         with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "unsupported-gate"}
+                ast, context={"wire_map": None, "name": "unsupported-gate"}
             )
 
     def test_missing_param(self):
@@ -254,7 +254,7 @@ class TestInterpreter:
             TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "missing-param"}
+                ast, context={"wire_map": None, "name": "missing-param"}
             )
 
     def test_uninitialized_var(self):
@@ -271,7 +271,7 @@ class TestInterpreter:
 
         with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "uninit-param"}
+                ast, context={"wire_map": None, "name": "uninit-param"}
             )
 
     def test_parses_simple_qasm(self):
@@ -295,7 +295,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"qubit_mapping": None, "name": "gates"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "gates"})
 
         assert q.queue == [
             PauliX("q0"),
@@ -328,7 +328,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "two-qubit-gates"}
+                ast, context={"wire_map": None, "name": "two-qubit-gates"}
             )
 
         assert q.queue == [
@@ -360,7 +360,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "param-two-qubit-gates"}
+                ast, context={"wire_map": None, "name": "param-two-qubit-gates"}
             )
 
         assert q.queue == [
@@ -390,7 +390,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "multi-qubit-gates"}
+                ast, context={"wire_map": None, "name": "multi-qubit-gates"}
             )
 
         assert q.queue == [Toffoli(wires=["q0", "q2", "q1"]), CSWAP(wires=["q1", "q2", "q0"])]
@@ -420,7 +420,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "param-single-qubit-gates"}
+                ast, context={"wire_map": None, "name": "param-single-qubit-gates"}
             )
 
         assert q.queue == [
@@ -462,7 +462,7 @@ class TestInterpreter:
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"qubit_mapping": None, "name": "single-qubit-gates"}
+                ast, context={"wire_map": None, "name": "single-qubit-gates"}
             )
 
         assert q.queue == [

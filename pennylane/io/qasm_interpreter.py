@@ -174,14 +174,14 @@ class QasmInterpreter:
         wires = [
             # parser will sometimes represent as a str and sometimes as an Identifier
             (
-                context["qubit_mapping"][
+                context["wire_map"][
                     (
                         node.qubits[q].name
                         if isinstance(node.qubits[q].name, str)
                         else node.qubits[q].name.name
                     )
                 ]
-                if context["qubit_mapping"] is not None
+                if context["wire_map"] is not None
                 else (
                     node.qubits[q].name
                     if isinstance(node.qubits[q].name, str)
