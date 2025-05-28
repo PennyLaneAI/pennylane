@@ -403,8 +403,9 @@
 <h3>Breaking changes 💔</h3>
 
 * Decompositions of two-qubit unitaries via `two_qubit_decomposition` now use 3 CNOTs even if
-  just 2 CNOTs would suffice theoretically. This is the price for guaranteeing correctness in
-  all edge cases, and will be improved in a later contribution.
+  just 2 CNOTs would suffice theoretically. This may or may not affect a user's workflow, depending
+  on the numerical matrices provided to the decomposition. This change fixes a previous bug that
+  affected the correctness of the decomposition in some edge cases.
   [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.

@@ -345,8 +345,8 @@ E_dag = E.conj().T
 
 # Helpful to have static copies of these since they are needed in a few places.
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-P_0 = np.kron(np.diag([1j, 1]), np.eye(2))
-P_0_dag = P_0.conj().T
+S_0 = np.kron(np.diag([1j, 1]), np.eye(2))
+S_0_dag = S_0.conj().T
 
 
 def _compute_num_cnots(U):
@@ -487,23 +487,30 @@ def _multidot(*matrices):
     return mat
 
 
-def _ai_kak(u):
-    """Compute a type-AI Cartan decomposition of ``u`` in the
-    standard basis/representation."""
+def _ai_kak(U):
+    """Compute a type-AI Cartan decomposition of ``U`` in the standard basis/representation.
+    This is done in the following steps (see App.E of https://arxiv.org/abs/2503.19014, case AI):
+    - compute a real-valued eigenbasis O_1 (orthogonal matrix) and the eigenvalues d^2 of Δ = U U^T,
+    - make O_1 *special* orthogonal by adjusting the sign of its first column,
+    - take the square root of d^2 to obtain d,
+    - compute O_2 = d* O_1^T U,
+    - adjust the sign of the first row of O_2 so that O_2 is special orthogonal, and multiply
+      the first entry of d with the same sign.
+    """
 
-    Delta = math.dot(u, math.transpose(u))
-    _, o1 = math.linalg.eigh(math.real(Delta) + math.imag(Delta))
-    evals = _multidot(math.transpose(o1), Delta, o1)
-    # assert math.allclose(o1 @ evals @ math.transpose(o1), Delta)
+    Delta = math.dot(U, math.transpose(U))
+    # Delta^T=Delta implies that real(Delta) and imag(Delta) share an eigenbasis, which then also
+    # is that of Delta itself. As (real(Delta) + imag(Delta)) is real symmetric, we can use ``eigh``
+    # and will obtain a real-valued eigenbasis
+    _, o1 = math.linalg.eigh(0.1 * math.real(Delta) + 10 * math.imag(Delta))
+    d_squared = _multidot(math.transpose(o1), Delta, o1)
 
     # This implements o1[:, 0] *= det(o1) to ensure det(o1) = 1 afterwards
     # No need to modify the eigenvalues or d because this change will be absorbed in o2
     o1 = math.transpose(math.set_index(math.transpose(o1), 0, math.linalg.det(o1) * o1[:, 0]))
 
-    d = math.diag(math.sqrt(math.diag(evals)))
-    o2 = _multidot(math.conj(d), math.transpose(o1), u)
-
-    # assert math.allclose(o1 @ d @ o2, u)
+    d = math.diag(math.sqrt(math.diag(d_squared)))
+    o2 = _multidot(math.conj(d), math.transpose(o1), U)
 
     # Instead of guaranteeing the correct determinant while taking the square root,
     # we correct it after the fact
@@ -531,10 +538,33 @@ def _extract_abde(A):
 
     and this function will return
 
-    a' + b'
-    a' - b'
-    d' + e'
-    (d' - e') / 2
+    a = a' + b'
+    b = a' - b'
+    d = d' + e'
+    e = (d' - e') / 2.
+
+    The performed computation steps are the following:
+    1. Compute a' from A_{00} and A_{30}
+        a. If cos(d')sin(a')≠0 or cos(d')cos(a')≠0, use
+           atan2(cos(d')sin(a'), cos(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
+        b. If cos(d')sin(a')=cos(d')cos(a')=0, use
+           atan2(sin(d')sin(a'), sin(d')cos(a')) = atan2(sin(a'), cos(a')) = a'
+        Note that if cos(d')sin(a')=cos(d')cos(a')=0, we know that cos(d')=0 and sin(d')≠0
+    2. Compute b' from A_{11} and A_{21}
+        a. If cos(e')sin(b')≠0 or cos(e')cos(b')≠0, use
+           atan2(cos(e')sin(b'), cos(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
+        b. If cos(e')sin(b')=cos(e')cos(b')=0, use
+           atan2(sin(e')sin(b'), sin(e')cos(b')) = atan2(sin(b'), cos(b')) = b'
+        Note that if cos(e')sin(b')=cos(e')cos(b')=0, we know that cos(e')=0 and sin(e')≠0
+    3. Compute a = a' + b' and b = a' - b'
+    4. Compute exp(-id') from A_{00} or A_{30}
+        a. If A_{00}≠0, use it and compute exp(-i d')cos(a') / cos(a')
+        b. If A_{00}=0, us A_{30} and compute exp(-i d')sin(a') / sin(a')
+    5. Compute exp(ie') from A_{11} or A_{21}
+        a. If A_{21}≠0, use it and compute exp(i e')cos(b') / cos(b')
+        b. If A_{21}=0, us A_{11} and compute exp(i e')sin(b') / sin(b')
+    6. Compute d = d' + e' as arg(exp(ie') exp(-id')*)
+    7. Compute e = (d' - e')/2 as -arg(exp(ie') exp(-id/2))
     """
     a_plus_b_half = math.cond(
         math.allclose(math.real(A[::3, 0]), math.zeros_like(math.real(A[::3, 0]))),
@@ -587,7 +617,8 @@ def _decompose_3_cnots(U, wires, initial_phase):
     The Cartan decomposition is of type AI, decomposing a (special) unitary matrix into
     two special orthogonal matrices and a matrix from some representation of U(1)^r, with r=4
     for unitary input (used here) and r=3 for special unitary input.
-    This Cartan decomposition is implemented in _ai_kak. In this function, we take care
+    See e.g. App. E, paragraph on AI in https://arxiv.org/abs/2503.19014 for details.
+    This Cartan decomposition is implemented in _ai_kak. Here we take care
     of translating the input and output matrices of _ai_kak into the right representations
     of SO(4) and U(1)^4.
     The representations that we want are given by the fixed circuit structure that we are after:
@@ -664,22 +695,23 @@ def _decompose_3_cnots(U, wires, initial_phase):
 
     So we actually implemented U!
     """
-    W = _multidot(E_dag, P_0_dag, SWAP, U, P_0, E)
+    W = _multidot(E_dag, S_0_dag, SWAP, U, S_0, E)
     K_1, A_K, K_2 = _ai_kak(W)
+
     L_1 = _multidot(E, K_1, E_dag)
     A_L = _multidot(E, A_K, E_dag)
     L_2 = _multidot(E, K_2, E_dag)
 
-    M_1 = _multidot(SWAP, P_0, L_1, P_0_dag, SWAP)
-    M_2 = _multidot(P_0, L_2, P_0_dag)
-    A_M = _multidot(SWAP, P_0, A_L, P_0_dag)
+    M_1 = _multidot(SWAP, S_0, L_1, S_0_dag, SWAP)
+    M_2 = _multidot(S_0, L_2, S_0_dag)
+    A_M = _multidot(SWAP, S_0, A_L, S_0_dag)
 
     a, b, d, e = _extract_abde(A_M)
 
-    gphase = _decompose_0_cnots(M_2, wires, 0.0)
+    _ = _decompose_0_cnots(M_2, wires, 0.0)
     _central_circuit(a, b, d, wires)
-    gphase += _decompose_0_cnots(M_1, wires, gphase)
-    # gphase is zero because we are guaranteed that M_1 and M_2 have unit determinant
+    _ = _decompose_0_cnots(M_1, wires, 0.0)
+    # global phases here are zero because we are guaranteed that M_1 and M_2 have unit determinant
 
     # Return the global phase obtained from A_M. It will be combined with initial_phase
     # in `two_qubit_decomposition`
