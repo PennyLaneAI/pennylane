@@ -1,5 +1,5 @@
-# Add commits here that should be ignored in the output of git blame.
-# Include comment about why the commit is ignored.
+# Add commits here that should be ignored in the output of git blame. Include a comment
+# about why the commit is ignored, with a link to the corresponding PR if applicable.
 
-# Update EOL character for many files from CRLF to LF
+# Update EOL character for many files from CRLF to LF (https://github.com/PennyLaneAI/pennylane/pull/7502)
 c73e73b19c8d38e63b41ca4c8039d9f430c55da1
