@@ -109,8 +109,8 @@ class TestInterpreter:
             permissive=True,
         )
         with pytest.raises(
-                ValueError,
-                match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
+            ValueError,
+            match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
@@ -201,10 +201,10 @@ class TestInterpreter:
             )
 
         assert q.queue == [
-            RX(1, 'q0'),
-            RX(2, 'q0'),
-            RX(0, 'q0'),
-            RX(2, 'q0'),
+            RX(1, "q0"),
+            RX(2, "q0"),
+            RX(0, "q0"),
+            RX(2, "q0"),
         ]
 
     def test_mod_with_declared_param(self):
@@ -234,6 +234,7 @@ class TestInterpreter:
         ast = parse(
             """
             qubit q0;
+            float phi;
             rx(phi) q0;
             """,
             permissive=True,
@@ -241,7 +242,7 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Undeclared variable phi encountered in QASM.",
+            match="Attempt to reference uninitialized parameter phi!",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})
 
@@ -261,8 +262,8 @@ class TestInterpreter:
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction QuantumMeasurementStatement "
-                  "was encountered on line 6, in unsupported-error.",
+            match="An unsupported QASM instruction QuantumMeasurementStatement was "
+                  "encountered on line 6, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
@@ -347,7 +348,7 @@ class TestInterpreter:
             ry(0.2) q0;
             inv @ rx(theta) q0;
             pow(2) @ x q0;
-            ctrl @ x q1, q0;
+            ctrl @ id q0, q1;
             """,
             permissive=True,
         )
@@ -363,7 +364,7 @@ class TestInterpreter:
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
             PowOpObs(PauliX(wires=["q0"]), 2),
-            CNOT(wires=["q1", "q0"]),
+            Controlled(Identity("q1"), control_wires=["q0"]),
         ]
 
     def test_interprets_two_qubit_gates(self):

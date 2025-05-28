@@ -12,7 +12,7 @@ from functools import partial
 from openqasm3.visitor import QASMNode
 from openqasm3.ast import BitstringLiteral, ArrayLiteral, Cast, IndexExpression, RangeDefinition, Identifier, \
     BinaryExpression, UnaryExpression, ClassicalDeclaration, QuantumGate, QubitDeclaration, ConstantDeclaration, \
-    ClassicalAssignment
+    ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, BinaryExpression
 
 from pennylane import ops
 from pennylane.operation import Operator
@@ -67,6 +67,7 @@ class QasmInterpreter:
         """
         self.permissive = permissive
         self.raise_if_dirty = False
+        self.executing = False
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
@@ -279,7 +280,10 @@ class QasmInterpreter:
                 res = context["vars"][name]
                 if res["dirty"] == True and self.raise_if_dirty:
                     _dirty(context, name)
-                return res
+                if res["val"] is not None:
+                    return res
+                else:
+                    raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         elif (
             "wires" in context
             and context["wires"] is not None
@@ -292,10 +296,12 @@ class QasmInterpreter:
             res = context["aliases"][name](context)  # evaluate the alias and de-reference
             if isinstance(res, str):
                 return res
+            if res["dirty"] == True and self.raise_if_dirty:
+                _dirty(context, name)
+            if res["val"] is not None:
+                return res
             else:
-                if res["dirty"] == True and self.raise_if_dirty:
-                    _dirty(context, name)
-            return res
+                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         else:
             _warning(context, name)
 
@@ -401,17 +407,6 @@ class QasmInterpreter:
         # runtime Callable
         self._init_gates_list(context)
         context["gates"].append(partial(self.visit_classical_declaration, node))
-
-    @staticmethod
-    def _execute_all(context: dict):
-        """
-        Executes all the gates in the context.
-
-        Args:
-            context (dict): the current context populated with the gates.
-        """
-        for func in context["gates"]:
-            func()
 
     def construct_callable(self, context: dict):
         """
@@ -614,13 +609,14 @@ class QasmInterpreter:
         elif isinstance(node, UnaryExpression):
             res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
         elif isinstance(node, IndexExpression):
+
             def _index_into_var(var):
                 if var["ty"] == "BitType":
                     var = bin(var["val"])[2:].zfill(var["size"])
                 else:
                     var = var["val"]
                 if isinstance(node.index[0], RangeDefinition):
-                    return var[node.index[0].start.value: node.index[0].end.value]
+                    return var[node.index[0].start.value : node.index[0].end.value]
                 elif re.search("Literal", node.index[0].__class__.__name__):
                     return var[node.index[0].value]
                 else:
@@ -671,7 +667,7 @@ class QasmInterpreter:
                     return value
                 except NameError as e:
                     raise NameError(
-                        f"Reference to an undeclared variable {node.name} in {context['name']}."
+                        str(e) or f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
         elif isinstance(node, Callable):
             res = node()
@@ -679,6 +675,76 @@ class QasmInterpreter:
             res = node.value
         # TODO: include all other cases here
         return res
+
+    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
+        """
+        Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
+        depending on the type of modifier. We build a Callable that applies the modifier appropriately
+        at execution time, evaluating the gate Callable appropriately as well.
+
+        Args:
+            gate (Callable): The Callable partial built for the gate we wish to modify.
+            node (QASMNode): The original QquantumGate QASMNode.
+            context (dict): The current context.
+
+        Returns:
+            Callable: The callable which will appropriately apply the modifier and execute the gate.
+        """
+        call_stack = [gate]
+        for mod in node.modifiers:
+            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+            # `no viable alternative at input 'wop(power)@'`, long before we get here.
+            assert mod.modifier.name in ("inv", "pow", "ctrl")
+            wrapper = None
+            if mod.modifier.name == "inv":
+                wrapper = ops.adjoint
+            elif mod.modifier.name == "pow":
+                if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                    wrapper = partial(ops.pow, z=mod.argument.value)
+                elif "vars" in context and mod.argument.name in context["vars"]:
+                    wrapper = partial(ops.pow, z=context["vars"][mod.argument.name]["val"])
+            elif mod.modifier.name == "ctrl":
+                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
+
+            call_stack.append(wrapper)
+
+        def call(execution_context):
+            res = None
+            for func in call_stack:
+                # if there is a control in the stack
+                if (
+                    call_stack[-1].__class__.__name__ == "partial"
+                    and "control" in call_stack[-1].keywords
+                ):
+                    # if we are processing the control now
+                    if "control" in func.keywords:
+                        res.keywords["wires"] = [res.keywords["wires"][-1]]
+                    # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
+                    def _needs_context(fn, **kwargs):
+                        try:
+                            inspect.signature(fn).bind(
+                                **kwargs
+                            )
+                            return False
+                        except TypeError:
+                            return True
+                    if res is not None:
+                        res = (
+                            func(res.func)(**res.keywords, context=execution_context)
+                            if _needs_context(res.func, **res.keywords)
+                            else func(res.func)(**res.keywords)
+                        )
+                    else:
+                        res = func
+                else:
+                    # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
+                    if res is not None:
+                        res = func(res)
+                    else:
+                        res = func() if self._all_context_bound(func) else func(execution_context)
+
+        return call
 
     @staticmethod
     def _require_wires(wires, context):
