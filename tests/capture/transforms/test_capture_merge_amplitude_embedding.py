@@ -973,21 +973,95 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
         """Test that an error is raised if an op is applied before a for loop with an embedding inside or after
         the loop where either can have dynamic wires"""
 
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(n, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+            qml.H(op_wires)
+
+            @qml.for_loop(n)
+            def loop_fn(i):  # pylint: disable=unused-argument
+                if embedding_location == "loop":
+                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qml.H(0)
+
+            loop_fn()
+            if embedding_location == "after":
+                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(5, 0)
+
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_for_loop_op_inside_embedding_after(self, dynamic_wires):
         """Test that an error is raised if an op is applied inside a for loop with an embedding after
         the loop where either can have dynamic wires"""
 
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(n, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+
+            @qml.for_loop(n)
+            def loop_fn(i):  # pylint: disable=unused-argument
+                qml.H(op_wires)
+
+            loop_fn()
+            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(5, 0)
+
     @pytest.mark.parametrize("embedding_location", ["loop", "after"])
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
-    def test_while_loop_op_before(self, dynamic_wires):
+    def test_while_loop_op_before(self, dynamic_wires, embedding_location):
         """Test that an error is raised if an op is applied before a while loop with an embedding inside or after
         the loop where either can have dynamic wires"""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(x, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+            qml.H(op_wires)
+
+            @qml.while_loop(lambda arg: arg < 2)
+            def loop_fn(arg):
+                if embedding_location == "loop":
+                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qml.H(0)
+                return arg - 1
+
+            loop_fn(x)
+            if embedding_location == "after":
+                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(1.5, 0)
 
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_while_loop_op_inside_embedding_after(self, dynamic_wires):
         """Test that an error is raised if an op is applied inside a while loop with an embedding after
         the loop where either can have dynamic wires"""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(x, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+
+            @qml.while_loop(lambda arg: arg < 2)
+            def loop_fn(arg):
+                qml.H(op_wires)
+                return arg - 1
+
+            loop_fn(x)
+            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(1.5, 0)
 
 
 class TestExpandPlxprTransformIntegration:
