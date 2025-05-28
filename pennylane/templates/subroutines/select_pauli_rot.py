@@ -82,6 +82,8 @@ class SelectPauliRot(Operation):
     grad_method = None
     ndim_params = (1,)
 
+    resource_keys = {"num_wires", "rot_axis"}
+
     def __init__(
         self, angles, control_wires, target_wire, rot_axis="Z", id=None
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -110,6 +112,10 @@ class SelectPauliRot(Operation):
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(data, **hyperparams_dict)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"rot_axis": self.hyperparameters["rot_axis"], "num_wires": len(self.wires)}
 
     def map_wires(self, wire_map: dict):
         """Map the control and target wires using the provided wire map."""
