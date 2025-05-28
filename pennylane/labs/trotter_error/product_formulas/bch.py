@@ -28,6 +28,12 @@ if TYPE_CHECKING:
 
 
 def bch_expansion(product_formula: ProductFormula, order: int) -> Dict[Tuple[int], complex]:
+    return _drop_zeros(_bch_expansion(product_formula, order, {}))
+
+
+def _bch_expansion(
+    product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
+) -> Dict[Tuple[Hashable], complex]:
     """Returns the commutators of order ``order`` of the BCH expansion of ``product_formula``.
     This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
     """
@@ -42,12 +48,16 @@ def bch_expansion(product_formula: ProductFormula, order: int) -> Dict[Tuple[int
     if not product_formula.recursive:
         return _apply_exponent(bch, product_formula.exponent)
 
-    terms = {pf: bch_expansion(pf, order) for pf in product_formula.terms}
+    for pf in product_formula.terms:
+        if pf in term_dict:
+            continue
+        term_dict[pf] = _bch_expansion(pf, order, term_dict)
+
     merged_bch = [defaultdict(complex) for _ in range(order)]
 
     for ith_order_commutators in bch:
         for commutator, coeff in ith_order_commutators.items():
-            for j, merged in enumerate(_merge_commutators(commutator, terms, order, coeff)):
+            for j, merged in enumerate(_merge_commutators(commutator, term_dict, order, coeff)):
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return _remove_redundancies(
@@ -246,7 +256,7 @@ def _remove_redundancies(
         _swap(terms, less_than)
 
     if max_order < 4:
-        return _drop_zeros(term_dicts)
+        return term_dicts
 
     for terms in term_dicts[3:]:
         swap = []
@@ -263,7 +273,7 @@ def _remove_redundancies(
             terms[new_commutator] += terms[commutator]
             del terms[commutator]
 
-    return _drop_zeros(term_dicts)
+    return term_dicts
 
 
 def _swap(terms, less_than):
