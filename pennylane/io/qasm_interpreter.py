@@ -5,7 +5,7 @@ This submodule contains the interpreter for QASM 3.0.
 import functools
 import re
 
-from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration, EndStatement
+from openqasm3.ast import ClassicalDeclaration, EndStatement, QuantumGate, QubitDeclaration
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -98,7 +98,6 @@ class QasmInterpreter:
         except InterruptedError as e:
             print(str(e))
         return context
-
 
     @visit.register(EndStatement)
     def visit_end_statement(self, node: QASMNode, context: dict):
