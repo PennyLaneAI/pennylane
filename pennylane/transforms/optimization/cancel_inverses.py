@@ -45,12 +45,7 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
 
 def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
     """Checks if any item in the iterable is abstract."""
-    for item in items:
-        if is_abstract(item):
-            return True
-        if isinstance(item, Wires) and any(is_abstract(w) for w in item):
-            return True
-    return False
+    return any(is_abstract(item) for item in items)
 
 
 def _op_has_abstract(op: Operator) -> bool:
