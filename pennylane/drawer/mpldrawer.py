@@ -59,7 +59,7 @@ def _open_circ_options_process(options):
     return new_options
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
