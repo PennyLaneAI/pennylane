@@ -23,7 +23,6 @@ import numpy as np
 
 from pennylane import CNOT, BasisState, H, I, S, StatePrep, X, Y, Z, math
 from pennylane.operation import Operator
-from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 
 _OPS_TO_XZ = {
@@ -298,14 +297,10 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
             cor = []
             # There could be X and Z corrections for each wire
             for i in range(2 * op.num_wires):
-                cor.append(
-                    sum(
-                        [
-                            mid_meas[mid_meas_offset + idx]
-                            for idx in _MBQC_GATES_SUPPORTED[type(op)]["cor"][i]
-                        ]
-                    )
-                )
+                sum = 0
+                for idx in _MBQC_GATES_SUPPORTED[type(op)]["cor"][i]:
+                    sum += mid_meas[mid_meas_offset + idx]
+                cor.append(sum)
 
             # Add a const 0 or 1 and apply commutate rules
             for idx, add_cor in enumerate(_MBQC_GATES_SUPPORTED[type(op)]["cor"][-1]):
