@@ -1189,9 +1189,9 @@ def _(action: GateCount):
 
 @_apply_adj.register
 def _(action: GrabWires):
-    return FreeWires(action.n)
+    return FreeWires(action.num_wires)
 
 
 @_apply_adj.register
 def _(action: FreeWires):
-    return GrabWires(action.n)
+    return GrabWires(action.num_wires)
