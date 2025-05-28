@@ -837,7 +837,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, qubit_mapping: dict = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     """
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
