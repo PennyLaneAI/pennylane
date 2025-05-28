@@ -505,7 +505,6 @@ def clifford_t_decomposition(
 
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
-        print(epsilon)
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
