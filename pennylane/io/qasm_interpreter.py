@@ -112,7 +112,7 @@ class QasmInterpreter:
     # needs to have same signature as visit()
     @visit.register(ClassicalDeclaration)
     def visit_classical_declaration(
-        self, node: QASMNode, context: dict
+        self, node: ClassicalDeclaration, context: dict
     ):  # pylint: disable=no-self-use
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
