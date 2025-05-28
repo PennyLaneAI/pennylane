@@ -102,6 +102,12 @@
   gate-set that can be translated to the MBQC formalism.
   [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
+  allowing angle computation for polynomials of large degrees (> 1000).
+  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
+  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
+  [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
+
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
@@ -333,6 +339,10 @@
 
 * Add xz encoding related `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` functions to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
+
+* Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc.pauli_tracker` module,
+  accessible via the `commute_clifford_op` function.
+  [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
 
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
@@ -638,6 +648,7 @@ Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
