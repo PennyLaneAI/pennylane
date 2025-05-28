@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
@@ -1279,7 +1280,7 @@ class TestDeviceNewUnits:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="not accepted for analytic simulation on default.qubit",
         ):
             program = dev.preprocess_transforms()
