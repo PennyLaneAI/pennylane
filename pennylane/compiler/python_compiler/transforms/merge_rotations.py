@@ -57,6 +57,7 @@ class MergeRotationsPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for merging consecutive composable rotations."""
 
+    # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
@@ -111,8 +112,8 @@ class MergeRotationsPass(passes.ModulePass):
 
     name = "merge-rotations"
 
-    # pylint: disable=arguments-renamed
-    def apply(self, ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+    # pylint: disable=arguments-renamed,no-self-use
+    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the merge rotations pass."""
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([MergeRotationsPattern()])
