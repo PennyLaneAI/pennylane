@@ -157,7 +157,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         assert all(op in gate_counts for op in actual_gate_counts)
     else:
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
-        print(non_zero_gate_counts)
+        print(non_zero_gate_counts, "\n")
         print(actual_gate_counts)
         assert non_zero_gate_counts == actual_gate_counts
 

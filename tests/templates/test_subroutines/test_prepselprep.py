@@ -340,6 +340,60 @@ class TestPrepSelPrep:
         assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
         assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
 
+    def test_resources(self):
+        """Test the registered resources."""
+
+        assert qml.PrepSelPrep.resource_keys == frozenset({"num_control", "op_reps"})
+
+        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
+        lcu = qml.dot([1, 2, 3], ops)
+        op = qml.PrepSelPrep(lcu, (3, 4))
+
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.ops.Prod, **ops[-1].resource_params),
+        )
+        assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
+
+    def test_decomposition_new_structure(self):
+        """Test that the decomposition is registered into the new pipelien."""
+
+        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.ops.Prod, **ops[-1].resource_params),
+        )
+        lcu = qml.dot([1, 4, 9], ops)
+        op = qml.PrepSelPrep(lcu, (3, 4))
+
+        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+
+        resource_obj = decomp.compute_resources(**op.resource_params)
+        assert resource_obj.num_gates == 3
+
+        expected_counts = {
+            qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=2): 1,
+            qml.resource_rep(qml.StatePrep, num_wires=2): 1,
+            qml.resource_rep(
+                qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+            ): 1,
+        }
+        assert resource_obj.gate_counts == expected_counts
+
+        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+
+        q = q.queue
+
+        prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
+        qml.assert_equal(q[0], prep)
+        qml.assert_equal(q[1], qml.Select(ops, (3, 4)))
+        qml.asserT_equal(q[2], qml.adjoint(prep))
+
 
 def test_control_in_ops():
     """Test that using an operation wire as a control wire results in an error"""

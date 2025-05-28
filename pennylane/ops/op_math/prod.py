@@ -235,7 +235,7 @@ class Prod(CompositeOp):
 
     @property
     def resource_params(self):
-        resources = Counter(qml.resource_rep(type(op), **op.resource_params) for op in self)
+        resources = dict(Counter(qml.resource_rep(type(op), **op.resource_params) for op in self))
         return {"resources": resources}
 
     _op_symbol = "@"

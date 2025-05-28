@@ -214,8 +214,10 @@ class PrepSelPrep(Operation):
 
 
 def _prepselprep_resources(op_reps, num_control):
+    prod_resources = ({qml.resource_rep(qml.GlobalPhase): 1, rep: 1} for rep in op_reps)
+    mod_op_reps = tuple(qml.resource_rep(qml.ops.Prod, resources=res) for res in prod_resources)
     return {
-        qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=num_control): 1,
+        qml.resource_rep(qml.Select, op_reps=mod_op_reps, num_control_wires=num_control): 1,
         qml.resource_rep(qml.StatePrep, num_wires=num_control): 1,
         qml.resource_rep(
             qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": num_control}
@@ -223,7 +225,7 @@ def _prepselprep_resources(op_reps, num_control):
     }
 
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 @qml.register_resources(_prepselprep_resources)
 def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
