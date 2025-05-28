@@ -73,7 +73,7 @@ class TestInterpreter:
                 ast, context={"qubit_mapping": None, "name": "nested-modifiers"}
             )
         assert q.queue == [
-            Adjoint(MultiControlledX(wires=['q0', 'q1'], control_values=[False])),
+            Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
             Toffoli(wires=["q2", "q1", "q0"]),
             Adjoint(CNOT(wires=["q0", "q1"])),
             (CNOT(wires=["q1", "q0"])) ** 2,

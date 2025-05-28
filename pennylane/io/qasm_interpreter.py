@@ -112,7 +112,9 @@ class QasmInterpreter:
 
     # needs to have same signature as visit()
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
+    def visit_classical_declaration(
+        self, node: QASMNode, context: dict
+    ):  # pylint: disable=no-self-use
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -191,10 +193,16 @@ class QasmInterpreter:
         ]
 
         if len(node.modifiers) > 0:
-            num_control = sum(mod.modifier.name == "ctrl" or mod.modifier.name == "negctrl" for mod in node.modifiers)
+            num_control = sum(
+                mod.modifier.name == "ctrl" or mod.modifier.name == "negctrl"
+                for mod in node.modifiers
+            )
             op_wires = wires[num_control:]
             control_wires = wires[:num_control]
-            if node.modifiers[-1].modifier.name == "ctrl" or node.modifiers[-1].modifier.name == "negctrl":
+            if (
+                node.modifiers[-1].modifier.name == "ctrl"
+                or node.modifiers[-1].modifier.name == "negctrl"
+            ):
                 prev, wires = self.apply_modifier(
                     node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
                 )
