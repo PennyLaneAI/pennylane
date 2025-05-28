@@ -140,6 +140,8 @@ class TestBroadcastExpand:
 
         result = fn(qml.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
+        # Note: Analytic accuracy is tested in test_expansion() above.
+        # This test focuses on shot vector structure/batching behavior only.
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize(
