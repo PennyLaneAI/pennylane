@@ -34,6 +34,7 @@ from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
 
 mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
+paulis = (Identity, X, Y, Z)
 
 
 @register_resources({RotXZX: 1})
@@ -75,6 +76,9 @@ def convert_to_mbqc_formalism(tape):
     mp = tape.measurements[0]
     meas_wires = mp.wires if mp.wires else tape.wires
 
+    if not (isinstance(mp.obs, paulis) or mp.obs is None):
+        raise NotImplementedError(f"{mp.obs.name} is not supported. Only Paulis are supported.")
+
     # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
@@ -111,14 +115,10 @@ def convert_to_mbqc_formalism(tape):
 
     new_wires = [wire_map[w] for w in meas_wires]
 
-    if mp.obs is None:
-        new_tape = tape.copy(
-            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
-        )
-    else:
-        new_tape = tape.copy(
-            operations=temp_tape.operations, measurements=[sample(type(mp.obs)(wires=new_wires))]
-        )
+    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
+
+    if mp.obs:
+        new_tape = new_tape.copy(measurements=[sample(type(mp.obs)(wires=new_wires))])
 
     return (new_tape,), null_postprocessing
 

@@ -290,6 +290,17 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="unsupported gate"):
             _, _ = convert_to_mbqc_formalism(tape)
 
+    def test_invalid_obs_in_tape_raises_error(self):
+        """Test that a NotImplemented error is raised if the measurement ob isn't valid for conversion
+        to the MBQC formalism using this transform"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.H(0)], measurements=[qml.sample(qml.Hermitian(np.eye(2), wires=0))]
+        )
+
+        with pytest.raises(NotImplementedError):
+            _, _ = convert_to_mbqc_formalism(tape)
+
     @pytest.mark.parametrize(
         "op",
         [qml.H(2), qml.S(2), qml.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],

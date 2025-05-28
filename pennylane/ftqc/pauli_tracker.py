@@ -275,16 +275,12 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     $by_op_{ctrl} = \sigma_x^{s_1+s_2+s_4+s_5}\sigma_z^{s_0+s_2+s_3+s_4+s_7+s_8+s_10+1}$. The byproduct operator for the target wire is:
     $by_op_{tgt} = \sigma_x^{s_1+s_2+s_7+s_9+s_11+s_13}\sigma_z^{s_8+s_10+s_12}$.
 
-    **TBD**
-    - Do we want to assume that the tape is preprocessed already, which means Clifford gates are moved to the beginning of the circuit?
-    - if yes, are Paulis consolidated?
-
     Args:
         tape (QuantumScript): The quantum tape in the standard circuit mode (Gates are not transformed into the MBQC formalism).
         mid_meas (list): Mid-measurements results.
 
     Returns:
-        A list of `byproduct` ops and a list of `operations` in a reversed manner.
+        A list of `byproduct` ops in xz and a list of `operations` in a reversed manner.
     """
     # Copy is explicitly applied here to avoid changes made to the original tape
     ops = copy.copy(tape.operations)
@@ -327,7 +323,7 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     Args:
         num_wires (int): Number of wires of the quantum state.
         by_ops (list): List of byproduct operators for Clifford gates
-        ops (list): List of Clifford/Pauli gates
+        ops (list): List of Clifford/Pauli/StatePrep operations.
 
     Return:
         The final recorded x and z for each wire.

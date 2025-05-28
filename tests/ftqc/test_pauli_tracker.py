@@ -256,6 +256,7 @@ class TestOfflineCorrection:
             elif isinstance(op, qml.ops.Conditional):
                 continue
             elif isinstance(op, _PAULIS):
+                # Pauli operations go to the Pauli tracker directly. No need to get them executed.
                 continue
             else:
                 mbqc_ops.extend([op])
