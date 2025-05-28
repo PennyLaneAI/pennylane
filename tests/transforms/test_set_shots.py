@@ -14,6 +14,9 @@
 
 """Unit tests for the ``set_shots`` transformer"""
 
+import inspect
+import warnings
+
 import pytest
 
 import pennylane as qml
@@ -208,7 +211,55 @@ class TestSetShots:
             return qml.sample(wires=0)
 
         with pytest.warns(
-            qml.exceptions.PennyLaneUserWarning,
+            UserWarning,
             match=r"The transform will take precedence",
         ):
             set_shots(c, shots=10)(shots=20)
+
+    @pytest.mark.system
+    def test_stacklevel_points_to_user_code(self):
+        """
+        Test that warnings from set_shots point to the user's calling code,
+        not to PennyLane's internal implementation.
+
+        This test verifies that the stacklevel parameter is set correctly so that
+        warnings appear to originate from user code rather than from deep within
+        PennyLane's call stack (e.g., qnode.py:901).
+        """
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.sample(wires=0)
+
+        def user_function():
+            """Simulate user code calling set_shots."""
+            # This line should be highlighted in the warning
+            return set_shots(circuit, shots=10)(shots=20)
+
+        # Capture the warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            user_function()
+
+        assert len(w) == 1, f"Expected exactly 1 warning, got {len(w)}"
+
+        warning = w[0]
+
+        # Verify the warning message content
+        assert "The transform will take precedence" in str(warning.message)
+
+        # Most importantly: verify the warning points to THIS test file, not PennyLane source
+        # If stacklevel is wrong, it would point to something like "qnode.py" instead
+        assert warning.filename.endswith("test_set_shots.py"), (
+            f"Warning should point to user code (this test file), "
+            f"but pointed to: {warning.filename}"
+        )
+
+        # The warning should point somewhere within our user_function
+        user_function_start = inspect.getsourcelines(user_function)[1]
+        user_function_end = user_function_start + len(inspect.getsourcelines(user_function)[0])
+
+        assert user_function_start <= warning.lineno <= user_function_end, (
+            f"Warning line {warning.lineno} should be within user_function "
+            f"(lines {user_function_start}-{user_function_end})"
+        )
