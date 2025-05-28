@@ -15,7 +15,6 @@
 
 import random
 
-import networkx as nx
 import numpy as np
 import pytest
 from flaky import flaky
@@ -23,12 +22,9 @@ from flaky import flaky
 import pennylane as qml
 from pennylane.ftqc import (
     GraphStatePrep,
-    QubitMgr,
+    convert_to_mbqc_formalism,
     diagonalize_mcms,
-    generate_lattice,
     get_byproduct_corrections,
-    measure_x,
-    measure_y,
 )
 from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
@@ -51,136 +47,6 @@ def generate_random_state(n, seed=0):
     rng = np.random.default_rng(seed=seed)
     input_state = rng.random(2**n) + 1j * rng.random(2**n)
     return input_state / np.linalg.norm(input_state)
-
-
-def generate_rot_gate_graph():
-    lattice = generate_lattice([4], "chain")
-    return lattice.graph
-
-
-def generate_cnot_graph():
-    wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    g = nx.Graph()
-    g.add_nodes_from(wires)
-    g.add_edges_from(
-        [
-            (0, 1),
-            (1, 2),
-            (2, 3),
-            (3, 4),
-            (4, 5),
-            (2, 6),
-            (6, 9),
-            (7, 8),
-            (8, 9),
-            (9, 10),
-            (10, 11),
-            (11, 12),
-        ]
-    )
-    return g
-
-
-def h_stencil(q_mgr, target_idx):
-    # Acquire 4 free qubit indices
-    graph_wires = q_mgr.acquire_qubits(4)
-
-    # Denote the index for the final output state
-    output_idx = graph_wires[-1]
-
-    # Prepare the state
-    qml.ftqc.GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([target_idx, graph_wires[0]])
-
-    m = []
-    # MBQC Hadamard: X, Y, Y, Y
-    # Reset operations allow qubits to be returned to the pool
-    m0 = measure_x(target_idx, reset=True)
-    m1 = measure_y(graph_wires[0], reset=True)
-    m2 = measure_y(graph_wires[1], reset=True)
-    m3 = measure_y(graph_wires[2], reset=True)
-
-    m.extend([m0, m1, m2, m3])
-
-    # The input qubit can be freed and the output qubit becomes the next iteration's input
-    q_mgr.release_qubit(target_idx)
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return output_idx, m
-
-
-def s_stencil(q_mgr, target_idx):
-    # Acquire 4 free qubit indices
-    graph_wires = q_mgr.acquire_qubits(4)
-
-    # Denote the index for the final output state
-    output_idx = graph_wires[-1]
-
-    # Prepare the state
-    GraphStatePrep(generate_rot_gate_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([target_idx, graph_wires[0]])
-
-    m = []
-    # MBQC Z rotation: X, X, Y, X
-    # Reset operations allow qubits to be returned to the pool
-    m0 = measure_x(target_idx, reset=True)
-    m1 = measure_x(graph_wires[0], reset=True)
-    m2 = measure_y(graph_wires[1], reset=True)
-    m3 = measure_x(graph_wires[2], reset=True)
-
-    m.extend([m0, m1, m2, m3])
-
-    # The input qubit can be freed and the output qubit becomes the next iteration's input
-    q_mgr.release_qubit(target_idx)
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:-1])
-
-    return output_idx, m
-
-
-def cnot_stencil(q_mgr, ctrl_idx, target_idx):
-    graph_wires = q_mgr.acquire_qubits(13)
-
-    # Denote the index for the final output state
-    output_ctrl_idx = graph_wires[5]
-    output_target_idx = graph_wires[12]
-
-    # Prepare the state
-    GraphStatePrep(generate_cnot_graph(), wires=graph_wires)
-
-    # entangle input and graph using first qubit
-    qml.CZ([ctrl_idx, graph_wires[0]])
-    qml.CZ([target_idx, graph_wires[7]])
-
-    m = []
-    m1 = qml.ftqc.measure_x(ctrl_idx, reset=True)
-    m2 = qml.ftqc.measure_y(graph_wires[0], reset=True)
-    m3 = qml.ftqc.measure_y(graph_wires[1], reset=True)
-    m4 = qml.ftqc.measure_y(graph_wires[2], reset=True)
-    m5 = qml.ftqc.measure_y(graph_wires[3], reset=True)
-    m6 = qml.ftqc.measure_y(graph_wires[4], reset=True)
-
-    m8 = qml.ftqc.measure_y(graph_wires[6], reset=True)
-
-    m9 = qml.ftqc.measure_x(target_idx, reset=True)
-    m10 = qml.ftqc.measure_x(graph_wires[7], reset=True)
-    m11 = qml.ftqc.measure_x(graph_wires[8], reset=True)
-    m12 = qml.ftqc.measure_y(graph_wires[9], reset=True)
-    m13 = qml.ftqc.measure_x(graph_wires[10], reset=True)
-    m14 = qml.ftqc.measure_x(graph_wires[11], reset=True)
-
-    m.extend([m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14])
-    q_mgr.release_qubit(ctrl_idx)
-    q_mgr.release_qubit(target_idx)
-
-    # We can now free all but the last qubit, which has become the new input_idx
-    q_mgr.release_qubits(graph_wires[0:5] + graph_wires[6:-1])
-    return output_ctrl_idx, output_target_idx, m
 
 
 class TestPauliTracker:
@@ -357,307 +223,97 @@ class TestOfflineCorrection:
             cor_res.append(np.sum(meas_res[i]) / num_shots)
         return cor_res
 
-    @pytest.mark.parametrize("num_shots", [250])
-    @pytest.mark.parametrize("num_iter", [1, 2, 3])
-    def test_cnot(self, num_shots, num_iter):
-        start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+    def _get_mbqc_tape(self, ops, obs, num_shots):
+        measurements = []
+        for ob in obs:
+            measurements.append(qml.sample(ob))
 
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state, num_iter):
-            q_mgr = QubitMgr(num_qubits=15, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
 
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            for _ in range(num_iter):
-                wire_map[0], wire_map[1], m = cnot_stencil(q_mgr, wire_map[0], wire_map[1])
-                mid_meas.extend(m)
+        (mbqc_tape,), _ = convert_to_mbqc_formalism(tape)
+        (diagonalized_mbqc_tape,), _ = diagonalize_mcms(mbqc_tape)
 
-            mid_meas = [qml.Z(wire_map[0]), qml.Z(wire_map[1])] + mid_meas
+        mbqc_ops = []
+        mbqc_measurements = diagonalized_mbqc_tape.measurements
+        for op in diagonalized_mbqc_tape.operations:
+            if isinstance(op, GraphStatePrep):
+                mbqc_ops.extend(op.decomposition())
+            elif isinstance(op, qml.measurements.MidMeasureMP):
+                mbqc_ops.extend([op])
+                mbqc_measurements.extend(
+                    [qml.sample(qml.measurements.MeasurementValue([op], lambda res: res))]
+                )
+            elif isinstance(op, qml.ops.Conditional):
+                continue
+            elif isinstance(op, _PAULIS):
+                continue
+            else:
+                mbqc_ops.extend([op])
 
-            return [qml.sample(op=m) for m in mid_meas]
+        mbqc_tape_new = qml.tape.QuantumScript(
+            ops=mbqc_ops, measurements=mbqc_measurements, shots=num_shots
+        )
+        return mbqc_tape_new
 
-        raw_res = circuit_mbqc(start_state, num_iter)
-
-        ops = [qml.StatePrep(start_state, wires=[0, 1])]
-        for _ in range(num_iter):
-            ops.extend([qml.CNOT(wires=[0, 1])])
-
-        measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
+    def _get_ref_res_tape(self, ops, obs):
         dev_ref = qml.device("default.qubit")
-
         measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
+        for ob in obs:
+            measurements_ref.append(qml.expval(ob))
         script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
         res_ref = dev_ref.execute(script_ref)
+        return res_ref, script_ref
 
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
+    def _execute_mbqc_tape(self, mbqc_tape, num_shots):
+        mcm_config = qml.devices.MCMConfig(mcm_method="one-shot")
+        config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
 
-    @pytest.mark.parametrize("num_shots", [250])
-    @pytest.mark.parametrize("num_iter", [1, 2, 3])
-    def test_h(self, num_shots, num_iter):
-        start_state = generate_random_state(2)
         dev = qml.device("lightning.qubit", shots=num_shots)
+        program, new_config = dev.preprocess(config)
+        new_tapes, processing_fn = program([mbqc_tape])
 
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state, num_iter):
-            q_mgr = QubitMgr(num_qubits=6, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
+        raw_res = dev.execute(new_tapes, new_config)
 
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            for _ in range(num_iter):
-                wire_map[0], m = h_stencil(q_mgr, wire_map[0])
-                mid_meas.extend(m)
-                wire_map[1], m = h_stencil(q_mgr, wire_map[1])
-                mid_meas.extend(m)
-
-            mid_meas = [qml.Z(wire_map[0]), qml.Z(wire_map[1])] + mid_meas
-
-            return [qml.sample(op=m) for m in mid_meas]
-
-        raw_res = circuit_mbqc(start_state, num_iter)
-
-        ops = [qml.StatePrep(start_state, wires=[0, 1])]
-        for _ in range(num_iter):
-            ops.extend([qml.H(wires=[0]), qml.H(wires=[1])])
-
-        measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
-        dev_ref = qml.device("default.qubit")
-
-        measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
-        res_ref = dev_ref.execute(script_ref)
-
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
+        return processing_fn(raw_res)[0]
 
     @pytest.mark.parametrize("num_shots", [250])
-    @pytest.mark.parametrize("num_iter", [1, 2, 3])
-    def test_s(self, num_shots, num_iter):
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qml.CNOT(wires=[0, 1])],
+            [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
+            [qml.S(0)],
+            [qml.S(1)],
+            [qml.S(0), qml.S(1)],
+            [qml.H(0)],
+            [qml.H(1)],
+            [qml.H(0), qml.H(1)],
+            [qml.H(0), qml.S(1), qml.H(1), qml.S(0), qml.CNOT(wires=[0, 1])],
+            [
+                qml.H(0),
+                qml.X(0),
+                qml.Z(0),
+                qml.S(1),
+                qml.Y(1),
+                qml.H(1),
+                qml.S(0),
+                qml.CNOT(wires=[0, 1]),
+                qml.X(0),
+                qml.Y(1),
+            ],
+        ],
+    )
+    @pytest.mark.parametrize(
+        "obs", [[qml.X(0)], [qml.X(1)], [qml.Y(0)], [qml.Y(1)], [qml.Z(0)], [qml.Z(1)]]
+    )
+    def test_clifford_circuit_offline(self, num_shots, ops, obs):
         start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
+        ops = [qml.StatePrep(start_state, wires=[0, 1])] + ops
 
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state, num_iter):
-            q_mgr = QubitMgr(num_qubits=6, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
+        res_ref, script_ref = self._get_ref_res_tape(ops, obs)
 
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            for _ in range(num_iter):
-                wire_map[0], m = s_stencil(q_mgr, wire_map[0])
-                mid_meas.extend(m)
-                wire_map[1], m = s_stencil(q_mgr, wire_map[1])
-                mid_meas.extend(m)
-
-            mid_meas = [qml.Z(wire_map[0]), qml.Z(wire_map[1])] + mid_meas
-
-            return [qml.sample(op=m) for m in mid_meas]
-
-        raw_res = circuit_mbqc(start_state, num_iter)
-        ops = [qml.StatePrep(start_state, wires=[0, 1])]
-        for _ in range(num_iter):
-            ops.extend([qml.S(wires=[0]), qml.S(wires=[1])])
-
-        measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
-        dev_ref = qml.device("default.qubit")
-
-        measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
-        res_ref = dev_ref.execute(script_ref)
-
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
-
-    @pytest.mark.parametrize("num_shots", [250])
-    def test_clifford(self, num_shots):
-        start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
-
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state):
-            q_mgr = QubitMgr(num_qubits=15, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
-
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            wire_map[0], wire_map[1], m = cnot_stencil(q_mgr, wire_map[0], wire_map[1])
-            mid_meas.extend(m)
-            wire_map[0], m = s_stencil(q_mgr, wire_map[0])
-            mid_meas.extend(m)
-            wire_map[1], m = h_stencil(q_mgr, wire_map[1])
-            mid_meas.extend(m)
-
-            mid_meas = [qml.Z(wire_map[0]), qml.Z(wire_map[1])] + mid_meas
-
-            return [qml.sample(op=m) for m in mid_meas]
-
-        raw_res = circuit_mbqc(start_state)
-        ops = [
-            qml.StatePrep(start_state, wires=[0, 1]),
-            qml.CNOT(wires=[0, 1]),
-            qml.S(wires=[0]),
-            qml.H(wires=[1]),
-        ]
-
-        measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
-        dev_ref = qml.device("default.qubit")
-
-        measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
-        res_ref = dev_ref.execute(script_ref)
-
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
-
-    @pytest.mark.parametrize("num_shots", [250])
-    def test_clifford_paulis(self, num_shots):
-        start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
-
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state):
-            q_mgr = QubitMgr(num_qubits=15, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
-
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            wire_map[0], wire_map[1], m = cnot_stencil(q_mgr, wire_map[0], wire_map[1])
-            mid_meas.extend(m)
-            wire_map[0], m = s_stencil(q_mgr, wire_map[0])
-            mid_meas.extend(m)
-            wire_map[1], m = h_stencil(q_mgr, wire_map[1])
-            mid_meas.extend(m)
-
-            mid_meas = [qml.Z(wire_map[0]), qml.Z(wire_map[1])] + mid_meas
-
-            return [qml.sample(op=m) for m in mid_meas]
-
-        raw_res = circuit_mbqc(start_state)
-        ops = [
-            qml.StatePrep(start_state, wires=[0, 1]),
-            qml.X(0),
-            qml.CNOT(wires=[0, 1]),
-            qml.Y(1),
-            qml.S(wires=[0]),
-            qml.Z(0),
-            qml.H(wires=[1]),
-        ]
-
-        measurements = [qml.sample(qml.Z(0)), qml.sample(qml.Z(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
-        dev_ref = qml.device("default.qubit")
-
-        measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
-        res_ref = dev_ref.execute(script_ref)
-
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
-
-    @pytest.mark.parametrize("p0", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("p1", [qml.X, qml.Y, qml.Z, qml.I])
-    @pytest.mark.parametrize("num_shots", [250])
-    def test_clifford_paulis_tensorprod(self, p0, p1, num_shots):
-        start_state = generate_random_state(2)
-        dev = qml.device("lightning.qubit", shots=num_shots)
-
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="one-shot")
-        def circuit_mbqc(start_state):
-            q_mgr = QubitMgr(num_qubits=15, start_idx=0)
-            ctrl_idx, target_idx = q_mgr.acquire_qubits(2)
-            wire_map = {0: ctrl_idx, 1: target_idx}
-
-            # prep input node
-            qml.StatePrep(start_state, wires=[wire_map[0], wire_map[1]])
-            mid_meas = []
-            wire_map[0], wire_map[1], m = cnot_stencil(q_mgr, wire_map[0], wire_map[1])
-            mid_meas.extend(m)
-            wire_map[0], m = s_stencil(q_mgr, wire_map[0])
-            mid_meas.extend(m)
-            wire_map[1], m = h_stencil(q_mgr, wire_map[1])
-            mid_meas.extend(m)
-
-            mid_meas = [p0(wire_map[0]) @ p1(wire_map[1])] + mid_meas
-
-            return [qml.sample(op=m) for m in mid_meas]
-
-        raw_res = circuit_mbqc(start_state)
-        ops = [
-            qml.StatePrep(start_state, wires=[0, 1]),
-            qml.X(0),
-            qml.CNOT(wires=[0, 1]),
-            qml.Y(1),
-            qml.S(wires=[0]),
-            qml.Z(0),
-            qml.H(wires=[1]),
-        ]
-
-        measurements = [qml.sample(p0(0) @ p1(1))]
-
-        script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
-
-        cor_res = self._measurements_corrections(script, num_shots, raw_res)
-
-        dev_ref = qml.device("default.qubit")
-
-        measurements_ref = []
-        for measurement in measurements:
-            measurements_ref.append(qml.expval(measurement.obs))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-
-        res_ref = dev_ref.execute(script_ref)
+        mbqc_tape = self._get_mbqc_tape(ops, obs, num_shots)
+        mbqc_res = self._execute_mbqc_tape(mbqc_tape, num_shots)
+        cor_res = self._measurements_corrections(script_ref, num_shots, mbqc_res)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)

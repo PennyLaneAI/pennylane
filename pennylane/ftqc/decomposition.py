@@ -22,7 +22,7 @@ from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, StatePrep, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
@@ -83,7 +83,10 @@ def convert_to_mbqc_formalism(tape):
 
     with AnnotatedQueue() as q:
         for op in tape.operations:
-            if isinstance(op, GlobalPhase):  # no wires
+            if isinstance(op, StatePrep):
+                wires_op = [wire_map[wire] for wire in list(op.wires)]
+                StatePrep(state=op.parameters[0], wires=wires_op)
+            elif isinstance(op, GlobalPhase):  # no wires
                 GlobalPhase(*op.data)
             elif isinstance(op, CNOT):  # two wires
                 ctrl, tgt = op.wires[0], op.wires[1]
@@ -108,7 +111,14 @@ def convert_to_mbqc_formalism(tape):
 
     new_wires = [wire_map[w] for w in meas_wires]
 
-    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
+    if mp.obs is None:
+        new_tape = tape.copy(
+            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
+        )
+    else:
+        new_tape = tape.copy(
+            operations=temp_tape.operations, measurements=[sample(type(mp.obs)(wires=new_wires))]
+        )
 
     return (new_tape,), null_postprocessing
 

@@ -395,6 +395,9 @@ def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
     if isinstance(ob, I):
         return 1
 
+    if ob is None:
+        return -1 if x == 1 else 1
+
     raise NotImplementedError(f"{ob.name} is not supported.")
 
 
@@ -414,7 +417,7 @@ def get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_re
         if type(obs) in _PAULIS:
             # branch for NamedObs
             phase_cor[idx] *= _apply_measurement_correction_rule(
-                x_record[obs.wires[0]], z_record[obs.wires[0]], measurement.obs
+                x_record[obs.wires[0]], z_record[obs.wires[0]], obs
             )
         elif isinstance(obs, Prod):
             # branch for TensorProd
@@ -422,6 +425,11 @@ def get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_re
             for ob in obs:
                 phase_cor[idx] *= _apply_measurement_correction_rule(
                     x_record[ob.wires[0]], z_record[ob.wires[0]], ob
+                )
+        elif obs is None:
+            for wire in measurement.wires:
+                phase_cor[idx] *= _apply_measurement_correction_rule(
+                    x_record[wire], z_record[wire], obs
                 )
         else:
             raise NotImplementedError(f"{obs.name} is not supported.")
