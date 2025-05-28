@@ -17,3 +17,4 @@ unitary operations into sequences of elementary operations.
 
 from .unitary_decompositions import one_qubit_decomposition, two_qubit_decomposition
 from .solovay_kitaev import sk_decomposition
+from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
