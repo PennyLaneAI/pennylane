@@ -216,8 +216,7 @@ class TestControlledDecompositionZYZ:
     def test_composite_ops(self, composite_op, want_decomp):
         """Test that ZYZ decomposition is used for composite operators."""
         have_decomp = ctrl_decomp_zyz(composite_op, 1)
-        assert len(have_decomp) == len(want_decomp)
-        for actual, expected in zip(have_decomp, want_decomp):
+        for actual, expected in zip(have_decomp, want_decomp, strict=True):
             qml.assert_equal(actual, expected)
 
     @pytest.mark.torch
