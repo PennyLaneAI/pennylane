@@ -46,7 +46,7 @@ PARAMETERIZED_GATES = {
 }
 
 
-class QasmInterpreter(QASMVisitor):
+class QasmInterpreter:
     """
     Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
     top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -83,11 +83,9 @@ class QasmInterpreter(QASMVisitor):
             f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
         )
 
-    def generic_visit(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict):
         """
-        Wraps the provided generic_visit method to make the context a required parameter
-        and return the context for testability. Constructs the QNode after all of the nodes
-        have been visited.
+        Entry point for visiting the QASMNodes of a parsed QASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
@@ -100,7 +98,12 @@ class QasmInterpreter(QASMVisitor):
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        super().generic_visit(node, context)
+        for value in node.__dict__.values():
+            if not isinstance(value, list):
+                value = [value]
+            for item in value:
+                if isinstance(item, QASMNode):
+                    self.visit(item, context)
         return context
 
     @visit.register(QubitDeclaration)

@@ -866,7 +866,7 @@ def from_qasm3(quantum_circuit: str, qubit_mapping: dict = None):
         )  # pragma: no cover
     # parse the QASM program
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
-    context = QasmInterpreter().generic_visit(
+    context = QasmInterpreter().interpret(
         ast, context={"name": "global", "qubit_mapping": qubit_mapping}
     )
 
