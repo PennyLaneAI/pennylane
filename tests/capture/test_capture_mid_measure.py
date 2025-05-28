@@ -307,7 +307,7 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    # !NOTE: this test has not negligible possibility to fail (20%~30%)
+    # NOTE: this test has an estimated fail rate of around 20%~30%
     # We have to fix the seed to ensure that the test is deterministic.
     @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("reset", [True, False])
@@ -353,7 +353,7 @@ class TestMidMeasureExecute:
         else:
             assert compare_with_capture_disabled(f, phi)
 
-    # !NOTE: this test has not negligible possibility to fail (20%~30%)
+    # NOTE: this test has an estimated fail rate of around 20%~30%
     # We have to fix the seed to ensure that the test is deterministic.
     @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))

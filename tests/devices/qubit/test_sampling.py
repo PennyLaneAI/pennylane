@@ -388,7 +388,7 @@ class TestMeasureSamples:
 
             assert res.shape == (sh, 2)
             assert res.dtype == np.int64
-            # !Note: since the numeric accuracy has already been tested
+            # NOTE: since the numeric accuracy has already been tested
             # at test_approximate_sample_measure, we only check the shape and type
 
     @pytest.mark.parametrize(
@@ -982,11 +982,10 @@ class TestBroadcastingPRNG:
         # third batch of samples can be any of |00>, |01>, |10>, or |11>
         assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
 
-    # about the salt: the accuracy checking of this test is necessary,
-    # but the definition of atol is too arbitrary here. Basically, it's
-    # too tight but we can't loosen it arbitrarily again. Instead, a
-    # further investigation is needed to establish a more systematic
-    # approach to test the final sampling distribution. sc-91887
+    # NOTE: The accuracy checking of this test is necessary,
+    # but the definition of `atol` is too arbitrary. Further 
+    # investigation is needed to establish a more systematic
+    # approach to test the final sampling distribution. [sc-91887]
     @pytest.mark.local_salt(2)
     @pytest.mark.parametrize(
         "measurement, expected",

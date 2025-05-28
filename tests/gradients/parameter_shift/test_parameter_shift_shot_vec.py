@@ -1378,7 +1378,7 @@ class TestParameterShiftRule:
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
         shot_vec = tuple([1000000] * 3)
-        # !NOTE: this test failed multiple times at https://github.com/PennyLaneAI/pennylane/pull/7306
+        # NOTE: this test failed multiple times at https://github.com/PennyLaneAI/pennylane/pull/7306
         # even after tweeking the salt. We fixed the seed to ensure its stability and track it in [sc-91487]
         dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54

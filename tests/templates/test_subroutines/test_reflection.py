@@ -162,7 +162,7 @@ class TestIntegration:
         assert res.shape == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
-    # !NOTE: the finite shot test of the results has a 3% chance to fail
+    # NOTE: the finite shot test of the results has a 3% chance to fail
     # due to the random nature of the sampling. Hence we just pin the salt
     @pytest.mark.local_salt(1)
     @pytest.mark.autograd
