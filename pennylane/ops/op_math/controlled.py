@@ -36,7 +36,7 @@ from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 

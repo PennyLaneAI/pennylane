@@ -6,14 +6,10 @@ import functools
 import re
 
 from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration, EndStatement
+from openqasm3.visitor import QASMNode
 
 from pennylane import ops
-
-has_openqasm = True
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_openqasm = False  # pragma: no cover
+from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -50,25 +46,11 @@ PARAMETERIZED_GATES = {
 }
 
 
-class QasmInterpreter(QASMVisitor):
+class QasmInterpreter:
     """
-    Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
-    top level node of the AST as a parameter and recursively descends the AST, calling the
-    overriden visitor function on each node.
+    Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
+    visitor function on each node.
     """
-
-    def __init__(self):
-        """
-        Checks that the openqasm3 package is available, otherwise raises an error.
-
-        Raises:
-            ImportError: if the openqasm3 package is not available.
-        """
-        if not has_openqasm:  # pragma: no cover
-            raise ImportError(
-                "QASM interpreter requires openqasm3 to be installed"
-            )  # pragma: no cover
-        super().__init__()
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
@@ -91,11 +73,9 @@ class QasmInterpreter(QASMVisitor):
             f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
         )
 
-    def generic_visit(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict):
         """
-        Wraps the provided generic_visit method to make the context a required parameter
-        and return the context for testability. Constructs the QNode after all of the nodes
-        have been visited.
+        Entry point for visiting the QASMNodes of a parsed QASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
@@ -109,10 +89,16 @@ class QasmInterpreter(QASMVisitor):
 
         # begin recursive descent traversal
         try:
-            super().generic_visit(node, context)
+            for value in node.__dict__.values():
+                if not isinstance(value, list):
+                    value = [value]
+                for item in value:
+                    if isinstance(item, QASMNode):
+                        self.visit(item, context)
         except InterruptedError as e:
             print(str(e))
         return context
+
 
     @visit.register(EndStatement)
     def visit_end_statement(self, node: QASMNode, context: dict):
@@ -128,10 +114,12 @@ class QasmInterpreter(QASMVisitor):
         )
 
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(self, node: QASMNode, context: dict):
+    def visit_qubit_declaration(
+        self, node: QubitDeclaration, context: dict
+    ):  # pylint: disable=no-self-use
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
-        in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
+        in context["wires"]. Note: Qubit declarations must be global.
 
         Args:
             node (QASMNode): The QubitDeclaration QASMNode.
@@ -139,8 +127,11 @@ class QasmInterpreter(QASMVisitor):
         """
         context["wires"].append(node.qubit.name)
 
+    # needs to have same signature as visit()
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict):
+    def visit_classical_declaration(
+        self, node: ClassicalDeclaration, context: dict
+    ):  # pylint: disable=no-self-use
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -163,7 +154,7 @@ class QasmInterpreter(QASMVisitor):
             }
 
     @visit.register(QuantumGate)
-    def visit_quantum_gate(self, node: QASMNode, context: dict):
+    def visit_quantum_gate(self, node: QuantumGate, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
@@ -172,8 +163,6 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
-        self._require_wires(context)
-
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
@@ -189,10 +178,7 @@ class QasmInterpreter(QASMVisitor):
         # setup arguments
         args = []
         for arg in node.arguments:
-            if re.search("Literal", arg.__class__.__name__) is not None:
-                args.append(arg.value)
-            else:
-                args.append(self.retrieve_variable(arg.name, context))
+            args.append(self.evaluate_argument(arg, context))
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -201,47 +187,79 @@ class QasmInterpreter(QASMVisitor):
         wires = [
             # parser will sometimes represent as a str and sometimes as an Identifier
             (
-                context["qubit_mapping"][
-                    (
-                        node.qubits[q].name
-                        if isinstance(node.qubits[q].name, str)
-                        else node.qubits[q].name.name
-                    )
-                ]
-                if "qubit_mapping" in context
-                else (
-                    node.qubits[q].name
-                    if isinstance(node.qubits[q].name, str)
-                    else node.qubits[q].name.name
-                )
+                node.qubits[q].name
+                if isinstance(node.qubits[q].name, str)
+                else node.qubits[q].name.name
             )
             for q in range(len(node.qubits))
         ]
 
-        if len(node.modifiers) > 0:
-            num_control = sum(mod.modifier.name == "ctrl" for mod in node.modifiers)
-            for mod in node.modifiers:
-                # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-                # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-                # `no viable alternative at input 'wop(power)@'`, long before we get here.
-                assert mod.modifier.name in ("inv", "pow", "ctrl")
+        self._require_wires(wires, context)
 
-                if mod.modifier.name == "inv":
-                    ops.adjoint(gate(*args, wires=wires))
-                elif mod.modifier.name == "pow":
-                    if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                        ops.pow(gate(*args, wires=wires), z=mod.argument.value)
-                    elif "vars" in context and mod.argument.name in context["vars"]:
-                        ops.pow(
-                            gate(*args, wires=wires), z=context["vars"][mod.argument.name]["val"]
-                        )
-                elif mod.modifier.name == "ctrl":
-                    ops.ctrl(gate, control=wires[0:-num_control])(*args, wires=wires[-num_control:])
+        if context["wire_map"] is not None:
+            wires = list(map(lambda wire: context["wire_map"][wire], wires))
+
+        if len(node.modifiers) > 0:
+            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+            op_wires = wires[num_control:]
+            control_wires = wires[:num_control]
+            if "ctrl" in node.modifiers[-1].modifier.name:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
+                )
+            else:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=wires), context, wires
+                )
+
+            for mod in node.modifiers[::-1][1:]:
+                prev, wires = self.apply_modifier(mod, prev, context, wires)
         else:
             gate(*args, wires=wires)
 
     @staticmethod
-    def retrieve_variable(name: str, context: dict):
+    def apply_modifier(mod: QuantumGate, previous: Operator, context: dict, wires: list):
+        """
+        Applies a modifier to the previous gate or modified gate.
+
+        Args:
+            mod (QASMNode): The modifier QASMNode.
+            previous (Operator): The previous (called) operator.
+            context (dict): The current context.
+            wires (list): The wires that the operator is applied to.
+
+        Raises:
+            NotImplementedError: If the modifier has a param of an as-yet unsupported type.
+        """
+        # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+        # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+        # `no viable alternative at input 'wop(power)@'`, long before we get here.
+        assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
+        next = None
+
+        if mod.modifier.name == "inv":
+            next = ops.adjoint(previous)
+        elif mod.modifier.name == "pow":
+            if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                power = mod.argument.value
+            elif "vars" in context and mod.argument.name in context["vars"]:
+                power = context["vars"][mod.argument.name]["val"]
+            else:
+                raise NotImplementedError(
+                    f"Unable to handle expression {mod.argument} at this time"
+                )
+            next = ops.pow(previous, z=power)
+        elif mod.modifier.name == "ctrl":
+            next = ops.ctrl(previous, control=wires[-1])
+            wires = wires[:-1]
+        elif mod.modifier.name == "negctrl":
+            next = ops.ctrl(previous, control=wires[-1], control_values=[0])
+            wires = wires[:-1]
+
+        return next, wires
+
+    @staticmethod
+    def evaluate_argument(arg: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
 
@@ -249,26 +267,33 @@ class QasmInterpreter(QASMVisitor):
             name (str): the name of the variable to retrieve.
             context (dict): the current context.
         """
-        if name in context["vars"]:
+        if re.search("Literal", arg.__class__.__name__) is not None:
+            return arg.value
+        if arg.name in context["vars"]:
             # the context at this point should reflect the states of the
             # variables as evaluated in the correct (current) scope.
-            if context["vars"][name]["val"] is not None:
-                return context["vars"][name]["val"]
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        raise NameError(f"Undeclared variable {name} encountered in QASM.")
+            if context["vars"][arg.name]["val"] is not None:
+                return context["vars"][arg.name]["val"]
+            raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
+        raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
 
     @staticmethod
-    def _require_wires(context):
+    def _require_wires(wires, context):
         """
         Simple helper that checks if we have wires in the current context.
 
         Args:
             context (dict): The current context.
+            wires (list): The wires that are required.
 
         Raises:
             NameError: If the context is missing a wire.
         """
-        if len(context["wires"]) == 0:
+        missing_wires = []
+        for wire in wires:
+            if wire not in context["wires"]:
+                missing_wires.append(wire)
+        if len(missing_wires) > 0:
             raise NameError(
-                f"Attempt to reference wires that have not been declared in {context['name']}"
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
             )
