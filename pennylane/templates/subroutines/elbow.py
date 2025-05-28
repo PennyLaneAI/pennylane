@@ -57,7 +57,9 @@ class Elbow(Operation):
             qml.X(1)
             qml.Elbow([0,1,2])
             qml.CNOT([2,3])
-            qml.adjoint(qml.Elbow([0,1,2]))
+            qml.adjoint(qml.Elbow([0,1,2])) # We can apply the adjoint Elbow because after applying a Toffoli,
+                                            # the target wire would be |0>.
+
             return qml.sample(wires=[0,1,2,3])
 
     .. code-block:: pycon
