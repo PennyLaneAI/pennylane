@@ -136,7 +136,7 @@ class QasmInterpreter:
             }
 
     @visit.register(QuantumGate)
-    def visit_quantum_gate(self, node: QASMNode, context: dict):
+    def visit_quantum_gate(self, node: QuantumGate, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
