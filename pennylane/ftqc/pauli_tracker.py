@@ -326,7 +326,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops, ops
 
 
-def get_xz_record(num_wires: int, by_ops: List[Tuple[np.uint8, np.uint8]], ops: List[Operator]):
+def get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Operator]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:

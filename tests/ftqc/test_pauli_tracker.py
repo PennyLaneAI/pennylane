@@ -48,7 +48,6 @@ def generate_random_state(n, seed=0):
     input_state = rng.random(2**n) + 1j * rng.random(2**n)
     return input_state / np.linalg.norm(input_state)
 
-
 class TestPauliTracker:
     """Test for the pauli tracker related functions."""
 
@@ -202,7 +201,6 @@ class TestPauliTracker:
             match="Please ensure xz are either 0 or 1.",
         ):
             _ = commute_clifford_op(clifford_op, xz)
-
 
 @flaky(max_runs=5)
 class TestOfflineCorrection:
