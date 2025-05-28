@@ -618,6 +618,7 @@ class TestDecomposition:
             (3, qml.Hamiltonian([1j, 2j, 3j], [qml.X(0), qml.Y(1), qml.Z(2)])),
             (-1j, qml.Y(1) + 3 * qml.PauliX(0) @ qml.PauliZ(2)),
             (-1, 1j * qml.PauliY(1) + 3j * qml.PauliX(0) @ qml.PauliZ(2)),
+            (0.3j, qml.Z(0) @ qml.Y(1)),
         ],
     )
     def test_trotter_decomposition_integration_graph(self, coeff, hamiltonian):
