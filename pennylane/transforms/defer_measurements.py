@@ -130,7 +130,7 @@ def _get_plxpr_defer_measurements():
     class DeferMeasurementsInterpreter(PlxprInterpreter):
         """Interpreter for applying the defer_measurements transform to plxpr."""
 
-        # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
+        # pylint: disable=attribute-defined-outside-init,no-self-use
 
         def __init__(self, num_wires):
             super().__init__()
@@ -392,9 +392,7 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _(
-        self, *invals, jaxpr_branches, consts_slices, args_slice
-    ):  # pylint: disable=unused-argument
+    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):

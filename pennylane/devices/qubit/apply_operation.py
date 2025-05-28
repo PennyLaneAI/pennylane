@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
