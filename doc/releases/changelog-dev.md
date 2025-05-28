@@ -507,6 +507,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
 
+* Enforce `debugging` module to be a tertiary module.
+  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
+
 * Enforce subset of submodules in `templates` to be auxiliary layer modules.
   [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
 
