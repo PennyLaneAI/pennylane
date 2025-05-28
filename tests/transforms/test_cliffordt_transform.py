@@ -459,8 +459,10 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
 
         def circuit(x):
-            qml.PhaseShift(x[0], wires=[1])
-            qml.SingleExcitation(x[1], wires=[1, 2])
+            qml.RZ(x[0], wires=[0])
+            qml.PhaseShift(x[1], wires=[1])
+            qml.SingleExcitation(x[2], wires=[1, 2])
+            qml.PauliX(0)
             return qml.expval(qml.PauliZ(1))
 
         original_qnode = qml.QNode(circuit, dev)
@@ -474,7 +476,7 @@ class TestCliffordCompile:
 
         funres = []
         igrads = []
-        coeffs = [0.8, 0.2]
+        coeffs = [1.0, 2.0, 3.0]
         for qcirc in [original_qnode, transfmd_qnode]:
             # Autograd Interface
             A = qml.numpy.array(coeffs)
@@ -504,8 +506,8 @@ class TestCliffordCompile:
             igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
 
         # Compare results
-        assert all(qml.math.allclose(res1, res2, atol=1e-1) for res1, res2 in zip(*funres))
-        assert all(qml.math.allclose(res1, res2, atol=1e-1) for res1, res2 in zip(*igrads))
+        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
+        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
 
 
 def circuit_7(num_repeat, rand_angles):

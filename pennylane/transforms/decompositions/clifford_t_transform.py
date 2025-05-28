@@ -330,6 +330,7 @@ def _merge_param_gates(operations, merge_ops=None):
 
     return merged_ops, number_ops
 
+
 class _CachedCallable:
     """A class to cache the decomposition of the operators.
 
@@ -366,11 +367,15 @@ class _CachedCallable:
 
     def cached_decompose(self, op):
         """Decomposes the angle into a sequence of gates."""
-        seq, angle = self.decompose_fn(op), op.data[0]
-        if angle != abs(angle):
-            adj = [qml.adjoint(s, lazy=False) for s in seq][::-1]
-            return adj[1:] + adj[:1]
-        return seq
+        f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
+        cached_op = op if f_adj else op.adjoint()
+
+        seq = self.decompose_fn(cached_op)
+        if f_adj:
+            return seq
+
+        adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
+        return adj[1:] + adj[:1]
 
     @staticmethod
     def wire_mapper(op, wire):
@@ -500,6 +505,7 @@ def clifford_t_decomposition(
 
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
+        print(epsilon)
 
         # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
         # where the implementation of each function should have the following signature:
@@ -517,8 +523,11 @@ def clifford_t_decomposition(
         phase = new_operations.pop().data[0]
         for op in new_operations:
             if isinstance(op, qml.RZ):
+                # If simplifies to Identity, skip it
+                if not (op_param := op.simplify().data):
+                    continue
                 # Decompose the RZ operation with a default wire
-                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op.data[0], [0]))
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [0]))
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
