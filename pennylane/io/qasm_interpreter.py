@@ -174,6 +174,40 @@ class QasmInterpreter:
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
+        gate, args, wires = self._gate_setup_helper(node, gates_dict, context)
+
+        if len(node.modifiers) > 0:
+            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+            op_wires = wires[num_control:]
+            control_wires = wires[:num_control]
+            if "ctrl" in node.modifiers[-1].modifier.name:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
+                )
+            else:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=wires), context, wires
+                )
+
+            for mod in node.modifiers[::-1][1:]:
+                prev, wires = self.apply_modifier(mod, prev, context, wires)
+        else:
+            gate(*args, wires=wires)
+
+    def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
+        """
+        Helper to setup the a quantum gate call, also resolving arguments and wires.
+
+        Args:
+            node (QuantumGate): The QuantumGate QASMNode.
+            gates_dict (dict): the gates dictionary.
+            context (dict): the current context.
+
+        Returns:
+            QuantumGate: The gate to execute.
+            list: The list of arguments to the QuantumGate.
+            list: The wires the gate applies to.
+        """
         # setup arguments
         args = []
         for arg in node.arguments:
@@ -198,23 +232,7 @@ class QasmInterpreter:
         if context["wire_map"] is not None:
             wires = list(map(lambda wire: context["wire_map"][wire], wires))
 
-        if len(node.modifiers) > 0:
-            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
-            op_wires = wires[num_control:]
-            control_wires = wires[:num_control]
-            if "ctrl" in node.modifiers[-1].modifier.name:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
-                )
-            else:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=wires), context, wires
-                )
-
-            for mod in node.modifiers[::-1][1:]:
-                prev, wires = self.apply_modifier(mod, prev, context, wires)
-        else:
-            gate(*args, wires=wires)
+        return gate, args, wires
 
     @staticmethod
     def apply_modifier(mod: QuantumGate, previous: Operator, context: dict, wires: list):
