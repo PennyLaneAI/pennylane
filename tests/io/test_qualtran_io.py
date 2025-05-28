@@ -354,9 +354,9 @@ class TestToBloq:
             qml.ToBloq("123")
 
     def test_to_bloq(self):
-        """Tests that to_bloq functions as intended"""
+        """Tests that to_bloq functions as intended for simple circuits and gates"""
 
-        from qualtran.bloqs.basic_gates import Hadamard
+        from qualtran.bloqs.basic_gates import Hadamard, XGate
 
         dev = qml.device("default.qubit")
 
@@ -366,8 +366,25 @@ class TestToBloq:
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.to_bloq(qml.Hadamard(0), False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+
+    def test_circuit_to_bloq_kwargs(self):
+        """Tests that to_bloq functions as intended for circuits with kwargs"""
+
+        from qualtran.bloqs.basic_gates import Rx
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(angle):
+            qml.RX(phi=angle, wires=[0])
+
+        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {Rx(angle=0.0, eps=1e-11): 1}
+        with pytest.raises(TypeError, match="circuit() missing 1 required positinal argument: 'angle'"):
+            qml.to_bloq(circuit).call_graph()
+
+        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
 
     def test_map_to_bloq(self):
         """Tests that _map_to_bloq produces the correct Qualtran equivalent"""
