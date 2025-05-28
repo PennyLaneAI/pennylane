@@ -487,6 +487,12 @@ def _multidot(*matrices):
     return mat
 
 
+def _real_imag_split_eigh(A, factor):
+    _, basis = math.linalg.eigh(math.real(A) / factor + factor * math.imag(A))
+    eigvals = _multidot(math.transpose(basis), A, basis)
+    return eigvals, basis
+
+
 def _ai_kak(U):
     """Compute a type-AI Cartan decomposition of ``U`` in the standard basis/representation.
     This is done in the following steps (see App.E of https://arxiv.org/abs/2503.19014, case AI):
@@ -499,11 +505,20 @@ def _ai_kak(U):
     """
 
     Delta = math.dot(U, math.transpose(U))
-    # Delta^T=Delta implies that real(Delta) and imag(Delta) share an eigenbasis, which then also
-    # is that of Delta itself. As (real(Delta) + imag(Delta)) is real symmetric, we can use ``eigh``
-    # and will obtain a real-valued eigenbasis
-    _, o1 = math.linalg.eigh(0.1 * math.real(Delta) + 10 * math.imag(Delta))
-    d_squared = _multidot(math.transpose(o1), Delta, o1)
+    # Delta^T=Delta implies that Delta, real(Delta), and imag(Delta) share an eigenbasis
+    # As real(Delta) and imag(Delta) are real symmetric, we can use ``eigh`` to obtain a
+    # real-valued eigenbasis. We need to make sure that for degenerate real or imaginary parts
+    # we actually find an eigenbasis that also is one for Delta. In a first step, we make this
+    # likely by weighting the real and imaginary part by 1/pi and pi. In a second step,
+    # we check whether this basis diagonalized Delta, and recompute with a new weighting (by 10)
+    # if it did not.
+    d_squared, o1 = _real_imag_split_eigh(Delta, np.pi)
+    d_squared, o1 = math.cond(
+        math.allclose(math.diag(math.diag(d_squared)), d_squared, atol=1e-7),
+        lambda: (d_squared, o1),
+        lambda: _real_imag_split_eigh(Delta, 10.0),
+        (),
+    )
 
     # This implements o1[:, 0] *= det(o1) to ensure det(o1) = 1 afterwards
     # No need to modify the eigenvalues or d because this change will be absorbed in o2
