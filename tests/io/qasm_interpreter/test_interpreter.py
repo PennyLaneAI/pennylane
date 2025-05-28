@@ -212,7 +212,7 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
+            match=r"Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-qubit"})
 
