@@ -219,6 +219,9 @@ class QasmInterpreter:
             previous (Operator): The previous (called) operator.
             context (dict): The current context.
             wires (list): The wires that the operator is applied to.
+
+        Raises:
+            NotImplementedError: If the modifier has a param of an as-yet unsupported type.
         """
         # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
         # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
@@ -233,9 +236,9 @@ class QasmInterpreter:
                 power = mod.argument.value
             elif "vars" in context and mod.argument.name in context["vars"]:
                 power = context["vars"][mod.argument.name]["val"]
-           else:
+            else:
                 raise NotImplementedError(f"Unable to handle expression {mod.argument} at this time")
-           next = ops.pow(previous, z=power)
+            next = ops.pow(previous, z=power)
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
             wires = wires[:-1]
