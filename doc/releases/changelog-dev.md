@@ -199,10 +199,11 @@
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
-  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
-  decompose into will be chosen based on the target gate set.
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
+  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
+  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
 
   ```python
   from functools import partial
