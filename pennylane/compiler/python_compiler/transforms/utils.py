@@ -23,8 +23,7 @@ def xdsl_transform(_klass):
     """Register the xdsl transform into the plxpr to catalyst map"""
 
     # avoid dependency on catalyst
-    # pylint: disable-next=import-outside-toplevel
-    import catalyst
+    import catalyst  # pylint: disable=import-outside-toplevel
 
     def identity_transform(tape):
         """Stub, we only need the name to be unique"""
