@@ -98,7 +98,7 @@ class QasmInterpreter:
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
+    def visit_qubit_declaration(self, node: QubitDeclaration, context: dict):  # pylint: disable=no-self-use
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. Note: Qubit declarations must be global.
