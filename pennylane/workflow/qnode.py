@@ -909,3 +909,34 @@ def qnode(device, **kwargs):
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+@qml.transforms.core.TransformDispatcher.apply.register(QNode)
+def apply_transform_to_qnode(self, qnode: QNode, *targs, **tkwargs):
+    if qml.capture.enabled():
+        new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
+        return self._capture_callable_transform(new_qnode, targs, tkwargs)
+
+    qnode = copy.copy(qnode)
+
+    if self.expand_transform:
+        qnode.add_transform(
+            TransformContainer(
+                self._expand_transform,
+                args=targs,
+                kwargs=tkwargs,
+                use_argnum=self._use_argnum_in_expand,
+            )
+        )
+    qnode.add_transform(
+        TransformContainer(
+            self._transform,
+            args=targs,
+            kwargs=tkwargs,
+            classical_cotransform=self._classical_cotransform,
+            plxpr_transform=self._plxpr_transform,
+            is_informative=self._is_informative,
+            final_transform=self._final_transform,
+        )
+    )
+    return qnode
