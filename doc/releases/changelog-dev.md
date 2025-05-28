@@ -488,6 +488,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* With program capture enabled, mcm method validation now happens on execution rather than setup.
+  [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
+
 * Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
   be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
   [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
