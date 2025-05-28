@@ -23,7 +23,8 @@ from .zx_conversion import _tape2pyzx
 def basic_optimization(tape, verbose=False):
     r"""
 
-    Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane circuit.
+    Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit.
+    This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize`.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
@@ -76,6 +77,8 @@ def basic_optimization(tape, verbose=False):
 
     """
     pyzx_circ = _tape2pyzx(tape)
+
+    pyzx_circ = pyzx_circ.to_basic_gates()
 
     pyzx_circ = zx.basic_optimization(pyzx_circ, quiet=not verbose)
 

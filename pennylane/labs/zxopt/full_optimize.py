@@ -99,7 +99,6 @@ def full_optimize(tape, verbose=False):
 
         pyzx_circ = zx.full_optimize(pyzx_circ, quiet=not verbose)
 
-    pyzx_circ = zx.basic_optimization(pyzx_circ)
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
     return pl_circ

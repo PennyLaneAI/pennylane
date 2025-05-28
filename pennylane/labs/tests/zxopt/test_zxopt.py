@@ -17,7 +17,22 @@ import pytest
 import pennylane as qml
 from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce, todd
 
+# arbitrary circuit
 circ1 = qml.tape.QuantumScript(
+    [
+        qml.CNOT((0, 1)),
+        qml.T(0),
+        qml.S(0),
+        qml.Hadamard(0),
+        qml.RZ(0.5, 0),
+        qml.RX(0.5, 0),
+        qml.RY(0.5, 0),
+    ],
+    [],
+)
+
+# arbitrary phase polynomial circuit
+phase_poly1 = qml.tape.QuantumScript(
     [
         qml.CNOT((0, 1)),
         qml.T(0),
@@ -35,6 +50,7 @@ circ1 = qml.tape.QuantumScript(
     [],
 )
 
+# clifford + T circuit
 circ1_clifford_T = qml.tape.QuantumScript(
     [
         qml.CNOT((0, 1)),
@@ -51,27 +67,36 @@ circ1_clifford_T = qml.tape.QuantumScript(
     ],
     [],
 )
+circ2_clifford_T = qml.tape.QuantumScript(
+    [
+        qml.CNOT((0, 1)),
+        qml.T(0),
+        qml.S(0),
+        qml.Hadamard(0),
+    ],
+    [],
+)
 
 
-@pytest.mark.parametrize("circ", [circ1, circ1_clifford_T])
+@pytest.mark.parametrize("circ", [circ1, phase_poly1, circ1_clifford_T, circ2_clifford_T])
 def test_full_reduce(circ):
     """Test full_reduce"""
     _ = full_reduce(circ)
 
 
-@pytest.mark.parametrize("circ", [circ1_clifford_T])
+@pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
 def test_full_optimize(circ):
     """Test full_optimize"""
     _ = full_optimize(circ)
 
 
-@pytest.mark.parametrize("circ", [circ1, circ1_clifford_T])
+@pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
 def test_basic_optimization(circ):
     """Test basic_optimization"""
     _ = basic_optimization(circ)
 
 
-@pytest.mark.parametrize("circ", [circ1_clifford_T])
+@pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
 def test_todd(circ):
     """Test TODD"""
     _ = todd(circ)
