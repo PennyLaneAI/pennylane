@@ -98,7 +98,8 @@ class QasmInterpreter:
         return context
 
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(self, node: QASMNode, context: dict):
+                                                            # disable no-self-use, needs to have same params as visit()
+    def visit_qubit_declaration(self, node: QASMNode, context: dict):  # pylint: disable=R0201
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
@@ -111,7 +112,7 @@ class QasmInterpreter:
 
     @visit.register(ClassicalDeclaration)
                                                                            # needs to have same params as visit()
-    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
+    def visit_classical_declaration(self, node: QASMNode, context: dict):  # pylint: disable=R0201
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -134,8 +135,7 @@ class QasmInterpreter:
             }
 
     @visit.register(QuantumGate)
-                                                                  # needs to have same params as visit()
-    def visit_quantum_gate(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
+    def visit_quantum_gate(self, node: QASMNode, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
