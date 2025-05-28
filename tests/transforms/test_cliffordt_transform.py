@@ -201,7 +201,9 @@ class TestCliffordCompile:
         dev = qml.device("default.qubit")
 
         qnode_basic = qml.QNode(circuit, dev)
-        qnode_transformed = clifford_t_decomposition(qnode_basic, epsilon=epsilon, max_depth=10)
+        qnode_transformed = clifford_t_decomposition(
+            qnode_basic, epsilon=epsilon, max_depth=10, basis_set=("T", "T*", "H")
+        )
         mat_exact = qml.matrix(qnode_basic, wire_order=[0, 1])()
         mat_approx = qml.matrix(qnode_transformed, wire_order=[0, 1])()
         phase = qml.math.divide(

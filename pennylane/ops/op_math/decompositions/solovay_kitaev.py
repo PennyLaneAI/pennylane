@@ -412,7 +412,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         QueuingManager.remove(op)
 
     if op.wires[0] != 0:
-        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True, replace=True)
+        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
     else:
         if queuing:
             _ = [qml.apply(op) for op in new_tape.operations]
