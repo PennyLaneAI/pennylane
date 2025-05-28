@@ -889,6 +889,85 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
 
 
+class TestDynamicWiresControlFlowPrimitivesIntegration:
+    """Unit tests for using dynamic wires with control flow primitives."""
+
+    @pytest.mark.parametrize("embedding_location", ["cond", "after"])
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_cond_op_before(self, embedding_location, dynamic_wires):
+        """Test that applying an AmplitudeEmbedding with dynamic wires inside or after a cond after other
+        ops are already applied raises an error."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(x, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+            qml.H(op_wires)
+
+            @qml.cond(x < 2)
+            def cond_fn():
+                if embedding_location == "cond":
+                    qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+                qml.H(0)
+
+            @cond_fn.otherwise
+            def _():
+                qml.Y(0)
+
+            cond_fn()
+            if embedding_location == "after":
+                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(1.5, 0)
+
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_cond_dyn_wires_one_branch_embedding_other_branch(self, dynamic_wires):
+        """Test that an operator in one branch, and an AmplitudeEmbedding in another, where either has
+        dynamic wires, does not raise an error."""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(x, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+
+            @qml.cond(x < 2)
+            def cond_fn():
+                qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=embedding_wires)
+
+            @cond_fn.otherwise
+            def _():
+                qml.Y(op_wires)
+
+            cond_fn()
+            return qml.expval(qml.Z(0))
+
+        # No error should be raised
+        _ = jax.make_jaxpr(circuit)(1.5, 0)
+
+    @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
+    def test_cond_op_inside_embedding_after(self, dynamic_wires):
+        """Test that applying an AmplitudeEmbedding after a cond that contains an op where
+        either can have dynamic wires raises an error"""
+
+        @MergeAmplitudeEmbeddingInterpreter()
+        def circuit(x, w):
+            op_wires = w if dynamic_wires in ("op", "both") else 0
+            embedding_wires = w if dynamic_wires in ("embedding", "both") else 0
+
+            @qml.cond(x < 2)
+            def cond_fn():
+                qml.H(op_wires)
+
+            cond_fn()
+            qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), embedding_wires)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
+            _ = jax.make_jaxpr(circuit)(1.5, 0)
+
+
 class TestExpandPlxprTransformIntegration:
     """Test that the transform works with expand_plxpr_transform"""
 
