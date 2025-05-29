@@ -264,9 +264,9 @@ class QasmInterpreter:
             ),
             partial(
                 self.visit,
-                node.cases[i + 1][1].statements,
+                node.default.statements,
                 context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
-            ) if f"cond_{i + 1}" in context["scopes"]["switches"][f"switch_{node.span.start_line}"] else None,
+            ) if hasattr(node, "default") and node.default is not None else None,
             [
                 (
                     target == self.eval_expr(node.cases[j + 1][0][0], context),
@@ -502,7 +502,6 @@ class QasmInterpreter:
             node (QASMNode): the quantum measurement node.
             context (dict): the current context.
         """
-        self._init_gates_list(context)
         if isinstance(node.measure.qubit, Identifier):
             meas = partial(measure, node.measure.qubit.name)
 
@@ -825,7 +824,6 @@ class QasmInterpreter:
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
-        self._init_gates_list(context)
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
@@ -1083,7 +1081,7 @@ class QasmInterpreter:
         """
         missing_wires = []
         for wire in wires:
-            if wire not in context["wires"]:
+            if not (wire in context["wires"] or ("outer_wires" in context and wire in context["outer_wires"])):
                 missing_wires.append(wire)
         if len(missing_wires) > 0:
             raise NameError(
