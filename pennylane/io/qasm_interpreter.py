@@ -250,6 +250,8 @@ class QasmInterpreter:
         elif mod.modifier.name == "negctrl":
             next = ops.ctrl(previous, control=wires[-1], control_values=[0])
             wires = wires[:-1]
+      else:
+           raise ValueError(f"Unknown modifier {mod}")
 
         return next, wires
 
