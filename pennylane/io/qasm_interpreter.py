@@ -183,9 +183,7 @@ class QasmInterpreter:
             list: The wires the gate applies to.
         """
         # setup arguments
-        args = []
-        for arg in node.arguments:
-            args.append(self.evaluate_argument(arg, context))
+        args = [self.evaluate_argument(arg, context) for arg in node.arguments]
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
