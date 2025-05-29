@@ -25,6 +25,7 @@ from pennylane.operation import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
+from pennylane.ops.op_math.exp import trotter_decomp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -631,6 +632,21 @@ class TestDecomposition:
         actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
         expected_matrix = qml.matrix(op, wire_order=op.wires)
         assert qml.math.allclose(actual_matrix, expected_matrix)
+
+    def test_trotter_decomposition_condition(self):
+        """Tests the condition of the trotter decomposition rule."""
+
+        hamiltonian = qml.RX(0.5, wires=0)
+        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0)
+        op = qml.exp(hamiltonian, coeff=1.5)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0) + qml.RX(0.5, wires=1)
+        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")

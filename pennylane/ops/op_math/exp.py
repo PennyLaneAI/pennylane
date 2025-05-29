@@ -28,6 +28,7 @@ from pennylane.operation import (
     Operation,
     Operator,
     OperatorPropertyUndefined,
+    TermsUndefinedError,
 )
 from pennylane.wires import Wires
 
@@ -528,8 +529,11 @@ def _trotter_decomp_condition(base, num_steps):
         base = base.simplify()
     if qml.pauli.is_pauli_word(base):
         return True
-    _, ops = base.terms()
-    return all(qml.pauli.is_pauli_word(ob) for ob in ops)
+    try:
+        _, ops = base.terms()
+        return all(qml.pauli.is_pauli_word(ob) for ob in ops)
+    except TermsUndefinedError:
+        return False
 
 
 def _trotter_decomp_resource(base, num_steps):
