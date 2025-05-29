@@ -50,7 +50,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
-    def test_raises_on_expressions(self):
+    def test_raises_on_unsupported_param_types(self):
         # parse the QASM
         ast = parse(
             """
@@ -62,7 +62,7 @@ class TestInterpreter:
         )
         with pytest.raises(
             NotImplementedError,
-            match="Unable to handle BinaryExpression expression at this time",
+            match="Unable to handle BinaryExpression at this time",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "expression-not-implemented"}
