@@ -398,7 +398,7 @@ def decompose(
             :doc:`quantum operators </introduction/operations>`.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
-            the operator is in the target gate set. TODO: add details section about this.
+            the operator is in the target gate set.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
@@ -526,10 +526,12 @@ def decompose(
     1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
     2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
     3: ──H──────────────────────────────────────────────────────────────────────────────────────────────
+    <BLANKLINE>
     ───RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X──RZ(4.71)─────────────────
     ─────────────│────────────────────────────────│────────────────────────│──╭SWAP†────────────────────
     ─────────────╰●───────────────────────────────│────────────────────────│──│─────────────╭(Rϕ(1.57))†
     ──────────────────────────────────────────────╰●───────────────────────╰●─╰SWAP†─────H†─╰●──────────
+    <BLANKLINE>
     ────────────────────────────────────┤
     ──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
     ───H†─│────────────╰●───────────────┤
@@ -618,6 +620,18 @@ def decompose(
         Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered
         *less* efficient. When they have relatively low weights, a decomposition involving them is considered *more*
         efficient.
+
+        **Gate Set vs. Stopping Condition**
+
+        With the new graph-based decomposition system enabled, we make the distinction between a
+        target gate set and a stopping condition. The ``gate_set`` is a collection of operator
+        types and/or names that is required by the graph-based decomposition solver, which chooses
+        a decomposition rule for each operator that ultimately minimizes the total number of
+        gates in terms of the target gate set (or the total cost if weights are provided). On the
+        other hand, the ``stopping_condition`` is a function that determines whether a concrete
+        operator needs to be decomposed.
+
+        
 
         **Customizing Decompositions**
 
@@ -849,11 +863,21 @@ def _resolve_gate_set(
     else:
         raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
 
-    # If the stopping condition is not explicitly provided, the default is to simply check
-    # whether an operator belongs to the target gate set.
-    stopping_condition = stopping_condition or gate_set_contains
+    if stopping_condition:
 
-    return gate_set, stopping_condition
+        # Even when the user provides a stopping condition, we still need to check
+        # whether an operator belongs to the target gate set. This is to prevent
+        # the case of an operator missing the stopping condition but doesn't have
+        # a decomposition assigned due to being in the target gate set.
+        def _stopping_condition(op):
+            return gate_set_contains(op) or stopping_condition(op)
+
+    else:
+        # If the stopping condition is not explicitly provided, the default is to simply check
+        # whether an operator belongs to the target gate set.
+        _stopping_condition = gate_set_contains
+
+    return gate_set, _stopping_condition
 
 
 def _construct_and_solve_decomp_graph(operations, target_gates, fixed_decomps, alt_decomps):
