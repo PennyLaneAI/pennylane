@@ -709,6 +709,7 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
+# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
 def scatter_element_add(
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
