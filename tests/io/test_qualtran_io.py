@@ -423,3 +423,29 @@ class TestToBloq:
         assert CYGate() == to_bloq()(qml.CY([0, 1]))
         assert ZGate() == to_bloq()(qml.PauliZ(0))
         assert CZ() == to_bloq()(qml.CZ([0, 1]))
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "expected_call_graph",  # Expected call graph computed by resources from labs or decompositions
+        ),
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                # ResourceQPE
+                {
+                    qml.to_bloq(qml.Hadamard(0)): 4,
+                    qml.ToBloq(qml.RX(0.1, wires=0)).controlled(): 15,
+                    qml.ToBloq(qml.adjoint(qml.QFT(wires=range(1, 5)))): 1,
+                },
+            ),
+        ],
+    )
+    def test_build_call_graph(self, op, expected_call_graph):
+        """ "Tests that the defined call_grapsh match the expected decompostions"""
+        from pennylane.io.qualtran_io import _get_op_call_graph
+
+        call_graph = _get_op_call_graph()(op)
+        assert dict(call_graph) == expected_call_graph
