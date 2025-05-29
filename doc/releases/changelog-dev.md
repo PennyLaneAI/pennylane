@@ -465,6 +465,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.43. Instead, this hybrid workflow can be accomplished 
   with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
+  [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
 
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
