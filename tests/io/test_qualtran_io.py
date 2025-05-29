@@ -464,6 +464,50 @@ class TestToBloq:
                     _map_to_bloq()(qml.SWAP([0, 1])): 2,
                 },
             ),
+            (
+                qml.QROMStatePreparation(
+                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    _map_to_bloq()(
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        )
+                    ): 1,
+                    _map_to_bloq()(
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        )
+                    ).adjoint(): 1,
+                    _map_to_bloq()(
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        )
+                    ): 1,
+                    _map_to_bloq()(
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        )
+                    ).adjoint(): 1,
+                    _map_to_bloq()(qml.CRY(0.0, wires=[0, 1])): 6,
+                },
+            ),
         ],
     )
     def test_build_call_graph(self, op, expected_call_graph):
@@ -471,5 +515,4 @@ class TestToBloq:
         from pennylane.io.qualtran_io import _get_op_call_graph
 
         call_graph = _get_op_call_graph()(op)
-
-        assert call_graph == expected_call_graph
+        assert dict(call_graph) == expected_call_graph

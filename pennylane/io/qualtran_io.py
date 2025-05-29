@@ -163,7 +163,7 @@ def _get_op_call_graph():
             ]
 
             if len(bitstrings) == 0:
-                bitstrings = ["0" * num_precision_wires]
+                bitstrings = ["0" * (num_precision_wires - 1) + "1"]
 
             qrom_op = qml.QROM(
                 bitstrings=bitstrings,
@@ -189,6 +189,9 @@ def _get_op_call_graph():
             bitstrings = [zero_string for _ in range(num_bit_flips)] + [
                 one_string for _ in range(num_bit_flips)
             ]
+
+            if len(bitstrings) == 0:
+                bitstrings = ["0" * (num_precision_wires - 1) + "1"]
 
             qrom_op = qml.QROM(
                 bitstrings=bitstrings,
