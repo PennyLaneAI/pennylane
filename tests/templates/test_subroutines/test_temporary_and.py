@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the Elbow template.
+Tests for the TemporaryAnd template.
 """
 
 import pytest
@@ -22,17 +22,17 @@ from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-class TestElbow:
-    """Tests specific to the Elbow operation"""
+class TestTemporaryAnd:
+    """Tests specific to the TemporaryAnd operation"""
 
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.Elbow(wires=[0, "a", 2])
+        op = qml.TemporaryAnd(wires=[0, "a", 2])
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
-        """Tests the correctness of the Elbow operator.
+        """Tests the correctness of the TemporaryAnd operator.
         This is done by comparing the results with the Toffoli operator
         """
 
@@ -42,10 +42,10 @@ class TestElbow:
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
-                qml.Elbow([0, 1, 2]),
+                qml.TemporaryAnd([0, 1, 2]),
                 qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
-                qml.adjoint(qml.Elbow([0, 1, 2])),
+                qml.adjoint(qml.TemporaryAnd([0, 1, 2])),
             ],
             [qml.state()],
         )
@@ -71,30 +71,30 @@ class TestElbow:
         assert np.allclose(output_toffoli, output_elbow)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
-        M_elbow = qml.matrix(qml.Elbow(wires=[0, 1, 2]))
-        M_elbow_adj = qml.matrix(qml.adjoint(qml.Elbow(wires=[0, 1, 2])))
+        M_elbow = qml.matrix(qml.TemporaryAnd(wires=[0, 1, 2]))
+        M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAnd(wires=[0, 1, 2])))
         M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
 
         # When the third qubit starts in |0>, we only check the odd columns
-        iso_elbow = M_elbow[:, ::2]
+        iso_and = M_elbow[:, ::2]
         iso_toffoli = M_toffoli[:, ::2]
 
         # When the third qubit ends in |0>, we only check the odd rows
-        iso_M_elbow_adj = M_elbow_adj[::2, :]
+        iso_M_and_adj = M_and_adj[::2, :]
         iso_toffoli_adj = M_toffoli[::2, :]
 
-        assert np.allclose(iso_elbow, iso_toffoli)
-        assert np.allclose(iso_M_elbow_adj, iso_toffoli_adj)
+        assert np.allclose(iso_and, iso_toffoli)
+        assert np.allclose(iso_M_and_adj, iso_toffoli_adj)
 
     def test_elbow_decompositions(self):
-        """Tests that Elbow is decomposed properly."""
+        """Tests that TemporaryAnd is decomposed properly."""
 
-        for rule in qml.list_decomps(qml.Elbow):
-            _test_decomposition_rule(qml.Elbow([0, 1, 2]), rule)
+        for rule in qml.list_decomps(qml.TemporaryAnd):
+            _test_decomposition_rule(qml.TemporaryAnd([0, 1, 2]), rule)
 
     def test_compute_matrix(self):
 
-        matrix = qml.Elbow([0, 1, "v"]).compute_matrix()
+        matrix = qml.TemporaryAnd([0, 1, "v"]).compute_matrix()
         matrix_target = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -112,7 +112,7 @@ class TestElbow:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        """Tests that Elbow works with jax and jit"""
+        """Tests that TemporaryAnd works with jax and jit"""
         import jax
 
         dev = qml.device("default.qubit")
@@ -121,10 +121,10 @@ class TestElbow:
         def circuit():
             qml.Hadamard(0)
             qml.Hadamard(1)
-            qml.Elbow(wires=[0, 1, 2])
+            qml.TemporaryAnd(wires=[0, 1, 2])
             qml.CNOT(wires=[2, 3])
             qml.RY(1.2, 3)
-            qml.adjoint(qml.Elbow([0, 1, 2]))
+            qml.adjoint(qml.TemporaryAnd([0, 1, 2]))
             return qml.probs([0, 1, 2, 3])
 
         jit_circuit = jax.jit(circuit)

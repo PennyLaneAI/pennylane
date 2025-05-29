@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the Elbow template.
+Contains the TemporaryAnd template.
 """
 
 from functools import lru_cache
@@ -23,18 +23,18 @@ from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 
-class Elbow(Operation):
-    r"""Elbow(wires)
+class TemporaryAnd(Operation):
+    r"""TemporaryAnd(wires)
 
-    The Elbow operator is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
-    about the target wire to enable more efficient circuit decompositions. The ``Elbow`` assumes the target qubit
-    to be initialized in :math:`|0\rangle`, while the ``Adjoint(Elbow)`` assumes the target output to be :math:`|0\rangle`.
+    The TemporaryAnd operator is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
+    about the target wire to enable more efficient circuit decompositions. The ``TemporaryAnd`` assumes the target qubit
+    to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAnd)`` assumes the target output to be :math:`|0\rangle`.
     For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
-        on the target wire when using ``Elbow`` or ``Adjoint(Elbow)``, respectively. Otherwise, the behavior could be
+        on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
         different from the expected ``AND``.
 
     **Details:**
@@ -55,10 +55,10 @@ class Elbow(Operation):
         def circuit():
             qml.X(0)
             qml.X(1)
-            qml.Elbow([0,1,2])
+            qml.TemporaryAnd([0,1,2])
             qml.CNOT([2,3])
-            qml.adjoint(qml.Elbow([0,1,2])) # We can apply the adjoint Elbow because after applying a Toffoli,
-                                            # the target wire would be |0>.
+            qml.adjoint(qml.TemporaryAnd([0,1,2])) # We can apply the adjoint TemporaryAnd because after applying a Toffoli,
+                                                   # the target wire would be |0>.
 
             return qml.sample(wires=[0,1,2,3])
 
@@ -78,8 +78,6 @@ class Elbow(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     resource_keys = set()
-
-    name = "Elbow"
 
     @property
     def resource_params(self) -> dict:
@@ -109,7 +107,7 @@ class Elbow(Operation):
 
         **Example**
 
-        >>> print(qml.Elbow.compute_matrix())
+        >>> print(qml.TemporaryAnd.compute_matrix())
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -140,7 +138,7 @@ class Elbow(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.Elbow.decomposition`.
+        .. seealso:: :meth:`~.TemporaryAnd.decomposition`.
 
         Args:
             wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
@@ -151,7 +149,7 @@ class Elbow(Operation):
 
         **Example:**
 
-        >>> qml.Elbow.compute_decomposition((0,1,2))
+        >>> qml.TemporaryAnd.compute_decomposition((0,1,2))
         [H(2),
         T(2),
         CNOT(wires=[1, 2]),
@@ -178,7 +176,7 @@ class Elbow(Operation):
         ]
 
 
-def _elbow_resources():
+def _temporary_and_resources():
     return {
         qml.Hadamard: 2,
         qml.CNOT: 3,
@@ -188,8 +186,8 @@ def _elbow_resources():
     }
 
 
-@register_resources(_elbow_resources)
-def _elbow(wires: WiresLike):
+@register_resources(_temporary_and_resources)
+def _temporary_and(wires: WiresLike):
     qml.Hadamard(wires=wires[2])
     qml.T(wires=wires[2])
     qml.CNOT(wires=[wires[1], wires[2]])
@@ -202,5 +200,5 @@ def _elbow(wires: WiresLike):
     qml.adjoint(qml.S(wires=wires[2]))
 
 
-add_decomps(Elbow, _elbow)
-# TODO: add add_decomps("Adjoint(Elbow)", _adjoint_elbow) when MCMs supported by the pipeline
+add_decomps(TemporaryAnd, _temporary_and)
+# TODO: add add_decomps("Adjoint(TemporaryAnd)", _adjoint_TemporaryAnd) when MCMs supported by the pipeline

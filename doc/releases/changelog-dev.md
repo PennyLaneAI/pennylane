@@ -104,7 +104,7 @@
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* A new template :class:`~.Elbow` has been added. The Elbow operator is a three-qubit gate equivalent to an AND, or Toffoli, gate that leverages extra information
+* A new template :class:`~.TemporaryAnd` has been added. The ``TemporaryAnd`` operator is a three-qubit gate equivalent to an AND, or Toffoli, gate that leverages extra information
   about the target wire to enable a more efficient decomposition. It is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
 

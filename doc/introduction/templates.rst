@@ -369,7 +369,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/select_pauli_rot/select_pauli_rot.png
 
 .. gallery-item::
-    :description: :doc:`Elbow <../code/api/pennylane.Elbow>`
+    :description: :doc:`TemporaryAnd <../code/api/pennylane.TemporaryAnd>`
     :figure: _static/templates/subroutines/elbow.png
 
 .. raw:: html
