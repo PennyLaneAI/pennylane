@@ -974,7 +974,7 @@ class TestFullMetricTensor:
     num_wires = 3
 
     @pytest.mark.external
-    def test_catalyst(self):
+    def test_catalyst_compatibility(self):
         """Test that the metric tensor can be executed with catalyst."""
 
         pytest.importorskip("catalyst")
