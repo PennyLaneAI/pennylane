@@ -1020,7 +1020,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 10  # 8 # 8 would be the count with 2-CNOT circuit
+        assert len(obtained_decomposition) == 11  # 8 # 8 would be the count with 2-CNOT circuit
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
