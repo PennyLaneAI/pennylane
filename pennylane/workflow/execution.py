@@ -195,7 +195,8 @@ def execute(
     if not tapes:
         return user_post_processing(())
 
-    ### Specifying and preprocessing variables ####
+    ### Specifying and preprocessing variables ###
+
     interface = _resolve_interface(interface, tapes)
 
     config = qml.devices.ExecutionConfig(
@@ -209,18 +210,13 @@ def execute(
         executor_backend=executor_backend,
     )
     config = _resolve_execution_config(config, device, tapes)
-    config = _resolve_execution_config(config, device, tapes)
 
-    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
     outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
     tapes, outer_post_processing = outer_transform(tapes)
-    tapes, outer_post_processing = outer_transform(tapes)
 
-    assert not outer_transform.is_informative, "should only contain device preprocessing"
     assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
-    return user_post_processing(outer_post_processing(results))
     return user_post_processing(outer_post_processing(results))
