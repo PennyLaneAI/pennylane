@@ -89,7 +89,6 @@ def _map_to_bloq():
     #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
     #     )
 
-
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
         from qualtran.bloqs.basic_gates import GlobalPhase
