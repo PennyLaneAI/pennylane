@@ -23,13 +23,11 @@ Functions
     ~from_qiskit_op
     ~from_quil
     ~from_quil_file
-    ~FromBloq
 
 Classes
 ^^^^^^^
 
 .. autosummary::
     :toctree: api
-    :show-inheritance:
 
     ~FromBloq
