@@ -62,7 +62,7 @@ class TestInterpreter:
 
         assert q.queue == [Hadamard('q0')]
 
-    def test_raises_on_expressions(self):
+    def test_param_as_expression(self):
         # parse the QASM
         ast = parse(
             """
@@ -72,13 +72,13 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        with pytest.raises(
-            NotImplementedError,
-            match="Unable to handle BinaryExpression expression at this time",
-        ):
+
+        with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "expression-not-implemented"}
+                ast, context={"wire_map": None, "name": "expression-implemented"}
             )
+
+        assert q.queue == [PauliX('q0')**2]
 
     def test_nested_modifiers(self):
         # parse the QASM program
