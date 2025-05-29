@@ -23,7 +23,6 @@ from pennylane.transforms.core import TransformProgram
 from ._cache_transform import _cache_transform
 
 
-# pylint: disable=protected-access
 def _prune_dynamic_transform(outer_transform, inner_transform):
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 

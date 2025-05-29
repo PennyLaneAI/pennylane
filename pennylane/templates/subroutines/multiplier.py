@@ -184,7 +184,7 @@ class Multiplier(Operation):
         """All wires involved in the operation."""
         return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod

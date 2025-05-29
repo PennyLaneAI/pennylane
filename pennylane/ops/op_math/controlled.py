@@ -33,11 +33,10 @@ import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.compiler import compiler
-from pennylane.decomposition.controlled_decomposition import base_to_custom_ctrl_op
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 
@@ -490,7 +489,7 @@ class Controlled(SymbolicOp):
             base, *control_wires, control_values=control_values, work_wires=work_wires
         )
 
-    # pylint: disable=too-many-function-args, too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -685,7 +684,6 @@ class Controlled(SymbolicOp):
     def has_sparse_matrix(self):
         return self.base.has_sparse_matrix or self.base.has_matrix
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         try:
             target_mat = self.base.sparse_matrix()
@@ -937,7 +935,7 @@ class ControlledOp(Controlled, operation.Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-function-args, too-many-positional-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity
@@ -1002,3 +1000,26 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
 # easier to just keep the same primitive for both versions
 # dispatch between the two types happens inside instance creation anyway
 ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access
+
+
+@functools.lru_cache(maxsize=1)
+def base_to_custom_ctrl_op():
+    """A dictionary mapping base op types to their custom controlled versions.
+    This dictionary is used under the assumption that all custom controlled operations do not
+    have resource params (which is why `ControlledQubitUnitary` is not included here).
+    """
+
+    ops_with_custom_ctrl_ops = {
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliZ, 2): qml.CCZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.CZ, 1): qml.CCZ,
+        (qml.SWAP, 1): qml.CSWAP,
+        (qml.Hadamard, 1): qml.CH,
+        (qml.RX, 1): qml.CRX,
+        (qml.RY, 1): qml.CRY,
+        (qml.RZ, 1): qml.CRZ,
+        (qml.Rot, 1): qml.CRot,
+        (qml.PhaseShift, 1): qml.ControlledPhaseShift,
+    }
+    return ops_with_custom_ctrl_ops

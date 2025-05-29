@@ -17,7 +17,6 @@ import functools
 import pennylane as qml
 from pennylane.math import Interface
 
-from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
 
@@ -102,11 +101,17 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             gradient_keyword_arguments=qnode.gradient_kwargs,
             mcm_config=mcm_config,
         )
-
         if resolve:
-            tape = construct_tape(qnode, level=0)(*args, **kwargs)
-            # pylint:disable=protected-access
-            config = _resolve_execution_config(config, qnode.device, (tape,))
+            if type(qnode).__name__ == "TorchLayer":
+                # avoid triggering import of torch if its not needed.
+                x = args[0]
+                kwargs = {
+                    **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+                }
+            shots = kwargs.pop("shots", None)
+            tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            batch, _ = qnode.transform_program((tape,))
+            config = _resolve_execution_config(config, qnode.device, batch)
 
         return config
 

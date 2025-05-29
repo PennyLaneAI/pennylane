@@ -185,7 +185,7 @@ class QROM(Operation):
 
         return copied_op
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
 
         return self.compute_decomposition(
             self.bitstrings,

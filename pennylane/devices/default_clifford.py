@@ -24,6 +24,7 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -122,7 +123,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 def _validate_channels(tape, name="device"):
     """Validates the channels for a circuit."""
     if not tape.shots and any(isinstance(op, qml.operation.Channel) for op in tape.operations):
-        raise qml.DeviceError(f"Channel not supported on {name} without finite shots.")
+        raise DeviceError(f"Channel not supported on {name} without finite shots.")
 
     return (tape,), null_postprocessing
 
@@ -133,7 +134,7 @@ def _pl_op_to_stim(op):
         stim_op = _OPERATIONS_MAP[op.name]
         stim_tg = map(str, op.wires)
     except KeyError as e:
-        raise qml.DeviceError(
+        raise DeviceError(
             f"Operator {op} not supported with default.clifford and does not provide a decomposition."
         ) from e
 
@@ -519,7 +520,6 @@ class DefaultClifford(Device):
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
         return results
 
-    # pylint:disable=no-member,too-many-branches
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
@@ -632,7 +632,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 
@@ -678,7 +678,6 @@ class DefaultClifford(Device):
 
         return samples, qml.math.array(coeffs)
 
-    # pylint:disable=protected-access
     def measure_statistical(self, circuit, stim_circuit, seed=None):
         """Given a circuit, compute samples and return the statistical measurement results."""
         # Compute samples via circuits from tableau
@@ -701,7 +700,7 @@ class DefaultClifford(Device):
                 )[0]
                 # Check if the rotation was permissible
                 if len(samples) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"Observable {meas_op.name} is not supported for rotating probabilities on {self.name}."
                     )
                 # Process the result from samples
@@ -901,7 +900,7 @@ class DefaultClifford(Device):
 
         return entropy / qml.math.log(log_base)
 
-    # pylint: disable=too-many-branches, too-many-statements
+    # pylint: disable=too-many-branches
     def _measure_probability(self, meas, _, **kwargs):
         r"""Measure the probability of each computational basis state.
 
