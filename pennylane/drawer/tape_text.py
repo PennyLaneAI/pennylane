@@ -14,7 +14,7 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
-# pylint: disable=too-many-arguments
+
 
 from dataclasses import dataclass, field
 from typing import Optional

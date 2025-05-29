@@ -14,19 +14,21 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
-from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Callable, List, Type, Optional, Hashable, Dict, Union
+from inspect import signature
+from typing import Callable, Hashable, List, Optional, Type, Dict, Union
 
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
-from pennylane.operation import classproperty
+import numpy as np
 
-from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.operation import classproperty
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 # pylint: disable=unused-argument
+
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
@@ -69,6 +71,21 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         )
 
     def __repr__(self) -> str:
+
+        class_name = self.__class__.__qualname__
+        op_type_name = self.op_type.__name__
+
+        params_arg_str = ""
+        if self.params:
+            params = sorted(self.params.items())
+            params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
+            params_arg_str = f", params={{{params_str}}}"
+
+        return f"{class_name}({op_type_name}{params_arg_str})"
+
+    @property
+    def name(self) -> str:
+        r"""Returns the name of operator."""
         return self._name
 
 
@@ -86,13 +103,75 @@ def _make_hashable(d) -> tuple:
 
     if isinstance(d, Hashable):
         return d
-    sorted_keys = sorted(d)
-    return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
+
+    if isinstance(d, dict):
+        return tuple(sorted((_make_hashable(k), _make_hashable(v)) for k, v in d.items()))
+    if isinstance(d, (list, tuple)):
+        return tuple(_make_hashable(elem) for elem in d)
+    if isinstance(d, set):
+        return tuple(sorted(_make_hashable(elem) for elem in d))
+    if isinstance(d, np.ndarray):
+        return _make_hashable(d.tolist())
+
+    raise TypeError(f"Object of type {type(d)} is not hashable and cannot be converted.")
 
 
 class ResourceOperator(ABC):
-    r"""Abstract base class to represent quantum operators according to the 
-    information required for resource estimation.
+    r"""Base class to represent quantum operators according to the set of information
+    required for resource estimation.
+
+    Operators defined for the purpose of resource estimation require less detailed information.
+    This is because the cost of a quantum gate can be well approximated without a full description
+    of its parameters. For example two :class:`~.RX` gates have the same cost regardless
+    of their rotation angle parameters.
+
+    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its
+    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally,
+
+    .. details::
+
+        **Example**
+
+        A PennyLane Operator can be extended for resource estimation by creating a new class that
+        inherits from both the ``Operator`` and ``ResourceOperator``. Here is an example showing how to
+        extend ``qml.QFT`` for resource estimation.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
+
+            class ResourceQFT(qml.QFT, ResourceOperator):
+
+                @staticmethod
+                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
+                    gate_types = {}
+                    hadamard = ResourceHadamard.resource_rep()
+                    swap = ResourceSWAP.resource_rep()
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
+
+                    gate_types[hadamard] = num_wires
+                    gate_types[swap] = num_wires // 2
+                    gate_types[ctrl_phase_shift] = num_wires*(num_wires - 1) // 2
+
+                    return gate_types
+
+                @property
+                def resource_params(self, num_wires) -> dict:
+                    return {"num_wires": num_wires}
+
+                @classmethod
+                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                    params = {"num_wires": num_wires}
+                    return CompressedResourceOp(cls, params)
+
+        Which can be instantiated as a normal operation, but now contains the resources:
+
+        .. code-block:: bash
+
+            >>> op = ResourceQFT(range(3))
+            >>> op.resources(**op.resource_params)
+            {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
     """
 
     num_wires = 0
@@ -254,7 +333,9 @@ class ResourceOperator(ABC):
             _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys.union({"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"})
+            keys = cls.resource_keys.union(
+                {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
+            )
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
         return
@@ -284,15 +365,15 @@ class ResourceOperator(ABC):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
-    
+
     def __and__(self, other):
         if isinstance(other, self.__class__):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     __radd__ = __add__
@@ -317,18 +398,18 @@ def _validate_signature(func: Callable, expected_args: set):
         func (Callable): function to match signature with
         expected_args (set): expected signature
     """
-    
+
     sig = signature(func)
     actual_args = set(sig.parameters)
 
-    if (extra_args := actual_args - expected_args):
+    if extra_args := actual_args - expected_args:
         raise ValueError(
             f"The function provided specifies addtional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
 
-    if (missing_args := expected_args - actual_args):
+    if missing_args := expected_args - actual_args:
         raise ValueError(
             f"The function is missing arguments ({missing_args}) which are expected. Please"
             + " update the function signature or modify the base class' `resource_keys` argument."

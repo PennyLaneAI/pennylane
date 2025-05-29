@@ -16,17 +16,20 @@ r"""This module contains the base class for qubit management"""
 from typing import Union
 
 import pennylane as qml
-from pennylane.queuing import QueuingManager
+
+# pylint: disable= too-few-public-methods
 
 
 class QubitManager:
+    r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.
 
-    r"""Contains attributes which help track how auxiliary qubits are used in a circuit
     Args:
-        work_wires (int or dict): Number of work wires or a dictionary containing
-            number of clean and dirty work wires. All work_wires are assumed to be clean when
+        work_wires (int or Dict[str, int]): Number of work wires or a dictionary containing
+            number of clean and dirty work wires. All ``work_wires`` are assumed to be clean when
             `int` is provided.
-        tight_budget (bool): flag to determine whether extra clean qubits are available
+        algo_wires (int): Number of algorithmic wires, default value is ``0``.
+        tight_budget (bool): Determines whether extra clean qubits can be allocated when they
+            exceed the available amount. The default is ``False``.
 
     **Example**
 
@@ -39,7 +42,7 @@ class QubitManager:
 
     """
 
-    def __init__(self, work_wires: Union[int, dict], tight_budget=False) -> None:
+    def __init__(self, work_wires: Union[int, dict], algo_wires=0, tight_budget=False) -> None:
 
         if isinstance(work_wires, dict):
             clean_wires = work_wires["clean"]
@@ -49,15 +52,24 @@ class QubitManager:
             dirty_wires = 0
 
         self.tight_budget = tight_budget
-        self._logic_qubit_counts = 0
+        self._logic_qubit_counts = algo_wires
         self._clean_qubit_counts = clean_wires
         self._dirty_qubit_counts = dirty_wires
 
     def __str__(self):
-        return f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, logic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+        return (
+            f"QubitManager(clean qubits={self._clean_qubit_counts}, dirty qubits={self._dirty_qubit_counts}, "
+            f"algorithmic qubits={self._logic_qubit_counts}, tight budget={self.tight_budget})"
+        )
 
     def __repr__(self) -> str:
-        return str(self)
+        work_wires_str = repr(
+            {"clean": self._clean_qubit_counts, "dirty": self._dirty_qubit_counts}
+        )
+        return (
+            f"QubitManager(work_wires={work_wires_str}, algo_wires={self._logic_qubit_counts}, "
+            f"tight_budget={self.tight_budget})"
+        )
 
     def __eq__(self, other: object) -> bool:
         return (
@@ -83,10 +95,15 @@ class QubitManager:
         r"""Returns the number of algorithmic qubits."""
         return self._logic_qubit_counts
 
+    @property
+    def total_qubits(self):
+        r"""Returns the number of total qubits."""
+        return self._clean_qubit_counts + self._dirty_qubit_counts + self.algo_qubits
+
     @algo_qubits.setter
-    def algo_qubits(self, count: int):  # these get set manually, the rest
+    def algo_qubits(self, count: int):  # these get set manually, the rest are dynamically updated
         r"""Setter for algorithmic qubits."""
-        self._logic_qubit_counts = count  #  are dynamically updated
+        self._logic_qubit_counts = count
 
     def allocate_qubits(self, num_qubits: int):
         r"""Allocates extra clean qubits.
@@ -104,7 +121,8 @@ class QubitManager:
             num_qubits(int) : number of clean qubits to be grabbed
 
         Raises:
-            ValueError: If tight_budget is `True` number of qubits to be grabbed is greater than available clean qubits.
+            ValueError: If tight_budget is `True` number of qubits to be grabbed is greater than
+            available clean qubits.
 
         """
         available_clean = self.clean_qubits
@@ -129,61 +147,50 @@ class QubitManager:
         Raises:
             ValueError: If number of qubits to be freed is greater than available dirty qubits.
         """
-        available_dirty = self.dirty_qubits
 
-        if num_qubits > available_dirty:
+        if num_qubits > self.dirty_qubits:
             raise ValueError(
                 f"Freeing more qubits than available dirty qubits."
-                f"Number of dirty qubits available is {available_dirty}, while {num_qubits} qubits are being released."
+                f"Number of dirty qubits available is {self.dirty_qubits}, while {num_qubits} qubits are being released."
             )
 
-        self._dirty_qubit_counts -= min(available_dirty, num_qubits)
-        self._clean_qubit_counts += min(available_dirty, num_qubits)
+        self._dirty_qubit_counts -= num_qubits
+        self._clean_qubit_counts += num_qubits
 
 
-class GrabWires:
-    r"""Allows users to allocate clean work wires
-
-    Args:
-        num_wires (int): number of work wires to be allocated
-    """
+class _WireAction:
+    """Base class for operations that manage qubit resources."""
 
     _queue_category = "_resource_qubit_action"
 
     def __init__(self, num_wires):
         self.num_wires = num_wires
-
         if qml.QueuingManager.recording():
             self.queue()
 
-    def __repr__(self) -> str:
-        return f"GrabWires({self.num_wires})"
-
-    def queue(self, context=QueuingManager):
-        r"""Adds GrabWires object to a queue."""
+    def queue(self, context=qml.QueuingManager):
+        r"""Adds the wire action object to a queue."""
         context.append(self)
         return self
 
 
-class FreeWires:
-    r"""Allows users to free dirty work wires
+class AllocWires(_WireAction):
+    r"""Allows users to allocate clean work wires.
+
+    Args:
+        num_wires (int): number of work wires to be allocated.
+    """
+
+    def __repr__(self) -> str:
+        return f"AllocWires({self.num_wires})"
+
+
+class FreeWires(_WireAction):
+    r"""Allows users to free dirty work wires.
 
     Args:
         num_wires (int): number of dirty work wires to be freed.
     """
 
-    _queue_category = "_resource_qubit_action"
-
-    def __init__(self, num_wires):
-        self.num_wires = num_wires
-
-        if qml.QueuingManager.recording():
-            self.queue()
-
     def __repr__(self) -> str:
         return f"FreeWires({self.num_wires})"
-
-    def queue(self, context=QueuingManager):
-        r"""Adds FreeWires object to a queue."""
-        context.append(self)
-        return self

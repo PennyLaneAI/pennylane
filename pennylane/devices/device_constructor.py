@@ -21,6 +21,7 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 
 def _get_device_entrypoints():
@@ -30,7 +31,6 @@ def _get_device_entrypoints():
     entries = (
         metadata.entry_points()["pennylane.plugins"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.plugins")
     )
     return {entry.name: entry for entry in entries}
@@ -257,7 +257,7 @@ def device(name, *args, **kwargs):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
             current_version = Version(qml.version())
             if current_version not in required_versions:
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
                     f"however PennyLane version {qml.version()} is installed."
                 )
@@ -273,17 +273,22 @@ def device(name, *args, **kwargs):
                     custom_decomps, dev
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
+
             else:
-                custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev
+                override_method = (
+                    "preprocess_transforms"
+                    if type(dev).preprocess == qml.devices.Device.preprocess
+                    else "preprocess"
                 )
-                dev.preprocess = custom_decomp_preprocess
+
+                new_method = qml.transforms.tape_expand._create_decomp_preprocessing(
+                    custom_decomps, dev, override_method=override_method
+                )
+                setattr(dev, override_method, new_method)
 
         if isinstance(dev, qml.devices.LegacyDevice):
             dev = qml.devices.LegacyDeviceFacade(dev)
 
         return dev
 
-    raise qml.DeviceError(
-        f"Device {name} does not exist. Make sure the required plugin is installed."
-    )
+    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")

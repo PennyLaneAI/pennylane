@@ -19,6 +19,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 
 
 def test_standard_validity():
@@ -331,21 +332,21 @@ class TestDecomposition:
         unitary = unitary_group.rvs(4, random_state=1967)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Target wires must be specified if the unitary is expressed as a matrix.",
         ):
             qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
 
         unitary = qml.RX(3, wires=[0])
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The unitary is expressed as an operator, which already has target wires "
             "defined, do not additionally specify target wires.",
         ):
             qml.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="No estimation wires specified.",
         ):
             qml.QuantumPhaseEstimation(unitary)
@@ -432,7 +433,7 @@ class TestInputs:
         """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
         common element"""
 
-        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
+        with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
             qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
 
     def test_id(self):

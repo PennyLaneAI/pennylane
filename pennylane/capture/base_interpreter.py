@@ -585,7 +585,7 @@ def handle_while_loop(
     )
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
 def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""

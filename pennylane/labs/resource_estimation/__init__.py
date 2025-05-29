@@ -22,10 +22,41 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
+
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~ResourceOperator
+
+Qubit Management Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QubitManager
+    ~AllocWires
+    ~FreeWires
+
 """
 
-from .qubit_manager import QubitManager, GrabWires, FreeWires
-from .resources_base import Resources
+from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .resource_mapping import map_to_resource_op
 from .resource_operator import (
     CompressedResourceOp,
     ResourceOperator,
@@ -44,3 +75,4 @@ from .resource_tracking import (
     resource_config,
     estimate_resources,
 )
+from .resources_base import Resources
