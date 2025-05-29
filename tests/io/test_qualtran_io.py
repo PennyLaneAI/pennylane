@@ -447,3 +447,29 @@ class TestToBloq:
 
         call_graph = _get_op_call_graph()(op)
         assert dict(call_graph) == expected_call_graph
+
+
+    from qualtran.bloqs.phase_estimation import RectangularWindowState
+    from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "expected_qualtran_bloq",  # Expected call graph computed by resources from labs or decompositions
+        ),
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                TextbookQPE(
+                    unitary=_map_to_bloq()(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=RectangularWindowState(4)
+                ),
+            ),
+        ],
+    )
+    def test_default_mapping(self, op, expected_qualtran_bloq):
+        """Tests that the defined default maps match the expected qualtran bloq"""
+        qt_qpe = qml.to_bloq(op, map_ops=True)
+        assert qt_qpe == expected_qualtran_bloq
