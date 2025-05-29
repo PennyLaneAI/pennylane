@@ -176,10 +176,11 @@
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` that 
-  can be accessed with the new graph-based decomposition system. The most efficient set of rotations to 
-  decompose into will be chosen based on the target gate set.
+* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
+  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
+  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
 
   ```python
   from functools import partial
@@ -294,6 +295,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
+  This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
+  [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
+
 * Setting up the configuration of a workflow, including the determination of the best diff
   method, is now done *after* user transforms have been applied. This allows transforms to
   update the shots and change measurement processes with fewer issues.
@@ -313,8 +318,10 @@
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
+  [(#7509)](https://github.com/PennyLaneAI/pennylane/pull/7509)
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
+  [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
 
 * PennyLane supports `JAX` version 0.6.0.
@@ -459,6 +466,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
+  [(#7508)](https://github.com/PennyLaneAI/pennylane/pull/7508)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
@@ -481,6 +489,17 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* With program capture enabled, mcm method validation now happens on execution rather than setup.
+  [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
+
+* Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
+  be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
+  [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
+
+* Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
+  repository.
+  [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
+
 * `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
@@ -492,6 +511,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
+
+* Enforce `debugging` module to be a tertiary module.
+  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
 
 * Enforce subset of submodules in `templates` to be auxiliary layer modules.
   [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)

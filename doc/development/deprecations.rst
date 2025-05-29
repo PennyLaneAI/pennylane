@@ -9,8 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` has been deprecated 
-  and will be removed in v0.43. Please import these objects from the new `pennylane.exceptions` module.
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 
   - Deprecated in v0.42
   - Will be removed in v0.43
