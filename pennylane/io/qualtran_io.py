@@ -89,50 +89,6 @@ def _map_to_bloq():
     #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
     #     )
 
-    # @_to_qt_bloq.register
-    # def _(op: qtemps.subroutines.trotter.TrotterizedQfunc, mapping: dict, **kwargs):
-    #     from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
-
-    #     dt = op.data[0]
-    #     n = op.hyperparameters["n"]
-    #     def _construct_suzuki_indices_coeffs(nterms: int, k: int):
-    #         """
-    #         Recursively construct the Suzuki product rule indices and coefficients for order `2 k`.
-    #         """
-    #         if k <= 0:
-    #             raise ValueError(f"`k` must be a positive integer, received {k}")
-    #         if k == 1:
-    #             indices = list(range(nterms)) + list(reversed(range(nterms)))
-    #             coeffs = (2*nterms) * (0.5,)
-    #         else:
-    #             uk = 1./(4 - 4**(1./(2*k-1)))
-    #             ik1, ck1 = _construct_suzuki_indices_coeffs(nterms, k - 1)
-    #             ck1_uk = [uk*c for c in ck1]
-    #             ck1_14uk = [(1 - 4*uk)*c for c in ck1]
-    #             indices = ik1 + ik1 + ik1 + ik1 + ik1
-    #             coeffs = ck1_uk + ck1_uk + ck1_14uk + ck1_uk + ck1_uk
-    #         return merge_layers(indices, coeffs)
-
-    #     def merge_layers(indices, coeffs):
-    #         """
-    #         Merge neighboring layers with the same index.
-    #         """
-    #         assert len(coeffs) == len(indices)
-    #         mindices = [indices[0]]
-    #         mcoeffs  = [coeffs[0]]
-    #         for i, c in zip(indices[1:], coeffs[1:]):
-    #             if mindices[-1] == i:
-    #                 mcoeffs[-1] += c
-    #             else:
-    #                 mindices.append(i)
-    #                 mcoeffs.append(c)
-    #         return mindices, mcoeffs
-
-    #     indices, coeffs = _construct_suzuki_indices_coeffs()
-
-    #     return TrotterizedUnitary(
-    #         bloqs=(x_bloq, zz_bloq), indices=indices, coeffs=coeffs, timestep=dt
-    #     )
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
