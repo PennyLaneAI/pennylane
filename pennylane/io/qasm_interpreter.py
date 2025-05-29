@@ -160,24 +160,13 @@ class QasmInterpreter:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
         gate, args, wires = self._gate_setup_helper(node, gates_dict, context)
+        num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+        op_wires = wires[num_control:]
+        control_wires = wires[:num_control]
 
-        if len(node.modifiers) > 0:
-            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
-            op_wires = wires[num_control:]
-            control_wires = wires[:num_control]
-            if "ctrl" in node.modifiers[-1].modifier.name:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
-                )
-            else:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=wires), context, wires
-                )
-
-            for mod in node.modifiers[::-1][1:]:
-                prev, wires = self.apply_modifier(mod, prev, context, wires)
-        else:
-            gate(*args, wires=wires)
+        op = gate(*args, wires=op_wires)
+        for mod in reversed(node.modifiers):
+            op, control_wires = self.apply_modifier(mod, op, context, control_wires)
 
     def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
         """
