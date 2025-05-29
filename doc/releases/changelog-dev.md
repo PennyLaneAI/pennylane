@@ -4,20 +4,18 @@
 
 <h3>New features since last release</h3>
 
-* A new function :func:`~.from_qasm3` is provided that allows very simple circuits composed of series of basic
-  gate applications to be converted into callables that may be loaded into QNodes and executed. Most QASM 3.0 features
-  are not yet supported. [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM3 circuits into quantum functions
+  that may be loaded into QNodes and executed. 
+  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
 
   ```python
   import pennylane as qml
-  from pennylane import device, wires
-  from pennylane.io import from_qasm3
 
-  dev = device("default.qubit", wires=[0, 1])
+  dev = qml.device("default.qubit", wires=[0, 1])
   
   @qml.qnode(dev)
   def my_circuit():
-      from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
       return qml.expval(qml.Z(0))
   ```
 
@@ -26,6 +24,9 @@
   0: ──RY(0.20)──X²─┤  <Z>
   1: ──RX(1.00)─────┤  
   ```
+  
+  Some gates and operations in OpenQASM3 programs are not currently supported. For more details, 
+  please consult the documentation for :func:`~.from_qasm3`.
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
@@ -341,6 +342,7 @@
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
+  [(#7509)](https://github.com/PennyLaneAI/pennylane/pull/7509)
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
   [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
@@ -488,6 +490,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
+  [(#7508)](https://github.com/PennyLaneAI/pennylane/pull/7508)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
@@ -510,6 +513,13 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* With program capture enabled, mcm method validation now happens on execution rather than setup.
+  [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
+
+* Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
+  be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
+  [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
+
 * Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
   repository.
   [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
@@ -525,6 +535,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
+
+* Enforce `debugging` module to be a tertiary module.
+  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
 
 * Enforce subset of submodules in `templates` to be auxiliary layer modules.
   [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)

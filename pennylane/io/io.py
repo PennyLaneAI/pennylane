@@ -842,6 +842,16 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
         interpreter.
 
+    .. note::
+        The following QASM 3.0 gates are not supported: sdg, tdg, cu. TODO: add support for these.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a simple quantum circuit.
+        qubit_mapping Optional[dict]:  the mapping from QASM 3.0 qubit names to Pennylane qubits.
+
+    Returns:
+        dict: the context resulting from the execution.
+
     >>> dev = device("default.qubit", wires=[0, 1])
     >>> @qml.qnode(dev)
     >>> def my_circuit():
@@ -851,14 +861,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     0: ──RY(0.20)──X²─┤  <Z>
     1: ──RX(1.00)─────┤
-
-    Args:
-        quantum_circuit (str): a QASM string containing a simple quantum circuit.
-        qubit_mapping Optional[dict]:  the mapping from QASM 3.0 qubit names to Pennylane qubits.
-
-    Returns:
-        function: a function created based on the QASM string that can be queued into a QNode.
-
     """
     if not has_openqasm:  # pragma: no cover
         raise ImportWarning(
@@ -868,4 +870,4 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
     context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
-    return context["callable"]
+    return context
