@@ -14,9 +14,6 @@
 
 """Unit tests for the ``set_shots`` transformer"""
 
-import inspect
-import warnings
-
 import pytest
 
 import pennylane as qml
