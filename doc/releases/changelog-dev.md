@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM3 circuits into quantum functions
-  that may be loaded into QNodes and executed. 
+* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+  that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
 
   ```python
@@ -15,7 +15,7 @@
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.io.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
       return qml.expval(qml.Z(0))
   ```
 
@@ -32,6 +32,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -320,6 +321,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
+  The labels are grouped together like for other multi-qubit operations, and the drawing
+  no longer depends on the wires of `GlobalPhase` or `Identity`. Control nodes of controlled global phases
+  and identities no longer receive the operator label, which is in line with other controlled operations.
+  [(#7457)](https://github.com/PennyLaneAI/pennylane/pull/7457)
+  
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
   This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
@@ -335,10 +342,14 @@
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
 
-* A transform for applying `cancel_inverses` has been added that can be used with the experimental
-  xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
-  iteratively to cancel nested self-inverse operations.
-  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
+* An xDSL `qml.compiler.python_compiler.transforms.MergeRotationsPass` pass for applying `merge_rotations` to an
+  xDSL module has been added for the experimental xDSL Python compiler integration.
+  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+
+* An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
+  iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
+  optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
+  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 

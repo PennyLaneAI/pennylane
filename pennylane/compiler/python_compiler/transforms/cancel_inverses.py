@@ -90,7 +90,7 @@ class IterativeCancelInversesPass(passes.ModulePass):
     name = "iterative-cancel-inverses"
 
     # pylint: disable=arguments-renamed,no-self-use
-    def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([IterativeCancelInversesPattern()])

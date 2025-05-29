@@ -337,24 +337,13 @@ class QasmInterpreter:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
         gate, args, wires = self._gate_setup_helper(node, gates_dict, context)
+        num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+        op_wires = wires[num_control:]
+        control_wires = wires[:num_control]
 
-        if len(node.modifiers) > 0:
-            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
-            op_wires = wires[num_control:]
-            control_wires = wires[:num_control]
-            if "ctrl" in node.modifiers[-1].modifier.name:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
-                )
-            else:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=wires), context, wires
-                )
-
-            for mod in node.modifiers[::-1][1:]:
-                prev, wires = self.apply_modifier(mod, prev, context, wires)
-        else:
-            gate(*args, wires=wires)
+        op = gate(*args, wires=op_wires)
+        for mod in reversed(node.modifiers):
+            op, control_wires = self.apply_modifier(mod, op, context, control_wires)
 
     def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
         """
@@ -371,9 +360,7 @@ class QasmInterpreter:
             list: The wires the gate applies to.
         """
         # setup arguments
-        args = []
-        for arg in node.arguments:
-            args.append(self.eval_expr(arg, context))
+        args = [self.evaluate_argument(arg, context) for arg in node.arguments]
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -413,7 +400,6 @@ class QasmInterpreter:
         # in the OpenQASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
         assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
-        next = None
 
         if mod.modifier.name == "inv":
             next = ops.adjoint(previous)
@@ -426,12 +412,13 @@ class QasmInterpreter:
         elif mod.modifier.name == "negctrl":
             next = ops.ctrl(previous, control=wires[-1], control_values=[0])
             wires = wires[:-1]
+        else:
+            raise ValueError(f"Unknown modifier {mod}")  # pragma: no cover
 
         return next, wires
 
     def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
-        Constructs a callable that can be queued into a QNode.
         Evaluates an expression.
         Args:
             context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
