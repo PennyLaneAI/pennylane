@@ -335,20 +335,14 @@ class TestSampling:
 
         @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(seed))
         def g():
-            qml.Hadamard(0)
-            m0 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m1 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m2 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m3 = qml.measure(0, reset=0)
-            qml.Hadamard(0)
-            m4 = qml.measure(0, reset=0)
-            return m0, m1, m2, m3, m4
+            ms = []
+            for _ in range(33):
+                qml.Hadamard(0)
+                ms.append(qml.measure(0, reset=0))
+            return ms
 
         output = g()
-        assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
+        assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 33))
         # only way we could get different values between the mcms is if they had different seeds
 
     def test_each_measurement_has_different_key(self, seed):
@@ -374,6 +368,7 @@ class TestSampling:
         s2 = f()  # should be done with different key, leading to different results.
         assert not qml.math.allclose(s1, s2)
 
+    @pytest.mark.local_salt(6)
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     def test_projector_samples_hw_like(self, seed, n_postselects):
         """Test that hw-like postselect_mode causes the number of samples to change as expected."""
