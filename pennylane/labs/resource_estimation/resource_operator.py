@@ -17,9 +17,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from inspect import signature
-from typing import Callable, Hashable, List, Optional, Type, Dict, Union
-
-import numpy as np
+from typing import Callable, Dict, Hashable, List, Optional, Type, Union
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 from pennylane.labs.resource_estimation.resources_base import Resources
@@ -60,6 +58,10 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         self._hashable_params = _make_hashable(params) if params else ()
         self._name = name or op_type.tracking_name(**self.params)
 
+    @property
+    def name(self):
+        return self._name
+
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))
 
@@ -71,21 +73,6 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         )
 
     def __repr__(self) -> str:
-
-        class_name = self.__class__.__qualname__
-        op_type_name = self.op_type.__name__
-
-        params_arg_str = ""
-        if self.params:
-            params = sorted(self.params.items())
-            params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
-            params_arg_str = f", params={{{params_str}}}"
-
-        return f"{class_name}({op_type_name}{params_arg_str})"
-
-    @property
-    def name(self) -> str:
-        r"""Returns the name of operator."""
         return self._name
 
 
@@ -103,75 +90,13 @@ def _make_hashable(d) -> tuple:
 
     if isinstance(d, Hashable):
         return d
-
-    if isinstance(d, dict):
-        return tuple(sorted((_make_hashable(k), _make_hashable(v)) for k, v in d.items()))
-    if isinstance(d, (list, tuple)):
-        return tuple(_make_hashable(elem) for elem in d)
-    if isinstance(d, set):
-        return tuple(sorted(_make_hashable(elem) for elem in d))
-    if isinstance(d, np.ndarray):
-        return _make_hashable(d.tolist())
-
-    raise TypeError(f"Object of type {type(d)} is not hashable and cannot be converted.")
+    sorted_keys = sorted(d)
+    return tuple((k, _make_hashable(d[k])) for k in sorted_keys)
 
 
 class ResourceOperator(ABC):
-    r"""Base class to represent quantum operators according to the set of information
-    required for resource estimation.
-
-    Operators defined for the purpose of resource estimation require less detailed information.
-    This is because the cost of a quantum gate can be well approximated without a full description
-    of its parameters. For example two :class:`~.RX` gates have the same cost regardless
-    of their rotation angle parameters.
-
-    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its
-    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally,
-
-    .. details::
-
-        **Example**
-
-        A PennyLane Operator can be extended for resource estimation by creating a new class that
-        inherits from both the ``Operator`` and ``ResourceOperator``. Here is an example showing how to
-        extend ``qml.QFT`` for resource estimation.
-
-        .. code-block:: python
-
-            import pennylane as qml
-            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
-
-            class ResourceQFT(qml.QFT, ResourceOperator):
-
-                @staticmethod
-                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
-                    gate_types = {}
-                    hadamard = ResourceHadamard.resource_rep()
-                    swap = ResourceSWAP.resource_rep()
-                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
-
-                    gate_types[hadamard] = num_wires
-                    gate_types[swap] = num_wires // 2
-                    gate_types[ctrl_phase_shift] = num_wires*(num_wires - 1) // 2
-
-                    return gate_types
-
-                @property
-                def resource_params(self, num_wires) -> dict:
-                    return {"num_wires": num_wires}
-
-                @classmethod
-                def resource_rep(cls, num_wires) -> CompressedResourceOp:
-                    params = {"num_wires": num_wires}
-                    return CompressedResourceOp(cls, params)
-
-        Which can be instantiated as a normal operation, but now contains the resources:
-
-        .. code-block:: bash
-
-            >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params)
-            {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
+    r"""Abstract base class to represent quantum operators according to the
+    information required for resource estimation.
     """
 
     num_wires = 0
@@ -438,11 +363,11 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 class GateCount:
     """A class to represent a gate and the amount of times it was repeated."""
-    
+
     def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
         self.gate = gate
         self.count = count
-    
+
     def __mul__(self, other):
         if isinstance(other, int):
             return self.__class__(self.gate, self.count * other)
@@ -455,21 +380,30 @@ class GateCount:
 
     __rmul__ = __mul__
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, GateCount):
+            return False
+        return self.gate == other.gate and self.count == other.count
+
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"
 
 
 def resource_rep(
-    resource_op: Type[ResourceOperator], resource_params: Dict,
+    resource_op: Type[ResourceOperator],
+    resource_params: Dict = None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
 
     Args:
-        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify 
+        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify
         resource_params (Dict): The required set of parameters to specify the operator
 
     Returns:
         CompressedResourceOp: A compressed representation of a resource operator
     """
-    return resource_op.resource_rep(**resource_params)
+    if resource_params:
+        return resource_op.resource_rep(**resource_params)
+
+    return resource_op.resource_rep()  # don't need to provide empty dict

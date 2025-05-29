@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 from pennylane.labs.resource_estimation.qubit_manager import (
     QubitManager,
-    GrabWires,
+    AllocWires,
     FreeWires,
 )
 from pennylane.labs.resource_estimation.resources_base import Resources
