@@ -35,7 +35,10 @@ class _AdditiveIdentity:
 
 
 def effective_hamiltonian(
-        product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int, timestep: float = 1.0
+    product_formula: ProductFormula,
+    fragments: Dict[Hashable, Fragment],
+    order: int,
+    timestep: float = 1.0,
 ):
     """Compute the effective Hamiltonian according to the product formula
 
@@ -94,7 +97,7 @@ def perturbation_error(
     fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     order: int,
-    timestep: float = 1.0
+    timestep: float = 1.0,
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 

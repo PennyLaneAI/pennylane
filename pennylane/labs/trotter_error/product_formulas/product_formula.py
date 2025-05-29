@@ -87,7 +87,9 @@ class ProductFormula:
 
         if ret.recursive:
             ret.terms = [term(t) for term in ret.terms]
-            ret._ordered_terms = {term(t): position for term, position in ret._ordered_terms.items()}
+            ret._ordered_terms = {
+                term(t): position for term, position in ret._ordered_terms.items()
+            }
         else:
             ret.coeffs = [t * coeff for coeff in ret.coeffs]
 
