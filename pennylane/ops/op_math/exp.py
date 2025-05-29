@@ -528,7 +528,10 @@ def _trotter_decomp_condition(base, num_steps):
     with qml.queuing.QueuingManager.stop_recording():
         base = base.simplify()
     if qml.pauli.is_pauli_word(base):
-        return True
+        # It does not make sense to use the Trotter approximation if the
+        # base is a single-term pauli word, because it can be decomposed
+        # exactly into a single PauliRot gate.
+        return False
     try:
         _, ops = base.terms()
         return all(qml.pauli.is_pauli_word(ob) for ob in ops)
