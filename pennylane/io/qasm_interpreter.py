@@ -1,34 +1,18 @@
 """
-This submodule contains the interpreter for QASM 3.0.
+This submodule contains the interpreter for OpenQASM 3.0.
 """
 
-import copy
-import inspect
+import functools
 import re
-from functools import partial
 from typing import Callable
 
-from openqasm3.ast import (
-    ArrayLiteral,
-    BinaryExpression,
-    BitstringLiteral,
-    Cast,
-    FunctionCall,
-    Identifier,
-    IndexExpression,
-    QuantumArgument,
-    RangeDefinition,
-    UnaryExpression,
-)
+from openqasm3.visitor import QASMNode
+from openqasm3.ast import BitstringLiteral, ArrayLiteral, ClassicalDeclaration, QuantumGate, QubitDeclaration, \
+    ConstantDeclaration, ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, \
+    BinaryExpression, FunctionCall, QuantumArgument, ReturnStatement, SubroutineDefinition
 
 from pennylane import ops
-from pennylane.control_flow.while_loop import WhileLoopCallable
-
-has_openqasm = True
-try:
-    from openqasm3.visitor import QASMNode, QASMVisitor
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_openqasm = False  # pragma: no cover
+from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -64,35 +48,47 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
+EQUALS = '='
+ARROW = '->'
+PLUS = '+'
+DOUBLE_PLUS = '++'
+MINUS = '-'
+ASTERISK = '*'
+DOUBLE_ASTERISK = '**'
+SLASH = '/'
+PERCENT = '%'
+PIPE = '|'
+DOUBLE_PIPE = '||'
+AMPERSAND = '&'
+DOUBLE_AMPERSAND = '&&'
+CARET = '^'
+AT = '@'
+TILDE = '~'
+EXCLAMATION_POINT = '!'
+EQUALITY_OPERATORS = ['==', '!=']
+COMPOUND_ASSIGNMENT_OPERATORS = ['+=', '-=', '*=', '/=', '&=', '|=', '~=', '^=', '<<=', '>>=', '%=', '**=']
+COMPARISON_OPERATORS = ['>', '<', '>=', '<=']
+BIT_SHIFT_OPERATORS = ['>>', '<<']
 
-class DirtyError(Exception):  # pragma: no cover
-    """Exception raised when attempt is made to use a dirty variable in a compilation context."""
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = EQUALITY_OPERATORS + COMPARISON_OPERATORS + BIT_SHIFT_OPERATORS \
+    + [PLUS, DOUBLE_PLUS, MINUS, ASTERISK, DOUBLE_ASTERISK, SLASH, PERCENT, PIPE, DOUBLE_PIPE,
+       AMPERSAND, DOUBLE_AMPERSAND, CARET, AT, TILDE, EXCLAMATION_POINT]
 
+ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
-class QasmInterpreter(QASMVisitor):
+class QasmInterpreter:
     """
-    Overrides generic_visit(self, node: QASMNode, context: Optional[T]) which takes the
-    top level node of the AST as a parameter and recursively descends the AST, calling the
-    overriden visitor function on each node.
+    Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
+    visitor function on each node.
     """
 
     def __init__(self, permissive=False):
         """
-        Checks that the openqasm3 package is available, otherwise raises an error.
-
-        Raises:
-            ImportError: if the openqasm3 package is not available.
+        Initializes the QASM interpreter.
         """
-        if not has_openqasm:  # pragma: no cover
-            raise ImportError(
-                "QASM interpreter requires openqasm3 to be installed"
-            )  # pragma: no cover
-        super().__init__()
-
         self.permissive = permissive
-        self.raise_if_dirty = False
-        self.executing = False
 
+    @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
@@ -109,19 +105,7 @@ class QasmInterpreter(QASMVisitor):
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        handler_name = "visit_" + node.__class__.__name__
-        if node.__class__ == list:
-            for sub_node in node:
-                self.visit(sub_node, context)
-        elif hasattr(self, handler_name):
-            try:
-                getattr(self, handler_name)(node, context)
-            except NotImplementedError as e:
-                if self.permissive:
-                    pass
-                else:
-                    raise NotImplementedError(str(e)) from e
-        elif self.permissive:
+        if self.permissive:
             print(
                 f"An unrecognized QASM instruction {node.__class__.__name__} "
                 f"was encountered on line {node.span.start_line}, in {context['name']}."
@@ -134,11 +118,9 @@ class QasmInterpreter(QASMVisitor):
 
         return context
 
-    def generic_visit(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict):
         """
-        Wraps the provided generic_visit method to make the context a required parameter
-        and return the context for testability. Constructs the QNode after all of the nodes
-        have been visited.
+        Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
@@ -148,41 +130,31 @@ class QasmInterpreter(QASMVisitor):
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
-        context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
-        init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
+        context.update({"wires": [], "vars": {}})
 
         # begin recursive descent traversal
-        try:
-            super().generic_visit(node, context)
-        except InterruptedError as e:
-            print(str(e))
-        execution_context = self.construct_qfunc(context, init_context)
-        self.executing = True
-        return context, execution_context
+        for value in node.__dict__.values():
+            if not isinstance(value, list):
+                value = [value]
+            for item in value:
+                if isinstance(item, QASMNode):
+                    self.visit(item, context)
+        return context
 
-    @staticmethod
-    def _all_context_bound(quantum_function):
+    # needs to have same signature as visit()
+    @visit.register(QubitDeclaration)
+    def visit_qubit_declaration(
+        self, node: QubitDeclaration, context: dict
+    ):  # pylint: disable=no-self-use
         """
-        Checks whether a partial received all required context during compilation, or if
-        it requires execution context because it has parameters that are based on, for example,
-        the outcomes of mid-circuit measurements or subroutines.
+        Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
+        in context["wires"]. Note: Qubit declarations must be global.
+
         Args:
-            partial_function (Callable): the partial with compilation context bound.
+            node (QASMNode): The QubitDeclaration QASMNode.
+            context (dict): The current context.
         """
-        if hasattr(quantum_function, "func"):
-            if isinstance(quantum_function.func, WhileLoopCallable):
-                return False
-            else:
-                try:
-                    inspect.signature(quantum_function.func).bind(
-                        *quantum_function.args, **quantum_function.keywords
-                    )
-                    return True
-                except TypeError:
-                    return False
-        elif len(inspect.signature(quantum_function).parameters) > 0:
-            return False
-        return True
+        context["wires"].append(node.qubit.name)
 
     def _update_var(self, value: any, name: str, node: QASMNode, context: dict):
         """
@@ -194,74 +166,29 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
         context["vars"][name]["val"] = value
-        if not context["vars"][name]["constant"]:
-            context["vars"][name]["dirty"] = True
-        else:
+        if context["vars"][name]["constant"]:
             raise ValueError(
                 f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                 f"defined on line {context['vars'][name]['line']}"
             )
         context["vars"][name]["line"] = node.span.start_line
 
-    def visit_ClassicalAssignment(self, node: QASMNode, context: dict):
+    @visit.register(ClassicalAssignment)
+    def visit_classical_assignment(self, node: QASMNode, context: dict):
         """
         Registers a classical assignment.
         Args:
             node (QASMNode): the assignment QASMNode.
             context (dict): the current context.
         """
-
-        def set_local_var(execution_context: dict):
-            rhs = partial(self.eval_expr, node.rvalue, execution_context)
-            name = (
-                node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
-            )  # str or Identifier
-            res = rhs()
-            self._update_var(res, name, node, execution_context)
-            return res
-
         # references to an unresolved value see a func for now
         name = (
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
-        self._update_var(set_local_var, name, node, context)
-        context["gates"].append(set_local_var)
+        res = self.eval_expr(node.rvalue, context)
+        self._update_var(res, name, node, context)
 
-    def _choose_context(self, func: Callable, context: dict, execution_context: dict):
-        """
-        Executes the callable with the right context depending on whether it was bound at compile time or
-        needs execution context.
-        Args:
-            func (Callable): the callable to be executed.
-            context (dict): the context to be passed to the function.
-            execution_context (dict): the execution context to be passed to the function.
-        Returns:
-            dict: the context to use.
-        """
-        if not self._depends_on_dirty_vars(func):
-            return context
-        else:
-            return execution_context
-
-    def _depends_on_dirty_vars(self, func: Callable):
-        """
-        Checks if any state (variables) relevant to the node being processed is dirty.
-        Args:
-            func (Callable): the function which may use dirty state.
-            context (dict): the current compilation context.
-        Returns:
-            bool: whether the func depends on dirty state. If it does, the state should not be bound during compilation.
-        """
-        self.raise_if_dirty = True
-        try:
-            func()
-            self.raise_if_dirty = False
-            return False
-        except DirtyError:
-            self.raise_if_dirty = False
-            return True
-
-    def visit_AliasStatement(self, node: QASMNode, context: dict):
+    def visit_alias_statement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.
         Args:
@@ -271,10 +198,6 @@ class QasmInterpreter(QASMVisitor):
         self._init_aliases(context)
         context["aliases"][node.target.name] = self.eval_expr(node.value, context, aliasing=True)
 
-        # we append anything that needs to be computed at execution time to the gates list...
-        # aliases can change throughout a program
-        context["gates"].append(partial(self.visit_AliasStatement, node))
-
     def retrieve_variable(self, name: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
@@ -283,28 +206,12 @@ class QasmInterpreter(QASMVisitor):
             context (dict): the current context.
         """
 
-        def _warning(context, name):
-            raise TypeError(
-                f"Attempt to use unevaluated variable {name} in {context['name']}, "
-                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
-            )
-
-        def _dirty(context, name):
-            raise DirtyError(
-                f"Attempt to use dirty variable {name} in compilation context {context['name']}."
-            )
-
         if "vars" in context and context["vars"] is not None and name in context["vars"]:
-            if isinstance(context["vars"][name], Callable):
-                _warning(context, name)
+            res = context["vars"][name]
+            if res["val"] is not None:
+                return res
             else:
-                res = context["vars"][name]
-                if res["dirty"] == True and self.raise_if_dirty:
-                    _dirty(context, name)
-                if res["val"] is not None:
-                    return res
-                else:
-                    raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         elif (
             "wires" in context
             and context["wires"] is not None
@@ -317,14 +224,15 @@ class QasmInterpreter(QASMVisitor):
             res = context["aliases"][name](context)  # evaluate the alias and de-reference
             if isinstance(res, str):
                 return res
-            if res["dirty"] == True and self.raise_if_dirty:
-                _dirty(context, name)
             if res["val"] is not None:
                 return res
             else:
                 raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         else:
-            _warning(context, name)
+            raise TypeError(
+                f"Attempt to use unevaluated variable {name} in {context['name']}, "
+                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
+            )
 
     def _init_clause_in_same_namespace(self, outer_context: dict, name: str):
         """
@@ -376,16 +284,6 @@ class QasmInterpreter(QASMVisitor):
         if "aliases" not in context:
             context["aliases"] = dict()
 
-    def _init_gates_list(self, context: dict):
-        """
-        Inits the gates list on the current context.
-
-        Args:
-            context (dict): the current context.
-        """
-        if "gates" not in context:
-            context["gates"] = []
-
     def _init_outer_wires_list(self, context: dict):
         """
         Inits the outer wires list on a sub context.
@@ -418,14 +316,16 @@ class QasmInterpreter(QASMVisitor):
     def _get_bit_type_val(var):
         return bin(var["val"])[2:].zfill(var["size"])
 
-    def visit_ReturnStatement(self, node: QASMNode, context: dict):
+    @visit.register(ReturnStatement)
+    def visit_return_statement(self, node: QASMNode, context: dict):
         """
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
         subroutine is called.
         """
         context["return"] = node.expression.name
 
-    def visit_ConstantDeclaration(self, node: QASMNode, context: dict):
+    @visit.register(ConstantDeclaration)
+    def visit_constant_declaration(self, node: QASMNode, context: dict):
         """
         Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
         Python type variables that can be readily used in expression eval, etc.
@@ -433,9 +333,10 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The constant QASMNode.
             context (dict): The current context.
         """
-        self.visit_ClassicalDeclaration(node, context, constant=True)
+        self.visit_classical_declaration(node, context, constant=True)
 
-    def visit_ClassicalDeclaration(self, node: QASMNode, context: dict, constant: bool = False):
+    @visit.register(ClassicalDeclaration)
+    def visit_classical_declaration(self, node: QASMNode, context: dict, constant:bool=False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -445,20 +346,14 @@ class QasmInterpreter(QASMVisitor):
             constant (bool): Whether the classical variable is a constant.
         """
 
-        # compile time tracking of static variables
         self._init_vars(context)
         if node.init_expression is not None:
-            # TODO: store AST objects in context instead of these dicts?
-
-            # Note: vars which are clean may be bound at compile time, dirty ones
-            # must be calculated during execution
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
                     "ty": node.type.__class__.__name__,
                     "val": self.eval_expr(node.init_expression, context),
                     "size": node.init_expression.width,
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
             elif not isinstance(node.init_expression, ArrayLiteral):
@@ -466,7 +361,6 @@ class QasmInterpreter(QASMVisitor):
                     "ty": node.type.__class__.__name__,
                     "val": self.eval_expr(node.init_expression, context),
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
             else:
@@ -476,7 +370,6 @@ class QasmInterpreter(QASMVisitor):
                         self.eval_expr(literal, context) for literal in node.init_expression.values
                     ],
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
         else:
@@ -485,87 +378,11 @@ class QasmInterpreter(QASMVisitor):
                 "ty": node.type.__class__.__name__,
                 "val": None,
                 "line": node.span.start_line,
-                "dirty": False,
                 "constant": constant,
             }
 
-        # runtime Callable
-        if not self.executing:
-            self._init_gates_list(context)
-            context["gates"].append(partial(self.visit_ClassicalDeclaration, node))
-
-    def construct_callable(self, context: dict):
-        """
-        Constructs a callable that can be queued into a QNode.
-
-        Args:
-            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
-        """
-        context["callable"] = partial(self._execute_all, context)
-
-    def _execute_all(self, context: dict, execution_context: dict):
-        """
-        Executes all the gates in the context.
-        Args:
-            context (dict): the context populated with the gates.
-            execution_context (dict): the execution context that handles dynamic variables, etc.
-        """
-        for gate in context["gates"]:
-            gate(execution_context) if not self._all_context_bound(gate) else gate()
-
-    def _get_wires_helper(self, curr: dict, wires: list):
-        """
-        We need a device with enough wires to support all the qubit declarations in every sub-context.
-        We need to instantiate a device with enough wires to support all qubit declarations, with names
-        that give enough specificity to identify them when they are in different scopes but share the same
-        name in the QASM file, for example.
-        Args:
-            curr (dict): the current context in our recursive descent.
-            wires (list): the wires list we are building.
-        Returns:
-            list: the list of wires we have found.
-        """
-        if "scopes" in curr:  # TODO: raise warning when a variable is shadowed
-            contexts = curr["scopes"]
-            for context_type, typed_contexts in contexts.items():
-                for typed_context_name, typed_context in typed_contexts.items():
-                    if context_type != "switches" and context_type != "branches":
-                        wires += [
-                            f'{contexts[context_type][typed_context_name]["name"]}_{w}'
-                            for w in contexts[context_type][typed_context_name]["wires"]
-                        ]
-                        wires = self._get_wires_helper(typed_context, wires)
-                    else:
-                        # TODO: account for: we don't need new wires for scopes that don't have their own namespaces
-                        for cond in typed_context.keys():
-                            wires += [
-                                f'{typed_context[cond]["name"]}_{w}'
-                                for w in typed_context[cond]["wires"]
-                            ]
-                            wires = self._get_wires_helper(typed_context[cond], wires)
-        return wires
-
-    def construct_qfunc(self, context: dict, init_context: dict):
-        """
-        Constructs a Callable quantum function that may be queued into a QNode.
-        Args:
-            context (dict): the final context resulting from the compilation pass.
-            init_context (dict): the initial context.
-        Returns:
-            dict: the final executed context.
-        """
-        if "device" not in context:
-            wires = [w for w in context["wires"]] if "wires" in context else []
-            curr = context
-            if "scopes" in curr:
-                wires = self._get_wires_helper(curr, wires)
-            context["wires"] = wires
-        # passes and modifies init_context through gate calls during second pass
-        # static variables are already bound in context["gates"]
-        context["callable"] = partial(self._execute_all, context, init_context)
-        return init_context
-
-    def visit_SubroutineDefinition(self, node: QASMNode, context: dict):
+    @visit.register(SubroutineDefinition)
+    def visit_subroutine_definition(self, node: QASMNode, context: dict):
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
         its parameters.
@@ -592,28 +409,8 @@ class QasmInterpreter(QASMVisitor):
             node.body, context["scopes"]["subroutines"][node.name.name]
         )
 
-        # Should we visit now or when the function is called with arguments?
-        # Now is fine b/c we evaluate vars at the end, and visit only constructs partials that
-        # reference them during a visit.
-
-        if not self.executing:
-            context["gates"].append(partial(self.visit_SubroutineDefinition, node))
-
-    def visit_QubitDeclaration(self, node: QASMNode, context: dict):
-        """
-        Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
-        in context["wires"]. TODO: this should be changed to have greater specificity. Coming in a follow-up PR.
-
-        Args:
-            node (QASMNode): The QubitDeclaration QASMNode.
-            context (dict): The current context.
-        """
-        context["wires"].append(node.qubit.name)
-
-        if not self.executing:
-            context["gates"].append(partial(self.visit_QubitDeclaration, node))
-
-    def visit_QuantumGate(self, node: QASMNode, context: dict):
+    @visit.register(QuantumGate)
+    def visit_quantum_gate(self, node: QuantumGate, context: dict):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
@@ -622,8 +419,6 @@ class QasmInterpreter(QASMVisitor):
             node (QASMNode): The QuantumGate QASMNode.
             context (dict): The current context.
         """
-        self._require_wires(context)
-        self._init_gates_list(context)
         name = node.name.name.upper()
         if name in PARAMETERIZED_GATES:
             if not node.arguments:
@@ -636,21 +431,110 @@ class QasmInterpreter(QASMVisitor):
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
-        gate = self.gate(
-            gates_dict, node, copy.deepcopy(context)
-        )  # use copy to bind at compile time
+        gate, args, wires = self._gate_setup_helper(node, gates_dict, context)
 
-        if self._depends_on_dirty_vars(gate):
-            gate = partial(
-                self.gate, gates_dict, node
-            )  # remove context, execution_context will substitute it later
-            if len(node.modifiers) > 0:
-                gate = self.modifiers(gate, node, context)
+        if len(node.modifiers) > 0:
+            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+            op_wires = wires[num_control:]
+            control_wires = wires[:num_control]
+            if "ctrl" in node.modifiers[-1].modifier.name:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
+                )
+            else:
+                prev, wires = self.apply_modifier(
+                    node.modifiers[-1], gate(*args, wires=wires), context, wires
+                )
+
+            for mod in node.modifiers[::-1][1:]:
+                prev, wires = self.apply_modifier(mod, prev, context, wires)
         else:
-            if len(node.modifiers) > 0:
-                gate = partial(self.modifiers(gate, node, context), context)
+            gate(*args, wires=wires)
 
-        context["gates"].append(gate)
+    def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
+        """
+        Helper to setup the quantum gate call, also resolving arguments and wires.
+
+        Args:
+            node (QuantumGate): The QuantumGate QASMNode.
+            gates_dict (dict): the gates dictionary.
+            context (dict): the current context.
+
+        Returns:
+            QuantumGate: The gate to execute.
+            list: The list of arguments to the QuantumGate.
+            list: The wires the gate applies to.
+        """
+        # setup arguments
+        args = []
+        for arg in node.arguments:
+            args.append(self.eval_expr(arg, context))
+
+        # retrieve gate method
+        gate = gates_dict[node.name.name.upper()]
+
+        # setup wires
+        wires = [
+            # parser will sometimes represent as a str and sometimes as an Identifier
+            (
+                node.qubits[q].name
+                if isinstance(node.qubits[q].name, str)
+                else node.qubits[q].name.name
+            )
+            for q in range(len(node.qubits))
+        ]
+
+        self._require_wires(wires, context)
+
+        if context["wire_map"] is not None:
+            wires = list(map(lambda wire: context["wire_map"][wire], wires))
+
+        return gate, args, wires
+
+    @staticmethod
+    def apply_modifier(mod: QuantumGate, previous: Operator, context: dict, wires: list):
+        """
+        Applies a modifier to the previous gate or modified gate.
+
+        Args:
+            mod (QASMNode): The modifier QASMNode.
+            previous (Operator): The previous (called) operator.
+            context (dict): The current context.
+            wires (list): The wires that the operator is applied to.
+
+        Raises:
+            NotImplementedError: If the modifier has a param of an as-yet unsupported type.
+        """
+        # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
+        # in the OpenQASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+        # `no viable alternative at input 'wop(power)@'`, long before we get here.
+        assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
+        next = None
+
+        if mod.modifier.name == "inv":
+            next = ops.adjoint(previous)
+        elif mod.modifier.name == "pow":
+            if re.search("Literal", mod.argument.__class__.__name__) is not None:
+                power = mod.argument.value
+            elif (
+                "vars" in context
+                and hasattr(mod.argument, "name")
+                and mod.argument.name in context["vars"]
+            ):
+                power = context["vars"][mod.argument.name]["val"]
+            else:
+                raise NotImplementedError(
+                    f"Unable to handle {mod.argument.__class__.__name__} expression at this time"
+                )
+            next = ops.pow(previous, z=power)
+        elif mod.modifier.name == "ctrl":
+            next = ops.ctrl(previous, control=wires[-1])
+            wires = wires[:-1]
+        elif mod.modifier.name == "negctrl":
+            next = ops.ctrl(previous, control=wires[-1], control_values=[0])
+            wires = wires[:-1]
+
+        return next, wires
 
     def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
@@ -668,9 +552,23 @@ class QasmInterpreter(QASMVisitor):
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            res = eval(f"{lhs}{node.op.name}{rhs}")  # TODO: don't use eval
+            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+                res = eval(f"{lhs}{node.op.name}{rhs}")
+            elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
+                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
+                                  f"not in binary expressions.")
+            else:
+                raise SyntaxError(f"Invalid operator {node.op.name} encountered in binary expression "
+                                  f"on line {node.span.start_line}.")
         elif isinstance(node, UnaryExpression):
-            res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
+            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+                res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
+            elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
+                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
+                                  f"not in unary expressions.")
+            else:
+                raise SyntaxError(f"Invalid operator {node.op.name} encountered in unary expression "
+                                  f"on line {node.span.start_line}.")
         elif isinstance(node, IndexExpression):
 
             def _index_into_var(var):
@@ -721,11 +619,8 @@ class QasmInterpreter(QASMVisitor):
                     var = self.retrieve_variable(node.name, context)
                     value = var["val"] if isinstance(var, dict) and "val" in var else var
                     if isinstance(value, Callable):
-                        var["val"] = (
-                            value(context) if not self._all_context_bound(value) else value()
-                        )
+                        var["val"] = value(context)
                         var["line"] = node.span.start_line
-                        var["dirty"] = True
                         value = var["val"]
                     return value
                 except NameError as e:
@@ -781,131 +676,23 @@ class QasmInterpreter(QASMVisitor):
         # TODO: include all other cases here
         return res
 
-    def modifiers(self, gate: Callable, node: QASMNode, context: dict):
-        """
-        Registers a modifier on a gate. Modifiers are applied to gates differently in Pennylane
-        depending on the type of modifier. We build a Callable that applies the modifier appropriately
-        at execution time, evaluating the gate Callable appropriately as well.
-
-        Args:
-            gate (Callable): The Callable partial built for the gate we wish to modify.
-            node (QASMNode): The original QquantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The callable which will appropriately apply the modifier and execute the gate.
-        """
-        call_stack = [gate]
-        for mod in node.modifiers:
-            # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-            # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
-            # `no viable alternative at input 'wop(power)@'`, long before we get here.
-            assert mod.modifier.name in ("inv", "pow", "ctrl")
-            wrapper = None
-            if mod.modifier.name == "inv":
-                wrapper = ops.adjoint
-            elif mod.modifier.name == "pow":
-                if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                    wrapper = partial(ops.pow, z=mod.argument.value)
-                elif "vars" in context and mod.argument.name in context["vars"]:
-                    wrapper = partial(ops.pow, z=context["vars"][mod.argument.name]["val"])
-            elif mod.modifier.name == "ctrl":
-                wrapper = partial(ops.ctrl, control=gate.keywords["wires"][0:-1])
-
-            call_stack.append(wrapper)
-
-        def call(execution_context):
-            res = None
-            for func in call_stack:
-                # if there is a control in the stack
-                if (
-                    call_stack[-1].__class__.__name__ == "partial"
-                    and "control" in call_stack[-1].keywords
-                ):
-                    # if we are processing the control now
-                    if "control" in func.keywords:
-                        res.keywords["wires"] = [res.keywords["wires"][-1]]
-
-                    # i.e. qml.ctrl(qml.RX, (1))(2, wires=0)
-                    def _needs_context(fn, **kwargs):
-                        try:
-                            inspect.signature(fn).bind(**kwargs)
-                            return False
-                        except TypeError:
-                            return True
-
-                    if res is not None:
-                        res = (
-                            func(res.func)(**res.keywords, context=execution_context)
-                            if _needs_context(res.func, **res.keywords)
-                            else func(res.func)(**res.keywords)
-                        )
-                    else:
-                        res = func
-                else:
-                    # i.e. qml.pow(qml.RX(1.5, wires=0), z=4)
-                    if res is not None:
-                        res = func(res)
-                    else:
-                        res = func() if self._all_context_bound(func) else func(execution_context)
-
-        return call
-
     @staticmethod
-    def _require_wires(context):
+    def _require_wires(wires: list, context: dict):
         """
         Simple helper that checks if we have wires in the current context.
 
         Args:
             context (dict): The current context.
+            wires (list): The wires that are required.
 
         Raises:
             NameError: If the context is missing a wire.
         """
-        if len(context["wires"]) == 0:
+        missing_wires = []
+        for wire in wires:
+            if wire not in context["wires"]:
+                missing_wires.append(wire)
+        if len(missing_wires) > 0:
             raise NameError(
-                f"Attempt to reference wires that have not been declared in {context['name']}"
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
             )
-
-    def gate(self, gates_dict: dict, node: QASMNode, context: dict):
-        """
-        Registers a gate application. Builds a Callable partial
-        that can be executed when the QNode is called. The gate will be executed at that time
-        with the appropriate arguments.
-        TODO: a robust method for retrieving vars from context will be provided in follow-up PR according to [sc-90383]
-
-        Args:
-            node (QASMNode): The QuantumGate QASMNode.
-            context (dict): The current context.
-
-        Returns:
-            Callable: The Callable partial that will execute the gate with the appropriate arguments at
-                "runtime".
-
-        Raises:
-            NameError: If an argument is not found in the current context.
-        """
-
-        def func(gate, wires=[]):
-            args = []
-            for arg in node.arguments:
-                args.append(self.eval_expr(arg, context))
-            return partial(
-                gate,
-                *args,
-                wires=wires,
-            )()
-
-        wires = [
-            # parser will sometimes represent as a str and sometimes as an Identifier
-            (
-                node.qubits[q].name
-                if isinstance(node.qubits[q].name, str)
-                else node.qubits[q].name.name
-            )
-            for q in range(len(node.qubits))
-        ]
-
-        if self.executing and not "sub" in context:
-            func(gate=gates_dict[node.name.name.upper()], wires=wires)
-        return partial(func, gate=gates_dict[node.name.name.upper()], wires=wires)

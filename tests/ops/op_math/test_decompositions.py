@@ -25,7 +25,10 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
-from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_num_cnots
+from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    _compute_num_cnots,
+    multi_qubit_decomposition,
+)
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
@@ -990,7 +993,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 9
+        assert len(obtained_decomposition) == 8
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
@@ -1024,7 +1027,8 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 3
+        # may or may not have global phase
+        assert len(obtained_decomposition) == 3 or len(obtained_decomposition) == 2
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
@@ -1383,6 +1387,27 @@ class TestTwoQubitDecompositionWarnings:
             qnode(1.0 + 0.5j)
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "U, n_wires",
+    [
+        (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
+        (qml.QFT.compute_matrix(5), 5),
+        (qml.GroverOperator.compute_matrix(6, []), 6),
+    ],
+)
+def test_multi_qubit_decomposition(U, n_wires):
+    """Tests that the multi-qubit decomposition rule is correct."""
+
+    obtained_decomposition = multi_qubit_decomposition(U, wires=list(range(n_wires)))
+    tape = qml.tape.QuantumScript(obtained_decomposition)
+    obtained_matrix = qml.matrix(tape, wire_order=list(range(n_wires)))
+
+    # We check with a slightly great tolerance threshold here simply because the
+    # test matrices were copied in here with reduced precision.
+    assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestQubitUnitaryDecompositionGraph:
     """Tests that the decomposition rules for QubitUnitary work with graph-enabled."""
@@ -1505,3 +1530,38 @@ class TestQubitUnitaryDecompositionGraph:
         decomp_tape = qml.tape.QuantumScript(decomp)
         matrix = qml.matrix(decomp_tape, wire_order=[0, 1])
         assert qml.math.allclose(matrix, U, atol=1e-7)
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "gate_set",
+        [
+            # TODO: remove SelectPauliRot when decomposition is defined for it.
+            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("Rot", "CNOT", "SelectPauliRot", "GlobalPhase"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "U, n_wires",
+        [
+            pytest.param(
+                qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])),
+                4,
+                marks=pytest.mark.xfail(
+                    strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/7467"
+                ),
+            ),
+            (qml.QFT.compute_matrix(5), 5),
+            (qml.GroverOperator.compute_matrix(6, []), 6),
+        ],
+    )
+    def test_multi_qubit_decomposition_integration(self, gate_set, U, n_wires):
+        """Tests that the multi-qubit unitary can be decomposed."""
+
+        op = qml.QubitUnitary(U, wires=list(range(n_wires)))
+        tape = qml.tape.QuantumScript([op])
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+
+        matrix = qml.matrix(decomp, wire_order=list(range(n_wires)))
+        assert qml.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)

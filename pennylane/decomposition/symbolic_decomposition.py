@@ -230,22 +230,14 @@ def flip_zero_control(inner_decomp):
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
-        return inner_decomp.is_applicable(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
-        inner_resource = inner_decomp.compute_resources(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        inner_resource = inner_decomp.compute_resources(**new_params)
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
@@ -299,3 +291,27 @@ def flip_control_adjoint(*_, wires, control_wires, control_values, work_wires, b
             work_wires=work_wires,
         )
     )
+
+
+def _to_controlled_qu_condition(base_class, **__):
+    return base_class.has_matrix and base_class.num_wires == 1
+
+
+def _to_controlled_qu_resource(num_control_wires, num_zero_control_values, num_work_wires, **__):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=1,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        ): 1
+    }
+
+
+@register_condition(_to_controlled_qu_condition)
+@register_resources(_to_controlled_qu_resource)
+def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, base, **__):
+    """Convert a controlled operator to a controlled qubit unitary."""
+    matrix = base.matrix()
+    qml.ControlledQubitUnitary(matrix, wires, control_values=control_values, work_wires=work_wires)
