@@ -40,7 +40,7 @@ def _bch_expansion(
 
     bch = _bch(
         product_formula.terms,
-        [coeff * product_formula.timestep for coeff in product_formula.coeffs],
+        product_formula.coeffs,
         product_formula._ordered_terms,
         order,
     )

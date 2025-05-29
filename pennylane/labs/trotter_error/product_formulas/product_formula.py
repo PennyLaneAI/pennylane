@@ -32,7 +32,6 @@ class ProductFormula:
         self,
         terms: Union[Sequence[Hashable], Sequence[ProductFormula]],
         coeffs: Sequence[float] = None,
-        timestep: float = 1.0,
         exponent: float = 1.0,
         label: str = None,
         include_i: bool = True,
@@ -72,7 +71,6 @@ class ProductFormula:
         else:
             self.coeffs = [1] * len(self.terms)
 
-        self.timestep = timestep
         self.exponent = exponent
         self.label = label
 
@@ -85,8 +83,13 @@ class ProductFormula:
 
     def __call__(self, t: float):
         ret = copy.copy(self)
-        ret.timestep *= t
         ret.label = f"{self.label}({t})"
+
+        if ret.recursive:
+            ret.terms = [term(t) for term in ret.terms]
+            ret._ordered_terms = {term(t): position for term, position in ret._ordered_terms.items()}
+        else:
+            ret.coeffs = [t * coeff for coeff in ret.coeffs]
 
         return ret
 
@@ -100,15 +103,12 @@ class ProductFormula:
         if self.coeffs != other.coeffs:
             return False
 
-        if self.timestep != other.timestep:
-            return False
-
         return self.exponent == other.exponent
 
     def __hash__(self) -> int:
         terms = tuple(self.terms)
         coeffs = tuple(self.coeffs)
-        return hash((terms, coeffs, self.timestep, self.exponent))
+        return hash((terms, coeffs, self.exponent))
 
     def __matmul__(self, other: ProductFormula) -> ProductFormula:
         return ProductFormula([self, other], label=f"{self.label}@{other.label}")
@@ -131,7 +131,7 @@ class ProductFormula:
     def to_matrix(self, fragments: Dict[Hashable, Fragment], accumulator: Fragment) -> np.ndarray:
         """Returns a numpy representation of the product formula"""
         acc = copy.copy(accumulator)
-        for term, coeff in zip(self.terms, [self.timestep * coeff for coeff in self.coeffs]):
+        for term, coeff in zip(self.terms, self.coeffs):
             if isinstance(term, ProductFormula):
                 accumulator @= term.to_matrix(fragments, copy.copy(acc))
             else:

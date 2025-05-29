@@ -35,7 +35,7 @@ class _AdditiveIdentity:
 
 
 def effective_hamiltonian(
-    product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int
+        product_formula: ProductFormula, fragments: Dict[Hashable, Fragment], order: int, timestep: float = 1.0
 ):
     """Compute the effective Hamiltonian according to the product formula
 
@@ -68,7 +68,7 @@ def effective_hamiltonian(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = bch_expansion(product_formula, order)
+    bch = bch_expansion(product_formula(timestep), order)
     eff = _AdditiveIdentity()
 
     for ith_order in bch:
@@ -94,6 +94,7 @@ def perturbation_error(
     fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     order: int,
+    timestep: float = 1.0
 ) -> List[float]:
     r"""Computes the perturbation theory error using the second-order Trotter error operator.
 
@@ -143,7 +144,7 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = bch_expansion(product_formula, order)
+    bch = bch_expansion(product_formula(timestep), order)
     commutators = {
         commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
     }
