@@ -500,6 +500,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce `qcut` module to be a tertiary module.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
 
