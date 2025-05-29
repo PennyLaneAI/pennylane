@@ -88,13 +88,13 @@ class TestInterpreter:
             ast, context={"wire_map": None, "name": "advanced-vars"}
         )
 
-        # static vars are available in the compilation context
+        # static vars
         assert context["vars"]["f"]["val"] == 3.2
         assert context["vars"]["g"]["val"] == 3
         assert context["vars"]["h"]["val"] == 2
         assert context["vars"]["k"]["val"] == 3
 
-        # classical logic is represented in the execution context after execution
+        # dynamic vars
         assert context["vars"]["l"]["val"] == True
         assert context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
         assert context["vars"]["a"]["val"] == 3.3333333

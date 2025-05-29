@@ -3,20 +3,16 @@ This submodule contains the interpreter for QASM 3.0.
 """
 
 import functools
-import copy
-import inspect
 import re
 from typing import Callable
-from functools import partial
 
 from openqasm3.visitor import QASMNode
-from openqasm3.ast import BitstringLiteral, ArrayLiteral, Cast, IndexExpression, RangeDefinition, Identifier, \
-    BinaryExpression, UnaryExpression, ClassicalDeclaration, QuantumGate, QubitDeclaration, ConstantDeclaration, \
-    ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, BinaryExpression
+from openqasm3.ast import BitstringLiteral, ArrayLiteral, ClassicalDeclaration, QuantumGate, QubitDeclaration, \
+    ConstantDeclaration, ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, \
+    BinaryExpression
 
 from pennylane import ops
 from pennylane.operation import Operator
-from pennylane.control_flow.while_loop import WhileLoopCallable
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -64,7 +60,6 @@ class QasmInterpreter:
         Initializes the QASM interpreter.
         """
         self.permissive = permissive
-        self.executing = False
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
@@ -108,8 +103,7 @@ class QasmInterpreter:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
-        context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
-        init_context = copy.deepcopy(context)  # preserved for use in second (execution) pass
+        context.update({"wires": [], "vars": {}})
 
         # begin recursive descent traversal
         for value in node.__dict__.values():
@@ -134,30 +128,6 @@ class QasmInterpreter:
             context (dict): The current context.
         """
         context["wires"].append(node.qubit.name)
-
-    @staticmethod
-    def _all_context_bound(quantum_function):
-        """
-        Checks whether a partial received all required context during compilation, or if
-        it requires execution context because it has parameters that are based on, for example,
-        the outcomes of mid-circuit measurements or subroutines.
-        Args:
-            partial_function (Callable): the partial with compilation context bound.
-        """
-        if hasattr(quantum_function, "func"):
-            if isinstance(quantum_function.func, WhileLoopCallable):
-                return False
-            else:
-                try:
-                    inspect.signature(quantum_function.func).bind(
-                        *quantum_function.args, **quantum_function.keywords
-                    )
-                    return True
-                except TypeError:
-                    return False
-        elif len(inspect.signature(quantum_function).parameters) > 0:
-            return False
-        return True
 
     def _update_var(self, value: any, name: str, node: QASMNode, context: dict):
         """
@@ -201,10 +171,6 @@ class QasmInterpreter:
         self._init_aliases(context)
         context["aliases"][node.target.name] = self.eval_expr(node.value, context, aliasing=True)
 
-        # we append anything that needs to be computed at execution time to the gates list...
-        # aliases can change throughout a program
-        context["gates"].append(partial(self.visit_alias_statement, node))
-
     def retrieve_variable(self, name: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
@@ -213,21 +179,12 @@ class QasmInterpreter:
             context (dict): the current context.
         """
 
-        def _warning(context, name):
-            raise TypeError(
-                f"Attempt to use unevaluated variable {name} in {context['name']}, "
-                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
-            )
-
         if "vars" in context and context["vars"] is not None and name in context["vars"]:
-            if isinstance(context["vars"][name], Callable):
-                _warning(context, name)
+            res = context["vars"][name]
+            if res["val"] is not None:
+                return res
             else:
-                res = context["vars"][name]
-                if res["val"] is not None:
-                    return res
-                else:
-                    raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         elif (
             "wires" in context
             and context["wires"] is not None
@@ -245,7 +202,10 @@ class QasmInterpreter:
             else:
                 raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         else:
-            _warning(context, name)
+            raise TypeError(
+                f"Attempt to use unevaluated variable {name} in {context['name']}, "
+                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
+            )
 
     def _init_vars(self, context: dict):
         """
@@ -265,16 +225,6 @@ class QasmInterpreter:
         """
         if "aliases" not in context:
             context["aliases"] = dict()
-
-    def _init_gates_list(self, context: dict):
-        """
-        Inits the gates list on the current context.
-
-        Args:
-            context (dict): the current context.
-        """
-        if "gates" not in context:
-            context["gates"] = []
 
     @staticmethod
     def _get_bit_type_val(var):
@@ -302,11 +252,8 @@ class QasmInterpreter:
             constant (bool): Whether the classical variable is a constant.
         """
 
-        # compile time tracking of static variables
         self._init_vars(context)
         if node.init_expression is not None:
-            # TODO: store AST objects in context instead of these dicts?
-
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
                     "ty": node.type.__class__.__name__,
@@ -339,49 +286,6 @@ class QasmInterpreter:
                 "line": node.span.start_line,
                 "constant": constant,
             }
-
-        # runtime Callable
-        self._init_gates_list(context)
-        context["gates"].append(partial(self.visit_classical_declaration, node))
-
-    def construct_callable(self, context: dict):
-        """
-        Constructs a callable that can be queued into a QNode.
-
-        Args:
-            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
-        """
-        context["callable"] = partial(self._execute_all, context)
-
-    def _execute_all(self, context: dict, execution_context: dict):
-        """
-        Executes all the gates in the context.
-        Args:
-            context (dict): the context populated with the gates.
-            execution_context (dict): the execution context that handles dynamic variables, etc.
-        """
-        for gate in context["gates"]:
-            gate(execution_context) if not self._all_context_bound(gate) else gate()
-
-    def construct_qfunc(self, context: dict, init_context: dict):
-        """
-        Constructs a Callable quantum function that may be queued into a QNode.
-        Args:
-            context (dict): the final context resulting from the compilation pass.
-            init_context (dict): the initial context.
-        Returns:
-            dict: the final executed context.
-        """
-        if "device" not in context:
-            wires = [w for w in context["wires"]] if "wires" in context else []
-            curr = context
-            if "scopes" in curr:
-                wires = self._get_wires_helper(curr, wires)
-            context["wires"] = wires
-        # passes and modifies init_context through gate calls during second pass
-        # static variables are already bound in context["gates"]
-        context["callable"] = partial(self._execute_all, context, init_context)
-        return init_context
 
     @visit.register(QuantumGate)
     def visit_quantum_gate(self, node: QuantumGate, context: dict):
@@ -442,7 +346,7 @@ class QasmInterpreter:
         # setup arguments
         args = []
         for arg in node.arguments:
-            args.append(self.evaluate_argument(arg, context))
+            args.append(self.eval_expr(arg, context))
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -505,27 +409,6 @@ class QasmInterpreter:
             wires = wires[:-1]
 
         return next, wires
-
-    @staticmethod
-    def evaluate_argument(arg: str, context: dict):
-        """
-        Constructs a callable that can be queued into a QNode.
-        Evaluates an expression.
-        Args:
-            context (dict): The final context populated with the Callables (called gates) to queue in the QNode.
-            node (QASMNode): the expression QASMNode.
-            context (dict): the current context.
-            aliasing (bool): whether to use aliases or not.
-        """
-        if re.search("Literal", arg.__class__.__name__) is not None:
-            return arg.value
-        if arg.name in context["vars"]:
-            # the context at this point should reflect the states of the
-            # variables as evaluated in the correct (current) scope.
-            if context["vars"][arg.name]["val"] is not None:
-                return context["vars"][arg.name]["val"]
-            raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
-        raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
 
     def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
@@ -596,9 +479,7 @@ class QasmInterpreter:
                     var = self.retrieve_variable(node.name, context)
                     value = var["val"] if isinstance(var, dict) and "val" in var else var
                     if isinstance(value, Callable):
-                        var["val"] = (
-                            value(context) if not self._all_context_bound(value) else value()
-                        )
+                        var["val"] = value(context)
                         var["line"] = node.span.start_line
                         value = var["val"]
                     return value
