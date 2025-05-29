@@ -113,7 +113,7 @@ class TestInterpreter:
         )
 
         # we would initialize the device like so
-        device("default.qubit", wires=[0, 1, 2])
+        # device("default.qubit", wires=[0, 1, 2])
 
         # execute
         with queuing.AnnotatedQueue() as q:
