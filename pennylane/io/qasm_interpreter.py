@@ -1,11 +1,18 @@
 """
-This submodule contains the interpreter for QASM 3.0.
+This submodule contains the interpreter for OpenQASM 3.0.
 """
 
 import functools
 import re
 
-from openqasm3.ast import ClassicalDeclaration, EndStatement, QuantumGate, QubitDeclaration
+from openqasm3.ast import (
+    ClassicalDeclaration,
+    Identifier,
+    QuantumGate,
+    QuantumGateModifier,
+    QubitDeclaration,
+    EndStatement
+)
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -75,7 +82,7 @@ class QasmInterpreter:
 
     def interpret(self, node: QASMNode, context: dict):
         """
-        Entry point for visiting the QASMNodes of a parsed QASM 3.0 program.
+        Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
@@ -175,24 +182,13 @@ class QasmInterpreter:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
         gate, args, wires = self._gate_setup_helper(node, gates_dict, context)
+        num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
+        op_wires = wires[num_control:]
+        control_wires = wires[:num_control]
 
-        if len(node.modifiers) > 0:
-            num_control = sum("ctrl" in mod.modifier.name for mod in node.modifiers)
-            op_wires = wires[num_control:]
-            control_wires = wires[:num_control]
-            if "ctrl" in node.modifiers[-1].modifier.name:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=op_wires), context, control_wires
-                )
-            else:
-                prev, wires = self.apply_modifier(
-                    node.modifiers[-1], gate(*args, wires=wires), context, wires
-                )
-
-            for mod in node.modifiers[::-1][1:]:
-                prev, wires = self.apply_modifier(mod, prev, context, wires)
-        else:
-            gate(*args, wires=wires)
+        op = gate(*args, wires=op_wires)
+        for mod in reversed(node.modifiers):
+            op, control_wires = self.apply_modifier(mod, op, context, control_wires)
 
     def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
         """
@@ -209,9 +205,7 @@ class QasmInterpreter:
             list: The wires the gate applies to.
         """
         # setup arguments
-        args = []
-        for arg in node.arguments:
-            args.append(self.evaluate_argument(arg, context))
+        args = [self.evaluate_argument(arg, context) for arg in node.arguments]
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -235,7 +229,7 @@ class QasmInterpreter:
         return gate, args, wires
 
     @staticmethod
-    def apply_modifier(mod: QuantumGate, previous: Operator, context: dict, wires: list):
+    def apply_modifier(mod: QuantumGateModifier, previous: Operator, context: dict, wires: list):
         """
         Applies a modifier to the previous gate or modified gate.
 
@@ -249,22 +243,14 @@ class QasmInterpreter:
             NotImplementedError: If the modifier has a param of an as-yet unsupported type.
         """
         # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-        # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+        # in the OpenQASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
         assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
-        next = None
 
         if mod.modifier.name == "inv":
             next = ops.adjoint(previous)
         elif mod.modifier.name == "pow":
-            if re.search("Literal", mod.argument.__class__.__name__) is not None:
-                power = mod.argument.value
-            elif "vars" in context and mod.argument.name in context["vars"]:
-                power = context["vars"][mod.argument.name]["val"]
-            else:
-                raise NotImplementedError(
-                    f"Unable to handle expression {mod.argument} at this time"
-                )
+            power = QasmInterpreter.evaluate_argument(mod.argument, context)
             next = ops.pow(previous, z=power)
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
@@ -272,11 +258,13 @@ class QasmInterpreter:
         elif mod.modifier.name == "negctrl":
             next = ops.ctrl(previous, control=wires[-1], control_values=[0])
             wires = wires[:-1]
+        else:
+            raise ValueError(f"Unknown modifier {mod}")  # pragma: no cover
 
         return next, wires
 
     @staticmethod
-    def evaluate_argument(arg: str, context: dict):
+    def evaluate_argument(arg: QASMNode, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
 
@@ -286,16 +274,18 @@ class QasmInterpreter:
         """
         if re.search("Literal", arg.__class__.__name__) is not None:
             return arg.value
-        if arg.name in context["vars"]:
+        if hasattr(arg, "name") and arg.name in context["vars"]:  # pylint: disable=no-else-raise
             # the context at this point should reflect the states of the
             # variables as evaluated in the correct (current) scope.
             if context["vars"][arg.name]["val"] is not None:
                 return context["vars"][arg.name]["val"]
             raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
-        raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
+        elif isinstance(arg, Identifier):
+            raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
+        raise NotImplementedError(f"Unable to handle {arg.__class__.__name__} at this time")
 
     @staticmethod
-    def _require_wires(wires, context):
+    def _require_wires(wires: list, context: dict):
         """
         Simple helper that checks if we have wires in the current context.
 

@@ -839,8 +839,20 @@ def from_quil_file(quil_filename: str):
 
 def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     """
-    Loads a simple QASM 3.0 quantum circuits involving basic usage of gates from a QASM string using the QASM
-        interpreter.
+    Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
+
+    .. note::
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu.
+        TODO: add support for these (they don't map directly to Pennylane ops).
+
+        In order to use this function, openqasm3 and 'openqasm3[parser]' must be installed in the user's environment.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a simple quantum circuit.
+        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to Pennylane qubits.
+
+    Returns:
+        dict: the context resulting from the execution.
 
     >>> dev = device("default.qubit", wires=[0, 1])
     >>> @qml.qnode(dev)
@@ -851,21 +863,19 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     0: ──RY(0.20)──X²─┤  <Z>
     1: ──RX(1.00)─────┤
-
-    Args:
-        quantum_circuit (str): a QASM string containing a simple quantum circuit.
-        qubit_mapping Optional[dict]:  the mapping from QASM 3.0 qubit names to Pennylane qubits.
-
-    Returns:
-        function: a function created based on the QASM string that can be queued into a QNode.
-
     """
     if not has_openqasm:  # pragma: no cover
         raise ImportWarning(
-            "QASM interpreter requires openqasm3 to be installed"
+            "QASM interpreter requires openqasm3 to be installed. Please pip install openqasm3 and 'openqasm3[parser]'"
+            "in your environment."
         )  # pragma: no cover
     # parse the QASM program
-    ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    try:
+        ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    except AttributeError as e:  # pragma: no cover
+        raise ImportError(
+            "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
+        ) from e  # pragma: no cover
     context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
-    return context["callable"]
+    return context
