@@ -51,7 +51,7 @@ class SemiAdder(Operation):
 
     .. math::
 
-        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x+y  \rangle,
+        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle,
 
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
