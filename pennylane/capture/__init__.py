@@ -223,6 +223,11 @@ def __getattr__(key):
 
         return PlxprVisualizerNew
 
+    if key == "PlxprGraph":
+        from .new_visualizer import PlxprGraph
+
+        return PlxprGraph
+
     if key == "eval_jaxpr":
         from .base_interpreter import eval_jaxpr
 
