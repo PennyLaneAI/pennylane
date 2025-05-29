@@ -302,6 +302,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
+  The labels are grouped together like for other multi-qubit operations, and the drawing
+  no longer depends on the wires of `GlobalPhase` or `Identity`. Control nodes of controlled global phases
+  and identities no longer receive the operator label, which is in line with other controlled operations.
+  [(#7457)](https://github.com/PennyLaneAI/pennylane/pull/7457)
+  
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
   This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
@@ -317,10 +323,14 @@
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
 
-* A transform for applying `cancel_inverses` has been added that can be used with the experimental
-  xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
-  iteratively to cancel nested self-inverse operations.
-  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
+* An xDSL `qml.compiler.python_compiler.transforms.MergeRotationsPass` pass for applying `merge_rotations` to an
+  xDSL module has been added for the experimental xDSL Python compiler integration.
+  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+
+* An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
+  iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
+  optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
+  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
