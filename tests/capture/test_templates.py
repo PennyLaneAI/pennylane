@@ -278,32 +278,33 @@ class TestModifiedTemplates:
         """Test the primitive bind call of Hamiltonian time evolution templates."""
 
         coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
 
-        def qfunc(Hi):
-            template(Hi, time=2.4, **kwargs)
+        def qfunc(coeffs):
+            ops = [qml.X(0), qml.Z(0)]
+            H = qml.dot(coeffs, ops)
+            template(H, 2.4, **kwargs)
 
         # Validate inputs
-        qfunc(H)
+        qfunc(coeffs)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(H)
+        jaxpr = jax.make_jaxpr(qfunc)(coeffs)
 
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
 
         eqn = jaxpr.eqns[5]
         assert eqn.primitive == template._primitive
-        assert eqn.invars == jaxpr.eqns[4].outvars  # the sum op
+        assert eqn.invars[0] == jaxpr.eqns[4].outvars[0]  # the sum op
+        assert eqn.invars[1].val == 2.4
 
-        assert eqn.params == kwargs | {"time": 2.4}
+        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -311,6 +312,8 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
 
         assert len(q) == 1
+        ops = [qml.X(0), qml.Z(0)]
+        H = qml.dot(coeffs, ops)
         assert q.queue[0] == template(H, time=2.4, **kwargs)
 
     def test_amplitude_amplification(self):

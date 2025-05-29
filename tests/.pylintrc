@@ -50,7 +50,8 @@ disable=
   not-callable, # because of qnode decorator
   unexpected-keyword-arg,
   arguments-differ,
-  no-value-for-parameter
+  no-value-for-parameter,
+  too-many-positional-arguments, # because of parameterization
 
 [MISCELLANEOUS]
 

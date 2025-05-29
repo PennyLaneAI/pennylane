@@ -81,7 +81,7 @@ class CutStrategy:
 
     """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
     devices: InitVar[Union[SupportedDeviceAPIs, Sequence[SupportedDeviceAPIs]]] = None

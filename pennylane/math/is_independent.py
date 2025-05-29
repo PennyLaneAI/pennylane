@@ -251,7 +251,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-positional-arguments
 def is_independent(
     func,
     interface,

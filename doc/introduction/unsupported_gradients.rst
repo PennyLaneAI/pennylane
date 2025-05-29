@@ -32,11 +32,7 @@ An exception is raised if this configuration is used:
         print(qml.grad(circuit)(x))
 
 >>> print_grad()
-Traceback (most recent call last):
-  ...
-  File "C:\pennylane\pennylane\qnode.py", line 448, in _validate_device_method
-    raise qml.QuantumFunctionError(
-pennylane.QuantumFunctionError: The default.qubit device does not provide a native method for computing the jacobian.
+QuantumFunctionError: Device <default.qubit device (wires=1) at 0x11ad22bf0> does not support device with requested circuit.
 
 .. _Analytic backpropagation:
 
@@ -65,11 +61,7 @@ Currently an exception is raised if this invalid configuration is used:
         print(qml.grad(circuit)(x))
 
 >>> print_grad()
-Traceback (most recent call last):
-  ...
-  File "C:\pennylane\pennylane\qnode.py", line 375, in _validate_backprop_method
-    raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
-pennylane.QuantumFunctionError: Backpropagation is only supported when shots=None.
+QuantumFunctionError: Device <default.qubit device (wires=1, shots=100) at 0x119d6e8c0> does not support backprop with requested circuit.
 
 Changing to ``shots=None`` allows computing the analytic gradient:
 

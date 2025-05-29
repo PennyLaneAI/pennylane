@@ -16,8 +16,11 @@ import warnings
 
 from scipy.linalg import sqrtm
 
-import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.measurements import probs
+from pennylane.ops import adjoint
+from pennylane.tape import QuantumScript
+from pennylane.workflow import construct_tape, execute
 
 
 class QNSPSAOptimizer:
@@ -126,6 +129,7 @@ class QNSPSAOptimizer:
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         stepsize=1e-3,
@@ -222,7 +226,7 @@ class QNSPSAOptimizer:
             all_tensor_dirs.append(tensor_dirs)
 
         # nosemgrep
-        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device)
+        raw_results = execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
@@ -357,9 +361,9 @@ class QNSPSAOptimizer:
             args_plus[index] = arg + self.finite_diff_step * direction
             args_minus[index] = arg - self.finite_diff_step * direction
 
-        tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
+        tape = construct_tape(cost)(*args_plus, **kwargs)
         tape_plus = tape.copy(copy_operations=True)
-        tape = qml.workflow.construct_tape(cost)(*args_minus, **kwargs)
+        tape = construct_tape(cost)(*args_minus, **kwargs)
         tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
 
@@ -412,28 +416,28 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        tape = qml.workflow.construct_tape(cost)(*args1, **kwargs)
-        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=tape.wires.labels)])
+        new_ops = op_forward + [adjoint(op) for op in reversed(op_inv)]
+        tape = construct_tape(cost)(*args1, **kwargs)
+        return QuantumScript(new_ops, [probs(wires=tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
-        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape = construct_tape(cost)(*args, **kwargs)
         return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
-        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape = construct_tape(cost)(*args, **kwargs)
         tape_loss_curr = tape.copy(copy_operations=True)
 
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
+        tape = construct_tape(cost)(*params_next, **kwargs)
         tape_loss_next = tape.copy(copy_operations=True)
 
         program = cost.device.preprocess_transforms()
 
-        loss_curr, loss_next = qml.execute(
+        loss_curr, loss_next = execute(
             [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
         )
 

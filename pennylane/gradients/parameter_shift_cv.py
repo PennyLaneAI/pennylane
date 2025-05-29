@@ -21,27 +21,29 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
-from pennylane.gradients.gradient_transform import (
-    _validate_gradient_methods,
-    choose_trainable_param_indices,
-    contract_qjac_with_cjac,
-)
+from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     ProbabilityMP,
     StateMP,
     VarianceMP,
+    expval,
 )
+from pennylane.ops.cv import PolyXP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import _no_trainable_grad
+from .gradient_transform import (
+    _no_trainable_grad,
+    _validate_gradient_methods,
+    choose_trainable_param_indices,
+    contract_qjac_with_cjac,
+)
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
@@ -182,9 +184,10 @@ def _transform_observable(obs, Z, device_wires):
     # TODO: if the A matrix corresponds to a known observable in PennyLane,
     # for example qml.QuadX, qml.QuadP, qml.NumberOperator, we should return that
     # instead. This will allow for greater device compatibility.
-    return qml.PolyXP(A, wires=device_wires)
+    return PolyXP(A, wires=device_wires)
 
 
+# pylint: disable=too-many-positional-arguments
 def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
     consisting of a mixture of expectation values and variances of observables.
@@ -232,7 +235,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape.measurements[i].obs
-        expval_tape._measurements[i] = qml.expval(op=obs)
+        expval_tape._measurements[i] = expval(op=obs)
 
     gradient_tapes = [expval_tape]
 
@@ -259,8 +262,8 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
         # take the outer product of the heisenberg representation
         # with itself, to get a square symmetric matrix representing
         # the square of the observable
-        obs = qml.PolyXP(np.outer(A, A), wires=obs.wires)
-        expval_sq_tape._measurements[i] = qml.expval(op=obs)
+        obs = PolyXP(np.outer(A, A), wires=obs.wires)
+        expval_sq_tape._measurements[i] = expval(op=obs)
 
     # Non-involutory observables are present; the partial derivative of <A^2>
     # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
@@ -271,16 +274,16 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
-        f0 = qml.math.expand_dims(results[0], -1)
+        mask = math.convert_like(math.reshape(var_mask, [-1, 1]), results[0])
+        f0 = math.expand_dims(results[0], -1)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = pdA2_fn(results[tape_boundary:])
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
-        pdA = qml.math.stack(pdA)
-        return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
+        pdA = math.stack(pdA)
+        return math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
     return gradient_tapes, processing_fn
 
@@ -422,9 +425,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                     constant = A[0]
 
             constants.append(constant)
-            new_measurements[obs_idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
+            new_measurements[obs_idx] = expval(op=_transform_observable(obs, Z, dev_wires))
 
-        g_tape = qml.tape.QuantumScript(
+        g_tape = QuantumScript(
             tape.operations,
             new_measurements,
             shots=tape.shots,
@@ -452,17 +455,17 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         if not results:
             results = [np.array(0.0)]
 
-        interface = qml.math.get_interface(results[0])
+        interface = math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
 
         for i, (shape, grad_value, obs_ind) in iterator:
             if shape == 0:
                 # parameter has zero gradient
-                isscalar = qml.math.ndim(results[0]) == 0
-                g = qml.math.zeros_like(qml.math.atleast_1d(results[0]), like=interface)
+                isscalar = math.ndim(results[0]) == 0
+                g = math.zeros_like(math.atleast_1d(results[0]), like=interface)
 
                 if grad_value:
-                    g = qml.math.scatter_element_add(g, obs_ind, grad_value, like=interface)
+                    g = math.scatter_element_add(g, obs_ind, grad_value, like=interface)
 
                 grads.append(g[0] if isscalar else g)
                 continue
@@ -471,14 +474,14 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             start = start + shape
 
             # compute the linear combination of results and coefficients
-            isscalar = qml.math.ndim(obs_result[0]) == 0
-            obs_result = qml.math.stack(qml.math.atleast_1d(obs_result[0]))
-            g = qml.math.zeros_like(obs_result, like=interface)
+            isscalar = math.ndim(obs_result[0]) == 0
+            obs_result = math.stack(math.atleast_1d(obs_result[0]))
+            g = math.zeros_like(obs_result, like=interface)
 
-            if qml.math.get_interface(g) not in ("tensorflow", "autograd"):
+            if math.get_interface(g) not in ("tensorflow", "autograd"):
                 obs_ind = (obs_ind,)
 
-            g = qml.math.scatter_element_add(g, obs_ind, obs_result[obs_ind], like=interface)
+            g = math.scatter_element_add(g, obs_ind, obs_result[obs_ind], like=interface)
             grads.append(g[0] if isscalar else g)
 
         # The following is for backwards compatibility; currently,
@@ -487,14 +490,15 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, results[0])
+            g = math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
-        return qml.math.T(qml.math.stack(grads))
+                grads[i] = math.hstack(g)
+        return math.T(math.stack(grads))
 
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=too-many-positional-arguments
 def _expand_transform_param_shift_cv(
     tape: QuantumScript,
     dev,
@@ -523,6 +527,7 @@ def _expand_transform_param_shift_cv(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
+# pylint: disable=too-many-positional-arguments
 def param_shift_cv(
     tape: QuantumScript,
     dev,
@@ -802,7 +807,7 @@ def param_shift_cv(
 
         # For expval param shift with multiple params
         if isinstance(grads[0], tuple):
-            grads = [qml.math.stack(g) for g in grads]
+            grads = [math.stack(g) for g in grads]
 
         jacobian = sum(grads)
 
