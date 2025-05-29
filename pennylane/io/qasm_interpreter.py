@@ -52,8 +52,6 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-class DirtyError(Exception):  # pragma: no cover
-    """Exception raised when attempt is made to use a dirty variable in a compilation context."""
 
 class QasmInterpreter:
     """
@@ -66,7 +64,6 @@ class QasmInterpreter:
         Initializes the QASM interpreter.
         """
         self.permissive = permissive
-        self.raise_if_dirty = False
         self.executing = False
 
     @functools.singledispatchmethod
@@ -172,9 +169,7 @@ class QasmInterpreter:
             context (dict): the current context.
         """
         context["vars"][name]["val"] = value
-        if not context["vars"][name]["constant"]:
-            context["vars"][name]["dirty"] = True
-        else:
+        if context["vars"][name]["constant"]:
             raise ValueError(
                 f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                 f"defined on line {context['vars'][name]['line']}"
@@ -206,40 +201,6 @@ class QasmInterpreter:
         self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
-    def _choose_context(self, func: Callable, context: dict, execution_context: dict):
-        """
-        Executes the callable with the right context depending on whether it was bound at compile time or
-        needs execution context.
-        Args:
-            func (Callable): the callable to be executed.
-            context (dict): the context to be passed to the function.
-            execution_context (dict): the execution context to be passed to the function.
-        Returns:
-            dict: the context to use.
-        """
-        if not self._depends_on_dirty_vars(func):
-            return context
-        else:
-            return execution_context
-
-    def _depends_on_dirty_vars(self, func: Callable):
-        """
-        Checks if any state (variables) relevant to the node being processed is dirty.
-        Args:
-            func (Callable): the function which may use dirty state.
-            context (dict): the current compilation context.
-        Returns:
-            bool: whether the func depends on dirty state. If it does, the state should not be bound during compilation.
-        """
-        self.raise_if_dirty = True
-        try:
-            func()
-            self.raise_if_dirty = False
-            return False
-        except DirtyError:
-            self.raise_if_dirty = False
-            return True
-
     def visit_alias_statement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.
@@ -268,18 +229,11 @@ class QasmInterpreter:
                 f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
             )
 
-        def _dirty(context, name):
-            raise DirtyError(
-                f"Attempt to use dirty variable {name} in compilation context {context['name']}."
-            )
-
         if "vars" in context and context["vars"] is not None and name in context["vars"]:
             if isinstance(context["vars"][name], Callable):
                 _warning(context, name)
             else:
                 res = context["vars"][name]
-                if res["dirty"] == True and self.raise_if_dirty:
-                    _dirty(context, name)
                 if res["val"] is not None:
                     return res
                 else:
@@ -296,8 +250,6 @@ class QasmInterpreter:
             res = context["aliases"][name](context)  # evaluate the alias and de-reference
             if isinstance(res, str):
                 return res
-            if res["dirty"] == True and self.raise_if_dirty:
-                _dirty(context, name)
             if res["val"] is not None:
                 return res
             else:
@@ -365,15 +317,12 @@ class QasmInterpreter:
         if node.init_expression is not None:
             # TODO: store AST objects in context instead of these dicts?
 
-            # Note: vars which are clean may be bound at compile time, dirty ones
-            # must be calculated during execution
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
                     "ty": node.type.__class__.__name__,
                     "val": self.eval_expr(node.init_expression, context),
                     "size": node.init_expression.width,
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
             elif not isinstance(node.init_expression, ArrayLiteral):
@@ -381,7 +330,6 @@ class QasmInterpreter:
                     "ty": node.type.__class__.__name__,
                     "val": self.eval_expr(node.init_expression, context),
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
             else:
@@ -391,7 +339,6 @@ class QasmInterpreter:
                         self.eval_expr(literal, context) for literal in node.init_expression.values
                     ],
                     "line": node.init_expression.span.start_line,
-                    "dirty": False,
                     "constant": constant,
                 }
         else:
@@ -400,7 +347,6 @@ class QasmInterpreter:
                 "ty": node.type.__class__.__name__,
                 "val": None,
                 "line": node.span.start_line,
-                "dirty": False,
                 "constant": constant,
             }
 
@@ -664,7 +610,6 @@ class QasmInterpreter:
                             value(context) if not self._all_context_bound(value) else value()
                         )
                         var["line"] = node.span.start_line
-                        var["dirty"] = True
                         value = var["val"]
                     return value
                 except NameError as e:
