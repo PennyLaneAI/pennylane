@@ -872,8 +872,10 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     # parse the QASM program
     try:
         ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
-    except AttributeError as e:
-        raise ImportError("antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package") from e
+    except AttributeError as e:  # pragma: no cover
+        raise ImportError(
+            "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
+        ) from e  # pragma: no cover
     context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
     return context
