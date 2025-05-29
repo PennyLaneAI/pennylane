@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments
-
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -286,7 +284,6 @@ def draw(
         0: ─╭GlobalPhase(0.50)─┤
         1: ─├GlobalPhase(0.50)─┤
         2: ─╰●─────────────────┤
-
 
     """
     if catalyst_qjit(qnode):
@@ -775,6 +772,7 @@ def draw_mpl(
             :align: center
             :width: 40%
             :target: javascript:void(0);
+
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
