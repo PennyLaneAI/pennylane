@@ -55,12 +55,10 @@ class SemiAdder(Operation):
 
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
-    .. seealso:: :class:`~.PhaseAdder` and :class:`~.Adder`.
-
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) . 1`` work
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
             wires should be provided.
 
     **Example**
