@@ -111,7 +111,6 @@ used in a quantum circuit with custom operations without execution.
     dev = qml.device("null.qubit", wires=[0, 1, 2])
 
     @partial(qml.set_shots, shots=100)
-
     @qml.qnode(dev)
     def circuit(theta):
         qml.RZ(theta, wires=0)
