@@ -31,3 +31,19 @@ from .qubit import (
     ResourceY,
     ResourceZ,
 )
+
+from .op_math import (
+    ResourceCY,
+    ResourceCH,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceToffoli,
+    ResourceMultiControlledX,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+)    
