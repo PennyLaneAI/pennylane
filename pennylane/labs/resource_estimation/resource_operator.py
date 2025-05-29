@@ -104,7 +104,7 @@ class ResourceOperator(ABC):
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
 

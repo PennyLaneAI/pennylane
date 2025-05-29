@@ -110,7 +110,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         self.order = order
         self.cmpr_fragments = tuple(op.resource_rep_from_op() for op in fragments)
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:

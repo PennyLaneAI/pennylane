@@ -119,7 +119,7 @@ class ResourceAdjoint(ResourceOperator):
 
         self.base_op = base_cmpr_op
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -387,7 +387,7 @@ class ResourceControlled(ResourceOperator):
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -725,7 +725,7 @@ class ResourcePow(ResourceOperator):
         self.z = z
         self.base_op = base_cmpr_op
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -951,7 +951,7 @@ class ResourceProd(ResourceOperator):
                 "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -1055,7 +1055,7 @@ class ResourceChangeBasisOp(ResourceOperator):
                 "All ops of the ChangeofBasisOp must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
