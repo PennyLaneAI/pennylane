@@ -7,6 +7,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -321,6 +322,7 @@
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
+  [(#7509)](https://github.com/PennyLaneAI/pennylane/pull/7509)
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
   [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
@@ -490,6 +492,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* With program capture enabled, mcm method validation now happens on execution rather than setup.
+  [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
 
 * Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
   be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
