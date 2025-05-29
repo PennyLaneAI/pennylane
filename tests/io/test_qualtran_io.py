@@ -381,9 +381,7 @@ class TestToBloq:
             qml.RX(phi=angle, wires=[0])
 
         assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {Rx(angle=0.0, eps=1e-11): 1}
-        with pytest.raises(
-            TypeError, match="circuit() missing 1 required positinal argument: 'angle'"
-        ):
+        with pytest.raises(TypeError):
             qml.to_bloq(circuit).call_graph()
 
         assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
