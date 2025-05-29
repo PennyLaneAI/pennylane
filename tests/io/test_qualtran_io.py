@@ -356,7 +356,7 @@ class TestToBloq:
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
 
-        from qualtran.bloqs.basic_gates import Hadamard, XGate
+        from qualtran.bloqs.basic_gates import Hadamard
 
         dev = qml.device("default.qubit")
 
@@ -368,6 +368,31 @@ class TestToBloq:
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
         assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+
+    def test_from_bloq_to_bloq(self):
+        """Tests that FromBloq and to_bloq functions as intended for the QPE operator"""
+
+        qpe_op = qml.QuantumPhaseEstimation(
+            unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        )
+        qpe_bloq = qml.to_bloq(qpe_op, map_ops=False)
+
+        # This test will also fail if FromBloq's decomposition() is bugged
+        # It is hard to test decompose_bloq by itself; but if this test passes we can be
+        # confident that decompose_bloq is working properly.
+        decomp_ops = qml.FromBloq(qpe_bloq, wires=range(5)).decomposition()
+        expected_decomp_ops = qpe_op.decomposition()
+        assert decomp_ops == [
+            qml.H(1),
+            qml.H(2),
+            qml.H(3),
+            qml.H(4),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[4]), wires=[1, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[5]), wires=[2, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[6]), wires=[3, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[7]), wires=[4, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8]), wires=range(1, 5)),
+        ]
 
     def test_circuit_to_bloq_kwargs(self):
         """Tests that to_bloq functions as intended for circuits with kwargs"""
