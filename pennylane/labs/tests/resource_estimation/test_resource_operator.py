@@ -63,7 +63,7 @@ class TestCompressedResourceOp:
         ("X", ResourceDummyX, {"num_wires": 1}, "X"),
     )
 
-    compressed_op_reprs = (
+    compressed_op_names = (
         "DummyX",
         "DummyQFT",
         "DummyQSVT",
@@ -117,13 +117,27 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
 
-    @pytest.mark.parametrize("args, repr", zip(compressed_ops_and_params_lst, compressed_op_reprs))
-    def test_repr(self, args, repr):
-        """Test that the repr method behaves as expected."""
+    @pytest.mark.parametrize("args, name", zip(compressed_ops_and_params_lst, compressed_op_names))
+    def test_name(self, args, name):
+        """Test that the name method behaves as expected."""
         _, op_type, parameters, name_param = args
         cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
 
-        assert str(cr_op) == repr
+        assert cr_op.name == name
+
+    @pytest.mark.parametrize("args", compressed_ops_and_params_lst)
+    def test_repr(self, args):
+        """Test that the name method behaves as expected."""
+        _, op_type, parameters, name_param = args
+
+        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
+
+        op_name = op_type.__name__
+        expected_params_str_parts = [f"{k!r}:{v!r}" for k, v in sorted(parameters.items())]
+        expected_params_str = ", ".join(expected_params_str_parts)
+
+        expected_repr_string = f"CompressedResourceOp({op_name}, params={{{expected_params_str}}})"
+        assert str(cr_op) == expected_repr_string
 
     def test_type_error(self):
         """Test that an error is raised if wrong type is provided for op_type."""

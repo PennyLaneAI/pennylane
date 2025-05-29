@@ -71,6 +71,21 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         )
 
     def __repr__(self) -> str:
+
+        class_name = self.__class__.__qualname__
+        op_type_name = self.op_type.__name__
+
+        params_arg_str = ""
+        if self.params:
+            params = sorted(self.params.items())
+            params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
+            params_arg_str = f", params={{{params_str}}}"
+
+        return f"{class_name}({op_type_name}{params_arg_str})"
+
+    @property
+    def name(self) -> str:
+        r"""Returns the name of operator."""
         return self._name
 
 
@@ -102,16 +117,16 @@ def _make_hashable(d) -> tuple:
 
 
 class ResourceOperator(ABC):
-    r"""Base class to represent quantum operators according to the set of information 
+    r"""Base class to represent quantum operators according to the set of information
     required for resource estimation.
 
     Operators defined for the purpose of resource estimation require less detailed information.
     This is because the cost of a quantum gate can be well approximated without a full description
     of its parameters. For example two :class:`~.RX` gates have the same cost regardless
-    of their rotation angle parameters. 
+    of their rotation angle parameters.
 
-    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its 
-    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally, 
+    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its
+    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally,
 
     .. details::
 
