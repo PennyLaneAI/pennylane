@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM3 circuits into quantum functions
-  that may be loaded into QNodes and executed. 
+* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+  that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
 
   ```python
