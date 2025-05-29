@@ -380,7 +380,7 @@ class QasmInterpreter:
         @while_loop(
             partial(self.eval_expr, node.while_condition)
         )  # traces data dep through context
-        def loop(execution_context):
+        def loop(context):
             """
             Executes a traceable while loop.
 
@@ -388,26 +388,21 @@ class QasmInterpreter:
                 loop_context (dict): the context used to compile the while loop.
                 execution_context (dict): the context passed at execution time with current variable values, etc.
             """
-            # we don't want to populate the gates again with every call to visit
-            context["scopes"]["loops"][f"while_{node.span.start_line}"]["gates"] = []
-            # process loop body...
-            inner_context = self.visit(
-                node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"]
-            )
             try:
-                for gate in inner_context["gates"]:
-                    # updates vars in context... need to propagate these to outer scope
-                    gate(execution_context) if not self._all_context_bound(gate) else gate()
+                # updates vars in context... need to propagate these to outer scope
+                self.visit(
+                    node.block, context["scopes"]["loops"][f"while_{node.span.start_line}"]
+                )
             except ContinueException as e:
-                pass  # evaluation of this iteration ends and we continue to the next
+                pass  # evaluation of this iteration ends, and we continue to the next
+
+            inner_context = context["scopes"]["loops"][f"while_{node.span.start_line}"]
             context["vars"] = inner_context["vars"] if "vars" in inner_context else None
             context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
-            return execution_context
+            return context
 
-        context["gates"].append(
-            partial(self._handle_break, loop)
-        )  # bind compilation context now, leave execution context
+        self._handle_break(loop, context)
 
     @visit.register(ForInLoop)
     def visit_for_in_loop(self, node: QASMNode, context: dict):
