@@ -35,7 +35,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
-# pylint: disable=abstract-method
+
 import math
 
 import numpy as np
@@ -73,7 +73,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return block_diag(1, temp)  # pylint: disable=no-member
+    return block_diag(1, temp)
 
 
 class Rotation(CVOperation):

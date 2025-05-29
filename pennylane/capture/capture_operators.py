@@ -14,28 +14,14 @@
 """
 This submodule defines the abstract classes and primitives for capturing operators.
 """
-
-import importlib.metadata as importlib_metadata
-import warnings
 from functools import lru_cache
 from typing import Optional, Type
-
-from packaging.version import Version
 
 import pennylane as qml
 
 has_jax = True
 try:
     import jax
-
-    jax_version = importlib_metadata.version("jax")
-    if Version(jax_version) > Version("0.4.28"):  # pragma: no cover
-        warnings.warn(
-            f"PennyLane is not yet compatible with JAX versions > 0.4.28. "
-            f"You have version {jax_version} installed. "
-            f"Please downgrade JAX to <=0.4.28 to avoid runtime errors.",
-            RuntimeWarning,
-        )
 
 except ImportError:
     has_jax = False
@@ -91,14 +77,12 @@ def _get_abstract_operator() -> type:
         def _pow(a, b):
             return qml.pow(a, b)
 
-    jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
-
     return AbstractOperator
 
 
 def create_operator_primitive(
     operator_type: Type["qml.operation.Operator"],
-) -> Optional["jax.core.Primitive"]:
+) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Called when defining any :class:`~.Operator` subclass, and is used to set the
@@ -108,16 +92,16 @@ def create_operator_primitive(
         operator_type (type): a subclass of qml.operation.Operator
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
         ``None`` is returned if jax is not available.
 
     """
     if not has_jax:
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    primitive = NonInterpPrimitive(operator_type.__name__)
+    primitive = QmlPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
 
     @primitive.def_impl

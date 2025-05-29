@@ -37,7 +37,7 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      default_runner: ubuntu-24.04
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   sphinx:

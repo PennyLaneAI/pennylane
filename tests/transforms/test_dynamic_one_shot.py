@@ -20,6 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -168,7 +169,7 @@ def test_unsupported_shots():
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.probs(wires=0)], shots=None)
 
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="dynamic_one_shot is only supported with finite shots.",
     ):
         _, _ = qml.dynamic_one_shot(tape)

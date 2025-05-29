@@ -16,7 +16,7 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+# pylint: disable=arguments-differ
 import functools
 from typing import Optional, Union
 
@@ -24,7 +24,17 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+    resource_rep,
+)
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    flip_zero_control,
+    pow_rotation,
+)
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -175,6 +185,40 @@ def _rx_to_rz_ry(phi, wires: WiresLike, **__):
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry)
+add_decomps("Adjoint(RX)", adjoint_rotation)
+add_decomps("Pow(RX)", pow_rotation)
+
+
+def _controlled_rx_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CRX: 1}
+    return {
+        qml.H: 2,
+        qml.RZ: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rx_resource)
+def _controlled_rx_decomp(*params, wires, control_wires, work_wires, **__):
+    if len(control_wires) == 1:
+        qml.CRX(*params, wires=wires)
+        return
+
+    qml.H(wires=wires[-1])
+    qml.RZ(params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.RZ(-params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.H(wires=wires[-1])
+
+
+add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
 
 
 class RY(Operation):
@@ -307,6 +351,37 @@ def _ry_to_rz_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx)
+add_decomps("Adjoint(RY)", adjoint_rotation)
+add_decomps("Pow(RY)", pow_rotation)
+
+
+def _controlled_ry_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CRY: 1}
+    return {
+        qml.RY: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_ry_resource)
+def _controlled_ry_decomp(*params, wires, control_wires, work_wires, **__):
+    if len(control_wires) == 1:
+        qml.CRY(*params, wires=wires)
+        return
+
+    qml.RY(params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.RY(-params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+
+
+add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
 
 
 class RZ(Operation):
@@ -478,6 +553,37 @@ def _rz_to_ry_rx(phi, wires: WiresLike, **__):
 
 
 add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx)
+add_decomps("Adjoint(RZ)", adjoint_rotation)
+add_decomps("Pow(RZ)", pow_rotation)
+
+
+def _controlled_rz_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CRZ: 1}
+    return {
+        qml.RZ: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rz_resource)
+def _controlled_rz_decomp(*params, wires, control_wires, work_wires, **__):
+    if len(control_wires) == 1:
+        qml.CRZ(*params, wires=wires)
+        return
+
+    qml.RZ(params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.RZ(-params[0] / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+
+
+add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
 
 
 class PhaseShift(Operation):
@@ -667,6 +773,42 @@ def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
+add_decomps("Pow(PhaseShift)", pow_rotation)
+
+
+def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, **__):
+    return num_control_wires == 1 or num_work_wires > 0
+
+
+def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.ControlledPhaseShift: 1}
+    return {
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires - 1,
+        ): 2,
+        qml.ControlledPhaseShift: 1,
+    }
+
+
+@register_condition(_controlled_phaseshift_condition)
+@register_resources(_controlled_phaseshift_resource)
+def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, **__):
+
+    if len(control_wires) == 1:
+        qml.ControlledPhaseShift(*params, wires=wires)
+        return
+
+    qml.MultiControlledX(wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:])
+    qml.ControlledPhaseShift(*params, wires=[work_wires[0], wires[-1]])
+    qml.MultiControlledX(wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:])
+
+
+add_decomps("C(PhaseShift)", flip_zero_control(_controlled_phase_shift_decomp))
 
 
 class Rot(Operation):
@@ -736,7 +878,7 @@ class Rot(Operation):
         phi: TensorLike,
         theta: TensorLike,
         omega: TensorLike,
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -874,6 +1016,48 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike, **__):
 add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
+@register_resources({Rot: 1})
+def _adjoint_rot(phi, theta, omega, wires, **__):
+    Rot(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(Rot)", _adjoint_rot)
+
+
+def _controlled_rot_resource(*_, num_control_wires, num_work_wires, **__):
+    if num_control_wires == 1:
+        return {qml.CRot: 1}
+    return {
+        qml.RZ: 3,
+        qml.RY: 2,
+        resource_rep(
+            qml.MultiControlledX,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rot_resource)
+def _controlled_rot_decomp(phi, theta, omega, wires, control_wires, work_wires, **_):
+
+    if len(control_wires) == 1:
+        qml.CRot(phi, theta, omega, wires=wires)
+        return
+
+    qml.RZ((phi - omega) / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.RZ(-(phi + omega) / 2, wires=wires[-1])
+    qml.RY(-theta / 2, wires=wires[-1])
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qml.RY(theta / 2, wires=wires[-1])
+    qml.RZ(omega, wires=wires[-1])
+
+
+add_decomps("C(Rot)", flip_zero_control(_controlled_rot_decomp))
+
+
 class U1(Operation):
     r"""
     U1 gate.
@@ -1008,6 +1192,8 @@ def _u1_phaseshift(phi, wires, **__):
 
 
 add_decomps(U1, _u1_phaseshift)
+add_decomps("Adjoint(U1)", adjoint_rotation)
+add_decomps("Pow(U1)", pow_rotation)
 
 
 class U2(Operation):
@@ -1069,9 +1255,7 @@ class U2(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, delta: TensorLike
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1177,6 +1361,16 @@ def _u2_phaseshift_rot(phi, delta, wires, **__):
 add_decomps(U2, _u2_phaseshift_rot)
 
 
+@register_resources({U2: 1})
+def _adjoint_u2(phi, delta, wires, **__):
+    new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+    new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
+    U2(new_phi, new_delta, wires=wires)
+
+
+add_decomps("Adjoint(U2)", _adjoint_u2)
+
+
 class U3(Operation):
     r"""
     Arbitrary single qubit unitary.
@@ -1243,9 +1437,7 @@ class U3(Operation):
         return {}
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1377,3 +1569,13 @@ def _u3_phaseshift_rot(theta, phi, delta, wires, **__):
 
 
 add_decomps(U3, _u3_phaseshift_rot)
+
+
+@register_resources({U3: 1})
+def _adjoint_u3(theta, phi, delta, wires, **__):
+    new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+    new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
+    U3(theta, new_phi, new_delta, wires=wires)
+
+
+add_decomps("Adjoint(U3)", _adjoint_u3)

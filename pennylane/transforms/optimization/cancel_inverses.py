@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
-# pylint: disable=too-many-branches
+
 from functools import lru_cache, partial
 
 from pennylane.ops.op_math import Adjoint
@@ -65,7 +65,7 @@ def _are_inverses(op1, op2):
 
 
 @lru_cache
-def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -174,11 +174,11 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
 
             self.previous_ops.clear()
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -186,7 +186,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

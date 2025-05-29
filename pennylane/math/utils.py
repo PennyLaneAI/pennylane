@@ -202,7 +202,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
             return _allclose_sparse_scalar(b, a, rtol=rtol, atol=atol)
 
         if sp.sparse.issparse(a):
-            # pylint: disable=arguments-out-of-order
+
             return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=False)
         if sp.sparse.issparse(b):
             return _allclose_mixed(a, b, rtol=rtol, atol=atol, b_is_sparse=True)
@@ -424,9 +424,9 @@ def is_abstract(tensor, like=None):
             ),
         ):
             # Tracer objects will be used when computing gradients or applying transforms.
-            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # If the value of the tracer is known, jax.core.is_concrete will return True.
             # Otherwise, it will be abstract.
-            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+            return not jax.core.is_concrete(tensor)
 
         return isinstance(tensor, DynamicJaxprTracer)
 
