@@ -493,7 +493,7 @@ class TestControlledDecompositions:
         assert q.queue == [qml.adjoint(qml.ops.Controlled(qml.U1(0.5, wires=0), control_wires=[1]))]
 
     def test_decompose_with_single_work_wire(self, _):
-        """Tests that the Lemma 7.11 decomposition is applied correctly."""
+        """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
 
         op = qml.ctrl(qml.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3], work_wires=[4, 5])
 

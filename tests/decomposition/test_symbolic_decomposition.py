@@ -709,7 +709,7 @@ class TestControlledDecomposition:
 
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
-        """Tests the controlled decomposition with a single work wire (Lemma 7.11)."""
+        """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
         U = qml.Rot.compute_matrix(0.123, 0.234, 0.345)
         op = qml.ctrl(qml.QubitUnitary(U, wires=0), control=[1, 2], work_wires=[3])
