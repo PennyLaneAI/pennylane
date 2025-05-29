@@ -30,9 +30,10 @@ from pennylane import (
     S,
     T,
     Toffoli,
+    device,
     queuing,
 )
-from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift
+from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
 
@@ -64,30 +65,86 @@ class TestInterpreter:
         QasmInterpreter(permissive=True).generic_visit(ast, context={"name": program_name})
         assert spy.call_count == count_nodes
 
-    def test_variables(self, mocker):
+    def test_subroutines(self):
+        # parse the QASM
+        ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
 
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter(permissive=True).interpret(
+                ast, context={"name": "subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard('q0')]
+
+    def test_param_as_expression(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            int p = 1;
+            pow(p * 2) @ x q0;
+            """,
+            permissive=True,
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "expression-implemented"}
+            )
+
+        assert q.queue == [PauliX('q0')**2]
+
+    def test_nested_modifiers(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            qubit q2;
+            inv @ negctrl @ x q0, q1;
+            ctrl @ ctrl @ x q2, q1, q0;
+            inv @ ctrl @ x q0, q1;
+            pow(2) @ ctrl @ x q1, q0;
+            pow(2) @ inv @ y q0;
+            inv @ pow(2) @ ctrl @ y q0, q1;
+            """,
+            permissive=True,
+        )
+        # execute
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "nested-modifiers"})
+
+        assert q.queue == [
+            Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
+            Toffoli(wires=["q2", "q1", "q0"]),
+            Adjoint(CNOT(wires=["q0", "q1"])),
+            (CNOT(wires=["q1", "q0"])) ** 2,
+            (Adjoint(PauliY("q0"))) ** 2,
+            Adjoint((CY(wires=["q0", "q1"])) ** 2),
+        ]
+
+    def test_variables(self, mocker):
         # parse the QASM
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
-            ast, context={"name": "advanced-vars"}
+        context = QasmInterpreter(permissive=True).interpret(
+            ast, context={"wire_map": None, "name": "advanced-vars"}
         )
-        context["callable"]()
 
-        # static vars are available in the compilation context
+        # static vars
         assert context["vars"]["f"]["val"] == 3.2
         assert context["vars"]["g"]["val"] == 3
         assert context["vars"]["h"]["val"] == 2
         assert context["vars"]["k"]["val"] == 3
 
-        # classical logic is represented in the execution context after execution
-        assert execution_context["vars"]["l"]["val"] == True
-        assert execution_context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
-        assert execution_context["vars"]["a"]["val"] == 3.3333333
+        # dynamic vars
+        assert context["vars"]["l"]["val"] == True
+        assert context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
+        assert context["vars"]["a"]["val"] == 3.3333333
 
-    def test_updating_constant(self, mocker):
-
+    def test_updating_constant(self):
         # parse the QASM
         ast = parse(
             """
@@ -96,30 +153,86 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
         with pytest.raises(
             ValueError,
             match=f"Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "mutate-error"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
-    def test_classical_variables(self, mocker):
+    def test_integer_wire_maps(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            qubit q2;
+            id q0;
+            h q2;
+            x q1;
+            y q2;
+            """,
+            permissive=True,
+        )
 
+        # we would initialize the device like so
+        device("default.qubit", wires=[0, 1, 2])
+
+        # execute
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast,
+                context={
+                    "name": "single-qubit-gates",
+                    "wire_map": {"q0": 0, "q1": 1, "q2": 2},
+                },
+            )
+
+        assert q.queue == [Identity(0), Hadamard(2), PauliX(1), PauliY(2)]
+
+    def test_wire_maps(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            qubit q2;
+            id q0;
+            h q2;
+            x q1;
+            y q2;
+            """,
+            permissive=True,
+        )
+
+        # we would initialize the device like so
+        device("default.qubit", wires=["0q", "1q", "2q"])
+
+        # execute
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast,
+                context={
+                    "name": "single-qubit-gates",
+                    "wire_map": {"q0": "0q", "q1": "1q", "q2": "2q"},
+                },
+            )
+
+        assert q.queue == [Identity("0q"), Hadamard("2q"), PauliX("1q"), PauliY("2q")]
+
+    def test_classical_variables(self):
         # parse the QASM
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context, _ = QasmInterpreter(permissive=True).generic_visit(
-            ast, context={"name": "basic-vars"}
+        context = QasmInterpreter(permissive=True).interpret(
+            ast, context={"wire_map": None, "name": "basic-vars"}
         )
-        context["callable"]()
 
         assert context["vars"]["i"]["val"] == 4
         assert context["vars"]["j"]["val"] == 4
         assert context["vars"]["c"]["val"] == 0
 
-    def test_updating_variables(self, mocker):
-
+    def test_updating_variables(self):
         # parse the QASM
         ast = parse(
             open("updating_variables.qasm", mode="r").read(),
@@ -220,11 +333,11 @@ class TestInterpreter:
             permissive=True,
         )
 
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "parameterized-gate"})
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "parameterized-gate"}
+            )
 
         assert q.queue[0] == PowOperation(RX(0.2, wires=["q0"]), 2)
 
@@ -234,6 +347,7 @@ class TestInterpreter:
         ast = parse(
             """
             qubit q0;
+            float phi;
             rx(phi) q0;
             """,
             permissive=True,
@@ -241,9 +355,9 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match="Undeclared variable phi encountered in QASM.",
+            match="Attempt to reference uninitialized parameter phi!",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "name-error"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})
 
     def test_unsupported_node_type_raises(self):
 
@@ -257,26 +371,29 @@ class TestInterpreter:
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction Include was encountered on line 2, in unsupported-error.",
+            match="An unsupported QASM instruction QuantumMeasurementStatement was "
+            "encountered on line 6, in unsupported-error.",
         ):
-            QasmInterpreter().generic_visit(ast, context={"name": "unsupported-error"})
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "unsupported-error"}
+            )
 
     def test_no_qubits(self):
 
         # parse the QASM program
         ast = parse(
             """
-            float theta;
-            x q0;
+            float theta = 0.1;
+            rx(theta) q0;
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NameError,
-            match="Attempt to reference wires that have not been declared in uninit-qubit",
+            match=r"Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
         ):
-            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-qubit"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-qubit"})
 
     def test_unsupported_gate(self):
 
@@ -292,9 +409,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(NotImplementedError, match="Unsupported gate encountered in QASM: Rxx"):
-            QasmInterpreter(permissive=False).generic_visit(
-                ast, context={"name": "unsupported-gate"}
-            )
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "unsupported-gate"})
 
     def test_missing_param(self):
 
@@ -311,7 +426,7 @@ class TestInterpreter:
         with pytest.raises(
             TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
-            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "missing-param"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "missing-param"})
 
     def test_uninitialized_var(self):
 
@@ -326,7 +441,7 @@ class TestInterpreter:
         )
 
         with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter(permissive=False).generic_visit(ast, context={"name": "uninit-param"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
 
     def test_parses_simple_qasm(self):
 
@@ -342,18 +457,14 @@ class TestInterpreter:
             ry(0.2) q0;
             inv @ rx(theta) q0;
             pow(2) @ x q0;
-            ctrl @ x q1, q0;
+            ctrl @ id q0, q1;
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "gates"})
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
-
-            # asserts
-            assert len(context["wires"]) == 2
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "gates"})
 
         assert q.queue == [
             PauliX("q0"),
@@ -362,7 +473,7 @@ class TestInterpreter:
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
             PowOpObs(PauliX(wires=["q0"]), 2),
-            CNOT(wires=["q1", "q0"]),
+            Controlled(Identity("q1"), control_wires=["q0"]),
         ]
 
     def test_interprets_two_qubit_gates(self):
@@ -380,13 +491,10 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "two-qubit-gates"})
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "two-qubit-gates"})
 
         assert q.queue == [
             CH(wires=["q0", "q1"]),
@@ -411,13 +519,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "param-two-qubit-gates"})
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "param-two-qubit-gates"}
+            )
 
         assert q.queue == [
             ControlledPhaseShift(0.4, wires=Wires(["q0", "q1"])),
@@ -440,13 +547,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "multi-qubit-gates"})
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "multi-qubit-gates"}
+            )
 
         assert q.queue == [Toffoli(wires=["q0", "q2", "q1"]), CSWAP(wires=["q1", "q2", "q0"])]
 
@@ -469,15 +575,12 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(
-            ast, context={"name": "param-single-qubit-gates"}
-        )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "param-single-qubit-gates"}
+            )
 
         assert q.queue == [
             RX(0.9, wires=["q0"]),
@@ -512,13 +615,14 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-        context, _ = QasmInterpreter().generic_visit(ast, context={"name": "single-qubit-gates"})
 
         # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            context["callable"]()
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "single-qubit-gates"}
+            )
 
         assert q.queue == [
             Identity("q0"),

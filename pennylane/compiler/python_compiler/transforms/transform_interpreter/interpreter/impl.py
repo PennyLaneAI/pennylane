@@ -17,14 +17,12 @@ An custom implementation of the interpreter functions used for the transform dia
 """
 
 import io
-from typing import Callable
 
-from xdsl.context import Context
 from xdsl.dialects import transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
 from xdsl.interpreters.transform import TransformFunctions
 from xdsl.parser import Parser
-from xdsl.passes import ModulePass, PipelinePass
+from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils import parse_pipeline
@@ -40,16 +38,6 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
-    ctx: Context
-    passes: dict[str, Callable[[], type[ModulePass]]]
-
-    def __init__(
-        self, ctx: Context, passes: dict[str, Callable[[], type[ModulePass]]]
-    ):  # pragma: no cover
-
-        self.ctx = ctx  # pragma: no cover
-        self.passes = passes  # pragma: no cover
-
     @impl(transform.ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(  # pragma: no cover
         self,
@@ -60,33 +48,30 @@ class TransformFunctionsExt(TransformFunctions):
         """Try to run the pass in xDSL, if it can't run on catalyst"""
 
         pass_name = op.pass_name.data  # pragma: no cover
-        requested_by_user = PipelinePass.build_pipeline_tuples(
-            self.passes, parse_pipeline.parse_pipeline(pass_name)
-        )
-
-        try:
+        if pass_name in self.passes:
             # pragma: no cover
-            schedule = tuple(
-                pass_type.from_pass_spec(spec) for pass_type, spec in requested_by_user
+            pipeline = PipelinePass(
+                tuple(
+                    PipelinePass.iter_passes(self.passes, parse_pipeline.parse_pipeline(pass_name))
+                )
             )
-            pipeline = PipelinePass(schedule)
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
-        except:  # pylint: disable=bare-except
-            # pragma: no cover
-            # Yes, we are importing it here because we don't want to import it
-            # and have an import time dependency on catalyst.
-            # This allows us to test without having a hard requirement on Catalyst
-            from catalyst.compiler import _quantum_opt  # pylint: disable=import-outside-toplevel
 
-            buffer = io.StringIO()
+        # pragma: no cover
+        # Yes, we are importing it here because we don't want to import it
+        # and have an import time dependency on catalyst.
+        # This allows us to test without having a hard requirement on Catalyst
+        from catalyst.compiler import _quantum_opt  # pylint: disable=import-outside-toplevel
 
-            Printer(stream=buffer, print_generic_format=True).print(args[0])
-            schedule = f"--{pass_name}"
-            modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
+        buffer = io.StringIO()
 
-            module = args[0]
-            data = Parser(self.ctx, modified).parse_module()
-            rewriter = Rewriter()
-            rewriter.replace_op(module, data)
-            return (data,)
+        Printer(stream=buffer, print_generic_format=True).print(args[0])
+        schedule = f"--{pass_name}"
+        modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
+
+        module = args[0]
+        data = Parser(self.ctx, modified).parse_module()
+        rewriter = Rewriter()
+        rewriter.replace_op(module, data)
+        return (data,)

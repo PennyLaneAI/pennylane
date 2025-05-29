@@ -223,7 +223,7 @@ class TestOpenQasm:
 
         # setup mocks
         parse = mocker.spy(openqasm3.parser, "parse")
-        visit = mocker.spy(QasmInterpreter, "generic_visit")
+        visit = mocker.spy(QasmInterpreter, "interpret")
 
         # call the method
         from_qasm3(circuit)
