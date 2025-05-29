@@ -381,7 +381,7 @@ def test_vibrational_pes(
 ):
     r"""Test that vibrational_pes returns correct object."""
 
-    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+    if backend in {"mpi4py_pool", "mpi4py_comm"}:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
