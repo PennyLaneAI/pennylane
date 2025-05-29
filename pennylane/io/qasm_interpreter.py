@@ -413,7 +413,6 @@ class QasmInterpreter:
             node (QASMNode): the loop node.
             context (dict): the current context.
         """
-        self._init_gates_list(context)
         self._init_loops_scope(node, context)
 
         loop_params = node.set_declaration
@@ -437,7 +436,7 @@ class QasmInterpreter:
 
             @for_loop(start, stop, step)
             def loop(i, execution_context):
-                context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
+                execution_context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
                     node.identifier.name
                 ] = {
                     "ty": i.__class__.__name__,
@@ -445,29 +444,24 @@ class QasmInterpreter:
                     "line": node.span.start_line,
                     "dirty": True,
                 }
-                # we don't want to populate the gates again with every call to visit
-                context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
-                # process loop body
-                inner_context = self.visit(
-                    node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
-                )
                 try:
-                    for gate in inner_context[
-                        "gates"
-                    ]:  # we only want to execute the gates in the loop's scope
-                        # updates vars in sub context... need to propagate these to outer context
-                        gate(execution_context) if not self._all_context_bound(gate) else gate()
+                    # we only want to execute the gates in the loop's scope
+                    # updates vars in sub context... need to propagate these to outer context
+                    self.visit(
+                        node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
+                    )
                 except ContinueException as e:
                     pass  # evaluation of the current iteration stops and we continue
+                inner_context = execution_context["scopes"]["loops"][f"for_{node.span.start_line}"]
                 context["vars"] = inner_context["vars"] if "vars" in inner_context else None
                 context["wires"] += inner_context["wires"] if "wires" in inner_context else None
 
                 return execution_context
 
-            context["gates"].append(partial(self._handle_break, loop))
+            self._handle_break(loop, context)
 
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
-        # accepts (start, stop, step) and nto a list of values.
+        # accepts (start, stop, step) and not a list of values.
         elif isinstance(loop_params, ArrayLiteral):
             iter = [self.eval_expr(literal, context) for literal in loop_params.values]
         elif isinstance(
@@ -477,7 +471,7 @@ class QasmInterpreter:
 
             def unrolled(execution_context):
                 for i in iter:
-                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
+                    execution_context["scopes"]["loops"][f"for_{node.span.start_line}"]["vars"][
                         node.identifier.name
                     ] = {
                         "ty": i.__class__.__name__,
@@ -485,27 +479,18 @@ class QasmInterpreter:
                         "line": node.span.start_line,
                         "dirty": True,
                     }
-                    context["scopes"]["loops"][f"for_{node.span.start_line}"]["gates"] = []
-                    # visit the nodes once per loop iteration
-                    self.visit(
-                        node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
-                    )
                     try:
-                        for gate in context["scopes"]["loops"][f"for_{node.span.start_line}"][
-                            "gates"
-                        ]:
-                            (
-                                gate(execution_context)
-                                if not self._all_context_bound(gate)
-                                else gate()
-                            )  # updates vars in sub context if any measurements etc. occur
+                        # visit the nodes once per loop iteration
+                        self.visit(
+                            node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
+                        ) # updates vars in sub context if any measurements etc. occur
                     except ContinueException as e:
                         pass  # eval of current iteration stops and we continue
 
-            context["gates"].append(partial(self._handle_break, unrolled))
+            self._handle_break(unrolled, context)
         elif (
             loop_params is None
-        ):  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
+        ):
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     @visit.register(QuantumMeasurementStatement)
