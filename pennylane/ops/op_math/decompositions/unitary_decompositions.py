@@ -723,9 +723,9 @@ def _decompose_3_cnots(U, wires, initial_phase):
 
     a, b, d, e = _extract_abde(A_M)
 
-    _ = _decompose_0_cnots(M_2, wires, 0.0)
+    _decompose_0_cnots(M_2, wires, 0.0)
     _central_circuit(a, b, d, wires)
-    _ = _decompose_0_cnots(M_1, wires, 0.0)
+    _decompose_0_cnots(M_1, wires, 0.0)
     # global phases here are zero because we are guaranteed that M_1 and M_2 have unit determinant
 
     # Return the global phase obtained from A_M. It will be combined with initial_phase
