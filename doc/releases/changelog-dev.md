@@ -581,6 +581,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The queuing behavior of the controlled of a controlled operation is fixed.
+
 * The documentation of `qml.pulse.drive` has been updated and corrected.
   [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
 
