@@ -543,7 +543,7 @@ def clifford_t_decomposition(
 
     # Construct a new tape with the expanded set of operations
     new_tape = compiled_tape.copy(operations=decomp_ops)
-    
+
     # decomp_ops becomes enormous, clear it to free memory
     decomp_ops.clear()
 
