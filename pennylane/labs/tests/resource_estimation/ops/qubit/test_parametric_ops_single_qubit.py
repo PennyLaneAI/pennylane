@@ -137,7 +137,7 @@ class TestRot:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourceRot(wires=0)
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""
@@ -174,7 +174,7 @@ class TestPhaseShift:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        op = re.ResourcePhaseShift(None, wires=0)
+        op = re.ResourcePhaseShift(wires=0)
         expected = re.CompressedResourceOp(re.ResourcePhaseShift, {})
         assert op.resource_rep() == expected
 
@@ -193,7 +193,7 @@ class TestPhaseShift:
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourcePhaseShift()
-        assert op.resource_params == {"eps": None}
+        assert op.resource_params == {}
 
     def test_adjoint_decomp(self):
         """Test that the adjoint decomposition is correct"""

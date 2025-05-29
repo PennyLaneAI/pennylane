@@ -88,14 +88,14 @@ class ResourcePhaseShift(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"eps": self.eps} if self.eps else {}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps is not None else {}
+        params = {"eps": eps} if eps else {}
         return CompressedResourceOp(cls, params)
 
     @classmethod
@@ -211,14 +211,14 @@ class ResourceRX(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * eps (Union[float, None]): the number of qubits the operation is controlled on
         """
-        return {"eps": self.eps}
+        return {"eps": self.eps} if self.eps else {}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps is not None else {}
+        params = {"eps": eps} if eps else {}
         return CompressedResourceOp(cls, params)
 
     @classmethod
@@ -338,14 +338,14 @@ class ResourceRY(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"eps": self.eps} if self.eps else {}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps is not None else {}
+        params = {"eps": eps} if eps else {}
         return CompressedResourceOp(cls, params)
 
     @classmethod
@@ -467,14 +467,14 @@ class ResourceRZ(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"eps": self.eps} if self.eps else {}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps is not None else {}
+        params = {"eps": eps} if eps else {}
         return CompressedResourceOp(cls, params)
 
     @classmethod
@@ -569,14 +569,14 @@ class ResourceRot(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps}
+        return {"eps": self.eps} if self.eps else {}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps is not None else {}
+        params = {"eps": eps} if eps else {}
         return CompressedResourceOp(cls, params)
 
     @classmethod
