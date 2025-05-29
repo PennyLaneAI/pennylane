@@ -94,7 +94,9 @@ class ResourcePhaseShift(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"eps": eps})
+
+        params = {"eps": eps} if eps is not None else {}
+        return CompressedResourceOp(cls, params)        
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -215,7 +217,9 @@ class ResourceRX(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"eps": eps})
+
+        params = {"eps": eps} if eps is not None else {}
+        return CompressedResourceOp(cls, params)        
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -340,7 +344,9 @@ class ResourceRY(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"eps": eps})
+
+        params = {"eps": eps} if eps is not None else {}
+        return CompressedResourceOp(cls, params)        
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -467,8 +473,10 @@ class ResourceRZ(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"eps": eps})
 
+        params = {"eps": eps} if eps is not None else {}
+        return CompressedResourceOp(cls, params)        
+        
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
@@ -567,7 +575,9 @@ class ResourceRot(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"eps": eps})
+
+        params = {"eps": eps} if eps is not None else {}
+        return CompressedResourceOp(cls, params)        
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
