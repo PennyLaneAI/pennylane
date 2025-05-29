@@ -2,22 +2,23 @@
 This submodule contains the interpreter for OpenQASM 3.0.
 """
 import functools
-import inspect
 import re
 from functools import partial
 from typing import Callable, Iterable
 
-from pennylane import wires
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.control_flow.while_loop import WhileLoopCallable
 from pennylane.measurements import measure
 
 from openqasm3.visitor import QASMNode
 from openqasm3.ast import QuantumGate, ArrayLiteral, \
-        BinaryExpression, Cast, ForInLoop, FunctionCall, Identifier, IndexExpression, \
-        IntegerLiteral, QuantumArgument, RangeDefinition, UnaryExpression, WhileLoop
+    BinaryExpression, Cast, ForInLoop, FunctionCall, Identifier, IndexExpression, \
+    IntegerLiteral, QuantumArgument, RangeDefinition, UnaryExpression, WhileLoop, ClassicalAssignment, QubitDeclaration, \
+    ConstantDeclaration, ClassicalDeclaration, BitstringLiteral, SubroutineDefinition, ReturnStatement, \
+    QuantumMeasurementStatement, QuantumReset, AliasStatement, BreakStatement, ContinueStatement, BranchingStatement, \
+    SwitchStatement
 
 from pennylane import ops
+from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
     "ID": ops.Identity,
@@ -160,7 +161,8 @@ class QasmInterpreter:
                     self.visit(item, context)
         return context
 
-    def visit_BreakStatement(self, node: QASMNode, context: dict):
+    @visit.register(BreakStatement)
+    def visit_break_statement(self, node: QASMNode, context: dict):
         """
         Registers a break statement.
 
@@ -174,7 +176,8 @@ class QasmInterpreter:
 
         context["gates"].append(raiser)
 
-    def visit_ContinueStatement(self, node: QASMNode, context: dict):
+    @visit.register(ContinueStatement)
+    def visit_continue_statement(self, node: QASMNode, context: dict):
         """
         Registers a continue statement.
 
@@ -188,7 +191,8 @@ class QasmInterpreter:
 
         context["gates"].append(raiser)
 
-    def visit_BranchingStatement(self, node: QASMNode, context: dict):
+    @visit.register(BranchingStatement)
+    def visit_branching_statement(self, node: QASMNode, context: dict):
         """
         Registers a branching statement. Like switches, uses qml.cond.
 
@@ -256,7 +260,8 @@ class QasmInterpreter:
 
         context["gates"].append(branch)
 
-    def visit_SwitchStatement(self, node: QASMNode, context: dict):
+    @visit.register(SwitchStatement)
+    def visit_switch_statement(self, node: QASMNode, context: dict):
         """
         Registers a switch statement.
 
@@ -432,7 +437,8 @@ class QasmInterpreter:
         except BreakException as e:
             pass  # evaluation of the loop stops
 
-    def visit_WhileLoop(self, node: QASMNode, context: dict):
+    @visit.register(WhileLoop)
+    def visit_while_loop(self, node: QASMNode, context: dict):
         """
         Registers a while loop.
 
@@ -475,7 +481,8 @@ class QasmInterpreter:
             partial(self._handle_break, loop)
         )  # bind compilation context now, leave execution context
 
-    def visit_ForInLoop(self, node: QASMNode, context: dict):
+    @visit.register(ForInLoop)
+    def visit_for_in_loop(self, node: QASMNode, context: dict):
         """
         Registers a for loop.
 
@@ -578,7 +585,8 @@ class QasmInterpreter:
         ):  # could be func param... then it's a value that will be evaluated at "runtime" (when calling the QNode)
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
-    def visit_QuantumMeasurementStatement(self, node: QASMNode, context: dict):
+    @visit.register(QuantumMeasurementStatement)
+    def visit_quantum_measurement_statement(self, node: QASMNode, context: dict):
         """
         Registers a quantum measurement.
 
@@ -617,7 +625,8 @@ class QasmInterpreter:
         self._update_var(set_local_var, name, node, context)
         context["gates"].append(set_local_var)
 
-    def visit_QuantumReset(self, node: QASMNode, context: dict):
+    @visit.register(QuantumReset)
+    def visit_quantum_reset(self, node: QASMNode, context: dict):
         """
         Registers a reset of a quantum gate.
 
@@ -686,6 +695,7 @@ class QasmInterpreter:
         res = self.eval_expr(node.rvalue, context)
         self._update_var(res, name, node, context)
 
+    @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.
