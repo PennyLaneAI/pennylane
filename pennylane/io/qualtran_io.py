@@ -715,6 +715,7 @@ def _inherit_from_bloq(cls):
                 from pennylane.workflow import construct_tape
 
                 if isinstance(self.op, QNode):
+                    self.op.name = "QNode"
                     num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
                 else:
                     num_wires = len(self.op.wires)
