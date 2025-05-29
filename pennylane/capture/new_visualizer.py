@@ -80,6 +80,7 @@ class PlxprVisualizerNew(PlxprInterpreter):
             print("Wires to node uid mapping: {}".format(self.map_wire_to_node_uid))
             print(f"Creating node {operator_node_uid}")
 
+            print(eqn)
             real_wires_with_id = eqn.invars[-eqn.params["n_wires"] :]
             print("real wires with id: {}".format(real_wires_with_id))
 
@@ -88,7 +89,7 @@ class PlxprVisualizerNew(PlxprInterpreter):
             print("adding node to current cluster: {}".format(self.current_cluster.get_label()))
             self.current_cluster.add_node(
                 pydot.Node(
-                    name=operator_node_uid,
+                    operator_node_uid,
                     label=f"{op.name} : {op_wires_ascii}",
                     **self.operator_attr,
                 )
@@ -290,7 +291,7 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     # Visualization part
     wires_node_uid = self.convert_name_to_uid("wires")
     wires_node = pydot.Node(
-        name=wires_node_uid,
+        wires_node_uid,
         label=f"{qnode.device.name} : {str(device.wires)}",
         style="filled",
         fillcolor="red",
@@ -302,7 +303,7 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     invars = map(self.convert_dyn_wire_to_ascii, qfunc_jaxpr.invars)
     qnode_node_uid = self.convert_name_to_uid(qnode.__name__)
     qnode_cluster = pydot.Cluster(
-        name=qnode_node_uid,
+        qnode_node_uid,
         label=f"{qnode.__name__}({','.join(invars)})",
         style="filled",
         fillcolor="lightgrey",
@@ -344,7 +345,7 @@ def handle_for_loop(
     print("Something inside for loop depends on outside variable: {}".format(consts))
     self.dyn_vars[str(loop_var[0])] = loop_var_ascii[0]
     for_loop_cluster = pydot.Cluster(
-        name=for_loop_uid,
+        for_loop_uid,
         label=f"for {loop_var_ascii[0]} in range({start}, {stop}, {step})",
         style="filled",
         fillcolor="lightgrey",
@@ -400,7 +401,7 @@ def handle_while_loop(
     # Visualization part
     while_loop_uid = self.convert_name_to_uid("while_loop")
     while_loop_cluster = pydot.Cluster(
-        name=while_loop_uid,
+        while_loop_uid,
         label="while",
         style="filled",
         fillcolor="lightgrey",
@@ -421,6 +422,7 @@ def handle_while_loop(
     copy_of_copy.map_operator_outvar_to_mp_invar = copy_.map_operator_outvar_to_mp_invar.copy()
 
     copy_of_copy.current_cluster = while_loop_cluster
+    print("####: ", jaxpr_cond_fn)
     new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy_of_copy, jaxpr_cond_fn, consts_cond, *init_state)
     self.graph = copy(copy_of_copy.graph)
     self.unique_id_counter = copy_of_copy.unique_id_counter
@@ -428,6 +430,8 @@ def handle_while_loop(
     self.map_wire_to_node_uid = copy_of_copy.map_wire_to_node_uid.copy()
     self.last_seen_dynamic_wire = copy_of_copy.last_seen_dynamic_wire
     self.map_operator_outvar_to_mp_invar = copy_of_copy.map_operator_outvar_to_mp_invar.copy()
+
+    print("CURRENT CLUSTER: ", self.current_cluster.get_label())
 
     body_consts = slice(0, len(new_jaxpr_body_fn.consts))
     cond_consts = slice(body_consts.stop, body_consts.stop + len(new_jaxpr_cond_fn.consts))
@@ -458,7 +462,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     print("Creating cond cluster!")
     cond_node_uid = self.convert_name_to_uid("cond")
     cond_cluster = pydot.Cluster(
-        name=cond_node_uid,
+        cond_node_uid,
         label="cond",
         style="filled",
         fillcolor="lightgrey",
