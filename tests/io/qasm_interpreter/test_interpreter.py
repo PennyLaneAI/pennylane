@@ -50,21 +50,17 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
-    def test_subroutines(self, mocker):
+    def test_subroutines(self):
         # parse the QASM
         ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context, execution_context = QasmInterpreter(permissive=True).generic_visit(
-            ast, context={"name": "subroutines"}
-        )
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter(permissive=True).interpret(
+                ast, context={"name": "subroutines", "wire_map": None}
+            )
 
-        spy = mocker.spy(Hadamard, "__init__")
-
-        # execute the callable
-        context["callable"]()
-
-        spy.assert_called_with(Hadamard('q0'), 'q0')
+        assert q.queue == [Hadamard('q0')]
 
     def test_raises_on_expressions(self):
         # parse the QASM

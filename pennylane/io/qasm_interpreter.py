@@ -118,6 +118,18 @@ class QasmInterpreter:
 
         return context
 
+    @visit.register(list)
+    def visit_list(self, node_list: list, context: dict):
+        """
+        Visits a list of QASMNodes.
+
+        Args:
+            node_list (list): the list of QASMNodes to visit.
+            context (dict): the current context.
+        """
+        for sub_node in node_list:
+            self.visit(sub_node, context)
+
     def interpret(self, node: QASMNode, context: dict):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
@@ -251,6 +263,7 @@ class QasmInterpreter:
         context = {
             "vars": outer_context["vars"] if "vars" in outer_context else None,  # same namespace
             "outer_wires": outer_wires,
+            "wire_map": outer_context["wire_map"],
             "wires": [],
             "name": name,
         }
@@ -311,6 +324,8 @@ class QasmInterpreter:
             context, f'{context["name"]}_{node.name.name}'
         )
         context["scopes"]["subroutines"][node.name.name]["sub"] = True
+        context["scopes"]["subroutines"][node.name.name]["body"] = node.body
+
 
     @staticmethod
     def _get_bit_type_val(var):
@@ -403,11 +418,6 @@ class QasmInterpreter:
                 }
             else:
                 context["scopes"]["subroutines"][node.name.name]["wires"].append(param.name.name)
-
-        # process the subroutine body. Note we don't call the gates in the outer context until the subroutine is called.
-        context["scopes"]["subroutines"][node.name.name] = self.visit(
-            node.body, context["scopes"]["subroutines"][node.name.name]
-        )
 
     @visit.register(QuantumGate)
     def visit_quantum_gate(self, node: QuantumGate, context: dict):
@@ -661,11 +671,9 @@ class QasmInterpreter:
                             func_context["vars"][arg.name] = evald_arg
 
                     # execute the subroutine
-                    if self.executing:
-                        [
-                            gate(func_context) if not self._all_context_bound(gate) else gate()
-                            for gate in func_context["gates"]
-                        ]
+                    self.visit(
+                        func_context["body"], context["scopes"]["subroutines"][node.name.name]
+                    )
 
                     # the return value
                     return self.retrieve_variable(func_context["return"], func_context)["val"]
