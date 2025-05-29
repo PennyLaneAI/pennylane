@@ -27,7 +27,7 @@ def _left_operator(wires):
     ck, ik, tk, aux = wires
     op_list.append(qml.CNOT([ck, ik]))
     op_list.append(qml.CNOT([ck, tk]))
-    op_list.append(qml.Elbow([ik, tk, aux]))
+    op_list.append(qml.TemporaryAnd([ik, tk, aux]))
     op_list.append(qml.CNOT([ck, aux]))
     return op_list
 
@@ -37,7 +37,7 @@ def _right_operator(wires):
     op_list = []
     ck, ik, tk, aux = wires
     op_list.append(qml.CNOT([ck, aux]))
-    op_list.append(qml.adjoint(qml.Elbow([ik, tk, aux])))
+    op_list.append(qml.adjoint(qml.TemporaryAnd([ik, tk, aux])))
     op_list.append(qml.CNOT([ck, ik]))
     op_list.append(qml.CNOT([ik, tk]))
     return op_list
@@ -200,7 +200,7 @@ class SemiAdder(Operation):
         x_wires_pl = x_wires[::-1][: len(y_wires)]
         y_wires_pl = y_wires[::-1]
         work_wires_pl = work_wires[::-1]
-        op_list.append(qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+        op_list.append(qml.TemporaryAnd([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
 
         for i in range(1, len(y_wires_pl) - 1):
             if i < len(x_wires_pl):
@@ -211,7 +211,9 @@ class SemiAdder(Operation):
                 # If the number of qubits in |x> is smaller than |y>, we can conceptually complete the |x> state
                 # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the left operator.
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], y_wires_pl[i]]))
-                op_list.append(qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
+                op_list.append(
+                    qml.TemporaryAnd([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
+                )
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
 
         op_list.append(qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]]))
@@ -229,10 +231,14 @@ class SemiAdder(Operation):
                 # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the right operator.
                 op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
                 op_list.append(
-                    qml.adjoint(qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
+                    qml.adjoint(
+                        qml.TemporaryAnd([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
+                    )
                 )
 
-        op_list.append(qml.adjoint(qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])))
+        op_list.append(
+            qml.adjoint(qml.TemporaryAnd([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+        )
 
         op_list.append(qml.CNOT([x_wires_pl[0], y_wires_pl[0]]))
 
@@ -242,8 +248,8 @@ class SemiAdder(Operation):
 def _semiadder_resources(num_y_wires):
     # In the case where len(x_wires) < len(y_wires), this is an upper bound.
     return {
-        qml.Elbow: num_y_wires - 1,
-        qml.decomposition.adjoint_resource_rep(qml.Elbow, {}): num_y_wires - 1,
+        qml.TemporaryAnd: num_y_wires - 1,
+        qml.decomposition.adjoint_resource_rep(qml.TemporaryAnd, {}): num_y_wires - 1,
         qml.CNOT: 6 * (num_y_wires - 2) + 3,
     }
 
@@ -253,14 +259,14 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
     x_wires_pl = x_wires[::-1][: len(y_wires)]
     y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
-    qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
+    qml.TemporaryAnd([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
 
     for i in range(1, len(y_wires_pl) - 1):
         if i < len(x_wires_pl):
             _left_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
         else:
             qml.CNOT([work_wires_pl[i - 1], y_wires_pl[i]])
-            qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
+            qml.TemporaryAnd([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
             qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]])
 
     qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]])
@@ -273,9 +279,9 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
             _right_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
         else:
             qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]])
-            qml.adjoint(qml.Elbow([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
+            qml.adjoint(qml.TemporaryAnd([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
 
-    qml.adjoint(qml.Elbow([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+    qml.adjoint(qml.TemporaryAnd([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
 
     qml.CNOT([x_wires_pl[0], y_wires_pl[0]])
 

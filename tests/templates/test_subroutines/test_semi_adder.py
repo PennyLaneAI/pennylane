@@ -118,8 +118,8 @@ class TestSemiAdder:
         names = [op.name for op in adder_decomposition]
 
         # Example in Fig 1.  https://arxiv.org/pdf/1709.06648
-        assert names.count("Elbow") == 4
-        assert names.count("Adjoint(Elbow)") == 4
+        assert names.count("TemporaryAnd") == 4
+        assert names.count("Adjoint(TemporaryAnd)") == 4
         assert names.count(("CNOT")) == 21
 
     def test_decomposition_rule(self):
