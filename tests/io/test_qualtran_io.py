@@ -531,10 +531,20 @@ class TestToBloq:
                     _map_to_bloq()(qml.CSWAP([0, 1, 2])): 0.0,
                 },
             ),
-            # (
-            #     qml.ModExp(x_wires=[0, 1], output_wires=[2, 3, 4], base=2, mod=7, work_wires=[5,6,7,8,9]),
-            #     {}
-            # )
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                {
+                    _map_to_bloq()(qml.QFT(range(4))).adjoint().controlled(): 1,
+                    _map_to_bloq()(qml.QFT(range(4))).controlled(): 1,
+                    _map_to_bloq()(qml.Toffoli([0, 1, 2])): 6,
+                },
+            ),
             (
                 qml.QSVT(
                     UA=qml.H(0),
