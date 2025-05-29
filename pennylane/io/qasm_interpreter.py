@@ -517,21 +517,12 @@ class QasmInterpreter:
                 elif isinstance(qubit, IntegerLiteral):
                     meas = partial(measure, qubit.value)
 
-        # handle data flow. Note: data flow dependent on quantum operations deferred? Promises?
-        def set_local_var(execution_context: dict):
-            name = (
-                node.target.name if isinstance(node.target.name, str) else node.target.name.name
-            )  # str or Identifier
-            res = meas()
-            self._update_var(res, name, node, execution_context)
-            return res
-
-        # references to an unresolved value see a func for now
         name = (
             node.target.name if isinstance(node.target.name, str) else node.target.name.name
         )  # str or Identifier
-        self._update_var(set_local_var, name, node, context)
-        context["gates"].append(set_local_var)
+        res = meas()
+        self._update_var(res, name, node, context)
+        return res
 
     @visit.register(QuantumReset)
     def visit_quantum_reset(self, node: QASMNode, context: dict):
@@ -544,17 +535,17 @@ class QasmInterpreter:
         """
         self._init_gates_list(context)
         if isinstance(node.qubits, Identifier):
-            context["gates"].append(partial(measure, node.qubits.name, reset=True))
+            measure(node.qubits.name, reset=True)
         elif isinstance(
             node.qubits, IntegerLiteral
         ):  # TODO: are all these cases necessary / supported
-            context["gates"].append(partial(measure, node.qubits.value, reset=True))
+            measure(node.qubits.value, reset=True)
         elif isinstance(node.qubits, list):
             for qubit in node.qubits:
                 if isinstance(qubit, Identifier):
-                    context["gates"].append(partial(measure, qubit.name, reset=True))
+                    measure(qubit.name, reset=True)
                 elif isinstance(qubit, IntegerLiteral):
-                    context["gates"].append(partial(measure, qubit.value, reset=True))
+                    measure(qubit.value, reset=True)
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
