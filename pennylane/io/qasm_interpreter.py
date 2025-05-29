@@ -171,10 +171,7 @@ class QasmInterpreter:
             context (dict): the current context.
         """
 
-        def raiser():
-            raise BreakException(f"Break statement encountered in {context['name']}")
-
-        context["gates"].append(raiser)
+        raise BreakException(f"Break statement encountered in {context['name']}")
 
     @visit.register(ContinueStatement)
     def visit_continue_statement(self, node: QASMNode, context: dict):
@@ -186,10 +183,7 @@ class QasmInterpreter:
             context (dict): the current context.
         """
 
-        def raiser():
-            raise ContinueException(f"Continue statement encountered in {context['name']}")
-
-        context["gates"].append(raiser)
+        raise ContinueException(f"Continue statement encountered in {context['name']}")
 
     @visit.register(BranchingStatement)
     def visit_branching_statement(self, node: QASMNode, context: dict):
@@ -201,19 +195,12 @@ class QasmInterpreter:
             context (dict): the current context.
         """
         self._init_branches_scope(node, context)
-        self._init_gates_list(context)
 
         # create the true body context
         context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"] = (
             self._init_clause_in_same_namespace(
                 context, f'{context["name"]}_branch_{node.span.start_line}_true_body'
             )
-        )
-
-        # process the true body
-        self.visit(
-            node.if_block,
-            context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"],
         )
 
         if hasattr(node, "else_block"):
@@ -225,40 +212,19 @@ class QasmInterpreter:
                 )
             )
 
-            # process the false body
-            self.visit(
+        ops.cond(
+            self.eval_expr(node.condition, context),
+            partial(
+                self.visit,
+                node.if_block,
+                context["scopes"]["branches"][f"branch_{node.span.start_line}"]["true_body"]
+            ),
+            partial(
+                self.visit,
                 node.else_block,
                 context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"],
-            )
-
-        def branch(execution_context: dict):
-            ops.cond(
-                self.eval_expr(
-                    node.condition,
-                    self._choose_context(
-                        partial(self.eval_expr, node.condition, context), context, execution_context
-                    ),
-                ),
-                lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate()
-                    for gate in context["scopes"]["branches"][f"branch_{node.span.start_line}"][
-                        "true_body"
-                    ]["gates"]
-                ],
-                lambda: (
-                    [
-                        gate(execution_context) if not self._all_context_bound(gate) else gate()
-                        for gate in context["scopes"]["branches"][f"branch_{node.span.start_line}"][
-                            "false_body"
-                        ]["gates"]
-                    ]
-                    if "gates"
-                    in context["scopes"]["branches"][f"branch_{node.span.start_line}"]["false_body"]
-                    else None
-                ),
-            )()
-
-        context["gates"].append(branch)
+            ) if hasattr(node, "else_block") else None
+        )()
 
     @visit.register(SwitchStatement)
     def visit_switch_statement(self, node: QASMNode, context: dict):
@@ -270,7 +236,6 @@ class QasmInterpreter:
             context (dict): the current context.
         """
         self._init_switches_scope(node, context)
-        self._init_gates_list(context)
 
         # switches need to have access to the outer context but not get called unless the condition is met
 
@@ -282,12 +247,6 @@ class QasmInterpreter:
                 )
             )
 
-            # process the individual clauses
-            self.visit(
-                case[1].statements,
-                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i}"],
-            )
-
         if hasattr(node, "default") and node.default is not None:
             context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"] = (
                 self._init_clause_in_same_namespace(
@@ -295,65 +254,35 @@ class QasmInterpreter:
                 )
             )
 
-            # process the default case
-            self.visit(
-                node.default.statements,
-                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
-            )
-
-        def switch(execution_context: dict):
-            target = self.eval_expr(
-                node.target,
-                self._choose_context(
-                    partial(self.eval_expr, node.target, context), context, execution_context
-                ),
-            )
-            ops.cond(
-                target
-                == self.eval_expr(
-                    node.cases[0][0][0],
-                    self._choose_context(
-                        partial(self.eval_expr, node.cases[0][0][0], context),
-                        context,
-                        execution_context,
-                    ),
-                ),
-                lambda: [
-                    gate(execution_context) if not self._all_context_bound(gate) else gate()
-                    for gate in context["scopes"]["switches"][f"switch_{node.span.start_line}"][
-                        f"cond_0"
-                    ]["gates"]
-                ],
-                lambda: (
-                    [
-                        gate(execution_context) if not self._all_context_bound(gate) else gate()
-                        for gate in context["scopes"]["switches"][f"switch_{node.span.start_line}"][
-                            f"cond_{i + 1}"
-                        ]["gates"]
-                    ]
-                    if f"cond_{i + 1}"
-                    in context["scopes"]["switches"][f"switch_{node.span.start_line}"]
-                    else None
-                ),
-                [
-                    (
-                        target == self.eval_expr(node.cases[j + 1][0][0], execution_context),
-                        lambda: [
-                            gate(execution_context) if not self._all_context_bound(gate) else gate()
-                            for gate in context["scopes"]["switches"][
-                                f"switch_{node.span.start_line}"
-                            ][case]["gates"]
-                        ],
+        target = self.eval_expr(node.target, context)
+        ops.cond(
+            target == self.eval_expr(node.cases[0][0][0], context),
+            partial(
+                self.visit,
+                node.cases[0][1].statements,
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"]["cond_0"]
+            ),
+            partial(
+                self.visit,
+                node.cases[i + 1][1].statements,
+                context["scopes"]["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"]
+            ) if f"cond_{i + 1}" in context["scopes"]["switches"][f"switch_{node.span.start_line}"] else None,
+            [
+                (
+                    target == self.eval_expr(node.cases[j + 1][0][0], context),
+                    partial(
+                        self.visit,
+                        node.cases[j + 1][1].statements,
+                        context["scopes"]["switches"][f"switch_{node.span.start_line}"][case]
                     )
-                    for j, case in enumerate(
-                        list(
-                            context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys()
-                        )[1:-1]
-                    )
-                ],
-            )()
-
-        context["gates"].append(switch)
+                )
+                for j, case in enumerate(
+                    list(
+                        context["scopes"]["switches"][f"switch_{node.span.start_line}"].keys()
+                    )[1:-1]
+                )
+            ],
+        )()
 
     def _init_switches_scope(self, node: QASMNode, context: dict):
         """
@@ -446,7 +375,6 @@ class QasmInterpreter:
             node (QASMNode): the loop node.
             context (dict): the current context.
         """
-        self._init_gates_list(context)
         self._init_loops_scope(node, context)
 
         @while_loop(
