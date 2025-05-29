@@ -543,10 +543,10 @@ def _trotter_decomp_resource(base, num_steps):
     gate_count = {}
     for op in ops:
         pauli_word = qml.pauli.pauli_word_to_string(op)
-        if pauli_word != "I" * op.num_wires:
+        if not all(p == "I" for p in pauli_word):
             op_rep = qml.resource_rep(qml.PauliRot, pauli_word=pauli_word)
-            gate_count[op_rep] = gate_count.get(op_rep, 0) + 1
-    return {op: count * num_steps for op, count in gate_count.items()}
+            gate_count[op_rep] = gate_count.get(op_rep, 0) + num_steps
+    return gate_count
 
 
 @register_condition(_pauli_rot_decomp_condition)
@@ -560,7 +560,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         coeff, base = params[0] * base.scalar, base.base
     coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
     pauli_word = qml.pauli.pauli_word_to_string(base)
-    if pauli_word != "I" * len(base.wires):
+    if not all(p == "I" for p in pauli_word):
         qml.PauliRot(coeff, pauli_word, base.wires)
 
 
