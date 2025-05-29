@@ -494,7 +494,7 @@ def _real_imag_split_eigh(A, factor):
 
 
 def _ai_kak(U):
-    """Compute a type-AI Cartan decomposition of ``U`` in the standard basis/representation.
+    """Compute a type-AI Cartan decomposition of a unitary ``U`` in the standard basis/representation.
     This is done in the following steps (see App.E of https://arxiv.org/abs/2503.19014, case AI):
     - compute a real-valued eigenbasis O_1 (orthogonal matrix) and the eigenvalues d^2 of Δ = U U^T,
     - make O_1 *special* orthogonal by adjusting the sign of its first column,
@@ -504,10 +504,15 @@ def _ai_kak(U):
       the first entry of d with the same sign.
     """
 
+    # Delta is symmetric (Delta^T=Delta) and unitary (because U is) but not real-valued.
     Delta = math.dot(U, math.transpose(U))
-    # Delta^T=Delta implies that Delta, real(Delta), and imag(Delta) share an eigenbasis
-    # As real(Delta) and imag(Delta) are real symmetric, we can use ``eigh`` to obtain a
-    # real-valued eigenbasis. We need to make sure that for degenerate real or imaginary parts
+    # Denote the real and imaginary parts of Delta as R and I, respectively.
+    # Delta^T=Delta ==> R^T=R and I^T=I.  (1)
+    # Delta unitary ==> (R+iI)(R^T-iI^T)=id ==> RR^T+II^T=id and IR^T-RI^T = 0 (2)
+    # Combine (1) and second equation in (2): 0=IR-RI=[I,R] ==> I and R share an eigenbasis
+    # ==> I, R and Delta=R+iI share an eigenbasis.
+    #
+    # We need to make sure that for degenerate real or imaginary parts
     # we actually find an eigenbasis that also is one for Delta. In a first step, we make this
     # likely by weighting the real and imaginary part by 1/pi and pi. In a second step,
     # we check whether this basis diagonalized Delta, and recompute with a new weighting (by 10)
