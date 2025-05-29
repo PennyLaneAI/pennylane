@@ -80,12 +80,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
         def __init__(
             self,
+            *,
             gate_set=None,
             stopping_condition=None,
             max_expansion=None,
             fixed_decomps=None,
             alt_decomps=None,
-        ):
+        ):  # pylint: disable=too-many-arguments
 
             self.max_expansion = max_expansion
             self._current_depth = 0
@@ -370,7 +371,7 @@ def decompose(
     max_expansion=None,
     fixed_decomps: dict = None,
     alt_decomps: dict = None,
-):
+):  # pylint: disable=too-many-arguments
     """Decomposes a quantum circuit into a user-specified gate set.
 
     .. note::
