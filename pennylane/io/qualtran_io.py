@@ -74,6 +74,8 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled):
+        if isinstance(op, qops.MultiControlledX):
+            return ToBloq(op)
         return _map_to_bloq()(op.base).controlled()
 
     # @_to_qt_bloq.register
