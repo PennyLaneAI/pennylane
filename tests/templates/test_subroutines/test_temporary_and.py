@@ -38,7 +38,7 @@ class TestTemporaryAnd:
 
         dev = qml.device("default.qubit", wires=4)
 
-        qs_elbow = qml.tape.QuantumScript(
+        qs_and = qml.tape.QuantumScript(
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
@@ -63,20 +63,20 @@ class TestTemporaryAnd:
         )
 
         program, _ = dev.preprocess()
-        tape = program([qs_elbow])
-        output_elbow = dev.execute(tape[0])[0]
+        tape = program([qs_and])
+        output_and = dev.execute(tape[0])[0]
 
         tape = program([qs_toffoli])
         output_toffoli = dev.execute(tape[0])[0]
-        assert np.allclose(output_toffoli, output_elbow)
+        assert np.allclose(output_toffoli, output_and)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
-        M_elbow = qml.matrix(qml.TemporaryAnd(wires=[0, 1, 2]))
+        M_and = qml.matrix(qml.TemporaryAnd(wires=[0, 1, 2]))
         M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAnd(wires=[0, 1, 2])))
         M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
 
         # When the third qubit starts in |0>, we only check the odd columns
-        iso_and = M_elbow[:, ::2]
+        iso_and = M_and[:, ::2]
         iso_toffoli = M_toffoli[:, ::2]
 
         # When the third qubit ends in |0>, we only check the odd rows
@@ -86,7 +86,7 @@ class TestTemporaryAnd:
         assert np.allclose(iso_and, iso_toffoli)
         assert np.allclose(iso_M_and_adj, iso_toffoli_adj)
 
-    def test_elbow_decompositions(self):
+    def test_and_decompositions(self):
         """Tests that TemporaryAnd is decomposed properly."""
 
         for rule in qml.list_decomps(qml.TemporaryAnd):
