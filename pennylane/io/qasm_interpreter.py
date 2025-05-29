@@ -1,5 +1,5 @@
 """
-This submodule contains the interpreter for QASM 3.0.
+This submodule contains the interpreter for OpenQASM 3.0.
 """
 
 import functools
@@ -75,7 +75,7 @@ class QasmInterpreter:
 
     def interpret(self, node: QASMNode, context: dict):
         """
-        Entry point for visiting the QASMNodes of a parsed QASM 3.0 program.
+        Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
@@ -234,7 +234,7 @@ class QasmInterpreter:
             NotImplementedError: If the modifier has a param of an as-yet unsupported type.
         """
         # the parser will raise when a modifier name is anything but the three modifiers (inv, pow, ctrl)
-        # in the QASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
+        # in the OpenQASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
         assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
         next = None
