@@ -24,7 +24,7 @@ from typing import Any
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
-import pennylane as qml
+from pennylane import ops
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operation
 from pennylane.ops.meta import WireCut
@@ -32,6 +32,7 @@ from pennylane.queuing import WrappedObj
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
+from .tapes import graph_to_tape
 
 
 class MeasureNode(Operation):
@@ -69,27 +70,27 @@ class PrepareNode(Operation):
 
 
 def _prep_zero_state(wire):
-    return [qml.Identity(wire)]
+    return [ops.Identity(wire)]
 
 
 def _prep_one_state(wire):
-    return [qml.X(wire)]
+    return [ops.X(wire)]
 
 
 def _prep_plus_state(wire):
-    return [qml.Hadamard(wire)]
+    return [ops.Hadamard(wire)]
 
 
 def _prep_minus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire)]
+    return [ops.X(wire), ops.Hadamard(wire)]
 
 
 def _prep_iplus_state(wire):
-    return [qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def _prep_iminus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.X(wire), ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def find_and_place_cuts(
@@ -694,6 +695,7 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     return subgraphs_connected_to_measurements, communication_graph
 
 
+# pylint: disable=too-many-positional-arguments
 def _is_valid_cut(
     fragments,
     num_cuts,
@@ -712,7 +714,7 @@ def _is_valid_cut(
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
 
     all_fragments_fit = all(
-        len(qml.qcut.graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
+        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
     return correct_num_fragments and best_candidate_yet and all_fragments_fit
