@@ -5,7 +5,7 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 import re
 
-from openqasm3.ast import ClassicalDeclaration, QuantumGate, QubitDeclaration, QuantumGateModifier
+from openqasm3.ast import ClassicalDeclaration, QuantumGate, QuantumGateModifier, QubitDeclaration
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
