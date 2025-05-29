@@ -14,11 +14,37 @@
 """
 Tests for the pennylane.qnn.cost module.
 """
+import warnings
+
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.qnn.cost import SquaredErrorLoss
+
+
+@pytest.fixture(autouse=True)
+def suppress_warnings():
+    """
+    A fixture that suppresses all PL deprecation warnings for the tests that use it.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            action="ignore",
+            category=PennyLaneDeprecationWarning,
+            message="qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed",
+        )
+        yield
+
+
+def test_deprecation_warning():
+    """Test that the deprecation warning is raised when importing SquaredErrorLoss."""
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed",
+    ):
+        SquaredErrorLoss(rx_ansatz, [qml.PauliZ(0)], qml.device("default.qubit", wires=1))
 
 
 # pylint: disable=unused-argument
