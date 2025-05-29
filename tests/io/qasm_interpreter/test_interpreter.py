@@ -30,7 +30,6 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    device,
     queuing,
 )
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
