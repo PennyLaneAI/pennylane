@@ -425,13 +425,14 @@ class TestToBloq:
     @pytest.mark.parametrize(
         (
             "op",
-            "expected_call_graph",
-        ),  # Expected call graph computed by resources from labs or decompositions
+            "expected_call_graph",  # Expected call graph computed by resources from labs or decompositions
+        ),
         [
             (
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
+                # ResourceQPE
                 {
                     qml.to_bloq(qml.Hadamard(0)): 4,
                     qml.ToBloq(qml.RX(0.1, wires=0)).controlled(): 15,
@@ -445,6 +446,7 @@ class TestToBloq:
                     wires=[0, 1, 2],
                     work_wire=3,
                 ),
+                # Inspired by Resource Superposition
                 {
                     qml.ToBloq(
                         qml.StatePrep(
@@ -458,6 +460,7 @@ class TestToBloq:
             (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {_map_to_bloq()(qml.X(0)): 2}),
             (
                 qml.QFT(wires=range(5)),
+                # From ResourceQFT
                 {
                     _map_to_bloq()(qml.H(0)): 5,
                     _map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1])): 10,
@@ -506,6 +509,26 @@ class TestToBloq:
                         )
                     ).adjoint(): 1,
                     _map_to_bloq()(qml.CRY(0.0, wires=[0, 1])): 6,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                # From ResourceQROM
+                {
+                    _map_to_bloq()(qml.CNOT([0, 1])): 1,
+                    _map_to_bloq()(
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        )
+                    ): 4,
+                    _map_to_bloq()(qml.X(0)): 4,
+                    _map_to_bloq()(qml.CSWAP([0, 1, 2])): 0.0,
                 },
             ),
         ],
