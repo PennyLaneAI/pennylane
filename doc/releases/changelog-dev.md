@@ -500,7 +500,14 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Enforce `qcut` module to be a tertiary module.
+* Enforce module dependencies in `pennylane` using `tach`.
+  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
+  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
+  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
+  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
+  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
@@ -526,24 +533,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
 
-* Enforce `debugging` module to be a tertiary module.
-  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
-
-* Enforce subset of submodules in `templates` to be auxiliary layer modules.
-  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
-
-* Enforce `noise` module to be a tertiary layer module.
-  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
-
-* Enforce `qaoa` module to be a tertiary layer module.
-  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
-
-* Enforce `gradients` module to be an auxiliary layer module.
-  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
-
-* Enforce `optimize` module to be an auxiliary layer module.
-  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
-
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
@@ -560,9 +549,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
-
-* Introduce module dependency management using `tach`.
-  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
