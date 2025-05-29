@@ -28,10 +28,7 @@ def test_weighted_graph_handles_negative_weight():
     tape = qml.tape.QuantumScript([])
 
     # edge case: negative gate weight
-    with pytest.raises(
-        ValueError,
-        match="Negative gate weights provided to gate_set in decompose" "are not supported.",
-    ):
+    with pytest.raises(ValueError, match="Negative gate weights"):
         qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
 
 
