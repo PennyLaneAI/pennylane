@@ -33,6 +33,11 @@ from .ops import (
     ResourceX,
     ResourceY,
     ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceRot,
+    ResourcePhaseShift,
 )
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resource_mapping import map_to_resource_op
