@@ -184,22 +184,12 @@ class QasmInterpreter:
             node (QASMNode): the assignment QASMNode.
             context (dict): the current context.
         """
-
-        def set_local_var(execution_context: dict):
-            rhs = partial(self.eval_expr, node.rvalue, execution_context)
-            name = (
-                node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
-            )  # str or Identifier
-            res = rhs()
-            self._update_var(res, name, node, execution_context)
-            return res
-
         # references to an unresolved value see a func for now
         name = (
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
-        self._update_var(set_local_var, name, node, context)
-        context["gates"].append(set_local_var)
+        res = self.eval_expr(node.rvalue, context)
+        self._update_var(res, name, node, context)
 
     def visit_alias_statement(self, node: QASMNode, context: dict):
         """
