@@ -842,6 +842,14 @@ def _inherit_from_bloq(cls):
                     return f"ToBloq({self.op.name})"
                 return "ToBloq(QNode)"
 
+            def __eq__(self, other):
+                if type(other) is type(self):
+                    return self.op == other.op
+                return False
+
+            def __hash__(self):
+                return hash(self.op)
+
             def __str__(self):
                 return "PL" + self.op.name
 
