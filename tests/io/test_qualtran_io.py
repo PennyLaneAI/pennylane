@@ -442,7 +442,7 @@ class TestToBloq:
         ],
     )
     def test_build_call_graph(self, op, expected_call_graph):
-        """ "Tests that the defined call_grapsh match the expected decompostions"""
+        """ "Tests that the defined call_graphs match the expected decompostions"""
         from pennylane.io.qualtran_io import _get_op_call_graph
 
         call_graph = _get_op_call_graph()(op)
