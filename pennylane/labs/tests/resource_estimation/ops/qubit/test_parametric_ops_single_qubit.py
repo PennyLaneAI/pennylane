@@ -55,7 +55,7 @@ class TestPauliRotation:
     def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test the compact representation"""
         op = resource_class(wires=0)
-        expected = re.CompressedResourceOp(resource_class, {"eps": None})
+        expected = re.CompressedResourceOp(resource_class, {})
         assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
@@ -119,7 +119,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = re.ResourceRot(wires=0)
-        expected = re.CompressedResourceOp(re.ResourceRot, {"eps": None})
+        expected = re.CompressedResourceOp(re.ResourceRot, {})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -175,7 +175,7 @@ class TestPhaseShift:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = re.ResourcePhaseShift(None, wires=0)
-        expected = re.CompressedResourceOp(re.ResourcePhaseShift, {"eps": None})
+        expected = re.CompressedResourceOp(re.ResourcePhaseShift, {})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
