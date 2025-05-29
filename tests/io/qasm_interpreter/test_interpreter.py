@@ -30,7 +30,6 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    device,
     queuing,
 )
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
@@ -113,7 +112,7 @@ class TestInterpreter:
         )
 
         # we would initialize the device like so
-        device("default.qubit", wires=[0, 1, 2])
+        # device("default.qubit", wires=[0, 1, 2])
 
         # execute
         with queuing.AnnotatedQueue() as q:
@@ -143,7 +142,7 @@ class TestInterpreter:
         )
 
         # we would initialize the device like so
-        device("default.qubit", wires=["0q", "1q", "2q"])
+        # device("default.qubit", wires=["0q", "1q", "2q"])
 
         # execute
         with queuing.AnnotatedQueue() as q:
