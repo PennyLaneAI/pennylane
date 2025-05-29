@@ -506,8 +506,6 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
             new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0, 0)
 
             # cancel out QFTs from consecutive Multipliers
-            print(comp_rep._name)
-            print(comp_rep._name == "QFT")
             if comp_rep._name in ("QFT", "Adjoint(QFT)"):
                 gate_types[new_rep] = 1
             else:
