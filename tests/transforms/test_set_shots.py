@@ -197,7 +197,7 @@ class TestSetShots:
         assert len(tracker_shots.history["executions"]) == 3
 
     @pytest.mark.system
-    def test_userwarnings(self):
+    def test_ambiguous_shots_configuration_warning(self):
         """
         Test that using set_shots with a QNode that has a shots value
         raises a UserWarning.
