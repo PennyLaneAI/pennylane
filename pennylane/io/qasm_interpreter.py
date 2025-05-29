@@ -226,7 +226,6 @@ class QasmInterpreter:
         # in the OpenQASM 3.0 spec. i.e. if we change `pow(power) @` to `wop(power) @` it will raise:
         # `no viable alternative at input 'wop(power)@'`, long before we get here.
         assert mod.modifier.name in ("inv", "pow", "ctrl", "negctrl")
-        next = None
 
         if mod.modifier.name == "inv":
             next = ops.adjoint(previous)
@@ -250,8 +249,8 @@ class QasmInterpreter:
         elif mod.modifier.name == "negctrl":
             next = ops.ctrl(previous, control=wires[-1], control_values=[0])
             wires = wires[:-1]
-      else:
-           raise ValueError(f"Unknown modifier {mod}")
+        else:
+            raise ValueError(f"Unknown modifier {mod}")  # pragma: no cover
 
         return next, wires
 
