@@ -124,7 +124,6 @@ def _get_op_call_graph():
         basis_size = 2**size_basis_state
         prob_matching_basis_states = num_basis_states / basis_size
         num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
-
         if num_permutes:
             gate_types[cnot] = num_permutes * (
                 size_basis_state // 2
@@ -136,7 +135,6 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
         import pennylane as qml
-        from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 
         gate_types = defaultdict(int, {})
         state_vector = op.state_vector
@@ -215,7 +213,6 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qops.BasisState):
-        import pennylane as qml
         from qualtran.bloqs.basic_gates import XGate
 
         gate_types = {}
@@ -306,7 +303,9 @@ def _get_op_call_graph():
         gate_types = {}
         num_wires = len(op.wires)
         gate_types[Hadamard()] = num_wires
-        gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = num_wires
+        gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = (
+            num_wires * (num_wires - 1) // 2
+        )
         gate_types[TwoBitSwap()] = num_wires // 2
         return gate_types
 
@@ -317,7 +316,7 @@ def _get_op_call_graph():
         projectors = op.hyperparameters["projectors"]
         num_projectors = len(projectors)
 
-        for idx, op in enumerate(projectors[:-1]):
+        for _, op in enumerate(projectors[:-1]):
             gate_types[_map_to_bloq()(op)] += 1
 
         gate_types[_map_to_bloq()(UA)] = num_projectors // 2 + 1
@@ -394,6 +393,8 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled):
+        if isinstance(op, qops.MultiControlledX):
+            return ToBloq(op)
         return _map_to_bloq()(op.base).controlled()
 
     # @_to_qt_bloq.register
@@ -1205,6 +1206,14 @@ def _inherit_from_bloq(cls):
                 if isinstance(self.op, Operation):
                     return f"ToBloq({self.op.name})"
                 return "ToBloq(QNode)"
+
+            def __eq__(self, other):
+                if type(other) is type(self):
+                    return self.op == other.op
+                return False
+
+            def __hash__(self):
+                return hash(self.op)
 
             def __str__(self):
                 return "PL" + self.op.name

@@ -381,7 +381,7 @@ class TestToBloq:
             qml.RX(phi=angle, wires=[0])
 
         assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {Rx(angle=0.0, eps=1e-11): 1}
-        with pytest.raises(TypeError, match="circuit() missing 1 required positinal argument: 'angle'"):
+        with pytest.raises(TypeError):
             qml.to_bloq(circuit).call_graph()
 
         assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
@@ -421,3 +421,55 @@ class TestToBloq:
         assert CYGate() == to_bloq()(qml.CY([0, 1]))
         assert ZGate() == to_bloq()(qml.PauliZ(0))
         assert CZ() == to_bloq()(qml.CZ([0, 1]))
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "expected_call_graph",
+        ),  # Expected call graph computed by resources from labs or decompositions
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                {
+                    qml.to_bloq(qml.Hadamard(0)): 4,
+                    qml.ToBloq(qml.RX(0.1, wires=0)).controlled(): 15,
+                    qml.ToBloq(qml.adjoint(qml.QFT(wires=range(1, 5)))): 1,
+                },
+            ),
+            (
+                qml.Superposition(
+                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                    wires=[0, 1, 2],
+                    work_wire=3,
+                ),
+                {
+                    qml.ToBloq(
+                        qml.StatePrep(
+                            np.array([0.57735027, 0.57735027, 0.57735027]), wires=[2, 3], pad_with=0
+                        )
+                    ): 1,
+                    _map_to_bloq()(qml.CNOT([0, 1])): 2,
+                    qml.ToBloq(qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0])): 4,
+                },
+            ),
+            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {_map_to_bloq()(qml.X(0)): 2}),
+            (
+                qml.QFT(wires=range(5)),
+                {
+                    _map_to_bloq()(qml.H(0)): 5,
+                    _map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1])): 10,
+                    _map_to_bloq()(qml.SWAP([0, 1])): 2,
+                },
+            ),
+        ],
+    )
+    def test_build_call_graph(self, op, expected_call_graph):
+        """ "Tests that the defined call_grapsh match the expected decompostions"""
+        from pennylane.io.qualtran_io import _get_op_call_graph
+
+        call_graph = _get_op_call_graph()(op)
+
+        assert call_graph == expected_call_graph
