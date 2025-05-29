@@ -528,10 +528,7 @@ def _trotter_decomp_condition(base, num_steps):
     with qml.queuing.QueuingManager.stop_recording():
         base = base.simplify()
     if qml.pauli.is_pauli_word(base):
-        # It does not make sense to use the Trotter approximation if the
-        # base is a single-term pauli word, because it can be decomposed
-        # exactly into a single PauliRot gate.
-        return False
+        return True
     try:
         _, ops = base.terms()
         return all(qml.pauli.is_pauli_word(ob) for ob in ops)
@@ -540,9 +537,15 @@ def _trotter_decomp_condition(base, num_steps):
 
 
 def _trotter_decomp_resource(base, num_steps):
+
     with qml.queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    _, ops = base.terms()
+
+    try:
+        _, ops = base.terms()
+    except TermsUndefinedError:
+        ops = [base]  # The condition should've already verified that this is a valid pauli word.
+
     gate_count = {}
     for op in ops:
         pauli_word = qml.pauli.pauli_word_to_string(op)
@@ -571,9 +574,16 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
 @register_resources(_trotter_decomp_resource)
 def trotter_decomp(*params, wires, base, num_steps):  # pylint: disable=unused-argument
     """Uses the Suzuki-Trotter approximation to decompose the operator exponential."""
+
     with qml.queuing.QueuingManager.stop_recording():
         simplified_base = base.simplify()
-    coeffs, ops = simplified_base.terms()
+
+    try:
+        coeffs, ops = simplified_base.terms()
+    except TermsUndefinedError:
+        # The condition should've already verified that this is a valid pauli word.
+        coeffs, ops = [1], [simplified_base]
+
     new_coeffs, pauli_words, new_wires = [], [], []
     for c, op in zip(coeffs, ops):
         # The 2j cancels the coefficient added by PauliRot
@@ -583,6 +593,7 @@ def trotter_decomp(*params, wires, base, num_steps):  # pylint: disable=unused-a
             new_coeffs.append(c)
             pauli_words.append(pauli_word)
             new_wires.append(op.wires)
+
     for _ in range(num_steps):
         for c, pauli_word, new_wire in zip(new_coeffs, pauli_words, new_wires):
             qml.PauliRot(c, pauli_word, new_wire)
