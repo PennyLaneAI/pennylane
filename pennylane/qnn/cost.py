@@ -14,8 +14,11 @@
 """
 This submodule contains frequently used loss and cost functions.
 """
+import warnings
+
 # pylint: disable=too-many-arguments
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 class SquaredErrorLoss:
@@ -98,6 +101,13 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
+        warnings.warn(
+            "qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed in version v0.43. "
+            "Instead, this hybrid workflow can be accomplished with a function like "
+            "`loss = lambda *args: (circuit(*args) - target)**2`.",
+            PennyLaneDeprecationWarning,
+        )
+
         @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
         def qnode(params, **circuit_kwargs):
             ansatz(params, wires=device.wires, **circuit_kwargs)
