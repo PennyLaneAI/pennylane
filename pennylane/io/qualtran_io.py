@@ -404,22 +404,22 @@ def _map_to_bloq():
             return ToBloq(op)
         return _map_to_bloq()(op.base).controlled()
 
-    # @_to_qt_bloq.register
-    # def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
-    #     from qualtran.bloqs.phase_estimation import RectangularWindowState
-    #     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+    @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
+        from qualtran.bloqs.phase_estimation import RectangularWindowState
+        from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-    #     if args and isinstance(args[0], dict) and args[0]:
-    #         try:
-    #             return args[0][type(op)]
-    #         except KeyError:
-    #             # ToDo: make this more robust of an error
-    #             return args[0][op]
+        if args and isinstance(args[0], dict) and args[0]:
+            try:
+                return args[0][type(op)]
+            except KeyError:
+                # ToDo: make this more robust of an error
+                return args[0][op]
 
-    #     return TextbookQPE(
-    #         unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
-    #         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
-    #     )
+        return TextbookQPE(
+            unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
+            ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+        )
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase):
@@ -1041,6 +1041,7 @@ def _inherit_from_bloq(cls):
                 from pennylane.workflow import construct_tape
 
                 if isinstance(self.op, QNode):
+                    self.op.name = "QNode"
                     num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
                 else:
                     num_wires = len(self.op.wires)
