@@ -253,7 +253,7 @@ class QasmInterpreter:
         return next, wires
 
     @staticmethod
-    def evaluate_argument(arg: str, context: dict):
+    def evaluate_argument(arg: QASMNode, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
 
