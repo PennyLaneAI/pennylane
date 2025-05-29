@@ -322,8 +322,8 @@ def _get_op_call_graph():
         for _, op in enumerate(projectors[:-1]):
             gate_types[_map_to_bloq()(op)] += 1
 
-        gate_types[_map_to_bloq()(UA)] = num_projectors // 2 + 1
-        gate_types[_map_to_bloq()(UA)] = num_projectors // 2
+        gate_types[_map_to_bloq()(UA)] += num_projectors // 2
+        gate_types[_map_to_bloq()(UA).adjoint()] += (num_projectors - 1) // 2
         gate_types[_map_to_bloq()(projectors[-1])] += 1
 
         return gate_types

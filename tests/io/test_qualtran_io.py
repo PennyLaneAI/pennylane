@@ -535,6 +535,18 @@ class TestToBloq:
             #     qml.ModExp(x_wires=[0, 1], output_wires=[2, 3, 4], base=2, mod=7, work_wires=[5,6,7,8,9]),
             #     {}
             # )
+            (
+                qml.QSVT(
+                    UA=qml.H(0),
+                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                ),
+                {
+                    _map_to_bloq()(qml.RZ(phi=-2.46, wires=0)): 1,
+                    _map_to_bloq()(qml.RZ(phi=1.0, wires=0)): 1,
+                    _map_to_bloq()(qml.Hadamard(0)): 2,
+                    _map_to_bloq()(qml.RZ(phi=0.6, wires=0)): 1,
+                },
+            ),
         ],
     )
     def test_build_call_graph(self, op, expected_call_graph):
