@@ -5,8 +5,14 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 import re
 
-from openqasm3.ast import ClassicalDeclaration, QuantumGate, QuantumGateModifier, QubitDeclaration, Expression, \
-    Identifier
+from openqasm3.ast import (
+    ClassicalDeclaration,
+    Expression,
+    Identifier,
+    QuantumGate,
+    QuantumGateModifier,
+    QubitDeclaration,
+)
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -253,7 +259,7 @@ class QasmInterpreter:
         """
         if re.search("Literal", arg.__class__.__name__) is not None:
             return arg.value
-        if hasattr(arg, 'name') and arg.name in context["vars"]:
+        if hasattr(arg, "name") and arg.name in context["vars"]:
             # the context at this point should reflect the states of the
             # variables as evaluated in the correct (current) scope.
             if context["vars"][arg.name]["val"] is not None:
