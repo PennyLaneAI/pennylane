@@ -21,7 +21,7 @@ from openqasm3.ast import (
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    UnaryExpression,
+    UnaryExpression, AliasStatement,
 )
 from openqasm3.visitor import QASMNode
 
@@ -223,6 +223,7 @@ class QasmInterpreter:
         res = self.visit(node.rvalue, context)
         self._update_var(res, name, node, context)
 
+    @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: dict):
         """
         Registers an alias statement.

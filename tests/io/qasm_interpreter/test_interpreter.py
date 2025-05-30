@@ -115,6 +115,7 @@ class TestInterpreter:
         assert context["vars"]["l"]["val"] == True
         assert context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
         assert context["vars"]["a"]["val"] == 3.3333333
+        assert context["aliases"]["alias"](context) == "01101"
 
     def test_updating_constant(self, mocker):
         # parse the QASM
