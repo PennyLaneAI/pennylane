@@ -370,6 +370,10 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        # Quick check for empty levels that don't need config construction
+        if level == "top" or level == 0:
+            return (initial_tape,), null_postprocessing
+
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_execution_config(
