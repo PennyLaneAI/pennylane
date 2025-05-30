@@ -36,6 +36,7 @@ from openqasm3.ast import (
     SwitchStatement,
     UnaryExpression,
     WhileLoop,
+    Expression,
 )
 from openqasm3.visitor import QASMNode
 
