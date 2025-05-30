@@ -188,7 +188,8 @@ class QasmInterpreter:
         """
         context["wires"].append(node.qubit.name)
 
-    def _update_var(self, value: any, name: str, node: QASMNode, context: dict):
+    @staticmethod
+    def _update_var(value: any, name: str, node: QASMNode, context: dict):
         """
         Updates a variable, or raises if it is constant.
         Args:
@@ -230,7 +231,8 @@ class QasmInterpreter:
         self._init_aliases(context)
         context["aliases"][node.target.name] = self.eval_expr(node.value, context, aliasing=True)
 
-    def retrieve_variable(self, name: str, context: dict):
+    @staticmethod
+    def retrieve_variable(name: str, context: dict):
         """
         Attempts to retrieve a variable from the current context by name.
         Args:
@@ -242,9 +244,8 @@ class QasmInterpreter:
             res = context["vars"][name]
             if res["val"] is not None:
                 return res
-            else:
-                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        elif (
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        if (
             "wires" in context
             and context["wires"] is not None
             and name in context["wires"]
@@ -252,21 +253,20 @@ class QasmInterpreter:
             and name in context["outer_wires"]
         ):
             return name
-        elif "aliases" in context and context["wires"] is not None and name in context["aliases"]:
+        if "aliases" in context and context["wires"] is not None and name in context["aliases"]:
             res = context["aliases"][name](context)  # evaluate the alias and de-reference
             if isinstance(res, str):
                 return res
             if res["val"] is not None:
                 return res
-            else:
-                raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        else:
-            raise TypeError(
-                f"Attempt to use unevaluated variable {name} in {context['name']}, "
-                f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
-            )
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        raise TypeError(
+            f"Attempt to use unevaluated variable {name} in {context['name']}, "
+            f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
+        )
 
-    def _init_vars(self, context: dict):
+    @staticmethod
+    def _init_vars(context: dict):
         """
         context["callable"] = partial(self._execute_all, context)
         Inits the vars dict on the current context.
@@ -276,7 +276,8 @@ class QasmInterpreter:
         if "vars" not in context:
             context["vars"] = dict()
 
-    def _init_aliases(self, context: dict):
+    @staticmethod
+    def _init_aliases(context: dict):
         """
         Inits the aliases dict on the current context.
         Args:
@@ -471,13 +472,13 @@ class QasmInterpreter:
         res = None
         if isinstance(node, Cast):
             return self.retrieve_variable(node.argument.name, context)["val"]
-        elif isinstance(node, BinaryExpression):
+        if isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
             if (
                 node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
             ):  # makes sure we are not executing anything malicious
-                res = eval(f"{lhs}{node.op.name}{rhs}")
+                res = eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
                 raise SyntaxError(
                     f"{node.op.name} assignment operators should only be used in classical assignments,"
@@ -492,7 +493,7 @@ class QasmInterpreter:
             if (
                 node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
             ):  # makes sure we are not executing anything malicious
-                res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
+                res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")  # pylint: disable=eval-used
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
                 raise SyntaxError(
                     f"{node.op.name} assignment operators should only be used in classical assignments,"
@@ -512,12 +513,11 @@ class QasmInterpreter:
                     var = var["val"]
                 if isinstance(node.index[0], RangeDefinition):
                     return var[node.index[0].start.value : node.index[0].end.value]
-                elif re.search("Literal", node.index[0].__class__.__name__):
+                if re.search("Literal", node.index[0].__class__.__name__):
                     return var[node.index[0].value]
-                else:
-                    raise TypeError(
-                        f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
-                    )
+                raise TypeError(
+                    f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+                )
 
             if aliasing:
 
