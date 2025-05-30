@@ -139,9 +139,9 @@ class TestFermiWord:
         fw_3 = FermiWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
         fw_4 = FermiWord({(0, 0): "+", (1, 2): "-"})  # distinct from above
 
-        assert fw_1.__hash__() == fw_2.__hash__()
-        assert fw_1.__hash__() == fw_3.__hash__()
-        assert fw_1.__hash__() != fw_4.__hash__()
+        assert hash(fw_1) == hash(fw_2)
+        assert hash(fw_1) == hash(fw_3)
+        assert hash(fw_1) != hash(fw_4)
 
     @pytest.mark.parametrize("fw", (fw1, fw2, fw3, fw4))
     def test_copy(self, fw):

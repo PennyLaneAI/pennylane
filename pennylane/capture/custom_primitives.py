@@ -14,10 +14,14 @@
 """
 This submodule offers custom primitives for the PennyLane capture module.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=abstract-method
+
 from enum import Enum
 from typing import Union
 
-import jax
+from jax.extend.core import Primitive
 
 
 class PrimitiveType(Enum):
@@ -30,8 +34,8 @@ class PrimitiveType(Enum):
     TRANSFORM = "transform"
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class QmlPrimitive(jax.core.Primitive):
+# pylint: disable=too-few-public-methods
+class QmlPrimitive(Primitive):
     """A subclass for JAX's Primitive that differentiates between different
     classes of primitives."""
 
@@ -47,18 +51,3 @@ class QmlPrimitive(jax.core.Primitive):
     def prim_type(self, value: Union[str, PrimitiveType]):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)
-
-
-# pylint: disable=too-few-public-methods,abstract-method
-class NonInterpPrimitive(QmlPrimitive):
-    """A subclass to JAX's Primitive that works like a Python function
-    when evaluating JVPTracers and BatchTracers."""
-
-    def bind_with_trace(self, trace, args, params):
-        """Bind the ``NonInterpPrimitive`` with a trace.
-
-        If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
-        Otherwise, the bind call of JAX's standard Primitive is used."""
-        if isinstance(trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)):
-            return self.impl(*args, **params)
-        return super().bind_with_trace(trace, args, params)

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
@@ -869,11 +869,13 @@ ar.register_function("torch", "cond", _cond)
 
 
 def _to_numpy_jax(x):
-    from jax.errors import TracerArrayConversionError
+    from jax.core import concrete_or_error
+    from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 
     try:
-        return np.array(getattr(x, "val", x))
-    except TracerArrayConversionError as e:
+        x = concrete_or_error(None, x)
+        return np.array(x)
+    except (ConcretizationTypeError, TracerArrayConversionError) as e:
         raise ValueError(
             "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
         ) from e

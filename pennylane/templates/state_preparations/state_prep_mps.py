@@ -102,6 +102,8 @@ def right_canonicalize_mps(mps):
 
         n_sites = 4
 
+        import numpy as np
+
         mps = ([np.ones((2, 4))] +
                [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)] +
                [np.ones((4, 2))])
@@ -132,7 +134,7 @@ def right_canonicalize_mps(mps):
         The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
 
         - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
-        - :math:`d_{j,1}` is the physical dimension for the site
+        - :math:`d_{j,1}` is the physical dimension of the site
         - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
 
         Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
@@ -311,7 +313,7 @@ class MPSPrep(Operation):
         The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
 
         - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
-        - :math:`d_{j,1}` is the physical dimension for the site
+        - :math:`d_{j,1}` is the physical dimension of the site
         - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
 
         Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
@@ -400,7 +402,7 @@ class MPSPrep(Operation):
             return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
         return cls._primitive.bind(*mps, wires=wires, id=id)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         filtered_hyperparameters = {
             key: value for key, value in self.hyperparameters.items() if key != "input_wires"
         }
@@ -421,7 +423,7 @@ class MPSPrep(Operation):
 
             wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
             work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
-                of the MPS tensors is `2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
+                of the MPS tensors is ``2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
                 this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
 
             right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed

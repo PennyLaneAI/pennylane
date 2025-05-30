@@ -200,7 +200,7 @@ def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qml.paulix_ops(generators, num_qubits)
     for p1, p2 in zip(pauli_ops, result):
-        assert p1.compare(p2)
+        qml.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]

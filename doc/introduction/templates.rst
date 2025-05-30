@@ -364,6 +364,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
 
+.. gallery-item::
+    :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
+    :figure: _static/templates/select_pauli_rot/select_pauli_rot.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

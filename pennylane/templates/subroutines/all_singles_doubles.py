@@ -20,7 +20,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
 
@@ -116,7 +116,6 @@ class AllSinglesDoubles(Operation):
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):

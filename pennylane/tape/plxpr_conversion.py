@@ -175,7 +175,6 @@ def _(self, wires, reset, postselect):
     return m0
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(grad_prim)
 def _(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
@@ -190,7 +189,7 @@ def _(self, *invals, jaxpr, n_consts, **params):
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
     self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
-):  # pylint: disable=too-many-arguments,unused-argument
+):  # pylint: disable=too-many-arguments
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
@@ -202,11 +201,11 @@ def _(
     return out
 
 
-def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
 

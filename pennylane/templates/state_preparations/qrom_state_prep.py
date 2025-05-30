@@ -66,22 +66,25 @@ class QROMStatePreparation(Operation):
 
     .. code-block::
 
-        state_vector = np.array([0.5, -0.5, 0.5, 0.5])
+        import numpy as np
 
-        dev = qml.device("default.qubit")
+        probs_vector = np.array([0.5, 0., 0.25, 0.25])
+
+        dev = qml.device("default.qubit", wires = 6)
+
         wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
 
         @qml.qnode(dev)
         def circuit():
             qml.QROMStatePreparation(
-                state_vector, wires["state_wires"], wires["prec_wires"], wires["work_wires"]
+                np.sqrt(probs_vector), wires["state_wires"], wires["prec_wires"], wires["work_wires"]
             )
-            return qml.state()
+            return qml.probs(wires["state_wires"])
 
     .. code-block:: pycon
 
-        >>> print(circuit()[:4].real)
-        [ 0.5 -0.5  0.5  0.5]
+        >>> circuit()
+        array([0.5 , 0.  , 0.25, 0.25])
 
     .. seealso:: :class:`~.QROM`
 
@@ -97,6 +100,7 @@ class QROMStatePreparation(Operation):
         reduce the overall resource requirements on the implementation.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self, state_vector, wires, precision_wires, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
@@ -163,7 +167,7 @@ class QROMStatePreparation(Operation):
     @staticmethod
     def compute_decomposition(
         state_vector, wires, input_wires, precision_wires, work_wires
-    ):  # pylint: disable=arguments-differ,too-many-positional-arguments
+    ):  # pylint: disable=arguments-differ
         r"""
         Computes the decomposition operations for the given state vector.
 

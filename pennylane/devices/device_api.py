@@ -14,7 +14,7 @@
 """
 This module contains the Abstract Base Class for the next generation of devices.
 """
-# pylint: disable=comparison-with-callable
+
 import abc
 from collections.abc import Iterable
 from dataclasses import replace
@@ -22,7 +22,6 @@ from numbers import Number
 from typing import Optional, Union, overload
 
 import pennylane as qml
-from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -42,6 +41,7 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
+from .tracker import Tracker
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -167,7 +167,7 @@ class Device(abc.ABC):
         return type(self).__name__
 
     tracker: Tracker = Tracker()
-    """A :class:`~.Tracker` that can store information about device executions, shots, batches,
+    """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
     intermediate results, or any additional device dependent information.
 
     A plugin developer can store information in the tracker by:
@@ -971,7 +971,7 @@ class Device(abc.ABC):
 
     def eval_jaxpr(
         self,
-        jaxpr: "jax.core.Jaxpr",
+        jaxpr: "jax.extend.core.Jaxpr",
         consts: list[TensorLike],
         *args,
         execution_config: Optional[ExecutionConfig] = None,
@@ -979,7 +979,7 @@ class Device(abc.ABC):
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
+            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
             *args (TensorLike): the variables to use with the jaxpr.
 
@@ -994,7 +994,7 @@ class Device(abc.ABC):
 
     def jaxpr_jvp(
         self,
-        jaxpr: "jax.core.Jaxpr",
+        jaxpr: "jax.extend.core.Jaxpr",
         args,
         tangents,
         execution_config: Optional[ExecutionConfig] = None,
@@ -1003,7 +1003,7 @@ class Device(abc.ABC):
         See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
+            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
                 and measurements
             args (Sequence[TensorLike]): the ``consts`` followed by the normal   arguments
             tangents (Sequence[TensorLike]): the tangents corresponding to ``args``.

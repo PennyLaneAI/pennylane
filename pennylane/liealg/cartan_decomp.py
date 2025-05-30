@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality for Cartan decomposition"""
-# pylint: disable= missing-function-docstring
+
 from typing import List, Tuple, Union
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.typing import TensorLike
@@ -144,10 +144,10 @@ def check_commutation_relation(
 
     ops1_is_tensor = any(isinstance(op, TensorLike) for op in ops1)
     ops2_is_tensor = any(isinstance(op, TensorLike) for op in ops2)
-    if not isinstance(vspace, qml.pauli.PauliVSpace):
+    if not isinstance(vspace, PauliVSpace):
         vspace_is_tensor = any(isinstance(op, TensorLike) for op in vspace)
         if any(isinstance(op, Operator) for op in vspace):
-            vspace = qml.pauli.PauliVSpace(vspace, dtype=complex)
+            vspace = PauliVSpace(vspace, dtype=complex)
 
     else:
         vspace_is_tensor = False
@@ -184,12 +184,12 @@ def _all_coms(vspace1, vspace2):
     r"""Compute all commutators [Vspace1, Vspace2]"""
     chi = len(vspace1[0])
 
-    m0m1 = qml.math.moveaxis(qml.math.tensordot(vspace1, vspace2, axes=[[2], [1]]), 1, 2)
-    m0m1 = qml.math.reshape(m0m1, (-1, chi, chi))
+    m0m1 = math.moveaxis(math.tensordot(vspace1, vspace2, axes=[[2], [1]]), 1, 2)
+    m0m1 = math.reshape(m0m1, (-1, chi, chi))
 
     # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
-    m1m0 = qml.math.moveaxis(qml.math.tensordot(vspace1, vspace2, axes=[[1], [2]]), 1, 3)
-    m1m0 = qml.math.reshape(m1m0, (-1, chi, chi))
+    m1m0 = math.moveaxis(math.tensordot(vspace1, vspace2, axes=[[1], [2]]), 1, 3)
+    m1m0 = math.reshape(m1m0, (-1, chi, chi))
     all_coms = m0m1 - m1m0
     return all_coms
 
@@ -198,11 +198,11 @@ def _is_subspace(subspace, vspace):
     r"""check if subspace <= vspace"""
     # Check if rank increases by adding matices from ``subspace``
     # Use matrices as vectors -> flatten matrix dimensions (chi, chi) to (chi**2,)
-    vspace = qml.math.reshape(vspace, (len(vspace), -1))
-    subspace = qml.math.reshape(subspace, (len(subspace), -1))
+    vspace = math.reshape(vspace, (len(vspace), -1))
+    subspace = math.reshape(subspace, (len(subspace), -1))
 
-    rank_V = qml.math.linalg.matrix_rank(vspace)
-    rank_both = qml.math.linalg.matrix_rank(qml.math.vstack([vspace, subspace]))
+    rank_V = math.linalg.matrix_rank(vspace)
+    rank_both = math.linalg.matrix_rank(math.vstack([vspace, subspace]))
 
     return rank_both <= rank_V
 
@@ -283,12 +283,12 @@ def check_cartan_decomp(
     if any(isinstance(op, TensorLike) for op in k):
         k_space = k
     else:
-        k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+        k_space = PauliVSpace(k, dtype=complex)
 
     if any(isinstance(op, TensorLike) for op in m):
         m_space = m
     else:
-        m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+        m_space = PauliVSpace(m, dtype=complex)
 
     # Commutation relations for Cartan pair
     if not (check_kk := check_commutation_relation(k, k, k_space)):

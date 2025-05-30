@@ -19,11 +19,11 @@ differentiation support.
 import inspect
 import logging
 from typing import Callable, Literal, Optional, Union
-from warnings import warn
 
 from cachetools import Cache
 
 import pennylane as qml
+from pennylane.concurrency.executors import RemoteExec
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -54,9 +54,7 @@ def execute(
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
-    mcm_config="unset",
-    config="unset",
-    inner_transform="unset",
+    executor_backend: Optional[RemoteExec] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -96,12 +94,9 @@ def execute(
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        mcm_config="unset": **DEPRECATED**. This keyword argument has been replaced by ``postselect_mode``
-            and ``mcm_method`` and will be removed in v0.42.
-        config="unset": **DEPRECATED**. This keyword argument has been deprecated and
-            will be removed in v0.42.
-        inner_transform="unset": **DEPRECATED**. This keyword argument has been deprecated
-            and will be removed in v0.42.
+        executor_backend (RemoteExec, None): concurrent task-based executor for function dispatch.
+            If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
+
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -165,30 +160,6 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
-    if config != "unset":
-        warn(
-            "The config argument has been deprecated and will be removed in v0.42. "
-            "The provided config argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if inner_transform != "unset":
-        warn(
-            "The inner_transform argument has been deprecated and will be removed in v0.42. "
-            "The provided inner_transform argument will be ignored. "
-            "If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if mcm_config != "unset":
-        warn(
-            "The mcm_config argument is deprecated and will be removed in v0.42, use mcm_method and postselect_mode instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        mcm_method = mcm_config.mcm_method
-        postselect_mode = mcm_config.postselect_mode
-
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
             (
@@ -215,7 +186,16 @@ def execute(
     if not tapes:
         return ()
 
-    ### Specifying and preprocessing variables ####
+    ### Apply the user transforms ####
+    transform_program = transform_program or TransformProgram()
+    tapes, user_post_processing = transform_program(tapes)
+    if transform_program.is_informative:
+        return user_post_processing(tapes)
+
+    if not tapes:
+        return user_post_processing(())
+
+    ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
 
@@ -227,19 +207,16 @@ def execute(
         mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
+        executor_backend=executor_backend,
     )
-    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
+    config = _resolve_execution_config(config, device, tapes)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
-    transform_program, inner_transform = _setup_transform_program(
-        transform_program, device, config, cache, cachesize
-    )
+    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
-    tapes, post_processing = transform_program(tapes)
+    tapes, outer_post_processing = outer_transform(tapes)
 
-    if transform_program.is_informative:
-        return post_processing(tapes)
+    assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
-    return post_processing(results)
+    return user_post_processing(outer_post_processing(results))

@@ -14,7 +14,7 @@
 """
 Contains the Select template.
 """
-# pylint: disable=too-many-arguments
+
 
 import copy
 import itertools
@@ -63,8 +63,6 @@ class Select(Operation):
     3: ────╰X────╰SWAP─┤  State
 
     """
-
-    num_wires = qml.operation.AnyWires
 
     def _flatten(self):
         return (self.ops), (self.control)
@@ -169,7 +167,7 @@ class Select(Operation):
     def compute_decomposition(
         ops,
         control,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -14,7 +14,7 @@
 """
 This submodule contains the template for QFT.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+
 
 import functools
 
@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -130,7 +130,6 @@ class QFT(Operation):
             [1 0 1 0]
     """
 
-    num_wires = AnyWires
     grad_method = None
     resource_keys = {
         "num_wires",
@@ -157,7 +156,7 @@ class QFT(Operation):
         return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

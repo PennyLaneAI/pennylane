@@ -158,7 +158,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     """Calculate the abstract output shapes for the given measurements."""
 
-    if jax.config.jax_enable_x64:  # pylint: disable=no-member
+    if jax.config.jax_enable_x64:
         dtype_map = {
             float: jax.numpy.float64,
             int: jax.numpy.int64,
@@ -188,7 +188,7 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=too-many-arguments, unused-argument
+# pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
 def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=None):
@@ -210,12 +210,39 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
     else:
         temp_all_args = args
 
-    qfunc_jaxpr = device_program(qfunc_jaxpr, [], *temp_all_args)
+    # Expand user transforms applied to the qfunc
+    if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
+        transformed_func = qml.capture.expand_plxpr_transforms(
+            partial(qml.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
+        )
+
+        qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
+        temp_consts = qfunc_jaxpr.consts
+        qfunc_jaxpr = qfunc_jaxpr.jaxpr
+
+    # Expand user transforms applied to the qnode
+    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, [], *temp_all_args)
     consts = qfunc_jaxpr.consts
-    qfunc_jaxpr = qfunc_jaxpr.jaxpr
+    temp_all_args = consts + temp_all_args
+    qfunc_jaxpr = jax.core.Jaxpr(
+        constvars=(),
+        invars=qfunc_jaxpr.jaxpr.constvars + qfunc_jaxpr.jaxpr.invars,
+        outvars=qfunc_jaxpr.jaxpr.outvars,
+        eqns=qfunc_jaxpr.jaxpr.eqns,
+        effects=qfunc_jaxpr.jaxpr.effects,
+    )
+
+    # Apply device preprocessing transforms
+    graph_enabled = qml.decomposition.enabled_graph()
+    try:
+        qml.decomposition.disable_graph()
+        qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
+    finally:
+        if graph_enabled:
+            qml.decomposition.enable_graph()
 
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
+        device.eval_jaxpr, qfunc_jaxpr, [], execution_config=execution_config
     )
     if batch_dims is None:
         return partial_eval(*args)
@@ -286,6 +313,12 @@ def _qnode_batching_rule(
 
 @debug_logger
 def _finite_diff(args, tangents, **impl_kwargs):
+    if not jax.config.jax_enable_x64:
+        warn(
+            "Detected 32 bits precision with finite differences. This can lead to incorrect results."
+            " Recommend enabling jax.config.update('jax_enable_x64', True).",
+            UserWarning,
+        )
     f = partial(qnode_prim.bind, **impl_kwargs)
     return qml.gradients.finite_diff_jvp(
         f, args, tangents, **impl_kwargs["execution_config"].gradient_keyword_arguments
@@ -297,6 +330,7 @@ diff_method_map = {"finite-diff": _finite_diff}
 
 @debug_logger
 def _qnode_jvp(args, tangents, *, execution_config, device, qfunc_jaxpr, **impl_kwargs):
+
     if execution_config.use_device_gradient:
         return device.jaxpr_jvp(qfunc_jaxpr, args, tangents, execution_config=execution_config)
 
@@ -417,7 +451,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure autograph=True or use native control "
+            "variable (a function input). Please ensure that autograph=True or use native control "
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
@@ -506,10 +540,12 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
-        raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")
+        raise NotImplementedError("shot vectors are not yet supported in plxpr.")
 
     if not qnode.device.wires:
-        raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
+        raise NotImplementedError(
+            "devices must specify wires for integration with program capture."
+        )
 
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which

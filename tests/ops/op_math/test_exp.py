@@ -20,8 +20,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
-    AllWires,
-    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
@@ -469,11 +467,7 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = (
-            [0, 1, 2]
-            if op_class.num_wires in {AnyWires, AllWires}
-            else list(range(op_class.num_wires))
-        )
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]

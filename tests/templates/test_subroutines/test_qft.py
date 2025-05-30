@@ -253,7 +253,7 @@ class TestDynamicDecomposition:
 
         graph = qml.decomposition.DecompositionGraph(
             operations=[qml.QFT(wires=wires)],
-            target_gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
+            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
         graph.solve()
         expected_resources = graph.resource_estimate(qml.QFT(wires=wires))

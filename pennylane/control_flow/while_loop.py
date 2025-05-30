@@ -103,11 +103,29 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     .. details::
         :title: Usage Details
 
+        .. note::
+
+            The following examples may yield different outputs depending on how the
+            workflow function is executed. For instance, the function can be run
+            directly as:
+
+            >>> arg = 2
+            >>> workflow(arg)
+
+            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            which captures the abstract computational graph for the given input and generates the abstract shapes.
+            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+
+            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
 
         >>> import jax
+        >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
+        >>> qml.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
         If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
@@ -118,13 +136,14 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=True)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
             def f(x, y):
-                return jax.numpy.hstack([x, y]), 2*y
+                return jnp.hstack([x, y]), 2*y
 
             def workflow(i0):
                 x0, y0 = jnp.ones(i0), jnp.ones(i0)
                 return f(x0, y0)
+
 
         Even though ``x`` and ``y`` are initialized with the same shape, the shapes no longer match
         after one iteration. In this circumstance, ``x`` and ``y`` can no longer be combined
@@ -135,7 +154,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 return x * y, 2*y
 
@@ -144,13 +163,14 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
                 y0 = jnp.ones(i0)
                 return f(x0, y0)
 
+
         Note that with ``allow_array_resizing=False``, all arrays can still be resized together, as
         long as the pattern still matches. For example, here both ``x`` and ``y`` start with the
         same shape, and keep the same shape as each other for each iteration.
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=False)
+            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
@@ -170,7 +190,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
             def w():
                 @qml.while_loop(lambda i, x: i < 5)
                 def f(i, x):
-                    return i + 1, jax.numpy.append(x, i)
+                    return i + 1, jnp.append(x, i)
 
                 return f(0, jnp.array([]))
 
@@ -205,14 +225,13 @@ def _get_while_loop_qfunc_prim():
     """Get the while_loop primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    while_loop_prim = NonInterpPrimitive("while_loop")
+    while_loop_prim = QmlPrimitive("while_loop")
     while_loop_prim.multiple_results = True
     while_loop_prim.prim_type = "higher_order"
     register_custom_staging_rule(while_loop_prim, lambda params: params["jaxpr_body_fn"].outvars)
 
-    # pylint: disable=too-many-arguments
     @while_loop_prim.def_impl
     def _(
         *args,

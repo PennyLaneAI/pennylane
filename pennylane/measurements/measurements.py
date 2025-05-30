@@ -17,93 +17,17 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from enum import Enum
 from typing import Optional, Union
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-# =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Counts = "counts"
-    AllCounts = "allcounts"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-    VnEntropy = "vnentropy"
-    MutualInfo = "mutualinfo"
-    Shadow = "shadow"
-    ShadowExpval = "shadowexpval"
-    Purity = "purity"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Counts = ObservableReturnTypes.Counts
-"""Enum: An enumeration which represents returning the number of times
- each of the observed outcomes occurred in sampling."""
-
-AllCounts = ObservableReturnTypes.AllCounts
-"""Enum: An enumeration which represents returning the number of times
- each of the possible outcomes occurred in sampling, including 0 counts
- for unobserved outcomes."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
-
-VnEntropy = ObservableReturnTypes.VnEntropy
-"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-MutualInfo = ObservableReturnTypes.MutualInfo
-"""Enum: An enumeration which represents returning the mutual information before measurements."""
-
-Shadow = ObservableReturnTypes.Shadow
-"""Enum: An enumeration which represents returning the bitstrings and recipes from
-the classical shadow protocol"""
-
-ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the estimated expectation value
-from a classical shadow measurement"""
-
-Purity = ObservableReturnTypes.Purity
-"""Enum: An enumeration which represents returning the purity of the system prior ot measurement."""
 
 
 class MeasurementShapeError(ValueError):
@@ -127,17 +51,15 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             where the instance has to be identified
     """
 
-    # pylint:disable=too-many-instance-attributes
-
     _shortname = None
 
-    _obs_primitive: Optional["jax.core.Primitive"] = None
-    _wires_primitive: Optional["jax.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.core.Primitive"] = None
+    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
+    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
-        name = getattr(cls._shortname, "value", cls.__name__)
+        name = cls._shortname or cls.__name__
         cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
         cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
         cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
@@ -222,7 +144,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Optional[
@@ -270,16 +191,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         self.queue()
 
     @property
-    def return_type(self) -> Optional[ObservableReturnTypes]:
-        """Measurement return type."""
-        warnings.warn(
-            "MeasurementProcess property return_type is deprecated and will be removed in version 0.42. "
-            "Instead, please use isinstance for type checking directly.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self._shortname
-
-    @property
     def numeric_type(self) -> type:
         """The Python numeric type of the measurement result.
 
@@ -290,7 +201,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
@@ -319,7 +230,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ()
 
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
@@ -341,13 +252,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __repr__(self):
         """Representation of this class."""
-        if self._shortname:
-            if isinstance(self._shortname, str):
-                name_str = self._shortname
-            else:
-                name_str = self._shortname.value
-        else:
-            name_str = type(self).__name__
+        name_str = self._shortname or type(self).__name__
 
         if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
@@ -357,7 +262,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{getattr(self._shortname, 'value', 'None')}(wires={self.wires.tolist()})"
+        name_str = self._shortname or "None"
+        return f"{name_str}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -590,7 +496,7 @@ class SampleMeasurement(MeasurementProcess):
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
-    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+    _shortname = "sample"
 
     @abstractmethod
     def process_samples(

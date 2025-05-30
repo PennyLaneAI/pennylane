@@ -18,7 +18,7 @@ Contains the ApproxTimeEvolution template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.wires import Wires
 
@@ -116,7 +116,6 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -162,7 +161,7 @@ class ApproxTimeEvolution(Operation):
     @staticmethod
     def compute_decomposition(
         *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

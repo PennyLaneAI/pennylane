@@ -4,6 +4,8 @@ qml.qchem
 Overview
 --------
 
+.. currentmodule:: pennylane.qchem
+
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
 and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
 number observables. It also includes functionalities to convert to and from Openfermion's 

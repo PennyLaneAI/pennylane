@@ -20,6 +20,7 @@ import itertools
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import (
     CCZ,
     CH,
@@ -45,7 +46,6 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.operation import AnyWires
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -123,14 +123,14 @@ class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
+        op = op_cls(wires=0 if op_cls.num_wires is None else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
+        op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
         res_static = op.compute_matrix()
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
@@ -827,7 +827,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
     # Controlled operations
     qml.CNOT(wires=(0, 1)),
@@ -842,6 +841,7 @@ period_two_ops = (
 
 
 class TestPowMethod:
+
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
@@ -919,16 +919,37 @@ class TestPowMethod:
         assert op_pow[0].__class__ is qml.PhaseShift
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
-    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
-    def test_ISWAP_sqaure_root(self, n):
-        """Test that SISWAP is the square root of ISWAP."""
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, []),
+            (4, []),
+            (-4, []),
+            (-3, [qml.ISWAP(wires=(0, 1))]),
+            (5, [qml.ISWAP(wires=(0, 1))]),
+            (0.5, [qml.SISWAP(wires=(0, 1))]),
+            (4.5, [qml.SISWAP(wires=(0, 1))]),
+            (2, [qml.Z(0), qml.Z(1)]),
+            (-2, [qml.Z(0), qml.Z(1)]),
+            (6, [qml.Z(0), qml.Z(1)]),
+        ],
+    )
+    def test_ISWAP_powers(self, n, expected):
+        """Check that the special powers of ISWAP are correct."""
+
         op = qml.ISWAP(wires=(0, 1))
-
-        assert op.pow(n)[0].__class__ is qml.SISWAP
-
-        sqrt_mat = qml.matrix(op.pow, wire_order=[0, 1])(n)
-        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
-        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+        op_mat = qml.matrix(op)
+        pow_ops = op.pow(n)
+        assert pow_ops == expected
+        if not pow_ops:
+            pow_ops.append(qml.I(wires=(0, 1)))
+        mat = qml.matrix(qml.prod(*pow_ops), wire_order=[0, 1])
+        expected = (
+            qml.math.linalg.matrix_power(op_mat, n)
+            if isinstance(n, int)
+            else sp.linalg.fractional_matrix_power(op_mat, n)
+        )
+        assert qml.math.allclose(mat, expected)
 
     @pytest.mark.parametrize("offset", (0, 4, -4))
     def test_S_pow(self, offset):
@@ -972,17 +993,28 @@ class TestPowMethod:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(2.43 + offset)
 
-    @pytest.mark.parametrize("offset", (0, 4, -4))
-    def test_SISWAP_pow(self, offset):
-        """Test powers of the SISWAP operator"""
-        op = qml.SISWAP(wires=("b", "c"))
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, []),
+            (8, []),
+            (9, [qml.SISWAP(wires=(0, 1))]),
+            (2, [qml.ISWAP(wires=(0, 1))]),
+            (4, [qml.Z(0), qml.Z(1)]),
+        ],
+    )
+    def test_SISWAP_powers(self, n, expected):
+        """Check that the special powers of SISWAP are correct."""
 
-        assert len(op.pow(0 + offset)) == 0
-        assert op.pow(1 + offset)[0].__class__ is qml.SISWAP
-        assert op.pow(2 + offset)[0].__class__ is qml.ISWAP
-
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(2.34 + offset)
+        op = qml.SISWAP(wires=(0, 1))
+        op_mat = qml.matrix(op)
+        pow_ops = op.pow(n)
+        assert pow_ops == expected
+        if not pow_ops:
+            pow_ops.append(qml.I(wires=(0, 1)))
+        mat = qml.matrix(qml.prod(*pow_ops), wire_order=[0, 1])
+        expected = qml.math.linalg.matrix_power(op_mat, n)
+        assert qml.math.allclose(mat, expected)
 
     @pytest.mark.parametrize("op", (qml.WireCut(0), qml.Barrier(0)))
     @pytest.mark.parametrize("n", (2, 0.123, -2.3))

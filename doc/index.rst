@@ -179,6 +179,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/release_notes.md
    development/deprecations
    news/new_opmath
+   news/program_capture_sharp_bits
 
 .. toctree::
    :maxdepth: 1
@@ -222,6 +223,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_qchem
    code/qml_qnn
    code/qml_spin
+   code/qml_io
    
 .. toctree::
    :maxdepth: 1
@@ -229,6 +231,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml_capture
+   code/qml_concurrency
    code/qml_devices
    code/qml_ftqc
    code/qml_measurements

@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
-# pylint: disable= too-many-branches, too-many-return-statements
+
 import numpy as np
 
 import pennylane as qml
@@ -113,6 +113,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
+    mapping = mapping.strip().lower()
     if mapping == "jordan_wigner":
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     elif mapping == "parity":
@@ -121,6 +122,11 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+    else:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+        )
 
     if list(h.wires) != sorted(list(h.wires)):
         h = PauliSentence(

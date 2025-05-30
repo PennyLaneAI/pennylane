@@ -17,15 +17,16 @@ This file contains the snapshots function which extracts measurements from the q
 import warnings
 from functools import partial
 
-import pennylane as qml
+from pennylane.devices import LegacyDeviceFacade
+from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
 def _is_snapshot_compatible(dev):
     # The `_debugger` attribute is a good enough proxy for snapshot compatibility
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, LegacyDeviceFacade):
         return _is_snapshot_compatible(dev.target_device)
     return hasattr(dev, "_debugger")
 
@@ -101,11 +102,17 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.Snapshot()
+            qml.Snapshot("sample", measurement=qml.sample(), shots=5)
             return qml.expval(qml.X(0))
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
     1: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+    'sample': array([[0, 0],
+            [1, 1],
+            [1, 1],
+            [0, 0],
+            [1, 1]]),
     'execution_results': 0.0}
 
     .. code-block:: python3
@@ -179,17 +186,22 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
     """
 
-    qml.devices.preprocess.validate_measurements(tape)
-
     new_tapes = []
     accumulated_ops = []
     snapshot_tags = []
 
     for op in tape.operations:
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
-            new_tapes.append(tape.copy(operations=accumulated_ops, measurements=[meas_op]))
+            shots = (
+                tape.shots
+                if op.hyperparameters["shots"] == "workflow"
+                else op.hyperparameters["shots"]
+            )
+            new_tapes.append(
+                tape.copy(operations=accumulated_ops, measurements=[meas_op], shots=shots)
+            )
         else:
             accumulated_ops.append(op)
 
@@ -213,21 +225,10 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     """
 
     def get_snapshots(*args, **kwargs):
-        # Need to construct to generate the tape and be able to validate
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
-        qml.devices.preprocess.validate_measurements(tape)
-
-        old_interface = qnode.interface
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         with _SnapshotDebugger(qnode.device) as dbg:
-            # pylint: disable=protected-access
-            results = qnode(*args, **kwargs)
 
-            # Reset interface
-            if old_interface == "auto":
-                qnode.interface = "auto"
+            results = qnode(*args, **kwargs)
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots

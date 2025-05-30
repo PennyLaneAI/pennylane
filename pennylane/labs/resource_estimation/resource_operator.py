@@ -70,7 +70,7 @@ class ResourceOperator(ABC):
         .. code-block:: bash
 
             >>> op = ResourceQFT(range(3))
-            >>> op.resources(**op.resource_params())
+            >>> op.resources(**op.resource_params)
             {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
 
     """
@@ -116,8 +116,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 
@@ -136,8 +135,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
 
         raise ResourcesNotDefined
@@ -153,8 +151,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 
@@ -172,8 +169,7 @@ class ResourceOperator(ABC):
             ResourcesNotDefined: no resources implemented by default
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
         """
         raise ResourcesNotDefined
 

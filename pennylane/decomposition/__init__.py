@@ -38,13 +38,13 @@ By default, this system is disabled.
 .. code-block:: pycon
 
     >>> import pennylane as qml
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     False
     >>> qml.decomposition.enable_graph()
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     True
     >>> qml.decomposition.disable_graph()
-    >>> qml.decomposition.enabled_garph()
+    >>> qml.decomposition.enabled_graph()
     False
 
 .. _decomps_rules:
@@ -58,12 +58,14 @@ Defining Decomposition Rules
     :toctree: api
 
     ~register_resources
+    ~register_condition
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
     ~pow_resource_rep
     ~DecompositionRule
     ~Resources
+    ~CompressedResourceOp
 
 In the new decomposition system, a decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -104,7 +106,7 @@ Integration with the Decompose Transform
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
 decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
 flexible decompositions towards any target gate set. For example, the current system does not
-guarentee a decomposition to the desired target gate set:
+guarantee a decomposition to the desired target gate set:
 
 .. code-block:: python
 
@@ -143,8 +145,8 @@ arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom dec
 as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
 to the transform via these arguments.
 
-The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
-certain operators, wheras the ``alt_decomps`` is used to provide alternative decomposition rules
+``fixed_decomps`` forces the transform to use the specified decomposition rules for
+certain operators, whereas ``alt_decomps`` is used to provide alternative decomposition rules
 for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
 In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
@@ -153,6 +155,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
 .. code-block:: python
 
+    from functools import partial
     import pennylane as qml
 
     qml.decomposition.enable_graph()
@@ -216,7 +219,7 @@ operator towards a target gate set.
     op = qml.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
-        target_gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
+        gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
     graph.solve()
 
@@ -225,24 +228,43 @@ operator towards a target gate set.
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     graph.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
-    [H(1), CRZ(0.5, wires=Wires([0, 1])), H(1)]
+    [RZ(1.5707963267948966, wires=[1]),
+     RY(0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RY(-0.25, wires=[1]),
+     CNOT(wires=[0, 1]),
+     RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
-    <num_gates=14, gate_counts={RZ: 6, GlobalPhase: 4, RX: 2, CNOT: 2}>
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
+
+Utility Classes
+~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~DecompositionError
 
 """
 
-from .utils import DecompositionError, enable_graph, disable_graph, enabled_graph
+from .utils import (
+    DecompositionError,
+    enable_graph,
+    disable_graph,
+    enabled_graph,
+)
 from .decomposition_graph import DecompositionGraph
 from .resources import (
     Resources,
-    # TODO: add CompressedResourceOp once the conflict with labs is resolved.
     resource_rep,
     controlled_resource_rep,
     adjoint_resource_rep,
     pow_resource_rep,
+    CompressedResourceOp,
 )
 from .decomposition_rule import (
     register_resources,
+    register_condition,
     DecompositionRule,
     add_decomps,
     list_decomps,

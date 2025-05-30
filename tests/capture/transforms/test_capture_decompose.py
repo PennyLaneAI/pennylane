@@ -591,7 +591,7 @@ def test_decompose_plxpr_to_plxpr():
     transformed_jaxpr = decompose_plxpr_to_plxpr(
         jaxpr.jaxpr, jaxpr.consts, [], {"gate_set": gate_set}, *args
     )
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
     assert transformed_jaxpr.eqns[0].primitive == qml.RZ._primitive
     assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive

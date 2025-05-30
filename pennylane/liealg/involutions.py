@@ -13,15 +13,13 @@
 # limitations under the License.
 """Cartan involutions"""
 from functools import singledispatch
-
-# pylint: disable=missing-function-docstring
 from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import Y, Z, matrix
+import pennylane.ops.functions as op_func
 from pennylane.operation import Operator
+from pennylane.ops import Y, Z, op_math
 from pennylane.pauli import PauliSentence
 
 # Canonical involutions
@@ -92,7 +90,9 @@ def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -112,7 +112,7 @@ def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -122,7 +122,7 @@ def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
 
 @singledispatch
-def _AI(op):  # pylint:disable=unused-argument
+def _AI(op):
     r"""Default implementation of the canonical form of the AI involution
     :math:`\theta: x \mapsto x^\ast`.
     """
@@ -182,7 +182,7 @@ def AII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = No
 
 
 @singledispatch
-def _AII(op, wire=None):  # pylint:disable=unused-argument
+def _AII(op, wire=None):
     r"""Default implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
@@ -264,7 +264,7 @@ def AIII(
 
 
 @singledispatch
-def _AIII(op, p=None, q=None, wire=None):  # pylint:disable=unused-argument
+def _AIII(op, p=None, q=None, wire=None):
     r"""Default implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
@@ -298,7 +298,7 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _AIII_matrix(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _AIII_matrix(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_AIII.register(Operator)
@@ -320,7 +320,9 @@ def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = Non
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -383,7 +385,7 @@ def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = N
 
 
 @singledispatch
-def _DIII(op, wire=None):  # pylint:disable=unused-argument
+def _DIII(op, wire=None):
     r"""Default implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
@@ -432,7 +434,9 @@ def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -452,7 +456,7 @@ def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
-        evaluated and for which the parity under the involution is returned.
+            evaluated and for which the parity under the involution is returned.
 
     Returns:
         bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
@@ -505,7 +509,7 @@ def CII(
 
 
 @singledispatch
-def _CII(op, p=None, q=None, wire=None):  # pylint:disable=unused-argument
+def _CII(op, p=None, q=None, wire=None):
     r"""Default implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
@@ -539,7 +543,7 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int]
         return parity[0]
 
     # If it is not a qubit case, use the matrix representation
-    return _CII(matrix(op, wire_order=sorted(op.wires)), p, q, wire)
+    return _CII(op_func.matrix(op, wire_order=sorted(op.wires)), p, q, wire)
 
 
 @_CII.register(Operator)
@@ -586,7 +590,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
 
 
 @singledispatch
-def _even_odd_involution(op):  # pylint:disable=unused-argument, missing-function-docstring
+def _even_odd_involution(op):
     raise NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
@@ -608,8 +612,8 @@ def _even_odd_involution_ps(op: PauliSentence):
 def _even_odd_involution_matrix(op: np.ndarray):
     """see Table CI in https://arxiv.org/abs/2406.04418"""
     n = int(np.round(np.log2(op.shape[-1])))
-    YYY = qml.prod(*[Y(i) for i in range(n)])
-    YYY = qml.matrix(YYY, range(n))
+    YYY = op_math.prod(*[Y(i) for i in range(n)])
+    YYY = op_func.matrix(YYY, range(n))
 
     transformed = YYY @ op.conj() @ YYY
     if np.allclose(transformed, op):

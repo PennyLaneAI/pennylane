@@ -14,9 +14,9 @@
 r"""
 Contains the BasicEntanglerLayers template.
 """
-# pylint: disable=consider-using-enumerate,too-many-arguments
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.ops import CNOT, RX
 
 
 class BasicEntanglerLayers(Operation):
@@ -122,15 +122,14 @@ class BasicEntanglerLayers(Operation):
         ``ValueError: Wrong number of parameters``.
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
-        interface = qml.math.get_interface(weights)
-        weights = qml.math.asarray(weights, like=interface)
+        interface = math.get_interface(weights)
+        weights = math.asarray(weights, like=interface)
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         if not (len(shape) == 3 or len(shape) == 2):  # 3 is when batching, 2 is no batching
             raise ValueError(
                 f"Weights tensor must be 2-dimensional "
@@ -143,7 +142,7 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
             )
 
-        self._hyperparameters = {"rotation": rotation or qml.RX}
+        self._hyperparameters = {"rotation": rotation or RX}
         super().__init__(weights, wires=wires, id=id)
 
     @property
@@ -180,7 +179,7 @@ class BasicEntanglerLayers(Operation):
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
-        repeat = qml.math.shape(weights)[-2]
+        repeat = math.shape(weights)[-2]
 
         op_list = []
         for layer in range(repeat):
@@ -188,12 +187,12 @@ class BasicEntanglerLayers(Operation):
                 op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
 
             if len(wires) == 2:
-                op_list.append(qml.CNOT(wires=wires))
+                op_list.append(CNOT(wires=wires))
 
             elif len(wires) > 2:
                 for i in range(len(wires)):
                     w = wires.subset([i, i + 1], periodic_boundary=True)
-                    op_list.append(qml.CNOT(wires=w))
+                    op_list.append(CNOT(wires=w))
 
         return op_list
 

@@ -19,6 +19,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
@@ -1215,7 +1216,8 @@ class TestQubitDeviceNewUnits:
         dev = DefaultQubitLegacy(wires=3)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            QuantumFunctionError,
+            match="Unsupported return type specified for observable",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
 
@@ -1232,7 +1234,7 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The state or density matrix cannot be returned in combination with other return types",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
@@ -1248,7 +1250,7 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Returning the Von Neumann entropy is not supported when using custom wire labels",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
@@ -1264,5 +1266,5 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Returning the mutual information is not supported when using custom wire labels"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             qml.execute(tapes=[tape], device=dev, diff_method=None)

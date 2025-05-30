@@ -15,11 +15,11 @@
 This submodule contains the qutrit quantum operations that
 accept a unitary matrix as a parameter.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+
 import warnings
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -49,9 +49,6 @@ class QutritUnitary(Operation):
     >>> print(example_circuit())
     [0.70710678+0.j 0.70710678+0.j 0.        +0.j]
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -185,9 +182,6 @@ class ControlledQutritUnitary(QutritUnitary):
 
     >>> qml.ControlledQutritUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='012')
     """
-
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""

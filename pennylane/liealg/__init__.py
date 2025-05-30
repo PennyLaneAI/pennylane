@@ -23,7 +23,7 @@ the special unitary group :math:`SU(2^n).`
 For full universality, we require the available gates to span all of :math:`SU(2^n)`
 in order to reach any state in Hilbert space from any other state.
 
-:math:`SU(2^n)` is a Lie group and has an associated :doc:`Lie algebra <demos/tutorial_liealgebra>`
+:math:`SU(2^n)` is a Lie group and has an associated `Lie algebra <demos/tutorial_liealgebra>`__
 to it, called :math:`\mathfrak{su}(2^n)`.
 In some cases, it is more convenient to work with the
 associated Lie algebra rather than the Lie group.
@@ -95,11 +95,11 @@ Relevant demos
 
 Check out the following demos to learn more about Lie algebras in the context of quantum computation:
 
-* :doc:`Introducing (dynamical) Lie algebras for quantum practitioners <demos/tutorial_liealgebra>`
-* :doc:`g-sim: Lie-algebraic classical simulations for variational quantum computing <demos/tutorial_liesim>`
-* :doc:`(g + P)-sim: Extending g-sim by non-DLA observables and gates <demos/tutorial_liesim_extension>`
-* :doc:`Fixed depth Hamiltonian simulation via Cartan decomposition <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`
-* :doc:`The KAK decomposition <demos/tutorial_kak_decomposition>`
+* `Introducing (dynamical) Lie algebras for quantum practitioners <demos/tutorial_liealgebra>`__
+* `g-sim: Lie-algebraic classical simulations for variational quantum computing <demos/tutorial_liesim>`__
+* `(g + P)-sim: Extending g-sim by non-DLA observables and gates <demos/tutorial_liesim_extension>`__
+* `Fixed depth Hamiltonian simulation via Cartan decomposition <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__
+* `The KAK decomposition <demos/tutorial_kak_decomposition>`__
 
 
 
@@ -130,3 +130,29 @@ from .horizontal_cartan_subalgebra import (
     change_basis_ad_rep,
     check_abelian,
 )
+
+__all__ = [
+    "structure_constants",
+    "center",
+    "lie_closure",
+    "cartan_decomp",
+    "check_cartan_decomp",
+    "check_commutation_relation",
+    "even_odd_involution",
+    "concurrence_involution",
+    "A",
+    "AI",
+    "AII",
+    "AIII",
+    "BD",
+    "BDI",
+    "DIII",
+    "C",
+    "CI",
+    "CII",
+    "horizontal_cartan_subalgebra",
+    "adjvec_to_op",
+    "op_to_adjvec",
+    "change_basis_ad_rep",
+    "check_abelian",
+]

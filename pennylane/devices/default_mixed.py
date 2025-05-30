@@ -12,35 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
+The ``default.mixed`` device is PennyLane's standard qubit simulator for mixed-state computations.
 
 It implements some built-in qubit :doc:`operations </introduction/operations>`,
-providing a simple mixed-state simulation ofqubit-based quantum circuits.
+providing a simple mixed-state simulation of qubit-based quantum circuits.
+
 """
-# isort: skip_file
-# pylint: disable=wrong-import-order, ungrouped-imports
 import logging
-
-import numpy as np
-
-import pennylane as qml
-from pennylane.math import get_canonical_interface_name
-from pennylane.logging import debug_logger, debug_logger_init
-
-# We deliberately separate the imports to avoid confusion with the legacy device
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Optional, Union
 
+import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
+from pennylane.exceptions import DeviceError
+from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.math import get_canonical_interface_name
 from pennylane.ops.channel import __qubit_channels__ as channels
-from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     no_sampling,
@@ -49,7 +45,6 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
-from .modifiers import simulator_tracking, single_tape_support
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -208,9 +203,8 @@ class DefaultMixed(Device):
         """The name of the device."""
         return "default.mixed"
 
-    # pylint: disable=too-many-positional-arguments
     @debug_logger_init
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         wires=None,
         shots=None,
@@ -235,13 +229,13 @@ class DefaultMixed(Device):
         super().__init__(wires=wires, shots=shots)
 
         # Seed setting
-        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        seed = qml.math.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":
             self._prng_key = seed
-            self._rng = np.random.default_rng(None)
+            self._rng = qml.math.random.default_rng(None)
         else:
             self._prng_key = None
-            self._rng = np.random.default_rng(seed)
+            self._rng = qml.math.random.default_rng(seed)
 
         self._debugger = None
 
@@ -311,7 +305,7 @@ class DefaultMixed(Device):
 
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:

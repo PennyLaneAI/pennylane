@@ -129,7 +129,7 @@ def _get_plxpr_defer_measurements():
     class DeferMeasurementsInterpreter(PlxprInterpreter):
         """Interpreter for applying the defer_measurements transform to plxpr."""
 
-        # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
+        # pylint: disable=attribute-defined-outside-init,no-self-use
 
         def __init__(self, num_wires):
             super().__init__()
@@ -161,7 +161,7 @@ def _get_plxpr_defer_measurements():
                 cur_target (int): target wire to be used for a mid-circuit measurement
 
             Raises:
-                TransformError: if there is overlap between the used circuit wires and mid-circuit
+                TransformError: if there is an overlap between the used circuit wires and mid-circuit
                 measurement target wires
             """
             self.state["used_wires"] |= wires.toset()
@@ -184,7 +184,7 @@ def _get_plxpr_defer_measurements():
                 inds (Sequence[int]): Indices of mid-circuit measurement values in ``data``
 
             Raises:
-                TransformError: if there is overlap between the used circuit wires and mid-circuit
+                TransformError: if there is an overlap between the used circuit wires and mid-circuit
                 measurement target wires
             """
             if len(inds) > 1:
@@ -260,7 +260,7 @@ def _get_plxpr_defer_measurements():
 
         def resolve_mcm_values(
             self,
-            primitive: "jax.core.Primitive",
+            primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
             invals: Sequence[Union[MeasurementValue, Number]],
             params: dict,
@@ -269,7 +269,7 @@ def _get_plxpr_defer_measurements():
             input ``eqn`` in its ``processing_fn``.
 
             Args:
-                primitive (jax.core.Primitive): Jax primitive
+                primitive (jax.extend.core.Primitive): Jax primitive
                 subfuns (Sequence[Callable]): Callable positional arguments to the primitive.
                     These are created by pre-processing jaxpr equation parameters.
                 invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the primitive
@@ -306,11 +306,11 @@ def _get_plxpr_defer_measurements():
             [m0, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
             return m0._apply(lambda x: processing_fn(x, other))
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -391,9 +391,7 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _(
-        self, *invals, jaxpr_branches, consts_slices, args_slice
-    ):  # pylint: disable=unused-argument
+    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
@@ -656,7 +654,7 @@ def defer_measurements(
         .. warning::
 
             While the transform includes validation to avoid overlap between wires of the original
-            circuit and mid-circuit measurement target wires, if any wires of the original ciruit
+            circuit and mid-circuit measurement target wires, if any wires of the original circuit
             are traced, i.e. dependent on dynamic arguments to the transformed workflow, the
             validation may not catch overlaps. Consider the following example:
 
@@ -679,8 +677,8 @@ def defer_measurements(
             is unknown. However, execution with n = 0 would raise an error, as the CNOT wires would
             be (0, 0).
 
-            Thus, users must by cautious when transforming a circuit. **For ``n`` total wires and
-            ``c`` circuit wires, the number of mid-circuit measurements allowed is ``n - c``.**
+            Thus, users must be cautious when transforming a circuit. **For n total wires and
+            c circuit wires, the number of mid-circuit measurements allowed is n - c.**
 
         Using ``defer_measurements`` with program capture enabled introduces new features and
         restrictions:
@@ -694,9 +692,9 @@ def defer_measurements(
           measurements.
 
         * Using mid-circuit measurements as gate parameters is now possible. This feature currently
-          has the following restrictions:
-          * Mid-circuit measurement values cannot be used for multiple parameters of the same gate.
-          * Mid-circuit measurement values cannot be used as wires.
+          has the following restrictions. First, mid-circuit measurement values cannot be used
+          for multiple parameters of the same gate. Second, mid-circuit measurement values
+          cannot be used as wires.
 
           .. code-block:: python
 

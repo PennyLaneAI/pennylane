@@ -1,4 +1,4 @@
-argcomplete==3.5.3
+argcomplete==3.6.2
 attrs==23.2.0
 Automat==22.10.0
 Babel==2.10.3
@@ -10,7 +10,7 @@ botocore==1.34.46
 certifi==2023.11.17
 chardet==5.2.0
 click==8.1.6
-cloud-init==24.3.1
+cloud-init==24.4.1
 colorama==0.4.6
 command-not-found==0.3
 configobj==5.0.8
@@ -41,7 +41,7 @@ oauthlib==3.2.2
 packaging==24.0
 pexpect==4.9.0
 pipx==1.7.1
-platformdirs==4.3.6
+platformdirs==4.3.8
 ptyprocess==0.7.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
@@ -54,7 +54,7 @@ pyparsing==3.1.1
 pyparted==3.12.0
 pyrsistent==0.20.0
 pyserial==3.5
-python-apt==2.7.7+ubuntu3
+python-apt==2.7.7+ubuntu4
 python-dateutil==2.8.2
 python-debian==0.1.49+ubuntu2
 python-magic==0.4.27
@@ -66,7 +66,7 @@ s3transfer==0.10.1
 service-identity==24.1.0
 setuptools==68.1.2
 six==1.16.0
-sos==4.7.2
+sos==4.8.2
 ssh-import-id==5.11
 systemd-python==235
 Twisted==24.3.0

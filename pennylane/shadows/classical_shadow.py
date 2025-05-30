@@ -15,11 +15,12 @@
 # pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops as qops
+from pennylane import math
 
 
 class ClassicalShadow:
@@ -46,7 +47,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
+        on `estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`__.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -55,7 +56,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on :doc:`Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`__, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -112,9 +113,9 @@ class ClassicalShadow:
             )
 
         self.observables = [
-            qml.matrix(qml.X(0)),
-            qml.matrix(qml.Y(0)),
-            qml.matrix(qml.Z(0)),
+            qops.functions.matrix(qops.X(0)),
+            qops.functions.matrix(qops.Y(0)),
+            qops.functions.matrix(qops.Z(0)),
         ]
 
     @property
@@ -147,17 +148,17 @@ class ClassicalShadow:
                 # snapshots is an iterable that determines the indices
                 pick_snapshots = snapshots
 
-            pick_snapshots = qml.math.convert_like(pick_snapshots, self.bits)
-            bits = qml.math.gather(self.bits, pick_snapshots)
-            recipes = qml.math.gather(self.recipes, pick_snapshots)
+            pick_snapshots = math.convert_like(pick_snapshots, self.bits)
+            bits = math.gather(self.bits, pick_snapshots)
+            recipes = math.gather(self.recipes, pick_snapshots)
         else:
             bits = self.bits
             recipes = self.recipes
 
         if isinstance(wires, Iterable):
-            wires = qml.math.convert_like(wires, bits)
-            bits = qml.math.T(qml.math.gather(qml.math.T(bits), wires))
-            recipes = qml.math.T(qml.math.gather(qml.math.T(recipes), wires))
+            wires = math.convert_like(wires, bits)
+            bits = math.T(math.gather(math.T(bits), wires))
+            recipes = math.T(math.gather(math.T(recipes), wires))
 
         T, n = bits.shape
 
@@ -165,7 +166,7 @@ class ClassicalShadow:
         for i, u in enumerate(self.observables):
             U[np.where(recipes == i)] = u
 
-        state = (qml.math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
+        state = (math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
 
         return 3 * state - np.eye(2)[None, None, :, :]
 
@@ -221,8 +222,8 @@ class ClassicalShadow:
 
         transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
 
-        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
-        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+        old_indices = [f"a{ascii_letters[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ascii_letters[1:2 * n + 1:2]}{ascii_letters[2:2 * n + 1:2]}"
 
         return np.reshape(
             np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),
@@ -262,7 +263,7 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Identity)):
+        if isinstance(observable, (qops.X, qops.Y, qops.Z, qops.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 
@@ -285,7 +286,7 @@ class ClassicalShadow:
         save quantum circuit executions.
 
         Args:
-            H (qml.Observable): Observable to compute the expectation value
+            H (qml.operation.Operator): Observable to compute the expectation value
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:
@@ -333,8 +334,9 @@ class ClassicalShadow:
             results.append(np.sum(expvals[start : start + len(coeffs_and_words[i])]))
             start += len(coeffs_and_words[i])
 
-        return qml.math.squeeze(results)
+        return math.squeeze(results)
 
+    # pylint: disable=too-many-positional-arguments
     def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 
@@ -431,16 +433,16 @@ class ClassicalShadow:
         evs_nonzero = _project_density_matrix_spectrum(rdm)
         if alpha == 1:
             # Special case of von Neumann entropy
-            return qml.math.entr(evs_nonzero) / div
+            return math.entr(evs_nonzero) / div
 
         # General Renyi-alpha entropy
-        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+        return math.log(math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
 
 def _project_density_matrix_spectrum(rdm):
     """Project the estimator density matrix rdm with possibly negative eigenvalues onto the closest true density matrix in L2 norm"""
     # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
-    evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
+    evs = math.eigvalsh(rdm)[::-1]  # order from largest to smallest
     d = len(rdm)
     a = 0.0
     for i in range(d - 1, -1, -1):
@@ -469,9 +471,7 @@ def median_of_means(arr, num_batches, axis=0):
         float: The median of means
     """
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
-    means = [
-        qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
-    ]
+    means = [math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)]
 
     return np.median(means, axis=axis)
 
@@ -513,27 +513,25 @@ def pauli_expval(bits, recipes, word):
     T, n = recipes.shape
     b = word.shape[0]
 
-    bits = qml.math.cast(bits, np.int64)
-    recipes = qml.math.cast(recipes, np.int64)
+    bits = math.cast(bits, np.int64)
+    recipes = math.cast(recipes, np.int64)
 
-    word = qml.math.convert_like(qml.math.cast_like(word, bits), bits)
+    word = math.convert_like(math.cast_like(word, bits), bits)
 
     # -1 in the word indicates an identity observable on that qubit
     id_mask = word == -1
 
     # determine snapshots and qubits that match the word
-    indices = qml.math.equal(
-        qml.math.reshape(recipes, (T, 1, n)), qml.math.reshape(word, (1, b, n))
-    )
-    indices = np.logical_or(indices, qml.math.tile(qml.math.reshape(id_mask, (1, b, n)), (T, 1, 1)))
-    indices = qml.math.all(indices, axis=2)
+    indices = math.equal(math.reshape(recipes, (T, 1, n)), math.reshape(word, (1, b, n)))
+    indices = np.logical_or(indices, math.tile(math.reshape(id_mask, (1, b, n)), (T, 1, 1)))
+    indices = math.all(indices, axis=2)
 
     # mask identity bits (set to 0)
-    bits = qml.math.where(id_mask, 0, qml.math.tile(qml.math.expand_dims(bits, 1), (1, b, 1)))
+    bits = math.where(id_mask, 0, math.tile(math.expand_dims(bits, 1), (1, b, 1)))
 
-    bits = qml.math.sum(bits, axis=2) % 2
+    bits = math.sum(bits, axis=2) % 2
 
-    expvals = qml.math.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(
+    expvals = math.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(
         np.logical_not(id_mask), axis=1
     )
-    return qml.math.cast(expvals, np.float64)
+    return math.cast(expvals, np.float64)

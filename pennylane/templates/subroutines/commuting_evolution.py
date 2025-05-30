@@ -18,7 +18,8 @@ Contains the CommutingEvolution template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
@@ -106,7 +107,6 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -131,7 +131,7 @@ class CommutingEvolution(Operation):
                 f"hamiltonian must be a linear combination of pauli words. Got {hamiltonian}"
             )
 
-        trainable_hamiltonian = qml.operation.is_trainable(hamiltonian)
+        trainable_hamiltonian = any(math.requires_grad(d) for d in hamiltonian.data)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
@@ -160,10 +160,12 @@ class CommutingEvolution(Operation):
         context.append(self)
         return self
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
