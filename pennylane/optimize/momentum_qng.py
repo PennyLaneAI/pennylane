@@ -56,7 +56,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     ...     return qml.expval(qml.X(0))
 
     Once constructed, the cost function can be passed directly to the
-    optimizer's :meth:`.step` function. In addition to the standard learning
+    optimizer's :meth:`~.step` function. In addition to the standard learning
     rate, the ``MomentumQNGOptimizer`` takes a ``momentum`` parameter:
 
     >>> eta = 0.01
