@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new function called :func:`~.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
 
@@ -26,7 +26,7 @@
   ```
   
   Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
-  please consult the documentation for :func:`~.from_qasm3` and ensure that you have installed `openqasm3` and 
+  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
   `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
