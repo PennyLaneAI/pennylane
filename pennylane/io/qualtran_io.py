@@ -75,6 +75,9 @@ def _map_to_bloq():
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
+        if "map_ops" in kwargs and not kwargs["map_ops"]:
+            return ToBloq(op, **kwargs)
+
         if "custom_mapping" in kwargs:
             return kwargs["custom_mapping"][op]
 
@@ -84,101 +87,101 @@ def _map_to_bloq():
         )
 
     @_to_qt_bloq.register
-    def _(op: qops.GlobalPhase):
+    def _(op: qops.GlobalPhase, **kwargs):
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
 
     @_to_qt_bloq.register
-    def _(op: qops.Hadamard):
+    def _(op: qops.Hadamard, **kwargs):
         from qualtran.bloqs.basic_gates import Hadamard
 
         return Hadamard()
 
     @_to_qt_bloq.register
-    def _(op: qops.Identity):
+    def _(op: qops.Identity, **kwargs):
         from qualtran.bloqs.basic_gates import Identity
 
         return Identity()
 
     @_to_qt_bloq.register
-    def _(op: qops.RX):
+    def _(op: qops.RX, **kwargs):
         from qualtran.bloqs.basic_gates import Rx
 
         return Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.RY):
+    def _(op: qops.RY, **kwargs):
         from qualtran.bloqs.basic_gates import Ry
 
         return Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.RZ):
+    def _(op: qops.RZ, **kwargs):
         from qualtran.bloqs.basic_gates import Rz
 
         return Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.S):
+    def _(op: qops.S, **kwargs):
         from qualtran.bloqs.basic_gates import SGate
 
         return SGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.SWAP):
+    def _(op: qops.SWAP, **kwargs):
         from qualtran.bloqs.basic_gates import TwoBitSwap
 
         return TwoBitSwap()
 
     @_to_qt_bloq.register
-    def _(op: qops.CSWAP):
+    def _(op: qops.CSWAP, **kwargs):
         from qualtran.bloqs.basic_gates import TwoBitCSwap
 
         return TwoBitCSwap()
 
     @_to_qt_bloq.register
-    def _(op: qops.T):
+    def _(op: qops.T, **kwargs):
         from qualtran.bloqs.basic_gates import TGate
 
         return TGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.X):
+    def _(op: qops.X, **kwargs):
         from qualtran.bloqs.basic_gates import XGate
 
         return XGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.Y):
+    def _(op: qops.Y, **kwargs):
         from qualtran.bloqs.basic_gates import YGate
 
         return YGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.CY):
+    def _(op: qops.CY, **kwargs):
         from qualtran.bloqs.basic_gates import CYGate
 
         return CYGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.Z):
+    def _(op: qops.Z, **kwargs):
         from qualtran.bloqs.basic_gates import ZGate
 
         return ZGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.CZ):
+    def _(op: qops.CZ, **kwargs):
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
 
     @_to_qt_bloq.register
-    def _(op: qops.Adjoint):
+    def _(op: qops.Adjoint, **kwargs):
         return _map_to_bloq()(op.base).adjoint()
 
     @_to_qt_bloq.register
-    def _(op: qops.Controlled):
+    def _(op: qops.Controlled, **kwargs):
         return _map_to_bloq()(op.base).controlled()
 
     return _to_qt_bloq
@@ -675,13 +678,14 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
 
-            def __init__(self, op, **kwargs):
+            def __init__(self, op, map_ops=False, **kwargs):
                 from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operation) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operation} or {QNode}.")
 
                 self.op = op
+                self.map_ops = map_ops
                 self._kwargs = kwargs
                 super().__init__()
 
@@ -742,7 +746,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
 
                     # 2. Add each operation to the composite Bloq.
                     for op in ops:
-                        bloq = _map_to_bloq()(op)
+                        bloq = _map_to_bloq()(op, map_ops=self.map_ops)
                         if bloq.signature == qt.Signature([]):
                             bb.add(bloq)
                             continue
@@ -952,7 +956,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if map_ops:
         if custom_mapping:
-            return _map_to_bloq()(circuit, custom_mapping=custom_mapping, **kwargs)
-        return _map_to_bloq()(circuit, **kwargs)
+            return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
+        return _map_to_bloq()(circuit, map_ops=True, **kwargs)
 
     return ToBloq(circuit, **kwargs)

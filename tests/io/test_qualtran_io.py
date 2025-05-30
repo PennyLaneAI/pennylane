@@ -378,8 +378,34 @@ class TestToBloq:
         assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
 
+    def test_to_bloq_circuits(self):
+        """Tests that to_bloq functions as intended for complex circuits"""
+
+        from qualtran.bloqs.basic_gates import Hadamard, CNOT
+
+        dev = qml.device("default.qubit", wires = 6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.QuantumPhaseEstimation(
+                unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
+        )
+        
+        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit_cg = mapped_circuit.call_graph()[1]
+        wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
+        wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
+
+        assert mapped_circuit_cg[Hadamard()] == 11
+        assert wrapped_circuit_cg[Hadamard()] == 11
+        assert CNOT() not in mapped_circuit_cg
+        assert wrapped_circuit_cg[CNOT()] == 20
+
     def test_from_bloq_to_bloq(self):
-        """Tests that FromBloq and to_bloq functions as intended for the QPE operator"""
+        """Tests that FromBloq and to_bloq functions as intended"""
+
+        from qualtran.bloqs.basic_gates import CZPowGate
 
         qpe_op = qml.QuantumPhaseEstimation(
             unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
