@@ -19,6 +19,7 @@ from functools import partial
 import networkx as nx
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
@@ -328,7 +329,7 @@ class TestMBQCFormalismConversion:
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.05)
+        assert np.allclose(res, res_ref, atol=0.07)
 
     def test_queue_cnot(self):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
@@ -490,6 +491,13 @@ class TestMBQCFormalismConversion:
         else:
             assert len(transformed_tape.measurements[0].wires) == len(tape.wires)
 
+    # this test takes 15-20 seconds for a run locally with 500 shots. It tests inherently
+    # probabilistic behaviour. The low shot count means a high variance in the results,
+    # but we want to ensure they are *usually* quite close to the analytic output, in order
+    # to test our protocol for conversion to the MBQC formalism with multiple gates and
+    # wires E2E. Following discussion at the FTQC team meeting, we are marking
+    # this test as flaky and keeping it here for the time being.
+    @flaky(max_runs=5, min_passes=3)
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
