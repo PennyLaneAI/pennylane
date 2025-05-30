@@ -76,7 +76,7 @@ def _get_full_transform_program(
 def _interpret_level(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
     num_user: int,
-    gradient_expand,
+    gradient_expand: bool,
 ) -> tuple[slice, bool]:
     """Interpret the level specification and convert it to a slice and final transform flag.
 
