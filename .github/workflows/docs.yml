@@ -55,7 +55,7 @@ jobs:
             && pip3 install .
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py
-        build-command: "sphinx-build -b html . _build -W --keep-going"
+        build-command: "sphinx-build -b html . _build -W --keep-going -vv"
 
     - name: Freeze dependencies
       shell: bash
