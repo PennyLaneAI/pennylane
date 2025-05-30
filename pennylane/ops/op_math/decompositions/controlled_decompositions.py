@@ -101,10 +101,9 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
         ctrl_decomp_bisect_rule(target_operation.matrix(), control_wires + target_operation.wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op, context=current_queue)
+            queuing.apply(op)
 
     return q.queue
 
@@ -196,10 +195,9 @@ def ctrl_decomp_zyz(
         ops.cond(_not_zero(global_phase), _ctrl_global_phase)(global_phase, control_wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op, context=current_queue)
+            queuing.apply(op)
 
     return q.queue
 
