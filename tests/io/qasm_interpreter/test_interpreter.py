@@ -32,6 +32,7 @@ from pennylane import (
     Toffoli,
     queuing,
 )
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -48,6 +49,22 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestInterpreter:
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(open("complex_subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter(permissive=True).interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [
+            Hadamard('q0'),
+            PauliY('q0')
+        ]
+        assert context["vars"]["c"]["val"] == 0
 
     def test_subroutines(self):
         # parse the QASM

@@ -278,9 +278,17 @@ class QasmInterpreter:
 
         return context
 
+    def _init_wire_map(self, context: dict):
+        """
+        Inits the wire map dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "wire_map" not in context or context["wire_map"] is None:
+            context["wire_map"] = dict()
+
     def _init_vars(self, context: dict):
         """
-        context["callable"] = partial(self._execute_all, context)
         Inits the vars dict on the current context.
         Args:
             context (dict): the current context.
@@ -325,6 +333,7 @@ class QasmInterpreter:
         )
         context["scopes"]["subroutines"][node.name.name]["sub"] = True
         context["scopes"]["subroutines"][node.name.name]["body"] = node.body
+        context["scopes"]["subroutines"][node.name.name]["params"] = [param.name.name for param in node.arguments]
 
 
     @staticmethod
@@ -337,7 +346,7 @@ class QasmInterpreter:
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
         subroutine is called.
         """
-        context["return"] = node.expression.name
+        context["return"] = self.eval_expr(node.expression, context)
 
     @visit.register(ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: dict):
@@ -630,28 +639,36 @@ class QasmInterpreter:
                         f"Reference to an undeclared subroutine {name} in {context['name']}."
                     )
                 else:
-                    if "scopes" in context and name in context["scopes"]["subroutines"]:
-                        func_context = context["scopes"]["subroutines"][name]
+                    # TODO: use ChainMap to get this from scopes or outer_scopes
+                    if "scopes" in context and "subroutines" in context["scopes"] \
+                            and node.name.name in context["scopes"]["subroutines"]:
+                        func_context = context["scopes"]["subroutines"][node.name.name]
+                    elif "outer_scopes" in context and "subroutines" in context["outer_scopes"] \
+                            and node.name.name in context["outer_scopes"]["subroutines"]:
+                        func_context = context["outer_scopes"]["subroutines"][node.name.name]
                     else:
-                        func_context = context["outer_scopes"]["subroutines"][name]
+                        raise NameError(f"Reference to subroutine {node.name.name} not available in calling namespace"
+                                        f"on line {node.span.start_line}.")
 
                     # bind subroutine arguments
-                    for arg in node.arguments:
-                        self._init_vars(func_context)
-                        evald_arg = self.eval_expr(arg, context)
-                        # TODO: maybe we want to have a class for classical and a class for quantum parameters
+                    self._init_vars(func_context)
+                    evald_args = [self.eval_expr(raw_arg, context) for raw_arg in node.arguments]
+                    for evald_arg, param in list(zip(evald_args, func_context["params"])):
                         if not isinstance(
                             evald_arg, str
                         ):  # this would indicate a quantum parameter
-                            func_context["vars"][arg.name] = evald_arg
+                            func_context["vars"][param] = evald_arg
+                        else:
+                            self._init_wire_map(func_context)
+                            func_context["wire_map"][param] = evald_arg
 
                     # execute the subroutine
                     self.visit(
-                        func_context["body"], context["scopes"]["subroutines"][node.name.name]
+                        func_context["body"], func_context
                     )
 
                     # the return value
-                    return self.retrieve_variable(func_context["return"], func_context)["val"]
+                    return func_context["return"]
         elif isinstance(node, Callable):
             res = node()
         elif re.search("Literal", node.__class__.__name__):
