@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
-# pylint: disable=unused-argument, too-many-statements
+# pylint: disable=too-many-statements
 @lru_cache
 def _get_op_call_graph():
     @singledispatch
