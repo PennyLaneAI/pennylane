@@ -434,6 +434,11 @@
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
 
+* A `rowcol` function is now available in `pennylane.labs.intermediate_reps`.
+  Given the parity matrix of a CNOT circuit and a qubit connectivity graph, it synthesizes a
+  possible implementation of the parity matrix that respects the connectivity.
+  [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
+
 
 <h3>Breaking changes 💔</h3>
 
