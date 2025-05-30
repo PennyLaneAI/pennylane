@@ -15,7 +15,6 @@
 Contains the Select template.
 """
 
-
 import copy
 import itertools
 
@@ -238,6 +237,41 @@ def _ceil_log(a):
 
 
 def _add_first_k_units(ops, controls, work_wires, k):
+    """Add all controlled-applied operators within the unary iterator scheme, in a recursive
+    manner.
+
+    This function is used for the outer-most recursion level, and then calls _add_k_units
+    for the inner recursion levels.
+
+    Given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ - 1`` control wires,
+    this function applies one of two circuits.
+    If ``k>=3/4 * 2**⌈log_2(k)⌉`` (i.e. ``k`` is larger or equal to the maximal capacity for
+    the given number of controls), the following circuit is applied:
+    ```
+    ─╭○─────╭○─────╭●────────╭●─────●─╮─
+    ─├○─────│──────│──╭●─────│──────●─┤─
+     ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
+    ────├■─────├■────────├■─────├■──────
+        ╰■     ╰■        ╰■     ╰■
+    ```
+    where each box symbolizes a call to _add_k_units on the next recursion level.
+    Here, two temporary ``AND`` gates were merged into the two single CNOTs and into the pair of
+    CNOTs each.
+
+    If ``k<3/4 * 2**⌈log_2(k)⌉`` (i.e. ``k`` is smaller than the maximal capacity for
+    the given number of controls), the following circuit is applied instead:
+    ```
+    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
+    ─├○─────│──────●─┤│──────│────────│─
+     ╰──╭■──╰X─╭■────╯│      │        │
+    ────├■─────├■─────├○─────│──────●─┤─
+        ╰■     ╰■     ╰───■──╰X──■────╯
+    ```
+
+    That is, the identity merging the central two temporary ``AND`` gates can not be applied,
+    and instead the second half, which takes a reduced form, is applied somewhat independently
+    of the first half.
+    """
     assert k == len(ops) > 2
 
     needed_controls = 2 * _ceil_log(k) - 1
@@ -294,12 +328,31 @@ def _add_first_k_units(ops, controls, work_wires, k):
 
 
 def _add_k_units(ops, controls, work_wires, k):
-    assert k == len(ops)
-    if k == 0:
-        return []
-    needed_controls = 2 * _ceil_log(k) + 1
-    assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
-    controls = controls[:needed_controls]
+    """Add k controlled-applied operators within the unary iterator scheme, in a recursive
+    manner.
+
+    This is _not_ used for the outer-most recursion level, see _add_first_k_units instead.
+
+    Given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ + 1`` control wires,
+    this function applies the circuit
+    ```
+    ─╭●────╭●────●─╮─
+    ─├○────│─────●─┤─
+     ╰──■──╰X─■────╯
+    ```
+    where each box symbolizes calls to _add_k_units on the next recursion level.
+    The next-level calls to _add_k_units use
+
+    ``k_first = 2 ** (⌈log_2(k)⌉-1)`` (i.e. half of ``k``, rounded up to the next power of two)
+    and
+    ``k_second = k-k_first`` (i.e. the rest)
+
+    operators, respectively. Accordingly, two control wires less are used.
+    """
+    assert k == len(ops) > 0
+    num_bits = _ceil_log(k)
+    needed_controls = 2 * num_bits + 1
+    assert len(controls) == needed_controls, f"{len(controls)=}, {needed_controls=}"
 
     if k == 1:
         return [ctrl(ops[0], control=controls[-1], control_values=[1], work_wires=work_wires)]
@@ -307,14 +360,12 @@ def _add_k_units(ops, controls, work_wires, k):
     and_wires = controls[:3]
     new_work_wires = work_wires + controls[:2]
     new_controls = controls[2:]
-    _k = 2 ** (_ceil_log(k) - 1)
+    k_first = 2 ** (num_bits - 1)
     return (
-        [X(and_wires[1])]
-        + [TemporaryAnd(and_wires)]
-        + [X(and_wires[1])]
-        + _add_k_units(ops[:_k], new_controls, new_work_wires, _k)
+        [X(and_wires[1]), TemporaryAnd(and_wires), X(and_wires[1])]
+        + _add_k_units(ops[:k_first], new_controls, new_work_wires, k_first)
         + [CNOT(and_wires[::2])]
-        + _add_k_units(ops[_k:], new_controls, new_work_wires, k - _k)
+        + _add_k_units(ops[k_first:], new_controls, new_work_wires, k - k_first)
         + [adjoint(TemporaryAnd)(and_wires)]
     )
 
