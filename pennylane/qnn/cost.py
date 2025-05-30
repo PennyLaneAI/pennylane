@@ -15,7 +15,7 @@
 This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments
-import pennylane as qml
+from pennylane import measurements
 
 
 class SquaredErrorLoss:
@@ -98,12 +98,15 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
-        def qnode(params, **circuit_kwargs):
-            ansatz(params, wires=device.wires, **circuit_kwargs)
-            return [getattr(qml, measure)(o) for o in observables]
+        # pylint: disable=import-outside-toplevel
+        from pennylane.workflow.qnode import qnode
 
-        self.qnode = qnode
+        @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
+        def qn(params, **circuit_kwargs):
+            ansatz(params, wires=device.wires, **circuit_kwargs)
+            return [getattr(measurements, measure)(o) for o in observables]
+
+        self.qnode = qn
 
     def loss(self, *args, target=None, **kwargs):
         r"""Calculates the squared error loss between the observables'
