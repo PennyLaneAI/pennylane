@@ -592,7 +592,7 @@ class TestToBloq:
         call_graph = _get_op_call_graph()(op)
         assert dict(call_graph) == expected_call_graph
 
-    from qualtran.bloqs.phase_estimation import RectangularWindowState, LPResourceState
+    from qualtran.bloqs.phase_estimation import LPResourceState, RectangularWindowState
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
     @pytest.mark.parametrize(

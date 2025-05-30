@@ -89,8 +89,9 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.Superposition):
-        import pennylane as qml
         from qualtran.bloqs.basic_gates import CNOT
+
+        import pennylane as qml
         from pennylane.templates.state_preparations.superposition import _assign_states
 
         gate_types = {}
@@ -229,8 +230,9 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
+        from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
+
         import pennylane as qml
-        from qualtran.bloqs.basic_gates import Hadamard, XGate, CNOT, TwoBitCSwap
 
         gate_types = defaultdict(int)
         bitstrings = op.hyperparameters["bitstrings"]
@@ -304,8 +306,9 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QFT):
-        import pennylane as qml
         from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
+
+        import pennylane as qml
 
         gate_types = {}
         num_wires = len(op.wires)
@@ -334,8 +337,9 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
-        import pennylane as qml
         from qualtran.bloqs.basic_gates import CNOT
+
+        import pennylane as qml
 
         mod = op.hyperparameters["mod"]
         num_work_wires = len(op.hyperparameters["work_wires"])
