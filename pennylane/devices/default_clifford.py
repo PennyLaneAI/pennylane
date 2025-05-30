@@ -393,7 +393,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments
+    # pylint:disable = too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         wires=None,
@@ -613,6 +613,7 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
+    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
         circuit: qml.tape.QuantumScript,
@@ -882,9 +883,7 @@ class DefaultClifford(Device):
 
         # Use the reduced row echelon form for finding rank efficiently
         # tapering always come in handy :)
-        rank = qml.math.sum(
-            qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
-        )
+        rank = qml.math.sum(qml.math.any(qml.math._reduced_row_echelon(partition_mat), axis=1))
 
         # Compute the entropy
         entropy = qml.math.log(2) * (rank - len(wires))

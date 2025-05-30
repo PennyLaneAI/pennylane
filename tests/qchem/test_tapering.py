@@ -22,10 +22,10 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.math.utils import _reduced_row_echelon
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _kernel,
-    _reduced_row_echelon,
     _split_pauli_sentence,
     _taper_pauli_sentence,
     clifford,
