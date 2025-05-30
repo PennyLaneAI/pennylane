@@ -14,7 +14,7 @@ from openqasm3.ast import QuantumGate, ArrayLiteral, \
     QuantumArgument, RangeDefinition, UnaryExpression, WhileLoop, ClassicalAssignment, QubitDeclaration, \
     ConstantDeclaration, ClassicalDeclaration, BitstringLiteral, SubroutineDefinition, ReturnStatement, \
     AliasStatement, BreakStatement, ContinueStatement, BranchingStatement, \
-    SwitchStatement
+    SwitchStatement, ExpressionStatement
 
 from pennylane import ops
 from pennylane.operation import Operator
@@ -53,31 +53,63 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = '='
-ARROW = '->'
-PLUS = '+'
-DOUBLE_PLUS = '++'
-MINUS = '-'
-ASTERISK = '*'
-DOUBLE_ASTERISK = '**'
-SLASH = '/'
-PERCENT = '%'
-PIPE = '|'
-DOUBLE_PIPE = '||'
-AMPERSAND = '&'
-DOUBLE_AMPERSAND = '&&'
-CARET = '^'
-AT = '@'
-TILDE = '~'
-EXCLAMATION_POINT = '!'
-EQUALITY_OPERATORS = ['==', '!=']
-COMPOUND_ASSIGNMENT_OPERATORS = ['+=', '-=', '*=', '/=', '&=', '|=', '~=', '^=', '<<=', '>>=', '%=', '**=']
-COMPARISON_OPERATORS = ['>', '<', '>=', '<=']
-BIT_SHIFT_OPERATORS = ['>>', '<<']
+EQUALS = "="
+ARROW = "->"
+PLUS = "+"
+DOUBLE_PLUS = "++"
+MINUS = "-"
+ASTERISK = "*"
+DOUBLE_ASTERISK = "**"
+SLASH = "/"
+PERCENT = "%"
+PIPE = "|"
+DOUBLE_PIPE = "||"
+AMPERSAND = "&"
+DOUBLE_AMPERSAND = "&&"
+CARET = "^"
+AT = "@"
+TILDE = "~"
+EXCLAMATION_POINT = "!"
+EQUALITY_OPERATORS = ["==", "!="]
+COMPOUND_ASSIGNMENT_OPERATORS = [
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "&=",
+    "|=",
+    "~=",
+    "^=",
+    "<<=",
+    ">>=",
+    "%=",
+    "**=",
+]
+COMPARISON_OPERATORS = [">", "<", ">=", "<="]
+BIT_SHIFT_OPERATORS = [">>", "<<"]
 
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = EQUALITY_OPERATORS + COMPARISON_OPERATORS + BIT_SHIFT_OPERATORS \
-    + [PLUS, DOUBLE_PLUS, MINUS, ASTERISK, DOUBLE_ASTERISK, SLASH, PERCENT, PIPE, DOUBLE_PIPE,
-       AMPERSAND, DOUBLE_AMPERSAND, CARET, AT, TILDE, EXCLAMATION_POINT]
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
+    EQUALITY_OPERATORS
+    + COMPARISON_OPERATORS
+    + BIT_SHIFT_OPERATORS
+    + [
+        PLUS,
+        DOUBLE_PLUS,
+        MINUS,
+        ASTERISK,
+        DOUBLE_ASTERISK,
+        SLASH,
+        PERCENT,
+        PIPE,
+        DOUBLE_PIPE,
+        AMPERSAND,
+        DOUBLE_AMPERSAND,
+        CARET,
+        AT,
+        TILDE,
+        EXCLAMATION_POINT,
+    ]
+)
 
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
@@ -96,12 +128,6 @@ class QasmInterpreter:
     visitor function on each node.
     """
 
-    def __init__(self, permissive=False):
-        """
-        Initializes the QASM interpreter.
-        """
-        self.permissive = permissive
-
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
         """
@@ -115,16 +141,10 @@ class QasmInterpreter:
         Raises:
             NotImplementedError: when an unsupported QASMNode type is found.
         """
-        if self.permissive:
-            print(
-                f"An unrecognized QASM instruction {node.__class__.__name__} "
-                f"was encountered on line {node.span.start_line}, in {context['name']}."
-            )
-        else:
-            raise NotImplementedError(
-                f"An unsupported QASM instruction {node.__class__.__name__} "
-                f"was encountered on line {node.span.start_line}, in {context['name']}."
-            )
+        raise NotImplementedError(
+            f"An unsupported QASM instruction {node.__class__.__name__} "
+            f"was encountered on line {node.span.start_line}, in {context['name']}."
+        )
 
     @visit.register(list)
     def visit_list(self, node_list: list, context: dict):
@@ -492,6 +512,71 @@ class QasmInterpreter:
         ):
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
+    @visit.register(FunctionCall)
+    def visit_function_call(self, node: FunctionCall, context: dict):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (dict): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        ret = None
+        if (
+            "scopes" in context
+            and "subroutines" in context["scopes"]
+            or "outer_scopes" in context
+            and "subroutines" in context["outer_scopes"]
+        ):
+            name = node.name if isinstance(node.name, str) else node.name.name  # str or Identifier
+            if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
+                "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
+            ):
+                raise NameError(
+                    f"Reference to an undeclared subroutine {name} in {context['name']}."
+                )
+            else:
+                # TODO: use ChainMap to get this from scopes or outer_scopes
+                if (
+                    "scopes" in context
+                    and "subroutines" in context["scopes"]
+                    and node.name.name in context["scopes"]["subroutines"]
+                ):
+                    func_context = context["scopes"]["subroutines"][node.name.name]
+                elif (
+                    "outer_scopes" in context
+                    and "subroutines" in context["outer_scopes"]
+                    and node.name.name in context["outer_scopes"]["subroutines"]
+                ):
+                    func_context = context["outer_scopes"]["subroutines"][node.name.name]
+                else:
+                    raise NameError(
+                        f"Reference to subroutine {node.name.name} not available in calling namespace"
+                        f"on line {node.span.start_line}."
+                    )
+
+                # bind subroutine arguments
+                self._init_vars(func_context)
+                evald_args = [self.eval_expr(raw_arg, context) for raw_arg in node.arguments]
+                for evald_arg, param in list(zip(evald_args, func_context["params"])):
+                    if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                        func_context["vars"][param] = evald_arg
+                    else:
+                        self._init_wire_map(func_context)
+                        if not param == evald_arg:
+                            func_context["wire_map"][param] = evald_arg
+
+                # execute the subroutine
+                self.visit(func_context["body"], func_context)
+
+                # the return value
+                ret = func_context["return"] if "return" in func_context else None
+        return ret
+
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
     def visit_qubit_declaration(
@@ -618,9 +703,17 @@ class QasmInterpreter:
 
         return context
 
+    def _init_wire_map(self, context: dict):
+        """
+        Inits the wire map dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "wire_map" not in context or context["wire_map"] is None:
+            context["wire_map"] = dict()
+
     def _init_vars(self, context: dict):
         """
-        context["callable"] = partial(self._execute_all, context)
         Inits the vars dict on the current context.
         Args:
             context (dict): the current context.
@@ -636,15 +729,6 @@ class QasmInterpreter:
         """
         if "aliases" not in context:
             context["aliases"] = dict()
-
-    def _init_outer_wires_list(self, context: dict):
-        """
-        Inits the outer wires list on a sub context.
-        Args:
-            context (dict): the current context.
-        """
-        if "outer_wires" not in context:
-            context["outer_wires"] = []
 
     def _init_subroutine_scope(self, node: QASMNode, context: dict):
         """
@@ -665,7 +749,9 @@ class QasmInterpreter:
         )
         context["scopes"]["subroutines"][node.name.name]["sub"] = True
         context["scopes"]["subroutines"][node.name.name]["body"] = node.body
-
+        context["scopes"]["subroutines"][node.name.name]["params"] = [
+            param.name.name for param in node.arguments
+        ]
 
     @staticmethod
     def _get_bit_type_val(var):
@@ -677,7 +763,7 @@ class QasmInterpreter:
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
         subroutine is called.
         """
-        context["return"] = node.expression.name
+        context["return"] = self.eval_expr(node.expression, context)
 
     @visit.register(ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: dict):
@@ -692,7 +778,7 @@ class QasmInterpreter:
         self.visit_classical_declaration(node, context, constant=True)
 
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict, constant:bool=False):
+    def visit_classical_declaration(self, node: QASMNode, context: dict, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -824,10 +910,17 @@ class QasmInterpreter:
 
         self._require_wires(wires, context)
 
+        resolved_wires = []
         if context["wire_map"] is not None:
-            wires = list(map(lambda wire: context["wire_map"][wire], wires))
+            for wire in wires:
+                resolving = wire
+                while resolving in context["wire_map"]:
+                    resolving = context["wire_map"][resolving]
+                resolved_wires.append(resolving)
+        else:
+            resolved_wires = wires
 
-        return gate, args, wires
+        return gate, args, resolved_wires
 
     def apply_modifier(self, mod: QuantumGate, previous: Operator, context: dict, wires: list):
         """
@@ -863,6 +956,17 @@ class QasmInterpreter:
 
         return next, wires
 
+    @visit.register(ExpressionStatement)
+    def visit_expression_statement(self, node: ExpressionStatement, context: dict):
+        """
+        Registers an expression statement.
+
+        Args:
+            node (ExpressionStatement): The expression statement.
+            context (dict): The current context.
+        """
+        return self.eval_expr(node.expression, context)
+
     def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
         Evaluates an expression.
@@ -878,23 +982,35 @@ class QasmInterpreter:
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{lhs}{node.op.name}{rhs}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in binary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in binary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in binary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, UnaryExpression):
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in unary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in unary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in unary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in unary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, IndexExpression):
 
             def _index_into_var(var):
@@ -955,44 +1071,7 @@ class QasmInterpreter:
                         or f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
         elif isinstance(node, FunctionCall):
-            if (
-                "scopes" in context
-                and "subroutines" in context["scopes"]
-                or "outer_scopes" in context
-                and "subroutines" in context["outer_scopes"]
-            ):
-                name = (
-                    node.name if isinstance(node.name, str) else node.name.name
-                )  # str or Identifier
-                if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
-                    "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
-                ):
-                    raise NameError(
-                        f"Reference to an undeclared subroutine {name} in {context['name']}."
-                    )
-                else:
-                    if "scopes" in context and name in context["scopes"]["subroutines"]:
-                        func_context = context["scopes"]["subroutines"][name]
-                    else:
-                        func_context = context["outer_scopes"]["subroutines"][name]
-
-                    # bind subroutine arguments
-                    for arg in node.arguments:
-                        self._init_vars(func_context)
-                        evald_arg = self.eval_expr(arg, context)
-                        # TODO: maybe we want to have a class for classical and a class for quantum parameters
-                        if not isinstance(
-                            evald_arg, str
-                        ):  # this would indicate a quantum parameter
-                            func_context["vars"][arg.name] = evald_arg
-
-                    # execute the subroutine
-                    self.visit(
-                        func_context["body"], context["scopes"]["subroutines"][node.name.name]
-                    )
-
-                    # the return value
-                    return self.retrieve_variable(func_context["return"], func_context)["val"]
+            return self.visit_function_call(node, context)
         elif isinstance(node, Callable):
             res = node()
         elif re.search("Literal", node.__class__.__name__):

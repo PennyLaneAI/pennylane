@@ -49,17 +49,42 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_stand_alone_call_of_subroutine(self):
+        # parse the QASM
+        ast = parse(open("standalone_subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "standalone-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(open("complex_subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+        assert context["vars"]["c"]["val"] == 0
+
     def test_subroutines(self):
         # parse the QASM
         ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"name": "subroutines", "wire_map": None}
             )
 
-        assert q.queue[0] == Hadamard('q0')
+        assert q.queue == [Hadamard("q0")]
 
     def test_param_as_expression(self):
         # parse the QASM
@@ -77,7 +102,7 @@ class TestInterpreter:
                 ast, context={"wire_map": None, "name": "expression-implemented"}
             )
 
-        assert q.queue == [PauliX('q0')**2]
+        assert q.queue == [PauliX("q0") ** 2]
 
     def test_nested_modifiers(self):
         # parse the QASM program
@@ -113,7 +138,7 @@ class TestInterpreter:
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter(permissive=True).interpret(
+        context = QasmInterpreter().interpret(
             ast, context={"wire_map": None, "name": "advanced-vars"}
         )
 
@@ -208,9 +233,7 @@ class TestInterpreter:
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter(permissive=True).interpret(
-            ast, context={"wire_map": None, "name": "basic-vars"}
-        )
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
 
         assert context["vars"]["i"]["val"] == 4
         assert context["vars"]["j"]["val"] == 4
@@ -225,9 +248,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
-                ast, context={"name": "updating-vars", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
             PauliX('q0'),
