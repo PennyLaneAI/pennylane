@@ -6,10 +6,22 @@ import functools
 import re
 from typing import Callable
 
+from openqasm3.ast import (
+    ArrayLiteral,
+    BinaryExpression,
+    BitstringLiteral,
+    Cast,
+    ClassicalAssignment,
+    ClassicalDeclaration,
+    ConstantDeclaration,
+    Identifier,
+    IndexExpression,
+    QuantumGate,
+    QubitDeclaration,
+    RangeDefinition,
+    UnaryExpression,
+)
 from openqasm3.visitor import QASMNode
-from openqasm3.ast import BitstringLiteral, ArrayLiteral, ClassicalDeclaration, QuantumGate, QubitDeclaration, \
-    ConstantDeclaration, ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, \
-    BinaryExpression
 
 from pennylane import ops
 from pennylane.operation import Operator
@@ -48,33 +60,66 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = '='
-ARROW = '->'
-PLUS = '+'
-DOUBLE_PLUS = '++'
-MINUS = '-'
-ASTERISK = '*'
-DOUBLE_ASTERISK = '**'
-SLASH = '/'
-PERCENT = '%'
-PIPE = '|'
-DOUBLE_PIPE = '||'
-AMPERSAND = '&'
-DOUBLE_AMPERSAND = '&&'
-CARET = '^'
-AT = '@'
-TILDE = '~'
-EXCLAMATION_POINT = '!'
-EQUALITY_OPERATORS = ['==', '!=']
-COMPOUND_ASSIGNMENT_OPERATORS = ['+=', '-=', '*=', '/=', '&=', '|=', '~=', '^=', '<<=', '>>=', '%=', '**=']
-COMPARISON_OPERATORS = ['>', '<', '>=', '<=']
-BIT_SHIFT_OPERATORS = ['>>', '<<']
+EQUALS = "="
+ARROW = "->"
+PLUS = "+"
+DOUBLE_PLUS = "++"
+MINUS = "-"
+ASTERISK = "*"
+DOUBLE_ASTERISK = "**"
+SLASH = "/"
+PERCENT = "%"
+PIPE = "|"
+DOUBLE_PIPE = "||"
+AMPERSAND = "&"
+DOUBLE_AMPERSAND = "&&"
+CARET = "^"
+AT = "@"
+TILDE = "~"
+EXCLAMATION_POINT = "!"
+EQUALITY_OPERATORS = ["==", "!="]
+COMPOUND_ASSIGNMENT_OPERATORS = [
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "&=",
+    "|=",
+    "~=",
+    "^=",
+    "<<=",
+    ">>=",
+    "%=",
+    "**=",
+]
+COMPARISON_OPERATORS = [">", "<", ">=", "<="]
+BIT_SHIFT_OPERATORS = [">>", "<<"]
 
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = EQUALITY_OPERATORS + COMPARISON_OPERATORS + BIT_SHIFT_OPERATORS \
-    + [PLUS, DOUBLE_PLUS, MINUS, ASTERISK, DOUBLE_ASTERISK, SLASH, PERCENT, PIPE, DOUBLE_PIPE,
-       AMPERSAND, DOUBLE_AMPERSAND, CARET, AT, TILDE, EXCLAMATION_POINT]
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
+    EQUALITY_OPERATORS
+    + COMPARISON_OPERATORS
+    + BIT_SHIFT_OPERATORS
+    + [
+        PLUS,
+        DOUBLE_PLUS,
+        MINUS,
+        ASTERISK,
+        DOUBLE_ASTERISK,
+        SLASH,
+        PERCENT,
+        PIPE,
+        DOUBLE_PIPE,
+        AMPERSAND,
+        DOUBLE_AMPERSAND,
+        CARET,
+        AT,
+        TILDE,
+        EXCLAMATION_POINT,
+    ]
+)
 
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
+
 
 class QasmInterpreter:
     """
@@ -269,7 +314,7 @@ class QasmInterpreter:
         self.visit_classical_declaration(node, context, constant=True)
 
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict, constant:bool=False):
+    def visit_classical_declaration(self, node: QASMNode, context: dict, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -432,23 +477,35 @@ class QasmInterpreter:
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{lhs}{node.op.name}{rhs}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in binary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in binary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in binary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, UnaryExpression):
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in unary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in unary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in unary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in unary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, IndexExpression):
 
             def _index_into_var(var):
@@ -505,7 +562,8 @@ class QasmInterpreter:
                     return value
                 except NameError as e:
                     raise NameError(
-                        str(e) or f"Reference to an undeclared variable {node.name} in {context['name']}."
+                        str(e)
+                        or f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
         elif isinstance(node, Callable):
             res = node()

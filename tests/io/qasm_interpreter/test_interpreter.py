@@ -65,7 +65,7 @@ class TestInterpreter:
                 ast, context={"wire_map": None, "name": "expression-implemented"}
             )
 
-        assert q.queue == [PauliX('q0')**2]
+        assert q.queue == [PauliX("q0") ** 2]
 
     def test_nested_modifiers(self):
         # parse the QASM program
@@ -280,7 +280,7 @@ class TestInterpreter:
         with pytest.raises(
             NotImplementedError,
             match="An unsupported QASM instruction QuantumMeasurementStatement was "
-                  "encountered on line 6, in unsupported-error.",
+            "encountered on line 6, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
