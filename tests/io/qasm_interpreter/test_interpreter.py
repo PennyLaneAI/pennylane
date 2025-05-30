@@ -196,9 +196,7 @@ class TestInterpreter:
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter().interpret(
-            ast, context={"wire_map": None, "name": "basic-vars"}
-        )
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
 
         assert context["vars"]["i"]["val"] == 4
         assert context["vars"]["j"]["val"] == 4
@@ -213,9 +211,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "updating-vars"}
-            )
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
             RX(1, "q0"),
