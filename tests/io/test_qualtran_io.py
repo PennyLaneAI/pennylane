@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq
+from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq, _get_op_call_graph
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -452,7 +452,7 @@ class TestToBloq:
     @pytest.mark.parametrize(
         (
             "op",
-            "expected_call_graph",  # Expected call graph computed by resources from labs or decompositions
+            "qml_call_graph",  # Computed by resources from labs or decompositions
         ),
         [
             (
@@ -461,71 +461,110 @@ class TestToBloq:
                 ),
                 # ResourceQPE
                 {
-                    qml.to_bloq(qml.Hadamard(0)): 4,
-                    qml.ToBloq(qml.RX(0.1, wires=0)).controlled(): 15,
-                    qml.ToBloq(qml.adjoint(qml.QFT(wires=range(1, 5)))): 1,
+                    (qml.Hadamard(0), True): 4,
+                    (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
                 },
             ),
         ],
     )
-    def test_build_call_graph(self, op, expected_call_graph):
+    def test_build_call_graph(self, op, qml_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
-        from pennylane.io.qualtran_io import _get_op_call_graph
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            if k[1]:  # bool decides whether or not to use map
+                bloq_call_graph[qml.to_bloq(k[0])] = v
+            else:
+                bloq_call_graph[qml.ToBloq(k[0])] = v
 
         call_graph = _get_op_call_graph()(op)
-        assert dict(call_graph) == expected_call_graph
-
-    from qualtran.bloqs.phase_estimation import RectangularWindowState, LPResourceState
-    from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+        assert dict(call_graph) == bloq_call_graph
 
     @pytest.mark.parametrize(
         (
             "op",
-            "expected_qualtran_bloq",  # Expected call graph computed by resources from labs or decompositions
+            "qt_bloq",
         ),
         [
             (
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
-                TextbookQPE(
-                    unitary=_map_to_bloq()(qml.RX(0.1, wires=0)),
-                    ctrl_state_prep=RectangularWindowState(4),
-                ),
+                "qpe_bloq",
             ),
         ],
     )
-    def test_default_mapping(self, op, expected_qualtran_bloq):
+    def test_default_mapping(self, op, qt_bloq):
         """Tests that the defined default maps match the expected qualtran bloq"""
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import RectangularWindowState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=RectangularWindowState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
         qt_qpe = qml.to_bloq(op, map_ops=True)
-        assert qt_qpe == expected_qualtran_bloq
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     @pytest.mark.parametrize(
         (
             "op",
             "custom_map",
-            "expected_qualtran_bloq",  # Expected call graph computed by resources from labs or decompositions
+            "qt_bloq",
         ),
         [
             (
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
-                {
-                    qml.QuantumPhaseEstimation(
-                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
-                    ): TextbookQPE(
-                        unitary=_map_to_bloq()(qml.RX(0.1, wires=0)),
-                        ctrl_state_prep=LPResourceState(4),
-                    )
-                },
-                TextbookQPE(
-                    unitary=_map_to_bloq()(qml.RX(0.1, wires=0)), ctrl_state_prep=LPResourceState(4)
-                ),
+                "qpe_custom_mapping",
+                "qpe_custom_bloq",
             ),
         ],
     )
-    def test_custom_mapping(self, op, custom_map, expected_qualtran_bloq):
+    def test_custom_mapping(self, op, custom_map, qt_bloq):
         """Tests that custom mapping maps the expected qualtran bloq"""
-        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map)
-        assert qt_qpe == expected_qualtran_bloq
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function to build expected Qualtran bloq inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
+        def _build_custom_map(custom_map):
+            """Factory function to build custom maps for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            custom_mapping = {
+                "qpe_custom_mapping": {
+                    qml.QuantumPhaseEstimation(
+                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                }
+            }
+
+            return custom_mapping[custom_map]
+
+        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
