@@ -346,12 +346,12 @@ def _parse_rotz(mid_meas: List):
 
 
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
-    r"""Parse a serial of mid-measurement results of a quantum tape with a few number of non-Clifford 
-    gates (:class:`~pennylane.RZ` and :class:`~pennylane.ftqc.RotXZX`), up to the number of wires of 
-    the tape and one non-Clifford gate per wire, at the beginning of the circuit, Pauli operators 
+    r"""Parse a serial of mid-measurement results of a quantum tape with a few number of non-Clifford
+    gates (:class:`~pennylane.RZ` and :class:`~pennylane.ftqc.RotXZX`), up to the number of wires of
+    the tape and one non-Clifford gate per wire, at the beginning of the circuit, Pauli operators
     (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
     set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`).
-    Both nob-Clifford and Clifford gates mentioned above are measured in the way defined in 
+    Both nob-Clifford and Clifford gates mentioned above are measured in the way defined in
     `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
     For :class:`~pennylane.S` operations, the measurements take on the four qubits out of a cluster(chain) state with five qubits and
@@ -506,8 +506,8 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
     measurement corrections are returned based on the observable operators and the xz recorded.
 
     Args:
-        tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with :class:`~pennylane.X`, :class:`~pennylane.Y`, :class:`~pennylane.Z`, 
-            :class:`~pennylane.I`, :class:`~pennylane.H`, :class:`~pennylane.S`, :class:`~pennylane.CNOT` and non-Clifford gates (:class:`~pennylane.RZ` 
+        tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with :class:`~pennylane.X`, :class:`~pennylane.Y`, :class:`~pennylane.Z`,
+            :class:`~pennylane.I`, :class:`~pennylane.H`, :class:`~pennylane.S`, :class:`~pennylane.CNOT` and non-Clifford gates (:class:`~pennylane.RZ`
             and :class:`~pennylane.ftqc.RotXZX`) at the beginning of circuit in the standard circuit formalism. Note that one non-Clifford gate per wire
             at most is supported.
         mid_meas (list): MidMeasurement results per shot.
