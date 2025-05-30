@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+import pennylane.measurements as qmeas
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
@@ -183,6 +184,10 @@ def _map_to_bloq():
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
         return _map_to_bloq()(op.base).controlled()
+
+    @_to_qt_bloq.register
+    def _(op: qmeas.MeasurementProcess, **kwargs):
+        return None
 
     return _to_qt_bloq
 
@@ -700,6 +705,9 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                     # 2. Add each operation to the composite Bloq.
                     for op in ops:
                         bloq = _map_to_bloq()(op, map_ops=self.map_ops)
+                        if not bloq:
+                            continue
+
                         if bloq.signature == qt.Signature([]):
                             bb.add(bloq)
                             continue

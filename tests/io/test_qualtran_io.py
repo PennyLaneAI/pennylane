@@ -392,6 +392,14 @@ class TestToBloq:
         @qml.qnode(dev)
         def circuit():
             qml.H(0)
+            return (
+                qml.expval(qml.Y(0)),
+                qml.probs(op=qml.X(0)),
+                qml.state(),
+                qml.sample(qml.X(0)),
+                qml.var(qml.X(0)),
+                qml.counts(qml.X(0)),
+            )
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
