@@ -88,6 +88,8 @@ from pennylane.io import (
     bloq_registers,
     ToBloq,
     to_bloq,
+    from_qasm3,
+
 )
 from pennylane.measurements import (
     counts,

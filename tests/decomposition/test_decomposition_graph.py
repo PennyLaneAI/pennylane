@@ -32,6 +32,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.decomposition_graph import _to_name
 
+# pylint: disable=protected-access,no-name-in-module
+
 
 @pytest.mark.unit
 @patch(
