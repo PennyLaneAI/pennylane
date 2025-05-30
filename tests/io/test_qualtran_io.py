@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_to_pl_op
+from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -333,3 +333,328 @@ class TestFromBloq:
         actual = qml.bloq_registers(circuit_bloq)
 
         assert actual == expected
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+class TestToBloq:
+    """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
+
+    def test_to_bloq_init(self):
+        """Tests that ToBloq's __init__() functions as intended"""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+
+        assert qml.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
+        assert qml.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.ToBloq(qml.H(0)).__str__() == "PLHadamard"
+        with pytest.raises(TypeError, match="Input must be either an instance of"):
+            qml.ToBloq("123")
+
+    def test_equivalence(self):
+        """Tests that ToBloq's __eq__ functions as expected"""
+
+        assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
+        assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
+        assert qml.ToBloq(qml.H(0)) != "Hadamard"
+
+    def test_allocate_and_free(self):
+        """Tests that ToBloq functions on a FromBloq that has ghost wires"""
+        from qualtran.bloqs.basic_gates import CZPowGate
+        from qualtran.bloqs.bookkeeping import Allocate, Free
+        from qualtran._infra.data_types import QAny, QBit
+
+        # TODO: this would ideally be only 1 allocate and free
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Allocate(QAny(bitsize=1))
+            ]
+            == 3
+        )
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Free(QBit())
+            ]
+            == 3
+        )
+
+    def test_to_bloq(self):
+        """Tests that to_bloq functions as intended for simple circuits and gates"""
+
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            return (
+                qml.expval(qml.Y(0)),
+                qml.probs(op=qml.X(0)),
+                qml.state(),
+                qml.sample(qml.X(0)),
+                qml.var(qml.X(0)),
+                qml.counts(qml.X(0)),
+            )
+
+        assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
+        assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+
+    def test_to_bloq_circuits(self):
+        """Tests that to_bloq functions as intended for complex circuits"""
+
+        from qualtran.bloqs.basic_gates import Hadamard, CNOT
+
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+
+        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit_cg = mapped_circuit.call_graph()[1]
+        wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
+        wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
+
+        assert mapped_circuit_cg[Hadamard()] == 11
+        assert wrapped_circuit_cg[Hadamard()] == 11
+        assert CNOT() not in mapped_circuit_cg
+        assert wrapped_circuit_cg[CNOT()] == 20
+
+    def test_from_bloq_to_bloq(self):
+        """Tests that FromBloq and to_bloq functions as intended"""
+
+        from qualtran.bloqs.basic_gates import CZPowGate
+
+        qpe_op = qml.QuantumPhaseEstimation(
+            unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        )
+        qpe_bloq = qml.to_bloq(qpe_op, map_ops=False)
+
+        # This test will also fail if FromBloq's decomposition() is bugged
+        # It is hard to test decompose_bloq by itself; but if this test passes we can be
+        # confident that decompose_bloq is working properly.
+        decomp_ops = qml.FromBloq(qpe_bloq, wires=range(5)).decomposition()
+        expected_decomp_ops = qpe_op.decomposition()
+        assert decomp_ops == [
+            qml.H(1),
+            qml.H(2),
+            qml.H(3),
+            qml.H(4),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[4]), wires=[1, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[5]), wires=[2, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[6]), wires=[3, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[7]), wires=[4, 0]),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8]), wires=range(1, 5)),
+        ]
+
+    def test_circuit_to_bloq_kwargs(self):
+        """Tests that to_bloq functions as intended for circuits with kwargs"""
+
+        from qualtran.bloqs.basic_gates import Rx, GlobalPhase
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(angle):
+            qml.RX(phi=angle, wires=[0])
+            qml.GlobalPhase(angle)
+
+        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
+        with pytest.raises(TypeError):
+            qml.to_bloq(circuit).call_graph()
+
+        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
+
+    def test_decomposition_undefined_error(self):
+        """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
+        import qualtran as qt
+
+        with pytest.raises(qt.DecomposeNotImplementedError):
+            qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
+
+    def test_call_graph(self):
+        """Tests that build_call_graph calls build_call_graph as expected"""
+        from qualtran.resource_counting import SympySymbolAllocator as ssa
+
+        cg = qml.to_bloq(
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+            False,
+        ).build_call_graph(ssa=ssa())
+
+        assert cg == {
+            qml.to_bloq(qml.Hadamard(0), True): 4,
+            qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+        }
+
+    def test_map_to_bloq(self):
+        """Tests that _map_to_bloq produces the correct Qualtran equivalent"""
+        from qualtran.bloqs.basic_gates import (
+            CZ,
+            CYGate,
+            GlobalPhase,
+            Identity,
+            Rx,
+            Ry,
+            Rz,
+            SGate,
+            TGate,
+            TwoBitCSwap,
+            TwoBitSwap,
+            XGate,
+            YGate,
+            ZGate,
+        )
+
+        to_bloq = _map_to_bloq
+
+        assert GlobalPhase(exponent=1) == to_bloq()(
+            qml.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
+        )
+        assert Identity() == to_bloq()(qml.Identity(0))
+        assert Ry(angle=np.pi / 2) == to_bloq()(qml.RY(np.pi / 2, 0))
+        assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
+        assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
+        assert SGate() == to_bloq()(qml.S(0))
+        assert TwoBitSwap() == to_bloq()(qml.SWAP([0, 1]))
+        assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
+        assert TGate() == to_bloq()(qml.T(0))
+        assert XGate() == to_bloq()(qml.PauliX(0))
+        assert YGate() == to_bloq()(qml.PauliY(0))
+        assert CYGate() == to_bloq()(qml.CY([0, 1]))
+        assert ZGate() == to_bloq()(qml.PauliZ(0))
+        assert CZ() == to_bloq()(qml.CZ([0, 1]))
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "qml_call_graph",  # Computed by resources from labs or decompositions
+        ),
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                # ResourceQPE
+                {
+                    (qml.Hadamard(0), True): 4,
+                    (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+                },
+            ),
+        ],
+    )
+    def test_build_call_graph(self, op, qml_call_graph):
+        """ "Tests that the defined call_graphs match the expected decompostions"""
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            if k[1]:  # bool decides whether or not to use map
+                bloq_call_graph[qml.to_bloq(k[0])] = v
+            else:
+                bloq_call_graph[qml.ToBloq(k[0])] = v
+
+        call_graph = _get_op_call_graph()(op)
+        assert dict(call_graph) == bloq_call_graph
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "qt_bloq",
+        ),
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                "qpe_bloq",
+            ),
+        ],
+    )
+    def test_default_mapping(self, op, qt_bloq):
+        """Tests that the defined default maps match the expected qualtran bloq"""
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import RectangularWindowState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=RectangularWindowState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
+        qt_qpe = qml.to_bloq(op, map_ops=True)
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
+
+    @pytest.mark.parametrize(
+        (
+            "op",
+            "custom_map",
+            "qt_bloq",
+        ),
+        [
+            (
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                ),
+                "qpe_custom_mapping",
+                "qpe_custom_bloq",
+            ),
+        ],
+    )
+    def test_custom_mapping(self, op, custom_map, qt_bloq):
+        """Tests that custom mapping maps the expected qualtran bloq"""
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function to build expected Qualtran bloq inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
+        def _build_custom_map(custom_map):
+            """Factory function to build custom maps for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            custom_mapping = {
+                "qpe_custom_mapping": {
+                    qml.QuantumPhaseEstimation(
+                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                }
+            }
+
+            return custom_mapping[custom_map]
+
+        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
