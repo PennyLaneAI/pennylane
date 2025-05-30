@@ -845,7 +845,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu.
         TODO: add support for these (they don't map directly to Pennylane ops).
 
-        In order to use this function, openqasm3 and 'openqasm3[parser]' must be installed in the user's environment.
+        In order to use this function, ``openqasm3`` and ``openqasm3[parser]`` must be installed in the user's environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>` for directions.
 
     Args:
         quantum_circuit (str): a QASM string containing a simple quantum circuit.
