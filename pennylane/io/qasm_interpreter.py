@@ -11,6 +11,7 @@ from openqasm3.ast import (
     QuantumGate,
     QuantumGateModifier,
     QubitDeclaration,
+    EndStatement
 )
 from openqasm3.visitor import QASMNode
 
@@ -94,15 +95,30 @@ class QasmInterpreter:
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        for value in node.__dict__.values():
-            if not isinstance(value, list):
-                value = [value]
-            for item in value:
-                if isinstance(item, QASMNode):
-                    self.visit(item, context)
+        try:
+            for value in node.__dict__.values():
+                if not isinstance(value, list):
+                    value = [value]
+                for item in value:
+                    if isinstance(item, QASMNode):
+                        self.visit(item, context)
+        except InterruptedError as e:
+            print(str(e))
         return context
 
-    # needs to have same signature as visit()
+    @visit.register(EndStatement)
+    def visit_end_statement(self, node: QASMNode, context: dict):
+        """
+        Ends the program.
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise InterruptedError(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
+
     @visit.register(QubitDeclaration)
     def visit_qubit_declaration(
         self, node: QubitDeclaration, context: dict
