@@ -609,53 +609,6 @@ def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
         # This is the easy case when no split / joins are needed.
         return
 
-    # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
-    in_reg_qubits = set(in_reg.qubits)
-
-    new_qreg_to_qvar: Dict[_QReg, qt.Soquet] = {}
-    for qreg, soq in qreg_to_qvar.items():
-        if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {
-                _QReg(q, qt.QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
-            }
-        else:
-            new_qreg_to_qvar[qreg] = soq
-    qreg_to_qvar.clear()
-
-    # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join = {}
-    for qreg, soq in new_qreg_to_qvar.items():
-        if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            # Cast single bit registers to QBit to preserve signature of later join.
-            if not isinstance(qreg.dtype, qt.QBit):
-                soqs_to_join[qreg.qubits[0]] = bb.add(
-                    qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq
-                )
-            else:
-                soqs_to_join[qreg.qubits[0]] = soq
-        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            # Cast single QBit registers to the appropriate single-bit register dtype.
-            err_msg = (
-                "Found non-QBit type register which shouldn't happen: "
-                f"{soq.reg.name} {soq.reg.dtype}"
-            )
-            assert isinstance(soq.reg.dtype, qt.QBit), err_msg
-            if not isinstance(in_reg.dtype, qt.QBit):
-                qreg_to_qvar[in_reg] = bb.add(
-                    qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq
-                )
-            else:
-                qreg_to_qvar[qreg] = soq
-        else:
-            qreg_to_qvar[qreg] = soq
-    if soqs_to_join:
-        # A split is not necessarily matched with a join of the same size so we
-        # need to strip the data type of the parent split before assigning the correct bitsize.
-        qreg_to_qvar[in_reg] = bb.join(
-            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
-        )
-
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     """Modified function from Qualtran-Cirq interop module that collects input Soquets."""

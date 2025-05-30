@@ -362,6 +362,16 @@ class TestToBloq:
         assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
         assert qml.ToBloq(qml.H(0)) != "Hadamard"
 
+    def test_allocate_and_free(self):
+        """Tests that ToBloq functions on a FromBloq that has ghost wires"""
+        from qualtran.bloqs.basic_gates import CZPowGate
+        from qualtran.bloqs.bookkeeping import Allocate, Free
+        from qualtran._infra.data_types import QAny, QBit
+
+        # TODO: this would ideally be only 1 allocate and free
+        assert qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][Allocate(QAny(bitsize=1))] == 3
+        assert qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][Free(QBit())] == 3
+
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
 
