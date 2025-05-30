@@ -26,8 +26,11 @@ import numpy as np
 
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane import math
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
+from pennylane.templates.state_preparations.superposition import _assign_states
 from pennylane.wires import WiresLike
 
 try:
@@ -63,8 +66,6 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.TrotterizedQfunc):
-        from pennylane.queueing import QueuingManager, queuing
-
         n = op.hyperparameters["n"]
         order = op.hyperparameters["order"]
         k = order // 2
@@ -72,7 +73,7 @@ def _get_op_call_graph():
         qfunc_args = op.parameters[1:]
 
         with QueuingManager.stop_recording():
-            with queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 base_hyper_params = ("n", "order", "qfunc", "reverse")
 
                 qfunc_args = op.parameters
@@ -93,9 +94,6 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.Superposition):
         from qualtran.bloqs.basic_gates import CNOT
-
-        from pennylane import math
-        from pennylane.templates.state_preparations.superposition import _assign_states
 
         gate_types = {}
         wires = op.wires
@@ -142,8 +140,6 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
-        from pennylane import math
-
         gate_types = defaultdict(int, {})
         state_vector = op.state_vector
         positive_and_real = True
@@ -234,8 +230,6 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
-
-        from pennylane import math
 
         gate_types = defaultdict(int)
         bitstrings = op.hyperparameters["bitstrings"]
