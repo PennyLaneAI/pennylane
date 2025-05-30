@@ -22,7 +22,7 @@ from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
-from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, StatePrep, X, Y, Z, cond
+from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
@@ -34,7 +34,6 @@ from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
 
 mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
-paulis = (Identity, X, Y, Z)
 
 
 @register_resources({RotXZX: 1})
