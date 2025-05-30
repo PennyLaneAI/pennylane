@@ -33,7 +33,9 @@ class TemporaryAnd(Operation):
 
     .. note::
 
-        For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
+        For correct usage of the operator, the user must ensure
+        that the input before computation is :math:`|0\rangle`,
+        and that the output after uncomputation is :math:`|0\rangle`.
         on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
         different from the expected ``AND``.
 
