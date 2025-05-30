@@ -426,6 +426,7 @@ class TestToBloq:
             SGate,
             TGate,
             TwoBitCSwap,
+            TwoBitSwap,
             XGate,
             YGate,
             ZGate,
@@ -441,6 +442,7 @@ class TestToBloq:
         assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
         assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
         assert SGate() == to_bloq()(qml.S(0))
+        assert TwoBitSwap() == to_bloq()(qml.SWAP([0, 1]))
         assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
         assert TGate() == to_bloq()(qml.T(0))
         assert XGate() == to_bloq()(qml.PauliX(0))
