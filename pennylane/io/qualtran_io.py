@@ -63,7 +63,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.TrotterizedQfunc):
-        from pennylane import QueuingManager, queuing
+        from pennylane.queueing import QueuingManager, queuing
 
         n = op.hyperparameters["n"]
         order = op.hyperparameters["order"]
@@ -234,6 +234,7 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
+
         from pennylane import math
 
         gate_types = defaultdict(int)
