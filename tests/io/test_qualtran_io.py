@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq, _get_op_call_graph
+from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq
 from pennylane.operation import DecompositionUndefinedError
 
 

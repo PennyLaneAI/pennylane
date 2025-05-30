@@ -1220,17 +1220,6 @@ class ToBloq:
        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
-
-    This example shows how to use ``qml.ToBloq`` for resource estimation:
-
-    >>> from qualtran.bloqs.basic_gates import CNOT
-    >>> dev = qml.device("default.qubit") # Execute on device
-    >>> @qml.qnode(dev)
-    ... def circuit():
-    ...     qml.FromBloq(CNOT(), wires=[0, 1])
-    ...     return qml.state()
-    >>> circuit()
-    array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
     """
 
     _dependency_missing = True
@@ -1278,12 +1267,47 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     This example shows how to use ``qml.to_bloq``:
 
     >>> qt_bloq = qml.to_bloq(qml.CNOT([0, 1]))
-    qt.CNOT()
+    >>> qt_bloq
+    CNOT()
 
     .. details::
         :title: Usage Details
 
-        Difference between mapping and wrapping:
+        Not every operator has a direct equivalent in Qualtran. For example, in Qualtran, there
+        exists many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
+        Quantum Phase Estimation, a smart default is chosen.
+
+        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
+        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ... ))
+        TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
+
+        Note that the chosen Qualtran Bloq may not be an exact equivalent. If you want an exact
+        equivalent, we recommend setting ``map_ops`` to False.
+
+        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
+        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ... ), map_ops=False)
+        ToBloq(QuantumPhaseEstimation)
+
+        This will wrap the input PennyLane operator as a Bloq, allowing you to use the functions
+        you would expect a Bloq to have, such as ``decompose_bloq`` or ``call_graph``.
+
+        Alternatively, you can provide a custom mapping that maps a PennyLane operator to a
+        specific Qualtran Bloq.
+
+        >>> op = qml.QuantumPhaseEstimation(
+        ...         unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ...     )
+        >>> custom_mapping = {
+        ...     op : TextbookQPE(
+        ...         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+        ...         ctrl_state_prep=LPResourceState(4),
+        ...     )
+        ... }
+        >>> qml.to_bloq(op, custom_mapping=custom_mapping)
+        TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=LPResourceState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
+
     """
 
     if map_ops:
