@@ -584,11 +584,11 @@ class ResourceSemiAdder(ResourceOperator):
             l_elbow = re.ResourceToffoli.resource_rep(elbow="left")
             r_elbow = re.ResourceToffoli.resource_rep(elbow="right")
             gate_lst = [
-                AddQubits(2 * (max_register_size - 1)),
+                AddQubits(max_register_size - 1),
                 GateCount(cnot, cnot_count),
                 GateCount(l_elbow, elbow_count),
                 GateCount(r_elbow, elbow_count),
-                CutQubits(2 * (max_register_size - 1)),
+                CutQubits(max_register_size - 1),
             ]
 
             if num_ctrl_values:
