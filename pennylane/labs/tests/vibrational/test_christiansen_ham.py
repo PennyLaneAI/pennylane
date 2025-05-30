@@ -200,12 +200,11 @@ def test_cform_onemode(pes, n_states, num_workers, backend, mpi4py_support):
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(H1),
             abs(
                 _cform_onemode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -227,12 +226,11 @@ def test_cform_onemode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(D1),
             abs(
                 _cform_onemode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -254,12 +252,11 @@ def test_cform_threemode(pes, n_states, num_workers, backend, mpi4py_support):
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(H3),
             abs(
                 _cform_threemode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -281,12 +278,11 @@ def test_cform_threemode_dipole(pes, n_states, num_workers, backend, mpi4py_supp
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(D3),
             abs(
                 _cform_threemode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -308,12 +304,11 @@ def test_cform_twomode(pes, n_states, num_workers, backend, mpi4py_support):
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(H2),
             abs(
                 _cform_twomode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -335,12 +330,11 @@ def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
     with TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir)
         assert np.allclose(
             abs(D2),
             abs(
                 _cform_twomode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=path
+                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
                 )
             ),
             atol=1e-8,
@@ -350,11 +344,10 @@ def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
 def test_write_and_read_data():
     """Test that _read_data return the data written using _write_data with the same args."""
     with TemporaryDirectory() as tmpdirname:
-        path = Path(tmpdirname)
         rank = 0
         file_name = "testfile"
         dataset_name = "testdata"
         original_data = np.array([1, 2, 3, 4, 5])
-        _write_data(path, rank, file_name, dataset_name, original_data)
-        read_data = _read_data(path, rank, file_name, dataset_name)
+        _write_data(tmpdirname, rank, file_name, dataset_name, original_data)
+        read_data = _read_data(tmpdirname, rank, file_name, dataset_name)
         np.testing.assert_array_equal(original_data, read_data)
