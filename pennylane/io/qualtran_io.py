@@ -729,11 +729,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                             # all_op_quregs should exist for both LEFT & RIGHT registers.
                             assert reg.name in all_op_quregs
                             quregs = all_op_quregs[reg.name]
-                            if reg.side == qt.Side.LEFT:
-                                # This register got de-allocated, update the `qreg_to_qvar` mapping.
-                                for q in quregs.flatten():
-                                    _ = qreg_to_qvar.pop(q)
-                            else:
+                            if reg.side != qt.Side.LEFT:
                                 assert quregs.shape == np.array(qvars_out[reg.name]).shape
                                 qreg_to_qvar |= zip(
                                     quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
