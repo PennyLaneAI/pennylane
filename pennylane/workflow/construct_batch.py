@@ -90,17 +90,13 @@ def _interpret_level(
             - slice_obj: The slice to apply to the full transform program
             - readd_final_transform: Whether to add back the final transform
     """
-    readd_final_transform = False
-
     if level == "device":
         level_slice = slice(0, None)
     elif level == "top":
         level_slice = slice(0, 0)
     elif level == "user":
-        readd_final_transform = True
         level_slice = slice(0, num_user)
     elif level == "gradient":
-        readd_final_transform = True
         gradient_expand = getattr(gradient_fn, "expand_transform", False)
         end_idx = num_user + 1 if gradient_expand else num_user
         level_slice = slice(0, end_idx)
@@ -114,7 +110,7 @@ def _interpret_level(
         # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
         level_slice = level
 
-    return level_slice, readd_final_transform
+    return level_slice
 
 
 def get_transform_program(
@@ -243,7 +239,8 @@ def get_transform_program(
         num_user -= 1
 
     # Use the level interpreter to convert level to slice and final transform flag
-    level_slice, readd_final_transform = _interpret_level(level, num_user, gradient_fn)
+    readd_final_transform = level == "user" or level == "gradient"
+    level_slice = _interpret_level(level, num_user, gradient_fn)
 
     resolved_program = full_transform_program[level_slice]
 
