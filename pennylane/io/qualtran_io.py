@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable=import-outside-toplevel, unused-argument, too-many-statements
 @lru_cache
 def _get_op_call_graph():
     @singledispatch
@@ -85,8 +85,8 @@ def _get_op_call_graph():
 
         call_graph = defaultdict(int, {})
         num_gates = 2 * n * (5 ** (k - 1))
-        for op in q.queue:
-            call_graph[_map_to_bloq()(op)] += num_gates
+        for q_op in q.queue:
+            call_graph[_map_to_bloq()(q_op)] += num_gates
 
         return call_graph
 
@@ -329,8 +329,8 @@ def _get_op_call_graph():
         projectors = op.hyperparameters["projectors"]
         num_projectors = len(projectors)
 
-        for _, op in enumerate(projectors[:-1]):
-            gate_types[_map_to_bloq()(op)] += 1
+        for _, proj_op in enumerate(projectors[:-1]):
+            gate_types[_map_to_bloq()(proj_op)] += 1
 
         gate_types[_map_to_bloq()(UA)] += num_projectors // 2
         gate_types[_map_to_bloq()(UA).adjoint()] += (num_projectors - 1) // 2
@@ -381,10 +381,10 @@ def _get_op_call_graph():
             new_rep = comp_rep.controlled()
             # cancel out QFTs from consecutive Multipliers
             if hasattr(comp_rep, "op"):
-                if comp_rep.op.name in ("QFT"):
+                if comp_rep.op.name == "QFT":
                     gate_types[new_rep] = 1
             elif hasattr(comp_rep, "subbloq"):
-                if comp_rep.subbloq.op.name in ("QFT"):
+                if comp_rep.subbloq.op.name == "QFT":
                     gate_types[new_rep] = 1
             else:
                 gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
@@ -521,7 +521,7 @@ def _map_to_bloq():
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
-    
+
     @_to_qt_bloq.register
     def _(op: qops.Adjoint):
         return _map_to_bloq()(op.base).adjoint()
