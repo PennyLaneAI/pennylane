@@ -607,7 +607,7 @@ def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
-) -> None: # pylint: disable=too-many-branches
+) -> None:  # pylint: disable=too-many-branches
     """Modified function from the Qualtran-Cirq interop module that takes care of qubit allocations,
     split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
@@ -672,9 +672,7 @@ def _ensure_in_reg_exists(
         )
 
 
-def _gather_input_soqs(
-    bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar
-):
+def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     """Modified function from Qualtran-Cirq interop module that collects input Soquets."""
     qvars_in = {}
     for reg_name, quregs in op_quregs.items():
@@ -690,7 +688,7 @@ def _inherit_from_bloq(cls):
     """Decorator for ToBloq to import qualtran only when qualtran is available."""
     if qualtran:
 
-        class ToBloq(qt.Bloq): # pylint: disable=redefined-outer-name
+        class ToBloq(qt.Bloq):  # pylint: disable=redefined-outer-name
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
@@ -718,7 +716,7 @@ def _inherit_from_bloq(cls):
                     num_wires = len(self.op.wires)
                 return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-            def decompose_bloq(self): # pylint:disable=too-many-branches
+            def decompose_bloq(self):  # pylint:disable=too-many-branches
                 """Decompose the bloq using the op's decomposition or the tape of the QNode"""
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
@@ -957,7 +955,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if map_ops:
         if custom_mapping:
-            return _map_to_bloq()(circuit, custom_mapping=custom_mapping, **kwargs) 
+            return _map_to_bloq()(circuit, custom_mapping=custom_mapping, **kwargs)
         return _map_to_bloq()(circuit, **kwargs)
 
     return ToBloq(circuit, **kwargs)
