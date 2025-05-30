@@ -630,6 +630,32 @@ samples_3_cnots = [
             -0.4168424055846296 + 0.3576772276508062j,
         ],
     ],
+    [  # this matrix caused issues before: https://github.com/PennyLaneAI/pennylane/issues/7467
+        [
+            -0.40836553 - 0.28850926j,
+            0.23864466 - 0.4393731j,
+            0.02190401 + 0.06284322j,
+            -0.23169726 - 0.66474606j,
+        ],
+        [
+            -0.48865844 - 0.10589111j,
+            0.49770294 + 0.04787262j,
+            -0.02177958 + 0.45019526j,
+            -0.02632749 + 0.54420285j,
+        ],
+        [
+            0.49276489 - 0.08475118j,
+            0.47943096 - 0.14193644j,
+            0.51448332 - 0.17932317j,
+            -0.42560958 + 0.14834623j,
+        ],
+        [
+            0.42041002 - 0.27065738j,
+            -0.31807806 - 0.38578018j,
+            -0.03401683 + 0.70314565j,
+            -0.00321586 + 0.06647341j,
+        ],
+    ],
 ]
 
 samples_2_cnots = [
@@ -987,13 +1013,14 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
+        # NOTE: Currently, we defer to the 3-CNOTs function for the 2-CNOTs case.
 
         U = qml.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        assert len(obtained_decomposition) == 8
+        assert len(obtained_decomposition) == 11  # 8 # 8 would be the count with 2-CNOT circuit
 
         tape = qml.tape.QuantumScript(obtained_decomposition)
         obtained_matrix = qml.matrix(tape, wire_order=wires)
@@ -1545,13 +1572,7 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            pytest.param(
-                qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])),
-                4,
-                marks=pytest.mark.xfail(
-                    strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/7467"
-                ),
-            ),
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
             (qml.QFT.compute_matrix(5), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
         ],
