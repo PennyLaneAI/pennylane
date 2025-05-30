@@ -300,6 +300,7 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
+  [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
 * Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
   The labels are grouped together like for other multi-qubit operations, and the drawing
