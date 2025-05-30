@@ -29,10 +29,10 @@ from pennylane.compiler.python_compiler.quantum_dialect import (
     ExtractOp,
     GlobalPhaseOp,
     QubitType,
+    AllocOp,
 )
 from pennylane.operation import Operator
 
-from ..quantum_dialect import CustomOp
 
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 from_str_to_PL_gate = {
@@ -98,6 +98,7 @@ def resolve_constant_wire(operand):
             return operand.idx_attr.parameters[0].data
 
         elif isinstance(operand, CustomOp):
+
             if result_index < len(operand.in_qubits):
                 input_operand = operand.in_qubits[result_index]
                 return resolve_constant_wire(input_operand)
@@ -153,7 +154,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         self.module = module
         super().__init__()
 
-    # pylint:disable=arguments-differ
+    # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Rewrite the function by replacing CustomOps with their decomposition."""
@@ -169,6 +170,15 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
             decomp_ops = concrete_op.decomposition()
             last_custom_op = None
+
+            qreg_val = None
+            for candidate_op in op.parent.walk():
+                if isinstance(candidate_op, AllocOp):
+                    qreg_val = candidate_op.qreg
+                    break
+
+            if qreg_val is None:
+                raise Exception("AllocOp not found; cannot extract qubits")
 
             for qml_op in decomp_ops:
                 parameters_xdsl = []
@@ -187,11 +197,25 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     rewriter.insert_op(const_op, InsertPoint.before(op))
                     parameters_xdsl.append(const_op.result)
 
+                # TODO: I will change this since it extracts wires unnecessarily
                 for wire in qml_op.wires:
                     wire_attr = IntegerAttr(wire, IntegerType(64))
-                    wire_const_op = ConstantOp(value=wire_attr)
-                    rewriter.insert_op(wire_const_op, InsertPoint.before(op))
-                    wires_xdsl.append(wire_const_op.result)
+
+                    extract_op = ExtractOp(
+                        operands=(qreg_val, None),
+                        properties={"idx_attr": wire_attr},
+                        attributes={},
+                        successors=(),
+                        regions=(),
+                        result_types=(QubitType(),),
+                    )
+
+                    if last_custom_op is None:
+                        rewriter.insert_op(extract_op, InsertPoint.before(op))
+
+                    wires_xdsl.append(extract_op.qubit)
+
+                wires_xdsl = wires_xdsl if last_custom_op is None else last_custom_op.out_qubits
 
                 # At this stage, this is the only 'special' operator we handle (GlobalPhase does not have wires)
                 if qml_op.name == "GlobalPhase":
@@ -200,13 +224,10 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                         operands=(*parameters_xdsl, None, None),
                         properties={
                             "gate_name": StringAttr(qml_op.name),
-                            # Do we need to pass more properties here?
-                            # **op.properties,
                         },
                         attributes={},
                         successors=op.successors,
                         regions=(),
-                        # This should probably be generalized
                         result_types=(QubitType(),),
                     )
 
@@ -216,13 +237,10 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                         operands=(*parameters_xdsl, *wires_xdsl, None, None),
                         properties={
                             "gate_name": StringAttr(qml_op.name),
-                            # Do we need to pass more properties here?
-                            # **op.properties,
                         },
                         attributes={},
                         successors=op.successors,
                         regions=(),
-                        # This should probably be generalized
                         result_types=(QubitType(), []),
                     )
 
