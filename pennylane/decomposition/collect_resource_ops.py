@@ -47,14 +47,13 @@ def _(self, *invals, jaxpr, lazy, n_consts):  # pylint: disable=unused-argument
 
 
 @CollectResourceOps.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _(self, *invals, n_control, jaxpr, **params):
     """Collect all operations in the target plxpr and create controlled resource ops with them."""
 
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
+    args = invals[:-n_control]
     control = invals[-n_control:]
     child = CollectResourceOps()
-    child.eval(jaxpr, consts, *args)
+    child.eval(jaxpr, [], *args)
 
     # Extract the resource parameters of this control transform
     control_values = params.get("control_values")
