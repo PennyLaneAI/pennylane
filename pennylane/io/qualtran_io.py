@@ -685,7 +685,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
 
 
 def _inherit_from_bloq(cls):
-    """Decorator for ToBloq to import qualtran only when qualtran is available."""
+    """Decorator for ToBloq to inherit from Qualtran's bloq only when qualtran is available."""
     if qualtran:
 
         class ToBloq(qt.Bloq):  # pylint: disable=redefined-outer-name
@@ -860,7 +860,7 @@ def _inherit_from_bloq(cls):
 @_inherit_from_bloq
 class ToBloq:
     r"""
-    An adapter for using a PennyLane :class:`~.Operation as a
+    An adapter for using a PennyLane :class:`~.Operation` as a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
@@ -875,7 +875,7 @@ class ToBloq:
         op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
 
     Raises:
-        TypeError: operator must be an instance of :class:`~.Operation.
+        TypeError: operator must be an instance of :class:`~.Operation`.
 
     **Example**
 
@@ -919,7 +919,7 @@ class ToBloq:
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
-    Converts the given circuit or :class:`~.Operation and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+    Converts the given circuit or :class:`~.Operation` and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the main
@@ -937,7 +937,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             Qualtran Bloq. A default mapping is used if not defined.
 
     Returns:
-        Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation and
+        Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
             options.
 
     **Example**
