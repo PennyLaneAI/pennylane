@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments
-
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -250,6 +248,42 @@ def draw(
         0: ─╭RandomLayers(M0)─╭Permute──X──X─┤  <X>
         1: ─╰RandomLayers(M0)─├Permute───────┤
         2: ───────────────────╰Permute───────┤
+
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        >>> draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+        >>> print(qml.draw(qml.Snapshot, **draw_kwargs)())
+        0: ──|Snap|─┤
+        1: ──|Snap|─┤
+        2: ──|Snap|─┤
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        >>> print(qml.draw(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        This is the case even if they are provided with a subset of all wires:
+
+        >>> print(qml.draw(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        >>> ctrl_gphase = qml.ctrl(qml.GlobalPhase, control=[2])
+        >>> print(qml.draw(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰●─────────────────┤
 
     """
     if catalyst_qjit(qnode):
@@ -683,6 +717,61 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        .. code-block:: python
+
+            draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+            fig, ax = qml.draw_mpl(qml.Snapshot, **draw_kwargs)()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/snapshot.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_no_wires.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        This is the case even if they are provided with a subset of all wires:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_one_wire.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        .. code-block:: python
+
+            ctrl_gphase = qml.ctrl(qml.GlobalPhase, control=[2])
+            fig, ax = qml.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
 
     """
     if catalyst_qjit(qnode):
