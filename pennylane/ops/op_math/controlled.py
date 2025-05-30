@@ -281,7 +281,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *args
         )
         consts = jaxpr.consts
-        jaxpr = jax.core.Jaxpr(
+        jaxpr = jax.extend.core.Jaxpr(
             constvars=(),
             invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
             outvars=jaxpr.jaxpr.outvars,

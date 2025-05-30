@@ -111,16 +111,15 @@ def _(self, *invals, jaxpr, lazy):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _(self, *invals, n_control, jaxpr, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
+    args = invals[:-n_control]
     control = invals[-n_control:]
 
     child = CollectOpsandMeas()
-    child.eval(jaxpr, consts, *args)
+    child.eval(jaxpr, [], *args)
     assert child.state
 
     for op in child.state["ops"]:

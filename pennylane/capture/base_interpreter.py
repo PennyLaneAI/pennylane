@@ -462,7 +462,7 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
     consts = jaxpr.consts
-    jaxpr = jax.core.Jaxpr(
+    jaxpr = jax.extend.core.Jaxpr(
         constvars=(),
         invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
         outvars=jaxpr.jaxpr.outvars,
@@ -479,7 +479,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     args = invals[:-n_control]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
     consts = jaxpr.consts
-    jaxpr = jax.core.Jaxpr(
+    jaxpr = jax.extend.core.Jaxpr(
         constvars=(),
         invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
         outvars=jaxpr.jaxpr.outvars,
@@ -600,7 +600,7 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     """Handle a qnode primitive."""
 
     qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
-    new_qfunc_jaxpr = jax.core.Jaxpr(
+    new_qfunc_jaxpr = jax.extend.core.Jaxpr(
         constvars=(),
         invars=qfunc_jaxpr.jaxpr.constvars + qfunc_jaxpr.jaxpr.invars,
         outvars=qfunc_jaxpr.jaxpr.outvars,
