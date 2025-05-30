@@ -19,14 +19,16 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     ConstantDeclaration,
     ContinueStatement,
-    Expression,
     ExpressionStatement,
     ForInLoop,
     FunctionCall,
     Identifier,
     IndexExpression,
+    IntegerLiteral,
     QuantumArgument,
     QuantumGate,
+    QuantumMeasurementStatement,
+    QuantumReset,
     QubitDeclaration,
     RangeDefinition,
     ReturnStatement,
@@ -34,11 +36,13 @@ from openqasm3.ast import (
     SwitchStatement,
     UnaryExpression,
     WhileLoop,
+    Expression,
 )
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
+from pennylane.measurements import measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -435,9 +439,7 @@ class QasmInterpreter:
         """
         self._init_loops_scope(node, context)
 
-        @while_loop(
-            partial(self.visit, node.while_condition)
-        )  # traces data dep through context
+        @while_loop(partial(self.visit, node.while_condition))  # traces data dep through context
         def loop(context):
             """
             Executes a traceable while loop.
@@ -546,6 +548,59 @@ class QasmInterpreter:
             self._handle_break(unrolled, context)
         elif loop_params is None:
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
+
+    @visit.register(QuantumMeasurementStatement)
+    def visit_quantum_measurement_statement(self, node: QASMNode, context: dict):
+        """
+        Registers a quantum measurement.
+
+        Args:
+            node (QASMNode): the quantum measurement node.
+            context (dict): the current context.
+        """
+        if isinstance(node.measure.qubit, Identifier):
+            meas = partial(measure, node.measure.qubit.name)
+
+        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary
+            meas = partial(measure, node.measure.qubit.value)
+
+        elif isinstance(node.measure.qubit, list):
+            for qubit in node.measure.qubit:
+                if isinstance(qubit, Identifier):
+                    meas = partial(measure, qubit.name)
+
+                elif isinstance(qubit, IntegerLiteral):
+                    meas = partial(measure, qubit.value)
+
+        name = (
+            node.target.name if isinstance(node.target.name, str) else node.target.name.name
+        )  # str or Identifier
+        res = meas()
+        self._update_var(res, name, node, context)
+        return res
+
+    @visit.register(QuantumReset)
+    def visit_quantum_reset(self, node: QASMNode, context: dict):
+        """
+        Registers a reset of a quantum gate.
+
+        Args:
+            node (QASMNode): the quantum reset node.
+            context (dict): the current context.
+        """
+        self._init_gates_list(context)
+        if isinstance(node.qubits, Identifier):
+            measure(node.qubits.name, reset=True)
+        elif isinstance(
+            node.qubits, IntegerLiteral
+        ):  # TODO: are all these cases necessary / supported
+            measure(node.qubits.value, reset=True)
+        elif isinstance(node.qubits, list):
+            for qubit in node.qubits:
+                if isinstance(qubit, Identifier):
+                    measure(qubit.name, reset=True)
+                elif isinstance(qubit, IntegerLiteral):
+                    measure(qubit.value, reset=True)
 
     @visit.register(FunctionCall)
     def visit_function_call(self, node: FunctionCall, context: dict):
@@ -1031,6 +1086,7 @@ class QasmInterpreter:
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
+            # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
             return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(
@@ -1057,6 +1113,7 @@ class QasmInterpreter:
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
+            # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
             return eval(
                 f"{node.op.name}{self.visit(node.expression, context)}"
             )  # pylint: disable=eval-used

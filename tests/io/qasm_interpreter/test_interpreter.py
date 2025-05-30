@@ -32,6 +32,7 @@ from pennylane import (
     Toffoli,
     queuing,
 )
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -48,6 +49,16 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestInterpreter:
+
+    def test_processing_measurement(self):
+        # parse the QASM
+        ast = parse(open("measurements.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(ast, context={"name": "measurements", "wire_map": None})
+
+        assert context["vars"]["c"] == []
 
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
@@ -82,7 +93,8 @@ class TestInterpreter:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
-        assert q.queue == [Hadamard("q0")]
+        assert q.queue[0] == Hadamard("q0")
+        assert isinstance(q.queue[1], MidMeasureMP)
 
     def test_param_as_expression(self):
         # parse the QASM
@@ -262,9 +274,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "loops", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "loops", "wire_map": None})
 
         assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
             RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
@@ -283,9 +293,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "switch", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "switch", "wire_map": None})
 
         assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
 
@@ -300,9 +308,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "if_else", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "if_else", "wire_map": None})
 
         # assertions
         assert cond.call_count == 3
