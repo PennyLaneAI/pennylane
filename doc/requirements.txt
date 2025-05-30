@@ -12,7 +12,7 @@ pygments-github-lexers
 packaging
 scipy
 docutils==0.20
-sphinx~=8.1
+sphinx==8.1
 sphinx-automodapi==0.19
 sphinx-copybutton
 sphinxcontrib-bibtex==2.6.3
