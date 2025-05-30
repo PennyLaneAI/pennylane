@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
-# pylint: disable=import-outside-toplevel, unused-argument, too-many-statements
+# pylint: disable=unused-argument, too-many-statements
 @lru_cache
 def _get_op_call_graph():
     @singledispatch
@@ -53,6 +53,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import Hadamard
 
         return {
@@ -93,6 +94,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.Superposition):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import CNOT
 
         gate_types = {}
@@ -220,6 +222,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qops.BasisState):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import XGate
 
         gate_types = {}
@@ -229,6 +232,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
 
         gate_types = defaultdict(int)
@@ -301,6 +305,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QFT):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 
         gate_types = {}
@@ -330,6 +335,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
+        # pylint: disable=import-outside-toplevel
         from qualtran.bloqs.basic_gates import CNOT
 
         mod = op.hyperparameters["mod"]
@@ -382,7 +388,7 @@ def _get_op_call_graph():
     return _op_call_graph
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable=import-outside-toplevel
 @lru_cache
 def _map_to_bloq():
     @singledispatch
