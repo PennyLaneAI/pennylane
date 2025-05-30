@@ -735,18 +735,9 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                     # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
                     qreg_to_qvar = {}
                     for reg in signature.lefts():
-                        if reg.name not in in_quregs:
-                            raise ValueError(
-                                f"Register {reg.name} from signature must be present in in_quregs."
-                            )
+                        assert reg.name in in_quregs
                         soqs = initial_soqs[reg.name]
-                        if isinstance(soqs, qt.Soquet):
-                            soqs = np.array(soqs)
-                        if in_quregs[reg.name].shape != soqs.shape:
-                            raise ValueError(
-                                f"Shape {in_quregs[reg.name].shape} of qubit register "
-                                f"{reg.name} should be {soqs.shape}."
-                            )
+                        assert in_quregs[reg.name].shape == soqs.shape
                         qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
 
                     # 2. Add each operation to the composite Bloq.

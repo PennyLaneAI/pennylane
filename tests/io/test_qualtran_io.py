@@ -406,19 +406,26 @@ class TestToBloq:
     def test_circuit_to_bloq_kwargs(self):
         """Tests that to_bloq functions as intended for circuits with kwargs"""
 
-        from qualtran.bloqs.basic_gates import Rx
+        from qualtran.bloqs.basic_gates import Rx, GlobalPhase
 
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit(angle):
             qml.RX(phi=angle, wires=[0])
+            qml.GlobalPhase(angle)
 
-        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {Rx(angle=0.0, eps=1e-11): 1}
+        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
         with pytest.raises(TypeError):
             qml.to_bloq(circuit).call_graph()
 
-        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
+        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
 
     def test_decomposition_undefined_error(self):
         """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
