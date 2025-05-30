@@ -28,6 +28,5 @@ Classes
 ^^^^^^^
 
 .. autosummary::
-    :toctree: api
-
+    
     ~FromBloq
