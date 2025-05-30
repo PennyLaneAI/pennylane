@@ -73,6 +73,50 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
+def _interpret_level(
+    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
+    num_user: int,
+    gradient_fn,
+) -> tuple[slice, bool]:
+    """Interpret the level specification and convert it to a slice and final transform flag.
+
+    Args:
+        level: The level specification from user input
+        num_user: Number of user transforms (excluding final transform)
+        gradient_fn: The gradient function
+
+    Returns:
+        tuple: (slice_obj, readd_final_transform)
+            - slice_obj: The slice to apply to the full transform program
+            - readd_final_transform: Whether to add back the final transform
+    """
+    readd_final_transform = False
+
+    if level == "device":
+        level_slice = slice(0, None)
+    elif level == "top":
+        level_slice = slice(0, 0)
+    elif level == "user":
+        readd_final_transform = True
+        level_slice = slice(0, num_user)
+    elif level == "gradient":
+        readd_final_transform = True
+        gradient_expand = getattr(gradient_fn, "expand_transform", False)
+        end_idx = num_user + 1 if gradient_expand else num_user
+        level_slice = slice(0, end_idx)
+    elif isinstance(level, str):
+        raise ValueError(
+            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
+        )
+    elif level is None or isinstance(level, int):
+        level_slice = slice(0, level)
+    else:
+        # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
+        level_slice = level
+
+    return level_slice, readd_final_transform
+
+
 def get_transform_program(
     qnode: "QNode", level=None, gradient_fn="unset"
 ) -> "qml.transforms.core.TransformProgram":
@@ -198,28 +242,10 @@ def get_transform_program(
         # final transform is placed after device transforms
         num_user -= 1
 
-    readd_final_transform = False
+    # Use the level interpreter to convert level to slice and final transform flag
+    level_slice, readd_final_transform = _interpret_level(level, num_user, gradient_fn)
 
-    if level == "device":
-        level = None
-    elif level == "top":
-        level = 0
-    elif level == "user":
-        readd_final_transform = True
-        level = num_user
-    elif level == "gradient":
-        readd_final_transform = True
-
-        level = num_user + 1 if getattr(gradient_fn, "expand_transform", False) else num_user
-    elif isinstance(level, str):
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-        )
-
-    if level is None or isinstance(level, int):
-        level = slice(0, level)
-
-    resolved_program = full_transform_program[level]
+    resolved_program = full_transform_program[level_slice]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
         resolved_program += qnode.transform_program[-1:]
