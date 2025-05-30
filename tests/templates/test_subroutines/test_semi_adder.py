@@ -122,11 +122,21 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAnd)") == 4
         assert names.count(("CNOT")) == 21
 
-    def test_decomposition_rule(self):
+    @pytest.mark.parametrize(
+        ("x_wires"),
+        [
+            [0, 1, 2],
+            [0, 1],
+            [0, 1, 2, 3],
+        ],
+    )
+    def test_decomposition_rule(self, x_wires):
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qml.list_decomps(qml.SemiAdder):
-            _test_decomposition_rule(qml.SemiAdder([0, 1, 2, 3], [5, 6, 7, 8], [10, 11, 12]), rule)
+            _test_decomposition_rule(
+                qml.SemiAdder(x_wires, [5, 6, 7], [10, 11]), rule, heuristic_resources=True
+            )
 
     @pytest.mark.jax
     def test_jit_compatible(self):
