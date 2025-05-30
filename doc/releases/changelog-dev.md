@@ -591,6 +591,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.metric_tensor` can now be calculated with catalyst.
+  [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
+
 * A new decomposition was implemented for two-qubit `QubitUnitary` operators in `two_qubit_decomposition`
   based on a type-AI Cartan decomposition. It fixes previously faulty edge cases for unitaries
   that require 2 or 3 CNOT gates. Now, 3 CNOTs are used for both cases, using one more
