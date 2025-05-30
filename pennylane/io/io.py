@@ -842,8 +842,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
-        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu.
-        TODO: add support for these (they don't map directly to Pennylane ops).
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. The remaining standard library gates are
+        all supported. End statements, robust variables, subroutines, control flow, measurements, built-in mathematical
+        functions and constants, custom gates, and pulses are not yet supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
         environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
