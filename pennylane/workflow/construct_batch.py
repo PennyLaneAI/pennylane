@@ -91,25 +91,23 @@ def _interpret_level(
             - readd_final_transform: Whether to add back the final transform
     """
     if level == "device":
-        level_slice = slice(0, None)
+        return slice(0, None)
     elif level == "top":
-        level_slice = slice(0, 0)
+        return slice(0, 0)
     elif level == "user":
-        level_slice = slice(0, num_user)
+        return slice(0, num_user)
     elif level == "gradient":
         end_idx = num_user + int(has_gradient_expand)
-        level_slice = slice(0, end_idx)
+        return slice(0, end_idx)
     elif isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
     elif level is None or isinstance(level, int):
-        level_slice = slice(0, level)
+        return slice(0, level)
     else:
         # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
-        level_slice = level
-
-    return level_slice
+        return level
 
 
 def get_transform_program(
@@ -370,23 +368,25 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        program = qml.transforms.core.TransformProgram()
-        # Quick check for empty levels that don't need config construction
+        # Empty level: just a no-op transform
         if level in ("top", 0):
+            program = qml.transforms.core.TransformProgram()
             return program((initial_tape,))
+
+        # User-level: apply only user transforms
         if level == "user":
             # If we are only interested in user transforms, we can skip the execution config
             program = qnode.transform_program
-            initial_tape, user_post_processing = program((initial_tape,))
-            return (initial_tape, user_post_processing)
+            tape_out, user_post_processing = program((initial_tape,))
+            return (tape_out, user_post_processing)
 
+        # Device/Gradient/Custom: build config and run full transform program
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_execution_config(
             config, qnode.device, tapes=(initial_tape,)
         )
         gradient_fn = config.gradient_method
-        # if not level=="user":
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
         return program((initial_tape,))
