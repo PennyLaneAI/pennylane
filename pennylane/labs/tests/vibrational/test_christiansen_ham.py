@@ -204,7 +204,11 @@ def test_cform_onemode(pes, n_states, num_workers, backend, mpi4py_support):
             abs(H1),
             abs(
                 _cform_onemode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
@@ -230,7 +234,11 @@ def test_cform_onemode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
             abs(D1),
             abs(
                 _cform_onemode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
@@ -256,7 +264,11 @@ def test_cform_threemode(pes, n_states, num_workers, backend, mpi4py_support):
             abs(H3),
             abs(
                 _cform_threemode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
@@ -282,7 +294,11 @@ def test_cform_threemode_dipole(pes, n_states, num_workers, backend, mpi4py_supp
             abs(D3),
             abs(
                 _cform_threemode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
@@ -308,7 +324,11 @@ def test_cform_twomode(pes, n_states, num_workers, backend, mpi4py_support):
             abs(H2),
             abs(
                 _cform_twomode(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
@@ -334,7 +354,11 @@ def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_suppor
             abs(D2),
             abs(
                 _cform_twomode_dipole(
-                    pes=pes, n_states=n_states, num_workers=num_workers, backend=backend, path=tmpdir
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
                 )
             ),
             atol=1e-8,
