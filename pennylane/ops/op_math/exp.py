@@ -20,7 +20,7 @@ import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
-from pennylane import math, pauli, queuing
+from pennylane import math, queuing
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -231,9 +231,11 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
-        is_pauli_rot = pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
+        is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
         is_hamiltonian = isinstance(base, LinearCombination)
-        is_sum_of_pauli_words = isinstance(base, Sum) and all(pauli.is_pauli_word(o) for o in base)
+        is_sum_of_pauli_words = isinstance(base, Sum) and all(
+            qml.pauli.is_pauli_word(o) for o in base
+        )
         return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
 
     def decomposition(self):
@@ -335,7 +337,7 @@ class Exp(ScalarSymbolicOp, Operation):
                     coeff = math.real(-1j * coeff)
                     return [op_class(coeff, g.wires)]
 
-        if pauli.is_pauli_word(base):
+        if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
@@ -362,7 +364,7 @@ class Exp(ScalarSymbolicOp, Operation):
         """
         # Cancel the coefficients added by PauliRot and Ising gates
         coeff = math.real(2j * coeff)
-        pauli_word = pauli.pauli_word_to_string(base)
+        pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
@@ -516,13 +518,13 @@ def _pauli_rot_decomp_condition(base, num_steps):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
-    return pauli.is_pauli_word(base)
+    return qml.pauli.is_pauli_word(base)
 
 
 def _pauli_rot_decomp_resource(base, **_):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {resource_rep(qml.PauliRot, pauli_word=pauli.pauli_word_to_string(base)): 1}
+    return {resource_rep(qml.PauliRot, pauli_word=qml.pauli.pauli_word_to_string(base)): 1}
 
 
 def _trotter_decomp_condition(base, num_steps):
@@ -530,11 +532,11 @@ def _trotter_decomp_condition(base, num_steps):
         return False
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    if pauli.is_pauli_word(base):
+    if qml.pauli.is_pauli_word(base):
         return True
     try:
         _, ops = base.terms()
-        return all(pauli.is_pauli_word(ob) for ob in ops)
+        return all(qml.pauli.is_pauli_word(ob) for ob in ops)
     except TermsUndefinedError:
         return False
 
@@ -551,7 +553,7 @@ def _trotter_decomp_resource(base, num_steps):
 
     gate_count = {}
     for op in ops:
-        pauli_word = pauli.pauli_word_to_string(op)
+        pauli_word = qml.pauli.pauli_word_to_string(op)
         if not all(p == "I" for p in pauli_word):
             op_rep = resource_rep(qml.PauliRot, pauli_word=pauli_word)
             gate_count[op_rep] = gate_count.get(op_rep, 0) + num_steps
@@ -568,7 +570,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     if isinstance(base, qml.ops.SProd):
         coeff, base = params[0] * base.scalar, base.base
     coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
-    pauli_word = pauli.pauli_word_to_string(base)
+    pauli_word = qml.pauli.pauli_word_to_string(base)
     if not all(p == "I" for p in pauli_word):
         qml.PauliRot(coeff, pauli_word, base.wires)
 
@@ -591,7 +593,7 @@ def trotter_decomp(*params, wires, base, num_steps):  # pylint: disable=unused-a
     for c, op in zip(coeffs, ops):
         # The 2j cancels the coefficient added by PauliRot
         c = c * params[0] / num_steps * 2j
-        pauli_word = pauli.pauli_word_to_string(op)
+        pauli_word = qml.pauli.pauli_word_to_string(op)
         if pauli_word != "I" * len(op.wires):
             new_coeffs.append(c)
             pauli_words.append(pauli_word)
