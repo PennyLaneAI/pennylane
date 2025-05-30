@@ -15,14 +15,14 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     ConstantDeclaration,
     FunctionCall,
+    QuantumArgument,
+    ReturnStatement,
+    SubroutineDefinition,
     Identifier,
     IndexExpression,
-    QuantumArgument,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    ReturnStatement,
-    SubroutineDefinition,
     UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
