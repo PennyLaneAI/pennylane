@@ -360,6 +360,7 @@ class TestToBloq:
 
         assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
         assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
+        assert qml.ToBloq(qml.H(0)) != "Hadamard"
 
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
@@ -427,10 +428,19 @@ class TestToBloq:
             qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
 
     def test_call_graph(self):
-        """Tests that call_graph calls build_call_graph as expected"""
-        _, cg = qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).call_graph()
+        """Tests that build_call_graph calls build_call_graph as expected"""
+        from qualtran.resource_counting import SympySymbolAllocator as ssa
 
-        assert cg == {qml.ToBloq(qml.RZ(phi=0.3, wires=[0])): 1}
+        cg = qml.to_bloq(
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+            False,
+        ).build_call_graph(ssa=ssa())
+
+        assert cg == {
+            qml.to_bloq(qml.Hadamard(0), True): 4,
+            qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+        }
 
     def test_map_to_bloq(self):
         """Tests that _map_to_bloq produces the correct Qualtran equivalent"""

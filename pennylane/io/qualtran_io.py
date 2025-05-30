@@ -49,7 +49,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
-        from qualtran.bloqs.basic_gates import Hadamard # pylint: disable=import-outside-toplevel
+        from qualtran.bloqs.basic_gates import Hadamard  # pylint: disable=import-outside-toplevel
 
         return {
             Hadamard(): len(op.estimation_wires),
@@ -63,7 +63,7 @@ def _get_op_call_graph():
     return _op_call_graph
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable=import-outside-toplevel
 @lru_cache
 def _map_to_bloq():
     @singledispatch
@@ -88,12 +88,6 @@ def _map_to_bloq():
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
-
-    @_to_qt_bloq.register
-    def _(op: qops.CNOT):
-        from qualtran.bloqs.basic_gates import CNOT
-
-        return CNOT()
 
     @_to_qt_bloq.register
     def _(op: qops.Hadamard):
@@ -148,12 +142,6 @@ def _map_to_bloq():
         from qualtran.bloqs.basic_gates import TGate
 
         return TGate()
-
-    @_to_qt_bloq.register
-    def _(op: qops.Toffoli):
-        from qualtran.bloqs.basic_gates import Toffoli
-
-        return Toffoli()
 
     @_to_qt_bloq.register
     def _(op: qops.X):
