@@ -585,6 +585,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated; non-native transforms being applied
+  to QNodes wherein operators have dynamic wires can lead to incorrect results.
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
+
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
  [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
@@ -599,6 +603,14 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where certain transforms with a native program capture implementation give incorrect results when
+  dynamic wires were present in the circuit. The affected transforms were:
+  * :func:`~pennylane.transforms.cancel_inverses`
+  * :func:`~pennylane.transforms.merge_rotations`
+  * :func:`~pennylane.transforms.single_qubit_fusion`
+  * :func:`~pennylane.transforms.merge_amplitude_embedding`
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
 
 * The `Operator.pow` method has been fixed to raise to the power of 2 the qutrit operators `~.TShift`, `~.TClock`, and `~.TAdd`.
   [(#7505)](https://github.com/PennyLaneAI/pennylane/pull/7505)
