@@ -302,7 +302,8 @@ class QubitUnitary(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
-        return len(self.wires) < 3 if self.has_matrix else len(self.wires) == 1
+        # We are unable to decompose sparse matrices larger than 1 qubit.
+        return self.has_matrix or len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:
