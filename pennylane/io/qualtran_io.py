@@ -94,7 +94,7 @@ def _get_op_call_graph():
     def _(op: qtemps.state_preparations.Superposition):
         from qualtran.bloqs.basic_gates import CNOT
 
-        import pennylane as qml
+        from pennylane import math
         from pennylane.templates.state_preparations.superposition import _assign_states
 
         gate_types = {}
@@ -114,9 +114,9 @@ def _get_op_call_graph():
                 new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
             )
         ]
-        msp = qml.StatePrep(
-            qml.math.stack(sorted_coefficients),
-            wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+        msp = qops.StatePrep(
+            math.stack(sorted_coefficients),
+            wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
             pad_with=0,
         )
         gate_types[_map_to_bloq()(msp)] = 1
@@ -126,7 +126,7 @@ def _get_op_call_graph():
         control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
 
         multi_x = _map_to_bloq()(
-            qml.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values)
+            qops.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values)
         )
 
         basis_size = 2**size_basis_state
@@ -528,6 +528,9 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled):
+        if isinstance(op, qops.MultiControlledX):
+            return ToBloq(op)
+
         return _map_to_bloq()(op.base).controlled()
 
     return _to_qt_bloq
