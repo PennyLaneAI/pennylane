@@ -370,9 +370,10 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        program = qml.transforms.core.TransformProgram()
         # Quick check for empty levels that don't need config construction
-        if level == "top" or level == 0:
-            return (initial_tape,), null_postprocessing
+        if level in ("top", 0):
+            return program((initial_tape,))
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
