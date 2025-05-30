@@ -221,6 +221,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 # These modules can only import from CORE, AUXILIARY and modules within their layer.
 
 [[modules]]
+path = "pennylane.qnn"
+layer = "tertiary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
+[[modules]]
 path = "pennylane.qaoa"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
@@ -327,10 +332,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 
 [[modules]]
 path = "pennylane.pulse"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
-
-[[modules]]
-path = "pennylane.qnn"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 [[modules]]
