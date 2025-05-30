@@ -868,7 +868,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     """
     if not has_openqasm:  # pragma: no cover
         raise ImportWarning(
-            "from_qasm3 requires openqasm3 and openqasm3[parser] to be installed in your environment. Please consult the OpenQASM 3.0 installation instructions for more information: https://pypi.org/project/openqasm3/."
+            "from_qasm3 requires openqasm3 and 'openqasm3[parser]' to be installed in your environment. "
+            "Please consult the OpenQASM 3.0 installation instructions for more information:"
+            " https://pypi.org/project/openqasm3/."
         )  # pragma: no cover
     # parse the QASM program
     try:
