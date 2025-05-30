@@ -405,16 +405,12 @@ def _map_to_bloq():
         return _map_to_bloq()(op.base).controlled()
 
     @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, *args, **kwargs):
+    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if args and isinstance(args[0], dict) and args[0]:
-            try:
-                return args[0][type(op)]
-            except KeyError:
-                # ToDo: make this more robust of an error
-                return args[0][op]
+        if "custom_mapping" in kwargs:
+            return kwargs["custom_mapping"][op]
 
         return TextbookQPE(
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
@@ -919,7 +915,7 @@ class FromBloq(Operation):
         return matrix
 
 
-def _split_qubits(registers, qubits):  # type: ignore[type-var]
+def _split_qubits(registers, qubits):  # pylint: disable=redefined-outer-name
     """Function from the Qualtran-Cirq interop module that splits the flat list of qubits into
     a dictionary of appropriately shaped qubit arrays."""
 
@@ -937,7 +933,7 @@ def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
-) -> None:
+) -> None:  # pylint: disable=too-many-branches
     """Modified function from the Qualtran-Cirq interop module that takes care of qubit allocations,
     split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
@@ -1002,11 +998,9 @@ def _ensure_in_reg_exists(
         )
 
 
-def _gather_input_soqs(
-    bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar  # type: ignore[type-var]
-):  # type: ignore[type-var]
+def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     """Modified function from Qualtran-Cirq interop module that collects input Soquets."""
-    qvars_in = {}  # type: ignore[type-var]
+    qvars_in = {}
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[qt.Soquet] = []
         for qureg in quregs.flatten():
@@ -1020,7 +1014,7 @@ def _inherit_from_bloq(cls):
     """Decorator for ToBloq to import qualtran only when qualtran is available."""
     if qualtran:
 
-        class ToBloq(qt.Bloq):
+        class ToBloq(qt.Bloq):  # pylint: disable=redefined-outer-name
             r"""
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
@@ -1037,8 +1031,9 @@ def _inherit_from_bloq(cls):
 
             @cached_property
             def signature(self) -> "qt.Signature":
-                from pennylane.workflow.qnode import QNode
+                """Compute and return Qualtran signature for given op or QNode."""
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
@@ -1047,10 +1042,12 @@ def _inherit_from_bloq(cls):
                     num_wires = len(self.op.wires)
                 return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-            def decompose_bloq(self):
+            def decompose_bloq(self):  # pylint:disable=too-many-branches
+                """Decompose the bloq using the op's decomposition or the tape of the QNode"""
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
-                from pennylane.workflow.qnode import QNode
+
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):
@@ -1154,10 +1151,12 @@ def _inherit_from_bloq(cls):
 
                     cbloq = bb.finalize(**final_soqs_dict)
                     return cbloq
-                except DecompositionUndefinedError:
-                    raise qt.DecomposeNotImplementedError
+                except DecompositionUndefinedError as undefined_decomposition:
+                    raise qt.DecomposeNotImplementedError from undefined_decomposition
 
             def build_call_graph(self, ssa):
+                """Build Qualtran call graph with defined call graph if available, otherwise build
+                said call graph with the decomposition"""
                 call_graph = _get_op_call_graph()(self.op)
                 if call_graph:
                     return call_graph
@@ -1282,7 +1281,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if map_ops:
         if custom_mapping:
-            return _map_to_bloq()(circuit, custom_mapping, **kwargs)
+            return _map_to_bloq()(circuit, custom_mapping=custom_mapping, **kwargs)
         return _map_to_bloq()(circuit, **kwargs)
 
     return ToBloq(circuit, **kwargs)
