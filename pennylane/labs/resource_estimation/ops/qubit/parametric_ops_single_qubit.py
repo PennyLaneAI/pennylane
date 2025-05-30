@@ -88,15 +88,14 @@ class ResourcePhaseShift(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps} if self.eps else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -218,8 +217,7 @@ class ResourceRX(ResourceOperator):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -345,8 +343,7 @@ class ResourceRY(ResourceOperator):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -474,8 +471,7 @@ class ResourceRZ(ResourceOperator):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -569,15 +565,14 @@ class ResourceRot(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps} if self.eps else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-        params = {"eps": eps} if eps else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
