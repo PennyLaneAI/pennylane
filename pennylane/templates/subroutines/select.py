@@ -25,7 +25,7 @@ from pennylane import math
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, Hadamard, S, T, X, adjoint, ctrl
-from pennylane.templates import TemporaryAnd
+from pennylane.templates.subroutines.temporary_and import TemporaryAnd
 from pennylane.wires import Wires
 
 
@@ -392,7 +392,7 @@ def _unary_select(ops, control, work_wires):
     if len(ops) == 0:
         return []
 
-    min_num_controls = _ceil_log(len(ops))
+    min_num_controls = max(_ceil_log(len(ops)), 1)
     assert len(control) >= min_num_controls
     control = control[:min_num_controls]
     if len(work_wires) < len(control) - 1:
