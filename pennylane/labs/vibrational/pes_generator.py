@@ -79,9 +79,6 @@ def _pes_onemode(
            if dipole is set to ``False``
 
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     quad_order = len(grid)
     all_jobs = range(quad_order)
@@ -101,9 +98,6 @@ def _pes_onemode(
     pes_onebody, dipole_onebody = _load_pes_onemode(
         num_workers, len(freqs), len(grid), path, dipole=dipole
     )
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     if dipole:
         return pes_onebody, dipole_onebody
@@ -259,9 +253,6 @@ def _pes_twomode(
            if dipole is set to ``False``
 
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2]
@@ -296,9 +287,6 @@ def _pes_twomode(
     pes_twobody, dipole_twobody = _load_pes_twomode(
         num_workers, len(freqs), len(grid), path, dipole=dipole
     )
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     if dipole:
 
@@ -641,9 +629,6 @@ def _pes_threemode(
            if dipole is set to ``False``
 
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     all_jobs = [
         [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
@@ -680,9 +665,6 @@ def _pes_threemode(
     pes_threebody, dipole_threebody = _load_pes_threemode(
         num_workers, len(freqs), len(grid), path, dipole
     )
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     if dipole:
         return pes_threebody, dipole_threebody
@@ -797,7 +779,8 @@ def vibrational_pes(
          2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
 
     """
-    with TemporaryDirectory() as path:
+    with TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir)
         if bins is None:
             bins = [2600]
 

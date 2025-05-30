@@ -39,9 +39,6 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial", pat
     Returns:
         TensorLike[float]: the kinetic energy part of the one body integrals
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
     # action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
     all_mode_combos = [[aa] for aa in range(nmodes)]
@@ -58,9 +55,6 @@ def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial", pat
         executor.starmap(_local_onemode_kinetic, args)
 
     result = _load_cform_onemode_kinetic(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -108,9 +102,6 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial", path=
     Returns:
         TensorLike[float]: the kinetic energy part of the two body integrals
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     nmodes = len(pes.freqs)
 
@@ -129,9 +120,6 @@ def _cform_twomode_kinetic(pes, n_states, num_workers=1, backend="serial", path=
         executor.starmap(_local_cform_twomode_kinetic, args)
 
     result = _load_cform_twomode_kinetic(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -188,10 +176,6 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial", path=None):
         TensorLike[float]: the one-body integrals for the Christiansen Hamiltonian
     """
 
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
-
     nmodes = len(pes.freqs)
     all_mode_combos = [[aa] for aa in range(nmodes)]
     all_bos_combos = list(itertools.product(range(n_states), range(n_states)))
@@ -208,9 +192,6 @@ def _cform_onemode(pes, n_states, num_workers=1, backend="serial", path=None):
     result = _load_cform_onemode(num_workers, nmodes, n_states, path) + _cform_onemode_kinetic(
         pes.freqs, n_states, num_workers=num_workers, backend=backend, path=path
     )
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -264,9 +245,6 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     nmodes = pes.dipole_onemode.shape[0]
     all_mode_combos = [[aa] for aa in range(nmodes)]
@@ -283,9 +261,6 @@ def _cform_onemode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
         executor.starmap(_local_cform_onemode_dipole, args)
 
     result = _load_cform_onemode_dipole(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -343,9 +318,6 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial", path=None):
     Returns:
         TensorLike[float]: the two-body integrals for the Christiansen Hamiltonian
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     nmodes = pes.pes_twomode.shape[0]
 
@@ -363,9 +335,6 @@ def _cform_twomode(pes, n_states, num_workers=1, backend="serial", path=None):
         executor.starmap(_local_cform_twomode, args)
 
     result = _load_cform_twomode(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -443,9 +412,6 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     nmodes = pes.dipole_twomode.shape[0]
 
@@ -463,9 +429,6 @@ def _cform_twomode_dipole(pes, n_states, num_workers=1, backend="serial", path=N
         ]
         executor.starmap(_local_cform_twomode_dipole, args)
     result = _load_cform_twomode_dipole(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -537,9 +500,7 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial", path=None):
     Returns:
         TensorLike[float]: the three-body integrals for the Christiansen Hamiltonian
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
+
     nmodes = pes.pes_threemode.shape[0]
 
     all_mode_combos = [
@@ -566,9 +527,6 @@ def _cform_threemode(pes, n_states, num_workers=1, backend="serial", path=None):
         ]
         executor.starmap(_local_cform_threemode, args)
     result = _load_cform_threemode(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -645,9 +603,6 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial", path
     Returns:
         TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
-    use_temp_dir = path is None
-    tmpdir = TemporaryDirectory() if use_temp_dir else None
-    path = Path(tmpdir.name) if use_temp_dir else Path(path)
 
     nmodes = pes.dipole_threemode.shape[0]
 
@@ -676,9 +631,6 @@ def _cform_threemode_dipole(pes, n_states, num_workers=1, backend="serial", path
         executor.starmap(_local_cform_threemode_dipole, args)
 
     result = _load_cform_threemode_dipole(num_workers, nmodes, n_states, path)
-
-    if use_temp_dir:
-        tmpdir.cleanup()
 
     return result
 
@@ -1164,14 +1116,14 @@ def _write_data(path, rank, file_name, dataset_name, data):
     r"""Write data to an HDF5 file under a specified dataset name.
 
     Args:
-        path (Path): The directory in which to store the HDF5 file. Should be a `pathlib.Path` object.
+        path (string): The directory in which to store the HDF5 file.
         rank (int): Identifier used to differentiate between different file outputs, typically used in parallel contexts.
-        file_name (str): The base name for the output HDF5 file.
-        dataset_name (str): Name of the dataset to be created within the HDF5 file.
+        file_name (string): The base name for the output HDF5 file.
+        dataset_name (string): Name of the dataset to be created within the HDF5 file.
         data (array-like): Data to be stored in the dataset. Must be compatible with `h5py`.
     """
+    path = Path(".") if path is None else Path(path)
     file_path = path / f"{file_name}_{rank}.hdf5"
-    print(dataset_name)
     with h5py.File(file_path, "a") as f:
         f.create_dataset(dataset_name, data=data)
 
@@ -1180,16 +1132,16 @@ def _read_data(path, rank, file_name, dataset_name):
     r"""Read data from a specified dataset within an HDF5 file.
 
     Args:
-        path (Path): The directory containing the HDF5 file. Should be a `pathlib.Path` object.
+        path (string): The directory containing the HDF5 file.
         rank (int): Identifier used to select the specific HDF5 file (typically used in parallel contexts).
-        file_name (str): The base name of the HDF5 file.
-        dataset_name (str): The name of the dataset to read from within the HDF5 file.
+        file_name (string): The base name of the HDF5 file.
+        dataset_name (string): The name of the dataset to read from within the HDF5 file.
 
     Returns:
         ndarray: The data read from the specified dataset. Returned as a NumPy array.
     """
+    path = Path(".") if path is None else Path(path)
     file_path = path / f"{file_name}_{rank}.hdf5"
-    print(dataset_name)
     with h5py.File(file_path, "r") as f:
         data = f[dataset_name][:]
     return data

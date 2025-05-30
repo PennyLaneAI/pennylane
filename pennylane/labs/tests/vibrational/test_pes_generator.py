@@ -15,6 +15,7 @@
 This module contains tests for functions needed to compute PES object.
 """
 import os
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import pytest
@@ -187,15 +188,16 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
 
     freqs = harmonic_res["freq_wavenumber"]
     displ_vecs = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = pes_generator._pes_onemode(
-        mol, mol_eq, freqs, displ_vecs, gauss_grid, method="RHF", dipole=do_dipole
-    )
+    with TemporaryDirectory() as tmpdir:
+        pes_onebody, dipole_onebody = pes_generator._pes_onemode(
+            mol, mol_eq, freqs, displ_vecs, gauss_grid, method="RHF", dipole=do_dipole, path=tmpdir
+        )
 
-    assert np.allclose(pes_onebody, exp_pes_onemode, atol=1e-6)
-    if do_dipole:
-        assert np.allclose(dipole_onebody, exp_dip_onemode, atol=1e-6)
-    else:
-        assert dipole_onebody is None
+        assert np.allclose(pes_onebody, exp_pes_onemode, atol=1e-6)
+        if do_dipole:
+            assert np.allclose(dipole_onebody, exp_dip_onemode, atol=1e-6)
+        else:
+            assert dipole_onebody is None
 
 
 @pytest.mark.parametrize(
@@ -250,21 +252,22 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
         exp_dip_onebody = np.array(f["D1_DMS"][()])
         exp_pes_twobody = np.array(f["V2_PES"][()])
         exp_dip_twobody = np.array(f["D2_DMS"][()])
+    with TemporaryDirectory() as tmpdir:
+        pes_twobody, dipole_twobody = pes_generator._pes_twomode(
+            mol,
+            mol_eq,
+            freqs,
+            vectors,
+            gauss_grid,
+            exp_pes_onebody,
+            exp_dip_onebody,
+            method="rhf",
+            dipole=True,
+            path=tmpdir,
+        )
 
-    pes_twobody, dipole_twobody = pes_generator._pes_twomode(
-        mol,
-        mol_eq,
-        freqs,
-        vectors,
-        gauss_grid,
-        exp_pes_onebody,
-        exp_dip_onebody,
-        method="rhf",
-        dipole=True,
-    )
-
-    assert np.allclose(pes_twobody, exp_pes_twobody, atol=1e-6)
-    assert np.allclose(dipole_twobody, exp_dip_twobody, atol=1e-6)
+        assert np.allclose(pes_twobody, exp_pes_twobody, atol=1e-6)
+        assert np.allclose(dipole_twobody, exp_dip_twobody, atol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -321,23 +324,24 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
         exp_dip_twobody = np.array(f["D2_DMS"][()])
         exp_pes_threebody = np.array(f["V3_PES"][()])
         exp_dip_threebody = np.array(f["D3_DMS"][()])
+    with TemporaryDirectory() as tmpdir:
+        pes_threebody, dipole_threebody = pes_generator._pes_threemode(
+            mol,
+            mol_eq,
+            freqs,
+            vectors,
+            gauss_grid,
+            exp_pes_onebody,
+            exp_pes_twobody,
+            exp_dip_onebody,
+            exp_dip_twobody,
+            method="rhf",
+            dipole=True,
+            path=tmpdir,
+        )
 
-    pes_threebody, dipole_threebody = pes_generator._pes_threemode(
-        mol,
-        mol_eq,
-        freqs,
-        vectors,
-        gauss_grid,
-        exp_pes_onebody,
-        exp_pes_twobody,
-        exp_dip_onebody,
-        exp_dip_twobody,
-        method="rhf",
-        dipole=True,
-    )
-
-    assert np.allclose(pes_threebody, exp_pes_threebody, atol=1e-6)
-    assert np.allclose(dipole_threebody, exp_dip_threebody, atol=1e-6)
+        assert np.allclose(pes_threebody, exp_pes_threebody, atol=1e-6)
+        assert np.allclose(dipole_threebody, exp_dip_threebody, atol=1e-6)
 
 
 def test_quad_order_error():
@@ -381,7 +385,7 @@ def test_vibrational_pes(
 ):
     r"""Test that vibrational_pes returns correct object."""
 
-    if backend in {"mpi4py_pool", "mpi4py_comm"}:
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
