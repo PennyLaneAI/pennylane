@@ -43,6 +43,7 @@ Resource Estimation Base Classes:
 
     ~Resources
     ~ResourceOperator
+    ~CompressedResourceOp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,7 +60,9 @@ Qubit Management Classes:
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
 from .resource_operator import (
+    CompressedResourceOp,
     ResourceOperator,
+    ResourcesNotDefined,
     set_adj_decomp,
     set_ctrl_decomp,
     set_decomp,
