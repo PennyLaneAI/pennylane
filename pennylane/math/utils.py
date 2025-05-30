@@ -589,7 +589,7 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def _reduced_row_echelon(binary_matrix):
+def reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
@@ -642,7 +642,7 @@ def _reduced_row_echelon(binary_matrix):
     return rref_mat.astype(int)
 
 
-def _kernel(binary_matrix):
+def compute_kernel(binary_matrix):
     r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
 
     Args:

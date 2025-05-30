@@ -22,7 +22,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.math.utils import _kernel, _reduced_row_echelon
+from pennylane.math.utils import compute_kernel, reduced_row_echelon
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _split_pauli_sentence,
@@ -119,7 +119,7 @@ def test_reduced_row_echelon(binary_matrix, result):
             ) % 2
 
     # get reduced row echelon form from the _reduced_row_echelon function
-    rref_bin_mat = _reduced_row_echelon(binary_matrix)
+    rref_bin_mat = reduced_row_echelon(binary_matrix)
 
     assert (rref_bin_mat == row_echelon_matrix).all()
     assert (rref_bin_mat == result).all()
@@ -173,7 +173,7 @@ def test_kernel(binary_matrix, result):
         kernel.append(null_vector.tolist())
 
     # get the nullspace from the _kernel function.
-    nullspace = _kernel(binary_matrix)
+    nullspace = compute_kernel(binary_matrix)
 
     for nullvec in kernel:
         assert nullvec in nullspace.tolist()

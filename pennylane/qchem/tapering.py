@@ -23,7 +23,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.math.utils import _kernel, _reduced_row_echelon
+from pennylane.math.utils import compute_kernel, reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
@@ -61,13 +61,13 @@ def symmetry_generators(h):
     binary_matrix = _binary_matrix_from_pws(list(ps), num_qubits)
 
     # Get reduced row echelon form of binary matrix
-    rref_binary_matrix = _reduced_row_echelon(binary_matrix)
+    rref_binary_matrix = reduced_row_echelon(binary_matrix)
     rref_binary_matrix_red = rref_binary_matrix[
         ~np.all(rref_binary_matrix == 0, axis=1)
     ]  # remove all-zero rows
 
     # Get kernel (i.e., nullspace) for trimmed binary matrix using gaussian elimination
-    nullspace = _kernel(rref_binary_matrix_red)
+    nullspace = compute_kernel(rref_binary_matrix_red)
 
     generators = []
     pauli_map = {"00": "I", "10": "X", "11": "Y", "01": "Z"}
