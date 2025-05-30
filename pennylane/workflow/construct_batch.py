@@ -239,7 +239,7 @@ def get_transform_program(
         num_user -= 1
 
     # Use the level interpreter to convert level to slice and final transform flag
-    readd_final_transform = level == "user" or level == "gradient"
+    readd_final_transform = level in ("user", "gradient")
     level_slice = _interpret_level(level, num_user, gradient_fn)
 
     resolved_program = full_transform_program[level_slice]
