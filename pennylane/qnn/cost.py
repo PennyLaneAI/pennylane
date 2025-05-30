@@ -16,6 +16,7 @@ This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments
 from pennylane import measurements
+from pennylane.workflow.qnode import qnode
 
 
 class SquaredErrorLoss:
@@ -98,8 +99,6 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.workflow.qnode import qnode
 
         @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
         def qn(params, **circuit_kwargs):
