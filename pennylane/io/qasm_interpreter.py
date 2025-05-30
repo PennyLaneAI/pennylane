@@ -4,13 +4,24 @@ This submodule contains the interpreter for OpenQASM 3.0.
 
 import functools
 import re
+from typing import Callable
 
 from openqasm3.ast import (
+    ArrayLiteral,
+    BinaryExpression,
+    BitstringLiteral,
+    Cast,
+    ClassicalAssignment,
     ClassicalDeclaration,
+    ConstantDeclaration,
+    Expression,
+    ExpressionStatement,
     Identifier,
+    IndexExpression,
     QuantumGate,
-    QuantumGateModifier,
     QubitDeclaration,
+    RangeDefinition,
+    UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -51,6 +62,66 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
+EQUALS = "="
+ARROW = "->"
+PLUS = "+"
+DOUBLE_PLUS = "++"
+MINUS = "-"
+ASTERISK = "*"
+DOUBLE_ASTERISK = "**"
+SLASH = "/"
+PERCENT = "%"
+PIPE = "|"
+DOUBLE_PIPE = "||"
+AMPERSAND = "&"
+DOUBLE_AMPERSAND = "&&"
+CARET = "^"
+AT = "@"
+TILDE = "~"
+EXCLAMATION_POINT = "!"
+EQUALITY_OPERATORS = ["==", "!="]
+COMPOUND_ASSIGNMENT_OPERATORS = [
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "&=",
+    "|=",
+    "~=",
+    "^=",
+    "<<=",
+    ">>=",
+    "%=",
+    "**=",
+]
+COMPARISON_OPERATORS = [">", "<", ">=", "<="]
+BIT_SHIFT_OPERATORS = [">>", "<<"]
+
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
+    EQUALITY_OPERATORS
+    + COMPARISON_OPERATORS
+    + BIT_SHIFT_OPERATORS
+    + [
+        PLUS,
+        DOUBLE_PLUS,
+        MINUS,
+        ASTERISK,
+        DOUBLE_ASTERISK,
+        SLASH,
+        PERCENT,
+        PIPE,
+        DOUBLE_PIPE,
+        AMPERSAND,
+        DOUBLE_AMPERSAND,
+        CARET,
+        AT,
+        TILDE,
+        EXCLAMATION_POINT,
+    ]
+)
+
+ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
+
 
 class QasmInterpreter:
     """
@@ -59,7 +130,7 @@ class QasmInterpreter:
     """
 
     @functools.singledispatchmethod
-    def visit(self, node: QASMNode, context: dict):
+    def visit(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
         The purpose of this function is to pass each node to the appropriate handler.
@@ -67,16 +138,18 @@ class QasmInterpreter:
         Args:
             node (QASMNode): the QASMNode to visit next.
             context (dict): the current context populated with any locally available variables, etc.
-
-        Returns:
-            dict: The context updated after the compilation of the current node into Callables
-                to queue into a QNode.
+            aliasing (bool): whether we are aliasing a variable in the context.
 
         Raises:
-            NameError: When a (so far) unsupported node type is encountered.
+            NotImplementedError: When a (so far) unsupported node type is encountered.
         """
+        if re.search("Literal", node.__class__.__name__):  # There is no single "Literal" base class
+            return self.visit_literal(node, context)
+        if isinstance(node, Callable):
+            return self.visit_callable(node, context)  # cannot register Callable
         raise NotImplementedError(
-            f"An unsupported QASM instruction was encountered: {node.__class__.__name__}"
+            f"An unsupported QASM instruction {node.__class__.__name__} "
+            f"was encountered on line {node.span.start_line}, in {context['name']}."
         )
 
     def interpret(self, node: QASMNode, context: dict):
@@ -91,7 +164,7 @@ class QasmInterpreter:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
 
-        context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
+        context.update({"wires": [], "vars": {}})
 
         # begin recursive descent traversal
         for value in node.__dict__.values():
@@ -117,30 +190,163 @@ class QasmInterpreter:
         """
         context["wires"].append(node.qubit.name)
 
-    # needs to have same signature as visit()
+    @staticmethod
+    def _update_var(value: any, name: str, node: QASMNode, context: dict):
+        """
+        Updates a variable, or raises if it is constant.
+        Args:
+            value (any): the value to set.
+            name (str): the name of the variable.
+            node (QASMNode): the QASMNode that corresponds to the update.
+            context (dict): the current context.
+        """
+        context["vars"][name]["val"] = value
+        if context["vars"][name]["constant"]:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"defined on line {context['vars'][name]['line']}"
+            )
+        context["vars"][name]["line"] = node.span.start_line
+
+    @visit.register(ClassicalAssignment)
+    def visit_classical_assignment(self, node: QASMNode, context: dict):
+        """
+        Registers a classical assignment.
+        Args:
+            node (QASMNode): the assignment QASMNode.
+            context (dict): the current context.
+        """
+        # references to an unresolved value see a func for now
+        name = (
+            node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
+        )  # str or Identifier
+        res = self.visit(node.rvalue, context)
+        self._update_var(res, name, node, context)
+
+    def visit_alias_statement(self, node: QASMNode, context: dict):
+        """
+        Registers an alias statement.
+        Args:
+            node (QASMNode): the alias QASMNode.
+            context (dict): the current context.
+        """
+        self._init_aliases(context)
+        context["aliases"][node.target.name] = self.visit(node.value, context, aliasing=True)
+
+    @staticmethod
+    def retrieve_variable(name: str, context: dict):
+        """
+        Attempts to retrieve a variable from the current context by name.
+        Args:
+            name (str): the name of the variable to retrieve.
+            context (dict): the current context.
+        """
+
+        if "vars" in context and context["vars"] is not None and name in context["vars"]:
+            res = context["vars"][name]
+            if res["val"] is not None:
+                return res
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        if (
+            "wires" in context
+            and context["wires"] is not None
+            and name in context["wires"]
+            or "outer_wires" in context
+            and name in context["outer_wires"]
+        ):
+            return name
+        if "aliases" in context and context["wires"] is not None and name in context["aliases"]:
+            res = context["aliases"][name](context)  # evaluate the alias and de-reference
+            if isinstance(res, str):
+                return res
+            if res["val"] is not None:
+                return res
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        raise TypeError(
+            f"Attempt to use unevaluated variable {name} in {context['name']}, "
+            f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
+        )
+
+    @staticmethod
+    def _init_vars(context: dict):
+        """
+        context["callable"] = partial(self._execute_all, context)
+        Inits the vars dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "vars" not in context:
+            context["vars"] = dict()
+
+    @staticmethod
+    def _init_aliases(context: dict):
+        """
+        Inits the aliases dict on the current context.
+        Args:
+            context (dict): the current context.
+        """
+        if "aliases" not in context:
+            context["aliases"] = dict()
+
+    @staticmethod
+    def _get_bit_type_val(var):
+        return bin(var["val"])[2:].zfill(var["size"])
+
+    @visit.register(ConstantDeclaration)
+    def visit_constant_declaration(self, node: QASMNode, context: dict):
+        """
+        Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
+        Python type variables that can be readily used in expression eval, etc.
+        Args:
+            node (QASMNode): The constant QASMNode.
+            context (dict): The current context.
+        """
+        self.visit_classical_declaration(node, context, constant=True)
+
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(
-        self, node: ClassicalDeclaration, context: dict
-    ):  # pylint: disable=no-self-use
+    def visit_classical_declaration(self, node: QASMNode, context: dict, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
-
         Args:
             node (QASMNode): The ClassicalDeclaration QASMNode.
             context (dict): The current context.
+            constant (bool): Whether the classical variable is a constant.
         """
+
+        self._init_vars(context)
         if node.init_expression is not None:
-            context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": node.init_expression.value,
-                "line": node.init_expression.span.start_line,
-            }
+            if isinstance(node.init_expression, BitstringLiteral):
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": self.visit(node.init_expression, context),
+                    "size": node.init_expression.width,
+                    "line": node.init_expression.span.start_line,
+                    "constant": constant,
+                }
+            elif not isinstance(node.init_expression, ArrayLiteral):
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": self.visit(node.init_expression, context),
+                    "line": node.init_expression.span.start_line,
+                    "constant": constant,
+                }
+            else:
+                context["vars"][node.identifier.name] = {
+                    "ty": node.type.__class__.__name__,
+                    "val": [
+                        self.visit(literal, context) for literal in node.init_expression.values
+                    ],
+                    "line": node.init_expression.span.start_line,
+                    "constant": constant,
+                }
         else:
+            # the var is declared but uninitialized
             context["vars"][node.identifier.name] = {
                 "ty": node.type.__class__.__name__,
                 "val": None,
                 "line": node.span.start_line,
+                "constant": constant,
             }
 
     @visit.register(QuantumGate)
@@ -176,7 +382,7 @@ class QasmInterpreter:
 
     def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: dict):
         """
-        Helper to setup the a quantum gate call, also resolving arguments and wires.
+        Helper to setup the quantum gate call, also resolving arguments and wires.
 
         Args:
             node (QuantumGate): The QuantumGate QASMNode.
@@ -189,7 +395,7 @@ class QasmInterpreter:
             list: The wires the gate applies to.
         """
         # setup arguments
-        args = [self.evaluate_argument(arg, context) for arg in node.arguments]
+        args = [self.visit(arg, context) for arg in node.arguments]
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -212,8 +418,7 @@ class QasmInterpreter:
 
         return gate, args, wires
 
-    @staticmethod
-    def apply_modifier(mod: QuantumGateModifier, previous: Operator, context: dict, wires: list):
+    def apply_modifier(self, mod: QuantumGate, previous: Operator, context: dict, wires: list):
         """
         Applies a modifier to the previous gate or modified gate.
 
@@ -234,7 +439,7 @@ class QasmInterpreter:
         if mod.modifier.name == "inv":
             next = ops.adjoint(previous)
         elif mod.modifier.name == "pow":
-            power = QasmInterpreter.evaluate_argument(mod.argument, context)
+            power = self.visit(mod.argument, context)
             next = ops.pow(previous, z=power)
         elif mod.modifier.name == "ctrl":
             next = ops.ctrl(previous, control=wires[-1])
@@ -247,26 +452,192 @@ class QasmInterpreter:
 
         return next, wires
 
-    @staticmethod
-    def evaluate_argument(arg: QASMNode, context: dict):
+    @visit.register(ExpressionStatement)
+    def visit_expression_statement(self, node: ExpressionStatement, context: dict):
         """
-        Attempts to retrieve a variable from the current context by name.
+        Registers an expression statement.
+        Args:
+            node (ExpressionStatement): The expression statement.
+            context (dict): The current context.
+        """
+        return self.visit(node.expression, context)
+
+    @visit.register(Cast)
+    def visit_cast(self, node: Cast, context: dict):
+        """
+        Registers a Cast expression.
 
         Args:
-            name (str): the name of the variable to retrieve.
-            context (dict): the current context.
+            node (Cast): The Cast expression.
+            context (dict): The current context.
         """
-        if re.search("Literal", arg.__class__.__name__) is not None:
-            return arg.value
-        if hasattr(arg, "name") and arg.name in context["vars"]:  # pylint: disable=no-else-raise
-            # the context at this point should reflect the states of the
-            # variables as evaluated in the correct (current) scope.
-            if context["vars"][arg.name]["val"] is not None:
-                return context["vars"][arg.name]["val"]
-            raise NameError(f"Attempt to reference uninitialized parameter {arg.name}!")
-        elif isinstance(arg, Identifier):
-            raise NameError(f"Undeclared variable {arg.name} encountered in QASM.")
-        raise NotImplementedError(f"Unable to handle {arg.__class__.__name__} at this time")
+        return self.retrieve_variable(node.argument.name, context)["val"]
+
+    @visit.register(BinaryExpression)
+    def visit_binary_expression(self, node: BinaryExpression, context: dict):
+        """
+        Registers a binary expression.
+
+        Args:
+            node (BinaryExpression): The binary expression.
+            context (dict): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        lhs = self.visit(node.lhs, context)
+        rhs = self.visit(node.rhs, context)
+        if (
+            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+        ):  # makes sure we are not executing anything malicious
+            return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
+        if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
+            raise SyntaxError(
+                f"{node.op.name} assignment operators should only be used in classical assignments,"
+                f"not in binary expressions."
+            )
+        raise SyntaxError(
+            f"Invalid operator {node.op.name} encountered in binary expression "
+            f"on line {node.span.start_line}."
+        )
+
+    @visit.register(UnaryExpression)
+    def visit_unary_expression(self, node: UnaryExpression, context: dict):
+        """
+        Registers a unary expression.
+
+        Args:
+            node (UnaryExpression): The unary expression.
+            context (dict): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        if (
+            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+        ):  # makes sure we are not executing anything malicious
+            return eval(
+                f"{node.op.name}{self.visit(node.expression, context)}"
+            )  # pylint: disable=eval-used
+        if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
+            raise SyntaxError(
+                f"{node.op.name} assignment operators should only be used in classical assignments,"
+                f"not in unary expressions."
+            )
+        raise SyntaxError(
+            f"Invalid operator {node.op.name} encountered in unary expression "
+            f"on line {node.span.start_line}."
+        )
+
+    @visit.register(IndexExpression)
+    def visit_index_expression(self, node: IndexExpression, context: dict, aliasing: bool = False):
+        """
+        Registers an index expression.
+
+        Args:
+            node (IndexExpression): The index expression.
+            context (dict): The current context.
+            aliasing (bool): If ``True``, the expression will be treated as an alias.
+
+        Returns:
+            The slice of the indexed value.
+        """
+
+        def _index_into_var(var):
+            if var["ty"] == "BitType":
+                var = bin(var["val"])[2:].zfill(var["size"])
+            else:
+                var = var["val"]
+            if isinstance(node.index[0], RangeDefinition):
+                return var[node.index[0].start.value : node.index[0].end.value]
+            if re.search("Literal", node.index[0].__class__.__name__):
+                return var[node.index[0].value]
+            raise TypeError(
+                f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+            )
+
+        if aliasing:
+
+            def alias(context):
+                try:
+                    var = self.retrieve_variable(node.collection.name, context)
+                    return _index_into_var(var)
+                except NameError as e:
+                    raise NameError(
+                        f"Attempt to alias an undeclared variable "
+                        f"{node.collection.name} in {context['name']}."
+                    ) from e
+
+            return alias
+        else:
+            var = self.retrieve_variable(node.collection.name, context)
+            return _index_into_var(var)
+
+    @visit.register(Identifier)
+    def visit_identifier(self, node: Identifier, context: dict, aliasing: bool = False):
+        """
+        Registers an identifier.
+
+        Args:
+            node (Identifier): The identifier.
+            context (dict): The current context.
+            aliasing (bool): If ``True``, the Identifier will be treated as an alias.
+
+        Returns:
+            The de-referenced identifier.
+        """
+        if aliasing:
+
+            def alias(context):
+                try:
+                    return self.retrieve_variable(node.collection.name, context)
+                except NameError as e:
+                    raise NameError(
+                        f"Attempt to alias an undeclared variable "
+                        f"{node.name} in {context['name']}."
+                    ) from e
+
+            return alias
+        else:
+            try:
+                var = self.retrieve_variable(node.name, context)
+                value = var["val"] if isinstance(var, dict) and "val" in var else var
+                if isinstance(value, Callable):
+                    var["val"] = value(context)
+                    var["line"] = node.span.start_line
+                    value = var["val"]
+                return value
+            except NameError as e:
+                raise NameError(
+                    str(e)
+                    or f"Reference to an undeclared variable {node.name} in {context['name']}."
+                ) from e
+
+    def visit_callable(self, func: Callable, context: dict):
+        """
+        Visits a Callable.
+
+        Args:
+            func (Callable): The callable.
+            context (dict): The current context.
+
+        Returns:
+            The result of the called callable.
+        """
+        return func()
+
+    def visit_literal(self, node: Expression, context: dict):
+        """
+        Visits a literal.
+
+        Args:
+            node (Literal): The literal.
+            context (dict): The current context.
+
+        Returns:
+            The value of the literal.
+        """
+        return node.value
 
     @staticmethod
     def _require_wires(wires: list, context: dict):
