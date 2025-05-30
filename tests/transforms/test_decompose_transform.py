@@ -154,7 +154,7 @@ class TestDecompose:
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, lambda obj: obj.has_matrix)
+            decompose(tape, gate_set=lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
