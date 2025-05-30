@@ -46,8 +46,8 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
-from . import Device
 from .default_qubit import accepted_sample_measurement
+from .device_api import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
