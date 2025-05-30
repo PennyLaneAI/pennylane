@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable=unused-argument
 @lru_cache
 def _get_op_call_graph():
     @singledispatch
@@ -50,7 +50,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
-        from qualtran.bloqs.basic_gates import Hadamard
+        from qualtran.bloqs.basic_gates import Hadamard # pylint: disable=import-outside-toplevel
 
         return {
             Hadamard(): len(op.estimation_wires),
