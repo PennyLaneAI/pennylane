@@ -14,6 +14,7 @@ from openqasm3.ast import (
     ClassicalAssignment,
     ClassicalDeclaration,
     ConstantDeclaration,
+    ExpressionStatement,
     Identifier,
     IndexExpression,
     QuantumGate,
@@ -447,6 +448,16 @@ class QasmInterpreter:
             raise ValueError(f"Unknown modifier {mod}")  # pragma: no cover
 
         return next, wires
+
+    @visit.register(ExpressionStatement)
+    def visit_expression_statement(self, node: ExpressionStatement, context: dict):
+        """
+        Registers an expression statement.
+        Args:
+            node (ExpressionStatement): The expression statement.
+            context (dict): The current context.
+        """
+        return self.eval_expr(node.expression, context)
 
     def eval_expr(self, node: QASMNode, context: dict, aliasing: bool = False):
         """
