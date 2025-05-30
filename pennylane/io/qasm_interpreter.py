@@ -493,7 +493,9 @@ class QasmInterpreter:
             if (
                 node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
             ):  # makes sure we are not executing anything malicious
-                res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")  # pylint: disable=eval-used
+                res = eval(
+                    f"{node.op.name}{self.eval_expr(node.expression, context)}"
+                )  # pylint: disable=eval-used
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
                 raise SyntaxError(
                     f"{node.op.name} assignment operators should only be used in classical assignments,"
