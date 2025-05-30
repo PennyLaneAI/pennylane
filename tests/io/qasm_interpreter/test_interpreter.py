@@ -50,6 +50,16 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_processing_measurement(self):
+        # parse the QASM
+        ast = parse(open("measurements.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(ast, context={"name": "measurements", "wire_map": None})
+
+        assert context["vars"]["c"] == []
+
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(open("standalone_subroutines.qasm", mode="r").read(), permissive=True)
