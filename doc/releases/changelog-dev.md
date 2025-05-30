@@ -518,7 +518,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Move `givens_decomposition` and `_reduced_row_echelon` from `qchem` to `math` module.
+* Move `givens_decomposition`, `_reduced_row_echelon`, and `_kernel` from `qchem` to `math` module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
 * Enforce module dependencies in `pennylane` using `tach`.
