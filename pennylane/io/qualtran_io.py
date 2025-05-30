@@ -24,9 +24,9 @@ from typing import TYPE_CHECKING, Dict, List
 
 import numpy as np
 
+import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-import pennylane.measurements as qmeas
 from pennylane import math
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
