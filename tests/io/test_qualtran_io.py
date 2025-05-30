@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq
+from pennylane.io.qualtran_io import _get_to_pl_op, _map_to_bloq, _get_op_call_graph
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -452,7 +452,7 @@ class TestToBloq:
     @pytest.mark.parametrize(
         (
             "op",
-            "expected_call_graph",  # Expected call graph computed by resources from labs or decompositions
+            "qml_call_graph",  # Computed by resources from labs or decompositions
         ),
         [
             (
@@ -461,9 +461,9 @@ class TestToBloq:
                 ),
                 # ResourceQPE
                 {
-                    qml.to_bloq(qml.Hadamard(0)): 4,
-                    qml.ToBloq(qml.RX(0.1, wires=0)).controlled(): 15,
-                    qml.ToBloq(qml.adjoint(qml.QFT(wires=range(1, 5)))): 1,
+                    (qml.Hadamard(0), True): 4,
+                    (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
                 },
             ),
             (
@@ -475,23 +475,24 @@ class TestToBloq:
                 ),
                 # Inspired by Resource Superposition
                 {
-                    qml.ToBloq(
+                    (
                         qml.StatePrep(
                             np.array([0.57735027, 0.57735027, 0.57735027]), wires=[2, 3], pad_with=0
-                        )
+                        ),
+                        False,
                     ): 1,
-                    _map_to_bloq()(qml.CNOT([0, 1])): 2,
-                    qml.ToBloq(qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0])): 4,
+                    (qml.CNOT([0, 1]), True): 2,
+                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), False): 4,
                 },
             ),
-            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {_map_to_bloq()(qml.X(0)): 2}),
+            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
             (
                 qml.QFT(wires=range(5)),
                 # From ResourceQFT
                 {
-                    _map_to_bloq()(qml.H(0)): 5,
-                    _map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1])): 10,
-                    _map_to_bloq()(qml.SWAP([0, 1])): 2,
+                    (qml.H(0), True): 5,
+                    (qml.ControlledPhaseShift(1, [0, 1]), True): 10,
+                    (qml.SWAP([0, 1]), True): 2,
                 },
             ),
             (
@@ -499,43 +500,51 @@ class TestToBloq:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    _map_to_bloq()(
+                    (
                         qml.QROM(
                             bitstrings=["001"],
                             control_wires=[],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
                             clean=False,
-                        )
+                        ),
+                        True,
                     ): 1,
-                    _map_to_bloq()(
-                        qml.QROM(
-                            bitstrings=["001"],
-                            control_wires=[],
-                            target_wires=[1, 2, 3],
-                            work_wires=[0],
-                            clean=False,
-                        )
-                    ).adjoint(): 1,
-                    _map_to_bloq()(
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
                         qml.QROM(
                             bitstrings=["000", "001"],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
                             clean=False,
-                        )
+                        ),
+                        True,
                     ): 1,
-                    _map_to_bloq()(
-                        qml.QROM(
-                            bitstrings=["000", "001"],
-                            control_wires=[4],
-                            target_wires=[1, 2, 3],
-                            work_wires=[0],
-                            clean=False,
-                        )
-                    ).adjoint(): 1,
-                    _map_to_bloq()(qml.CRY(0.0, wires=[0, 1])): 6,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
                 },
             ),
             (
@@ -548,14 +557,15 @@ class TestToBloq:
                 ),
                 # From ResourceQROM
                 {
-                    _map_to_bloq()(qml.CNOT([0, 1])): 1,
-                    _map_to_bloq()(
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
                         qml.MultiControlledX(
                             wires=[0, 1], control_values=[True], work_wires=range(2, 3)
-                        )
+                        ),
+                        True,
                     ): 4,
-                    _map_to_bloq()(qml.X(0)): 4,
-                    _map_to_bloq()(qml.CSWAP([0, 1, 2])): 0.0,
+                    (qml.X(0), True): 4,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
                 },
             ),
             (
@@ -567,9 +577,9 @@ class TestToBloq:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    _map_to_bloq()(qml.QFT(range(4))).adjoint().controlled(): 1,
-                    _map_to_bloq()(qml.QFT(range(4))).controlled(): 1,
-                    _map_to_bloq()(qml.Toffoli([0, 1, 2])): 6,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), True): 1,
+                    (qml.ctrl(qml.QFT(range(4)), control=[4]), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
             (
@@ -578,72 +588,111 @@ class TestToBloq:
                     projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
                 ),
                 {
-                    _map_to_bloq()(qml.RZ(phi=-2.46, wires=0)): 1,
-                    _map_to_bloq()(qml.RZ(phi=1.0, wires=0)): 1,
-                    _map_to_bloq()(qml.Hadamard(0)): 2,
-                    _map_to_bloq()(qml.RZ(phi=0.6, wires=0)): 1,
+                    (qml.RZ(phi=-2.46, wires=0), True): 1,
+                    (qml.RZ(phi=1.0, wires=0), True): 1,
+                    (qml.Hadamard(0), True): 2,
+                    (qml.RZ(phi=0.6, wires=0), True): 1,
                 },
             ),
         ],
     )
-    def test_build_call_graph(self, op, expected_call_graph):
+    def test_build_call_graph(self, op, qml_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
-        from pennylane.io.qualtran_io import _get_op_call_graph
+        bloq_call_graph = {}
+
+        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+            if k[1]:  # bool decides whether or not to use map
+                bloq_call_graph[qml.to_bloq(k[0])] = v
+            else:
+                bloq_call_graph[qml.ToBloq(k[0])] = v
 
         call_graph = _get_op_call_graph()(op)
-        assert dict(call_graph) == expected_call_graph
-
-    from qualtran.bloqs.phase_estimation import LPResourceState, RectangularWindowState
-    from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+        assert dict(call_graph) == bloq_call_graph
 
     @pytest.mark.parametrize(
         (
             "op",
-            "expected_qualtran_bloq",  # Expected call graph computed by resources from labs or decompositions
+            "qt_bloq",
         ),
         [
             (
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
-                TextbookQPE(
-                    unitary=_map_to_bloq()(qml.RX(0.1, wires=0)),
-                    ctrl_state_prep=RectangularWindowState(4),
-                ),
+                "qpe_bloq",
             ),
         ],
     )
-    def test_default_mapping(self, op, expected_qualtran_bloq):
+    def test_default_mapping(self, op, qt_bloq):
         """Tests that the defined default maps match the expected qualtran bloq"""
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import RectangularWindowState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=RectangularWindowState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
         qt_qpe = qml.to_bloq(op, map_ops=True)
-        assert qt_qpe == expected_qualtran_bloq
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     @pytest.mark.parametrize(
         (
             "op",
             "custom_map",
-            "expected_qualtran_bloq",  # Expected call graph computed by resources from labs or decompositions
+            "qt_bloq",
         ),
         [
             (
                 qml.QuantumPhaseEstimation(
                     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
                 ),
-                {
-                    qml.QuantumPhaseEstimation(
-                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
-                    ): TextbookQPE(
-                        unitary=_map_to_bloq()(qml.RX(0.1, wires=0)),
-                        ctrl_state_prep=LPResourceState(4),
-                    )
-                },
-                TextbookQPE(
-                    unitary=_map_to_bloq()(qml.RX(0.1, wires=0)), ctrl_state_prep=LPResourceState(4)
-                ),
+                "qpe_custom_mapping",
+                "qpe_custom_bloq",
             ),
         ],
     )
-    def test_custom_mapping(self, op, custom_map, expected_qualtran_bloq):
+    def test_custom_mapping(self, op, custom_map, qt_bloq):
         """Tests that custom mapping maps the expected qualtran bloq"""
-        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map)
-        assert qt_qpe == expected_qualtran_bloq
+
+        def _build_expected_qualtran_bloq(qt_bloq):
+            """Factory function to build expected Qualtran bloq inside for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            qualtran_bloqs = {
+                "qpe_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                )
+            }
+
+            return qualtran_bloqs[qt_bloq]
+
+        def _build_custom_map(custom_map):
+            """Factory function to build custom maps for parametrization of test cases"""
+            from qualtran.bloqs.phase_estimation import LPResourceState
+            from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+            custom_mapping = {
+                "qpe_custom_mapping": {
+                    qml.QuantumPhaseEstimation(
+                        unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                }
+            }
+
+            return custom_mapping[custom_map]
+
+        qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
+        assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
