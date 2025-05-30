@@ -845,11 +845,13 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu.
         TODO: add support for these (they don't map directly to Pennylane ops).
 
-        In order to use this function, openqasm3 and 'openqasm3[parser]' must be installed in the user's environment.
+        In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
+        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
+        for directions.
 
     Args:
-        quantum_circuit (str): a QASM string containing a simple quantum circuit.
-        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to Pennylane qubits.
+        quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
+        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
         dict: the context resulting from the execution.
@@ -860,14 +862,14 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     >>>   from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
     >>>   return qml.expval(qml.Z(0))
     >>> print(qml.draw(my_circuit)())
-
     0: ──RY(0.20)──X²─┤  <Z>
     1: ──RX(1.00)─────┤
     """
     if not has_openqasm:  # pragma: no cover
         raise ImportWarning(
-            "QASM interpreter requires openqasm3 to be installed. Please pip install openqasm3 and 'openqasm3[parser]'"
-            "in your environment."
+            "from_qasm3 requires openqasm3 and 'openqasm3[parser]' to be installed in your environment. "
+            "Please consult the OpenQASM 3.0 installation instructions for more information:"
+            " https://pypi.org/project/openqasm3/."
         )  # pragma: no cover
     # parse the QASM program
     try:
