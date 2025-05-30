@@ -92,10 +92,9 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
             ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op, context=current_queue)
+            queuing.apply(op)
 
     return q.queue
 
@@ -226,10 +225,9 @@ def two_qubit_decomposition(U, wires):
             ops.GlobalPhase(-global_phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op, context=current_queue)
+            queuing.apply(op)
 
     return q.queue
 
@@ -267,10 +265,9 @@ def multi_qubit_decomposition(U, wires):
         multi_qubit_decomp_rule(U, wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
-    current_queue = queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op, context=current_queue)
+            queuing.apply(op)
 
     return q.queue
 

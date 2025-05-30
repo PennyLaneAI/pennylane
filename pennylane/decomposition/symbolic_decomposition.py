@@ -226,7 +226,7 @@ def make_controlled_decomp(base_decomposition):
     return _impl
 
 
-def flip_zero_control(inner_decomp):
+def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):

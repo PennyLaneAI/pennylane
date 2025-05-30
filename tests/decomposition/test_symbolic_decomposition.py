@@ -327,6 +327,7 @@ def _custom_resource(num_wires):
             num_control_wires=3,
             num_zero_control_values=1,
             num_work_wires=1,
+            work_wire_type="clean",
         ): 1,
         qml.RX: 1,
         qml.Rot: 1,
@@ -416,12 +417,14 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(qml.CRX): 1,
                 qml.resource_rep(qml.CRot): 1,
@@ -516,18 +519,21 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="clean",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=2, num_work_wires=1
@@ -629,24 +635,28 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=6,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="clean",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=3, num_work_wires=1

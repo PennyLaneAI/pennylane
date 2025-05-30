@@ -288,12 +288,13 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(
+def controlled_resource_rep(  # pylint: disable=too-many-arguments
     base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int = 0,
     num_work_wires: int = 0,
+    work_wire_type="clean",
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
@@ -308,6 +309,7 @@ def controlled_resource_rep(
         num_control_wires (int): the number of control wires
         num_zero_control_values (int): the number of control values that are 0
         num_work_wires (int): the number of work wires
+        work_wire_type (str): the type of work wire
 
     """
 
@@ -355,6 +357,7 @@ def controlled_resource_rep(
             num_control_wires,
             num_zero_control_values,
             num_work_wires,
+            work_wire_type,
         )
 
     return CompressedResourceOp(
@@ -448,8 +451,13 @@ def _controlled_qubit_unitary_rep(
     )
 
 
-def _controlled_x_rep(
-    base_class, base_params, num_control_wires, num_zero_control_values, num_work_wires
+def _controlled_x_rep(  # pylint: disable=too-many-arguments
+    base_class,
+    base_params,
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type="clean",
 ) -> Optional[CompressedResourceOp]:
     """Helper function that handles custom logic for controlled X gates."""
 
@@ -463,6 +471,7 @@ def _controlled_x_rep(
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
         )
 
     # base_class is qml.MultiControlledX:
@@ -474,4 +483,5 @@ def _controlled_x_rep(
         num_control_wires=num_control_wires,
         num_zero_control_values=num_zero_control_values,
         num_work_wires=num_work_wires,
+        work_wire_type=work_wire_type,
     )
