@@ -72,6 +72,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     as a :class:`~.QNode` object measuring the expectation of a :class:`~.ops.LinearCombination`.
 
     >>> from pennylane import numpy as np
+    >>> from functools import partial
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
     ...   qml.X(1),
@@ -81,9 +82,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ...   qml.Z(0) @ qml.Z(1)
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> dev = qml.device("default.qubit", wires=2, shots=100)
-    >>> @qml.qnode(dev)
-    >>> def cost(weights):
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @partial(qml.set_shots, shots=100)
+
+    ... @qml.qnode(dev)
+    ... def cost(weights):
     ...     qml.StronglyEntanglingLayers(weights, wires=range(2))
     ...     return qml.expval(H)
 

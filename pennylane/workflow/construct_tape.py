@@ -42,7 +42,8 @@ def construct_tape(qnode, level="user"):
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
             qml.RX(x, wires=0)
