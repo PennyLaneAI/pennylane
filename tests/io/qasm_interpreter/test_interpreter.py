@@ -60,10 +60,7 @@ class TestInterpreter:
                 ast, context={"name": "complex-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [
-            Hadamard('q0'),
-            PauliY('q0')
-        ]
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
         assert context["vars"]["c"]["val"] == 0
 
     def test_subroutines(self):
@@ -76,7 +73,7 @@ class TestInterpreter:
                 ast, context={"name": "subroutines", "wire_map": None}
             )
 
-        assert q.queue == [Hadamard('q0')]
+        assert q.queue == [Hadamard("q0")]
 
     def test_param_as_expression(self):
         # parse the QASM
@@ -94,7 +91,7 @@ class TestInterpreter:
                 ast, context={"wire_map": None, "name": "expression-implemented"}
             )
 
-        assert q.queue == [PauliX('q0')**2]
+        assert q.queue == [PauliX("q0") ** 2]
 
     def test_nested_modifiers(self):
         # parse the QASM program

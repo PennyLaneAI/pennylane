@@ -6,10 +6,26 @@ import functools
 import re
 from typing import Callable
 
+from openqasm3.ast import (
+    ArrayLiteral,
+    BinaryExpression,
+    BitstringLiteral,
+    Cast,
+    ClassicalAssignment,
+    ClassicalDeclaration,
+    ConstantDeclaration,
+    FunctionCall,
+    Identifier,
+    IndexExpression,
+    QuantumArgument,
+    QuantumGate,
+    QubitDeclaration,
+    RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
+    UnaryExpression,
+)
 from openqasm3.visitor import QASMNode
-from openqasm3.ast import BitstringLiteral, ArrayLiteral, ClassicalDeclaration, QuantumGate, QubitDeclaration, \
-    ConstantDeclaration, ClassicalAssignment, Cast, Identifier, IndexExpression, RangeDefinition, UnaryExpression, \
-    BinaryExpression, FunctionCall, QuantumArgument, ReturnStatement, SubroutineDefinition
 
 from pennylane import ops
 from pennylane.operation import Operator
@@ -48,33 +64,66 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = '='
-ARROW = '->'
-PLUS = '+'
-DOUBLE_PLUS = '++'
-MINUS = '-'
-ASTERISK = '*'
-DOUBLE_ASTERISK = '**'
-SLASH = '/'
-PERCENT = '%'
-PIPE = '|'
-DOUBLE_PIPE = '||'
-AMPERSAND = '&'
-DOUBLE_AMPERSAND = '&&'
-CARET = '^'
-AT = '@'
-TILDE = '~'
-EXCLAMATION_POINT = '!'
-EQUALITY_OPERATORS = ['==', '!=']
-COMPOUND_ASSIGNMENT_OPERATORS = ['+=', '-=', '*=', '/=', '&=', '|=', '~=', '^=', '<<=', '>>=', '%=', '**=']
-COMPARISON_OPERATORS = ['>', '<', '>=', '<=']
-BIT_SHIFT_OPERATORS = ['>>', '<<']
+EQUALS = "="
+ARROW = "->"
+PLUS = "+"
+DOUBLE_PLUS = "++"
+MINUS = "-"
+ASTERISK = "*"
+DOUBLE_ASTERISK = "**"
+SLASH = "/"
+PERCENT = "%"
+PIPE = "|"
+DOUBLE_PIPE = "||"
+AMPERSAND = "&"
+DOUBLE_AMPERSAND = "&&"
+CARET = "^"
+AT = "@"
+TILDE = "~"
+EXCLAMATION_POINT = "!"
+EQUALITY_OPERATORS = ["==", "!="]
+COMPOUND_ASSIGNMENT_OPERATORS = [
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "&=",
+    "|=",
+    "~=",
+    "^=",
+    "<<=",
+    ">>=",
+    "%=",
+    "**=",
+]
+COMPARISON_OPERATORS = [">", "<", ">=", "<="]
+BIT_SHIFT_OPERATORS = [">>", "<<"]
 
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = EQUALITY_OPERATORS + COMPARISON_OPERATORS + BIT_SHIFT_OPERATORS \
-    + [PLUS, DOUBLE_PLUS, MINUS, ASTERISK, DOUBLE_ASTERISK, SLASH, PERCENT, PIPE, DOUBLE_PIPE,
-       AMPERSAND, DOUBLE_AMPERSAND, CARET, AT, TILDE, EXCLAMATION_POINT]
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
+    EQUALITY_OPERATORS
+    + COMPARISON_OPERATORS
+    + BIT_SHIFT_OPERATORS
+    + [
+        PLUS,
+        DOUBLE_PLUS,
+        MINUS,
+        ASTERISK,
+        DOUBLE_ASTERISK,
+        SLASH,
+        PERCENT,
+        PIPE,
+        DOUBLE_PIPE,
+        AMPERSAND,
+        DOUBLE_AMPERSAND,
+        CARET,
+        AT,
+        TILDE,
+        EXCLAMATION_POINT,
+    ]
+)
 
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
+
 
 class QasmInterpreter:
     """
@@ -333,8 +382,9 @@ class QasmInterpreter:
         )
         context["scopes"]["subroutines"][node.name.name]["sub"] = True
         context["scopes"]["subroutines"][node.name.name]["body"] = node.body
-        context["scopes"]["subroutines"][node.name.name]["params"] = [param.name.name for param in node.arguments]
-
+        context["scopes"]["subroutines"][node.name.name]["params"] = [
+            param.name.name for param in node.arguments
+        ]
 
     @staticmethod
     def _get_bit_type_val(var):
@@ -360,7 +410,7 @@ class QasmInterpreter:
         self.visit_classical_declaration(node, context, constant=True)
 
     @visit.register(ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: dict, constant:bool=False):
+    def visit_classical_declaration(self, node: QASMNode, context: dict, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
@@ -546,23 +596,35 @@ class QasmInterpreter:
         elif isinstance(node, BinaryExpression):
             lhs = self.eval_expr(node.lhs, context)
             rhs = self.eval_expr(node.rhs, context)
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{lhs}{node.op.name}{rhs}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in binary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in binary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in binary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, UnaryExpression):
-            if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:  # makes sure we are not executing anything malicious
+            if (
+                node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+            ):  # makes sure we are not executing anything malicious
                 res = eval(f"{node.op.name}{self.eval_expr(node.expression, context)}")
             elif node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                raise SyntaxError(f"{node.op.name} assignment operators should only be used in classical assignments,"
-                                  f"not in unary expressions.")
+                raise SyntaxError(
+                    f"{node.op.name} assignment operators should only be used in classical assignments,"
+                    f"not in unary expressions."
+                )
             else:
-                raise SyntaxError(f"Invalid operator {node.op.name} encountered in unary expression "
-                                  f"on line {node.span.start_line}.")
+                raise SyntaxError(
+                    f"Invalid operator {node.op.name} encountered in unary expression "
+                    f"on line {node.span.start_line}."
+                )
         elif isinstance(node, IndexExpression):
 
             def _index_into_var(var):
@@ -640,15 +702,23 @@ class QasmInterpreter:
                     )
                 else:
                     # TODO: use ChainMap to get this from scopes or outer_scopes
-                    if "scopes" in context and "subroutines" in context["scopes"] \
-                            and node.name.name in context["scopes"]["subroutines"]:
+                    if (
+                        "scopes" in context
+                        and "subroutines" in context["scopes"]
+                        and node.name.name in context["scopes"]["subroutines"]
+                    ):
                         func_context = context["scopes"]["subroutines"][node.name.name]
-                    elif "outer_scopes" in context and "subroutines" in context["outer_scopes"] \
-                            and node.name.name in context["outer_scopes"]["subroutines"]:
+                    elif (
+                        "outer_scopes" in context
+                        and "subroutines" in context["outer_scopes"]
+                        and node.name.name in context["outer_scopes"]["subroutines"]
+                    ):
                         func_context = context["outer_scopes"]["subroutines"][node.name.name]
                     else:
-                        raise NameError(f"Reference to subroutine {node.name.name} not available in calling namespace"
-                                        f"on line {node.span.start_line}.")
+                        raise NameError(
+                            f"Reference to subroutine {node.name.name} not available in calling namespace"
+                            f"on line {node.span.start_line}."
+                        )
 
                     # bind subroutine arguments
                     self._init_vars(func_context)
@@ -663,9 +733,7 @@ class QasmInterpreter:
                             func_context["wire_map"][param] = evald_arg
 
                     # execute the subroutine
-                    self.visit(
-                        func_context["body"], func_context
-                    )
+                    self.visit(func_context["body"], func_context)
 
                     # the return value
                     return func_context["return"]
