@@ -27,7 +27,7 @@
   
   Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
   please consult the documentation for :func:`~.from_qasm3` and ensure that you have installed `openqasm3` and 
-* `'openqasm3[parser]'` with `pip install openqasm3 'openqasm3[parser]'` in your environment.
+  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
