@@ -54,8 +54,8 @@ def _get_op_call_graph():
 
         return {
             Hadamard(): len(op.estimation_wires),
-            ToBloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires)) - 1,
-            ToBloq(qops.adjoint(qtemps.QFT(wires=op.estimation_wires))): 1,
+            _map_to_bloq()(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires)) - 1,
+            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires))).adjoint(): 1,
         }
 
     @_op_call_graph.register
