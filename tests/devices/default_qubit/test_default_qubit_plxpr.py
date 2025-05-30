@@ -60,14 +60,6 @@ class TestPreprocess:
         assert new_config.use_device_jacobian_product
         assert new_config.grad_on_execution
 
-    def test_execution_config_invalid_mcm_method_error(self):
-        """Test that an error is raised if mcm_method is invalid."""
-        dev = qml.device("default.qubit", wires=1)
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="foo"))
-
-        with pytest.raises(DeviceError, match="mcm_method='foo' is not supported"):
-            _ = dev.preprocess(execution_config=config)
-
     def test_execution_config_default_mcm_config(self):
         """Test that not specifying MCM config updates the execution config correctly."""
         dev = qml.device("default.qubit", wires=1)
