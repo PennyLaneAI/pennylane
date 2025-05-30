@@ -23,51 +23,13 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.math.utils import _reduced_row_echelon
+from pennylane.math.utils import _kernel, _reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
 # Global Variables
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
-
-
-def _kernel(binary_matrix):
-    r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
-
-    Args:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian
-    Returns:
-        array[int]: nullspace of the `binary_matrix` where each row corresponds to a
-        basis vector in the nullspace
-
-    **Example**
-
-    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-    ...                          [0, 0, 1, 1, 1, 1, 1, 1],
-    ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
-    >>> _kernel(binary_matrix)
-    array([[0, 1, 0, 0, 0, 0, 0, 0],
-           [0, 0, 1, 1, 1, 0, 0, 0],
-           [1, 0, 1, 0, 0, 1, 0, 0],
-           [0, 0, 1, 0, 0, 0, 1, 0],
-           [0, 0, 1, 1, 0, 0, 0, 1]])
-    """
-    # Get the columns with and without pivots
-    pivots = (binary_matrix.T != 0).argmax(axis=0)
-    nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
-
-    # Initialize the nullspace
-    null_vector = np.zeros((binary_matrix.shape[1], len(nonpivots)), dtype=int)
-    null_vector[nonpivots, np.arange(len(nonpivots))] = 1
-
-    # Fill up the nullspace vectors from the binary matrix
-    null_vector_indices = np.ix_(pivots, np.arange(len(nonpivots)))
-    binary_vector_indices = np.ix_(np.arange(len(pivots)), nonpivots)
-    null_vector[null_vector_indices] = -binary_matrix[binary_vector_indices] % 2
-
-    nullspace = null_vector.T
-    return nullspace
 
 
 def symmetry_generators(h):
