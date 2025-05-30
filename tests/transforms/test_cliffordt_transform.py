@@ -560,9 +560,10 @@ class TestCliffordCached:
 
         num_repeat = 2
         old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
-        _ = clifford_t_decomposition(old_tape)
+        _ = clifford_t_decomposition(old_tape, cache_size=100)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
         cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
+        assert cache_info.maxsize == 100
