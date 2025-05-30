@@ -522,6 +522,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
   [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
+  [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
@@ -593,6 +594,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The queuing behavior of the controlled of a controlled operation is fixed.
+  [(#7532)](https://github.com/PennyLaneAI/pennylane/pull/7532)
 
 * A new decomposition was implemented for two-qubit `QubitUnitary` operators in `two_qubit_decomposition`
   based on a type-AI Cartan decomposition. It fixes previously faulty edge cases for unitaries
