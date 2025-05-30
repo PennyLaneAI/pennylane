@@ -112,6 +112,7 @@ from .interface_utils import (
 )
 from .grad import grad, jacobian
 from . import decomposition
+from .decomposition import givens_decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj

@@ -20,11 +20,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.givens_decomposition import (
-    _givens_matrix,
-    _set_unitary_matrix,
-    givens_decomposition,
-)
+from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
 
 @pytest.mark.parametrize("left", [True, False])
