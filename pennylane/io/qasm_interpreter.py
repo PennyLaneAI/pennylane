@@ -132,12 +132,6 @@ class QasmInterpreter:
     visitor function on each node.
     """
 
-    def __init__(self, permissive=False):
-        """
-        Initializes the QASM interpreter.
-        """
-        self.permissive = permissive
-
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: dict):
         """
@@ -155,18 +149,10 @@ class QasmInterpreter:
         Raises:
             NameError: When a (so far) unsupported node type is encountered.
         """
-        if self.permissive:
-            print(
-                f"An unrecognized QASM instruction {node.__class__.__name__} "
-                f"was encountered on line {node.span.start_line}, in {context['name']}."
-            )
-        else:
-            raise NotImplementedError(
-                f"An unsupported QASM instruction {node.__class__.__name__} "
-                f"was encountered on line {node.span.start_line}, in {context['name']}."
-            )
-
-        return context
+        raise NotImplementedError(
+            f"An unsupported QASM instruction {node.__class__.__name__} "
+            f"was encountered on line {node.span.start_line}, in {context['name']}."
+        )
 
     @visit.register(list)
     def visit_list(self, node_list: list, context: dict):
