@@ -87,7 +87,7 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
             *jaxpr.consts, *abstract_shapes, *flat_args, **prim_kwargs, method=method, h=h
         )
 
-        # fl --atten once more to go from 2D derivative structure (outputs, args) to flat structure
+        # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
         out_flat = tree_leaves(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
         # The derivative output tree is the composition of output tree and trainable input trees
