@@ -26,7 +26,6 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.concurrency.executors.base import RemoteExec
-from pennylane.debugging import pldb_device_manager
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -851,6 +850,9 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
+        # pylint: disable=import-outside-toplevel
+        from pennylane.debugging import pldb_device_manager
+
         with pldb_device_manager(self.device):
             with qml.queuing.AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
@@ -895,6 +897,13 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if "shots" in kwargs and qml.set_shots in self.transform_program:
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over 'shots='",
+                UserWarning,
+                stacklevel=2,
+            )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 
