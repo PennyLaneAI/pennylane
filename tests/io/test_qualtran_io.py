@@ -369,8 +369,18 @@ class TestToBloq:
         from qualtran._infra.data_types import QAny, QBit
 
         # TODO: this would ideally be only 1 allocate and free
-        assert qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][Allocate(QAny(bitsize=1))] == 3
-        assert qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][Free(QBit())] == 3
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Allocate(QAny(bitsize=1))
+            ]
+            == 3
+        )
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Free(QBit())
+            ]
+            == 3
+        )
 
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
@@ -393,15 +403,13 @@ class TestToBloq:
 
         from qualtran.bloqs.basic_gates import Hadamard, CNOT
 
-        dev = qml.device("default.qubit", wires = 6)
+        dev = qml.device("default.qubit", wires=6)
 
         @qml.qnode(dev)
         def circuit():
             qml.H(0)
-            qml.QuantumPhaseEstimation(
-                unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
-        )
-        
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+
         mapped_circuit = qml.to_bloq(circuit)
         mapped_circuit_cg = mapped_circuit.call_graph()[1]
         wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
