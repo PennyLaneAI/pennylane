@@ -21,9 +21,12 @@ from typing import List, Tuple
 
 import numpy as np
 
-from pennylane import CNOT, BasisState, H, I, S, StatePrep, X, Y, Z, math
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z, cond
 from pennylane.tape import QuantumScript
+
+from .operations import RotXZX
 
 _OPS_TO_XZ = {
     I: (0, 0),
@@ -41,22 +44,9 @@ _XZ_TO_OPS = {
 
 _PAULIS = (X, Y, Z, I)
 
-_GATE_SET_SUPPORTED = (X, Y, Z, I, H, S, CNOT)
+_CLIFFORD_GATES_SUPPORTED = (H, S, CNOT)
 
-_MBQC_GATES_SUPPORTED = {
-    H: {"meas_len": 4, "cor": [[0, 2, 3], [1, 2], [0, 0]]},
-    S: {"meas_len": 4, "cor": [[1, 3], [0, 1, 2], [0, 1]]},
-    CNOT: {
-        "meas_len": 13,
-        "cor": [
-            [1, 2, 4, 5],
-            [0, 2, 3, 4, 6, 7, 9],
-            [1, 2, 6, 8, 10, 12],
-            [7, 9, 11],
-            [0, 1, 0, 0],
-        ],
-    },
-}
+_NON_CLIFFORD_GATES_SUPPORTED = (RZ, RotXZX)
 
 
 def pauli_to_xz(op: Operator) -> Tuple[int, int]:
@@ -257,9 +247,112 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
+def _sum_parity(mid_meas: List):
+    """Get least significant bit (LSB) of the sum of the elements in a list.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        The last bit of the sum.
+    """
+
+    return sum([m for m in mid_meas]) & 1
+
+
+def _parse_s(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.S` gate.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        A list of tuples of xz encoding.
+    """
+    return [(mid_meas[1] ^ mid_meas[3], _sum_parity(mid_meas[0], mid_meas[1], mid_meas[2], 1))]
+
+
+def _parse_h(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.H` gate.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        A list of tuples of xz encoding.
+    """
+    return [(_sum_parity(mid_meas[0], mid_meas[2], mid_meas[3]), mid_meas[1] ^ mid_meas[2])]
+
+
+def _parse_cnot(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.CNOT` gate.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        A list of tuples of xz encoding.
+    """
+    # Control wire
+    by_op = [
+        (
+            _sum_parity(mid_meas[1], mid_meas[2], mid_meas[4], mid_meas[5]),
+            _sum_parity(
+                mid_meas[0],
+                mid_meas[2],
+                mid_meas[3],
+                mid_meas[4],
+                mid_meas[6],
+                mid_meas[7],
+                mid_meas[9],
+                1,
+            ),
+        )
+    ]
+    # Target wire
+    by_op.append(
+        (
+            _sum_parity(
+                mid_meas[1], mid_meas[2], mid_meas[6], mid_meas[8], mid_meas[10], mid_meas[12]
+            ),
+            _sum_parity(mid_meas[7], mid_meas[9], mid_meas[11]),
+        )
+    )
+    return by_op
+
+
+def _parse_rotxzx(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.ftqc.RotXZX` gate.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        A list of tuples of xz encoding.
+    """
+    return [(mid_meas[1] ^ mid_meas[3], mid_meas[0] ^ mid_meas[2])]
+
+
+def _parse_rotz(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.RZ` gate.
+
+    Args:
+        mid_meas (List): A list of mid measurement results.
+
+    Returns:
+        A list of tuples of xz encoding.
+    """
+    return [(mid_meas[1] ^ mid_meas[3], mid_meas[0] ^ mid_meas[2])]
+
+
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
-    r"""Parse a serial of mid-measurement results of a quantum tape with only Pauli operators (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
-    set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`) and the Clifford gates mentioned above are measured in the way defined in `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
+    r"""Parse a serial of mid-measurement results of a quantum tape with a few number of non-Clifford 
+    gates (:class:`~pennylane.RZ` and :class:`~pennylane.ftqc.RotXZX`), up to the number of wires of 
+    the tape and one non-Clifford gate per wire, at the beginning of the circuit, Pauli operators 
+    (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
+    set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`).
+    Both nob-Clifford and Clifford gates mentioned above are measured in the way defined in 
+    `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
     For :class:`~pennylane.S` operations, the measurements take on the four qubits out of a cluster(chain) state with five qubits and
     the corresponding measurements would be `X-basis`, `X-basis`, `Y-basis` and `X-basis`. The byproduct operator is $by_op = \sigma_x^{s_1+s_3}\sigma_z^{s_0+s_1+s_2+1}$
@@ -282,38 +375,47 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     Returns:
         A list of `byproduct` ops in xz and a list of `operations` in a reversed manner.
     """
-    # Copy is explicitly applied here to avoid changes made to the original tape
-    ops = copy.copy(tape.operations)
+    ops = tape.operations
 
     by_ops = []
 
     mid_meas_offset = 0
-    for op in ops:
-        if type(op) in _MBQC_GATES_SUPPORTED:
-            cor = []
-            # There could be X and Z corrections for each wire
-            for i in range(2 * op.num_wires):
-                sum = 0
-                for idx in _MBQC_GATES_SUPPORTED[type(op)]["cor"][i]:
-                    sum += mid_meas[mid_meas_offset + idx]
-                cor.append(sum)
+    _t_ops_record = [None] * tape.num_wires
+    for idx, op in enumerate(ops):
+        gate_offset = 4 if op.num_wires == 1 else 13
+        ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
+        by_op = []
+        if isinstance(op, S):
+            by_op = _parse_s(ms)
+        elif isinstance(op, H):
+            by_op = _parse_h(ms)
+        elif isinstance(op, CNOT):
+            by_op = _parse_cnot(ms)
+        elif isinstance(op, RZ):
+            if _t_ops_record[op.wires[0]] is None and idx < tape.num_wires:
+                _t_ops_record[op.wires[0]] = op
+            else:
+                raise NotImplementedError(
+                    f"Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
+                )
+            by_op = _parse_rotz(ms)
+        elif isinstance(op, RotXZX):
+            if _t_ops_record[op.wires[0]] is None and idx < tape.num_wires:
+                _t_ops_record[op.wires[0]] = op
+            else:
+                raise NotImplementedError(
+                    f"Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
+                )
+            by_op = _parse_rotxzx(ms)
+        else:
+            raise NotImplementedError(f"{op.name} is not supported.")
 
-            # Add a const 0 or 1 and apply commutate rules
-            for idx, add_cor in enumerate(_MBQC_GATES_SUPPORTED[type(op)]["cor"][-1]):
-                cor[idx] += add_cor
-                cor[idx] &= 1
+        by_ops.append(by_op)
 
-            by_op = []
-            for i in range(op.num_wires):
-                by_op.append((cor[0 + 2 * i], cor[1 + 2 * i]))
+        mid_meas_offset += gate_offset
 
-            by_ops.append(by_op)
-
-            # Update the mid_measurement offset
-            mid_meas_offset += _MBQC_GATES_SUPPORTED[type(op)]["meas_len"]
     # To use list in a stack manner
     by_ops.reverse()
-    ops.reverse()
     return by_ops, ops
 
 
@@ -331,8 +433,7 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     x_record = math.zeros(num_wires, dtype=np.uint8)
     z_record = math.zeros(num_wires, dtype=np.uint8)
 
-    while len(by_ops) or len(ops):
-        op = ops.pop()
+    for op in ops:
         wires = list(op.wires)
 
         # Get the recorded xz
@@ -340,8 +441,12 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
 
         # Updated xz
         new_xz = []
-
-        if type(op) in _MBQC_GATES_SUPPORTED:
+        if isinstance(op, _NON_CLIFFORD_GATES_SUPPORTED):
+            # Branch for non-Clifford gates
+            by_op = by_ops.pop()
+            new_xz.append(math.bitwise_xor(pauli_to_xz(by_op), xz[0]))
+        elif isinstance(op, _CLIFFORD_GATES_SUPPORTED):
+            # Branch for Clifford gates
             # Step 1: Commutate the recorded xz with the Clifford gate to a new xz.
             xz_commutated = commute_clifford_op(op, xz)
 
@@ -349,8 +454,6 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
             by_op = by_ops.pop()
             for _by_op, _xz_comm in zip(by_op, xz_commutated):
                 new_xz.append(math.bitwise_xor(_by_op, _xz_comm))
-        elif isinstance(op, (StatePrep, BasisState)):
-            new_xz = xz
         else:  # branch for Paulis
             # Commutate step is skipped.
             # Get the new xz by merging the recorded xz with the Pauli ops directly.
@@ -362,67 +465,51 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     return x_record, z_record
 
 
-def _apply_measurement_correction_rule(x: np.uint8, z: np.uint8, ob: Operator):
+def _apply_measurement_correction_rule(x: np.uint8):
     """Get the phase correction factor based on the recorded `x` an `z` of the target wire and the corresponding
     observable.
 
         Args:
             x (np.uint8): Recorded x at the target wire of ob.
-            z (np.uint8): Recorded z at the target wire of ob.
-            ob (Operator): Observable of the measurement.
 
         Return:
             Phase correction factor.
     """
-    if isinstance(ob, Z):
-        return -1 if x == 1 else 1
-
-    if isinstance(ob, X):
-        return -1 if z == 1 else 1
-
-    if isinstance(ob, Y):
-        return -1 if math.sum([x, z]) == 1 else 1
-
-    if isinstance(ob, I):
-        return 1
-
-    raise NotImplementedError(f"{ob.name} is not supported.")
+    return -1 if x == 1 else 1
 
 
-def _get_measurements_corrections(tape: QuantumScript, x_record: math.array, z_record: math.array):
+def _get_measurements_corrections(tape: QuantumScript, x_record: math.array):
     """Get phase correction factor for all measurements in a tape. The phase correction factor
-    is calculated based on the measurement observables with the corresponding recorded x an z.
+    is calculated based on the `samples` at `wires` with the corresponding recorded x.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
             x_record (math.array): The array of recorded x for each wire.
-            z_record (math.array): The array of recorded z for each wire.
         Return:
             A list of phase correction factor for all measurements.
     """
-    phase_cor = [1] * len(tape.measurements)
+    phase_factor = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
-        obs = measurement.obs
-        if type(obs) in _PAULIS:
-            # branch for NamedObs
-            phase_cor[idx] *= _apply_measurement_correction_rule(
-                x_record[obs.wires[0]], z_record[obs.wires[0]], obs
-            )
-        else:
-            raise NotImplementedError(f"{obs.name} is not supported.")
-    return phase_cor
+        wires = measurement.wires.tolist()
+
+        phase_factor[idx] *= _apply_measurement_correction_rule(x_record[wires[0]])
+
+    return phase_factor
 
 
 def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
     r"""Get measurement correction coefficients offline with a quantum script and mid-measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
-    gates. Note that byproduct operations and ops are stored with list and used in a stack manner. The calculation iteratively
+    and non-Clifford gates. Note that byproduct operations are stored with list and used in a stack manner. The calculation iteratively
     pops out the first operation in the tape and applies commutate rules for the first byproduct ops in the byproduct stack and
     then the results are commutated to the byproduct of the current operations in the tape if it is a Clifford gate. The calculation
     starts from applying commutate rules for :class:`qml.I` gate or $encode\_xz(x,z)=(0,0)$ to the first gate in the tape. The
     measurement corrections are returned based on the observable operators and the xz recorded.
 
     Args:
-        tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with Paulis, qml.H, qml.S and qml.CNOT in the standard circuit formalism.
+        tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with :class:`~pennylane.X`, :class:`~pennylane.Y`, :class:`~pennylane.Z`, 
+            :class:`~pennylane.I`, :class:`~pennylane.H`, :class:`~pennylane.S`, :class:`~pennylane.CNOT` and non-Clifford gates (:class:`~pennylane.RZ` 
+            and :class:`~pennylane.ftqc.RotXZX`) at the beginning of circuit in the standard circuit formalism. Note that one non-Clifford gate per wire
+            at most is supported.
         mid_meas (list): MidMeasurement results per shot.
 
     **Note**
@@ -515,14 +602,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
             print(res)
 
     """
-    if not all(
-        isinstance(op, _GATE_SET_SUPPORTED + (StatePrep, BasisState)) for op in tape.operations
-    ):
-        raise NotImplementedError("Not all gate operations in the tape are supported.")
-
-    if not all(res in [0, 1] for res in mid_meas):
-        raise ValueError("The mid-measure value should be either 0 or 1.")
-
     by_ops, ops = _parse_mid_measurements(tape, mid_meas)
 
     x_record, z_record = _get_xz_record(tape.num_wires, by_ops, ops)
