@@ -370,7 +370,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`TemporaryAnd <../code/api/pennylane.TemporaryAnd>`
-    :figure: _static/templates/subroutines/elbow.png
+    :figure: _static/templates/subroutines/temporary_and.png
 
 .. raw:: html
 
