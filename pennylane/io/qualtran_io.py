@@ -63,7 +63,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.TrotterizedQfunc):
-        import pennylane as qml
+        from pennylane import QueuingManager, queuing
 
         n = op.hyperparameters["n"]
         order = op.hyperparameters["order"]
@@ -71,8 +71,8 @@ def _get_op_call_graph():
         qfunc = op.hyperparameters["qfunc"]
         qfunc_args = op.parameters[1:]
 
-        with qml.QueuingManager.stop_recording():
-            with qml.queuing.AnnotatedQueue() as q:
+        with QueuingManager.stop_recording():
+            with queuing.AnnotatedQueue() as q:
                 base_hyper_params = ("n", "order", "qfunc", "reverse")
 
                 qfunc_args = op.parameters
@@ -142,7 +142,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
-        import pennylane as qml
+        from pennylane import math
 
         gate_types = defaultdict(int, {})
         state_vector = op.state_vector
@@ -153,7 +153,7 @@ def _get_op_call_graph():
                 positive_and_real = False
                 break
 
-        num_state_qubits = int(qml.math.log2(len(op.state_vector)))
+        num_state_qubits = int(math.log2(len(op.state_vector)))
         precision_wires = op.hyperparameters["precision_wires"]
         input_wires = op.hyperparameters["input_wires"]
         work_wires = op.hyperparameters["work_wires"]
@@ -173,7 +173,7 @@ def _get_op_call_graph():
             if len(bitstrings) == 0:
                 bitstrings = ["0" * (num_precision_wires - 1) + "1"]
 
-            qrom_op = qml.QROM(
+            qrom_op = qtemps.QROM(
                 bitstrings=bitstrings,
                 target_wires=precision_wires,
                 control_wires=input_wires[:i],
@@ -181,9 +181,9 @@ def _get_op_call_graph():
                 clean=False,
             )
             gate_types[_map_to_bloq()(qrom_op)] += 1
-            gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
+            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
 
-        gate_types[_map_to_bloq()(qml.CRY(0, wires=[0, 1]))] = (
+        gate_types[_map_to_bloq()(qops.CRY(0, wires=[0, 1]))] = (
             num_precision_wires * num_state_qubits
         )
 
@@ -201,7 +201,7 @@ def _get_op_call_graph():
             if len(bitstrings) == 0:
                 bitstrings = ["0" * (num_precision_wires - 1) + "1"]
 
-            qrom_op = qml.QROM(
+            qrom_op = qtemps.QROM(
                 bitstrings=bitstrings,
                 target_wires=precision_wires,
                 control_wires=input_wires,
@@ -210,11 +210,11 @@ def _get_op_call_graph():
             )
 
             gate_types[_map_to_bloq()(qrom_op)] += 1
-            gate_types[_map_to_bloq()(qml.adjoint(qrom_op))] += 1
+            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
             gate_types[
                 _map_to_bloq()(
-                    qml.ctrl(
-                        qml.GlobalPhase((2 * np.pi), wires=input_wires[0]),
+                    qops.ctrl(
+                        qops.GlobalPhase((2 * np.pi), wires=input_wires[0]),
                         control=0,
                     )
                 )
@@ -234,8 +234,7 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
         from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
-
-        import pennylane as qml
+        from pennylane import math
 
         gate_types = defaultdict(int)
         bitstrings = op.hyperparameters["bitstrings"]
@@ -259,15 +258,13 @@ def _get_op_call_graph():
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
         # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
 
-        square_fact = qml.math.floor(
-            qml.math.sqrt(num_bitstrings)
+        square_fact = math.floor(
+            math.sqrt(num_bitstrings)
         )  # use a square scheme for rows and cloumns
         num_parallel_computations = min(num_parallel_computations, square_fact)
 
-        num_swap_wires = qml.math.floor(qml.math.log2(num_parallel_computations))
-        num_select_wires = qml.math.ceil(
-            qml.math.log2(qml.math.ceil(num_bitstrings / (2**num_swap_wires)))
-        )
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+        num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
         assert num_swap_wires + num_select_wires <= num_control_wires
 
         swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
@@ -286,7 +283,7 @@ def _get_op_call_graph():
 
         num_select_wires = int(num_select_wires)
         multi_x = _map_to_bloq()(
-            qml.MultiControlledX(
+            qops.MultiControlledX(
                 wires=range(num_select_wires + 1),
                 control_values=[True] * num_select_wires,
                 work_wires=range(num_select_wires + 1, num_select_wires + 1 + free_work_wires),
@@ -311,12 +308,10 @@ def _get_op_call_graph():
     def _(op: qtemps.subroutines.QFT):
         from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 
-        import pennylane as qml
-
         gate_types = {}
         num_wires = len(op.wires)
         gate_types[Hadamard()] = num_wires
-        gate_types[_map_to_bloq()(qml.ControlledPhaseShift(1, [0, 1]))] = (
+        gate_types[_map_to_bloq()(qops.ControlledPhaseShift(1, [0, 1]))] = (
             num_wires * (num_wires - 1) // 2
         )
         gate_types[TwoBitSwap()] = num_wires // 2
@@ -342,8 +337,6 @@ def _get_op_call_graph():
     def _(op: qtemps.subroutines.ModExp):
         from qualtran.bloqs.basic_gates import CNOT
 
-        import pennylane as qml
-
         mod = op.hyperparameters["mod"]
         num_work_wires = len(op.hyperparameters["work_wires"])
         num_x_wires = len(op.hyperparameters["x_wires"])
@@ -356,12 +349,12 @@ def _get_op_call_graph():
             num_aux_wires = num_work_wires - 1
             num_aux_swap = num_aux_wires - 1
 
-        qft = _map_to_bloq()(qml.QFT(wires=range(num_aux_wires)))
+        qft = _map_to_bloq()(qtemps.QFT(wires=range(num_aux_wires)))
         qft_dag = qft.adjoint()
 
         sequence = _map_to_bloq()(
-            qml.ControlledSequence(
-                qml.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
+            qtemps.ControlledSequence(
+                qtemps.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
             )
         )
 
