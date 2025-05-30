@@ -449,17 +449,12 @@ to be used with certain limitations:
 * Transforms that return multiple tapes are not supported.
 * Transforms that return non-trivial post-processing functions are not supported.
 * Tape transforms may give incorrect results if the circuit has dynamic wires (i.e. there are operators
-  in the circuit dependent on dynamic parameters).
+  in the circuit whose wires are dynamic parameters).
 * Tape transforms will fail to execute if the transformed quantum function or QNode contains:
 
    * ``qml.cond`` with dynamic parameters as predicates.
    * ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
    * ``qml.while_loop``.
-
-.. warning::
-
-    Transforming a circuit with dynamic wires using tape transforms may not raise an error, potentially
-    leading to incorrect results.
 
 Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
 ``RX`` gates to the end of the circuit.
