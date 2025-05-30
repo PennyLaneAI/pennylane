@@ -455,6 +455,11 @@ class GateCount:
 
     __rmul__ = __mul__
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, GateCount):
+            return False
+        return self.gate == other.gate and self.count == other.count
+
     def __repr__(self) -> str:
         return f"({self.count} x {self.gate._name})"
 
@@ -472,4 +477,9 @@ def resource_rep(
     Returns:
         CompressedResourceOp: A compressed representation of a resource operator
     """
-    return resource_op.resource_rep(**resource_params)
+
+    if resource_params:
+        return resource_op.resource_rep(**resource_params)
+
+    return resource_op.resource_rep()
+
