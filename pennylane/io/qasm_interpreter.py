@@ -14,6 +14,7 @@ from openqasm3.ast import (
     ClassicalAssignment,
     ClassicalDeclaration,
     ConstantDeclaration,
+    ExpressionStatement,
     FunctionCall,
     Identifier,
     IndexExpression,
@@ -23,7 +24,7 @@ from openqasm3.ast import (
     RangeDefinition,
     ReturnStatement,
     SubroutineDefinition,
-    UnaryExpression, ExpressionStatement,
+    UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -701,6 +702,7 @@ class QasmInterpreter:
                     f"on line {node.span.start_line}."
                 )
         elif isinstance(node, IndexExpression):
+
             def _index_into_var(var):
                 if var["ty"] == "BitType":
                     var = bin(var["val"])[2:].zfill(var["size"])
@@ -714,7 +716,9 @@ class QasmInterpreter:
                     raise TypeError(
                         f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
                     )
+
             if aliasing:
+
                 def alias(context):
                     try:
                         var = self.retrieve_variable(node.collection.name, context)
@@ -731,6 +735,7 @@ class QasmInterpreter:
                 return _index_into_var(var)
         elif isinstance(node, Identifier):
             if aliasing:
+
                 def alias(context):
                     try:
                         return self.retrieve_variable(node.collection.name, context)
