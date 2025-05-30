@@ -104,7 +104,7 @@ class ResourceOperator(ABC):
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
 
@@ -401,4 +401,4 @@ def resource_rep(
     if resource_params:
         return resource_op.resource_rep(**resource_params)
 
-    return resource_params.resource_rep()  # don't need to provide empty dict
+    return resource_op.resource_rep()  # don't need to provide empty dict
