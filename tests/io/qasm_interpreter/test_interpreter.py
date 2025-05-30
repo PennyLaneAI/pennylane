@@ -32,6 +32,7 @@ from pennylane import (
     Toffoli,
     queuing,
 )
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -60,6 +61,7 @@ class TestInterpreter:
             )
 
         assert q.queue[0] == Hadamard('q0')
+        assert isinstance(q.queue[1], MidMeasureMP)
 
     def test_param_as_expression(self):
         # parse the QASM
