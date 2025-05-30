@@ -203,6 +203,9 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
+* A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
+  [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
+
 * A :func:`~.decomposition.register_condition` decorator is added that allows users to bind a condition to a
   decomposition rule for when it is applicable. The condition should be a function that takes the
   resource parameters of an operator as arguments and returns `True` or `False` based on whether
