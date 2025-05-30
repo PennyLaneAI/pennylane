@@ -157,12 +157,6 @@ def _map_to_bloq():
         return Toffoli()
 
     @_to_qt_bloq.register
-    def _(op: qops.Toffoli):
-        from qualtran.bloqs.basic_gates import Toffoli
-
-        return Toffoli()
-
-    @_to_qt_bloq.register
     def _(op: qops.X):
         from qualtran.bloqs.basic_gates import XGate
 
