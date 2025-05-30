@@ -711,8 +711,8 @@ def _inherit_from_bloq(cls):
 
             @cached_property
             def signature(self) -> "qt.Signature":
-                from pennylane.workflow.qnode import QNode
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
@@ -723,8 +723,9 @@ def _inherit_from_bloq(cls):
 
             def decompose_bloq(self):
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
-                from pennylane.workflow.qnode import QNode
+
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):
