@@ -850,7 +850,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         for directions.
 
     Args:
-        quantum_circuit (str): a QASM string containing a simple quantum circuit.
+        quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
         qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
