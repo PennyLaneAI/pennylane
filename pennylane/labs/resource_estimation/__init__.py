@@ -42,6 +42,7 @@ Resource Estimation Base Classes:
 
     ~Resources
     ~ResourceOperator
+    ~CompressedResourceOp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
