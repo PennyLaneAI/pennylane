@@ -76,7 +76,7 @@ def _get_full_transform_program(
 def _interpret_level(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
     num_user: int,
-    gradient_expand: bool,
+    has_gradient_expand: bool,
 ) -> tuple[slice, bool]:
     """Interpret the level specification and convert it to a slice and final transform flag.
 
@@ -97,7 +97,7 @@ def _interpret_level(
     elif level == "user":
         level_slice = slice(0, num_user)
     elif level == "gradient":
-        end_idx = num_user + 1 if gradient_expand else num_user
+        end_idx = num_user + int(has_gradient_expand)
         level_slice = slice(0, end_idx)
     elif isinstance(level, str):
         raise ValueError(
@@ -229,7 +229,7 @@ def get_transform_program(
             qnode.device,
         )
         gradient_fn = config.gradient_method
-    gradient_expand = getattr(gradient_fn, "expand_transform", False)
+    has_gradient_expand = hasattr(gradient_fn, "expand_transform")
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
     num_user = len(qnode.transform_program)
@@ -240,7 +240,7 @@ def get_transform_program(
     # flag: re-add the final transform
     readd_final_transform = level in ("user", "gradient")
     # Use the level interpreter to convert level to slice
-    level_slice = _interpret_level(level, num_user, gradient_expand)
+    level_slice = _interpret_level(level, num_user, has_gradient_expand)
 
     resolved_program = full_transform_program[level_slice]
 
