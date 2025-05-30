@@ -191,7 +191,7 @@ def _map_to_bloq():
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
-    
+
     @_to_qt_bloq.register
     def _(op: qops.Adjoint):
         return _map_to_bloq()(op.base).adjoint()
