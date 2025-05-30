@@ -4,7 +4,7 @@ qubit anc;
 def random(qubit q0) -> bit {
   bit b = "0";
   h q0;
-  measure q0 -> b;
+  // measure q0 -> b;
   return b;
 }
 

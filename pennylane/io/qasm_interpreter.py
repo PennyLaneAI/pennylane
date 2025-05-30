@@ -258,7 +258,8 @@ class QasmInterpreter:
                         func_context["vars"][param] = evald_arg
                     else:
                         self._init_wire_map(func_context)
-                        func_context["wire_map"][param] = evald_arg
+                        if not param == evald_arg:
+                            func_context["wire_map"][param] = evald_arg
 
                 # execute the subroutine
                 self.visit(func_context["body"], func_context)
@@ -607,10 +608,17 @@ class QasmInterpreter:
 
         self._require_wires(wires, context)
 
+        resolved_wires = []
         if context["wire_map"] is not None:
-            wires = list(map(lambda wire: context["wire_map"][wire], wires))
+            for wire in wires:
+                resolving = wire
+                while resolving in context["wire_map"]:
+                    resolving = context["wire_map"][resolving]
+                resolved_wires.append(resolving)
+        else:
+            resolved_wires = wires
 
-        return gate, args, wires
+        return gate, args, resolved_wires
 
     def apply_modifier(self, mod: QuantumGate, previous: Operator, context: dict, wires: list):
         """

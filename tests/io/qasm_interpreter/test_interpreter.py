@@ -55,7 +55,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"name": "standalone-subroutines", "wire_map": None}
             )
 
@@ -67,7 +67,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            context = QasmInterpreter(permissive=True).interpret(
+            context = QasmInterpreter().interpret(
                 ast, context={"name": "complex-subroutines", "wire_map": None}
             )
 
@@ -80,7 +80,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"name": "subroutines", "wire_map": None}
             )
 
@@ -138,7 +138,7 @@ class TestInterpreter:
         ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter(permissive=True).interpret(
+        context = QasmInterpreter().interpret(
             ast, context={"wire_map": None, "name": "advanced-vars"}
         )
 
@@ -233,7 +233,7 @@ class TestInterpreter:
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
-        context = QasmInterpreter(permissive=True).interpret(
+        context = QasmInterpreter().interpret(
             ast, context={"wire_map": None, "name": "basic-vars"}
         )
 
@@ -250,7 +250,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "updating-vars"}
             )
 
