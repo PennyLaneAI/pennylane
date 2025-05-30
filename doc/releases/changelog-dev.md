@@ -203,6 +203,9 @@
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
 
+* A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
+  [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
+
 * A :func:`~.decomposition.register_condition` decorator is added that allows users to bind a condition to a
   decomposition rule for when it is applicable. The condition should be a function that takes the
   resource parameters of an operator as arguments and returns `True` or `False` based on whether
@@ -435,9 +438,24 @@
   for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
+  
+* The `pennylane.labs.vibrational` module is upgraded to use features from the `concurrency` module
+  to perform multiprocess and multithreaded execution of workloads. 
+  [(#7401)](https://github.com/PennyLaneAI/pennylane/pull/7401)
+
+
+* A `rowcol` function is now available in `pennylane.labs.intermediate_reps`.
+  Given the parity matrix of a CNOT circuit and a qubit connectivity graph, it synthesizes a
+  possible implementation of the parity matrix that respects the connectivity.
+  [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
 
 <h3>Breaking changes 💔</h3>
+
+* A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
+  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates
+  even if 2 CNOTs would suffice theoretically.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
@@ -502,6 +520,17 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforce module dependencies in `pennylane` using `tach`.
+  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
+  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
+  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
+  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
+  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
+  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
+  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
+  [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
+  [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
+
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
 
@@ -525,24 +554,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
 
-* Enforce `debugging` module to be a tertiary module.
-  [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
-
-* Enforce subset of submodules in `templates` to be auxiliary layer modules.
-  [(#7437)](https://github.com/PennyLaneAI/pennylane/pull/7437)
-
-* Enforce `noise` module to be a tertiary layer module.
-  [(#7430)](https://github.com/PennyLaneAI/pennylane/pull/7430)
-
-* Enforce `qaoa` module to be a tertiary layer module.
-  [(#7429)](https://github.com/PennyLaneAI/pennylane/pull/7429)
-
-* Enforce `gradients` module to be an auxiliary layer module.
-  [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
-
-* Enforce `optimize` module to be an auxiliary layer module.
-  [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
-
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
@@ -559,9 +570,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
-
-* Introduce module dependency management using `tach`.
-  [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
@@ -593,6 +601,15 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The queuing behavior of the controlled of a controlled operation is fixed.
+  [(#7532)](https://github.com/PennyLaneAI/pennylane/pull/7532)
+
+* A new decomposition was implemented for two-qubit `QubitUnitary` operators in `two_qubit_decomposition`
+  based on a type-AI Cartan decomposition. It fixes previously faulty edge cases for unitaries
+  that require 2 or 3 CNOT gates. Now, 3 CNOTs are used for both cases, using one more
+  CNOT than theoretically required in the former case.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The documentation of `qml.pulse.drive` has been updated and corrected.
   [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
@@ -685,5 +702,6 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Kalman Szenes,
+Marc Vandelle,
 David Wierichs,
 Jake Zaia

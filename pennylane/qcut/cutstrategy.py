@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Union
 
 from networkx import MultiDiGraph
 
-import pennylane as qml
+from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut
 
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
@@ -127,12 +127,12 @@ class CutStrategy:
         if devices is None and self.max_free_wires is None:
             raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
 
-        if isinstance(devices, (qml.devices.LegacyDevice, qml.devices.Device)):
+        if isinstance(devices, (LegacyDevice, Device)):
             devices = (devices,)
 
         if devices is not None:
             if not isinstance(devices, Sequence) or any(
-                (not isinstance(d, (qml.devices.LegacyDevice, qml.devices.Device)) for d in devices)
+                (not isinstance(d, (LegacyDevice, Device)) for d in devices)
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
