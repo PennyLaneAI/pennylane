@@ -80,9 +80,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "subroutines", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
         assert q.queue == [Hadamard("q0")]
 
@@ -251,11 +249,65 @@ class TestInterpreter:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
-            RX(1, "q0"),
-            RX(2, "q0"),
-            RX(0, "q0"),
-            RX(2, "q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            RX(0.1, "q0"),
+            PauliY("q0"),
         ]
+
+    def test_loops(self, mocker):
+
+        # parse the QASM
+        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "loops", "wire_map": None}
+            )
+
+        assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]] + [
+            RZ(0.1, wires=["q0"]) for _ in range(6)
+        ] + [
+            PauliY("q0") for _ in range(6)
+        ] + [
+            PauliZ("q0") for _ in range(5)
+        ]
+
+    def test_switch(self, mocker):
+
+        # parse the QASM
+        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "switch", "wire_map": None}
+            )
+
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
+
+    def test_if_else(self, mocker):
+        from pennylane import ops
+
+        # parse the QASM
+        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
+
+        # setup mocks
+        cond = mocker.spy(ops, "cond")
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "if_else", "wire_map": None}
+            )
+
+        # assertions
+        assert cond.call_count == 3
+
+        assert q.queue == [PauliX("q0"), PauliY("q0")]
 
     def test_mod_with_declared_param(self):
 
@@ -301,19 +353,15 @@ class TestInterpreter:
         # parse the QASM program
         ast = parse(
             """
-            bit b;
-            qubit q0;
-            float theta = 0.2;
-            rx(theta) q0;
-            measure q0 -> b;
+            include "stdgates.inc";
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction QuantumMeasurementStatement was "
-            "encountered on line 6, in unsupported-error.",
+            match="An unsupported QASM instruction Include was encountered "
+            "on line 2, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
@@ -433,8 +481,6 @@ class TestInterpreter:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "two-qubit-gates"})
@@ -463,8 +509,6 @@ class TestInterpreter:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
@@ -492,8 +536,6 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
