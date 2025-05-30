@@ -15,14 +15,14 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     ConstantDeclaration,
     FunctionCall,
-    QuantumArgument,
-    ReturnStatement,
-    SubroutineDefinition,
     Identifier,
     IndexExpression,
+    QuantumArgument,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
     UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
@@ -201,6 +201,70 @@ class QasmInterpreter:
                 if isinstance(item, QASMNode):
                     self.visit(item, context)
         return context
+
+    @visit.register(FunctionCall)
+    def visit_function_call(self, node: FunctionCall, context: dict):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (dict): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        ret = None
+        if (
+            "scopes" in context
+            and "subroutines" in context["scopes"]
+            or "outer_scopes" in context
+            and "subroutines" in context["outer_scopes"]
+        ):
+            name = node.name if isinstance(node.name, str) else node.name.name  # str or Identifier
+            if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
+                "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
+            ):
+                raise NameError(
+                    f"Reference to an undeclared subroutine {name} in {context['name']}."
+                )
+            else:
+                # TODO: use ChainMap to get this from scopes or outer_scopes
+                if (
+                    "scopes" in context
+                    and "subroutines" in context["scopes"]
+                    and node.name.name in context["scopes"]["subroutines"]
+                ):
+                    func_context = context["scopes"]["subroutines"][node.name.name]
+                elif (
+                    "outer_scopes" in context
+                    and "subroutines" in context["outer_scopes"]
+                    and node.name.name in context["outer_scopes"]["subroutines"]
+                ):
+                    func_context = context["outer_scopes"]["subroutines"][node.name.name]
+                else:
+                    raise NameError(
+                        f"Reference to subroutine {node.name.name} not available in calling namespace"
+                        f"on line {node.span.start_line}."
+                    )
+
+                # bind subroutine arguments
+                self._init_vars(func_context)
+                evald_args = [self.eval_expr(raw_arg, context) for raw_arg in node.arguments]
+                for evald_arg, param in list(zip(evald_args, func_context["params"])):
+                    if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                        func_context["vars"][param] = evald_arg
+                    else:
+                        self._init_wire_map(func_context)
+                        func_context["wire_map"][param] = evald_arg
+
+                # execute the subroutine
+                self.visit(func_context["body"], func_context)
+
+                # the return value
+                ret = func_context["return"]
+        return ret
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
@@ -524,7 +588,7 @@ class QasmInterpreter:
             list: The wires the gate applies to.
         """
         # setup arguments
-        args = [self.evaluate_argument(arg, context) for arg in node.arguments]
+        args = [self.eval_expr(arg, context) for arg in node.arguments]
 
         # retrieve gate method
         gate = gates_dict[node.name.name.upper()]
@@ -626,7 +690,6 @@ class QasmInterpreter:
                     f"on line {node.span.start_line}."
                 )
         elif isinstance(node, IndexExpression):
-
             def _index_into_var(var):
                 if var["ty"] == "BitType":
                     var = bin(var["val"])[2:].zfill(var["size"])
@@ -640,9 +703,7 @@ class QasmInterpreter:
                     raise TypeError(
                         f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
                     )
-
             if aliasing:
-
                 def alias(context):
                     try:
                         var = self.retrieve_variable(node.collection.name, context)
@@ -659,7 +720,6 @@ class QasmInterpreter:
                 return _index_into_var(var)
         elif isinstance(node, Identifier):
             if aliasing:
-
                 def alias(context):
                     try:
                         return self.retrieve_variable(node.collection.name, context)
@@ -685,58 +745,7 @@ class QasmInterpreter:
                         or f"Reference to an undeclared variable {node.name} in {context['name']}."
                     ) from e
         elif isinstance(node, FunctionCall):
-            if (
-                "scopes" in context
-                and "subroutines" in context["scopes"]
-                or "outer_scopes" in context
-                and "subroutines" in context["outer_scopes"]
-            ):
-                name = (
-                    node.name if isinstance(node.name, str) else node.name.name
-                )  # str or Identifier
-                if ("scopes" in context and name not in context["scopes"]["subroutines"]) or (
-                    "outer_scopes" in context and name not in context["outer_scopes"]["subroutines"]
-                ):
-                    raise NameError(
-                        f"Reference to an undeclared subroutine {name} in {context['name']}."
-                    )
-                else:
-                    # TODO: use ChainMap to get this from scopes or outer_scopes
-                    if (
-                        "scopes" in context
-                        and "subroutines" in context["scopes"]
-                        and node.name.name in context["scopes"]["subroutines"]
-                    ):
-                        func_context = context["scopes"]["subroutines"][node.name.name]
-                    elif (
-                        "outer_scopes" in context
-                        and "subroutines" in context["outer_scopes"]
-                        and node.name.name in context["outer_scopes"]["subroutines"]
-                    ):
-                        func_context = context["outer_scopes"]["subroutines"][node.name.name]
-                    else:
-                        raise NameError(
-                            f"Reference to subroutine {node.name.name} not available in calling namespace"
-                            f"on line {node.span.start_line}."
-                        )
-
-                    # bind subroutine arguments
-                    self._init_vars(func_context)
-                    evald_args = [self.eval_expr(raw_arg, context) for raw_arg in node.arguments]
-                    for evald_arg, param in list(zip(evald_args, func_context["params"])):
-                        if not isinstance(
-                            evald_arg, str
-                        ):  # this would indicate a quantum parameter
-                            func_context["vars"][param] = evald_arg
-                        else:
-                            self._init_wire_map(func_context)
-                            func_context["wire_map"][param] = evald_arg
-
-                    # execute the subroutine
-                    self.visit(func_context["body"], func_context)
-
-                    # the return value
-                    return func_context["return"]
+            return self.visit_function_call(node, context)
         elif isinstance(node, Callable):
             res = node()
         elif re.search("Literal", node.__class__.__name__):

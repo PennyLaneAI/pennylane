@@ -32,7 +32,6 @@ from pennylane import (
     Toffoli,
     queuing,
 )
-from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
