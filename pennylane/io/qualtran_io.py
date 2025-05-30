@@ -603,11 +603,11 @@ def _split_qubits(registers, qubits):  # pylint: disable=redefined-outer-name
     return qubit_regs
 
 
-def _ensure_in_reg_exists( # pylint: disable=too-many-branches
+def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
-) -> None:  
+) -> None:
     """Modified function from the Qualtran-Cirq interop module that takes care of qubit allocations,
     split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
@@ -684,7 +684,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-def _inherit_from_bloq(cls): # pylint: disable=too-many-statements
+def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
     """Decorator for ToBloq to inherit from Qualtran's bloq only when qualtran is available."""
     if qualtran:
 
