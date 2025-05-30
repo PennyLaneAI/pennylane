@@ -20,7 +20,6 @@ from .convert import import_operator, import_state
 from .convert_openfermion import from_openfermion, to_openfermion
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular_dipole
 from .factorization import basis_rotation, factorize, symmetry_shift
-from .givens_decomposition import givens_decomposition
 from .hamiltonian import (
     electron_integrals,
     fermionic_hamiltonian,
@@ -92,3 +91,21 @@ from .vibrational import (
     taylor_hamiltonian,
     vscf_integrals,
 )
+
+
+def __getattr__(name):
+    if name == "givens_decomposition":  # pragma: no cover
+        # pylint: disable=import-outside-toplevel
+        import warnings
+        from pennylane.exceptions import PennyLaneDeprecationWarning
+        from pennylane import math
+
+        warnings.warn(
+            f"pennylane.qchem.{name} is no longer accessible from this module \
+                and must be imported as pennylane.math.{name}. \
+                    Support for access through qchem will be removed in v0.43.",
+            PennyLaneDeprecationWarning,
+        )
+        return getattr(math.decomposition, name)
+
+    raise AttributeError(f"module 'qchem' has no attribute '{name}'")
