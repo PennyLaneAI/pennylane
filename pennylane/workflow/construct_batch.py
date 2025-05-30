@@ -374,15 +374,10 @@ def construct_batch(
         # Quick check for empty levels that don't need config construction
         if level in ("top", 0):
             return program((initial_tape,))
-        elif level == "user":
+        if level == "user":
             # If we are only interested in user transforms, we can skip the execution config
-            # construction and just use the qnode transform program.
             program = qnode.transform_program
             initial_tape, user_post_processing = program((initial_tape,))
-            # if program.is_informative:
-            #     return user_post_processing((initial_tape,))
-            # if not initial_tape:
-            #     return user_post_processing(())
             return (initial_tape, user_post_processing)
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
