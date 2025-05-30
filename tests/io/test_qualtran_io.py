@@ -355,6 +355,12 @@ class TestToBloq:
         with pytest.raises(TypeError, match="Input must be either an instance of"):
             qml.ToBloq("123")
 
+    def test_equivalence(self):
+        """Tests that ToBloq's __eq__ functions as expected"""
+
+        assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
+        assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
+
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
 
@@ -413,6 +419,18 @@ class TestToBloq:
 
         assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
 
+    def test_decomposition_undefined_error(self):
+        """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
+        import qualtran as qt
+        with pytest.raises(qt.DecomposeNotImplementedError):
+            qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
+
+    def test_call_graph(self):
+        """Tests that call_graph calls build_call_graph as expected"""
+        _, cg = qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).call_graph()
+
+        assert cg == {qml.ToBloq(qml.RZ(phi=0.3, wires=[0])): 1}
+
     def test_map_to_bloq(self):
         """Tests that _map_to_bloq produces the correct Qualtran equivalent"""
         from qualtran.bloqs.basic_gates import (
@@ -426,6 +444,7 @@ class TestToBloq:
             SGate,
             TGate,
             TwoBitCSwap,
+            TwoBitSwap,
             XGate,
             YGate,
             ZGate,
@@ -441,6 +460,7 @@ class TestToBloq:
         assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
         assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
         assert SGate() == to_bloq()(qml.S(0))
+        assert TwoBitSwap() == to_bloq()(qml.SWAP([0, 1]))
         assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
         assert TGate() == to_bloq()(qml.T(0))
         assert XGate() == to_bloq()(qml.PauliX(0))

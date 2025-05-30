@@ -402,16 +402,6 @@ def _map_to_bloq():
         return ToBloq(op, **kwargs)
 
     @_to_qt_bloq.register
-    def _(op: qops.Adjoint):
-        return _map_to_bloq()(op.base).adjoint()
-
-    @_to_qt_bloq.register
-    def _(op: qops.Controlled):
-        if isinstance(op, qops.MultiControlledX):
-            return ToBloq(op)
-        return _map_to_bloq()(op.base).controlled()
-
-    @_to_qt_bloq.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
@@ -531,6 +521,14 @@ def _map_to_bloq():
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
+    
+    @_to_qt_bloq.register
+    def _(op: qops.Adjoint):
+        return _map_to_bloq()(op.base).adjoint()
+
+    @_to_qt_bloq.register
+    def _(op: qops.Controlled):
+        return _map_to_bloq()(op.base).controlled()
 
     return _to_qt_bloq
 
