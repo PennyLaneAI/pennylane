@@ -30,6 +30,13 @@ from .qubit import (
     ResourceX,
     ResourceY,
     ResourceZ,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,    
 )
 
 from .op_math import (

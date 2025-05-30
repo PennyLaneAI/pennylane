@@ -72,4 +72,11 @@ from .ops import (
     ResourceCRZ,
     ResourceCRot,
     ResourceControlledPhaseShift,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
 )
