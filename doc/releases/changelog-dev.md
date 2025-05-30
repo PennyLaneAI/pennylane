@@ -321,6 +321,12 @@
   0: ──RX(-0.50)─╭●────────────┤  <Z>
   1: ────────────╰X──RY(-0.50)─┤
   ```
+  
+* Decomposition rules compatible with the new graph-based decomposition system has been implemented
+  for `Exp`, specifically the following decompositions:
+  [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
+  * Performs a Suzuki-Trotter decomposition when the `num_steps` kwarg is specified.
+  * Decomposes to a `PauliRot` when the base is a single-term pauli word.
 
 <h3>Improvements 🛠</h3>
 
