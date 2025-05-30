@@ -87,6 +87,7 @@ from pennylane.io import (
     from_quil_file,
     FromBloq,
     bloq_registers,
+    from_qasm3
 )
 from pennylane.measurements import (
     counts,
