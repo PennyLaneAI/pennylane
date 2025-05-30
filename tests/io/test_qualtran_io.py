@@ -334,7 +334,8 @@ class TestFromBloq:
 
         assert actual == expected
 
-
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestToBloq:
     """Test that ToBloq and to_bloq accurately wraps or maps Bloqs."""
 
