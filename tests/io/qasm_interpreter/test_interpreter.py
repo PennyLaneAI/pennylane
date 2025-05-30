@@ -49,6 +49,43 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_stand_alone_call_of_subroutine(self):
+        # parse the QASM
+        ast = parse(open("standalone_subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "standalone-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(open("complex_subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+        assert context["vars"]["c"]["val"] == 0
+
+    def test_subroutines(self):
+        # parse the QASM
+        ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0")]
+
     def test_param_as_expression(self):
         # parse the QASM
         ast = parse(
@@ -116,7 +153,7 @@ class TestInterpreter:
         assert context["vars"]["m"]["val"] == (3.14159 / 2) * 3.3
         assert context["vars"]["a"]["val"] == 3.3333333
 
-    def test_updating_constant(self, mocker):
+    def test_updating_constant(self):
         # parse the QASM
         ast = parse(
             """
@@ -191,7 +228,7 @@ class TestInterpreter:
 
         assert q.queue == [Identity("0q"), Hadamard("2q"), PauliX("1q"), PauliY("2q")]
 
-    def test_classical_variables(self, mocker):
+    def test_classical_variables(self):
         # parse the QASM
         ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
@@ -202,7 +239,7 @@ class TestInterpreter:
         assert context["vars"]["j"]["val"] == 4
         assert context["vars"]["c"]["val"] == 0
 
-    def test_updating_variables(self, mocker):
+    def test_updating_variables(self):
         # parse the QASM
         ast = parse(
             open("updating_variables.qasm", mode="r").read(),
@@ -485,8 +522,6 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
