@@ -38,6 +38,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    controlled_decomp_with_work_wire,
     decompose_to_base,
     flip_control_adjoint,
     flip_pow_adjoint,
@@ -305,6 +306,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
         rules.append(to_controlled_qubit_unitary)
+
+        # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
+        rules.append(controlled_decomp_with_work_wire)
 
         return rules
 
