@@ -80,9 +80,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "subroutines", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
         assert q.queue == [Hadamard("q0")]
 
@@ -251,10 +249,10 @@ class TestInterpreter:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
-            PauliX('q0'),
-            PauliY('q0'),
-            RX(0.1, 'q0'),
-            PauliY('q0'),
+            PauliX("q0"),
+            PauliY("q0"),
+            RX(0.1, "q0"),
+            PauliY("q0"),
         ]
 
     def test_loops(self, mocker):
@@ -264,15 +262,19 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(ast, context={"name": "loops", "wire_map": None})
+            QasmInterpreter().interpret(
+                ast, context={"name": "loops", "wire_map": None}
+            )
 
-        assert q.queue == [PauliZ('q0')] + \
-            [PauliX('q0') for _ in range(10)] + \
-            [RX(phi, wires=['q0']) for phi in range(4294967296, 4294967306)] + \
-            [RY(phi, wires=['q0']) for phi in [1.2, -3.4, 0.5, 9.8]] + \
-            [RZ(0.1, wires=['q0']) for _ in range(6)] + \
-            [PauliY('q0') for _ in range(6)] + \
-            [PauliZ('q0') for _ in range(5)]
+        assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]] + [
+            RZ(0.1, wires=["q0"]) for _ in range(6)
+        ] + [
+            PauliY("q0") for _ in range(6)
+        ] + [
+            PauliZ("q0") for _ in range(5)
+        ]
 
     def test_switch(self, mocker):
 
@@ -281,13 +283,11 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(ast, context={"name": "switch", "wire_map": None})
+            QasmInterpreter().interpret(
+                ast, context={"name": "switch", "wire_map": None}
+            )
 
-        assert q.queue == [
-            PauliX('q0'),
-            PauliY('q0'),
-            RX(0.1, wires=['q0'])
-        ]
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
 
     def test_if_else(self, mocker):
         from pennylane import ops
@@ -300,17 +300,14 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"name": "if_else", "wire_map": None}
             )
 
         # assertions
         assert cond.call_count == 3
 
-        assert q.queue == [
-            PauliX('q0'),
-            PauliY('q0')
-        ]
+        assert q.queue == [PauliX("q0"), PauliY("q0")]
 
     def test_mod_with_declared_param(self):
 
