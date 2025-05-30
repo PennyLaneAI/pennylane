@@ -360,6 +360,27 @@ class TestToBloq:
 
         assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
         assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
+        assert qml.ToBloq(qml.H(0)) != "Hadamard"
+
+    def test_allocate_and_free(self):
+        """Tests that ToBloq functions on a FromBloq that has ghost wires"""
+        from qualtran.bloqs.basic_gates import CZPowGate
+        from qualtran.bloqs.bookkeeping import Allocate, Free
+        from qualtran._infra.data_types import QAny, QBit
+
+        # TODO: this would ideally be only 1 allocate and free
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Allocate(QAny(bitsize=1))
+            ]
+            == 3
+        )
+        assert (
+            qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
+                Free(QBit())
+            ]
+            == 3
+        )
 
     def test_to_bloq(self):
         """Tests that to_bloq functions as intended for simple circuits and gates"""
@@ -371,14 +392,46 @@ class TestToBloq:
         @qml.qnode(dev)
         def circuit():
             qml.H(0)
+            return (
+                qml.expval(qml.Y(0)),
+                qml.probs(op=qml.X(0)),
+                qml.state(),
+                qml.sample(qml.X(0)),
+                qml.var(qml.X(0)),
+                qml.counts(qml.X(0)),
+            )
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
         assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
 
+    def test_to_bloq_circuits(self):
+        """Tests that to_bloq functions as intended for complex circuits"""
+
+        from qualtran.bloqs.basic_gates import Hadamard, CNOT
+
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=5), estimation_wires=range(5))
+
+        mapped_circuit = qml.to_bloq(circuit)
+        mapped_circuit_cg = mapped_circuit.call_graph()[1]
+        wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
+        wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
+
+        assert mapped_circuit_cg[Hadamard()] == 11
+        assert wrapped_circuit_cg[Hadamard()] == 11
+        assert CNOT() not in mapped_circuit_cg
+        assert wrapped_circuit_cg[CNOT()] == 20
+
     def test_from_bloq_to_bloq(self):
-        """Tests that FromBloq and to_bloq functions as intended for the QPE operator"""
+        """Tests that FromBloq and to_bloq functions as intended"""
+
+        from qualtran.bloqs.basic_gates import CZPowGate
 
         qpe_op = qml.QuantumPhaseEstimation(
             unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
@@ -405,19 +458,26 @@ class TestToBloq:
     def test_circuit_to_bloq_kwargs(self):
         """Tests that to_bloq functions as intended for circuits with kwargs"""
 
-        from qualtran.bloqs.basic_gates import Rx
+        from qualtran.bloqs.basic_gates import Rx, GlobalPhase
 
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit(angle):
             qml.RX(phi=angle, wires=[0])
+            qml.GlobalPhase(angle)
 
-        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {Rx(angle=0.0, eps=1e-11): 1}
+        assert qml.to_bloq(circuit, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
         with pytest.raises(TypeError):
             qml.to_bloq(circuit).call_graph()
 
-        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1]
+        assert qml.to_bloq(circuit, map_ops=False, angle=0).call_graph()[1] == {
+            Rx(angle=0.0, eps=1e-11): 1,
+            GlobalPhase(exponent=0): 1,
+        }
 
     def test_decomposition_undefined_error(self):
         """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
@@ -427,10 +487,19 @@ class TestToBloq:
             qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
 
     def test_call_graph(self):
-        """Tests that call_graph calls build_call_graph as expected"""
-        _, cg = qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).call_graph()
+        """Tests that build_call_graph calls build_call_graph as expected"""
+        from qualtran.resource_counting import SympySymbolAllocator as ssa
 
-        assert cg == {qml.ToBloq(qml.RZ(phi=0.3, wires=[0])): 1}
+        cg = qml.to_bloq(
+            qml.QuantumPhaseEstimation(unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)),
+            False,
+        ).build_call_graph(ssa=ssa())
+
+        assert cg == {
+            qml.to_bloq(qml.Hadamard(0), True): 4,
+            qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+        }
 
     def test_map_to_bloq(self):
         """Tests that _map_to_bloq produces the correct Qualtran equivalent"""

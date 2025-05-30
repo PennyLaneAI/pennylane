@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+import pennylane.measurements as qmeas
 from pennylane import math
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
@@ -400,6 +401,9 @@ def _map_to_bloq():
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
+        if "map_ops" in kwargs and not kwargs["map_ops"]:
+            return ToBloq(op, **kwargs)
+
         if "custom_mapping" in kwargs:
             return kwargs["custom_mapping"][op]
 
@@ -409,123 +413,107 @@ def _map_to_bloq():
         )
 
     @_to_qt_bloq.register
-    def _(op: qops.GlobalPhase):
+    def _(op: qops.GlobalPhase, **kwargs):
         from qualtran.bloqs.basic_gates import GlobalPhase
 
         return GlobalPhase(exponent=op.data[0] / np.pi)
 
     @_to_qt_bloq.register
-    def _(op: qops.CNOT):
-        from qualtran.bloqs.basic_gates import CNOT
-
-        return CNOT()
-
-    @_to_qt_bloq.register
-    def _(op: qops.Hadamard):
+    def _(op: qops.Hadamard, **kwargs):
         from qualtran.bloqs.basic_gates import Hadamard
 
         return Hadamard()
 
     @_to_qt_bloq.register
-    def _(op: qops.Identity):
+    def _(op: qops.Identity, **kwargs):
         from qualtran.bloqs.basic_gates import Identity
 
         return Identity()
 
     @_to_qt_bloq.register
-    def _(op: qops.RX):
+    def _(op: qops.RX, **kwargs):
         from qualtran.bloqs.basic_gates import Rx
 
         return Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.RY):
+    def _(op: qops.RY, **kwargs):
         from qualtran.bloqs.basic_gates import Ry
 
         return Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.RZ):
+    def _(op: qops.RZ, **kwargs):
         from qualtran.bloqs.basic_gates import Rz
 
         return Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
-    def _(op: qops.S):
+    def _(op: qops.S, **kwargs):
         from qualtran.bloqs.basic_gates import SGate
 
         return SGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.SWAP):
+    def _(op: qops.SWAP, **kwargs):
         from qualtran.bloqs.basic_gates import TwoBitSwap
 
         return TwoBitSwap()
 
     @_to_qt_bloq.register
-    def _(op: qops.CSWAP):
+    def _(op: qops.CSWAP, **kwargs):
         from qualtran.bloqs.basic_gates import TwoBitCSwap
 
         return TwoBitCSwap()
 
     @_to_qt_bloq.register
-    def _(op: qops.T):
+    def _(op: qops.T, **kwargs):
         from qualtran.bloqs.basic_gates import TGate
 
         return TGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.Toffoli):
-        from qualtran.bloqs.basic_gates import Toffoli
-
-        return Toffoli()
-
-    @_to_qt_bloq.register
-    def _(op: qops.Toffoli):
-        from qualtran.bloqs.basic_gates import Toffoli
-
-        return Toffoli()
-
-    @_to_qt_bloq.register
-    def _(op: qops.X):
+    def _(op: qops.X, **kwargs):
         from qualtran.bloqs.basic_gates import XGate
 
         return XGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.Y):
+    def _(op: qops.Y, **kwargs):
         from qualtran.bloqs.basic_gates import YGate
 
         return YGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.CY):
+    def _(op: qops.CY, **kwargs):
         from qualtran.bloqs.basic_gates import CYGate
 
         return CYGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.Z):
+    def _(op: qops.Z, **kwargs):
         from qualtran.bloqs.basic_gates import ZGate
 
         return ZGate()
 
     @_to_qt_bloq.register
-    def _(op: qops.CZ):
+    def _(op: qops.CZ, **kwargs):
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ()
 
     @_to_qt_bloq.register
-    def _(op: qops.Adjoint):
+    def _(op: qops.Adjoint, **kwargs):
         return _map_to_bloq()(op.base).adjoint()
 
-    @_to_qt_bloq.register
-    def _(op: qops.Controlled):
+    def _(op: qops.Controlled, **kwargs):
         if isinstance(op, qops.MultiControlledX):
             return ToBloq(op)
-
         return _map_to_bloq()(op.base).controlled()
+
+    @_to_qt_bloq.register
+    def _(op: qmeas.MeasurementProcess, **kwargs):
+        return None
 
     return _to_qt_bloq
 
@@ -952,53 +940,6 @@ def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
         # This is the easy case when no split / joins are needed.
         return
 
-    # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
-    in_reg_qubits = set(in_reg.qubits)
-
-    new_qreg_to_qvar: Dict[_QReg, qt.Soquet] = {}
-    for qreg, soq in qreg_to_qvar.items():
-        if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {
-                _QReg(q, qt.QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
-            }
-        else:
-            new_qreg_to_qvar[qreg] = soq
-    qreg_to_qvar.clear()
-
-    # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join = {}
-    for qreg, soq in new_qreg_to_qvar.items():
-        if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            # Cast single bit registers to QBit to preserve signature of later join.
-            if not isinstance(qreg.dtype, qt.QBit):
-                soqs_to_join[qreg.qubits[0]] = bb.add(
-                    qt.bloqs.bookkeeping.Cast(qreg.dtype, qt.QBit()), reg=soq
-                )
-            else:
-                soqs_to_join[qreg.qubits[0]] = soq
-        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            # Cast single QBit registers to the appropriate single-bit register dtype.
-            err_msg = (
-                "Found non-QBit type register which shouldn't happen: "
-                f"{soq.reg.name} {soq.reg.dtype}"
-            )
-            assert isinstance(soq.reg.dtype, qt.QBit), err_msg
-            if not isinstance(in_reg.dtype, qt.QBit):
-                qreg_to_qvar[in_reg] = bb.add(
-                    qt.bloqs.bookkeeping.Cast(qt.QBit(), in_reg.dtype), reg=soq
-                )
-            else:
-                qreg_to_qvar[qreg] = soq
-        else:
-            qreg_to_qvar[qreg] = soq
-    if soqs_to_join:
-        # A split is not necessarily matched with a join of the same size so we
-        # need to strip the data type of the parent split before assigning the correct bitsize.
-        qreg_to_qvar[in_reg] = bb.join(
-            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
-        )
-
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     """Modified function from Qualtran-Cirq interop module that collects input Soquets."""
@@ -1021,13 +962,14 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             Adapter class to convert PennyLane operators into Qualtran Bloqs
             """
 
-            def __init__(self, op, **kwargs):
+            def __init__(self, op, map_ops=False, **kwargs):
                 from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operation) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operation} or {QNode}.")
 
                 self.op = op
+                self.map_ops = map_ops
                 self._kwargs = kwargs
                 super().__init__()
 
@@ -1081,23 +1023,17 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                     # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
                     qreg_to_qvar = {}
                     for reg in signature.lefts():
-                        if reg.name not in in_quregs:
-                            raise ValueError(
-                                f"Register {reg.name} from signature must be present in in_quregs."
-                            )
+                        assert reg.name in in_quregs
                         soqs = initial_soqs[reg.name]
-                        if isinstance(soqs, qt.Soquet):
-                            soqs = np.array(soqs)
-                        if in_quregs[reg.name].shape != soqs.shape:
-                            raise ValueError(
-                                f"Shape {in_quregs[reg.name].shape} of qubit register "
-                                f"{reg.name} should be {soqs.shape}."
-                            )
+                        assert in_quregs[reg.name].shape == soqs.shape
                         qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
 
                     # 2. Add each operation to the composite Bloq.
                     for op in ops:
-                        bloq = _map_to_bloq()(op)
+                        bloq = _map_to_bloq()(op, map_ops=self.map_ops)
+                        if not bloq:
+                            continue
+
                         if bloq.signature == qt.Signature([]):
                             bb.add(bloq)
                             continue
@@ -1127,11 +1063,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                             # all_op_quregs should exist for both LEFT & RIGHT registers.
                             assert reg.name in all_op_quregs
                             quregs = all_op_quregs[reg.name]
-                            if reg.side == qt.Side.LEFT:
-                                # This register got de-allocated, update the `qreg_to_qvar` mapping.
-                                for q in quregs.flatten():
-                                    _ = qreg_to_qvar.pop(q)
-                            else:
+                            if reg.side != qt.Side.LEFT:
                                 assert quregs.shape == np.array(qvars_out[reg.name]).shape
                                 qreg_to_qvar |= zip(
                                     quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
@@ -1307,7 +1239,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if map_ops:
         if custom_mapping:
-            return _map_to_bloq()(circuit, custom_mapping=custom_mapping, **kwargs)
-        return _map_to_bloq()(circuit, **kwargs)
+            return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
+        return _map_to_bloq()(circuit, map_ops=True, **kwargs)
 
     return ToBloq(circuit, **kwargs)
