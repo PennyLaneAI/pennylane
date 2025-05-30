@@ -266,7 +266,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(ast, context={"name": "loops", "wire_map": None})
+            QasmInterpreter().interpret(ast, context={"name": "loops", "wire_map": None})
 
         assert q.queue == [PauliZ('q0')] + \
             [PauliX('q0') for _ in range(10)] + \
@@ -283,7 +283,7 @@ class TestInterpreter:
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(ast, context={"name": "switch", "wire_map": None})
+            QasmInterpreter().interpret(ast, context={"name": "switch", "wire_map": None})
 
         assert q.queue == [
             PauliX('q0'),
@@ -302,7 +302,7 @@ class TestInterpreter:
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter(permissive=True).interpret(
+            QasmInterpreter().interpret(
                 ast, context={"name": "if_else", "wire_map": None}
             )
 
