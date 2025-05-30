@@ -55,3 +55,4 @@ from .out_poly import OutPoly
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
 from .temporary_and import TemporaryAnd
+from .semi_adder import SemiAdder
