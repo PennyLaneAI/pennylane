@@ -7,14 +7,13 @@ from functools import partial
 from typing import Callable, Iterable
 
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import measure
 
 from openqasm3.visitor import QASMNode
 from openqasm3.ast import QuantumGate, ArrayLiteral, \
     BinaryExpression, Cast, ForInLoop, FunctionCall, Identifier, IndexExpression, \
-    IntegerLiteral, QuantumArgument, RangeDefinition, UnaryExpression, WhileLoop, ClassicalAssignment, QubitDeclaration, \
+    QuantumArgument, RangeDefinition, UnaryExpression, WhileLoop, ClassicalAssignment, QubitDeclaration, \
     ConstantDeclaration, ClassicalDeclaration, BitstringLiteral, SubroutineDefinition, ReturnStatement, \
-    QuantumMeasurementStatement, QuantumReset, AliasStatement, BreakStatement, ContinueStatement, BranchingStatement, \
+    AliasStatement, BreakStatement, ContinueStatement, BranchingStatement, \
     SwitchStatement
 
 from pennylane import ops
@@ -492,59 +491,6 @@ class QasmInterpreter:
             loop_params is None
         ):
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
-
-    @visit.register(QuantumMeasurementStatement)
-    def visit_quantum_measurement_statement(self, node: QASMNode, context: dict):
-        """
-        Registers a quantum measurement.
-
-        Args:
-            node (QASMNode): the quantum measurement node.
-            context (dict): the current context.
-        """
-        if isinstance(node.measure.qubit, Identifier):
-            meas = partial(measure, node.measure.qubit.name)
-
-        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary
-            meas = partial(measure, node.measure.qubit.value)
-
-        elif isinstance(node.measure.qubit, list):
-            for qubit in node.measure.qubit:
-                if isinstance(qubit, Identifier):
-                    meas = partial(measure, qubit.name)
-
-                elif isinstance(qubit, IntegerLiteral):
-                    meas = partial(measure, qubit.value)
-
-        name = (
-            node.target.name if isinstance(node.target.name, str) else node.target.name.name
-        )  # str or Identifier
-        res = meas()
-        self._update_var(res, name, node, context)
-        return res
-
-    @visit.register(QuantumReset)
-    def visit_quantum_reset(self, node: QASMNode, context: dict):
-        """
-        Registers a reset of a quantum gate.
-
-        Args:
-            node (QASMNode): the quantum reset node.
-            context (dict): the current context.
-        """
-        self._init_gates_list(context)
-        if isinstance(node.qubits, Identifier):
-            measure(node.qubits.name, reset=True)
-        elif isinstance(
-            node.qubits, IntegerLiteral
-        ):  # TODO: are all these cases necessary / supported
-            measure(node.qubits.value, reset=True)
-        elif isinstance(node.qubits, list):
-            for qubit in node.qubits:
-                if isinstance(qubit, Identifier):
-                    measure(qubit.name, reset=True)
-                elif isinstance(qubit, IntegerLiteral):
-                    measure(qubit.value, reset=True)
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
