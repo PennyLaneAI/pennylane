@@ -25,7 +25,17 @@ jaxlib = pytest.importorskip("jaxlib")
 
 
 from pennylane.compiler.python_compiler.impl import Compiler
-from pennylane.compiler.python_compiler.jax_utils import jax_from_docstring, module
+from pennylane.compiler.python_compiler.jax_utils import (
+    jax_from_docstring,
+    module,
+    xdsl_from_docstring,
+)
+from pennylane.compiler.python_compiler.transforms.transform_interpreter.interpreter import (
+    TransformFunctionsExt,
+)
+from pennylane.compiler.python_compiler.transforms.transform_interpreter.transform_interpreter_catalyst import (
+    TransformInterpreterPass,
+)
 
 
 def test_compiler():
@@ -98,6 +108,48 @@ def test_generic_catalyst_program():
 
     retval = Compiler.run(program())
     assert isinstance(retval, jaxlib.mlir.ir.Module)
+
+
+def test_raises_error_when_pass_does_not_exists():
+    """Attempts to run pass "this-pass-does-not-exists" on an empty module.
+
+    This should raise an error
+    """
+
+    @xdsl_from_docstring
+    def empty_module():
+        """
+        builtin.module {}
+        """
+
+    @xdsl_from_docstring
+    def schedule_module():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "this-pass-does-not-exists" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
+            }
+          }
+        }
+        """
+
+    from catalyst import CompileError
+    from xdsl.context import Context
+    from xdsl.dialects import builtin, transform
+    from xdsl.interpreters import Interpreter
+
+    ctx = Context()
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(transform.Transform)
+    schedule = TransformInterpreterPass.find_transform_entry_point(
+        schedule_module(), "__transform_main"
+    )
+    interpreter = Interpreter(empty_module())
+    interpreter.register_implementations(TransformFunctionsExt(ctx, {}))
+    with pytest.raises(CompileError):
+        interpreter.call_op(schedule, (empty_module(),))
 
 
 if __name__ == "__main__":
