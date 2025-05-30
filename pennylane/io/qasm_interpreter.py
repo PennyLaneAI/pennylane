@@ -145,6 +145,8 @@ class QasmInterpreter:
         """
         if re.search("Literal", node.__class__.__name__):  # There is no single "Literal" base class
             return self.visit_literal(node, context)
+        if isinstance(node, Callable):
+            return self.visit_callable(node, context)  # cannot register Callable
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
             f"was encountered on line {node.span.start_line}, in {context['name']}."
@@ -611,7 +613,6 @@ class QasmInterpreter:
                     or f"Reference to an undeclared variable {node.name} in {context['name']}."
                 ) from e
 
-    @visit.register(Callable)
     def visit_callable(self, func: Callable, context: dict):
         """
         Visits a Callable.
