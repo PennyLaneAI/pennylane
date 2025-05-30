@@ -247,7 +247,7 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
-def _sum_parity(mid_meas: List):
+def _sum_parity(*mid_meas):
     """Get least significant bit (LSB) of the sum of the elements in a list.
 
     Args:
@@ -407,6 +407,8 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
                     f"Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
                 )
             by_op = _parse_rotxzx(ms)
+        elif isinstance(op, _PAULIS):
+            continue
         else:
             raise NotImplementedError(f"{op.name} is not supported.")
 
@@ -604,6 +606,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
     """
     by_ops, ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, z_record = _get_xz_record(tape.num_wires, by_ops, ops)
+    x_record, _ = _get_xz_record(tape.num_wires, by_ops, ops)
 
-    return _get_measurements_corrections(tape, x_record, z_record)
+    return _get_measurements_corrections(tape, x_record)
