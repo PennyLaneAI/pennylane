@@ -143,10 +143,9 @@ def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires)
         wires = list(control_wires) + [target_wire]
         _decompose_mcx_with_many_workers(wires=wires, work_wires=work_wires)
 
-    current_queue = qml.queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.queuing.apply(op, context=current_queue)
+            qml.apply(op)
 
     return q.queue
 
@@ -205,10 +204,9 @@ def _decompose_mcx_with_one_worker_kg24(
             wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type
         )
 
-    current_queue = qml.queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.queuing.apply(op, context=current_queue)
+            qml.apply(op)
 
     return q.queue
 
@@ -248,9 +246,8 @@ def _decompose_mcx_with_two_workers_old(
             wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
         )
 
-    current_queue = qml.queuing.QueuingManager.active_context()
-    if current_queue is not None:
+    if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.queuing.apply(op, context=current_queue)
+            qml.apply(op)
 
     return q.queue
