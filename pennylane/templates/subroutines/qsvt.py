@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import copy
+import math
+from functools import reduce
 from typing import Literal, Sequence, Union
 
 import numpy as np
+import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
@@ -29,7 +32,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
-def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
+def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
     if block_encoding not in ["prepselprep", "qubitization", None]:
         raise ValueError(
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
@@ -43,13 +46,14 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
             f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
         )
 
+    # compute angles
+    angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
+
     encoding = (
         qml.Qubitization(A, control=encoding_wires)
         if block_encoding == "qubitization"
         else qml.PrepSelPrep(A, control=encoding_wires)
     )
-
-    angles = qml.poly_to_angles(poly, "QSVT")
 
     projectors = [
         qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
@@ -58,7 +62,7 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding):
     return encoding, projectors
 
 
-def _tensorlike_process(A, poly, encoding_wires, block_encoding):
+def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
     if block_encoding not in ["embedding", "fable", None]:
         raise ValueError(
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}."
@@ -66,6 +70,9 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
             "Otherwise, please provide an input with a Pauli decomposition. For more details, "
             "see the 'qml.pauli_decompose' function."
         )
+
+    # compute angles
+    angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
 
     A = qml.math.atleast_2d(A)
     max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
@@ -81,14 +88,12 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding):
 
         fable_norm = int(np.ceil(np.log2(max_dimension)))
         encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
-        angles = qml.poly_to_angles(poly, "QSVT")
 
         projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
     else:
         c, r = qml.math.shape(A)
 
-        angles = qml.poly_to_angles(poly, "QSVT")
         projectors = []
         for idx, phi in enumerate(angles):
             dim = c if idx % 2 else r
@@ -104,6 +109,7 @@ def qsvt(
     poly: TensorLike,
     encoding_wires: Sequence,
     block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,
+    angle_solver="root-finding",
 ):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
@@ -127,7 +133,7 @@ def qsvt(
 
     .. note::
 
-        The function ``poly_to_angles``, used within ``qsvt``, is not JIT-compatible, which
+        The function :func:`~.poly_to_angles`, used within ``qsvt``, is not JIT-compatible, which
         prevents ``poly`` from being traceable in ``qsvt``. However, ``A`` is traceable
         and can be optimized by JIT within this function.
 
@@ -150,6 +156,11 @@ def qsvt(
               Template not hardware compatible. Default encoding for matrices.
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
 
+        angle_solver (str): Specifies the method used to calculate the angles of the routine
+            via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
+
+            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000`
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -270,9 +281,13 @@ def qsvt(
 
     # If the input A is a Hamiltonian
     if hasattr(A, "pauli_rep"):
-        encoding, projectors = _pauli_rep_process(A, poly, encoding_wires, block_encoding)
+        encoding, projectors = _pauli_rep_process(
+            A, poly, encoding_wires, block_encoding, angle_solver=angle_solver
+        )
     else:
-        encoding, projectors = _tensorlike_process(A, poly, encoding_wires, block_encoding)
+        encoding, projectors = _tensorlike_process(
+            A, poly, encoding_wires, block_encoding, angle_solver=angle_solver
+        )
 
     return QSVT(encoding, projectors)
 
@@ -753,6 +768,225 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
+def _cheby_pol(x, degree):
+    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
+
+    Args:
+        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
+        degree (int): degree of the Chebyshev polynomial
+
+    Returns:
+        float: value of cos(degree*arcos(x))
+    """
+    return qml.math.cos(degree * qml.math.arccos(x))
+
+
+def _poly_func(coeffs, parity, x):
+    r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
+
+    Args:
+        coeffs (tensor_like): coefficient of the polynomial function in the Chebyshev basis
+        parity (int): 0 or 1 for odd/even polynomials respectively
+        x (float): point at which to evaluate the polynomial function
+
+    Returns:
+        float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
+    """
+
+    ind = qml.math.arange(len(coeffs))
+    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
+
+
+def _z_rotation(phi, interface):
+    r"""Returns the matrix of the `RZ(2 \phi)` gate.
+
+    Args:
+        phi (float): angle parameter
+
+    Returns:
+        tensor_like: Z rotation matrix
+    """
+
+    return qml.math.array(
+        [[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]], like=interface
+    )
+
+
+def _W_of_x(x, interface):
+    r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+
+    Args:
+        x (float): point at which to evaluate the parametric operator W
+
+    Returns:
+        tensor_like: 2x2 matrix of W(x)
+    """
+
+    return qml.math.array(
+        [
+            [_cheby_pol(x=x, degree=1.0), 1j * qml.math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2)],
+            [1j * qml.math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2), _cheby_pol(x=x, degree=1.0)],
+        ],
+        like=interface,
+    )
+
+
+def _qsp_iterate(phi, x, interface):
+    r"""
+    Signal operator defined as the product of RZ(phi) and W(x)
+
+    Args:
+        phi (float): angle parameter
+        x (float): point at which to evaluate the parametric operator W
+
+    Returns:
+        tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
+    """
+
+    a = qml.math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
+    return a
+
+
+def _qsp_iterate_broadcast(phis, x, interface):
+    r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
+
+    Args:
+        phis (tensor_like): array of QSP angles implementing a given polynomial
+        x (float):point at which to evaluate the polynomial
+    Returns:
+        tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
+    """
+
+    # pylint: disable=import-outside-toplevel
+    try:
+        from jax import vmap
+
+        interface = "jax"
+        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+    except ModuleNotFoundError:
+        qsp_iterate_list = qml.math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
+            phis[1:], x, interface
+        )
+
+    matrix_iterate = reduce(qml.math.dot, qsp_iterate_list)
+    matrix_iterate = qml.math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
+
+    return qml.math.real(matrix_iterate[0, 0])
+
+
+def _grid_pts(degree, interface):
+    r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
+    are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
+
+    Args:
+        degree (int): degree of polynomial function
+
+    Returns:
+        tensor_like: optimization grid points
+    """
+
+    d = (degree + 1) // 2 + (degree + 1) % 2
+    return qml.math.array(
+        [qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)], like=interface
+    )
+
+
+def _qsp_optimization(degree, coeffs_target_func, interface=None):
+    r"""
+    Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomial over the grid
+
+    Args:
+        degree (int): degree of polynomial function
+        coeffs_target_func (tensor_like): coefficients of the polynomial function in ascending index order
+
+    Returns:
+        tuple[tensor_like, float]: A tuple containing QSP angles and the converged cost function value at QSP angles
+    """
+    parity = degree % 2
+
+    # pylint: disable=import-outside-toplevel
+    try:
+        from jax import jacobian
+
+        interface = "jax"
+
+    except ModuleNotFoundError:
+        from autograd import jacobian
+
+    grid_points = _grid_pts(degree, interface=interface)
+
+    initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
+    initial_guess = qml.math.array(initial_guess, like=interface)
+
+    targets = [_poly_func(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
+    targets = qml.math.array(targets, like=interface)
+
+    def obj_function(phi):
+        # Equation (23) in https://arxiv.org/pdf/2002.11649
+
+        # pylint: disable=import-outside-toplevel
+        try:
+            from jax import jit, vmap
+
+            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+
+            obj_func = (
+                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+            )
+        except ModuleNotFoundError:
+            obj_func = (
+                qml.math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(
+                    phi, grid_points, interface
+                )
+                - targets
+            )
+
+        obj_func = qml.math.dot(obj_func, obj_func)
+
+        return 1 / len(grid_points) * obj_func
+
+    try:
+        from jax import jit
+
+        obj_function = jit(obj_function)
+    except ModuleNotFoundError:
+        pass
+
+    results = scipy.optimize.minimize(
+        fun=obj_function,
+        x0=initial_guess,
+        method="L-BFGS-B",  # More efficient than Newton method
+        jac=jacobian(obj_function),
+        tol=1e-15,
+    )
+    phis = results.x
+    cost_func = results.fun
+
+    return phis, cost_func
+
+
+def _compute_qsp_angles_iteratively(poly):
+    """Calculates the angles given a polynomial in canonical base
+
+    Args:
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
+    """
+    poly_cheb = chebyshev.poly2cheb(poly)
+    degree = len(poly_cheb) - 1
+
+    coeffs_odd = poly_cheb[1::2]
+    coeffs_even = poly_cheb[0::2]
+
+    if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
+        coeffs_target_func = qml.math.array(coeffs_even)
+    else:
+        coeffs_target_func = qml.math.array(coeffs_odd)
+
+    angles, *_ = _qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func)
+
+    return angles
+
+
 def _gqsp_u3_gate(theta, phi, lambd):
     r"""
     Computes the U3 gate matrix for Generalized Quantum Signal Processing (GQSP) as described
@@ -908,20 +1142,23 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-finding"):
     r"""
-    Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
-    or quantum singular value transformation (QSVT).
+    Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP),
+    quantum singular value transformation (QSVT) or generalized quantum signal processing (GQSP).
 
-    The polynomial :math:`P(x) = \sum_n a_n x^n` must satisfy :math:`|P(x)| \leq 1` for :math:`x \in [-1, 1]`, the
-    coefficients :math:`a_n` must be real and the exponents :math:`n` must be either all even or all odd.
+    The polynomial :math:`P(x) = \sum_n a_n x^n` must satisfy :math:`|P(x)| \leq 1` for :math:`x \in [-1, 1]`.
+    In QSP and QSVT, the coefficients :math:`a_n` must be real and the exponents :math:`n` must be either all even or all odd.
     For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
-        poly (tensor-like): coefficients of the polynomial ordered from lowest to highest power
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
-        routine (str): the routine for which the angles are computed. Must be either ``"QSP"`` or ``"QSVT"``.
+        routine (str): the routine for which the angles are computed. Must be either ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
-        angle_solver (str): the method used to calculate the angles. Default is ``"root-finding"``.
-            ``"root-finding"`` is currently the only supported method.
+        angle_solver (str): Specifies the method used to calculate the angles. Options include:
+
+            - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
+            - ``"iterative"``: effective for polynomials of degree higher than :math:`\sim 1000` for
+              the ``"QSP"`` and ``"QSVT"`` routines.
 
     Returns:
         (tensor-like): computed angles for the specified routine
@@ -1003,13 +1240,22 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
-        raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
+        if angle_solver == "iterative":
+            return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
+
+        raise AssertionError(
+            "Invalid angle solver method. We currently support 'root-finding' and 'iterative'"
+        )
 
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
-        raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+        if angle_solver == "iterative":
+            return _compute_qsp_angles_iteratively(poly)
+        raise AssertionError(
+            "Invalid angle solver method. Valid value is 'root-finding' and 'iterative'"
+        )
 
     if routine == "GQSP":
         return _compute_gqsp_angles(poly)
-    raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
+    raise AssertionError("Invalid routine. Valid values are 'GQSP', 'QSP' and 'QSVT'")
