@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs import vibrational
-from pennylane.labs.vibrational import pes_generator
+from pennylane.qchem import vibrational
+from pennylane.qchem.vibrational import pes_generator
 from pennylane.qchem.vibrational.vibrational_class import _single_point
 
 h5py = pytest.importorskip("h5py")

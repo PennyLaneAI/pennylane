@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Christiansen Hamiltonian construction functions."""
-
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -20,18 +20,13 @@ import numpy as np
 import pytest
 
 from pennylane.bose.bosonic import BoseWord
-from pennylane.labs.tests.vibrational.test_ref_files.cform_ops_data import (
-    cform_coeffs_ref,
-    cform_dipole_ref_x,
-    cform_ham_ref,
-    cform_ops_ref,
-)
-from pennylane.labs.vibrational.christiansen_ham import (
+
+from pennylane.qchem.vibrational.christiansen_ham import (
     christiansen_bosonic,
     christiansen_dipole,
     christiansen_hamiltonian,
 )
-from pennylane.labs.vibrational.christiansen_utils import (
+from pennylane.qchem.vibrational.christiansen_utils import (
     _cform_onemode,
     _cform_onemode_dipole,
     _cform_threemode,
@@ -45,17 +40,16 @@ from pennylane.labs.vibrational.christiansen_utils import (
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
 
-# Path is pennylane/labs/tests/vibrational/test_ref_files/H2S.hdf5
+ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
+cform_coeffs_ref = os.path.join(ref_dir, "cform_coeffs_ref")
+cform_dipole_ref_x = os.path.join(ref_dir, "cform_dipole_ref_x")
+cform_ham_ref = os.path.join(ref_dir, "cform_ham_ref")
+cform_ops_ref = os.path.join(ref_dir, "cform_ops_ref")
+
 cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
 
-# Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S_3D_PES.hdf5
 pes_file = (
-    Path(__file__).resolve().parent.parent.parent.parent.parent
-    / "tests"
-    / "qchem"
-    / "vibrational"
-    / "test_ref_files"
-    / "H2S_3D_PES.hdf5"
+    Path(__file__).resolve().parent / "test_ref_files" / "H2S_3D_PES.hdf5"
 )
 
 h5py = pytest.importorskip("h5py")
