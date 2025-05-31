@@ -448,6 +448,8 @@
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
+* Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 
