@@ -649,7 +649,6 @@ class TestCatalystGrad:
 
         assert jnp.allclose(result, reference)
 
-    @pytest.mark.xfail(reason="Skipped temporarily to unblock CI, see sc-92105")
     def test_jacobian_fd(self):
         """Test the Jacobian transformation with 'fd'."""
         dev = qml.device("lightning.qubit", wires=1)
