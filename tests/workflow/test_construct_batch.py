@@ -388,7 +388,8 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))

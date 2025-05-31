@@ -73,6 +73,43 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
+def _interpret_level(
+    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
+    num_user: int,
+    has_gradient_expand: bool,
+) -> tuple[slice, bool]:
+    """Interpret the level specification and convert it to a slice and final transform flag.
+
+    Args:
+        level: The level specification from user input
+        num_user: Number of user transforms (excluding final transform)
+        gradient_fn: The gradient function
+
+    Returns:
+        tuple: (slice_obj, readd_final_transform)
+            - slice_obj: The slice to apply to the full transform program
+            - readd_final_transform: Whether to add back the final transform
+    """
+    if level == "device":
+        return slice(0, None)
+    elif level == "top":
+        return slice(0, 0)
+    elif level == "user":
+        return slice(0, num_user)
+    elif level == "gradient":
+        end_idx = num_user + int(has_gradient_expand)
+        return slice(0, end_idx)
+    elif isinstance(level, str):
+        raise ValueError(
+            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
+        )
+    elif level is None or isinstance(level, int):
+        return slice(0, level)
+    else:
+        # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
+        return level
+
+
 def get_transform_program(
     qnode: "QNode", level=None, gradient_fn="unset"
 ) -> "qml.transforms.core.TransformProgram":
@@ -190,7 +227,7 @@ def get_transform_program(
             qnode.device,
         )
         gradient_fn = config.gradient_method
-
+    has_gradient_expand = hasattr(gradient_fn, "expand_transform")
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
     num_user = len(qnode.transform_program)
@@ -198,33 +235,29 @@ def get_transform_program(
         # final transform is placed after device transforms
         num_user -= 1
 
-    readd_final_transform = False
+    # flag: re-add the final transform
+    readd_final_transform = level in ("user", "gradient")
+    # Use the level interpreter to convert level to slice
+    level_slice = _interpret_level(level, num_user, has_gradient_expand)
 
-    if level == "device":
-        level = None
-    elif level == "top":
-        level = 0
-    elif level == "user":
-        readd_final_transform = True
-        level = num_user
-    elif level == "gradient":
-        readd_final_transform = True
-
-        level = num_user + 1 if getattr(gradient_fn, "expand_transform", False) else num_user
-    elif isinstance(level, str):
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-        )
-
-    if level is None or isinstance(level, int):
-        level = slice(0, level)
-
-    resolved_program = full_transform_program[level]
+    resolved_program = full_transform_program[level_slice]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
         resolved_program += qnode.transform_program[-1:]
 
     return resolved_program
+
+
+def needs_final_transform(level, num_user_transforms, has_final_transform):
+    if not has_final_transform:
+        return False
+    if level in ("user", "gradient"):
+        return True
+    if isinstance(level, int):
+        return level == num_user_transforms
+    if isinstance(level, slice):
+        return level.stop == num_user_transforms
+    return False
 
 
 def construct_batch(
@@ -328,16 +361,32 @@ def construct_batch(
          expval(X(0) + Y(0))]
 
     """
+    is_torch_layer = type(qnode).__name__ == "TorchLayer"
+    has_shots_param = "shots" in inspect.signature(qnode.func).parameters
+    default_shots = qnode.device.shots
+
+    user_program = qnode.transform_program
+    has_final_transform = user_program.has_final_transform
+    num_user_transforms = len(user_program) - int(has_final_transform)
+
+    is_empty_top = level in ("top", 0)
+    is_simple_user = (not has_final_transform) and (
+        level == "user"
+        or (isinstance(level, int) and level <= num_user_transforms)
+        or (
+            isinstance(level, slice)
+            and level.stop is not None
+            and level.stop <= num_user_transforms
+        )
+    )
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-        """Create a batch of tapes and a post processing function."""
-        if "shots" in inspect.signature(qnode.func).parameters:
-            shots = qnode.device.shots
+        if has_shots_param:
+            shots = default_shots
         else:
-            shots = kwargs.pop("shots", qnode.device.shots)
+            shots = kwargs.pop("shots", default_shots)
 
-        if type(qnode).__name__ == "TorchLayer":
-            # avoid triggering import of torch if its not needed.
+        if is_torch_layer:
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
@@ -347,14 +396,44 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        if is_empty_top:
+            return qml.transforms.core.TransformProgram()((initial_tape,))
+
+        if is_simple_user:
+            level_slice = _interpret_level(level, num_user_transforms, False)
+            program = user_program[level_slice]
+            initial_tape, user_post_processing = program((initial_tape,))
+            return (initial_tape, user_post_processing)
+
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
-        # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_execution_config(
             config, qnode.device, tapes=(initial_tape,)
         )
         gradient_fn = config.gradient_method
-        program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
+        has_gradient_expand = hasattr(gradient_fn, "expand_transform")
+        level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
 
-        return program((initial_tape,))
+        program = qml.transforms.core.TransformProgram(user_program)
+        if has_gradient_expand:
+            program.add_transform(
+                qml.transform(gradient_fn.expand_transform),
+                **qnode.gradient_kwargs,
+            )
+
+        mcm_config = qml.devices.MCMConfig(
+            postselect_mode=qnode.execute_kwargs["postselect_mode"],
+            mcm_method=qnode.execute_kwargs["mcm_method"],
+        )
+
+        full_transform_program = program + qnode.device.preprocess_transforms(
+            _make_execution_config(qnode, gradient_fn, mcm_config)
+        )
+
+        if needs_final_transform(level, num_user_transforms, has_final_transform):
+            resolved_program = full_transform_program[level_slice] + qnode.transform_program[-1:]
+        else:
+            resolved_program = full_transform_program[level_slice]
+
+        return resolved_program((initial_tape,))
 
     return batch_constructor
