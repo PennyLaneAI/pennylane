@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.subroutines.select import _unary_select
 
 
 def test_standard_checks():
@@ -425,3 +426,40 @@ class TestInterfaces:
         jit_circuit = jax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
+
+
+class TestUnaryIterator:
+    """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
+
+    @pytest.mark.parametrize("num_controls", [1, 2])
+    def test_identity_with_basis_states(self, num_controls):
+        """Test that the unary iterator is correct by asserting that the identity
+        matrix is created by preparing the i-th computational basis state conditioned on the
+        i-th basis state in the control qubits."""
+
+        dev = qml.device("default.qubit")
+
+        for num_ops in range(2 ** (num_controls - 1) + 1, 2**num_controls + 1):
+            print(f"k={num_ops=}")
+            control = list(range(num_controls))
+            work = list(range(num_controls, 2 * num_controls - 1))
+            target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
+
+            ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+
+            eye = np.eye(2**num_controls)
+
+            for n in range(num_ops):
+
+                print(n)
+                print(control)
+
+                @qml.qnode(dev)
+                def circuit():
+                    qml.BasisEmbedding(n, wires=control)
+                    _unary_select(ops, control=control, work_wires=work)
+                    return qml.probs(target)
+
+                probs = circuit()
+                print(qml.draw(circuit)())
+                assert np.allclose(probs, eye[n])
