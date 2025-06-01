@@ -27,12 +27,7 @@ from pennylane.ftqc import (
     diagonalize_mcms,
     get_byproduct_corrections,
 )
-from pennylane.ftqc.pauli_tracker import (
-    commute_clifford_op,
-    pauli_prod,
-    pauli_to_xz,
-    xz_to_pauli,
-)
+from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
@@ -210,7 +205,7 @@ class TestPauliTracker:
             _ = commute_clifford_op(clifford_op, xz)
 
 
-@flaky(max_runs=5)
+# @flaky(max_runs=5)
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
 
@@ -336,10 +331,10 @@ class TestOfflineCorrection:
         [
             [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[0])],
             [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[0])],
-            [qml.MultiControlledX(wires=[0,1,2,3], control_values=[0,1,0])]
+            [qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0])],
         ],
     )
-    @pytest.mark.parametrize("sample_wires", [200])
+    @pytest.mark.parametrize("sample_wires", [0])
     def test_unsupported_tape_offline_correction(self, num_shots, ops, sample_wires):
         measurements = []
 
@@ -352,42 +347,30 @@ class TestOfflineCorrection:
         with pytest.raises(NotImplementedError):
             _ = get_byproduct_corrections(tape, mid_meas)
 
-    # @pytest.mark.parametrize(
-    #     "ops",
-    #     [
-    #         [qml.CNOT(wires=[0, 1])],
-    #         [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
-    #     ],
-    # )
-    # @pytest.mark.parametrize("obs", [[qml.Hermitian(A=np.array([[1, 1], [1, 1]]), wires=[0])]])
-    # def test_unsupported_obs(self, ops, obs):
-    #     start_state = generate_random_state(2)
-    #     ops = [qml.StatePrep(start_state, wires=[0, 1])] + ops
+    @pytest.mark.parametrize(
+        "ops, mid_meas, expected",
+        [
+            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], -1),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                -1,
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 0, 0, 1],
+                1,
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("sample_wires", [0])
+    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, expected):
+        measurements = []
 
-    #     _, script_ref = self._get_ref_res_tape(ops, obs)
+        measurements.append(qml.sample(wires=sample_wires))
 
-    #     with pytest.raises(NotImplementedError):
-    #         x = np.zeros(script_ref.num_wires, dtype=np.uint8)
-    #         z = np.zeros(script_ref.num_wires, dtype=np.uint8)
-    #         _ = _get_measurements_corrections(script_ref, x, z)
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-    #     with pytest.raises(NotImplementedError):
-    #         x = 1
-    #         z = 1
-    #         _ = _apply_measurement_correction_rule(x, z, obs[0])
+        cor = get_byproduct_corrections(tape, mid_meas)[0]
 
-    #     with pytest.raises(
-    #         NotImplementedError, match="Not all gate operations in the tape are supported."
-    #     ):
-    #         script = qml.tape.QuantumScript(
-    #             ops=[qml.RX(0.1, wires=[0])], measurements=[qml.sample(qml.X(0))], shots=10
-    #         )
-    #         mid_res = [0, 1, 1, 0]
-    #         _ = get_byproduct_corrections(script, mid_res)
-
-    #     with pytest.raises(ValueError, match="The mid-measure value should be either 0 or 1."):
-    #         script = qml.tape.QuantumScript(
-    #             ops=[qml.H(0)], measurements=[qml.sample(qml.X(0))], shots=10
-    #         )
-    #         mid_res = [2, 1, 1, 2]
-    #         _ = get_byproduct_corrections(script, mid_res)
+        assert cor == expected

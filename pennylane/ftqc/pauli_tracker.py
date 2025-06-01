@@ -15,7 +15,6 @@
 r"""
 This module contains Pauli Tracking functions.
 """
-import copy
 import itertools
 from typing import List, Tuple
 
@@ -396,7 +395,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
                 _t_ops_record[op.wires[0]] = op
             else:
                 raise NotImplementedError(
-                    f"Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
+                    "Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
                 )
             by_op = _parse_rotz(ms)
         elif isinstance(op, RotXZX):
@@ -404,7 +403,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
                 _t_ops_record[op.wires[0]] = op
             else:
                 raise NotImplementedError(
-                    f"Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
+                    "Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
                 )
             by_op = _parse_rotxzx(ms)
         elif isinstance(op, _PAULIS):
@@ -446,7 +445,7 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
         if isinstance(op, _NON_CLIFFORD_GATES_SUPPORTED):
             # Branch for non-Clifford gates
             by_op = by_ops.pop()
-            new_xz.append(math.bitwise_xor(pauli_to_xz(by_op), xz[0]))
+            new_xz.append(math.bitwise_xor(by_op[0], xz[0]))
         elif isinstance(op, _CLIFFORD_GATES_SUPPORTED):
             # Branch for Clifford gates
             # Step 1: Commutate the recorded xz with the Clifford gate to a new xz.
