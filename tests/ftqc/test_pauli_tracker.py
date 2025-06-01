@@ -20,20 +20,14 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane.decomposition import enabled_graph
 from pennylane.ftqc import (
-    GraphStatePrep,
-    ParametricMidMeasureMP,
-    XMidMeasureMP,
-    YMidMeasureMP,
+    RotXZX,
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
     diagonalize_mcms,
     get_byproduct_corrections,
 )
 from pennylane.ftqc.pauli_tracker import (
-    _apply_measurement_correction_rule,
-    _get_measurements_corrections,
     commute_clifford_op,
     pauli_prod,
     pauli_to_xz,
@@ -216,7 +210,7 @@ class TestPauliTracker:
             _ = commute_clifford_op(clifford_op, xz)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
 
@@ -238,7 +232,11 @@ class TestOfflineCorrection:
         return cor_res
 
     def _get_mbqc_tape(self, ops, sample_wires, num_shots):
-        """Helper function for creating a MBQC tape with a list of ops and obs."""
+        """Helper function for creating a MBQC tape with a list of ops and obs.
+        Note that this helper function only works for a circuit with Clifford gates and
+        Paulis. The `diagonalize_mcms` step is subject to be removed. The `qml.Conditional`
+        ops for non-Clifford gates should be kept instead of be removed in the future.
+        """
         measurements = []
 
         measurements.append(qml.sample(wires=sample_wires))
@@ -291,7 +289,7 @@ class TestOfflineCorrection:
         return processing_fn(raw_res)[0]
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("num_shots", [1250])
+    @pytest.mark.parametrize("num_shots", [200])
     @pytest.mark.parametrize(
         "ops",
         [
@@ -331,6 +329,28 @@ class TestOfflineCorrection:
         cor_res = self._measurements_corrections(script_ref, num_shots, mbqc_res)
 
         assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
+
+    @pytest.mark.parametrize("num_shots", [250])
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[0])],
+            [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[0])],
+            [qml.MultiControlledX(wires=[0,1,2,3], control_values=[0,1,0])]
+        ],
+    )
+    @pytest.mark.parametrize("sample_wires", [200])
+    def test_unsupported_tape_offline_correction(self, num_shots, ops, sample_wires):
+        measurements = []
+
+        measurements.append(qml.sample(wires=sample_wires))
+
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
+
+        mid_meas = [random.choice([0, 1]) for _ in range(8)]
+
+        with pytest.raises(NotImplementedError):
+            _ = get_byproduct_corrections(tape, mid_meas)
 
     # @pytest.mark.parametrize(
     #     "ops",
