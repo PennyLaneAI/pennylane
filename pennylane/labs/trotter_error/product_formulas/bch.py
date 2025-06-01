@@ -1,5 +1,3 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -335,11 +333,11 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
         commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(coc).items()
     }
 
-    ret = {}
+    ret = defaultdict(complex)
 
     for partial, coeff1 in partially_nested.items():
         for nested, coeff2 in _right_nested(partial).items():
-            ret[nested] = coeff1 * coeff2
+            ret[nested] += coeff1 * coeff2
 
     return ret
 
@@ -348,6 +346,12 @@ def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     """Assume commutator is the commutator of two right-nested commutators
     Apply the Jacobi identity [A, [B, C]] = [C, [B, A]] - [B, [C, A]]
     """
+
+    if len(commutator[0]) == 0:
+        return _right_nested(commutator[1])
+
+    if len(commutator[1]) == 0:
+        return _right_nested(commutator[0])
 
     if len(commutator[0]) == 1:
         return {commutator[0] + commutator[1]: 1}
