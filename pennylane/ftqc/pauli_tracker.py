@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z, cond
+from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from pennylane.tape import QuantumScript
 
 from .operations import RotXZX
@@ -257,7 +257,7 @@ def _sum_parity(*mid_meas):
         The last bit of the sum.
     """
 
-    return sum([m for m in mid_meas]) & 1
+    return sum(mid_meas) & 1
 
 
 def _parse_s(mid_meas: List):
