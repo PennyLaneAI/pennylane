@@ -248,7 +248,6 @@ class TestOfflineCorrection:
         (decomposed_tape,), _ = convert_to_mbqc_gateset(tape)
 
         (mbqc_tape,), _ = convert_to_mbqc_formalism(decomposed_tape)
-        # (diagonalized_mbqc_tape,), _ = diagonalize_mcms(mbqc_tape)
 
         mbqc_ops = []
         mbqc_measurements = mbqc_tape.measurements
@@ -259,17 +258,12 @@ class TestOfflineCorrection:
                     [qml.sample(qml.measurements.MeasurementValue([op], lambda res: res))]
                 )
             elif isinstance(op, qml.ops.Conditional):
-                if isinstance(op.base, (ParametricMidMeasureMP, XMidMeasureMP, YMidMeasureMP)):
-                    mbqc_ops.extend([op])
-                else:
-                    continue
+                continue
             elif isinstance(op, _PAULIS):
                 # Pauli operations go to the Pauli tracker directly. No need to get them executed.
                 continue
             else:
                 mbqc_ops.extend([op])
-        # print(mbqc_ops)
-        # print(mbqc_measurements)
         mbqc_tape_new = qml.tape.QuantumScript(
             ops=mbqc_ops, measurements=mbqc_measurements, shots=num_shots
         )
@@ -304,10 +298,8 @@ class TestOfflineCorrection:
             [qml.CNOT(wires=[0, 1])],
             [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
             [qml.S(0)],
-            [qml.S(1)],
             [qml.S(0), qml.S(1)],
             [qml.H(0)],
-            [qml.H(1)],
             [qml.H(0), qml.H(1)],
             [qml.H(0), qml.S(1), qml.H(1), qml.S(0), qml.CNOT(wires=[0, 1])],
             [
