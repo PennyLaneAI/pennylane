@@ -205,7 +205,7 @@ class TestPauliTracker:
             _ = commute_clifford_op(clifford_op, xz)
 
 
-# @flaky(max_runs=5)
+@flaky(max_runs=5)
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
 
