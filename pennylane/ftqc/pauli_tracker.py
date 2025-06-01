@@ -353,20 +353,6 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     Both nob-Clifford and Clifford gates mentioned above are measured in the way defined in
     `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
-    For :class:`~pennylane.S` operations, the measurements take on the four qubits out of a cluster(chain) state with five qubits and
-    the corresponding measurements would be `X-basis`, `X-basis`, `Y-basis` and `X-basis`. The byproduct operator is $by_op = \sigma_x^{s_1+s_3}\sigma_z^{s_0+s_1+s_2+1}$
-    and $s_i$ means measurement results of `i`th qubit in the cluster state. Note that the indexing here follows the `C` convention instead of
-    `Fortran` convention used in the `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
-
-    For :class:`~pennylane.H` operations, the measurements take on the four qubits out of a cluster(chain) state with five qubits and
-    the corresponding measurements would be `X-basis`, `Y-basis`, `Y-basis` and `Y-basis`. The byproduct operator is $by_op = \sigma_x^{s_0+s_2+s_3}\sigma_z^{s_1+s_2}$.
-
-    For :class:`~pennylane.CNOT` operations, the measurements take on the thirteen qubits out of a cluster(2D) state with fifteen qubits and
-    the corresponding measurements would be `X-basis`(0), `Y-basis`(1), `Y-basis`(2), `Y-basis`(3), `Y-basis`(4), `Y-basis`(5), `Y-basis`(7),
-    `X-basis`(8), `X-basis`(9), `X-basis`(10), `Y-basis`(11), `X-basis`(12) and `X-basis`(13). The byproduct operator for the control wire is
-    $by_op_{ctrl} = \sigma_x^{s_1+s_2+s_4+s_5}\sigma_z^{s_0+s_2+s_3+s_4+s_7+s_8+s_10+1}$. The byproduct operator for the target wire is:
-    $by_op_{tgt} = \sigma_x^{s_1+s_2+s_7+s_9+s_11+s_13}\sigma_z^{s_8+s_10+s_12}$.
-
     Args:
         tape (QuantumScript): The quantum tape in the standard circuit mode (Gates are not transformed into the MBQC formalism).
         mid_meas (list): Mid-measurements results.
@@ -479,22 +465,22 @@ def _apply_measurement_correction_rule(x: np.uint8):
     return -1 if x == 1 else 1
 
 
-def _get_measurements_corrections(tape: QuantumScript, x_record: math.array):
-    """Get phase correction factor for all measurements in a tape. The phase correction factor
+def _get_measurements_sign_factor(tape: QuantumScript, x_record: math.array):
+    """Get sign factor for all measurements in a tape. The sign factor
     is calculated based on the `samples` at `wires` with the corresponding recorded x.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
             x_record (math.array): The array of recorded x for each wire.
         Return:
-            A list of phase correction factor for all measurements.
+            A list of sign factors for all measurements.
     """
-    phase_factor = [1] * len(tape.measurements)
+    phase_sign_factor = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
         wires = measurement.wires.tolist()
 
-        phase_factor[idx] *= _apply_measurement_correction_rule(x_record[wires[0]])
+        phase_sign_factor[idx] *= _apply_measurement_correction_rule(x_record[wires[0]])
 
-    return phase_factor
+    return phase_sign_factor
 
 
 def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
@@ -525,7 +511,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep
 
-            from offline_byprod_correction import get_byproduct_corrections
+            from pennylane.ftqc.pauli_tracker import get_byproduct_corrections
             import numpy as np
 
 
@@ -570,7 +556,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
                 m11 = measure_y(3, reset=True)
 
                 return (
-                    qml.sample(qml.Z(4)),
+                    qml.sample(wires=[4]),
                     qml.sample(m0),
                     qml.sample(m1),
                     qml.sample(m2),
@@ -607,4 +593,4 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
 
     x_record, _ = _get_xz_record(tape.num_wires, by_ops, ops)
 
-    return _get_measurements_corrections(tape, x_record)
+    return _get_measurements_sign_factor(tape, x_record)
