@@ -348,22 +348,48 @@ class TestOfflineCorrection:
             _ = get_byproduct_corrections(tape, mid_meas)
 
     @pytest.mark.parametrize(
-        "ops, mid_meas, expected",
+        "ops, mid_meas, sample_wires, expected",
         [
-            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], -1),
+            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], [0], -1),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
-                [0, 1, 1, 0, 1, 1, 0, 0],
+                [0, 0, 1, 1, 1, 1, 0, 0],
+                [0],
                 -1,
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
+                [0],
+                1,
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 0, 1, 0, 1, 0, 0, 1],
+                [0],
+                1,
+            ),
+            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], [1], -1),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 0, 0, 0],
+                [1],
+                1,
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 0, 0, 1],
+                [1],
+                -1,
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 1, 0, 1],
+                [1],
                 1,
             ),
         ],
     )
-    @pytest.mark.parametrize("sample_wires", [0])
     def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, expected):
         measurements = []
 
