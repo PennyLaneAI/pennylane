@@ -410,7 +410,9 @@ def construct_batch(
             config, qnode.device, tapes=(initial_tape,)
         )
         gradient_fn = config.gradient_method
-        has_gradient_expand = hasattr(gradient_fn, "expand_transform")
+        has_gradient_expand = bool(
+            getattr(gradient_fn, "expand_transform", False)
+        )  # Note that it could exist as None which is still False, but can't use hasattr on it.
         level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
 
         program = qml.transforms.core.TransformProgram(user_program)
