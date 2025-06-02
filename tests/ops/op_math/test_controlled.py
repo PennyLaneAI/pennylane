@@ -1777,14 +1777,18 @@ class TestCtrl:
     def test_nested_controls(self):
         """Tests that nested controls are flattened correctly."""
 
-        op = qml.ctrl(
-            Controlled(
-                Controlled(qml.S(wires=[0]), control_wires=[1]),
-                control_wires=[2],
-                control_values=[0],
-            ),
-            control=[3],
-        )
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(
+                Controlled(
+                    Controlled(qml.S(wires=[0]), control_wires=[1]),
+                    control_wires=[2],
+                    control_values=[0],
+                ),
+                control=[3],
+            )
+
+        assert len(q) == 1
+        assert q.queue[0] is op
         expected = Controlled(
             qml.S(wires=[0]),
             control_wires=[3, 2, 1],
