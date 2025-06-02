@@ -153,6 +153,40 @@ class Context:
             context["wires"] = []
         self.context = context
 
+    def retrieve_variable(self, name: str):
+        """
+        Attempts to retrieve a variable from the current context by name.
+
+        Args:
+            name (str): the name of the variable to retrieve.
+
+        Returns:
+            The value of the variable in the current context.
+
+        Raises:
+             NameError: if the variable is not initialized.
+             TypeError: if the variable is not declared.
+        """
+
+        if name in self.vars:
+            res = self.vars[name]
+            if res.val is not None:
+                return res
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        if name in self.wires:
+            return name
+        if name in self.aliases:
+            res = self.aliases[name](self)  # evaluate the alias and de-reference
+            if isinstance(res, str):
+                return res
+            if res.val is not None:
+                return res
+            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+        raise TypeError(
+            f"Attempt to use undeclared variable {name} in {self.name}"
+        )
+
+
     def update_var(
         self,
         value: any,
@@ -342,34 +376,6 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         context.aliases[node.target.name] = self.visit(node.value, context, aliasing=True)
-
-    @staticmethod
-    def retrieve_variable(name: str, context: Context):
-        """
-        Attempts to retrieve a variable from the current context by name.
-        Args:
-            name (str): the name of the variable to retrieve.
-            context (Context): the current context.
-        """
-
-        if name in context.vars:
-            res = context.vars[name]
-            if res.val is not None:
-                return res
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        if name in context["wires"]:
-            return name
-        if name in context.aliases:
-            res = context.aliases[name](context)  # evaluate the alias and de-reference
-            if isinstance(res, str):
-                return res
-            if res.val is not None:
-                return res
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        raise TypeError(
-            f"Attempt to use unevaluated variable {name} in {context.name}, "
-            f"last updated on line {context.vars[name]['line'] if name in context.vars else 'unknown'}."
-        )
 
     @visit.register(ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: Context):
@@ -641,7 +647,7 @@ class QasmInterpreter:
             return lambda cntxt: _index_into_var(self._alias(node, cntxt), node)
 
         # else we are just evaluating an index
-        var = self.retrieve_variable(node.collection.name, context)
+        var = context.retrieve_variable(node.collection.name)
         return _index_into_var(var, node)
 
     def _alias(self, node: Identifier | IndexExpression, context: Context):
@@ -656,7 +662,7 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-            return self.retrieve_variable(node.collection.name, context)
+            return context.retrieve_variable(node.collection.name)
         except NameError as e:
             raise NameError(
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
@@ -679,7 +685,7 @@ class QasmInterpreter:
             return partial(self._alias, node)
         # else we are evaluating an alias
         try:
-            var = self.retrieve_variable(node.name, context)
+            var = context.retrieve_variable(node.name)
             value = var.val if isinstance(var, Variable) else var
             if callable(value):
                 var.val = value(context)
