@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource tracking logic."""
+import copy
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
@@ -189,7 +190,7 @@ def resources_from_qfunc(
     """Get resources from a quantum function which queues operations"""
 
     if single_qubit_rotation_error is not None:
-        _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
+        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
@@ -235,7 +236,7 @@ def resources_from_resource(
 ) -> Callable:
     
     if single_qubit_rotation_error is not None:
-        _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
+        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     existing_qm = obj.qubit_manager
     if work_wires is not None:
@@ -340,10 +341,11 @@ def _sum_allocated_wires(decomp):
 
 
 def _update_config_single_qubit_rot_error(config, error):
-    config["error_rx"] = error
-    config["error_ry"] = error
-    config["error_rz"] = error
-    return
+    new_config = copy.copy(config)
+    new_config["error_rx"] = error
+    new_config["error_ry"] = error
+    new_config["error_rz"] = error
+    return new_config
 
 
 @QueuingManager.stop_recording()
