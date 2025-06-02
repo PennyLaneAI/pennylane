@@ -369,20 +369,33 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(0.5)
+        x_val = qml.numpy.array(0.3, requires_grad=True)
+        batch, fn = construct_batch(circuit, level=None)(x_val)
         assert len(batch) == 4
-        expected0 = qml.tape.QuantumScript([qml.RX(1.0 + np.pi, 0)], [qml.expval(qml.PauliZ(0))])
-        qml.assert_equal(batch[0], expected0)
-        expected1 = qml.tape.QuantumScript([qml.RX(1.0, 0)], [qml.expval(qml.PauliZ(0))])
-        qml.assert_equal(batch[1], expected1)
-        expected2 = qml.tape.QuantumScript([qml.RX(1.0, 0)], [qml.expval(qml.PauliZ(0))])
-        qml.assert_equal(batch[2], expected2)
-        expected3 = qml.tape.QuantumScript([qml.RX(1.0 - np.pi, 0)], [qml.expval(qml.PauliZ(0))])
-        qml.assert_equal(batch[3], expected3)
 
-        dummy_res = (1.0, 2.0, 3.0, 4.0)
-        expected_res = 0  #  should be (1.0 - 4.0) / 2, but since we don't want final transforms any more this will be 0
-        assert qml.numpy.allclose(fn(dummy_res)[0], expected_res)
+        # Test that the batch contains the expected transformed tapes
+        # merge_rotations: RX(x) + RX(x) -> RX(2x) = RX(0.6)
+        # param_shift: Creates 4 evaluation tapes with shifted parameters
+        shift = np.pi
+        base_param = x_val * 2
+        param_shifts = [shift, 0, 0, -shift]
+
+        expected_tapes = [
+            qml.tape.QuantumScript(
+                [qml.RX(base_param + param_shift, 0)], [qml.expval(qml.PauliZ(0))]
+            )
+            for param_shift in param_shifts
+        ]
+
+        for i, expected_tape in enumerate(expected_tapes):
+            qml.assert_equal(batch[i], expected_tape)
+
+        # Test parameter-shift gradient computation
+        dummy_results = (0.1, -0.1, 0.2, -0.2)
+        grad_result = fn(dummy_results)
+
+        expected_grad = (0.1 - 0.2) / 2  # Parameter-shift rule application
+        assert qml.numpy.allclose(grad_result[0], expected_grad)
 
     def test_user_transform_multiple_tapes(self):
         """Test a user transform that creates multiple tapes."""
