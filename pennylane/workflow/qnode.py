@@ -897,6 +897,13 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if "shots" in kwargs and qml.set_shots in self.transform_program:
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over 'shots='",
+                UserWarning,
+                stacklevel=2,
+            )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 

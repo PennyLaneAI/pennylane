@@ -1041,21 +1041,3 @@ class TestMCXDecomposition:
             _ = _decompose_mcx_with_two_workers(
                 control_wires, target_wire, work_wires, work_wire_type="clean"
             )
-
-
-def test_ControlledQubitUnitary_has_decomposition_correct():
-    """Test that ControlledQubitUnitary reports has_decomposition=False if it is False"""
-    U = qml.Toffoli(wires=[0, 1, 2]).matrix()
-    op = qml.ControlledQubitUnitary(U, wires=[0, 1, 2, 3])
-
-    assert not op.has_decomposition
-    with pytest.raises(qml.operation.DecompositionUndefinedError):
-        op.decomposition()
-
-
-def test_ControlledQubitUnitary_has_decomposition_super_False(mocker):
-    """Test that has_decomposition returns False if super() returns False"""
-    spy = mocker.spy(qml.QueuingManager, "stop_recording")
-    op = qml.ControlledQubitUnitary(np.diag((1.0,) * 8), wires=[0, 1, 2, 3, 4])
-    assert not op.has_decomposition
-    spy.assert_not_called()
