@@ -843,7 +843,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     .. note::
         The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. The remaining standard library gates,
-        subroutines, and end statements are all supported. Robust variables, control flow, measurements,
+        subroutines, variables and end statements are all supported. Control flow, measurements,
         built-in mathematical functions and constants, custom gates, and pulses are not yet supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
