@@ -20,16 +20,15 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 import scipy as sp
-
-from pennylane import qchem
-from pennylane import concurrency
+from pennylane import concurrency, qchem
 from pennylane.qchem.vibrational.christiansen_utils import _read_data, _write_data
-from pennylane.qchem.vibrational.vibrational_class import VibrationalPES, optimize_geometry
 from pennylane.qchem.vibrational.localize_modes import localize_normal_modes
 from pennylane.qchem.vibrational.vibrational_class import (
+    VibrationalPES,
     _get_dipole,
     _harmonic_analysis,
     _single_point,
+    optimize_geometry,
 )
 
 # pylint: disable=too-many-arguments,too-many-function-args

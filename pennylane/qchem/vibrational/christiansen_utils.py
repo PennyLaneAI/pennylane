@@ -16,11 +16,10 @@ import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from pennylane.data.base.hdf5 import h5py
 import numpy as np
-from scipy.special import factorial
-
 from pennylane import concurrency
+from scipy.special import factorial
+from pennylane.data.base.hdf5 import h5py
 
 # pylint: disable = redefined-outer-name,
 
