@@ -89,13 +89,20 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             """Handle an operation that cannot be fused into a Rot gate."""
 
             previous_ops_on_wires = self._retrieve_prev_ops_same_wire(op)
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if dyn_wires and other_saved_wires:
+                # We cannot guarantee that ops on other static or dynamic wires won't have wire
+                # overlap with the current op, so we need to interpret all of them.
+                self.interpret_all_previous_ops()
 
             res = []
             for prev_op in previous_ops_on_wires:
-                # pylint: disable=protected-access
-                rot = qml.Rot._primitive.impl(
-                    *qml.math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
-                )
+                with qml.capture.pause():
+                    rot = qml.Rot(
+                        *qml.math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
+                    )
                 res.append(super().interpret_operation(rot))
 
             res.append(super().interpret_operation(op))
@@ -108,9 +115,20 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             # Only single-qubit gates are considered for fusion
             op_wire = op.wires[0]
 
-            prev_op = self.previous_ops.get(op_wire)
-            if prev_op is None:
-                self.previous_ops[op_wire] = op
+            prev_op = self.previous_ops.get(op.wires[0], None)
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if prev_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't fuse. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to fuse, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (prev_op is None or other_saved_wires):
+                    self.interpret_all_previous_ops()
+                for w in op.wires:
+                    self.previous_ops[w] = op
                 return []
 
             prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
@@ -128,8 +146,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                     rtol=0,
                 )
             ):
-                # pylint: disable=protected-access
-                new_rot = qml.Rot._primitive.impl(*cumulative_angles, wires=op.wires)
+                with qml.capture.pause():
+                    new_rot = qml.Rot(*cumulative_angles, wires=op.wires)
                 self.previous_ops[op_wire] = new_rot
             else:
                 del self.previous_ops[op_wire]
