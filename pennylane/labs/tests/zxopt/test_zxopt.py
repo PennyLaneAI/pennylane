@@ -13,9 +13,11 @@
 # limitations under the License.
 """Tests for pennylane/labs/dla/zxopt"""
 import pytest
+import pyzx as zx
 
 import pennylane as qml
 from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce, todd
+from pennylane.labs.zxopt.zx_conversion import _tape2pyzx
 
 # arbitrary circuit
 circ1 = qml.tape.QuantumScript(
@@ -100,3 +102,10 @@ def test_basic_optimization(circ):
 def test_todd(circ):
     """Test TODD"""
     _ = todd(circ)
+
+
+@pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
+def test_tape2pyzx(circ):
+    """Test that PL circuits are translated to pyzx circuits"""
+    zx_circuit = _tape2pyzx(circ)
+    assert isinstance(zx_circuit, zx.Circuit)
