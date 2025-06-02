@@ -101,4 +101,10 @@ from .ops import (
     ResourceCRot,
     ResourceControlledPhaseShift,
     ResourceTempAND,
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourceProd,
+    ResourceChangeBasisOp,
+    ResourcePow,
+    ResourceSWAP,
 )

@@ -26,7 +26,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 
 # pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments
-MY_DEBUG_VARIABLE = "I am here"
 
 
 class ResourceCH(ResourceOperator):
@@ -217,7 +216,7 @@ class ResourceCY(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -350,7 +349,7 @@ class ResourceCZ(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -477,7 +476,7 @@ class ResourceCSWAP(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -609,7 +608,7 @@ class ResourceCCZ(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -730,7 +729,7 @@ class ResourceCNOT(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -974,7 +973,7 @@ class ResourceToffoli(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, elbow=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -1022,7 +1021,7 @@ class ResourceToffoli(ResourceOperator):
 
     @classmethod
     def textbook_resource_decomp(cls, elbow=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -1061,13 +1060,13 @@ class ResourceToffoli(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"elbow": self.elbow} if self.elbow else {}
+        return {"elbow": self.elbow}
 
     @classmethod
     def resource_rep(cls, elbow=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {"elbow": elbow}) if elbow else CompressedResourceOp(cls, {})
+        return CompressedResourceOp(cls, {"elbow": elbow})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, elbow=None) -> list[GateCount]:
@@ -1234,7 +1233,7 @@ class ResourceMultiControlledX(ResourceOperator):
         num_ctrl_values,
         **kwargs,  # pylint: disable=unused-argument
     ) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Args:
@@ -1287,7 +1286,7 @@ class ResourceMultiControlledX(ResourceOperator):
             return gate_lst
 
         l_elbow = resource_rep(ResourceTempAND)
-        r_elbow = resource_rep(ResourceToffoli, {"elbow": "right"})
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
 
         res = [
             AllocWires(num_ctrl_wires - 2),
@@ -1354,8 +1353,8 @@ class ResourceMultiControlledX(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        return [GateCount
-            (
+        return [
+            GateCount(
                 cls.resource_rep(
                     outer_num_ctrl_wires + num_ctrl_wires,
                     outer_num_ctrl_values + num_ctrl_values,
@@ -1433,19 +1432,17 @@ class ResourceCRX(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"eps": self.eps} if self.eps is not None else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-
-        params = {"eps": eps} if eps is not None else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -1531,7 +1528,7 @@ class ResourceCRX(ResourceOperator):
                 in the decomposition.
         """
         if pow_z == 0:
-            return[GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(re.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep(eps))]
 
 
@@ -1577,20 +1574,17 @@ class ResourceCRY(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"eps": self.eps} if self.eps is not None else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-
-        params = {"eps": eps} if eps is not None else {}
-        return CompressedResourceOp(cls, params)
-
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -1673,8 +1667,6 @@ class ResourceCRY(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z==0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep(eps))]
 
 
@@ -1720,19 +1712,17 @@ class ResourceCRZ(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"eps": self.eps} if self.eps is not None else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-
-        params = {"eps": eps} if eps is not None else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
@@ -1815,8 +1805,6 @@ class ResourceCRZ(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep(eps))]
 
 
@@ -1868,15 +1856,13 @@ class ResourceCRot(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"eps": self.eps} if self.eps is not None else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-
-        params = {"eps": eps} if eps is not None else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -1974,8 +1960,6 @@ class ResourceCRot(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep(eps))]
 
 
@@ -2021,19 +2005,17 @@ class ResourceControlledPhaseShift(ResourceOperator):
         Returns:
             dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
         """
-        return {"eps": self.eps} if self.eps is not None else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
-
-        params = {"eps": eps} if eps is not None else {}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
         """
         cnot = resource_rep(ResourceCNOT)
@@ -2105,6 +2087,4 @@ class ResourceControlledPhaseShift(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
         return [GateCount(cls.resource_rep(eps))]
