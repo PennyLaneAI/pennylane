@@ -291,6 +291,7 @@
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
     [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
+    [(#7499)](https://github.com/PennyLaneAI/pennylane/pull/7499)
 
   ```python
   @qml.register_resources({qml.RY: 1})
