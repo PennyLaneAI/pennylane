@@ -23,6 +23,7 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 
+
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
