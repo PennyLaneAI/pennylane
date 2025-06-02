@@ -602,7 +602,7 @@ def reduced_row_echelon(binary_matrix):
     >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
     ...                           [1, 0, 1, 0, 0, 0, 1, 0],
     ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-    >>> _reduced_row_echelon(binary_matrix)
+    >>> qml.math.reduced_row_echelon(binary_matrix)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [0, 0, 1, 0, 0, 1, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])
