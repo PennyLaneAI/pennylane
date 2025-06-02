@@ -77,7 +77,7 @@ def _interpret_level(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
     num_user: int,
     has_gradient_expand: bool,
-) -> tuple[slice, bool]:
+) -> slice:
     """Interpret the level specification and convert it to a slice and final transform flag.
 
     Args:
@@ -92,22 +92,27 @@ def _interpret_level(
     """
     if level == "device":
         return slice(0, None)
-    elif level == "top":
+
+    if level == "top":
         return slice(0, 0)
-    elif level == "user":
+
+    if level == "user":
         return slice(0, num_user)
-    elif level == "gradient":
+
+    if level == "gradient":
         end_idx = num_user + int(has_gradient_expand)
         return slice(0, end_idx)
-    elif isinstance(level, str):
+
+    if isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
-    elif level is None or isinstance(level, int):
+
+    if level is None or isinstance(level, int):
         return slice(0, level)
-    else:
-        # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
-        return level
+
+    # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
+    return level
 
 
 def get_transform_program(
@@ -248,7 +253,8 @@ def get_transform_program(
     return resolved_program
 
 
-def needs_final_transform(level, num_user_transforms, has_final_transform):
+def needs_final_transform(level, has_final_transform):
+    """A simple utility function to determine if the final transform should be added back."""
     if not has_final_transform:
         return False
     if level in ("user", "gradient"):
@@ -405,25 +411,23 @@ def construct_batch(
         if is_simple_user:
             level_slice = _interpret_level(level, num_user_transforms, False)
             program = user_program[level_slice]
-            initial_tape, user_post_processing = program((initial_tape,))
-            return (initial_tape, user_post_processing)
+            return program((initial_tape,))
 
-        # Otherwise, not simply at all, we have to process the gradient fn and device transforms.        user_post_processing = null_postprocessing
-        level_slice = slice(0, None)
-        # if level == "device" or level is None:
+        # Otherwise, not simply at all, we have to process the gradient fn and device transforms.
+        # Apply user transforms first
         program = user_program[:num_user_transforms]
-        (initial_tape,), user_post_processing = program((initial_tape,))
-        # level_slice = slice(num_user_transforms, None)
+        tapes, user_post_processing = program((initial_tape,))
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
+        # pylint: disable = protected-access
         config = qml.workflow.resolution._resolve_execution_config(
-            config, qnode.device, tapes=(initial_tape,)
+            config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
         gradient_fn = config.gradient_method
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        # if not (level == "device" or level is None):
+
         level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
         level_slice = slice(
             max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
@@ -450,15 +454,13 @@ def construct_batch(
         else:
             resolved_program = full_transform_program[level_slice]
 
-        (batch, remaining_post_processing) = resolved_program((initial_tape,))
+        batch, remaining_post_processing = resolved_program(tapes)  # Use the user-transformed tapes
 
         def combined_post_processing(results):
             """Combine the user post-processing with the remaining post-processing."""
             intermediate_results = remaining_post_processing(results)
-            if user_post_processing is null_postprocessing:
-                return intermediate_results
             return user_post_processing(intermediate_results)
 
-        return (batch, combined_post_processing)
+        return batch, combined_post_processing
 
     return batch_constructor
