@@ -48,8 +48,8 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter.gate_set_contains(valid_op)
-        assert not interpreter.gate_set_contains(invalid_op)
+        assert interpreter._stopping_condition(valid_op)
+        assert not interpreter._stopping_condition(invalid_op)
 
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op, recwarn):
