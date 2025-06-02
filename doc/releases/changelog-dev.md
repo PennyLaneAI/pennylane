@@ -629,6 +629,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* Fixed the wrong `sum` to `sum_abstracted` in the :doc:`/news/qjit_api` page.
+  [(#7587)](https://github.com/PennyLaneAI/pennylane/pull/7587)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where certain transforms with a native program capture implementation give incorrect results when
@@ -733,6 +736,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
