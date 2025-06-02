@@ -21,17 +21,18 @@ import pennylane as qml
 from .zx_conversion import _tape2pyzx
 
 
-def full_optimize(tape):
+def full_optimize(tape, clifford_t_args=None):
     r"""
 
     Full optimization pipeline applying TODD and ZX-based T gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     This function applies `zx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ and is basically a combination of :func:`~todd` and :func:`~full_reduce`.
 
-    When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
+    When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`. Otherwise, :func:`~clifford_t_decomposition` is used to decompose the circuit to the (Clifford + T) gate set.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
+        clifford_t_args (dict): Optional arguments to be passed to :func:`~clifford_t_decomposition` when a circuit with continuous gates is passed.
 
     Returns:
         qml.tape.QuantumScript: T gate optimized PennyLane circuit.
@@ -93,7 +94,11 @@ def full_optimize(tape):
         warnings.warn(
             "Input circuit is not in the (Clifford + T) basis, will attempt to decompose using qml.clifford_t_decomposition."
         )
-        (tape,), _ = qml.clifford_t_decomposition(tape)
+
+        if clifford_t_args is None:
+            clifford_t_args = {}
+
+        (tape,), _ = qml.clifford_t_decomposition(tape, **clifford_t_args)
         pyzx_circ = _tape2pyzx(tape)
 
         pyzx_circ = zx.full_optimize(pyzx_circ)

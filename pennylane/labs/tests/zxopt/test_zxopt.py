@@ -109,3 +109,20 @@ def test_tape2pyzx(circ):
     """Test that PL circuits are translated to pyzx circuits"""
     zx_circuit = _tape2pyzx(circ)
     assert isinstance(zx_circuit, zx.Circuit)
+
+
+def test_full_optimize_warns_clifford_t(circ):
+    """Test that a warning is raised when attempting to full_optimize a circuit with rotation gates"""
+    circ = qml.tape.QuantumScript(
+        [
+            qml.CNOT((0, 1)),
+            qml.T(0),
+            qml.RZ(0.5, 0),
+            qml.Hadamard(0),
+        ],
+        [],
+    )
+
+    new_circ = full_optimize(circ, clifford_t_args={"epsilon": 0.1})
+    assert not any(isinstance(op, qml.RZ) for op in new_circ.operations)
+    assert any(isinstance(op, (qml.S, qml.T, qml.Hadamard)) for op in new_circ.operations)
