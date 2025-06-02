@@ -23,6 +23,7 @@ from openqasm3.ast import (
     ExpressionStatement,
     ForInLoop,
     FunctionCall,
+    EndStatement,
     Identifier,
     IndexExpression,
     QuantumArgument,
@@ -144,6 +145,10 @@ class ContinueException(Exception):  # pragma: no cover
     """Exception raised when encountering a continue statement."""
 
 
+class EndProgram(Exception):
+    """Exception raised when it encounters an end statement in the QASM circuit."""
+
+
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -201,12 +206,15 @@ class QasmInterpreter:
         context.update({"wires": [], "vars": {}})
 
         # begin recursive descent traversal
-        for value in node.__dict__.values():
-            if not isinstance(value, list):
-                value = [value]
-            for item in value:
-                if isinstance(item, QASMNode):
-                    self.visit(item, context)
+        try:
+            for value in node.__dict__.values():
+                if not isinstance(value, list):
+                    value = [value]
+                for item in value:
+                    if isinstance(item, QASMNode):
+                        self.visit(item, context)
+        except EndProgram:
+            pass
         return context
 
     @visit.register(BreakStatement)
@@ -611,6 +619,19 @@ class QasmInterpreter:
                 # the return value
                 ret = func_context["return"] if "return" in func_context else None
         return ret
+
+    @visit.register(EndStatement)
+    def visit_end_statement(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
+        """
+        Ends the program.
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise EndProgram(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)

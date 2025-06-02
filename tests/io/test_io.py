@@ -208,7 +208,7 @@ class TestLoad:
 
 @pytest.mark.external
 class TestOpenQasm:
-    """Test the qml.to_openqasm and qml.io.from_qasm3 functions."""
+    """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 

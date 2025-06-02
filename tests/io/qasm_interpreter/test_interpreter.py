@@ -321,6 +321,31 @@ class TestInterpreter:
 
         assert q.queue == [PauliX("q0"), PauliY("q0")]
 
+    def test_end_statement(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            ch q0, q1;
+            cx q1, q0;
+            end;
+            cy q0, q1;
+            cz q1, q0;
+            swap q0, q1;
+            """,
+            permissive=True,
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
+
+        assert q.queue == [
+            CH(wires=["q0", "q1"]),
+            CNOT(wires=["q1", "q0"]),
+        ]
+
     def test_mod_with_declared_param(self):
 
         # parse the QASM program
