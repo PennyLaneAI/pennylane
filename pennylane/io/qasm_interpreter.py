@@ -217,7 +217,9 @@ class QasmInterpreter:
     """
 
     @functools.singledispatchmethod
-    def visit(self, node: QASMNode, context: dict, aliasing: bool = False):  # pylint: disable=unused-argument
+    def visit(
+        self, node: QASMNode, context: dict, aliasing: bool = False
+    ):  # pylint: disable=unused-argument
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
         The purpose of this function is to pass each node to the appropriate handler.
@@ -562,7 +564,9 @@ class QasmInterpreter:
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
-            return eval(f"{node.op.name}{float(self.visit(node.expression, context))}")  # pylint: disable=eval-used
+            return eval(  # pylint: disable=eval-used
+                f"{node.op.name}{float(self.visit(node.expression, context))}"
+            )
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(
                 f"{node.op.name} assignment operators should only be used in classical assignments,"
@@ -638,8 +642,7 @@ class QasmInterpreter:
             return value
         except NameError as e:
             raise NameError(
-                str(e)
-                or f"Reference to an undeclared variable {node.name} in {context['name']}."
+                str(e) or f"Reference to an undeclared variable {node.name} in {context['name']}."
             ) from e
 
     @staticmethod
