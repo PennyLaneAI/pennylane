@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for non parametric single qubit operations."""
-from typing import Dict
-
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -372,7 +370,7 @@ class ResourceSWAP(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -411,7 +409,7 @@ class ResourceSWAP(ResourceOperator):
         return [GateCount(cnot, 3)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -427,7 +425,7 @@ class ResourceSWAP(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -468,7 +466,7 @@ class ResourceSWAP(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -883,7 +881,7 @@ class ResourceY(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -1024,7 +1022,7 @@ class ResourceZ(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:

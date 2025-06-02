@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric single qubit operations."""
-from typing import Dict
-
 import numpy as np
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -157,8 +155,9 @@ class ResourcePhaseShift(ResourceOperator):
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceControlledPhaseShift, {"eps": eps}))]
@@ -176,7 +175,7 @@ class ResourcePhaseShift(ResourceOperator):
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
-        return [GrabWires(1), GateCount(c_ps), GateCount(mcx, 2), FreeWires(1)]
+        return [AllocWires(1), GateCount(c_ps), GateCount(mcx, 2), FreeWires(1)]
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
@@ -332,8 +331,9 @@ class ResourceRX(ResourceOperator):
             controlled-version of that identity.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
 
@@ -511,8 +511,9 @@ class ResourceRY(ResourceOperator):
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRY, {"eps": eps}))]
@@ -684,8 +685,9 @@ class ResourceRZ(ResourceOperator):
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRZ, {"eps": eps}))]
@@ -840,8 +842,9 @@ class ResourceRot(ResourceOperator):
             multi-controlled case.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRot, {"eps": eps}))]

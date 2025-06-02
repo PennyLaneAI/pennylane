@@ -28,7 +28,7 @@ from .optimization_utils import find_next_gate
 
 
 @lru_cache
-def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr

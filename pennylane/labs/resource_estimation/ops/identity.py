@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for identity operations."""
-from typing import Dict
-
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -217,8 +215,9 @@ class ResourceGlobalPhase(ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourcePhaseShift))]
@@ -237,7 +236,7 @@ class ResourceGlobalPhase(ResourceOperator):
             },
         )
 
-        return [GrabWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
+        return [AllocWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
 
     def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.

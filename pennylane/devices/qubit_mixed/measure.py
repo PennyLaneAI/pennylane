@@ -53,7 +53,7 @@ def _reshape_state_as_matrix(state, num_wires):
     return math.reshape(state, shape)
 
 
-def state_diagonalizing_gates(  # pylint: disable=unused-argument
+def state_diagonalizing_gates(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,

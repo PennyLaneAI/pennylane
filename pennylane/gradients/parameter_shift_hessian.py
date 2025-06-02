@@ -298,7 +298,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
     """
-    # pylint: disable=too-many-arguments, too-many-statements
+    # pylint: disable=too-many-arguments
     h_dim = tape.num_params
 
     unshifted_coeffs = {}
@@ -412,7 +412,6 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
     return hessian_tapes, processing_fn
 
 
-# pylint: disable=too-many-return-statements,too-many-branches
 def contract_qjac_with_cjac(qhess, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
     qhess = (qhess,)
@@ -631,7 +630,9 @@ def param_shift_hessian(
     for i, g in diff_methods.items():
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
-    if math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=invalid-unary-operand-type
+    if math.all(~bool_argnum):
         return _all_zero_hessian(tape)
 
     # If any of these argument indices correspond to a finite difference
