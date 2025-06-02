@@ -287,9 +287,8 @@ class TestOfflineCorrection:
     )
     def test_parse_mid_measurements(self, ops, mid_measures, expected):
         tape = qml.tape.QuantumScript(ops=ops)
-        by_ops, ops = _parse_mid_measurements(tape, mid_measures)
+        by_ops = _parse_mid_measurements(tape, mid_measures)
         assert by_ops == expected
-        assert len(by_ops) == 1
 
     @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize(

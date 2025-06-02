@@ -383,7 +383,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
 
     # To use list in a stack manner
     by_ops.reverse()
-    return by_ops, ops
+    return by_ops
 
 
 def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Operator]):
@@ -559,8 +559,8 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
             print(res)
 
     """
-    by_ops, ops = _parse_mid_measurements(tape, mid_meas)
+    by_ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, _ = _get_xz_record(tape.num_wires, by_ops, ops)
+    x_record, _ = _get_xz_record(tape.num_wires, by_ops, tape.operations)
 
     return _correct_measurements(tape, x_record, measurement_vals)
