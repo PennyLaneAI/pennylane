@@ -52,7 +52,7 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-class EndError(Exception):  # pragma: no cover
+class EndProgram(Exception):  # pragma: no cover
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 class QasmInterpreter:
@@ -104,7 +104,7 @@ class QasmInterpreter:
                 for item in value:
                     if isinstance(item, QASMNode):
                         self.visit(item, context)
-        except EndError:
+        except EndProgram:
             pass
         return context
 
@@ -116,7 +116,7 @@ class QasmInterpreter:
             node (QASMNode): The end statement QASMNode.
             context (dict): the current context.
         """
-        raise EndError(
+        raise EndProgram(
             f"The QASM program was terminated om line {node.span.start_line}."
             f"There may be unprocessed QASM code."
         )
