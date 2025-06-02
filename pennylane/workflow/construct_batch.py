@@ -449,7 +449,7 @@ def construct_batch(
             _make_execution_config(qnode, gradient_fn, mcm_config)
         )
 
-        if needs_final_transform(level, num_user_transforms, has_final_transform):
+        if needs_final_transform(level, has_final_transform):
             resolved_program = full_transform_program[level_slice] + qnode.transform_program[-1:]
         else:
             resolved_program = full_transform_program[level_slice]
