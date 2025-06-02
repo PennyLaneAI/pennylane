@@ -104,8 +104,8 @@ class QasmInterpreter:
                 for item in value:
                     if isinstance(item, QASMNode):
                         self.visit(item, context)
-        except EndError as e:
-            print(str(e))
+        except EndError:
+            pass
         return context
 
     @visit.register(EndStatement)
