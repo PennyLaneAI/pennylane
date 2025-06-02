@@ -16,7 +16,7 @@ import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import h5py
+from pennylane.data.base.hdf5 import h5py
 import numpy as np
 from scipy.special import factorial
 

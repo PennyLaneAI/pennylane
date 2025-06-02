@@ -425,11 +425,6 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
             init_idx = 0
             end_idx = 0
             for proc in range(num_proc):
-                # file_path = Path("v2data" + f"_{proc}" + ".hdf5")
-                # with h5py.File(file_path, "r+") as f:
-                #     local_pes_twobody = f["V2_PES"][()]
-                #     if dipole:
-                #         local_dipole_twobody = f["D2_DMS"][()]
                 local_pes_twobody = _read_data(path, proc, "v2data", "V2_PES")
                 if dipole:
                     local_dipole_twobody = _read_data(path, proc, "v2data", "D2_DMS")
