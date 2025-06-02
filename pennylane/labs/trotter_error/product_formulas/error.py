@@ -198,8 +198,8 @@ def _op_list(commutator):
 
     head, *tail = commutator
 
-    ops1 = defaultdict(int, {(head,) + ops: coeff for ops, coeff in _op_list(tail).items()})
-    ops2 = defaultdict(int, {ops + (head,): -coeff for ops, coeff in _op_list(tail).items()})
+    ops1 = defaultdict(int, {(head, *ops): coeff for ops, coeff in _op_list(tail).items()})
+    ops2 = defaultdict(int, {(*ops, head): -coeff for ops, coeff in _op_list(tail).items()})
 
     for op, coeff in ops2.items():
         ops1[op] += coeff

@@ -287,6 +287,7 @@ def _delete(terms):
     for commutator in delete:
         del terms[commutator]
 
+
 def _fourth_order_simplification(terms):
     swap = []
     for commutator in terms.keys():
