@@ -450,6 +450,9 @@
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
 
+* Fixed the wrong `sum` to `sum_abstracted` in the docstring on :func:`~pennylane.compiler.qjit`.
+  [(#7587)](https://github.com/PennyLaneAI/pennylane/pull/7587)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 
@@ -628,9 +631,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
-
-* Fixed the wrong `sum` to `sum_abstracted` in the :doc:`/news/qjit_api` page.
-  [(#7587)](https://github.com/PennyLaneAI/pennylane/pull/7587)
 
 <h3>Bug fixes 🐛</h3>
 
