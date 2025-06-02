@@ -325,7 +325,8 @@
 * The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument, which must be
   a function that returns `True` if an operator does not need to be decomposed (it meets the requirements as described
   in `stopping_condition`).
-  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)  
+  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
+  
   Here is an example of using `stopping_condition` to not decompose a `qml.QubitUnitary` instance if it's
   equivalent to the identity matrix. 
   
@@ -347,7 +348,7 @@
       return False
   ```
 
-Note that the `stopping_condition` does not need to check whether the operator is in the target gate set. This will always be checked.
+  Note that the `stopping_condition` does not need to check whether the operator is in the target gate set. This will always be checked.
 
   ```python
   @partial(

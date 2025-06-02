@@ -633,6 +633,9 @@ def decompose(
         needs to be decomposed. In short, the ``gate_set`` is specified in terms of operator types,
         whereas the ``stopping_condition`` is specified in terms of operator instances.
 
+        Here is an example of using `stopping_condition` to not decompose a `qml.QubitUnitary`
+        instance if it's equivalent to the identity matrix.
+
         .. code-block:: python
 
             from functools import partial
@@ -646,19 +649,18 @@ def decompose(
             def stopping_condition(op):
 
                 if isinstance(op, qml.QubitUnitary):
-                    # Let's say we want to skip decomposing a QubitUnitary if it is
-                    # equivalent to the identity.
                     identity = qml.math.eye(2 ** len(op.wires))
                     return qml.math.allclose(op.matrix(), identity)
 
-                # For simplicity, the stopping condition does not need to check whether
-                # the operator is in the target gate set. This will always be checked.
                 return False
+
+        Note that the `stopping_condition` does not need to check whether the operator is in the
+        target gate set. This will always be checked.
+
+        .. code-block:: python
 
             @partial(
                 qml.transforms.decompose,
-                # A target gate set specified in terms of operator types is always required
-                # if the new graph-based decomposition system is enabled.
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
@@ -666,7 +668,6 @@ def decompose(
             def circuit():
                 qml.QubitUnitary(U, wires=[0, 1])
                 return qml.expval(qml.PauliZ(0))
-
 
         .. code-block:: pycon
 
@@ -678,8 +679,7 @@ def decompose(
             [[1.+0.j 0.+0.j]
              [0.+0.j 1.+0.j]]
 
-
-        We can see that the ``QubitUnitary`` on wire 1 is not decomposed, due to the stopping
+        We can see that the ``QubitUnitary`` on wire 1 is not decomposed due to the stopping
         condition, despite ``QubitUnitary`` not being in the target gate set.
 
         **Customizing Decompositions**
