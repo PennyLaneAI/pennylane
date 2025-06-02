@@ -72,36 +72,5 @@ from .resource_operator import (
 )
 from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
 from .resources_base import Resources
-
-from .ops import (
-    ResourceHadamard,
-    ResourceS,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceT,
-    ResourcePhaseShift,
-    ResourceGlobalPhase,
-    ResourceRot,
-    ResourceIdentity,
-    ResourceCH,
-    ResourceCY,
-    ResourceCZ,
-    ResourceCSWAP,
-    ResourceCCZ,
-    ResourceCNOT,
-    ResourceToffoli,
-    ResourceMultiControlledX,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCRot,
-    ResourceControlledPhaseShift,
-    ResourceTempAND,
-)
-
 from .ops import *
 from .templates import *
