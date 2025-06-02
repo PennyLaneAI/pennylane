@@ -43,4 +43,5 @@ from .op_math import (
     ResourceMultiControlledX,
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceTempAND,
 )    

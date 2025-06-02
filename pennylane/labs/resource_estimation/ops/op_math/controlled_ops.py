@@ -17,7 +17,7 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -815,6 +815,92 @@ class ResourceCNOT(ResourceOperator):
         )
 
 
+class ResourceTempAND(ResourceOperator):
+    r"""Resource class representing a temporary `AND`-gate.
+    
+    This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
+    with it's adjoint (uncompute). 
+    
+    """
+    num_wires = 2
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        Each GateCount object specifies a gate type and its total occurrence count.
+
+        Resources:
+            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        tof = resource_rep(ResourceToffoli, {"elbow": "left"})
+        return [GateCount(tof)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Resources:
+            The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        h = resource_rep(re.ResourceHadamard)
+        cz = resource_rep(ResourceCZ)
+        return [GateCount(h), GateCount(cz)]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
+        Resources:
+            The resources are expressed as one general :class:`~.ResourceMultiControlledX` gate.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(mcx)]
+
+
 class ResourceToffoli(ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
@@ -924,7 +1010,7 @@ class ResourceToffoli(ResourceOperator):
         )
 
         return [
-            GrabWires(2),
+            AllocWires(2),
             GateCount(cnot, 9),
             GateCount(h, 3),
             GateCount(s),
@@ -1196,7 +1282,7 @@ class ResourceMultiControlledX(ResourceOperator):
             return gate_lst
 
         if num_ctrl_wires == 3:  # assuming one work wire:
-            res = [GrabWires(1), GateCount(cnot, 2), GateCount(toffoli, 2), FreeWires(1)]
+            res = [AllocWires(1), GateCount(cnot, 2), GateCount(toffoli, 2), FreeWires(1)]
             gate_lst.extend(res)
             return gate_lst
 
@@ -1204,7 +1290,7 @@ class ResourceMultiControlledX(ResourceOperator):
         r_elbow = resource_rep(ResourceToffoli, {"elbow": "right"})
 
         res = [
-            GrabWires(num_ctrl_wires - 2),
+            AllocWires(num_ctrl_wires - 2),
             GateCount(l_elbow, num_ctrl_wires - 2),
             GateCount(r_elbow, num_ctrl_wires - 2),
             GateCount(toffoli, 1),
@@ -1268,18 +1354,14 @@ class ResourceMultiControlledX(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-#        return [GateCount(
-#            cls.resource_rep(
-#            outer_num_ctrl_wires + num_ctrl_wires,
-#            outer_num_ctrl_values + num_ctrl_values,
-#            )
-#        )
-#        ]
-         
-        return cls.resource_decomp(
-            outer_num_ctrl_wires + num_ctrl_wires,
-            outer_num_ctrl_values + num_ctrl_values,
+        return [GateCount
+            (
+                cls.resource_rep(
+                    outer_num_ctrl_wires + num_ctrl_wires,
+                    outer_num_ctrl_values + num_ctrl_values,
+                )
             )
+        ]
 
     @classmethod
     def default_pow_resource_decomp(

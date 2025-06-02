@@ -100,4 +100,5 @@ from .ops import (
     ResourceCRZ,
     ResourceCRot,
     ResourceControlledPhaseShift,
+    ResourceTempAND,
 )
