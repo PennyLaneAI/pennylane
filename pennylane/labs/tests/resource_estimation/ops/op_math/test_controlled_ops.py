@@ -302,7 +302,7 @@ class TestResourceToffoli:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceToffoli, {})
+        expected_rep = re.CompressedResourceOp(re.ResourceToffoli, {"elbow": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -494,7 +494,7 @@ class TestResourceCRX:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRX, {})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRX, {"eps": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -509,7 +509,6 @@ class TestResourceCRX:
         assert self.op.adjoint_resource_decomp() == expected_res
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(op.resource_rep(), 1)]),
         (2, [re.GateCount(op.resource_rep(), 1)]),
         (5, [re.GateCount(op.resource_rep(), 1)]),
@@ -538,7 +537,7 @@ class TestResourceCRY:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRY, {})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRY, {"eps": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -553,7 +552,6 @@ class TestResourceCRY:
         assert self.op.adjoint_resource_decomp() == expected_res
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(op.resource_rep(), 1)]),
         (2, [re.GateCount(op.resource_rep(), 1)]),
         (5, [re.GateCount(op.resource_rep(), 1)]),
@@ -582,7 +580,7 @@ class TestResourceCRZ:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRZ, {})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRZ, {"eps": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -597,7 +595,6 @@ class TestResourceCRZ:
         assert self.op.adjoint_resource_decomp() == expected_res
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(op.resource_rep(), 1)]),
         (2, [re.GateCount(op.resource_rep(), 1)]),
         (5, [re.GateCount(op.resource_rep(), 1)]),
@@ -626,7 +623,7 @@ class TestResourceCRot:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = re.CompressedResourceOp(re.ResourceCRot, {})
+        expected_rep = re.CompressedResourceOp(re.ResourceCRot, {"eps": None})
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -641,7 +638,6 @@ class TestResourceCRot:
         assert self.op.adjoint_resource_decomp() == expected_res
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(op.resource_rep(), 1)]),
         (2, [re.GateCount(op.resource_rep(), 1)]),
         (5, [re.GateCount(op.resource_rep(), 1)]),
@@ -681,7 +677,7 @@ class TestResourceControlledPhaseShift:
         """Test the compressed representation"""
 
         op = re.ResourceControlledPhaseShift()
-        expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
+        expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {"eps": None})
 
         assert op.resource_rep() == expected
 
@@ -718,10 +714,7 @@ class TestResourceControlledPhaseShift:
             re.GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)
         ]
 
-    pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
-        (1, [re.GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)]),
-    )
+    pow_data = ((1, [re.GateCount(re.ResourceControlledPhaseShift.resource_rep(), 1)]),)
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_pow_decomp(self, z, expected_res):
