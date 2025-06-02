@@ -370,18 +370,18 @@ class TestConstructBatch:
             return qml.expval(qml.PauliZ(0))
 
         batch, fn = construct_batch(circuit, level=None)(0.5)
-        assert len(batch) == 2
-        expected0 = qml.tape.QuantumScript(
-            [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
-        )
+        assert len(batch) == 4
+        expected0 = qml.tape.QuantumScript([qml.RX(1.0 + np.pi, 0)], [qml.expval(qml.PauliZ(0))])
         qml.assert_equal(batch[0], expected0)
-        expected1 = qml.tape.QuantumScript(
-            [qml.RX(1.0 - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
-        )
+        expected1 = qml.tape.QuantumScript([qml.RX(1.0, 0)], [qml.expval(qml.PauliZ(0))])
         qml.assert_equal(batch[1], expected1)
+        expected2 = qml.tape.QuantumScript([qml.RX(1.0, 0)], [qml.expval(qml.PauliZ(0))])
+        qml.assert_equal(batch[2], expected2)
+        expected3 = qml.tape.QuantumScript([qml.RX(1.0 - np.pi, 0)], [qml.expval(qml.PauliZ(0))])
+        qml.assert_equal(batch[3], expected3)
 
-        dummy_res = (1.0, 2.0)
-        expected_res = (1.0 - 2.0) / 2
+        dummy_res = (1.0, 2.0, 3.0, 4.0)
+        expected_res = 0  #  should be (1.0 - 4.0) / 2, but since we don't want final transforms any more this will be 0
         assert qml.numpy.allclose(fn(dummy_res)[0], expected_res)
 
     def test_user_transform_multiple_tapes(self):
