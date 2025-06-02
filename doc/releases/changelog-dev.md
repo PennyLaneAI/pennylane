@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+  that can be subsequently loaded into QNodes and executed. 
+  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit", wires=[0, 1])
+  
+  @qml.qnode(dev)
+  def my_circuit():
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(my_circuit)())
+  0: ──RY(0.20)──X²─┤  <Z>
+  1: ──RX(1.00)─────┤  
+  ```
+  
+  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
+  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
+  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
+
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
@@ -202,6 +227,9 @@
   >>> print(qml.draw(circuit)())
   0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
   ```
+
+* A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
+  [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
 * A :func:`~.decomposition.register_condition` decorator is added that allows users to bind a condition to a
   decomposition rule for when it is applicable. The condition should be a function that takes the
@@ -426,6 +454,8 @@
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
+* Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 
@@ -588,6 +618,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated; non-native transforms being applied
+  to QNodes wherein operators have dynamic wires can lead to incorrect results.
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
+
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
  [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
@@ -602,6 +636,17 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where certain transforms with a native program capture implementation give incorrect results when
+  dynamic wires were present in the circuit. The affected transforms were:
+  * :func:`~pennylane.transforms.cancel_inverses`
+  * :func:`~pennylane.transforms.merge_rotations`
+  * :func:`~pennylane.transforms.single_qubit_fusion`
+  * :func:`~pennylane.transforms.merge_amplitude_embedding`
+  [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
+
+* The `Operator.pow` method has been fixed to raise to the power of 2 the qutrit operators `~.TShift`, `~.TClock`, and `~.TAdd`.
+  [(#7505)](https://github.com/PennyLaneAI/pennylane/pull/7505)
 
 * The queuing behavior of the controlled of a controlled operation is fixed.
   [(#7532)](https://github.com/PennyLaneAI/pennylane/pull/7532)
