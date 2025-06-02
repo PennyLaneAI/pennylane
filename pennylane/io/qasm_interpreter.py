@@ -6,7 +6,7 @@ import functools
 import re
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Any
+from typing import Any, Callable
 
 from openqasm3.ast import (
     AliasStatement,
@@ -125,6 +125,7 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
 
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
+
 @dataclass
 class Variable:
     ty: str
@@ -159,12 +160,12 @@ class Context:
             name (str): the name of the variable.
             node (QASMNode): the QASMNode that corresponds to the update.
         """
-        self.vars[name].val = value
         if self.vars[name].constant:
             raise ValueError(
                 f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                 f"defined on line {self.vars[name].line}"
             )
+        self.vars[name].val = value
         self.vars[name].line = node.span.start_line
 
     def require_wires(self, wires: list):
@@ -194,7 +195,9 @@ class Context:
         if name in self.context:
             return self.context[name]
         else:
-            raise NameError(f"No attribute {name} on Context and no {name} key found on context {self.context}")
+            raise NameError(
+                f"No attribute {name} on Context and no {name} key found on context {self.context}"
+            )
 
 
 def _get_bit_type_val(var):
@@ -351,9 +354,7 @@ class QasmInterpreter:
             if res.val is not None:
                 return res
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        if (
-            name in context["wires"]
-        ):
+        if name in context["wires"]:
             return name
         if name in context.aliases:
             res = context.aliases[name](context)  # evaluate the alias and de-reference
@@ -604,7 +605,9 @@ class QasmInterpreter:
         )
 
     @visit.register(IndexExpression)
-    def visit_index_expression(self, node: IndexExpression, context: Context, aliasing: bool = False):
+    def visit_index_expression(
+        self, node: IndexExpression, context: Context, aliasing: bool = False
+    ):
         """
         Registers an index expression.
 
