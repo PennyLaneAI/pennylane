@@ -253,10 +253,6 @@ def needs_final_transform(level, num_user_transforms, has_final_transform):
         return False
     if level in ("user", "gradient"):
         return True
-    if isinstance(level, int):
-        return level == num_user_transforms
-    if isinstance(level, slice):
-        return level.stop == num_user_transforms
     return False
 
 
