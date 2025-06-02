@@ -26,7 +26,7 @@ def todd(tape, pre_optimize=True):
     Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
     to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
-    After `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
+    After running `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 

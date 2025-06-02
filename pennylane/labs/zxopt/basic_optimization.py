@@ -23,7 +23,7 @@ from .zx_conversion import _tape2pyzx
 def basic_optimization(tape):
     r"""
     Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit with :class:`~Hadamard` gates.
-    This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize` by moving :class:`~Hadamard` to create big and few phase polynomial blocks.
+    This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize` by moving :class:`~Hadamard` gates in order to create big and few phase polynomial blocks.
 
     Args:
         tape (qml.tape.QuantumScript): Input PennyLane circuit.
@@ -35,7 +35,7 @@ def basic_optimization(tape):
 
     **Example**
 
-    This pass tried to push :class:`~Hadamard` gates as far as possible to the side to allow better phase polynomial optimization via, e.g., :func:`~todd`.
+    This pass tries to push :class:`~Hadamard` gates as far as possible to the side to allow better phase polynomial optimization via, e.g., :func:`~todd`.
 
     .. code-block:: python
 
