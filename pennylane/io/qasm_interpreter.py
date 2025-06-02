@@ -119,6 +119,7 @@ class QasmInterpreter:
             f"There may be unprocessed QASM code."
         )
 
+    # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
     def visit_qubit_declaration(
         self, node: QubitDeclaration, context: dict
