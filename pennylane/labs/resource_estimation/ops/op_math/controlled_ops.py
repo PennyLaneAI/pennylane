@@ -17,7 +17,7 @@ from typing import Dict
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -816,11 +816,12 @@ class ResourceCNOT(ResourceOperator):
 
 class ResourceTempAND(ResourceOperator):
     r"""Resource class representing a temporary `AND`-gate.
-    
+
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
-    with it's adjoint (uncompute). 
-    
+    with it's adjoint (uncompute).
+
     """
+
     num_wires = 2
 
     @property
@@ -840,12 +841,12 @@ class ResourceTempAND(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list of GateCount objects representing the resources of the operator. 
+        r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
             The resources are obtained from Figure 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
-        
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
                 represents a specific quantum gate and the number of times it appears
@@ -1299,9 +1300,7 @@ class ResourceMultiControlledX(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_adjoint_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values
-    ) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, num_ctrl_wires, num_ctrl_values) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -1363,9 +1362,7 @@ class ResourceMultiControlledX(ResourceOperator):
         ]
 
     @classmethod
-    def default_pow_resource_decomp(
-        cls, pow_z, num_ctrl_wires, num_ctrl_values
-    ) -> list[GateCount]:
+    def default_pow_resource_decomp(cls, pow_z, num_ctrl_wires, num_ctrl_values) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
@@ -1420,6 +1417,7 @@ class ResourceCRX(ResourceOperator):
     """
 
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1562,6 +1560,7 @@ class ResourceCRY(ResourceOperator):
     """
 
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1700,6 +1699,7 @@ class ResourceCRZ(ResourceOperator):
     """
 
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1844,6 +1844,7 @@ class ResourceCRot(ResourceOperator):
     """
 
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps
@@ -1993,6 +1994,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
     """
 
     num_wires = 2
+    resource_keys = {"eps"}
 
     def __init__(self, eps=None, wires=None) -> None:
         self.eps = eps

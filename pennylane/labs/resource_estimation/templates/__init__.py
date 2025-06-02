@@ -13,6 +13,6 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .identity import *
-from .qubit import *
-from .op_math import *
+from .trotter import *
+from .stateprep import *
+from .subroutines import *

@@ -16,7 +16,7 @@ from functools import singledispatch
 from typing import Dict, List, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -119,7 +119,7 @@ class ResourceAdjoint(ResourceOperator):
 
         self.base_op = base_cmpr_op
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -387,7 +387,7 @@ class ResourceControlled(ResourceOperator):
         self.num_ctrl_wires = num_ctrl_wires
         self.num_ctrl_values = num_ctrl_values
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -725,7 +725,7 @@ class ResourcePow(ResourceOperator):
         self.z = z
         self.base_op = base_cmpr_op
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -951,7 +951,7 @@ class ResourceProd(ResourceOperator):
                 "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -1055,7 +1055,7 @@ class ResourceChangeBasisOp(ResourceOperator):
                 "All ops of the ChangeofBasisOp must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
@@ -1148,6 +1148,30 @@ class ResourceChangeBasisOp(ResourceOperator):
         return [
             GateCount(cmpr_compute_op),
             GateCount(cmpr_base_op),
+            GateCount(cmpr_uncompute_op),
+        ]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+        cmpr_compute_op: CompressedResourceOp,
+        cmpr_base_op: CompressedResourceOp,
+        cmpr_uncompute_op: CompressedResourceOp,
+    ) -> List:
+        return [
+            GateCount(cmpr_compute_op),
+            GateCount(
+                resource_rep(
+                    re.ResourceControlled,
+                    {
+                        "base_cmpr_op": cmpr_base_op,
+                        "num_ctrl_wires": ctrl_num_ctrl_wires,
+                        "num_ctrl_values": ctrl_num_ctrl_values,
+                    },
+                )
+            ),
             GateCount(cmpr_uncompute_op),
         ]
 
