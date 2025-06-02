@@ -217,7 +217,7 @@ class QasmInterpreter:
     """
 
     @functools.singledispatchmethod
-    def visit(self, node: QASMNode, context: dict, aliasing: bool = False):
+    def visit(self, node: QASMNode, context: dict, aliasing: bool = False):  # pylint: disable=unused-argument
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
         The purpose of this function is to pass each node to the appropriate handler.
@@ -231,8 +231,8 @@ class QasmInterpreter:
             NotImplementedError: When a (so far) unsupported node type is encountered.
         """
         if re.search("Literal", node.__class__.__name__):  # There is no single "Literal" base class
-            return self.visit_literal(node, context)
-        if isinstance(node, Callable):
+            return self.visit_literal(node)
+        if callable(node):
             return self.visit_callable(node, context)  # cannot register Callable
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
@@ -382,7 +382,17 @@ class QasmInterpreter:
         }
 
     @visit.register(ArrayLiteral)
-    def visit_array_literal(self, node: QASMNode, context: dict):
+    def visit_array_literal(self, node: ArrayLiteral, context: dict):
+        """
+        Evaluates an array literal.
+
+        Args:
+            node (ArrayLiteral): The array literal QASMNode.
+            context (dict): The current context.
+
+        Returns:
+            list: The evaluated array.
+        """
         return [self.visit(literal, context) for literal in node.values]
 
     @visit.register(QuantumGate)
@@ -552,9 +562,7 @@ class QasmInterpreter:
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
-            return eval(
-                f"{node.op.name}{float(self.visit(node.expression, context))}"
-            )  # pylint: disable=eval-used
+            return eval(f"{node.op.name}{float(self.visit(node.expression, context))}")  # pylint: disable=eval-used
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(
                 f"{node.op.name} assignment operators should only be used in classical assignments,"
@@ -581,9 +589,10 @@ class QasmInterpreter:
 
         if aliasing:  # we are registering an alias
             return lambda cntxt: _index_into_var(self._alias(node, cntxt), node)
-        else:  # we are just evaluating an index
-            var = self.retrieve_variable(node.collection.name, context)
-            return _index_into_var(var, node)
+
+        # else we are just evaluating an index
+        var = self.retrieve_variable(node.collection.name, context)
+        return _index_into_var(var, node)
 
     def _alias(self, node: Identifier | IndexExpression, context: dict):
         """
@@ -618,22 +627,23 @@ class QasmInterpreter:
         """
         if aliasing:  # we are registering an alias
             return partial(self._alias, node)
-        else:  # else we are evaluating an alias
-            try:
-                var = self.retrieve_variable(node.name, context)
-                value = var["val"] if isinstance(var, dict) and "val" in var else var
-                if isinstance(value, Callable):
-                    var["val"] = value(context)
-                    var["line"] = node.span.start_line
-                    value = var["val"]
-                return value
-            except NameError as e:
-                raise NameError(
-                    str(e)
-                    or f"Reference to an undeclared variable {node.name} in {context['name']}."
-                ) from e
+        # else we are evaluating an alias
+        try:
+            var = self.retrieve_variable(node.name, context)
+            value = var["val"] if isinstance(var, dict) and "val" in var else var
+            if callable(value):
+                var["val"] = value(context)
+                var["line"] = node.span.start_line
+                value = var["val"]
+            return value
+        except NameError as e:
+            raise NameError(
+                str(e)
+                or f"Reference to an undeclared variable {node.name} in {context['name']}."
+            ) from e
 
-    def visit_callable(self, func: Callable, context: dict):
+    @staticmethod
+    def visit_callable(func: Callable, context: dict):
         """
         Visits a Callable.
 
@@ -644,9 +654,10 @@ class QasmInterpreter:
         Returns:
             The result of the called callable.
         """
-        return func()
+        return func(context)
 
-    def visit_literal(self, node: Expression, context: dict):
+    @staticmethod
+    def visit_literal(node: Expression):
         """
         Visits a literal.
 
