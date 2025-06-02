@@ -124,6 +124,92 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
 
+def _init_vars(context: dict):
+    """
+    Inits the vars dict on the current context.
+    Args:
+        context (dict): the current context.
+    """
+    if "vars" not in context:
+        context["vars"] = dict()
+
+
+def _init_aliases(context: dict):
+    """
+    Inits the aliases dict on the current context.
+    Args:
+        context (dict): the current context.
+    """
+    if "aliases" not in context:
+        context["aliases"] = dict()
+
+
+def _get_bit_type_val(var):
+    return bin(var["val"])[2:].zfill(var["size"])
+
+
+def _update_var(value: any, name: str, node: QASMNode, context: dict):
+    """
+    Updates a variable, or raises if it is constant.
+    Args:
+        value (any): the value to set.
+        name (str): the name of the variable.
+        node (QASMNode): the QASMNode that corresponds to the update.
+        context (dict): the current context.
+    """
+    context["vars"][name]["val"] = value
+    if context["vars"][name]["constant"]:
+        raise ValueError(
+            f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+            f"defined on line {context['vars'][name]['line']}"
+        )
+    context["vars"][name]["line"] = node.span.start_line
+
+
+def _index_into_var(var: dict, node: IndexExpression):
+    """
+    Index into a variable using an IndexExpression.
+
+    Args:
+        var (Variable): The data structure representing the variable to index.
+
+    Returns:
+        The indexed slice of the variable.
+    """
+    if var["ty"] == "BitType":
+        var = bin(var["val"])[2:].zfill(var["size"])
+    else:
+        var = var["val"]
+    if isinstance(node.index[0], RangeDefinition):
+        return var[node.index[0].start.value: node.index[0].end.value]
+    if re.search("Literal", node.index[0].__class__.__name__):
+        return var[node.index[0].value]
+    raise TypeError(
+        f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+    )
+
+
+def _require_wires(wires: list, context: dict):
+    """
+    Simple helper that checks if we have wires in the current context.
+
+    Args:
+        context (dict): The current context.
+        wires (list): The wires that are required.
+
+    Raises:
+        NameError: If the context is missing a wire.
+    """
+    missing_wires = []
+    for wire in wires:
+        if wire not in context["wires"]:
+            missing_wires.append(wire)
+    if len(missing_wires) > 0:
+        raise NameError(
+            f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
+        )
+
+
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -191,24 +277,6 @@ class QasmInterpreter:
         """
         context["wires"].append(node.qubit.name)
 
-    @staticmethod
-    def _update_var(value: any, name: str, node: QASMNode, context: dict):
-        """
-        Updates a variable, or raises if it is constant.
-        Args:
-            value (any): the value to set.
-            name (str): the name of the variable.
-            node (QASMNode): the QASMNode that corresponds to the update.
-            context (dict): the current context.
-        """
-        context["vars"][name]["val"] = value
-        if context["vars"][name]["constant"]:
-            raise ValueError(
-                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                f"defined on line {context['vars'][name]['line']}"
-            )
-        context["vars"][name]["line"] = node.span.start_line
-
     @visit.register(ClassicalAssignment)
     def visit_classical_assignment(self, node: QASMNode, context: dict):
         """
@@ -222,7 +290,7 @@ class QasmInterpreter:
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
         res = self.visit(node.rvalue, context)
-        self._update_var(res, name, node, context)
+        _update_var(res, name, node, context)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: dict):
@@ -232,7 +300,7 @@ class QasmInterpreter:
             node (QASMNode): the alias QASMNode.
             context (dict): the current context.
         """
-        self._init_aliases(context)
+        _init_aliases(context)
         context["aliases"][node.target.name] = self.visit(node.value, context, aliasing=True)
 
     @staticmethod
@@ -269,30 +337,6 @@ class QasmInterpreter:
             f"last updated on line {context['vars'][name]['line'] if name in context['vars'] else 'unknown'}."
         )
 
-    @staticmethod
-    def _init_vars(context: dict):
-        """
-        Inits the vars dict on the current context.
-        Args:
-            context (dict): the current context.
-        """
-        if "vars" not in context:
-            context["vars"] = dict()
-
-    @staticmethod
-    def _init_aliases(context: dict):
-        """
-        Inits the aliases dict on the current context.
-        Args:
-            context (dict): the current context.
-        """
-        if "aliases" not in context:
-            context["aliases"] = dict()
-
-    @staticmethod
-    def _get_bit_type_val(var):
-        return bin(var["val"])[2:].zfill(var["size"])
-
     @visit.register(ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: dict):
         """
@@ -315,7 +359,7 @@ class QasmInterpreter:
             constant (bool): Whether the classical variable is a constant.
         """
 
-        self._init_vars(context)
+        _init_vars(context)
         if node.init_expression is not None:
             if isinstance(node.init_expression, BitstringLiteral):
                 context["vars"][node.identifier.name] = {
@@ -412,7 +456,7 @@ class QasmInterpreter:
             for q in range(len(node.qubits))
         ]
 
-        self._require_wires(wires, context)
+        _require_wires(wires, context)
 
         if context["wire_map"] is not None:
             wires = list(map(lambda wire: context["wire_map"][wire], wires))
@@ -530,29 +574,6 @@ class QasmInterpreter:
             f"on line {node.span.start_line}."
         )
 
-    @staticmethod
-    def _index_into_var(var: dict, node: IndexExpression):
-        """
-        Index into a variable using an IndexExpression.
-
-        Args:
-            var (Variable): The data structure representing the variable to index.
-
-        Returns:
-            The indexed slice of the variable.
-        """
-        if var["ty"] == "BitType":
-            var = bin(var["val"])[2:].zfill(var["size"])
-        else:
-            var = var["val"]
-        if isinstance(node.index[0], RangeDefinition):
-            return var[node.index[0].start.value: node.index[0].end.value]
-        if re.search("Literal", node.index[0].__class__.__name__):
-            return var[node.index[0].value]
-        raise TypeError(
-            f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
-        )
-
     @visit.register(IndexExpression)
     def visit_index_expression(self, node: IndexExpression, context: dict, aliasing: bool = False):
         """
@@ -568,10 +589,10 @@ class QasmInterpreter:
         """
 
         if aliasing:  # we are registering an alias
-            return lambda cntxt: self._index_into_var(self._alias(node, cntxt), node)
+            return lambda cntxt: _index_into_var(self._alias(node, cntxt), node)
         else:  # we are just evaluating an index
             var = self.retrieve_variable(node.collection.name, context)
-            return self._index_into_var(var, node)
+            return _index_into_var(var, node)
 
     def _alias(self, node: Identifier | IndexExpression, context: dict):
         """
@@ -585,7 +606,7 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-            return self.retrieve_variable(node.collection.name, context)
+           return self.retrieve_variable(node.collection.name, context)
         except NameError as e:
             raise NameError(
                 f"Attempt to alias an undeclared variable "
@@ -647,24 +668,3 @@ class QasmInterpreter:
             The value of the literal.
         """
         return node.value
-
-    @staticmethod
-    def _require_wires(wires: list, context: dict):
-        """
-        Simple helper that checks if we have wires in the current context.
-
-        Args:
-            context (dict): The current context.
-            wires (list): The wires that are required.
-
-        Raises:
-            NameError: If the context is missing a wire.
-        """
-        missing_wires = []
-        for wire in wires:
-            if wire not in context["wires"]:
-                missing_wires.append(wire)
-        if len(missing_wires) > 0:
-            raise NameError(
-                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
-            )
