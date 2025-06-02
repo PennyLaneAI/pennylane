@@ -1087,6 +1087,7 @@ class QasmInterpreter:
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
             # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
+            # TODO: need to scrub lhs and rhs for malicious code too? could have a bad AST injected
             return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(
@@ -1114,6 +1115,7 @@ class QasmInterpreter:
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
             # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
+            # TODO: need to scrub lhs and rhs for malicious code too? could have a bad AST injected
             return eval(
                 f"{node.op.name}{self.visit(node.expression, context)}"
             )  # pylint: disable=eval-used
