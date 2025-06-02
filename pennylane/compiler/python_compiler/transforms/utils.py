@@ -14,32 +14,31 @@
 """Registering transforms with plxpr to catalyst map"""
 
 import pennylane as qml
-from pennylane.devices.preprocess import null_postprocessing
 
 from .apply_transform_sequence import register_pass
 
 
-def xdsl_transform(_klass):
+def xdsl_transform(cls):
     """Register the xdsl transform into the plxpr to catalyst map"""
 
     # avoid dependency on catalyst
     import catalyst  # pylint: disable=import-outside-toplevel
 
-    def identity_transform(tape):
-        """Stub, we only need the name to be unique"""
-        return tape, null_postprocessing
+    def null_transform():
+        """Stub, we only need the name to be unique
+        This will never be executed
+        """
 
-    identity_transform.__name__ = "xdsl_transform" + _klass.__name__
-    transform = qml.transform(identity_transform)
+    null_transform.__name__ = "xdsl_transform" + cls.__name__
+    transform = qml.transform(null_transform)
 
     # Map from plxpr to register transform
-    catalyst.from_plxpr.register_transform(transform, _klass.name, False)
+    catalyst.from_plxpr.register_transform(transform, cls.name, False)
 
     # Register this pass as available in the apply-transform-sequence
     # interpreter
-    def get_pass_instance():
-        return _klass()
+    def get_pass_cls():
+        return cls
 
-    register_pass(_klass.name, get_pass_instance)
-
+    register_pass(cls.name, get_pass_cls)
     return transform
