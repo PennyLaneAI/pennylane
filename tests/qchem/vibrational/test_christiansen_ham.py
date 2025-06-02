@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit Tests for the Christiansen Hamiltonian construction functions."""
 import os
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -40,17 +41,16 @@ from pennylane.qchem.vibrational.christiansen_utils import (
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
 
-ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
-cform_coeffs_ref = os.path.join(ref_dir, "cform_coeffs_ref")
-cform_dipole_ref_x = os.path.join(ref_dir, "cform_dipole_ref_x")
-cform_ham_ref = os.path.join(ref_dir, "cform_ham_ref")
-cform_ops_ref = os.path.join(ref_dir, "cform_ops_ref")
+from .test_ref_files.cform_ops_data import (
+    cform_coeffs_ref,
+    cform_dipole_ref_x,
+    cform_ham_ref,
+    cform_ops_ref,
+)
 
 cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
 
-pes_file = (
-    Path(__file__).resolve().parent / "test_ref_files" / "H2S_3D_PES.hdf5"
-)
+pes_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S_3D_PES.hdf5"
 
 h5py = pytest.importorskip("h5py")
 
@@ -101,6 +101,7 @@ def test_christiansen_bosonic():
     ops, coeffs = zip(*list(christiansen_bos_op.items()))
 
     for i, ele in enumerate(cform_ops_ref):
+        print("ssssssssss", i, ele)
         cform_ops_ref[i] = BoseWord(ele)
 
     assert list(ops) == cform_ops_ref

@@ -21,10 +21,11 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import scipy as sp
 
-import pennylane as qml
+from pennylane import qchem
 from pennylane import concurrency
 from pennylane.qchem.vibrational.christiansen_utils import _read_data, _write_data
-from pennylane.qchem import VibrationalPES, localize_normal_modes, optimize_geometry
+from pennylane.qchem.vibrational.vibrational_class import VibrationalPES, optimize_geometry
+from pennylane.qchem.vibrational.localize_modes import localize_normal_modes
 from pennylane.qchem.vibrational.vibrational_class import (
     _get_dipole,
     _harmonic_analysis,
@@ -149,7 +150,7 @@ def _local_pes_onemode(
             scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * sp.constants.c))
             positions = np.array(init_geom + scaling * gridpoint * vec)
 
-            displ_mol = qml.qchem.Molecule(
+            displ_mol = qchem.Molecule(
                 molecule.symbols,
                 positions,
                 basis_name=molecule.basis_name,
@@ -360,7 +361,7 @@ def _local_pes_twomode(
             positions = np.array(
                 init_geom + scaling_a * gridpoint_1 * vec_a + scaling_b * gridpoint_2 * vec_b
             )
-            displ_mol = qml.qchem.Molecule(
+            displ_mol = qchem.Molecule(
                 molecule.symbols,
                 positions,
                 basis_name=molecule.basis_name,
@@ -545,7 +546,7 @@ def _local_pes_threemode(
                 + scaling_c * gridpoint_3 * vec_c
             )
 
-            displ_mol = qml.qchem.Molecule(
+            displ_mol = qchem.Molecule(
                 molecule.symbols,
                 positions,
                 basis_name=molecule.basis_name,
@@ -794,7 +795,7 @@ def vibrational_pes(
 
         geom_eq = optimize_geometry(molecule, method)
 
-        mol_eq = qml.qchem.Molecule(
+        mol_eq = qchem.Molecule(
             molecule.symbols,
             geom_eq,
             unit=molecule.unit,
