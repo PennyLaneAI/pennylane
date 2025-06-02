@@ -124,46 +124,64 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
 
-def _init_vars(context: dict):
-    """
-    Inits the vars dict on the current context.
-    Args:
-        context (dict): the current context.
-    """
-    if "vars" not in context:
-        context["vars"] = dict()
+class ContextManager:
+
+    def __init__(self, context):
+        self.context = context
+
+    def init_vars(self):
+        """
+        Inits the vars dict on the current context.
+        """
+        if "vars" not in self.context:
+            self.context["vars"] = dict()
 
 
-def _init_aliases(context: dict):
-    """
-    Inits the aliases dict on the current context.
-    Args:
-        context (dict): the current context.
-    """
-    if "aliases" not in context:
-        context["aliases"] = dict()
+    def init_aliases(self):
+        """
+        Inits the aliases dict on the current context.
+        """
+        if "aliases" not in self.context:
+            self.context["aliases"] = dict()
+
+    def update_var(self, value: any, name: str, node: QASMNode, ):
+        """
+        Updates a variable, or raises if it is constant.
+        Args:
+            value (any): the value to set.
+            name (str): the name of the variable.
+            node (QASMNode): the QASMNode that corresponds to the update.
+        """
+        self.context["vars"][name]["val"] = value
+        if self.context["vars"][name]["constant"]:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"defined on line {self.context['vars'][name]['line']}"
+            )
+        self.context["vars"][name]["line"] = node.span.start_line
+
+    def require_wires(self, wires: list):
+        """
+        Simple helper that checks if we have wires in the current context.
+
+        Args:
+            wires (list): The wires that are required.
+
+        Raises:
+            NameError: If the context is missing a wire.
+        """
+        missing_wires = []
+        for wire in wires:
+            if wire not in self.context["wires"]:
+                missing_wires.append(wire)
+        if len(missing_wires) > 0:
+            raise NameError(
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.context['name']}"
+            )
 
 
 def _get_bit_type_val(var):
     return bin(var["val"])[2:].zfill(var["size"])
-
-
-def _update_var(value: any, name: str, node: QASMNode, context: dict):
-    """
-    Updates a variable, or raises if it is constant.
-    Args:
-        value (any): the value to set.
-        name (str): the name of the variable.
-        node (QASMNode): the QASMNode that corresponds to the update.
-        context (dict): the current context.
-    """
-    context["vars"][name]["val"] = value
-    if context["vars"][name]["constant"]:
-        raise ValueError(
-            f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-            f"defined on line {context['vars'][name]['line']}"
-        )
-    context["vars"][name]["line"] = node.span.start_line
 
 
 def _index_into_var(var: dict, node: IndexExpression):
@@ -187,27 +205,6 @@ def _index_into_var(var: dict, node: IndexExpression):
     raise TypeError(
         f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
     )
-
-
-def _require_wires(wires: list, context: dict):
-    """
-    Simple helper that checks if we have wires in the current context.
-
-    Args:
-        context (dict): The current context.
-        wires (list): The wires that are required.
-
-    Raises:
-        NameError: If the context is missing a wire.
-    """
-    missing_wires = []
-    for wire in wires:
-        if wire not in context["wires"]:
-            missing_wires.append(wire)
-    if len(missing_wires) > 0:
-        raise NameError(
-            f"Attempt to reference wire(s): {missing_wires} that have not been declared in {context['name']}"
-        )
 
 
 class QasmInterpreter:
@@ -292,7 +289,7 @@ class QasmInterpreter:
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
         res = self.visit(node.rvalue, context)
-        _update_var(res, name, node, context)
+        ContextManager(context).update_var(res, name, node)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: dict):
@@ -302,7 +299,7 @@ class QasmInterpreter:
             node (QASMNode): the alias QASMNode.
             context (dict): the current context.
         """
-        _init_aliases(context)
+        ContextManager(context).init_aliases()
         context["aliases"][node.target.name] = self.visit(node.value, context, aliasing=True)
 
     @staticmethod
@@ -361,7 +358,7 @@ class QasmInterpreter:
             constant (bool): Whether the classical variable is a constant.
         """
 
-        _init_vars(context)
+        ContextManager(context).init_vars()
 
         context["vars"][node.identifier.name] = {
             "ty": node.type.__class__.__name__,
@@ -459,7 +456,7 @@ class QasmInterpreter:
             for q in range(len(node.qubits))
         ]
 
-        _require_wires(wires, context)
+        ContextManager(context).require_wires(wires)
 
         if context["wire_map"] is not None:
             wires = list(map(lambda wire: context["wire_map"][wire], wires))
@@ -666,7 +663,6 @@ class QasmInterpreter:
 
         Args:
             node (Literal): The literal.
-            context (dict): The current context.
 
         Returns:
             The value of the literal.
