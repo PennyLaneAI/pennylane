@@ -15,24 +15,23 @@
 written using xDSL."""
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Union
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
 from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
+from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.quantum_dialect import (
+    AllocOp,
     CustomOp,
     ExtractOp,
     GlobalPhaseOp,
-    QubitType,
-    AllocOp,
 )
 from pennylane.operation import Operator
-
 
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 from_str_to_PL_gate = {
@@ -113,24 +112,19 @@ def resolve_constant_wire(operand):
     raise TypeError(f"Operand {operand} is not a result or constant-producing op")
 
 
-def get_parameters(op: Operator) -> list[float | int]:
+def from_qml_to_xdsl_params(op: Operator) -> list[float | int]:
     """Get the parameters from the operation."""
     return [resolve_constant_params(p) for p in op.params if p is not None]
 
 
-def get_wires(op: Operator) -> list[int]:
+def from_qml_to_xdsl_wires(op: Operator) -> list[int]:
     """Get the wires from the operation."""
     if not hasattr(op, "in_qubits"):
         return []
     return [resolve_constant_wire(w) for w in op.in_qubits if w is not None]
 
 
-def get_op_name(op: Operator) -> str:
-    """Get the name of the operation from the properties."""
-    return op.properties["gate_name"].data
-
-
-def resolve_gate(name: str):
+def resolve_gate(name: str) -> Operator:
     """Resolve the gate from the name."""
     try:
         return from_str_to_PL_gate[name]
@@ -138,12 +132,29 @@ def resolve_gate(name: str):
         raise ValueError(f"Unsupported gate: {name}") from exc
 
 
-def reconstruct_gate(op: CustomOp):
-    """Reconstruct the gate from the operation."""
-    gate_name = get_op_name(op)
-    parameters = get_parameters(op)
-    wires = flatten(get_wires(op))
+def from_xdsl_to_qml_op(op: CustomOp):
+    """Convert an xDSL CustomOp to a PennyLane operation."""
+    gate_name = op.properties["gate_name"].data
+    parameters = from_qml_to_xdsl_params(op)
+    wires = flatten(from_qml_to_xdsl_wires(op))
     return resolve_gate(gate_name)(*parameters, wires=wires)
+
+
+def from_qml_to_xdsl_wire(wire: int):
+    """Convert a PennyLane wire to an xDSL SSAValue."""
+    return IntegerAttr(wire, IntegerType(64))
+
+
+def from_qml_to_xdsl_param(param: Union[int, float]):
+    """Convert a PennyLane parameter to an xDSL SSAValue."""
+    val = param.item() if hasattr(param, "item") else param
+    if isinstance(val, int):
+        attr = IntegerAttr(val, IntegerType(64))
+    elif isinstance(val, float):
+        attr = FloatAttr(val, Float64Type())
+    else:
+        raise TypeError(f"Unsupported parameter type: {type(val)}")
+    return attr
 
 
 # pylint: disable=too-few-public-methods
@@ -151,107 +162,100 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     """A pattern that rewrites CustomOps to their decomposition."""
 
     def __init__(self, module):
-        self.module = module
         super().__init__()
+        self.module = module
+        self.extracted_qubits: dict[int, SSAValue] = {}
+        # TODO: This would require a proper rounding
+        self.extracted_params: dict[Union[int, float], SSAValue] = {}
+        self.quantum_register = None
 
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Rewrite the function by replacing CustomOps with their decomposition."""
-        for op in funcOp.body.walk():
 
-            if not isinstance(op, CustomOp):
+        for xdsl_op in funcOp.body.walk():
+
+            # This assumes that the AllocOp is placed at the top of the program
+            if isinstance(xdsl_op, AllocOp):
+                self.quantum_register = xdsl_op.qreg
                 continue
 
-            concrete_op = reconstruct_gate(op)
-
-            if not concrete_op.has_decomposition:
+            # TODO: This doesn't decompose PL operators that are not CustomOp (e.g., QubitUnaryOp)
+            if not isinstance(xdsl_op, CustomOp):
                 continue
 
-            decomp_ops = concrete_op.decomposition()
+            if self.quantum_register is None:
+                raise ValueError("Quantum register (AllocOp) not found in the function.")
+
+            qml_op = from_xdsl_to_qml_op(xdsl_op)
+
+            for idx, wire in enumerate(qml_op.wires):
+                self.extracted_qubits[wire] = xdsl_op.in_qubits[idx]
+
+            if not qml_op.has_decomposition:
+                continue
+
+            qml_decomp_ops = qml_op.decomposition()
             last_custom_op = None
 
-            qreg_val = None
-            for candidate_op in op.parent.walk():
-                if isinstance(candidate_op, AllocOp):
-                    qreg_val = candidate_op.qreg
-                    break
+            for qml_decomp_op in qml_decomp_ops:
 
-            if qreg_val is None:
-                raise Exception("AllocOp not found; cannot extract qubits")
+                params_xdsl: list[SSAValue] = []
+                for param in qml_decomp_op.parameters:
 
-            for qml_op in decomp_ops:
-                parameters_xdsl = []
-                wires_xdsl = []
+                    xdsl_param = from_qml_to_xdsl_param(param)
 
-                for param in qml_op.parameters:
-                    val = param.item() if hasattr(param, "item") else param
-                    if isinstance(val, int):
-                        attr = IntegerAttr(val, IntegerType(64))
-                    elif isinstance(val, float):
-                        attr = FloatAttr(val, Float64Type())
+                    if xdsl_param in self.extracted_params:
+                        const_ssa = self.extracted_params[xdsl_param]
                     else:
-                        raise TypeError(f"Unsupported parameter type: {type(val)}")
+                        const_op = ConstantOp(value=xdsl_param)
+                        rewriter.insert_op(const_op, InsertPoint.before(xdsl_op))
+                        const_ssa = const_op.result
+                        self.extracted_params[xdsl_param] = const_ssa
 
-                    const_op = ConstantOp(value=attr)
-                    rewriter.insert_op(const_op, InsertPoint.before(op))
-                    parameters_xdsl.append(const_op.result)
+                    params_xdsl.append(const_ssa)
 
-                # TODO: I will change this since it extracts wires unnecessarily
-                for wire in qml_op.wires:
-                    wire_attr = IntegerAttr(wire, IntegerType(64))
+                wires_xdsl: list[SSAValue] = []
+                for wire in qml_decomp_op.wires:
 
-                    extract_op = ExtractOp(
-                        operands=(qreg_val, None),
-                        properties={"idx_attr": wire_attr},
-                        attributes={},
-                        successors=(),
-                        regions=(),
-                        result_types=(QubitType(),),
-                    )
+                    if wire in self.extracted_qubits:
+                        qubit_ssa = self.extracted_qubits[wire]
+                    else:
+                        wire_xdsl = from_qml_to_xdsl_wire(wire)
+                        extract_op = ExtractOp(qreg=self.quantum_register, idx=wire_xdsl)
+                        rewriter.insert_op(extract_op, InsertPoint.before(xdsl_op))
+                        qubit_ssa = extract_op.qubit
+                        self.extracted_qubits[wire] = qubit_ssa
 
-                    if last_custom_op is None:
-                        rewriter.insert_op(extract_op, InsertPoint.before(op))
+                    wires_xdsl.append(qubit_ssa)
 
-                    wires_xdsl.append(extract_op.qubit)
-
-                wires_xdsl = wires_xdsl if last_custom_op is None else last_custom_op.out_qubits
+                if last_custom_op is not None:
+                    wires_xdsl = last_custom_op.out_qubits
 
                 # At this stage, this is the only 'special' operator we handle (GlobalPhase does not have wires)
-                if qml_op.name == "GlobalPhase":
-
-                    custom_op = GlobalPhaseOp(
-                        operands=(*parameters_xdsl, None, None),
-                        properties={
-                            "gate_name": StringAttr(qml_op.name),
-                        },
-                        attributes={},
-                        successors=op.successors,
-                        regions=(),
-                        result_types=(QubitType(),),
-                    )
-
+                if qml_decomp_op.name == "GlobalPhase":
+                    # pylint: disable=unexpected-keyword-arg
+                    custom_op = GlobalPhaseOp(params=params_xdsl)
                 else:
-
                     custom_op = CustomOp(
-                        operands=(*parameters_xdsl, *wires_xdsl, None, None),
-                        properties={
-                            "gate_name": StringAttr(qml_op.name),
-                        },
-                        attributes={},
-                        successors=op.successors,
-                        regions=(),
-                        result_types=(QubitType(), []),
+                        params=params_xdsl,
+                        in_qubits=wires_xdsl,
+                        gate_name=qml_decomp_op.name,
                     )
 
-                rewriter.insert_op(custom_op, InsertPoint.before(op))
-
+                rewriter.insert_op(custom_op, InsertPoint.before(xdsl_op))
                 last_custom_op = custom_op
 
-            if op.results:
-                op.results[0].replace_by(last_custom_op.results[0])
+            if xdsl_op.results:
+                old_results = list(xdsl_op.results)
+                new_results = list(last_custom_op.results)
+                if len(old_results) != len(new_results):
+                    raise NotImplementedError
+                for old_res, new_res in zip(old_results, new_results, strict=True):
+                    old_res.replace_by(new_res)
 
-            rewriter.erase_op(op)
+            rewriter.erase_op(xdsl_op)
 
 
 @dataclass(frozen=True)
