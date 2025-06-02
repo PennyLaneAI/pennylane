@@ -231,5 +231,6 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "vn_entanglement_entropy",
+    "givens_decomposition",
     "where",
 ]
