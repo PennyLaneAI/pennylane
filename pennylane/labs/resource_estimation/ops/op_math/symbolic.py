@@ -16,7 +16,7 @@ from functools import singledispatch
 from typing import Dict, List, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -1164,10 +1164,10 @@ def _(action: GateCount):
 
 
 @_apply_adj.register
-def _(action: GrabWires):
+def _(action: AllocWires):
     return FreeWires(action.n)
 
 
 @_apply_adj.register
 def _(action: FreeWires):
-    return GrabWires(action.n)
+    return AllocWires(action.n)
