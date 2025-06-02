@@ -182,10 +182,7 @@ class Context:
             if res.val is not None:
                 return res
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
-        raise TypeError(
-            f"Attempt to use undeclared variable {name} in {self.name}"
-        )
-
+        raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
         self,
