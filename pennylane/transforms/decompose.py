@@ -171,7 +171,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
 
-            if self.stopping_condition(op):
+            if self._stopping_condition(op):
                 return self.interpret_operation(op)
 
             max_expansion = (
@@ -193,7 +193,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def _evaluate_jaxpr_decomposition(self, op: qml.operation.Operator):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
-            if self.stopping_condition(op):
+            if self._stopping_condition(op):
                 return self.interpret_operation(op)
 
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
