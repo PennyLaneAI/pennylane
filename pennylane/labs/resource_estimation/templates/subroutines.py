@@ -1370,8 +1370,8 @@ class ResourceQROM(ResourceOperator):
     def default_resource_decomp(
         cls,
         num_bitstrings,
-        num_bit_flips,
         size_bitstring,
+        num_bit_flips,
         select_swap_depth=None,
         clean=True,
         **kwargs,
@@ -1440,8 +1440,8 @@ class ResourceQROM(ResourceOperator):
     def single_controlled_res_decomp(
         cls,
         num_bitstrings,
-        num_bit_flips,
         size_bitstring,
+        num_bit_flips,
         select_swap_depth,
         clean,
     ):
@@ -1506,8 +1506,8 @@ class ResourceQROM(ResourceOperator):
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
         num_bitstrings,
-        num_bit_flips,
         size_bitstring,
+        num_bit_flips=None,
         select_swap_depth=None,
         clean=True,
         **kwargs,
@@ -1517,10 +1517,13 @@ class ResourceQROM(ResourceOperator):
             x = re.ResourceX.resource_rep()
             gate_cost.append(GateCount(x, 2 * ctrl_num_ctrl_values))
 
+        if num_bit_flips is None:
+            num_bit_flips = (num_bitstrings * size_bitstring) // 2
+
         single_ctrl_cost = cls.single_controlled_res_decomp(
             num_bitstrings,
-            num_bit_flips,
             size_bitstring,
+            num_bit_flips,
             select_swap_depth,
             clean,
         )
@@ -1556,8 +1559,8 @@ class ResourceQROM(ResourceOperator):
 
         return {
             "num_bitstrings": self.num_bitstrings,
-            "num_bit_flips": self.num_bit_flips,
             "size_bitstring": self.size_bitstring,
+            "num_bit_flips": self.num_bit_flips,
             "select_swap_depth": self.select_swap_depth,
             "clean": self.clean,
         }
@@ -1566,8 +1569,8 @@ class ResourceQROM(ResourceOperator):
     def resource_rep(
         cls,
         num_bitstrings,
-        num_bit_flips,
         size_bitstring,
+        num_bit_flips=None,
         select_swap_depth=None,
         clean=True,
     ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
@@ -1585,6 +1588,9 @@ class ResourceQROM(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        if num_bit_flips is None:
+            num_bit_flips = (num_bitstrings * size_bitstring // 2)
+
         params = {
             "num_bitstrings": num_bitstrings,
             "num_bit_flips": num_bit_flips,
