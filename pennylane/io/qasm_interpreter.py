@@ -7,11 +7,11 @@ import re
 
 from openqasm3.ast import (
     ClassicalDeclaration,
+    EndStatement,
     Identifier,
     QuantumGate,
     QuantumGateModifier,
     QubitDeclaration,
-    EndStatement
 )
 from openqasm3.visitor import QASMNode
 
@@ -52,8 +52,10 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
+
 class EndProgram(Exception):  # pragma: no cover
     """Exception raised when it encounters an end statement in the QASM circuit."""
+
 
 class QasmInterpreter:
     """
