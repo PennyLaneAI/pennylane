@@ -36,7 +36,7 @@ from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 
@@ -179,6 +179,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
         work_wires = () if work_wires is None else work_wires
+        qml.QueuingManager.remove(op)
         return ctrl(
             op.base,
             control=control + op.control_wires,
