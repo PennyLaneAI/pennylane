@@ -146,8 +146,7 @@ class ResourcePhaseShift(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
+
         return [GateCount(cls.resource_rep(eps=eps))]
 
 
@@ -210,7 +209,7 @@ class ResourceRX(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * eps (Union[float, None]): the number of qubits the operation is controlled on
         """
-        return {"eps": self.eps} if self.eps else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
@@ -270,8 +269,6 @@ class ResourceRX(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
 
         return [GateCount(cls.resource_rep(eps))]
 
@@ -336,7 +333,7 @@ class ResourceRY(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps} if self.eps else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
@@ -398,8 +395,6 @@ class ResourceRY(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
 
         return [GateCount(cls.resource_rep(eps))]
 
@@ -464,7 +459,7 @@ class ResourceRZ(ResourceOperator):
             A dictionary containing the resource parameters:
                 * eps (Union[float, None]): error threshold for the approximation
         """
-        return {"eps": self.eps} if self.eps else {}
+        return {"eps": self.eps}
 
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
@@ -523,9 +518,6 @@ class ResourceRZ(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
-
         return [GateCount(cls.resource_rep(eps))]
 
 
@@ -621,7 +613,5 @@ class ResourceRot(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        if pow_z == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
 
         return [GateCount(cls.resource_rep(eps))]
