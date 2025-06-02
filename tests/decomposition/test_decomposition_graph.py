@@ -518,6 +518,7 @@ class TestControlledDecompositions:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="clean"
                 ): 2,
                 qml.CRot: 1,
             }
