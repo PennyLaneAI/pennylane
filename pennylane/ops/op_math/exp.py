@@ -587,7 +587,7 @@ def trotter_decomp(*params, wires, base, num_steps):  # pylint: disable=unused-a
         coeffs, ops = simplified_base.terms()
     except TermsUndefinedError:
         # The condition should've already verified that this is a valid pauli word.
-        coeffs, ops = [1], [simplified_base]
+        coeffs, ops = [1.0], [simplified_base]
 
     new_coeffs, pauli_words, new_wires = [], [], []
     for c, op in zip(coeffs, ops):
