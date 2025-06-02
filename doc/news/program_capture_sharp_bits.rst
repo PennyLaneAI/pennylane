@@ -448,6 +448,8 @@ to be used with certain limitations:
 
 * Transforms that return multiple tapes are not supported.
 * Transforms that return non-trivial post-processing functions are not supported.
+* Tape transforms may give incorrect results if the circuit has dynamic wires (i.e. there are operators
+  in the circuit whose wires are dynamic parameters).
 * Tape transforms will fail to execute if the transformed quantum function or QNode contains:
 
    * ``qml.cond`` with dynamic parameters as predicates.
