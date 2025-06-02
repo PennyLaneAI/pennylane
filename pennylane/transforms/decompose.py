@@ -668,15 +668,16 @@ def decompose(
                 return qml.expval(qml.PauliZ(0))
 
 
-        .. code-block::pycon
+        .. code-block:: pycon
 
             >>> print(qml.draw(circuit)())
             0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
             1: ──U(M0)────────────────────────┤
-            <BLANKLINE>
+
             M0 =
             [[1.+0.j 0.+0.j]
              [0.+0.j 1.+0.j]]
+
 
         We can see that the ``QubitUnitary`` on wire 1 is not decomposed, due to the stopping
         condition, despite ``QubitUnitary`` not being in the target gate set.

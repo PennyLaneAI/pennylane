@@ -258,5 +258,21 @@ class TestPrivateHelpers:
         qml.assert_equal(op, final_decomp[0])
 
     @pytest.mark.unit
+    def test_no_both_gate_set_and_stopping_condition_graph_disabled(self):
+        """Tests that with graph disabled, gate_set and stopping_condition cannot both exist."""
+
+        tape = qml.tape.QuantumScript([])
+
+        def stopping_condition(op):  # pylint: disable=unused-argument
+            return True
+
+        with pytest.raises(TypeError, match="Specifying both gate_set and stopping_condition"):
+            qml.transforms.decompose(
+                tape,
+                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+                stopping_condition=stopping_condition,
+            )
+
+    @pytest.mark.unit
     def test_resolve_gate_set_graph_disabled(self):
-        """Tests the _resolve_gate_set function."""
+        """Tests that the gate set is resolved correctly when the graph is disabled."""
