@@ -49,14 +49,11 @@ builtin.module @circuit {
       %3 = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
 
       // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
-      // CHECK: [[QUBIT0:%.*]] = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
-      // CHECK: [[VALUE1:%.*]]  = arith.constant 5.000000e-01 : f64
       // CHECK: [[QUBIT1:%.*]] = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+      // CHECK: [[VALUE1:%.*]]  = arith.constant 5.000000e-01 : f64
       // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT1]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[VALUE2:%.*]] = arith.constant 5.000000e-01 : f64
-      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE2]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[VALUE3:%.*]] = arith.constant 5.000000e-01 : f64
-      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE3]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
       
       %4 = "quantum.custom"(%0, %0, %0, %3) <{gate_name = "Rot", operandSegmentSizes = array<i32: 3, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, f64, f64, !quantum.bit) -> !quantum.bit
     }
@@ -76,6 +73,8 @@ builtin.module @circuit {
 
     pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
     pipeline.apply(ctx, module)
+
+    print(module)
 
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(

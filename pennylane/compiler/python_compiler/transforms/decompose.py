@@ -15,12 +15,12 @@
 written using xDSL."""
 
 from dataclasses import dataclass
-from typing import Iterable, Union
+from typing import Iterable, Union, Dict
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
-from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
+from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
@@ -140,11 +140,6 @@ def from_xdsl_to_qml_op(op: CustomOp):
     return resolve_gate(gate_name)(*parameters, wires=wires)
 
 
-def from_qml_to_xdsl_wire(wire: int):
-    """Convert a PennyLane wire to an xDSL SSAValue."""
-    return IntegerAttr(wire, IntegerType(64))
-
-
 def from_qml_to_xdsl_param(param: Union[int, float]):
     """Convert a PennyLane parameter to an xDSL SSAValue."""
     val = param.item() if hasattr(param, "item") else param
@@ -164,10 +159,9 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     def __init__(self, module):
         super().__init__()
         self.module = module
-        self.extracted_qubits: dict[int, SSAValue] = {}
-        # TODO: This would require a proper rounding
-        self.extracted_params: dict[Union[int, float], SSAValue] = {}
-        self.quantum_register = None
+        self.extracted_qubits: Dict[int, SSAValue] = {}
+        self.extracted_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
+        self.quantum_register: Union[SSAValue, None] = None
 
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
@@ -177,6 +171,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         for xdsl_op in funcOp.body.walk():
 
             # This assumes that the AllocOp is placed at the top of the program
+            # TODO: I feel this should be moved out of the loop, but I am not sure how to do it yet.
             if isinstance(xdsl_op, AllocOp):
                 self.quantum_register = xdsl_op.qreg
                 continue
@@ -189,6 +184,11 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
 
             qml_op = from_xdsl_to_qml_op(xdsl_op)
+
+            # TODO: Decide what to do with the parameters and wires of the operation.
+            # It could be worth registering the parameters and wires of the operation
+            # in the `self.extracted_params` and `self.extracted_qubits` dictionaries
+            # at this point, or erasing them if they are not used later.
 
             for idx, wire in enumerate(qml_op.wires):
                 self.extracted_qubits[wire] = xdsl_op.in_qubits[idx]
@@ -222,7 +222,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     if wire in self.extracted_qubits:
                         qubit_ssa = self.extracted_qubits[wire]
                     else:
-                        wire_xdsl = from_qml_to_xdsl_wire(wire)
+                        wire_xdsl = IntegerAttr(wire, IntegerType(64))
                         extract_op = ExtractOp(qreg=self.quantum_register, idx=wire_xdsl)
                         rewriter.insert_op(extract_op, InsertPoint.before(xdsl_op))
                         qubit_ssa = extract_op.qubit
