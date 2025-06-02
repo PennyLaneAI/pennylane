@@ -1165,9 +1165,9 @@ def _(action: GateCount):
 
 @_apply_adj.register
 def _(action: AllocWires):
-    return FreeWires(action.n)
+    return FreeWires(action.num_wires)
 
 
 @_apply_adj.register
 def _(action: FreeWires):
-    return AllocWires(action.n)
+    return AllocWires(action.num_wires)
