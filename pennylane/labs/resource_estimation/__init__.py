@@ -103,34 +103,5 @@ from .ops import (
     ResourceTempAND,
 )
 
-from .ops import (
-    ResourceHadamard,
-    ResourceS,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceT,
-    ResourcePhaseShift,
-    ResourceGlobalPhase,
-    ResourceRot,
-    ResourceIdentity,
-    ResourceCH,
-    ResourceCY,
-    ResourceCZ,
-    ResourceCSWAP,
-    ResourceCCZ,
-    ResourceCNOT,
-    ResourceToffoli,
-    ResourceMultiControlledX,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCRot,
-    ResourceControlledPhaseShift,
-)
-
 from .ops import *
 from .templates import *
