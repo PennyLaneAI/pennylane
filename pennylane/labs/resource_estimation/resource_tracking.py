@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 from pennylane.labs.resource_estimation.qubit_manager import (
     QubitManager,
-    GrabWires,
+    AllocWires,
     FreeWires,
 )
 from pennylane.labs.resource_estimation.resources_base import Resources
@@ -71,9 +71,9 @@ DefaultGateSet = {
 
 # parameters for further configuration of the decompositions
 resource_config = {
-    "error_rx": 10e-3,
-    "error_ry": 10e-3,
-    "error_rz": 10e-3,
+    "error_rx": 1e-3,
+    "error_ry": 1e-3,
+    "error_rz": 1e-3,
     "precision_multiplexer": 1e-3,
     "precision_qrom_state_prep": 1e-3,
 }
@@ -86,6 +86,7 @@ def estimate_resources(
     config: Dict = resource_config,
     work_wires=0,
     tight_budget=False,
+    single_qubit_rotation_error=None,
 ) -> Union[Resources, Callable]:
     r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
@@ -181,8 +182,12 @@ def resources_from_qfunc(
     config: Dict = resource_config,
     work_wires=0,
     tight_budget=False,
+    single_qubit_rotation_error=None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
+
+    if single_qubit_rotation_error is not None:
+        _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
@@ -224,7 +229,11 @@ def resources_from_resource(
     config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
+    single_qubit_rotation_error=None,
 ) -> Callable:
+    
+    if single_qubit_rotation_error is not None:
+        _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     existing_qm = obj.qubit_manager
     if work_wires is not None:
@@ -249,6 +258,21 @@ def resources_from_resource(
 
     # Update:
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
+
+
+@estimate_resources.register
+def resources_from_resource_ops(
+    obj: ResourceOperator,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=None,
+    tight_budget=None,
+    single_qubit_rotation_error=None,
+) -> Callable:
+
+    return estimate_resources(
+        1*obj, gate_set, config, work_wires, tight_budget, single_qubit_rotation_error
+    )
 
 
 def _counts_from_compressed_res_op(
@@ -289,7 +313,7 @@ def _counts_from_compressed_res_op(
             )
             continue
 
-        if isinstance(action, GrabWires):
+        if isinstance(action, AllocWires):
             if qubit_alloc_sum !=0 and scalar > 1:
                 qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
             else:
@@ -306,11 +330,18 @@ def _counts_from_compressed_res_op(
 def _sum_allocated_wires(decomp):
     s = 0
     for action in decomp:
-        if isinstance(action, GrabWires):
+        if isinstance(action, AllocWires):
             s += action.num_wires
         if isinstance(action, FreeWires):
             s -= action.num_wires
     return s
+
+
+def _update_config_single_qubit_rot_error(config, error):
+    config["error_rx"] = error
+    config["error_ry"] = error
+    config["error_rz"] = error
+    return
 
 
 @QueuingManager.stop_recording()
