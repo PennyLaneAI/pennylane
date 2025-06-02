@@ -96,16 +96,8 @@ from .vibrational import (
 def __getattr__(name):
     if name == "givens_decomposition":  # pragma: no cover
         # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-        from pennylane import math
+        from pennylane.math import decomposition
 
-        warnings.warn(
-            f"pennylane.qchem.{name} is no longer accessible from this module \
-                and must be imported as pennylane.math.{name}. \
-                    Support for access through qchem will be removed in v0.43.",
-            PennyLaneDeprecationWarning,
-        )
-        return getattr(math.decomposition, name)
+        return getattr(decomposition, name)
 
     raise AttributeError(f"module 'qchem' has no attribute '{name}'")
