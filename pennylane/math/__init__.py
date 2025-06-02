@@ -100,6 +100,7 @@ from .utils import (
     in_backprop,
     requires_grad,
     is_abstract,
+    reduced_row_echelon,
 )
 from .interface_utils import (
     get_canonical_interface_name,
