@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane.operation import Operation
-from pennylane.transforms.decompose import _operator_decomposition_gen, _resolve_gate_set, decompose
+from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
