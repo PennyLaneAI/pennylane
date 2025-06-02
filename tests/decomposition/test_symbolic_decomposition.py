@@ -27,6 +27,7 @@ from pennylane.decomposition.resources import (
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    controlled_decomp_with_work_wire,
     controlled_resource_rep,
     flip_control_adjoint,
     flip_pow_adjoint,
@@ -705,6 +706,31 @@ class TestControlledDecomposition:
                 ): 1
             }
         )
+
+    @pytest.mark.unit
+    def test_controlled_decomp_with_work_wire(self):
+        """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
+
+        U = qml.Rot.compute_matrix(0.123, 0.234, 0.345)
+        op = qml.ctrl(qml.QubitUnitary(U, wires=0), control=[1, 2], work_wires=[3])
+
+        with queuing.AnnotatedQueue() as q:
+            qml.Projector([0], wires=3)
+            controlled_decomp_with_work_wire(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        mat = qml.matrix(qml.tape.QuantumScript.from_queue(q), wire_order=[0, 1, 2, 3])
+        expected_mat = qml.matrix(op @ qml.Projector([0], wires=3), wire_order=[0, 1, 2, 3])
+        assert qml.math.allclose(mat, expected_mat)
+
+    @pytest.mark.unit
+    def test_controlled_decomp_with_work_wire_not_applicable(self):
+        """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
+
+        op = qml.ctrl(qml.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
+
+        op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""

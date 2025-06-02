@@ -842,8 +842,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
-        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu.
-        TODO: add support for these (they don't map directly to Pennylane ops).
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. The remaining standard library gates,
+        subroutines, and end statements are all supported. Robust variables, control flow, measurements,
+        built-in mathematical functions and constants, custom gates, and pulses are not yet supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
         environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
@@ -856,11 +857,12 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Returns:
         dict: the context resulting from the execution.
 
-    >>> dev = device("default.qubit", wires=[0, 1])
+    >>> import pennylane as qml
+    >>> dev = qml.device("default.qubit", wires=[0, 1])
     >>> @qml.qnode(dev)
     >>> def my_circuit():
-    >>>   from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
-    >>>   return qml.expval(qml.Z(0))
+    ...     qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+    ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(my_circuit)())
     0: ──RY(0.20)──X²─┤  <Z>
     1: ──RX(1.00)─────┤

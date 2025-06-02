@@ -507,7 +507,7 @@ class QasmInterpreter:
                 "ty": node.type.__class__.__name__,
                 "val": None,
                 "line": node.span.start_line,
-                "constant": constant,
+                "constant": constant
             }
 
     @visit.register(SubroutineDefinition)
