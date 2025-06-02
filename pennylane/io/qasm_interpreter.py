@@ -606,7 +606,7 @@ class QasmInterpreter:
             The de-referenced identifier.
         """
         if aliasing:  # we are registering an alias
-            return partial(self._alias, node, context)
+            return partial(self._alias, node)
         else:  # else we are evaluating an alias
             try:
                 var = self.retrieve_variable(node.name, context)
