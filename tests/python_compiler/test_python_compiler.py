@@ -14,6 +14,8 @@
 
 """Unit test module for pennylane/compiler/python_compiler/impl.py"""
 
+from dataclasses import dataclass
+
 # pylint: disable=wrong-import-position
 import pytest
 
@@ -150,6 +152,29 @@ def test_raises_error_when_pass_does_not_exists():
     interpreter.register_implementations(TransformFunctionsExt(ctx, {}))
     with pytest.raises(CompileError):
         interpreter.call_op(schedule, (empty_module(),))
+
+
+def test_decorator():
+
+    from xdsl import passes
+    from xdsl.context import Context
+    from xdsl.dialects import builtin
+
+    from pennylane.compiler.python_compiler.transforms import xdsl_transform
+    from pennylane.compiler.python_compiler.transforms.apply_transform_sequence import (
+        available_passes,
+    )
+
+    @dataclass(frozen=True)
+    class PrintModule(passes.ModulePass):
+        name = "print-module"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+            print("hello")
+
+    xdsl_transform(PrintModule)
+    assert "print-module" in available_passes
+    assert available_passes["print-module"]() == PrintModule
 
 
 if __name__ == "__main__":
