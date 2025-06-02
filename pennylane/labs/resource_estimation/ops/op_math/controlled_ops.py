@@ -1286,7 +1286,7 @@ class ResourceMultiControlledX(ResourceOperator):
             gate_lst.extend(res)
             return gate_lst
 
-        l_elbow = resource_rep(ResourceToffoli, {"elbow": "left"})
+        l_elbow = resource_rep(ResourceTempAND)
         r_elbow = resource_rep(ResourceToffoli, {"elbow": "right"})
 
         res = [
