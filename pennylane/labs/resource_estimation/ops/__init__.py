@@ -13,35 +13,6 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane Operators"""
 
-from .identity import ResourceGlobalPhase, ResourceIdentity
-
-from .qubit import (
-    ResourceHadamard,
-    ResourcePhaseShift,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceS,
-    ResourceT,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-)
-
-from .op_math import (
-    ResourceCY,
-    ResourceCH,
-    ResourceCZ,
-    ResourceCSWAP,
-    ResourceCCZ,
-    ResourceCRot,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceToffoli,
-    ResourceMultiControlledX,
-    ResourceCNOT,
-    ResourceControlledPhaseShift,
-    ResourceTempAND,
-)    
+from .identity import *
+from .qubit import *
+from .op_math import * 
