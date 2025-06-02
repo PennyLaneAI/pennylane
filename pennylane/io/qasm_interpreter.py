@@ -12,15 +12,21 @@ from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
     BinaryExpression,
+    BitstringLiteral,
+    BooleanLiteral,
     Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
     ConstantDeclaration,
+    DurationLiteral,
     EndStatement,
     Expression,
     ExpressionStatement,
+    FloatLiteral,
     Identifier,
+    ImaginaryLiteral,
     IndexExpression,
+    IntegerLiteral,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
@@ -143,9 +149,9 @@ class Context:
             context["vars"] = {}
         if "aliases" not in context:
             context["aliases"] = {}
-        self.context = context
         if "wires" not in context:
             context["wires"] = []
+        self.context = context
 
     def update_var(
         self,
@@ -194,10 +200,9 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
-        else:
-            raise NameError(
-                f"No attribute {name} on Context and no {name} key found on context {self.context}"
-            )
+        raise NameError(
+            f"No attribute {name} on Context and no {name} key found on context {self.context}"
+        )
 
 
 def _get_bit_type_val(var):
@@ -253,8 +258,6 @@ class QasmInterpreter:
         Raises:
             NotImplementedError: When a (so far) unsupported node type is encountered.
         """
-        if re.search("Literal", node.__class__.__name__):  # There is no single "Literal" base class
-            return self.visit_literal(node)
         if callable(node):
             return self.visit_callable(node, context)  # cannot register Callable
         raise NotImplementedError(
@@ -394,7 +397,7 @@ class QasmInterpreter:
             node.type.__class__.__name__,
             (
                 self.visit(node.init_expression, context)
-                if hasattr(node, "init_expression") and node.init_expression is not None
+                if getattr(node, "init_expression", None)
                 else None
             ),
             (
@@ -404,11 +407,25 @@ class QasmInterpreter:
             ),
             (
                 node.init_expression.span.start_line
-                if hasattr(node, "init_expression") and node.init_expression is not None
+                if getattr(node, "init_expression", None)
                 else node.span.start_line
             ),
             constant,
         )
+
+    @visit.register(ImaginaryLiteral)
+    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):
+        """
+        Registers an imaginary literal.
+
+        Args:
+            node (ImaginaryLiteral): The imaginary literal QASMNode.
+            context (Context): the current context.
+
+        Returns:
+            complex: a complex number corresponding to the imaginary literal.
+        """
+        return 1j * node.value
 
     @visit.register(ArrayLiteral)
     def visit_array_literal(self, node: ArrayLiteral, context: Context):
@@ -546,7 +563,7 @@ class QasmInterpreter:
             node (Cast): The Cast expression.
             context (Context): The current context.
         """
-        return self.retrieve_variable(node.argument.name, context).val
+        return self.visit(node.argument, context)
 
     @visit.register(BinaryExpression)
     def visit_binary_expression(self, node: BinaryExpression, context: Context):
@@ -688,13 +705,18 @@ class QasmInterpreter:
         """
         return func(context)
 
-    @staticmethod
-    def visit_literal(node: Expression):
+    @visit.register(IntegerLiteral)
+    @visit.register(FloatLiteral)
+    @visit.register(BooleanLiteral)
+    @visit.register(BitstringLiteral)
+    @visit.register(DurationLiteral)
+    def visit_literal(self, node: Expression, context: Context):
         """
         Visits a literal.
 
         Args:
             node (Literal): The literal.
+            context (Context): The current context.
 
         Returns:
             The value of the literal.
