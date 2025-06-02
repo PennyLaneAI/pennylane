@@ -84,6 +84,26 @@ def full_optimize(tape, clifford_t_args=None):
 
     The original five T gates are reduced to just one.
 
+    .. details::
+        :title: Usage Details
+
+        There is the option to pass circuits that are not in the clifft gate set. Those circuits will be first decomposed using :func:`~clifford_t_decomposition`.
+        We can pass optional keyword arguments to it via the ``clifford_t_args`` argument in the following way.
+
+        .. code-block:: python
+
+            circ = qml.tape.QuantumScript(
+                [
+                    qml.CNOT((0, 1)),
+                    qml.T(0),
+                    qml.RZ(0.5, 0),
+                    qml.Hadamard(0),
+                ],
+                [],
+            )
+
+            new_circ = full_optimize(circ, clifford_t_args = {"epsilon": 0.1})
+
     """
     try:
         pyzx_circ = _tape2pyzx(tape)
