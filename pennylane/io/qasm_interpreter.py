@@ -52,6 +52,8 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
+class EndError(Exception):  # pragma: no cover
+    """Exception raised when it encounters an end statement in the QASM circuit."""
 
 class QasmInterpreter:
     """
@@ -95,15 +97,29 @@ class QasmInterpreter:
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        for value in node.__dict__.values():
-            if not isinstance(value, list):
-                value = [value]
-            for item in value:
-                if isinstance(item, EndStatement):
-                    break
-                if isinstance(item, QASMNode):
-                    self.visit(item, context)
+        try:
+            for value in node.__dict__.values():
+                if not isinstance(value, list):
+                    value = [value]
+                for item in value:
+                    if isinstance(item, QASMNode):
+                        self.visit(item, context)
+        except EndError as e:
+            print(str(e))
         return context
+
+    @visit.register(EndStatement)
+    def visit_end_statement(self, node: QASMNode, context: dict):
+        """
+        Ends the program.
+        Args:
+            node (QASMNode): The end statement QASMNode.
+            context (dict): the current context.
+        """
+        raise EndError(
+            f"The QASM program was terminated om line {node.span.start_line}."
+            f"There may be unprocessed QASM code."
+        )
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
