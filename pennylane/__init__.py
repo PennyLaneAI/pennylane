@@ -38,7 +38,6 @@ from pennylane.decomposition import (
     list_decomps,
     resource_rep,
 )
-import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
@@ -87,6 +86,7 @@ from pennylane.io import (
     from_quil_file,
     FromBloq,
     bloq_registers,
+    from_qasm3,
 )
 from pennylane.measurements import (
     counts,
@@ -183,6 +183,7 @@ import pennylane.spin
 
 import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
