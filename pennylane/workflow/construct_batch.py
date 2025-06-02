@@ -365,7 +365,12 @@ def construct_batch(
     has_final_transform = user_program.has_final_transform
     num_user_transforms = len(user_program) - int(has_final_transform)
 
-    is_empty_top = level in ("top", 0)
+    # Two cases are recognized as "empty": 1. defined as empty by either "top" or 0; 2. a slice that starts beyond the range of user transforms.
+    is_empty_top = level in ("top", 0) or (
+        isinstance(level, slice) and level.start >= num_user_transforms
+    )
+
+    # Simple case where we have no final transform and the level is either "user" or a range that is within the user transforms.
     is_simple_user = (not has_final_transform) and (
         level == "user"
         or (isinstance(level, int) and level <= num_user_transforms)
@@ -392,21 +397,23 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        # Simply empty, do nothing
         if is_empty_top:
             return qml.transforms.core.TransformProgram()((initial_tape,))
 
+        # Simply just pure user transform no final, just return the program
         if is_simple_user:
             level_slice = _interpret_level(level, num_user_transforms, False)
             program = user_program[level_slice]
             initial_tape, user_post_processing = program((initial_tape,))
             return (initial_tape, user_post_processing)
 
-        user_post_processing = null_postprocessing
+        # Otherwise, not simply at all, we have to process the gradient fn and device transforms.        user_post_processing = null_postprocessing
         level_slice = slice(0, None)
-        if level == "device" or level is None:
-            program = user_program[:num_user_transforms]
-            (initial_tape,), user_post_processing = program((initial_tape,))
-            level_slice = slice(num_user_transforms, None)
+        # if level == "device" or level is None:
+        program = user_program[:num_user_transforms]
+        (initial_tape,), user_post_processing = program((initial_tape,))
+        # level_slice = slice(num_user_transforms, None)
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         config = qml.workflow.resolution._resolve_execution_config(
@@ -416,8 +423,11 @@ def construct_batch(
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        if not (level == "device" or level is None):
-            level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
+        # if not (level == "device" or level is None):
+        level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
+        level_slice = slice(
+            max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
+        )
 
         program = qml.transforms.core.TransformProgram(user_program)
         if has_gradient_expand:
