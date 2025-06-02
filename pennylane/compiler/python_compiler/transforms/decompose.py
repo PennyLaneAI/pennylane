@@ -56,88 +56,12 @@ def flatten(nested: Iterable):
     return flat
 
 
-def resolve_constant_params(op: Operator):
-    """Walk back to the producing op and resolve the constant parameters."""
-
-    while hasattr(op, "owner"):
-        op = op.owner
-
-    if isinstance(op, ConstantOp):
-        val = op.value
-
-        if isinstance(val, (FloatAttr, IntegerAttr)):
-            return val.value.data
-
-    if isinstance(op, ExtractOp):
-        return op.idx_attr.parameters[0].data
-
-    if isinstance(op, CustomOp):
-
-        raise NotImplementedError("Cannot resolve params from CustomOp")
-
-    raise NotImplementedError(f"Cannot resolve params from {op}")
-
-
-def resolve_constant_wire(operand):
-    """Resolve the integer wire index that this operand originates from."""
-
-    while hasattr(operand, "owner"):
-        result_index = operand.index
-        operand = operand.owner
-
-        if isinstance(operand, GlobalPhaseOp):
-            return None
-
-        if isinstance(operand, ConstantOp):
-            val = operand.value
-            if isinstance(val, IntegerAttr):
-                return val.value.data
-
-        elif isinstance(operand, ExtractOp):
-            return operand.idx_attr.parameters[0].data
-
-        elif isinstance(operand, CustomOp):
-
-            if result_index < len(operand.in_qubits):
-                input_operand = operand.in_qubits[result_index]
-                return resolve_constant_wire(input_operand)
-
-            raise IndexError(
-                f"Result index {result_index} out of bounds for CustomOp with {len(operand.in_qubits)} in_qubits."
-            )
-
-        else:
-            raise NotImplementedError(f"Cannot resolve wires from operation type: {type(operand)}")
-
-    raise TypeError(f"Operand {operand} is not a result or constant-producing op")
-
-
-def from_qml_to_xdsl_params(op: Operator) -> list[float | int]:
-    """Get the parameters from the operation."""
-    return [resolve_constant_params(p) for p in op.params if p is not None]
-
-
-def from_qml_to_xdsl_wires(op: Operator) -> list[int]:
-    """Get the wires from the operation."""
-    if not hasattr(op, "in_qubits"):
-        return []
-    return [resolve_constant_wire(w) for w in op.in_qubits if w is not None]
-
-
 def resolve_gate(name: str) -> Operator:
     """Resolve the gate from the name."""
     try:
         return from_str_to_PL_gate[name]
     except KeyError as exc:
         raise ValueError(f"Unsupported gate: {name}") from exc
-
-
-def from_xdsl_to_qml_op(op: CustomOp):
-    """Convert an xDSL CustomOp to a PennyLane operation."""
-    gate_name = op.properties["gate_name"].data
-    parameters = from_qml_to_xdsl_params(op)
-    wires = flatten(from_qml_to_xdsl_wires(op))
-    return resolve_gate(gate_name)(*parameters, wires=wires)
 
 
 def from_qml_to_xdsl_param(param: Union[int, float]):
@@ -163,6 +87,69 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         self.extracted_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
         self.quantum_register: Union[SSAValue, None] = None
 
+    def resolve_constant_params(self, op: Operator):
+        """Walk back to the producing op and resolve the constant parameters."""
+        while hasattr(op, "owner"):
+            op = op.owner
+        if isinstance(op, ConstantOp):
+            val = op.value
+            if isinstance(val, (FloatAttr, IntegerAttr)):
+                if val not in self.extracted_params:
+                    self.extracted_params[val] = op.result
+                return val.value.data
+        if isinstance(op, ExtractOp):
+            return op.idx_attr.parameters[0].data
+        if isinstance(op, CustomOp):
+            raise NotImplementedError("Cannot resolve params from CustomOp")
+        raise NotImplementedError(f"Cannot resolve params from {op}")
+
+    def from_qml_to_xdsl_params(self, op: Operator) -> list[float | int]:
+        """Get the parameters from the operation."""
+        return [self.resolve_constant_params(p) for p in op.params if p is not None]
+
+    def from_qml_to_xdsl_wires(self, op: Operator) -> list[int]:
+        """Get the wires from the operation."""
+        if not hasattr(op, "in_qubits"):
+            return []
+        return [self.resolve_constant_wire(w) for w in op.in_qubits if w is not None]
+
+    def from_xdsl_to_qml_op(self, op: CustomOp):
+        """Convert an xDSL CustomOp to a PennyLane operation."""
+        gate_name = op.properties["gate_name"].data
+        parameters = self.from_qml_to_xdsl_params(op)
+        wires = flatten(self.from_qml_to_xdsl_wires(op))
+        return resolve_gate(gate_name)(*parameters, wires=wires)
+
+    def resolve_constant_wire(self, operand):
+        """Resolve the integer wire index that this operand originates from."""
+
+        while hasattr(operand, "owner"):
+            wire_index = operand.index
+            operand = operand.owner
+            if isinstance(operand, GlobalPhaseOp):
+                return None
+            if isinstance(operand, ConstantOp):
+                val = operand.value
+                if isinstance(val, IntegerAttr):
+                    return val.value.data
+            elif isinstance(operand, ExtractOp):
+                wire = operand.idx_attr.parameters[0].data
+                if wire not in self.extracted_qubits:
+                    self.extracted_qubits[wire] = operand
+                return wire
+            elif isinstance(operand, CustomOp):
+                if wire_index < len(operand.in_qubits):
+                    input_operand = operand.in_qubits[wire_index]
+                    return self.resolve_constant_wire(input_operand)
+                raise IndexError(
+                    f"Result index {wire_index} out of bounds for CustomOp with {len(operand.in_qubits)} in_qubits."
+                )
+            else:
+                raise NotImplementedError(
+                    f"Cannot resolve wires from operation type: {type(operand)}"
+                )
+        raise TypeError(f"Operand {operand} is not a result or constant-producing op")
+
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
@@ -183,29 +170,20 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             if self.quantum_register is None:
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
 
-            qml_op = from_xdsl_to_qml_op(xdsl_op)
-
-            # TODO: Decide what to do with the parameters and wires of the operation.
-            # It could be worth registering the parameters and wires of the operation
-            # in the `self.extracted_params` and `self.extracted_qubits` dictionaries
-            # at this point, or erasing them if they are not used later.
-
-            for idx, wire in enumerate(qml_op.wires):
-                self.extracted_qubits[wire] = xdsl_op.in_qubits[idx]
+            qml_op = self.from_xdsl_to_qml_op(xdsl_op)
 
             if not qml_op.has_decomposition:
                 continue
 
             qml_decomp_ops = qml_op.decomposition()
+            # TODO: I think this variable is not really needed
             last_custom_op = None
 
             for qml_decomp_op in qml_decomp_ops:
 
                 params_xdsl: list[SSAValue] = []
                 for param in qml_decomp_op.parameters:
-
                     xdsl_param = from_qml_to_xdsl_param(param)
-
                     if xdsl_param in self.extracted_params:
                         const_ssa = self.extracted_params[xdsl_param]
                     else:
@@ -218,20 +196,14 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
                 wires_xdsl: list[SSAValue] = []
                 for wire in qml_decomp_op.wires:
-
                     if wire in self.extracted_qubits:
                         qubit_ssa = self.extracted_qubits[wire]
                     else:
-                        wire_xdsl = IntegerAttr(wire, IntegerType(64))
-                        extract_op = ExtractOp(qreg=self.quantum_register, idx=wire_xdsl)
-                        rewriter.insert_op(extract_op, InsertPoint.before(xdsl_op))
-                        qubit_ssa = extract_op.qubit
-                        self.extracted_qubits[wire] = qubit_ssa
+                        # The logic is that each decomposed operator should act on a subset of wires
+                        # of the original operator, and these wires should have been extracted before.
+                        assert False, "This should not happen, wires should have been extracted"
 
                     wires_xdsl.append(qubit_ssa)
-
-                if last_custom_op is not None:
-                    wires_xdsl = last_custom_op.out_qubits
 
                 # At this stage, this is the only 'special' operator we handle (GlobalPhase does not have wires)
                 if qml_decomp_op.name == "GlobalPhase":
@@ -245,13 +217,16 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     )
 
                 rewriter.insert_op(custom_op, InsertPoint.before(xdsl_op))
+                for idx, wire in enumerate(qml_decomp_op.wires):
+                    self.extracted_qubits[wire] = custom_op.out_qubits[idx]
+
                 last_custom_op = custom_op
 
             if xdsl_op.results:
+                # TODO: This assumes that the last CustomOp has the same number of results as the original CustomOp
+                # and it acts on the same wires. But this is not always the case.
                 old_results = list(xdsl_op.results)
                 new_results = list(last_custom_op.results)
-                if len(old_results) != len(new_results):
-                    raise NotImplementedError
                 for old_res, new_res in zip(old_results, new_results, strict=True):
                     old_res.replace_by(new_res)
 

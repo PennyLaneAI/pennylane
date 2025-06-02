@@ -48,12 +48,12 @@ builtin.module @circuit {
       %2 = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
       %3 = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
 
+      // CHECK: [[VALUE:%.*]] = arith.constant 5.000000e-01 : f64
       // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
       // CHECK: [[QUBIT1:%.*]] = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
-      // CHECK: [[VALUE1:%.*]]  = arith.constant 5.000000e-01 : f64
-      // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT1]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE1]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT1]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
       
       %4 = "quantum.custom"(%0, %0, %0, %3) <{gate_name = "Rot", operandSegmentSizes = array<i32: 3, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, f64, f64, !quantum.bit) -> !quantum.bit
     }
