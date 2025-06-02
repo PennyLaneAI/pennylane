@@ -587,9 +587,19 @@ class QasmInterpreter:
         Returns:
             The de-referenced identifier.
         """
-        if aliasing:
+        if aliasing:  # we are registering an alias
 
             def alias(context):
+                """
+                An alias is registered as a callable since we need to be able to
+                evaluate it at a later time.
+
+                Args:
+                    context (dict): The current context.
+
+                Returns:
+                    The de-referenced alias.
+                """
                 try:
                     return self.retrieve_variable(node.collection.name, context)
                 except NameError as e:
@@ -599,7 +609,7 @@ class QasmInterpreter:
                     ) from e
 
             return alias
-        else:
+        else:  # else we are evaluating an alias
             try:
                 var = self.retrieve_variable(node.name, context)
                 value = var["val"] if isinstance(var, dict) and "val" in var else var
