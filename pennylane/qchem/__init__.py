@@ -14,6 +14,7 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
+from pennylane.math.decomposition import givens_decomposition
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
@@ -91,13 +92,3 @@ from .vibrational import (
     taylor_hamiltonian,
     vscf_integrals,
 )
-
-
-def __getattr__(name):
-    if name == "givens_decomposition":  # pragma: no cover
-        # pylint: disable=import-outside-toplevel
-        from pennylane.math import decomposition
-
-        return getattr(decomposition, name)
-
-    raise AttributeError(f"module 'qchem' has no attribute '{name}'")
