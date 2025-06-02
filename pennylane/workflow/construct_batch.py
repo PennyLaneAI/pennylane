@@ -227,7 +227,7 @@ def get_transform_program(
             qnode.device,
         )
         gradient_fn = config.gradient_method
-    has_gradient_expand = hasattr(gradient_fn, "expand_transform")
+    has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
     num_user = len(qnode.transform_program)
@@ -405,6 +405,13 @@ def construct_batch(
             initial_tape, user_post_processing = program((initial_tape,))
             return (initial_tape, user_post_processing)
 
+        user_post_processing = null_postprocessing
+        level_slice = slice(0, None)
+        if level == "device" or level is None:
+            program = user_program[:num_user_transforms]
+            (initial_tape,), user_post_processing = program((initial_tape,))
+            level_slice = slice(num_user_transforms, None)
+
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         config = qml.workflow.resolution._resolve_execution_config(
             config, qnode.device, tapes=(initial_tape,)
@@ -413,7 +420,8 @@ def construct_batch(
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
+        if not (level == "device" or level is None):
+            level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
 
         program = qml.transforms.core.TransformProgram(user_program)
         if has_gradient_expand:
@@ -436,6 +444,13 @@ def construct_batch(
         else:
             resolved_program = full_transform_program[level_slice]
 
-        return resolved_program((initial_tape,))
+        (batch, remaining_post_processing) = resolved_program((initial_tape,))
+
+        def combined_post_processing(results):
+            """Combine the user post-processing with the remaining post-processing."""
+            intermediate_results = remaining_post_processing(results)
+            return user_post_processing(intermediate_results)
+
+        return (batch, combined_post_processing)
 
     return batch_constructor
