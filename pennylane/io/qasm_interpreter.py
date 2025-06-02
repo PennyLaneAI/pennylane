@@ -486,8 +486,8 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        lhs = self.visit(node.lhs, context)
-        rhs = self.visit(node.rhs, context)
+        lhs = float(self.visit(node.lhs, context))
+        rhs = float(self.visit(node.rhs, context))
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
@@ -518,7 +518,7 @@ class QasmInterpreter:
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
             return eval(
-                f"{node.op.name}{self.visit(node.expression, context)}"
+                f"{node.op.name}{float(self.visit(node.expression, context))}"
             )  # pylint: disable=eval-used
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(

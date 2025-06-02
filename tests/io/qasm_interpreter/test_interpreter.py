@@ -49,6 +49,30 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_nested_expr(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            int p = 3 + 3;
+            pow(p * 2) @ x q0;
+            pow(p * (2 + 1)) @ x q0;
+            pow((8.0 - 0.0) * (2.0 + 1)) @ x q0;
+            """,
+            permissive=True,
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "expression-implemented"}
+            )
+
+        assert q.queue == [
+            PauliX("q0") ** 12,
+            PauliX("q0") ** 18,
+            PauliX("q0") ** 24,
+        ]
+
     def test_param_as_expression(self):
         # parse the QASM
         ast = parse(
