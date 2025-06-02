@@ -322,10 +322,13 @@
   1: ────────────╰X──RY(-0.50)─┤
   ```
 
-* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument that is
-  a function that returns `True` if a concrete operator does not need to be decomposed.
+* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument, which must be
+  a function that returns `True` if an operator does not need to be decomposed (it meets the requirements as described
+  in `stopping_condition`).
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)  
-
+  Here is an example of using `stopping_condition` to not decompose a `qml.QubitUnitary` instance if it's
+  equivalent to the identity matrix. 
+  
   ```python
   from functools import partial
   import pennylane as qml
@@ -338,19 +341,17 @@
   def stopping_condition(op):
 
       if isinstance(op, qml.QubitUnitary):
-          # Let's say we want to skip decomposing a QubitUnitary if it is
-          # equivalent to the identity.
           identity = qml.math.eye(2 ** len(op.wires))
           return qml.math.allclose(op.matrix(), identity)
 
-      # For simplicity, the stopping condition does not need to check whether
-      # the operator is in the target gate set. This will always be checked.
       return False
+  ```
 
+Note that the `stopping_condition` does not need to check whether the operator is in the target gate set. This will always be checked.
+
+  ```python
   @partial(
       qml.transforms.decompose,
-      # A target gate set specified in terms of operator types is always required
-      # if the new graph-based decomposition system is enabled.
       gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
       stopping_condition=stopping_condition,
   )
