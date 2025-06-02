@@ -106,7 +106,6 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "expression-implemented"}
@@ -130,10 +129,10 @@ class TestInterpreter:
             """,
             permissive=True,
         )
+
         # execute
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "nested-modifiers"})
-
         assert q.queue == [
             Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
             Toffoli(wires=["q2", "q1", "q0"]),
@@ -483,7 +482,7 @@ class TestInterpreter:
             ry(0.2) q0;
             inv @ rx(theta) q0;
             pow(2) @ x q0;
-            ctrl @ id q0, q1;
+            ctrl @ x q1, q0;
             """,
             permissive=True,
         )
@@ -499,7 +498,7 @@ class TestInterpreter:
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
             PowOpObs(PauliX(wires=["q0"]), 2),
-            Controlled(Identity("q1"), control_wires=["q0"]),
+            CNOT(wires=["q1", "q0"]),
         ]
 
     def test_interprets_two_qubit_gates(self):

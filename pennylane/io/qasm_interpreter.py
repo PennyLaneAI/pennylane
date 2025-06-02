@@ -164,6 +164,7 @@ class QasmInterpreter:
         Args:
             node (QASMNode): the QASMNode to visit next.
             context (dict): the current context populated with any locally available variables, etc.
+            aliasing (bool): whether we are aliasing a variable in the context.
 
         Raises:
             NotImplementedError: when an unsupported QASMNode type is found.
