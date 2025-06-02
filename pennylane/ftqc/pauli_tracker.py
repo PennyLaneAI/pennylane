@@ -432,38 +432,28 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     return x_record, z_record
 
 
-def _apply_measurement_correction_rule(x: np.uint8):
-    """Get the phase correction factor based on the recorded `x` an `z` of the target wire and the corresponding
-    observable.
-
-        Args:
-            x (np.uint8): Recorded x at the target wire of ob.
-
-        Return:
-            Phase correction factor.
-    """
-    return -1 if x == 1 else 1
-
-
-def _get_measurements_sign_factor(tape: QuantumScript, x_record: math.array):
+def _correct_measurements(tape: QuantumScript, x_record: math.array, measurement_vals: List):
     """Get sign factor for all measurements in a tape. The sign factor
     is calculated based on the `samples` at `wires` with the corresponding recorded x.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
+            measurement_vals (List) : A list of measurement values.
             x_record (math.array): The array of recorded x for each wire.
         Return:
             A list of sign factors for all measurements.
     """
-    phase_sign_factor = [1] * len(tape.measurements)
+    correct_meas = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
         wires = measurement.wires.tolist()
 
-        phase_sign_factor[idx] *= _apply_measurement_correction_rule(x_record[wires[0]])
+        correct_meas[idx] = (
+            1 - measurement_vals[idx] if x_record[wires[0]] == 1 else measurement_vals[idx]
+        )
 
-    return phase_sign_factor
+    return correct_meas
 
 
-def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
+def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_vals: List):
     r"""Get measurement correction coefficients offline with a quantum script and mid-measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored with list and used in a stack manner. The calculation iteratively
@@ -573,4 +563,4 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List):
 
     x_record, _ = _get_xz_record(tape.num_wires, by_ops, ops)
 
-    return _get_measurements_sign_factor(tape, x_record)
+    return _correct_measurements(tape, x_record, measurement_vals)

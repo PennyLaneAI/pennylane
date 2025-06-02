@@ -17,17 +17,21 @@ import random
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
-from pennylane.ftqc import (
-    RotXZX,
-    convert_to_mbqc_formalism,
-    convert_to_mbqc_gateset,
-    diagonalize_mcms,
-    get_byproduct_corrections,
+from pennylane.ftqc import RotXZX, get_byproduct_corrections
+from pennylane.ftqc.pauli_tracker import (
+    _parse_cnot,
+    _parse_h,
+    _parse_mid_measurements,
+    _parse_rotation,
+    _parse_s,
+    _sum_parity,
+    commute_clifford_op,
+    pauli_prod,
+    pauli_to_xz,
+    xz_to_pauli,
 )
-from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
@@ -205,125 +209,87 @@ class TestPauliTracker:
             _ = commute_clifford_op(clifford_op, xz)
 
 
-@flaky(max_runs=5)
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
 
-    def _measurements_corrections(self, script, num_shots, raw_res):
-        """Helper function for correcting the measurement results with recorded MidMeasure results."""
-        meas_res = raw_res[0 : len(script.measurements)]
-
-        mid_meas_res = raw_res[len(script.measurements) :]
-
-        for i in range(num_shots):
-            mid_meas = [row[i] for row in mid_meas_res]
-            phase_cor = get_byproduct_corrections(script, mid_meas)
-            for j in range(len(script.measurements)):
-                meas_res[j][i] = (1 - 2 * meas_res[j][i]) * phase_cor[j]
-
-        cor_res = []
-        for i in range(len(script.measurements)):
-            cor_res.append(np.sum(meas_res[i]) / num_shots)
-        return cor_res
-
-    def _get_mbqc_tape(self, ops, sample_wires, num_shots):
-        """Helper function for creating a MBQC tape with a list of ops and obs.
-        Note that this helper function only works for a circuit with Clifford gates and
-        Paulis. The `diagonalize_mcms` step is subject to be removed. The `qml.Conditional`
-        ops for non-Clifford gates should be kept instead of be removed in the future.
-        """
-        measurements = []
-
-        measurements.append(qml.sample(wires=sample_wires))
-
-        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
-
-        (decomposed_tape,), _ = convert_to_mbqc_gateset(tape)
-
-        (mbqc_tape,), _ = convert_to_mbqc_formalism(decomposed_tape)
-
-        mbqc_ops = []
-        mbqc_measurements = mbqc_tape.measurements
-        for op in mbqc_tape.operations:
-            if isinstance(op, qml.measurements.MidMeasureMP):
-                mbqc_ops.extend([op])
-                mbqc_measurements.extend(
-                    [qml.sample(qml.measurements.MeasurementValue([op], lambda res: res))]
-                )
-            elif isinstance(op, qml.ops.Conditional):
-                continue
-            elif isinstance(op, _PAULIS):
-                # Pauli operations go to the Pauli tracker directly. No need to get them executed.
-                continue
-            else:
-                mbqc_ops.extend([op])
-        mbqc_tape_new = qml.tape.QuantumScript(
-            ops=mbqc_ops, measurements=mbqc_measurements, shots=num_shots
-        )
-        (diagonalized_mbqc_tape,), _ = diagonalize_mcms(mbqc_tape_new)
-        return diagonalized_mbqc_tape
-
-    def _get_ref_res_tape(self, ops, sample_wires):
-        dev_ref = qml.device("default.qubit")
-        measurements_ref = []
-        measurements_ref.append(qml.expval(qml.Z(wires=sample_wires)))
-        script_ref = qml.tape.QuantumScript(ops, measurements_ref)
-        res_ref = dev_ref.execute(script_ref)
-        return res_ref, script_ref
-
-    def _execute_mbqc_tape(self, mbqc_tape, num_shots):
-        mcm_config = qml.devices.MCMConfig(mcm_method="one-shot")
-        config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
-
-        dev = qml.device("lightning.qubit", shots=num_shots)
-        program, new_config = dev.preprocess(config)
-        new_tapes, processing_fn = program([mbqc_tape])
-
-        raw_res = dev.execute(new_tapes, new_config)
-
-        return processing_fn(raw_res)[0]
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("num_shots", [500])
     @pytest.mark.parametrize(
-        "ops",
+        "mid_measures, expected",
+        [([0, 1, 1, 0, 1], 1), ([0, 1, 0, 1, 1, 1], 0), ([0, 1, 1, 0, 0], 0)],
+    )
+    def test_sum_parity(self, mid_measures, expected):
+        assert _sum_parity(*mid_measures) == expected
+
+    @pytest.mark.parametrize(
+        "mid_measures, expected",
         [
-            [qml.CNOT(wires=[0, 1])],
-            [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
-            [qml.S(0)],
-            [qml.S(0), qml.S(1)],
-            [qml.H(0)],
-            [qml.H(0), qml.H(1)],
-            [qml.H(0), qml.S(1), qml.H(1), qml.S(0), qml.CNOT(wires=[0, 1])],
-            [
-                qml.H(0),
-                qml.X(0),
-                qml.Z(0),
-                qml.S(1),
-                qml.Y(1),
-                qml.H(1),
-                qml.S(0),
-                qml.CNOT(wires=[0, 1]),
-                qml.X(0),
-                qml.Y(1),
-            ],
+            ([0, 0, 0, 0], [(0, 1)]),
+            ([0, 0, 0, 1], [(1, 1)]),
+            ([1, 0, 0, 1], [(1, 0)]),
+            ([1, 1, 1, 1], [(0, 0)]),
         ],
     )
+    def test_parse_s(self, mid_measures, expected):
+        assert _parse_s(mid_measures) == expected
+
     @pytest.mark.parametrize(
-        "sample_wires",
+        "mid_measures, expected",
         [
-            [0],
-            [1],
+            ([0, 0, 0, 0], [(0, 0)]),
+            ([0, 0, 0, 1], [(1, 0)]),
+            ([1, 1, 0, 0], [(1, 1)]),
+            ([0, 0, 1, 1], [(0, 1)]),
         ],
     )
-    def test_clifford_circuit_offline(self, num_shots, ops, sample_wires):
-        res_ref, script_ref = self._get_ref_res_tape(ops, sample_wires)
+    def test_parse_h(self, mid_measures, expected):
+        assert _parse_h(mid_measures) == expected
 
-        mbqc_tape = self._get_mbqc_tape(ops, sample_wires, num_shots)
-        mbqc_res = self._execute_mbqc_tape(mbqc_tape, num_shots)
-        cor_res = self._measurements_corrections(script_ref, num_shots, mbqc_res)
+    @pytest.mark.parametrize(
+        "mid_measures, expected",
+        [
+            ([0, 0, 0, 0], [(0, 0)]),
+            ([1, 1, 0, 0], [(1, 1)]),
+            ([1, 0, 1, 1], [(1, 0)]),
+            ([0, 0, 1, 0], [(0, 1)]),
+        ],
+    )
+    def test_parse_rotation(self, mid_measures, expected):
+        assert _parse_rotation(mid_measures) == expected
 
-        assert np.allclose(cor_res, res_ref, rtol=RTOL, atol=ATOL)
+    @pytest.mark.parametrize(
+        "mid_measures, expected",
+        [
+            ([0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0], [(0, 0), (0, 0)]),
+            ([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [(0, 1), (0, 0)]),
+            ([1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [(1, 0), (0, 0)]),
+            ([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [(1, 1), (0, 0)]),
+            ([0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1], [(0, 0), (1, 0)]),
+            ([0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0], [(0, 0), (1, 1)]),
+            ([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [(1, 1), (1, 0)]),
+            ([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0], [(0, 1), (1, 0)]),
+            ([1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0], [(0, 1), (0, 1)]),
+        ],
+    )
+    def test_parse_cnot(self, mid_measures, expected):
+        assert _parse_cnot(mid_measures) == expected
+
+    @pytest.mark.parametrize(
+        "ops, mid_measures, expected",
+        [
+            (
+                [qml.CNOT(wires=[0, 1]), qml.X(0), qml.X(1)],
+                [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0],
+                [[(0, 1), (0, 1)]],
+            ),
+            ([qml.S(0), qml.Y(0)], [1, 0, 0, 1], [[(1, 0)]]),
+            ([qml.H(0), qml.Z(0)], [1, 1, 0, 0], [[(1, 1)]]),
+            ([qml.RZ(0.1, wires=[0]), qml.X(0)], [1, 0, 1, 1], [[(1, 0)]]),
+        ],
+    )
+    def test_parse_mid_measurements(self, ops, mid_measures, expected):
+        tape = qml.tape.QuantumScript(ops=ops)
+        by_ops, ops = _parse_mid_measurements(tape, mid_measures)
+        assert by_ops == expected
+        assert len(by_ops) == 1
 
     @pytest.mark.parametrize("num_shots", [250])
     @pytest.mark.parametrize(
@@ -345,58 +311,76 @@ class TestOfflineCorrection:
         mid_meas = [random.choice([0, 1]) for _ in range(8)]
 
         with pytest.raises(NotImplementedError):
-            _ = get_byproduct_corrections(tape, mid_meas)
+            _ = get_byproduct_corrections(tape, mid_meas, [1])
 
     @pytest.mark.parametrize(
-        "ops, mid_meas, sample_wires, expected",
+        "ops, mid_meas, sample_wires, measures, expected",
         [
-            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], [0], -1),
+            (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [0],
+                [1],
+                [0],
+            ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
                 [0, 0, 1, 1, 1, 1, 0, 0],
                 [0],
-                -1,
+                [1],
+                [0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [0],
-                1,
+                [0],
+                [0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 0, 1, 0, 1, 0, 0, 1],
                 [0],
-                1,
+                [1],
+                [1],
             ),
-            ([qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])], [0, 1, 1, 0, 1, 1, 0, 0], [1], -1),
+            (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [1],
+                [0],
+                [1],
+            ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
                 [0, 1, 1, 0, 1, 0, 0, 0],
                 [1],
-                1,
+                [0],
+                [0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [1],
-                -1,
+                [0],
+                [1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 1, 0, 1],
                 [1],
-                1,
+                [1],
+                [1],
             ),
         ],
     )
-    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, expected):
+    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, measures, expected):
         measurements = []
 
         measurements.append(qml.sample(wires=sample_wires))
 
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        cor = get_byproduct_corrections(tape, mid_meas)[0]
+        corrected_meas = get_byproduct_corrections(tape, mid_meas, measures)
 
-        assert cor == expected
+        assert corrected_meas == expected
