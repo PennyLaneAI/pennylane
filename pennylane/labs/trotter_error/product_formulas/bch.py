@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
 import numpy as np
 
 if TYPE_CHECKING:
-    from pennylane.labs.trotter_error import Fragment, ProductFormula
+    from pennylane.labs.trotter_error import ProductFormula
 
 
 def bch_expansion(product_formula: ProductFormula, order: int) -> Dict[Tuple[int], complex]:
@@ -257,19 +257,7 @@ def _remove_redundancies(
         return term_dicts
 
     for terms in term_dicts[3:]:
-        swap = []
-        for commutator in terms.keys():
-            if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
-                swap.append(commutator)
-
-        for commutator in swap:
-            new_commutator = list(commutator)
-            new_commutator[-4] = commutator[-3]
-            new_commutator[-3] = commutator[-4]
-            new_commutator = tuple(new_commutator)
-
-            terms[new_commutator] += terms[commutator]
-            del terms[commutator]
+        _fourth_order_simplification(terms)
 
     return term_dicts
 
@@ -297,6 +285,21 @@ def _delete(terms):
             delete.append(commutator)
 
     for commutator in delete:
+        del terms[commutator]
+
+def _fourth_order_simplification(terms):
+    swap = []
+    for commutator in terms.keys():
+        if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
+            swap.append(commutator)
+
+    for commutator in swap:
+        new_commutator = list(commutator)
+        new_commutator[-4] = commutator[-3]
+        new_commutator[-3] = commutator[-4]
+        new_commutator = tuple(new_commutator)
+
+        terms[new_commutator] += terms[commutator]
         del terms[commutator]
 
 
