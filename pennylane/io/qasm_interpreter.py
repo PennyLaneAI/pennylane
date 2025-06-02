@@ -95,29 +95,15 @@ class QasmInterpreter:
         context.update({"wires": [], "vars": {}, "gates": [], "callable": None})
 
         # begin recursive descent traversal
-        try:
-            for value in node.__dict__.values():
-                if not isinstance(value, list):
-                    value = [value]
-                for item in value:
-                    if isinstance(item, QASMNode):
-                        self.visit(item, context)
-        except InterruptedError as e:
-            print(str(e))
+        for value in node.__dict__.values():
+            if not isinstance(value, list):
+                value = [value]
+            for item in value:
+                if isinstance(item, EndStatement):
+                    break
+                if isinstance(item, QASMNode):
+                    self.visit(item, context)
         return context
-
-    @visit.register(EndStatement)
-    def visit_end_statement(self, node: QASMNode, context: dict):
-        """
-        Ends the program.
-        Args:
-            node (QASMNode): The end statement QASMNode.
-            context (dict): the current context.
-        """
-        raise InterruptedError(
-            f"The QASM program was terminated om line {node.span.start_line}."
-            f"There may be unprocessed QASM code."
-        )
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
