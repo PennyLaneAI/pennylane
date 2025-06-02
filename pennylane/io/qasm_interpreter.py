@@ -124,7 +124,7 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
 
-class ContextManager:
+class Context:
     """Class with helper methods for managing, updating, checking context."""
 
     def __init__(self, context):
@@ -294,7 +294,7 @@ class QasmInterpreter:
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
         res = self.visit(node.rvalue, context)
-        ContextManager(context).update_var(res, name, node)
+        Context(context).update_var(res, name, node)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: dict):
@@ -304,7 +304,7 @@ class QasmInterpreter:
             node (QASMNode): the alias QASMNode.
             context (dict): the current context.
         """
-        ContextManager(context).init_aliases()
+        Context(context).init_aliases()
         context["aliases"][node.target.name] = self.visit(node.value, context, aliasing=True)
 
     @staticmethod
@@ -363,7 +363,7 @@ class QasmInterpreter:
             constant (bool): Whether the classical variable is a constant.
         """
 
-        ContextManager(context).init_vars()
+        Context(context).init_vars()
 
         context["vars"][node.identifier.name] = {
             "ty": node.type.__class__.__name__,
@@ -461,7 +461,7 @@ class QasmInterpreter:
             for q in range(len(node.qubits))
         ]
 
-        ContextManager(context).require_wires(wires)
+        Context(context).require_wires(wires)
 
         if context["wire_map"] is not None:
             wires = list(map(lambda wire: context["wire_map"][wire], wires))
