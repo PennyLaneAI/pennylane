@@ -20,10 +20,10 @@ import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    ResourceOperator, 
-    GateCount,
-    resource_rep,
     CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
@@ -31,6 +31,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 class ResourceSumOfSlatersStatePrep(ResourceOperator):
     r"""Resource class for preparing states using the Sum of Slaters method"""
+
     resource_keys = {"num_wires", "num_slaters"}
 
     def __init__(self, num_wires, num_slaters, wires=None):
@@ -57,11 +58,11 @@ class ResourceSumOfSlatersStatePrep(ResourceOperator):
 
     @staticmethod
     def sos_toffoli_cost(D):
-        return math.ceil((2 * math.log2(D) - 2)*D + 2**(math.log2(D)+1) + D)
-    
+        return math.ceil((2 * math.log2(D) - 2) * D + 2 ** (math.log2(D) + 1) + D)
+
     @staticmethod
     def sos_qubit_cost(D):
-        return math.ceil(5*math.log2(D)-3)
+        return math.ceil(5 * math.log2(D) - 3)
 
     @classmethod
     def default_resource_decomp(cls, num_wires, num_slaters, **kwargs):
@@ -689,7 +690,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
         gate_counts.append(
             GateCount(
                 t,
-                (2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1)) * num_state_qubits,
+                (2 * (2 * (num_precision_wires - 1)) + 4 * (2 * num_precision_wires - 1))
+                * num_state_qubits,
             )
         )
 

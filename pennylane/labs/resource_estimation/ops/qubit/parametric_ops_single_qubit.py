@@ -15,7 +15,7 @@ r"""Resource operators for parametric single qubit operations."""
 import numpy as np
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,

@@ -16,7 +16,7 @@ from functools import singledispatch
 from typing import Dict, List, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -1153,11 +1153,11 @@ class ResourceChangeBasisOp(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, 
+        cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-        cmpr_compute_op: CompressedResourceOp, 
-        cmpr_base_op: CompressedResourceOp, 
+        cmpr_compute_op: CompressedResourceOp,
+        cmpr_base_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
     ) -> List:
         return [

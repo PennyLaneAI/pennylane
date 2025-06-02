@@ -18,23 +18,17 @@ from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
-
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
+from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
-
-from pennylane.labs.resource_estimation.qubit_manager import (
-    QubitManager,
-    AllocWires,
-    FreeWires,
-)
-from pennylane.labs.resource_estimation.resources_base import Resources
-from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
-from pennylane.labs.resource_estimation.resource_operator import (
-    GateCount,
-    ResourceOperator,
-    CompressedResourceOp,
-)
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -97,7 +91,7 @@ def estimate_resources(
         obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
         gate_set (Set, optional): python set of strings specifying the names of operations to track
         config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
-        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing single 
+        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing single
             qubit rotations to `T`-gates using a Clifford + T approximation.
 
     Returns:
@@ -235,7 +229,7 @@ def resources_from_resource(
     tight_budget=None,
     single_qubit_rotation_error=None,
 ) -> Callable:
-    
+
     if single_qubit_rotation_error is not None:
         config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
@@ -280,7 +274,7 @@ def resources_from_resource_ops(
 ) -> Callable:
 
     return estimate_resources(
-        1*obj, gate_set, config, work_wires, tight_budget, single_qubit_rotation_error
+        1 * obj, gate_set, config, work_wires, tight_budget, single_qubit_rotation_error
     )
 
 
@@ -323,7 +317,7 @@ def _counts_from_compressed_res_op(
             continue
 
         if isinstance(action, AllocWires):
-            if qubit_alloc_sum !=0 and scalar > 1:
+            if qubit_alloc_sum != 0 and scalar > 1:
                 qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
             else:
                 qbit_mngr.grab_clean_qubits(action.num_wires)
