@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane.operation import Operation
-from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
+from pennylane.transforms.decompose import _operator_decomposition_gen, _resolve_gate_set, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
@@ -272,7 +272,3 @@ class TestPrivateHelpers:
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
-
-    @pytest.mark.unit
-    def test_resolve_gate_set_graph_disabled(self):
-        """Tests that the gate set is resolved correctly when the graph is disabled."""

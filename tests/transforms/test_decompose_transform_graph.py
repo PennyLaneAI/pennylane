@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.decompose import _resolve_gate_set
 
 
 @pytest.mark.unit
@@ -328,5 +329,15 @@ def test_decompose_qnode():
 
 @pytest.mark.unit
 @pytest.mark.usefixtures("enable_graph_decomposition")
-def test_resolve_gate_set_graph_enabled():
-    """Tests the _resolve_gate_set function."""
+def test_stopping_condition_graph_enabled():
+    """Tests that the stopping condition is resolved correctly when the graph is disabled."""
+
+    def _stopping_condition(op):
+        return op.num_params > 0 and all(qml.math.allclose(p, 0) for p in op.parameters)
+
+    gate_set, stopping_condition = _resolve_gate_set({"RX", "RY"}, _stopping_condition)
+    assert stopping_condition(qml.RX(0.1, wires=0))
+    assert stopping_condition(qml.RY(0.1, wires=0))
+    assert not stopping_condition(qml.RZ(0.1, wires=0))
+    assert stopping_condition(qml.RZ(0, wires=1))
+    assert gate_set == {"RX", "RY"}
