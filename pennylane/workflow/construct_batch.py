@@ -368,8 +368,9 @@ def construct_batch(
     default_shots = qnode.device.shots
 
     user_program = qnode.transform_program
-    has_final_transform = user_program.has_final_transform
-    num_user_transforms = len(user_program) - int(has_final_transform)
+    has_final_transform = user_program.has_final_transform  # Not used now
+    # num_user_transforms = len(user_program) - int(has_final_transform)
+    num_user_transforms = len(user_program)
 
     # Two cases are recognized as "empty": 1. defined as empty by either "top" or 0; 2. a slice that starts beyond the range of user transforms.
     is_empty_top = level in ("top", 0) or (
@@ -377,7 +378,7 @@ def construct_batch(
     )
 
     # Simple case where we have no final transform and the level is either "user" or a range that is within the user transforms.
-    is_simple_user = (not has_final_transform) and (
+    is_simple_user = (
         level == "user"
         or (isinstance(level, int) and level <= num_user_transforms)
         or (
@@ -449,10 +450,11 @@ def construct_batch(
             _make_execution_config(qnode, gradient_fn, mcm_config)
         )
 
-        if needs_final_transform(level, has_final_transform):
-            resolved_program = full_transform_program[level_slice] + qnode.transform_program[-1:]
-        else:
-            resolved_program = full_transform_program[level_slice]
+        resolved_program = full_transform_program[level_slice]
+        # if needs_final_transform(level, has_final_transform):
+        #     resolved_program = full_transform_program[level_slice] + qnode.transform_program[-1:]
+        # else:
+        #     resolved_program = full_transform_program[level_slice]
 
         batch, remaining_post_processing = resolved_program(tapes)  # Use the user-transformed tapes
 
