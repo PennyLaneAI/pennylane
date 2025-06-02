@@ -11,7 +11,6 @@ from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
     BinaryExpression,
-    BitstringLiteral,
     Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
@@ -361,39 +360,30 @@ class QasmInterpreter:
         """
 
         _init_vars(context)
-        if node.init_expression is not None:
-            if isinstance(node.init_expression, BitstringLiteral):
-                context["vars"][node.identifier.name] = {
-                    "ty": node.type.__class__.__name__,
-                    "val": self.visit(node.init_expression, context),
-                    "size": node.init_expression.width,
-                    "line": node.init_expression.span.start_line,
-                    "constant": constant,
-                }
-            elif not isinstance(node.init_expression, ArrayLiteral):
-                context["vars"][node.identifier.name] = {
-                    "ty": node.type.__class__.__name__,
-                    "val": self.visit(node.init_expression, context),
-                    "line": node.init_expression.span.start_line,
-                    "constant": constant,
-                }
-            else:
-                context["vars"][node.identifier.name] = {
-                    "ty": node.type.__class__.__name__,
-                    "val": [
-                        self.visit(literal, context) for literal in node.init_expression.values
-                    ],
-                    "line": node.init_expression.span.start_line,
-                    "constant": constant,
-                }
-        else:
-            # the var is declared but uninitialized
-            context["vars"][node.identifier.name] = {
-                "ty": node.type.__class__.__name__,
-                "val": None,
-                "line": node.span.start_line,
-                "constant": constant,
-            }
+
+        context["vars"][node.identifier.name] = {
+            "ty": node.type.__class__.__name__,
+            "val": (
+                self.visit(node.init_expression, context)
+                if hasattr(node, "init_expression") and node.init_expression is not None
+                else None
+            ),
+            "size": (
+                node.init_expression.width
+                if hasattr(node, "init_expression") and hasattr(node.init_expression, "width")
+                else None
+            ),
+            "line": (
+                node.init_expression.span.start_line
+                if hasattr(node, "init_expression") and node.init_expression is not None
+                else node.span.start_line
+            ),
+            "constant": constant,
+        }
+
+    @visit.register(ArrayLiteral)
+    def visit_array_literal(self, node: QASMNode, context: dict):
+        return [self.visit(literal, context) for literal in node.values]
 
     @visit.register(QuantumGate)
     def visit_quantum_gate(self, node: QuantumGate, context: dict):
