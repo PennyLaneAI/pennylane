@@ -256,3 +256,7 @@ class TestPrivateHelpers:
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
+
+    @pytest.mark.unit
+    def test_resolve_gate_set_graph_disabled(self):
+        """Tests the _resolve_gate_set function."""

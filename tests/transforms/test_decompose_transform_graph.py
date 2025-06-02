@@ -324,3 +324,9 @@ def test_decompose_qnode():
 
     res = circuit()
     assert qml.math.allclose(res, 1.0)
+
+
+@pytest.mark.unit
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_resolve_gate_set_graph_enabled():
+    """Tests the _resolve_gate_set function."""

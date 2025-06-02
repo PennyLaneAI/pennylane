@@ -322,6 +322,57 @@
   1: ────────────╰X──RY(-0.50)─┤
   ```
 
+* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument that is
+  a function that returns `True` if a concrete operator does not need to be decomposed.
+  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)  
+
+  ```python
+  from functools import partial
+  import pennylane as qml
+
+  qml.decomposition.enable_graph()
+
+  # Prepare a unitary matrix that we want to decompose
+  U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
+
+  def stopping_condition(op):
+
+      if isinstance(op, qml.QubitUnitary):
+          # Let's say we want to skip decomposing a QubitUnitary if it is
+          # equivalent to the identity.
+          identity = qml.math.eye(2 ** len(op.wires))
+          return qml.math.allclose(op.matrix(), identity)
+
+      # For simplicity, the stopping condition does not need to check whether
+      # the operator is in the target gate set. This will always be checked.
+      return False
+
+  @partial(
+      qml.transforms.decompose,
+      # A target gate set specified in terms of operator types is always required
+      # if the new graph-based decomposition system is enabled.
+      gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+      stopping_condition=stopping_condition,
+  )
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.QubitUnitary(U, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
+  1: ──U(M0)────────────────────────┤
+
+  M0 =
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 1.+0.j]]
+  ```
+
+  We can see that the ``QubitUnitary`` on wire 1 is not decomposed due to the stopping condition, 
+  despite ``QubitUnitary`` not being in the target gate set.
+
 <h3>Improvements 🛠</h3>
 
 * Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.

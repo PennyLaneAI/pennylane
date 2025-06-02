@@ -398,7 +398,8 @@ def decompose(
             :doc:`quantum operators </introduction/operations>`.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
-            the operator is in the target gate set.
+            the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
+            section below for more details.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to ``None``.
             If ``None``, the circuit will be decomposed until the target gate set is reached.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
@@ -626,12 +627,59 @@ def decompose(
         With the new graph-based decomposition system enabled, we make the distinction between a
         target gate set and a stopping condition. The ``gate_set`` is a collection of operator
         types and/or names that is required by the graph-based decomposition solver, which chooses
-        a decomposition rule for each operator that ultimately minimizes the total number of
-        gates in terms of the target gate set (or the total cost if weights are provided). On the
-        other hand, the ``stopping_condition`` is a function that determines whether a concrete
-        operator needs to be decomposed.
+        a decomposition rule for each operator that ultimately minimizes the total number of gates
+        in terms of the target gate set (or the total cost if weights are provided). On the other
+        hand, the ``stopping_condition`` is a function that determines whether a concrete operator
+        needs to be decomposed. In short, the ``gate_set`` is specified in terms of operator types,
+        whereas the ``stopping_condition`` is specified in terms of operator instances.
 
-        
+        .. code-block:: python
+
+            from functools import partial
+            import pennylane as qml
+
+            qml.decomposition.enable_graph()
+
+            # Prepare a unitary matrix that we want to decompose
+            U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
+
+            def stopping_condition(op):
+
+                if isinstance(op, qml.QubitUnitary):
+                    # Let's say we want to skip decomposing a QubitUnitary if it is
+                    # equivalent to the identity.
+                    identity = qml.math.eye(2 ** len(op.wires))
+                    return qml.math.allclose(op.matrix(), identity)
+
+                # For simplicity, the stopping condition does not need to check whether
+                # the operator is in the target gate set. This will always be checked.
+                return False
+
+            @partial(
+                qml.transforms.decompose,
+                # A target gate set specified in terms of operator types is always required
+                # if the new graph-based decomposition system is enabled.
+                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+                stopping_condition=stopping_condition,
+            )
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit():
+                qml.QubitUnitary(U, wires=[0, 1])
+                return qml.expval(qml.PauliZ(0))
+
+
+        .. code-block::pycon
+
+            >>> print(qml.draw(circuit)())
+            0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
+            1: ──U(M0)────────────────────────┤
+            <BLANKLINE>
+            M0 =
+            [[1.+0.j 0.+0.j]
+             [0.+0.j 1.+0.j]]
+
+        We can see that the ``QubitUnitary`` on wire 1 is not decomposed, due to the stopping
+        condition, despite ``QubitUnitary`` not being in the target gate set.
 
         **Customizing Decompositions**
 
