@@ -102,15 +102,15 @@ class TestVariables:
         )
 
         # static vars
-        assert context.vars["f"]["val"] == 3.2
-        assert context.vars["g"]["val"] == 3
-        assert context.vars["h"]["val"] == 2
-        assert context.vars["k"]["val"] == 3
+        assert context.vars["f"].val == 3.2
+        assert context.vars["g"].val == 3
+        assert context.vars["h"].val == 2
+        assert context.vars["k"].val == 3
 
         # dynamic vars
-        assert context.vars["l"]["val"]
-        assert context.vars["m"]["val"] == (3.14159 / 2) * 3.3
-        assert context.vars["a"]["val"] == 3.3333333
+        assert context.vars["l"].val
+        assert context.vars["m"].val == (3.14159 / 2) * 3.3
+        assert context.vars["a"].val == 3.3333333
         assert context.aliases["alias"](context) == "01101"
 
     def test_updating_constant(self):
@@ -137,9 +137,9 @@ class TestVariables:
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
 
-        assert context.vars["i"]["val"] == 4
-        assert context.vars["j"]["val"] == 4
-        assert context.vars["c"]["val"] == 0
+        assert context.vars["i"].val == 4
+        assert context.vars["j"].val == 4
+        assert context.vars["c"].val == 0
 
     def test_updating_variables(self):
         # parse the QASM

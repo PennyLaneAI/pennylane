@@ -4,8 +4,9 @@ This submodule contains the interpreter for OpenQASM 3.0.
 
 import functools
 import re
+from dataclasses import dataclass
 from functools import partial
-from typing import Callable
+from typing import Callable, Any
 
 from openqasm3.ast import (
     AliasStatement,
@@ -124,6 +125,14 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
 
 ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
+@dataclass
+class Variable:
+    ty: str
+    val: Any
+    size: int
+    line: int
+    constant: bool
+
 
 class Context:
     """Class with helper methods for managing, updating, checking context."""
@@ -150,13 +159,13 @@ class Context:
             name (str): the name of the variable.
             node (QASMNode): the QASMNode that corresponds to the update.
         """
-        self.context["vars"][name]["val"] = value
-        if self.context["vars"][name]["constant"]:
+        self.vars[name].val = value
+        if self.vars[name].constant:
             raise ValueError(
                 f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                f"defined on line {self.context['vars'][name]['line']}"
+                f"defined on line {self.vars[name].line}"
             )
-        self.context["vars"][name]["line"] = node.span.start_line
+        self.vars[name].line = node.span.start_line
 
     def require_wires(self, wires: list):
         """
@@ -170,11 +179,11 @@ class Context:
         """
         missing_wires = []
         for wire in wires:
-            if wire not in self.context["wires"]:
+            if wire not in self.wires:
                 missing_wires.append(wire)
         if len(missing_wires) > 0:
             raise NameError(
-                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.context['name']}"
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
             )
 
     def __getattr__(self, name: str):
@@ -189,7 +198,7 @@ class Context:
 
 
 def _get_bit_type_val(var):
-    return bin(var["val"])[2:].zfill(var["size"])
+    return bin(var.val)[2:].zfill(var.size)
 
 
 def _index_into_var(var: dict, node: IndexExpression):
@@ -202,10 +211,10 @@ def _index_into_var(var: dict, node: IndexExpression):
     Returns:
         The indexed slice of the variable.
     """
-    if var["ty"] == "BitType":
-        var = bin(var["val"])[2:].zfill(var["size"])
+    if var.ty == "BitType":
+        var = bin(var.val)[2:].zfill(var.size)
     else:
-        var = var["val"]
+        var = var.val
     if isinstance(node.index[0], RangeDefinition):
         return var[node.index[0].start.value : node.index[0].end.value]
     if re.search("Literal", node.index[0].__class__.__name__):
@@ -339,7 +348,7 @@ class QasmInterpreter:
 
         if name in context.vars:
             res = context.vars[name]
-            if res["val"] is not None:
+            if res.val is not None:
                 return res
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         if (
@@ -350,7 +359,7 @@ class QasmInterpreter:
             res = context.aliases[name](context)  # evaluate the alias and de-reference
             if isinstance(res, str):
                 return res
-            if res["val"] is not None:
+            if res.val is not None:
                 return res
             raise NameError(f"Attempt to reference uninitialized parameter {name}!")
         raise TypeError(
@@ -380,25 +389,25 @@ class QasmInterpreter:
             constant (bool): Whether the classical variable is a constant.
         """
 
-        context.vars[node.identifier.name] = {
-            "ty": node.type.__class__.__name__,
-            "val": (
+        context.vars[node.identifier.name] = Variable(
+            node.type.__class__.__name__,
+            (
                 self.visit(node.init_expression, context)
                 if hasattr(node, "init_expression") and node.init_expression is not None
                 else None
             ),
-            "size": (
+            (
                 node.init_expression.width
                 if hasattr(node, "init_expression") and hasattr(node.init_expression, "width")
                 else None
             ),
-            "line": (
+            (
                 node.init_expression.span.start_line
                 if hasattr(node, "init_expression") and node.init_expression is not None
                 else node.span.start_line
             ),
-            "constant": constant,
-        }
+            constant,
+        )
 
     @visit.register(ArrayLiteral)
     def visit_array_literal(self, node: ArrayLiteral, context: Context):
@@ -536,7 +545,7 @@ class QasmInterpreter:
             node (Cast): The Cast expression.
             context (Context): The current context.
         """
-        return self.retrieve_variable(node.argument.name, context)["val"]
+        return self.retrieve_variable(node.argument.name, context).val
 
     @visit.register(BinaryExpression)
     def visit_binary_expression(self, node: BinaryExpression, context: Context):
@@ -651,11 +660,11 @@ class QasmInterpreter:
         # else we are evaluating an alias
         try:
             var = self.retrieve_variable(node.name, context)
-            value = var["val"] if isinstance(var, dict) and "val" in var else var
+            value = var.val if isinstance(var, Variable) else var
             if callable(value):
-                var["val"] = value(context)
-                var["line"] = node.span.start_line
-                value = var["val"]
+                var.val = value(context)
+                var.line = node.span.start_line
+                value = var.val
             return value
         except NameError as e:
             raise NameError(
