@@ -5,6 +5,7 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 import re
 from typing import Callable
+from functools import partial
 
 from openqasm3.ast import (
     ArrayLiteral,
@@ -271,7 +272,6 @@ class QasmInterpreter:
     @staticmethod
     def _init_vars(context: dict):
         """
-        context["callable"] = partial(self._execute_all, context)
         Inits the vars dict on the current context.
         Args:
             context (dict): the current context.
@@ -530,6 +530,29 @@ class QasmInterpreter:
             f"on line {node.span.start_line}."
         )
 
+    @staticmethod
+    def _index_into_var(var: dict, node: IndexExpression):
+        """
+        Index into a variable using an IndexExpression.
+
+        Args:
+            var (Variable): The data structure representing the variable to index.
+
+        Returns:
+            The indexed slice of the variable.
+        """
+        if var["ty"] == "BitType":
+            var = bin(var["val"])[2:].zfill(var["size"])
+        else:
+            var = var["val"]
+        if isinstance(node.index[0], RangeDefinition):
+            return var[node.index[0].start.value: node.index[0].end.value]
+        if re.search("Literal", node.index[0].__class__.__name__):
+            return var[node.index[0].value]
+        raise TypeError(
+            f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+        )
+
     @visit.register(IndexExpression)
     def visit_index_expression(self, node: IndexExpression, context: dict, aliasing: bool = False):
         """
@@ -544,35 +567,30 @@ class QasmInterpreter:
             The slice of the indexed value.
         """
 
-        def _index_into_var(var):
-            if var["ty"] == "BitType":
-                var = bin(var["val"])[2:].zfill(var["size"])
-            else:
-                var = var["val"]
-            if isinstance(node.index[0], RangeDefinition):
-                return var[node.index[0].start.value : node.index[0].end.value]
-            if re.search("Literal", node.index[0].__class__.__name__):
-                return var[node.index[0].value]
-            raise TypeError(
-                f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
-            )
-
-        if aliasing:
-
-            def alias(context):
-                try:
-                    var = self.retrieve_variable(node.collection.name, context)
-                    return _index_into_var(var)
-                except NameError as e:
-                    raise NameError(
-                        f"Attempt to alias an undeclared variable "
-                        f"{node.collection.name} in {context['name']}."
-                    ) from e
-
-            return alias
-        else:
+        if aliasing:  # we are registering an alias
+            return lambda cntxt: self._index_into_var(self._alias(node, cntxt), node)
+        else:  # we are just evaluating an index
             var = self.retrieve_variable(node.collection.name, context)
-            return _index_into_var(var)
+            return self._index_into_var(var, node)
+
+    def _alias(self, node: Identifier | IndexExpression, context: dict):
+        """
+        An alias is registered as a callable since we need to be able to
+        evaluate it at a later time.
+
+        Args:
+            context (dict): The current context.
+
+        Returns:
+            The de-referenced alias.
+        """
+        try:
+            return self.retrieve_variable(node.collection.name, context)
+        except NameError as e:
+            raise NameError(
+                f"Attempt to alias an undeclared variable "
+                f"{node.name} in {context['name']}."
+            ) from e
 
     @visit.register(Identifier)
     def visit_identifier(self, node: Identifier, context: dict, aliasing: bool = False):
@@ -588,27 +606,7 @@ class QasmInterpreter:
             The de-referenced identifier.
         """
         if aliasing:  # we are registering an alias
-
-            def alias(context):
-                """
-                An alias is registered as a callable since we need to be able to
-                evaluate it at a later time.
-
-                Args:
-                    context (dict): The current context.
-
-                Returns:
-                    The de-referenced alias.
-                """
-                try:
-                    return self.retrieve_variable(node.collection.name, context)
-                except NameError as e:
-                    raise NameError(
-                        f"Attempt to alias an undeclared variable "
-                        f"{node.name} in {context['name']}."
-                    ) from e
-
-            return alias
+            return partial(self._alias, node, context)
         else:  # else we are evaluating an alias
             try:
                 var = self.retrieve_variable(node.name, context)
