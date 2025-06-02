@@ -51,7 +51,7 @@ class TestInterpreter:
 
     def test_nested_end(self):
         # parse the QASM
-        ast = parse(open("nested_end.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -63,7 +63,7 @@ class TestInterpreter:
 
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
-        ast = parse(open("standalone_subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -75,7 +75,7 @@ class TestInterpreter:
 
     def test_complex_subroutines(self):
         # parse the QASM
-        ast = parse(open("complex_subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -88,7 +88,7 @@ class TestInterpreter:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(open("subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -145,7 +145,7 @@ class TestInterpreter:
 
     def test_variables(self, mocker):
         # parse the QASM
-        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -240,7 +240,7 @@ class TestInterpreter:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
@@ -252,7 +252,7 @@ class TestInterpreter:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -270,7 +270,7 @@ class TestInterpreter:
     def test_loops(self, mocker):
 
         # parse the QASM
-        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -291,7 +291,7 @@ class TestInterpreter:
     def test_switch(self, mocker):
 
         # parse the QASM
-        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
