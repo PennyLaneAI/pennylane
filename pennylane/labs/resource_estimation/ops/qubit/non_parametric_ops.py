@@ -100,7 +100,7 @@ class ResourceHadamard(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -133,7 +133,7 @@ class ResourceS(ResourceOperator):
         Resources:
             The S-gate decomposes into two T-gates.
         """
-        t = ResourceT.resource_rep()
+        t = resource_rep(re.ResourceT)
         return [GateCount(t, 2)]
 
     @property
@@ -165,7 +165,7 @@ class ResourceS(ResourceOperator):
                 in the decomposition.
         """
 
-        z = re.ResourceZ.resource_rep()
+        z = resource_rep(re.ResourceZ)
 
         return [GateCount(z, 1), GateCount(cls.resource_rep(), 1)]
 
@@ -192,13 +192,13 @@ class ResourceS(ResourceOperator):
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         if mod_4 == 1:
             return [GateCount(cls.resource_rep())]
         if mod_4 == 2:
-            return [GateCount(re.ResourceZ.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceZ))]
 
-        return [GateCount(re.ResourceZ.resource_rep()), GateCount(cls.resource_rep())]
+        return [GateCount(resource_rep(re.ResourceZ)), GateCount(cls.resource_rep())]
 
 
 class ResourceT(ResourceOperator):
@@ -259,8 +259,8 @@ class ResourceT(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-        z = resource_rep(ResourceZ)
-        s = resource_rep(ResourceS)
+        z = resource_rep(re.ResourceZ)
+        s = resource_rep(re.ResourceS)
         return [GateCount(cls.resource_rep()), GateCount(s), GateCount(z)]
 
     @classmethod
@@ -292,15 +292,15 @@ class ResourceT(ResourceOperator):
         """
 
         if (mod_8 := pow_z % 8) == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
+            return [GateCount(resource_rep(re.ResourceIdentity))]
 
         gate_lst = []
         if mod_8 >= 4:
-            gate_lst.append(GateCount(resource_rep(ResourceZ)))
+            gate_lst.append(GateCount(resource_rep(re.ResourceZ)))
             mod_8 -= 4
 
         if mod_8 >= 2:
-            gate_lst.append(GateCount(resource_rep(ResourceS)))
+            gate_lst.append(GateCount(resource_rep(re.ResourceS)))
             mod_8 -= 2
 
         if mod_8 >= 1:
@@ -358,8 +358,8 @@ class ResourceX(ResourceOperator):
             Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        s = resource_rep(re.ResourceS)
+        h = resource_rep(re.ResourceHadamard)
 
         return [GateCount(h, 2), GateCount(s, 2)]
 
@@ -410,7 +410,7 @@ class ResourceX(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -467,8 +467,8 @@ class ResourceY(ResourceOperator):
             Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        s = resource_rep(re.ResourceS)
+        h = resource_rep(re.ResourceHadamard)
 
         return [GateCount(s, 6), GateCount(h, 2)]
 
@@ -519,7 +519,7 @@ class ResourceY(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -560,7 +560,7 @@ class ResourceZ(ResourceOperator):
 
             thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
         """
-        s = re.ResourceS.resource_rep()
+        s = resource_rep(re.ResourceS)
         return [GateCount(s, 2)]
 
     @property
@@ -610,5 +610,5 @@ class ResourceZ(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]

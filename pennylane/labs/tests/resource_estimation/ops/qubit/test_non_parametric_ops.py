@@ -192,7 +192,7 @@ class TestT:
                 re.GateCount(re.ResourceT.resource_rep(), 1),
             ],
         ),
-        (8, {re.ResourceIdentity.resource_rep(): 1}),
+        (8, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (
             14,
             [
@@ -208,13 +208,13 @@ class TestT:
                 re.GateCount(re.ResourceT.resource_rep(), 1),
             ],
         ),
-        (16, {re.ResourceIdentity.resource_rep(): 1}),
+        (16, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        op = re.ResourceT(0)
+        op = re.ResourceT
         assert op.pow_resource_decomp(z) == expected_res
 
 

@@ -113,7 +113,7 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Identity gate acts trivially when raised to a power. The resources of this
@@ -196,7 +196,7 @@ class ResourceGlobalPhase(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a global phase produces a sum of global phases.
