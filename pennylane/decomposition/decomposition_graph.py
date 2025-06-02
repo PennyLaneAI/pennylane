@@ -38,6 +38,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    controlled_decomp_with_work_wire,
     decompose_to_base,
     flip_control_adjoint,
     flip_pow_adjoint,
@@ -48,6 +49,7 @@ from .symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    to_controlled_qubit_unitary,
 )
 from .utils import DecompositionError, translate_op_alias
 
@@ -299,7 +301,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
-        return [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+        rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+
+        # There's always the option of turning the controlled operator into a controlled
+        # qubit unitary if the base operator has a matrix form.
+        rules.append(to_controlled_qubit_unitary)
+
+        # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
+        rules.append(controlled_decomp_with_work_wire)
+
+        return rules
 
     def solve(self, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.
