@@ -49,6 +49,18 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestInterpreter:
 
+    def test_nested_end(self):
+        # parse the QASM
+        ast = parse(open("nested_end.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-end", "wire_map": None}
+            )
+
+        assert q.queue == [PauliX("q0")]
+
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(open("standalone_subroutines.qasm", mode="r").read(), permissive=True)
