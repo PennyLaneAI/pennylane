@@ -899,6 +899,7 @@ def _resolve_gate_set(
         def gate_set_contains(op: Operator) -> bool:
             return (op.name in gate_names) or isinstance(op, gate_types)
 
+    # pylint: disable=isinstance-second-argument-not-valid-type
     elif isinstance(gate_set, Callable):
 
         gate_set_contains = gate_set
