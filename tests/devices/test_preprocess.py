@@ -712,11 +712,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
-    def test_multiple_measurements(self, meas_transform):
+    def test_multiple_measurements(self, meas_transform, seed):
         """Test the results of applying measurements_from_counts/measurements_from_samples with
         multiple measurements"""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @qml.qnode(dev)
         def basic_circuit(theta: float):
