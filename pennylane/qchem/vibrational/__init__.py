@@ -25,5 +25,5 @@ from .localize_modes import localize_normal_modes
 from .vibrational_class import VibrationalPES, optimize_geometry
 from .vscf import vscf_integrals
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
-from christiansen_ham import christiansen_hamiltonian, christiansen_bosonic, christiansen_dipole
-from pes_generator import vibrational_pes
+from .christiansen_ham import christiansen_hamiltonian, christiansen_bosonic, christiansen_dipole
+from .pes_generator import vibrational_pes

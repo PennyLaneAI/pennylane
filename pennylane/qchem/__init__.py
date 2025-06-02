@@ -91,4 +91,8 @@ from .vibrational import (
     taylor_dipole_coeffs,
     taylor_hamiltonian,
     vscf_integrals,
+    christiansen_hamiltonian,
+    christiansen_bosonic,
+    christiansen_dipole,
+    vibrational_pes
 )
