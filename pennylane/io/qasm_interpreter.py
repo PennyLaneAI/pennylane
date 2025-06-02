@@ -53,7 +53,7 @@ PARAMETERIZED_GATES = {
 }
 
 
-class EndProgram(Exception):  # pragma: no cover
+class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
@@ -111,7 +111,7 @@ class QasmInterpreter:
         return context
 
     @visit.register(EndStatement)
-    def visit_end_statement(self, node: QASMNode, context: dict):
+    def visit_end_statement(self, node: QASMNode, context: dict):  # pylint: disable=no-self-use
         """
         Ends the program.
         Args:
