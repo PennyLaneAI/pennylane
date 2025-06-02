@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Christiansen Hamiltonian construction functions."""
-import os
-import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
