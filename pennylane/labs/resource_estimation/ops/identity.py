@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for identity operations."""
-from typing import Dict
-
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -36,7 +34,7 @@ class ResourceIdentity(ResourceOperator):
 
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate returns an empty dictionary.
+        further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: :class:`~.Identity`
 
@@ -61,29 +59,30 @@ class ResourceIdentity(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             The Identity gate is treated as a free gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate returns an empty dictionary.
+            further. Requesting the resources of this gate returns an empty list.
 
         Returns:
-            dict: empty dictionary
+            list: empty list
         """
         return []
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation is also an empty dictionary.
+            This operation is self-adjoint, so the resources of the adjoint operation is also an empty list.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -92,8 +91,8 @@ class ResourceIdentity(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
@@ -105,14 +104,15 @@ class ResourceIdentity(ResourceOperator):
             the original (un-controlled) operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             z (int): the power that the operator is being raised to
@@ -122,8 +122,9 @@ class ResourceIdentity(ResourceOperator):
             operation are the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -139,7 +140,7 @@ class ResourceGlobalPhase(ResourceOperator):
 
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
-        further. Requesting the resources of this gate returns an empty dictionary.
+        further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: :class:`~.GlobalPhase`
 
@@ -164,30 +165,31 @@ class ResourceGlobalPhase(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
             The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate returns an empty dictionary.
+            further. Requesting the resources of this gate returns an empty list.
 
         Returns:
-            dict: empty dictionary
+            list: empty list
         """
         return []
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a global phase operator changes the sign of the phase, thus
             the resources of the adjoint operation is the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -196,7 +198,7 @@ class ResourceGlobalPhase(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -213,8 +215,9 @@ class ResourceGlobalPhase(ResourceOperator):
             case, we sandwich the phase shift operation with two multi-controlled X gates.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourcePhaseShift))]
@@ -233,21 +236,21 @@ class ResourceGlobalPhase(ResourceOperator):
             },
         )
 
-        return [GrabWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
+        return [AllocWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
 
-    @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a global phase produces a sum of global phases.
             The resources simplify to just one total global phase operator.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]

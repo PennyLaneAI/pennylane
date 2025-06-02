@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for non parametric single qubit operations."""
-from typing import Dict
-
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -41,6 +39,20 @@ class ResourceHadamard(ResourceOperator):
 
     num_wires = 1
 
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+        """
+        raise re.ResourcesNotDefined
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -53,43 +65,30 @@ class ResourceHadamard(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
-
-        Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
-        """
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
-        return [GateCount(cls.resource_rep())]
+        return [GateCount(cls.resource_rep(), 1)]
 
     @classmethod
     def default_controlled_resource_decomp(
         cls,
         ctrl_num_ctrl_wires: int,
         ctrl_num_ctrl_values: int,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -147,22 +146,21 @@ class ResourceHadamard(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Hadamard gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
-        if pow_z % 2 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -181,7 +179,7 @@ class ResourceS(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceS.resources()
+    >>> re.ResourceS.resource_decomp()
     {T: 2}
     """
 
@@ -203,8 +201,8 @@ class ResourceS(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -214,16 +212,17 @@ class ResourceS(ResourceOperator):
         return [GateCount(t, 2)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of the S-gate is equivalent to the S-gate raised to the third power.
-            The resources are defined as three instances of the S-gate.
+            The adjoint of the S-gate is equivalent to the Z.S.
+            The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         z = resource_rep(ResourceZ)
         return [GateCount(z), GateCount(cls.resource_rep())]
@@ -275,24 +274,35 @@ class ResourceS(ResourceOperator):
         return [GateCount(cs, 1), GateCount(mcx, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The S-gate, when raised to a power which is a multiple of four, produces identity.
-            The cost of raising to an arbitrary integer power :math:`z` is given by
-            :math:`z \mod 4` instances of the S-gate.
+            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to one, means one instance of the S-gate.
+            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to two, means one instance of the Z-gate.
+            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
-        if (mod_4 := pow_z % 4) == 0:
+        mod_4 = pow_z % 4
+        if mod_4 == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
-        return [GateCount(cls.resource_rep(), mod_4)]
+        if mod_4 == 1:
+            return [GateCount(cls.resource_rep())]
+        if mod_4 == 2:
+            return [GateCount(resource_rep(ResourceZ))]
+
+        return [GateCount(resource_rep(ResourceZ)), GateCount(cls.resource_rep())]
 
 
 class ResourceSWAP(ResourceOperator):
@@ -360,7 +370,7 @@ class ResourceSWAP(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -399,7 +409,7 @@ class ResourceSWAP(ResourceOperator):
         return [GateCount(cnot, 3)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -415,7 +425,7 @@ class ResourceSWAP(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -456,7 +466,7 @@ class ResourceSWAP(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(mcx)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
@@ -491,6 +501,20 @@ class ResourceT(ResourceOperator):
 
     num_wires = 1
 
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
+            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
+
+        Raises:
+            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
+        """
+        raise re.ResourcesNotDefined
+
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
@@ -507,30 +531,17 @@ class ResourceT(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The T-gate is treated as a fundamental gate and thus it cannot be decomposed
-            further. Requesting the resources of this gate raises a :code:`ResourcesNotDefined` error.
-
-        Raises:
-            ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
-        """
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of the T-gate is equivalent to the T-gate raised to the 7th power.
             The resources are defined as seven instances of the T-gate.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         z = resource_rep(ResourceZ)
         s = resource_rep(ResourceS)
@@ -579,20 +590,31 @@ class ResourceT(ResourceOperator):
         return [GateCount(ct), GateCount(mcx, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The T-gate, when raised to a power which is a multiple of eight, produces identity.
-            The cost of raising to an arbitrary integer power :math:`z` is given by
-            :math:`z \mod 8` instances of the T-gate.
+            Consequently, for any integer power `z`, the effective quantum operation :math:`T^{z}` is equivalent
+            to :math:`T^{z \pmod 8}`.
+
+        The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            - If `z' = 0`: The operation is equivalent to the Identity gate (`I`).
+            - If `z' = 1`: The operation is equivalent to the T-gate (`T`).
+            - If `z' = 2`: The operation is equivalent to the S-gate (`S`).
+            - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
+            - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
+            - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
+            - If `z' = 6`: The operation is equivalent to the S-adjoint gate (:math:`S^{\dagger}`).
+            - If `z' = 7`: The operation is equivalent to the T-adjoint gate (:math:`T^{\dagger}`).
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if (mod_8 := pow_z % 8) == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
@@ -637,30 +659,15 @@ class ResourceX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceX.resources()
+    >>> re.ResourceX.resource_decomp()
     {S: 2, Hadamard: 2}
     """
 
     num_wires = 1
 
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
-        """
-        return {}
-
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, {})
-
-    @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -681,17 +688,33 @@ class ResourceX(ResourceOperator):
 
         return [GateCount(h, 2), GateCount(s, 2)]
 
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def resource_rep(cls) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -745,19 +768,20 @@ class ResourceX(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The X-gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
@@ -791,7 +815,7 @@ class ResourceY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceY.resources()
+    >>> re.ResourceY.resource_decomp()
     {S: 6, Hadamard: 2}
     """
 
@@ -813,8 +837,8 @@ class ResourceY(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -840,23 +864,24 @@ class ResourceY(ResourceOperator):
         return [GateCount(s), GateCount(z), GateCount(s_adj), GateCount(h, 2)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -902,19 +927,20 @@ class ResourceY(ResourceOperator):
         return [GateCount(s), GateCount(s_dagg), GateCount(mcx)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Y-gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]
@@ -940,11 +966,26 @@ class ResourceZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceZ.resources()
+    >>> re.ResourceZ.resource_decomp()
     {S: 2}
     """
 
     num_wires = 1
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Resources:
+            The Z-gate can be decomposed according to the following identities:
+
+            .. math:: \hat{Z} = \hat{S}^{2},
+
+            thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
+        """
+        s = resource_rep(ResourceS)
+        return [GateCount(s, 2)]
 
     @property
     def resource_params(self) -> dict:
@@ -962,31 +1003,17 @@ class ResourceZ(ResourceOperator):
         return CompressedResourceOp(cls, {})
 
     @classmethod
-    def default_resource_decomp(cls, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Resources:
-            The Z-gate can be decomposed according to the following identities:
-
-            .. math:: \hat{Z} = \hat{S}^{2},
-
-            thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
-        """
-        s = resource_rep(ResourceS)
-        return [GateCount(s, 2)]
-
-    @classmethod
-    def default_adjoint_resource_decomp(cls) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
             in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -995,7 +1022,7 @@ class ResourceZ(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -1046,19 +1073,20 @@ class ResourceZ(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Z-gate raised to even powers produces identity and raised
             to odd powers it produces itself.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(re.ResourceIdentity))]

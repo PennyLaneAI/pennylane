@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric single qubit operations."""
-from typing import Dict
-
 import numpy as np
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -31,7 +29,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 def _rotation_resources(epsilon=10e-3):
     r"""An estimate on the number of T gates needed to implement a Pauli rotation.
 
-    The expected T-count is taken from (the 'Simulation Results' section) `Eﬃcient
+    The expected T-count is taken from (the 'Simulation Results' section) `Efficient
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
@@ -41,8 +39,9 @@ def _rotation_resources(epsilon=10e-3):
         epsilon (float): the acceptable error threshold for the approximation
 
     Returns:
-        dict: the T-gate counts
-
+        list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
     """
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
     t = resource_rep(re.ResourceT)
@@ -68,7 +67,7 @@ class ResourcePhaseShift(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation are computed as:
 
     >>> re.ResourcePhaseShift.resources()
     {RZ: 1, GlobalPhase: 1}
@@ -86,7 +85,8 @@ class ResourcePhaseShift(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -94,11 +94,12 @@ class ResourcePhaseShift(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
+
         return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
         Resources:
@@ -115,16 +116,17 @@ class ResourcePhaseShift(ResourceOperator):
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a phase shift operator just changes the sign of the phase, thus
             the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps=eps))]
 
@@ -134,7 +136,7 @@ class ResourcePhaseShift(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -153,8 +155,9 @@ class ResourcePhaseShift(ResourceOperator):
             as described in (lemma 7.11) `Elementary gates for quantum computation <https://arxiv.org/pdf/quant-ph/9503016>`_.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceControlledPhaseShift, {"eps": eps}))]
@@ -172,22 +175,23 @@ class ResourcePhaseShift(ResourceOperator):
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
-        return [GrabWires(1), GateCount(c_ps), GateCount(mcx, 2), FreeWires(1)]
+        return [AllocWires(1), GateCount(c_ps), GateCount(mcx, 2), FreeWires(1)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a phase shift produces a sum of shifts.
             The resources simplify to just one total phase shift operator.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps=eps))]
 
@@ -202,7 +206,7 @@ class ResourceRX(ResourceOperator):
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
@@ -211,17 +215,29 @@ class ResourceRX(ResourceOperator):
 
     **Example**
 
-    The resources for this operation are computed using:
+    The resources for this operation are computed as:
 
-    >>> re.get_resources(re.ResourceRX(1.23, 0))
-    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+    >>> re.estimate_resources(re.ResourceRX)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rx": 1e-3}
-    >>> re.get_resources(re.ResourceRX(1.23, 0), config=config)
-    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
+    >>> re.estimate_resources(re.ResourceRX, config=config)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
     """
 
     num_wires = 1
@@ -245,10 +261,12 @@ class ResourceRX(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
+
+        params = {"eps": eps}
         return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -268,7 +286,7 @@ class ResourceRX(ResourceOperator):
         return _rotation_resources(epsilon=eps)
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -276,8 +294,9 @@ class ResourceRX(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -287,7 +306,7 @@ class ResourceRX(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -312,8 +331,9 @@ class ResourceRX(ResourceOperator):
             controlled-version of that identity.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
 
@@ -336,19 +356,20 @@ class ResourceRX(ResourceOperator):
         return [GateCount(mcx, 2), GateCount(rz, 2), GateCount(h, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -363,7 +384,7 @@ class ResourceRY(ResourceOperator):
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
         resources are approximating the gate with a series of T gates. The expected T-count is taken
-        from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+        from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
         .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
@@ -374,15 +395,28 @@ class ResourceRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.get_resources(re.ResourceRY(1.23, 0))
-    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+    >>> re.estimate_resources(re.ResourceRY)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_ry": 1e-3}
-    >>> re.get_resources(re.ResourceRY(1.23, 0), config=config)
-    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}
+    >>> re.estimate_resources(re.ResourceRY, config=config)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
+
     """
 
     num_wires = 1
@@ -397,7 +431,8 @@ class ResourceRY(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -408,7 +443,7 @@ class ResourceRY(ResourceOperator):
         return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -418,7 +453,7 @@ class ResourceRY(ResourceOperator):
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
             resources are approximating the gate with a series of T gates. The expected T-count is taken
-            from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
+            from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
             .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
@@ -430,7 +465,7 @@ class ResourceRY(ResourceOperator):
         return _rotation_resources(epsilon=eps)
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -438,8 +473,9 @@ class ResourceRY(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -449,7 +485,7 @@ class ResourceRY(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -475,8 +511,9 @@ class ResourceRY(ResourceOperator):
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRY, {"eps": eps}))]
@@ -498,19 +535,20 @@ class ResourceRY(ResourceOperator):
         return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -536,15 +574,28 @@ class ResourceRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.get_resources(re.ResourceRZ(1.23, 0))
-    {'gate_types': defaultdict(<class 'int'>, {'T': 17}), 'num_gates': 17, 'num_wires': 1}
+    >>> re.estimate_resources(re.ResourceRZ)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rz": 1e-3}
-    >>> re.get_resources(re.ResourceRZ(1.23, 0), config=config)
-    {'gate_types': defaultdict(<class 'int'>, {'T': 21}), 'num_gates': 21, 'num_wires': 1}s
+    >>> re.estimate_resources(re.ResourceRZ, config=config)
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'T': 17}
+
     """
 
     num_wires = 1
@@ -559,7 +610,8 @@ class ResourceRZ(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -570,7 +622,7 @@ class ResourceRZ(ResourceOperator):
         return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -589,7 +641,7 @@ class ResourceRZ(ResourceOperator):
         return _rotation_resources(epsilon=eps)
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -597,8 +649,9 @@ class ResourceRZ(ResourceOperator):
             thus the resources of the adjoint operation result in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -608,7 +661,7 @@ class ResourceRZ(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         eps=None,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -632,8 +685,9 @@ class ResourceRZ(ResourceOperator):
             interfere the gates based on the value of the control qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRZ, {"eps": eps}))]
@@ -655,19 +709,20 @@ class ResourceRZ(ResourceOperator):
         return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -676,11 +731,7 @@ class ResourceRot(ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        theta (float): rotation angle :math:`\theta`
-        omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         The resources are obtained according to the definition of the :class:`Rot` gate:
@@ -693,7 +744,7 @@ class ResourceRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceRot.resources()
+    >>> re.ResourceRot.resource_decomp()
     {RY: 1, RZ: 2}
     """
 
@@ -709,7 +760,8 @@ class ResourceRot(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -720,7 +772,7 @@ class ResourceRot(ResourceOperator):
         return CompressedResourceOp(cls, {"eps": eps})
 
     @classmethod
-    def default_resource_decomp(cls, eps=None, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -736,7 +788,7 @@ class ResourceRot(ResourceOperator):
         return [GateCount(ry), GateCount(rz, 2)]
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for the adjoint of the operator.
 
         Resources:
@@ -744,15 +796,16 @@ class ResourceRot(ResourceOperator):
             thus the resources of the adjoint operation results in the original operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, eps=None
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -764,7 +817,7 @@ class ResourceRot(ResourceOperator):
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`.
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
-g
+
             In the case where multiple controlled wires are provided, the resources are derived
             from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
@@ -789,8 +842,9 @@ g
             multi-controlled case.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(re.ResourceCRot, {"eps": eps}))]
@@ -813,18 +867,22 @@ g
         return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z, eps=None) -> Dict[CompressedResourceOp, int]:
+    def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a general single qubit rotation produces a sum of rotations.
             The resources simplify to just one total single qubit rotation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
         """
+        if pow_z == 0:
+            return [GateCount(re.ResourceIdentity.resource_rep(eps=eps), 1)]
+
         return [GateCount(cls.resource_rep(eps))]
