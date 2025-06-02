@@ -37,6 +37,12 @@ from pennylane.compiler.python_compiler.transforms.decompose import Decompositio
 def test_rot_decomposition():
     """Test that the Rot gate is decomposed into RZ and RY gates."""
 
+    # qml.Rot(0.5, 0.5, 0.5, wires=0)
+    # ---->
+    # RZ(0.5, wires=0)
+    # RY(0.5, wires=0)
+    # RZ(0.5, wires=0)
+
     module_source = """
 builtin.module @circuit {
     // CHECK: func.func public @circuit()
@@ -54,8 +60,70 @@ builtin.module @circuit {
       // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT1]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
       // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
       // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      
+      // CHeCK: [[___]] = "quantum.insert"([[QUBITREGISTER]], [[LASTQUBIT]]) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
       %4 = "quantum.custom"(%0, %0, %0, %3) <{gate_name = "Rot", operandSegmentSizes = array<i32: 3, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, f64, f64, !quantum.bit) -> !quantum.bit
+    }
+}
+"""
+
+    ctx = xdsl.context.Context()
+    ctx.allow_unregistered_dialects = True
+    ctx.load_dialect(xdsl.dialects.builtin.Builtin)
+    ctx.load_dialect(xdsl.dialects.func.Func)
+    ctx.load_dialect(xdsl.dialects.transform.Transform)
+    ctx.load_dialect(xdsl.dialects.arith.Arith)
+    ctx.load_dialect(Test)
+    ctx.load_dialect(QuantumDialect)
+
+    module = xdsl.parser.Parser(ctx, module_source).parse_module()
+
+    pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+    pipeline.apply(ctx, module)
+
+    print(module)
+
+    opts = parse_argv_options(["filecheck", __file__])
+    matcher = Matcher(
+        opts,
+        FInput("no-name", str(module)),
+        FCParser(opts, io.StringIO(module_source), *pattern_for_opts(opts)),
+    )
+    assert matcher.run() == 0
+
+
+def test_repeated_rot_decomposition():
+    """Test that the Rot gate is decomposed into RZ and RY gates."""
+
+    # qml.Rot(0.1, 0.2, 0.3, wires=0)
+    # qml.Rot(0.4, 0.5, 0.6, wires=0)
+    # qml.Rot(0.1, 0.1, 0.1, wires=1)
+    # ---->
+    # RZ(0.1, wires=0)
+    # RY(0.2, wires=0)
+    # RZ(0.3, wires=0)
+    # RZ(0.4, wires=0)
+    # RY(0.5, wires=0)
+    # RZ(0.6, wires=0)
+    # RZ(0.1, wires=1)
+    # RY(0.1, wires=1)
+    # RZ(0.1, wires=1)
+
+    module_source = """
+builtin.module @circuit {
+    // CHECK: func.func public @circuit()
+    func.func public @circuit() -> tensor<8xcomplex<f64>> attributes {qnode} {
+
+        %0 = arith.constant 6.000000e-01 : f64
+        %1 = arith.constant 5.000000e-01 : f64
+        %2 = arith.constant 4.000000e-01 : f64
+        %3 = arith.constant 3.000000e-01 : f64
+        %4 = arith.constant 2.000000e-01 : f64
+        %5 = arith.constant 1.000000e-01 : f64
+        %6 = arith.constant 0 : i64
+
+        "quantum.device_init"(%6) <{kwargs = "{'mcmc': False, 'num_burnin': 0, 'kernel_name': None}", lib = "...", name = "LightningSimulator"}> : (i64) -> ()
+        %7 = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+
     }
 }
 """
