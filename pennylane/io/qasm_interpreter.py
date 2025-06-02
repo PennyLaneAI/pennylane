@@ -4,10 +4,11 @@ This submodule contains the interpreter for OpenQASM 3.0.
 
 import functools
 import re
-from typing import Callable
 from functools import partial
+from typing import Callable
 
 from openqasm3.ast import (
+    AliasStatement,
     ArrayLiteral,
     BinaryExpression,
     BitstringLiteral,
@@ -22,7 +23,7 @@ from openqasm3.ast import (
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    UnaryExpression, AliasStatement,
+    UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -181,7 +182,7 @@ def _index_into_var(var: dict, node: IndexExpression):
     else:
         var = var["val"]
     if isinstance(node.index[0], RangeDefinition):
-        return var[node.index[0].start.value: node.index[0].end.value]
+        return var[node.index[0].start.value : node.index[0].end.value]
     if re.search("Literal", node.index[0].__class__.__name__):
         return var[node.index[0].value]
     raise TypeError(
@@ -606,11 +607,10 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-           return self.retrieve_variable(node.collection.name, context)
+            return self.retrieve_variable(node.collection.name, context)
         except NameError as e:
             raise NameError(
-                f"Attempt to alias an undeclared variable "
-                f"{node.name} in {context['name']}."
+                f"Attempt to alias an undeclared variable " f"{node.name} in {context['name']}."
             ) from e
 
     @visit.register(Identifier)
