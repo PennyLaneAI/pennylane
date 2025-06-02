@@ -95,6 +95,8 @@ def estimate_resources(
         obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
         gate_set (Set, optional): python set of strings specifying the names of operations to track
         config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
+        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing single 
+            qubit rotations to `T`-gates using a Clifford + T approximation.
 
     Returns:
         Resources: the total resources of the quantum circuit
