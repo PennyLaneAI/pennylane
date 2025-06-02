@@ -31,8 +31,8 @@ from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
-RTOL = 2.5e-1
-ATOL = 5e-2
+RTOL = 2.5e-2
+ATOL = 2.5e-2
 
 
 def generate_pauli_list(wire: int, num_ops: int):
@@ -284,7 +284,7 @@ class TestOfflineCorrection:
         return processing_fn(raw_res)[0]
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("num_shots", [200])
+    @pytest.mark.parametrize("num_shots", [500])
     @pytest.mark.parametrize(
         "ops",
         [

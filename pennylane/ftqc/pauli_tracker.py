@@ -320,20 +320,8 @@ def _parse_cnot(mid_meas: List):
     return by_op
 
 
-def _parse_rotxzx(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.ftqc.RotXZX` gate.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        A list of tuples of xz encoding.
-    """
-    return [(mid_meas[1] ^ mid_meas[3], mid_meas[0] ^ mid_meas[2])]
-
-
-def _parse_rotz(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.RZ` gate.
+def _parse_rotation(mid_meas: List):
+    """Parse the mid measurements of a :class:`~pennylane.RZ` or :class:`~pennylane.RotXZX` gate.
 
     Args:
         mid_meas (List): A list of mid measurement results.
@@ -376,22 +364,14 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
             by_op = _parse_h(ms)
         elif isinstance(op, CNOT):
             by_op = _parse_cnot(ms)
-        elif isinstance(op, RZ):
+        elif isinstance(op, (RZ, RotXZX)):
             if _t_ops_record[op.wires[0]] is None and idx < tape.num_wires:
                 _t_ops_record[op.wires[0]] = op
             else:
                 raise NotImplementedError(
-                    "Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
+                    "Current implementation only support one non-Clifford gate per wire at the beginning of the circuit."
                 )
-            by_op = _parse_rotz(ms)
-        elif isinstance(op, RotXZX):
-            if _t_ops_record[op.wires[0]] is None and idx < tape.num_wires:
-                _t_ops_record[op.wires[0]] = op
-            else:
-                raise NotImplementedError(
-                    "Current implement only support one non-Clifford gate per wire at the beginning of the circuit."
-                )
-            by_op = _parse_rotxzx(ms)
+            by_op = _parse_rotation(ms)
         elif isinstance(op, _PAULIS):
             continue
         else:
