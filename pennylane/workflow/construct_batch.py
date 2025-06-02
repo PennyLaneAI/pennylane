@@ -253,15 +253,6 @@ def get_transform_program(
     return resolved_program
 
 
-def needs_final_transform(level, has_final_transform):
-    """A simple utility function to determine if the final transform should be added back."""
-    if not has_final_transform:
-        return False
-    if level in ("user", "gradient"):
-        return True
-    return False
-
-
 def construct_batch(
     qnode: Union[QNode, "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
@@ -368,8 +359,6 @@ def construct_batch(
     default_shots = qnode.device.shots
 
     user_program = qnode.transform_program
-    has_final_transform = user_program.has_final_transform  # Not used now
-    # num_user_transforms = len(user_program) - int(has_final_transform)
     num_user_transforms = len(user_program)
 
     # Two cases are recognized as "empty": 1. defined as empty by either "top" or 0; 2. a slice that starts beyond the range of user transforms.
@@ -451,10 +440,6 @@ def construct_batch(
         )
 
         resolved_program = full_transform_program[level_slice]
-        # if needs_final_transform(level, has_final_transform):
-        #     resolved_program = full_transform_program[level_slice] + qnode.transform_program[-1:]
-        # else:
-        #     resolved_program = full_transform_program[level_slice]
 
         batch, remaining_post_processing = resolved_program(tapes)  # Use the user-transformed tapes
 
