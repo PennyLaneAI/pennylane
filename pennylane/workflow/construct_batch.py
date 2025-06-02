@@ -449,6 +449,8 @@ def construct_batch(
         def combined_post_processing(results):
             """Combine the user post-processing with the remaining post-processing."""
             intermediate_results = remaining_post_processing(results)
+            if user_post_processing is null_postprocessing:
+                return intermediate_results
             return user_post_processing(intermediate_results)
 
         return (batch, combined_post_processing)
