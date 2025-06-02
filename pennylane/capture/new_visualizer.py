@@ -434,15 +434,126 @@ def handle_while_loop(
     consts_cond = invals[cond_slice]
     init_state = invals[args_slice]
 
+    def get_condition_label(cond_jaxpr):
+        # Mapping of internal JAXPR variables to their string representation
+        # Start with input variables
+        # Example: invars: [a:i32[], b:f32[]]
+        # We'll map 'a' to 'carry_0', 'b' to 'carry_1'
+        var_map = {cond_jaxpr.invars[idx]: f"carry_{idx}" for idx in range(len(cond_jaxpr.invars))}
+
+        # Process constants (literals)
+        # Literals are special in JAXPR: they are `core.Literal` objects.
+        # You can get their value via `literal.val`.
+        # For now, we'll just use their string representation.
+        # We won't map them in `var_map` directly as they're usually just values.
+
+        # This is a simplification. Real JAXPR parsing for general expressions
+        # would be a recursive or stack-based approach.
+        # For common conditions, it's usually a sequence of comparisons and logical ops.
+
+        # If there's only one equation, it's likely a simple comparison or a logical op.
+
+        if len(cond_jaxpr.eqns) == 1:
+            eqn = cond_jaxpr.eqns[0]
+            print(eqn)
+            primitive = eqn.primitive
+            print(primitive)
+            print(eqn.invars)
+            invars = [
+                v.val if isinstance(v, jax.extend.core.Literal) else var_map.get(v, None)
+                for v in eqn.invars
+            ]
+            outvar = eqn.outvars[0]  # Assuming single output for simplicity
+
+            label_parts = []
+
+            # Handle binary operations (comparison, logical AND/OR)
+            if primitive.name in ["lt", "gt", "le", "ge", "eq", "ne", "and", "or"]:
+                op_symbol = {
+                    "lt": "<",
+                    "gt": ">",
+                    "le": "<=",
+                    "ge": ">=",
+                    "eq": "==",
+                    "ne": "!=",
+                    "and": "&&",
+                    "or": "||",
+                }.get(
+                    primitive.name, primitive.name
+                )  # Fallback to primitive name
+
+                # Make sure we have enough inputs for a binary op
+                if len(invars) >= 2:
+                    left_operand = invars[0]
+                    right_operand = invars[1]
+
+                    # Update var_map for the output of this equation
+                    # This is important if there are chained operations (e.g., (A < B) && C)
+                    var_map[outvar] = f"({left_operand} {op_symbol} {right_operand})"
+                    label_parts.append(var_map[outvar])
+                else:
+                    label_parts.append(f"{primitive.name}({', '.join(invars)})")
+
+            elif primitive.name == "not":
+                if invars:
+                    var_map[outvar] = f"!({invars[0]})"
+                    label_parts.append(var_map[outvar])
+                else:
+                    label_parts.append(f"not()")
+            else:
+                # Fallback for unknown primitives in condition, or complex expressions
+                label_parts.append(f"{primitive.name}({', '.join(invars)})")
+                var_map[outvar] = f"{primitive.name}({', '.join(invars)})"  # Store it
+
+            # The final output variable of the cond_jaxpr is the result
+            final_result_var = cond_jaxpr.outvars[0]
+            return var_map.get(final_result_var, "Complex Condition")
+
+        else:
+            # For multiple equations, you'd need to trace the flow more deeply.
+            # This can get very complex for arbitrary JAXPRs.
+            # A simplified approach might be to just show the last operation,
+            # or indicate that it's a "Multi-step Condition".
+            # You'd need to build a graph of the cond_jaxpr and then try to
+            # find the "root" expression.
+            return "Multi-step Condition (expand for details)"
+
+    print(jaxpr_cond_fn)
+    print("getting condition label for jaxpr_cond_fn")
+
+    label = get_condition_label(jaxpr_cond_fn)
+
     # Visualization part
     while_loop_uid = self.graph_obj.convert_name_to_uid("while_loop")
     while_loop_cluster = pydot.Cluster(
         while_loop_uid,
-        label="while",
         style="filled",
         fillcolor="lightgrey",
         color="black",
     )
+    while_node_uid = self.graph_obj.convert_name_to_uid("condition")
+    while_loop_cluster.add_node(
+        pydot.Node(
+            while_node_uid,
+            label=f"while {label}",
+            style="filled",
+            fillcolor="lightblue",
+        )
+    )
+    for (
+        wire_ascii,
+        seen_node_uid,
+    ) in self.graph_obj.map_wire_to_node_uid.items():
+
+        if not self.graph_obj.graph.get_edge(seen_node_uid, while_node_uid):
+            print("Connected {} to {}".format(seen_node_uid, while_node_uid))
+            if seen_node_uid == while_node_uid:
+                # Seems to happen it it's a multi wire operation with multiple dynamic wires
+                continue
+            edge = pydot.Edge(seen_node_uid, while_node_uid, style="dotted")
+            self.graph_obj.graph.add_edge(edge)
+        self.graph_obj.map_wire_to_node_uid[wire_ascii] = while_node_uid
+
     self.graph_obj.current_cluster.add_subgraph(while_loop_cluster)
 
     copy_ = copy(self)
