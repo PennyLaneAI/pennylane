@@ -18,7 +18,7 @@ from typing import Dict
 
 import pennylane as qml
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import GrabWires, FreeWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator, 
     GateCount,
@@ -70,7 +70,7 @@ class ResourceSumOfSlatersStatePrep(ResourceOperator):
         num_toffolis = cls.sos_toffoli_cost(num_slaters)
 
         gate_lst = [
-            GrabWires(aux_wires),
+            AllocWires(aux_wires),
             GateCount(toffoli, num_toffolis),
             FreeWires(aux_wires),
         ]
@@ -531,7 +531,7 @@ class ResourceMPSPrep(ResourceOperator):
         num_work_wires = math.ceil(math.log2(max_bond_dim))
         log2_chi = min(num_work_wires, math.ceil(num_wires / 2))
 
-        gate_lst = [GrabWires(num_work_wires)]
+        gate_lst = [AllocWires(num_work_wires)]
 
         for index in range(1, num_wires + 1):
             qubit_unitary_wires = min(index + 1, log2_chi + 1, (num_wires - index) + 2)
@@ -648,7 +648,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         precision = precision or kwargs["config"]["precision_qrom_state_prep"]
         num_precision_wires = abs(math.floor(math.log2(precision)))
 
-        gate_counts.append(GrabWires(num_precision_wires))
+        gate_counts.append(AllocWires(num_precision_wires))
 
         for j in range(1, num_state_qubits):
             num_bitstrings = 2**j

@@ -19,7 +19,7 @@ from typing import Dict
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import FreeWires, GrabWires
+from pennylane.labs.resource_estimation.qubit_manager import FreeWires, AllocWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -102,7 +102,7 @@ class ResourceMultiplexer(ResourceOperator):
             },
         )
 
-        gate_lst.append(GrabWires(num_prec_wires))
+        gate_lst.append(AllocWires(num_prec_wires))
         gate_lst.append(GateCount(qrom))
         gate_lst.append(
             GateCount(
@@ -401,8 +401,8 @@ class ResourceOutMultiplier(ResourceOperator):
         l = max(a_num_qubits, b_num_qubits)
 
         toff = resource_rep(re.ResourceToffoli)
-        l_elbow = resource_rep(re.ResourceToffoli, {"elbow": "left"})
-        r_elbow = resource_rep(re.ResourceToffoli, {"elbow": "right"})
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
 
         toff_count = 2 * a_num_qubits * b_num_qubits - l
         elbow_count = toff_count // 2
@@ -448,10 +448,10 @@ class ResourceSemiAdder(ResourceOperator):
         cnot_count = (6 * (max_register_size - 2)) + 3
         elbow_count = max_register_size - 1
 
-        l_elbow = resource_rep(re.ResourceToffoli, {"elbow": "left"})
-        r_elbow = resource_rep(re.ResourceToffoli, {"elbow": "right"})
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
         return [
-            GrabWires(max_register_size - 1),
+            AllocWires(max_register_size - 1),
             GateCount(cnot, cnot_count),
             GateCount(l_elbow, elbow_count),
             GateCount(r_elbow, elbow_count),
@@ -468,10 +468,10 @@ class ResourceSemiAdder(ResourceOperator):
 
             x = resource_rep(re.ResourceX)
             cnot = resource_rep(re.ResourceCNOT)
-            l_elbow = resource_rep(re.ResourceToffoli, {"elbow": "left"})
-            r_elbow = resource_rep(re.ResourceToffoli, {"elbow": "right"})
+            l_elbow = resource_rep(re.ResourceTempAND)
+            r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
             gate_lst = [
-                GrabWires(2 * (max_register_size - 1)),
+                AllocWires(2 * (max_register_size - 1)),
                 GateCount(cnot, cnot_count),
                 GateCount(l_elbow, elbow_count),
                 GateCount(r_elbow, elbow_count),
@@ -1197,7 +1197,7 @@ class ResourceSelect(ResourceOperator):
         num_ops = len(cmpr_ops)
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
-        gate_types.append(GrabWires(work_qubits))
+        gate_types.append(AllocWires(work_qubits))
         for cmp_rep in cmpr_ops:
             ctrl_op = re.ResourceControlled.resource_rep(cmp_rep, 1, 0)
             gate_types.append(GateCount(ctrl_op))
@@ -1822,13 +1822,13 @@ class ResourceQROM(ResourceOperator):
 
         gate_cost = []
         gate_cost.append(
-            GrabWires((W_opt - 1) * size_bitstring + (l - 1))
+            AllocWires((W_opt - 1) * size_bitstring + (l - 1))
         )  # Swap registers + work_wires for UI trick
 
         x = resource_rep(re.ResourceX)
         cnot = resource_rep(re.ResourceCNOT)
-        l_elbow = resource_rep(re.ResourceToffoli, {"elbow": "left"})
-        r_elbow = resource_rep(re.ResourceToffoli, {"elbow": "right"})
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(re.ResourceHadamard)
 
         swap_clean_prefactor = 1
@@ -1884,8 +1884,8 @@ class ResourceQROM(ResourceOperator):
 
         x = resource_rep(re.ResourceX)
         cnot = resource_rep(re.ResourceCNOT)
-        l_elbow = resource_rep(re.ResourceToffoli, {"elbow": "left"})
-        r_elbow = resource_rep(re.ResourceToffoli, {"elbow": "right"})
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
         hadamard = resource_rep(re.ResourceHadamard)
 
         swap_clean_prefactor = 1
@@ -1913,7 +1913,7 @@ class ResourceQROM(ResourceOperator):
         # SWAP cost:
         w = math.ceil(math.log2(W_opt))
         ctrl_swap = re.ResourceCSWAP.resource_rep()
-        gate_cost.append(GrabWires(1))  # need one temporary qubit for l/r-elbow to control SWAP
+        gate_cost.append(AllocWires(1))  # need one temporary qubit for l/r-elbow to control SWAP
 
         gate_cost.append(GateCount(l_elbow, w))
         gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
@@ -1955,7 +1955,7 @@ class ResourceQROM(ResourceOperator):
             gate_cost.extend(single_ctrl_cost)
             return gate_cost
 
-        gate_cost.append(GrabWires(1))
+        gate_cost.append(AllocWires(1))
         gate_cost.append(
             GateCount(re.ResourceMultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
         )

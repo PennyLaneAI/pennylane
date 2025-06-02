@@ -1285,8 +1285,8 @@ class ResourceMultiControlledX(ResourceOperator):
             gate_lst.extend(res)
             return gate_lst
 
-        l_elbow = resource_rep(ResourceToffoli, {"elbow": "left"})
-        r_elbow = resource_rep(ResourceToffoli, {"elbow": "right"})
+        l_elbow = resource_rep(ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
 
         res = [
             AllocWires(num_ctrl_wires - 2),
