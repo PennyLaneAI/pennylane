@@ -14,6 +14,7 @@
 """Unit Tests for the Christiansen Hamiltonian construction functions."""
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import pytest
@@ -37,6 +38,8 @@ from pennylane.labs.vibrational.christiansen_utils import (
     _cform_threemode_dipole,
     _cform_twomode,
     _cform_twomode_dipole,
+    _read_data,
+    _write_data,
     christiansen_integrals,
     christiansen_integrals_dipole,
 )
@@ -135,73 +138,240 @@ def test_christiansen_dipole():
     )
 
 
-def test_christiansen_integrals():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_christiansen_integrals(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that christiansen_integrals produces the expected integrals."""
-    one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True)
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    one, two, three = christiansen_integrals(
+        pes=pes, n_states=n_states, cubic=True, num_workers=num_workers, backend=backend
+    )
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
     assert np.allclose(abs(three), abs(H3), atol=1e-8)
 
 
-def test_christiansen_integrals_dipole():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_christiansen_integrals_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that christiansen_integrals_dipole produces the expected dipole integrals."""
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4)
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    one, two, three = christiansen_integrals_dipole(
+        pes=pes, n_states=n_states, num_workers=num_workers, backend=backend
+    )
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)
 
 
-def test_cform_onemode():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_onemode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_onemode produces the expected one-body integral."""
-    flattened_H1 = H1.ravel()
-    assert np.allclose(
-        abs(flattened_H1), abs(_cform_onemode(pes=pes_object_3D, n_states=4)), atol=1e-8
-    )
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(H1),
+            abs(
+                _cform_onemode(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
 
-def test_cform_onemode_dipole():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_onemode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_onemode_dipole produces the expected one-body dipole integral."""
-    flattened_D1 = D1.transpose(1, 2, 3, 0).ravel()
-    assert np.allclose(
-        abs(flattened_D1),
-        abs(_cform_onemode_dipole(pes=pes_object_3D, n_states=4).ravel()),
-        atol=1e-8,
-    )
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(D1),
+            abs(
+                _cform_onemode_dipole(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
 
-def test_cform_threemode():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_threemode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_threemode produces the expected three-body integral."""
-    flattened_H3 = H3.ravel()
-    assert np.allclose(
-        abs(flattened_H3), abs(_cform_threemode(pes=pes_object_3D, n_states=4)), atol=1e-8
-    )
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(H3),
+            abs(
+                _cform_threemode(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
 
-def test_cform_threemode_dipole():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_threemode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_threemode_dipole produces the expected three-body dipole integral."""
-    flattened_D3 = D3.transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).ravel()
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(D3),
+            abs(
+                _cform_threemode_dipole(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
-    assert np.allclose(
-        abs(flattened_D3),
-        abs(_cform_threemode_dipole(pes=pes_object_3D, n_states=4).ravel()),
-        atol=1e-8,
-    )
 
-
-def test_cform_twomode():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_twomode(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_twomode produces the expected two-body integral."""
-    flattened_H2 = H2.ravel()
-    assert np.allclose(
-        abs(flattened_H2), abs(_cform_twomode(pes=pes_object_3D, n_states=4)), atol=1e-8
-    )
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(H2),
+            abs(
+                _cform_twomode(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
 
-def test_cform_twomode_dipole():
+@pytest.mark.parametrize(
+    ("pes", "n_states", "num_workers", "backend"),
+    [
+        (pes_object_3D, 4, 1, "serial"),
+        (pes_object_3D, 4, 2, "mp_pool"),
+        (pes_object_3D, 4, 2, "cf_procpool"),
+        (pes_object_3D, 4, 2, "mpi4py_pool"),
+        (pes_object_3D, 4, 2, "mpi4py_comm"),
+    ],
+)
+def test_cform_twomode_dipole(pes, n_states, num_workers, backend, mpi4py_support):
     """Test that _cform_twomode_dipole produces the expected two-body dipole integral."""
-    flattened_D2 = D2.transpose(1, 2, 3, 4, 5, 6, 0).ravel()
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    with TemporaryDirectory() as tmpdir:
+        assert np.allclose(
+            abs(D2),
+            abs(
+                _cform_twomode_dipole(
+                    pes=pes,
+                    n_states=n_states,
+                    num_workers=num_workers,
+                    backend=backend,
+                    path=tmpdir,
+                )
+            ),
+            atol=1e-8,
+        )
 
-    assert np.allclose(
-        abs(flattened_D2),
-        abs(_cform_twomode_dipole(pes=pes_object_3D, n_states=4).ravel()),
-        atol=1e-8,
-    )
+
+def test_write_and_read_data():
+    """Test that _read_data return the data written using _write_data with the same args."""
+    with TemporaryDirectory() as tmpdirname:
+        rank = 0
+        file_name = "testfile"
+        dataset_name = "testdata"
+        original_data = np.array([1, 2, 3, 4, 5])
+        _write_data(tmpdirname, rank, file_name, dataset_name, original_data)
+        read_data = _read_data(tmpdirname, rank, file_name, dataset_name)
+        np.testing.assert_array_equal(original_data, read_data)
