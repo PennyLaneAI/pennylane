@@ -159,7 +159,7 @@ def zxz_rotation_angles(U, return_global_phase=False):
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = math.where(abs_a > abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
+    theta = math.where(abs_a < abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
 
     half_phi_plus_lam = math.angle(U[..., 1, 1] + EPS)
     half_phi_minus_lam = math.angle(1j * U[..., 1, 0] + EPS)
@@ -218,3 +218,51 @@ def su2su2_to_tensor_products(U):
     )
 
     return math.convert_like(A, U), math.convert_like(B, U)
+
+
+def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
+    r"""Decompose an integer :math:`k<=2^{n-1}` into additions and subtractions of the
+    smallest-possible number of powers of two.
+
+    Args:
+        k (int): Integer to be decomposed
+        n (int): Number of bits to consider
+
+    Returns:
+        list[int]: A list with length ``n``, with entry :math:`c_i` at position :math:`i`.
+
+    This function is documented in ``pennylane/ops/qubit/pcphase_decomposition.md``.
+
+    As an example, consider the number
+    :math:`k=121_{10}=01111001_2`, which can be (trivially) decomposed into a sum of
+    five powers of two by reading off the bits:
+    :math:`k = 2^6 + 2^5 + 2^4 + 2^3 + 2^0 = 64 + 32 + 16 + 8 + 1`.
+    The decomposition here, however, allows for minus signs and achieves the decomposition
+    :math:`k = 2^7 - 2^3 + 2^0 = 128 - 8 + 1`, which only requires three powers of two.
+    """
+    R = []
+    assert k <= 2 ** (n - 1)
+    s = 0
+    powers = 2 ** np.arange(n)
+    for p in powers:  # p = 2**(n-1-i)
+        if s & p == k & p:
+            # Equal bit, move on
+            factor = 0
+        else:
+            # Differing bit, consider pairs of bits
+            if p >= 2 ** (n - 2):
+                # 2**(n-1-i) >= 2**(n-2) is the same condition as i < 2
+                factor = 1
+            else:
+                # Table entry from documentation
+                in_middle_rows = (s & (p + 2 * p)).bit_count() == 1  # two bits of s are 01 or 10
+                in_last_cols = bool(k & (2 * p))  # latter bit of k is 1
+                if in_middle_rows != in_last_cols:  # xor between in_middle_rows and in_last_cols
+                    factor = -1
+                else:
+                    factor = 1
+
+            s += factor * p
+        R.insert(0, factor)
+
+    return R

@@ -14,10 +14,12 @@
 """
 This module contains tests for classes needed to track auxilliary qubits.
 """
+import copy
+
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import FreeWires, GrabWires, QubitManager
+from pennylane.labs.resource_estimation import AllocWires, FreeWires, QubitManager
 
 
 # pylint: disable= no-self-use
@@ -26,14 +28,14 @@ class TestQubitManager:
 
     qm_quantities = (
         QubitManager(work_wires=2),
-        QubitManager(work_wires={"clean": 4, "dirty": 2}),
-        QubitManager({"clean": 2, "dirty": 2}, True),
+        QubitManager(work_wires={"clean": 4, "dirty": 2}, algo_wires=20),
+        QubitManager({"clean": 2, "dirty": 2}, algo_wires=10, tight_budget=True),
     )
 
     qm_parameters = (
         (2, 0, 0, False),
-        (4, 2, 0, False),
-        (2, 2, 0, True),
+        (4, 2, 20, False),
+        (2, 2, 10, True),
     )
 
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
@@ -49,16 +51,20 @@ class TestQubitManager:
     @pytest.mark.parametrize("qm, attribute_tup", zip(qm_quantities, qm_parameters))
     def test_equality(self, qm, attribute_tup):
         """Test that the equality methods behaves as expected"""
-        clean_qubits, dirty_qubits, _, tight_budget = attribute_tup
+
+        clean_qubits, dirty_qubits, algo_qubits, tight_budget = attribute_tup
+
         qm2 = QubitManager(
-            work_wires={"clean": clean_qubits, "dirty": dirty_qubits}, tight_budget=tight_budget
+            work_wires={"clean": clean_qubits, "dirty": dirty_qubits},
+            algo_wires=algo_qubits,
+            tight_budget=tight_budget,
         )
         assert qm == qm2
 
     extra_qubits = (0, 2, 4)
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, alloc_q", zip(qm_quantities, qm_parameters, extra_qubits)
+        "qm, attribute_tup, alloc_q", zip(copy.deepcopy(qm_quantities), qm_parameters, extra_qubits)
     )
     def test_allocate_qubits(self, qm, attribute_tup, alloc_q):
         """Test that the extra qubits are allocated correctly."""
@@ -75,7 +81,42 @@ class TestQubitManager:
     )
 
     @pytest.mark.parametrize(
-        "qm, attribute_tup, algo_q", zip(qm_quantities, qm_parameters_algo, extra_qubits)
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_repr(self, qm, attribute_tup, algo_q):
+        """Test that the QubitManager representation is correct."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        work_wires_str = repr({"clean": clean_qubits, "dirty": dirty_qubits})
+        expected_string = (
+            f"QubitManager(work_wires={work_wires_str}, algo_wires={logic_qubits}, "
+            f"tight_budget={tight_budget})"
+        )
+
+        qm.algo_qubits = algo_q
+        assert repr(qm) == expected_string
+
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_str(self, qm, attribute_tup, algo_q):
+        """Test that the QubitManager string is correct."""
+
+        clean_qubits, dirty_qubits, logic_qubits, tight_budget = attribute_tup
+
+        expected_string = (
+            f"QubitManager(clean qubits={clean_qubits}, dirty qubits={dirty_qubits}, "
+            f"algorithmic qubits={logic_qubits}, tight budget={tight_budget})"
+        )
+        qm.algo_qubits = algo_q
+        assert str(qm) == expected_string
+
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
     )
     def test_algo_qubits(self, qm, attribute_tup, algo_q):
         """Test that the logic qubits are set correctly."""
@@ -84,6 +125,17 @@ class TestQubitManager:
 
         qm.algo_qubits = algo_q
         assert qm.algo_qubits == logic_qubits
+
+    @pytest.mark.parametrize(
+        "qm, attribute_tup, algo_q",
+        zip(copy.deepcopy(qm_quantities), qm_parameters_algo, extra_qubits),
+    )
+    def test_total_qubits(self, qm, attribute_tup, algo_q):
+        """Test that the total qubits returned are correct."""
+
+        qm.algo_qubits = algo_q
+        total_qubits = attribute_tup[0] + attribute_tup[1] + attribute_tup[2]
+        assert qm.total_qubits == total_qubits
 
     def test_grab_clean_qubits(self):
         """Test that the clean qubits are grabbed properly."""
@@ -118,30 +170,44 @@ class TestQubitManager:
             qm.free_qubits(6)
 
 
-class TestGrabWires:
-    """Test the methods and attributes of the GrabWires class"""
+class TestAllocWires:
+    """Test the methods and attributes of the AllocWires class"""
 
     def test_init(self):
-        """Test that the GrabWires class is instantiated as expected when there is no active recording."""
+        """Test that the AllocWires class is instantiated as expected when there is no active recording."""
 
         for i in range(3):
-            assert GrabWires(i).num_wires == i
+            assert AllocWires(i).num_wires == i
+
+    def test_repr(self):
+        """Test that correct representation is returned for AllocWires class"""
+
+        wires = 3
+        exp_string = f"AllocWires({wires})"
+        assert repr(AllocWires(wires)) == exp_string
 
     def test_init_recording(self):
-        """Test that the GrabWires class is instantiated as expected when there is active recording."""
+        """Test that the AllocWires class is instantiated as expected when there is active recording."""
         with qml.queuing.AnnotatedQueue() as q:
-            ops = [GrabWires(2), GrabWires(4)]
+            ops = [AllocWires(2), AllocWires(4)]
         assert q.queue == ops
 
 
 class TestFreeWires:
-    """Test the methods and attributes of the GrabWires class"""
+    """Test the methods and attributes of the FreeWires class"""
 
     def test_init(self):
         """Test that the FreeWires class is instantiated as expected when there is no recording."""
 
         for i in range(3):
             assert FreeWires(i).num_wires == i
+
+    def test_repr(self):
+        """Test that correct representation is returned for FreeWires class"""
+
+        wires = 3
+        exp_string = f"FreeWires({wires})"
+        assert repr(FreeWires(wires)) == exp_string
 
     def test_init_recording(self):
         """Test that the FreeWires class is instantiated as expected when there is active recording."""

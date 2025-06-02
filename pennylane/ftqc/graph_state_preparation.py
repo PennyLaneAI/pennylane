@@ -231,7 +231,7 @@ class GraphStatePrep(Operation):
         graph: Union[nx.Graph, QubitGraph],
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

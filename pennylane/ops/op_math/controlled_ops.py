@@ -14,7 +14,7 @@
 """
 This submodule contains controlled operators based on the ControlledOp class.
 """
-# pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
+# pylint: disable=arguments-differ,arguments-renamed
 from collections.abc import Iterable
 from functools import lru_cache
 from typing import List, Literal, Union
@@ -24,17 +24,29 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    flip_zero_control,
+    pow_involutory,
+    pow_rotation,
+    self_adjoint,
+)
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+from .decompositions.controlled_decompositions import (
+    controlled_two_qubit_unitary_rule,
+    ctrl_decomp_bisect_rule,
+    multi_control_decomp_zyz_rule,
+    single_ctrl_decomp_zyz_rule,
+)
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
-# pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, wires)
     Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
@@ -59,7 +71,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
-        control_values (List[int, bool]): a list providing the state of the control qubits to
+        control_values (List[int or bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
@@ -99,7 +111,12 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"base", "num_control_wires", "num_zero_control_values", "num_work_wires"}
+    resource_keys = {
+        "num_target_wires",
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+    }
 
     grad_method = None
     """Gradient computation method."""
@@ -111,7 +128,7 @@ class ControlledQubitUnitary(ControlledOp):
     def _unflatten(cls, data, metadata):
         return cls(data[0], wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
 
-    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
+    # pylint: disable=too-many-arguments,unused-argument,too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls,
@@ -167,7 +184,7 @@ class ControlledQubitUnitary(ControlledOp):
     @property
     def resource_params(self) -> dict:
         return {
-            "base": self.base,
+            "num_target_wires": len(self.base.wires),
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
@@ -186,6 +203,15 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=values,
             work_wires=self.work_wires,
         )
+
+
+add_decomps(
+    ControlledQubitUnitary,
+    flip_zero_control(ctrl_decomp_bisect_rule),
+    flip_zero_control(single_ctrl_decomp_zyz_rule),
+    flip_zero_control(multi_control_decomp_zyz_rule),
+    controlled_two_qubit_unitary_rule,
+)
 
 
 class CH(ControlledOp):
@@ -325,6 +351,8 @@ def _ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(CH, _ch_to_ry_cz_ry)
+add_decomps("Adjoint(CH)", self_adjoint)
+add_decomps("Pow(CH)", pow_involutory)
 
 
 class CY(ControlledOp):
@@ -458,6 +486,8 @@ def _cy(wires: WiresLike, **__):
 
 
 add_decomps(CY, _cy)
+add_decomps("Adjoint(CY)", self_adjoint)
+add_decomps("Pow(CY)", pow_involutory)
 
 
 class CZ(ControlledOp):
@@ -574,6 +604,8 @@ def _cz_to_cnot(wires: WiresLike, **__):
 
 
 add_decomps(CZ, _cz_to_cps, _cz_to_cnot)
+add_decomps("Adjoint(CZ)", self_adjoint)
+add_decomps("Pow(CZ)", pow_involutory)
 
 
 class CSWAP(ControlledOp):
@@ -724,6 +756,8 @@ def _cswap(wires: WiresLike, **__):
 
 
 add_decomps(CSWAP, _cswap)
+add_decomps("Adjoint(CSWAP)", self_adjoint)
+add_decomps("Pow(CSWAP)", pow_involutory)
 
 
 class CCZ(ControlledOp):
@@ -838,7 +872,7 @@ class CCZ(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -920,6 +954,8 @@ def _ccz(wires: WiresLike, **__):
 
 
 add_decomps(CCZ, _ccz)
+add_decomps("Adjoint(CCZ)", self_adjoint)
+add_decomps("Pow(CCZ)", pow_involutory)
 
 
 class CNOT(ControlledOp):
@@ -1050,6 +1086,8 @@ def _cnot_to_cz_h(wires: WiresLike, **__):
 
 
 add_decomps(CNOT, _cnot_to_cz_h)
+add_decomps("Adjoint(CNOT)", self_adjoint)
+add_decomps("Pow(CNOT)", pow_involutory)
 
 
 class Toffoli(ControlledOp):
@@ -1163,7 +1201,7 @@ class Toffoli(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1262,6 +1300,8 @@ def _toffoli(wires: WiresLike, **__):
 
 
 add_decomps(Toffoli, _toffoli)
+add_decomps("Adjoint(Toffoli)", self_adjoint)
+add_decomps("Pow(Toffoli)", pow_involutory)
 
 
 class MultiControlledX(ControlledOp):
@@ -1337,7 +1377,10 @@ class MultiControlledX(ControlledOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments, too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
         cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
@@ -1364,7 +1407,6 @@ class MultiControlledX(ControlledOp):
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: WiresLike = (),
@@ -1540,6 +1582,10 @@ class MultiControlledX(ControlledOp):
         )
 
 
+add_decomps("Adjoint(MultiControlledX)", self_adjoint)
+add_decomps("Pow(MultiControlledX)", pow_involutory)
+
+
 class CRX(ControlledOp):
     r"""The controlled-RX operator
 
@@ -1668,9 +1714,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1745,6 +1789,8 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz)
+add_decomps("Adjoint(CRX)", adjoint_rotation)
+add_decomps("Pow(CRX)", pow_rotation)
 
 
 class CRY(ControlledOp):
@@ -1875,9 +1921,7 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1922,6 +1966,8 @@ def _cry(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRY, _cry)
+add_decomps("Adjoint(CRY)", adjoint_rotation)
+add_decomps("Pow(CRY)", pow_rotation)
 
 
 class CRZ(ControlledOp):
@@ -2093,9 +2139,7 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(
-        phi: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2140,6 +2184,8 @@ def _crz(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CRZ, _crz)
+add_decomps("Adjoint(CRZ)", adjoint_rotation)
+add_decomps("Pow(CRZ)", pow_rotation)
 
 
 class CRot(ControlledOp):
@@ -2300,7 +2346,7 @@ class CRot(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:  # pylint: disable=arguments-differ
+    ) -> List[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2356,6 +2402,14 @@ def _crot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLik
 
 
 add_decomps(CRot, _crot)
+
+
+@register_resources({CRot: 1})
+def _adjoint_crot(phi, theta, omega, wires, **_):
+    CRot(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
 class ControlledPhaseShift(ControlledOp):
@@ -2558,5 +2612,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot)
+add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
+add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
 CPhase = ControlledPhaseShift
