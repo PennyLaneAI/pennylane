@@ -17,8 +17,7 @@ Contains the Select template.
 
 import copy
 import itertools
-
-import numpy as np
+import warnings
 
 import pennylane as qml
 from pennylane import math
@@ -237,40 +236,53 @@ def _ceil_log(a):
 
 
 def _add_first_k_units(ops, controls, work_wires, k):
-    """Add all controlled-applied operators within the unary iterator scheme, in a recursive
-    manner.
+    """Add all controlled-applied operators within the unary iterator scheme.
 
     This function is used for the outer-most recursion level, and then calls _add_k_units
     for the inner recursion levels.
 
-    Given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ - 1`` control wires,
-    this function applies one of two circuits.
-    If ``k>=3/4 * 2**⌈log_2(k)⌉`` (i.e. ``k`` is larger or equal to the maximal capacity for
-    the given number of controls), the following circuit is applied:
-    ```
-    ─╭○─────╭○─────╭●────────╭●─────●─╮─
-    ─├○─────│──────│──╭●─────│──────●─┤─
-     ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
-    ────├■─────├■────────├■─────├■──────
-        ╰■     ╰■        ╰■     ╰■
-    ```
-    where each box symbolizes a call to _add_k_units on the next recursion level.
-    Here, two temporary ``AND`` gates were merged into the two single CNOTs and into the pair of
-    CNOTs each.
+    Given ``k=len(ops)=2**a-b`` operators, where ``a`` is chosen as small as possible to obtain
+    ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), and ``2 * a - 1`` control wires,
+    this function applies one of three circuits; in each variant, the first ``2**(a-1)`` are
+    applied in two equal portions of ``2**(a-2)`` operators, after which ``l=2**(a-1) -b``
+    operators remain. Now the three circuit variants are distinguished, based on ``l``:
 
-    If ``k<3/4 * 2**⌈log_2(k)⌉`` (i.e. ``k`` is smaller than the maximal capacity for
-    the given number of controls), the following circuit is applied instead:
-    ```
-    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
-    ─├○─────│──────●─┤│──────│────────│─
-     ╰──╭■──╰X─╭■────╯│      │        │
-    ────├■─────├■─────├○─────│──────●─┤─
-        ╰■     ╰■     ╰───■──╰X──■────╯
-    ```
+    - if ``l=1``, the following circuit is applied:
+      ```
+      ─╭○─────╭○─────○─╮╭●──
+      ─├○─────│──────●─┤│───
+       ╰──╭■──╰X─╭■────╯│───
+      ────├■─────├■─────│───
+          ╰■     ╰■     ╰■  .
+      ```
+      Here, each triple box symbolizes a call to ``_add_k_units`` to add 2**(a-2) operators in a
+      recursive manner, and the right hand side controlled gate is a single controlled operator.
 
-    That is, the identity merging the central two temporary ``AND`` gates can not be applied,
-    and instead the second half, which takes a reduced form, is applied somewhat independently
-    of the first half.
+    - if ``l < 2**(a-2)``, the following circuit is applied:
+      ```
+      ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
+      ─├○─────│──────●─┤│──────│────────│─
+       ╰──╭■──╰X─╭■────╯│      │        │
+      ────├■─────├■─────├○─────│──────●─┤─
+          ╰■     ╰■     ╰───■──╰X──■────╯
+      ```
+      where the second half may skip more than two control wires (the number of skipped control
+      wires is ``c_bar`` in code). The single boxes in the second half are calls to
+      ``_add_k_units``, not single operators.
+
+    - if ``l >= 2**(a-2)``, the following, more generic, circuit is applied:
+      ```
+      ─╭○─────╭○─────╭●────────╭●─────●─╮─
+      ─├○─────│──────│──╭●─────│──────●─┤─
+       ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
+      ────├■─────├■────────├■─────├■──────
+          ╰■     ╰■        ╰■     ╰■      .
+      ```
+      Here, each triple box again symbolizes a call to _add_k_units.
+      This case is triggered if ``k`` is larger than or equal to 3/4 of the maximal capacity
+      for ``2a-1`` control wires.
+      Note how the two middle elbows were merged into two CNOTs, which was not possible above
+      because they acted on distinct wire triples.
     """
     assert k == len(ops) > 2
 
@@ -282,47 +294,54 @@ def _add_first_k_units(ops, controls, work_wires, k):
     new_work_wires = work_wires + controls[:2]
     new_controls = controls[2:]
 
-    _k = 2 ** (_ceil_log(k) - 1)
-    k0 = _k // 2
-    k1 = _k - k0
-    k2 = _ceil(2 ** (_ceil_log(k - _k) - 1))
-    k3 = k - _k - k2
+    a = _ceil_log(k)  # a >= 2 because k>2 by assertion above
+    k01 = 2 ** (a - 1)  # First half of circuit will implement 2^(a-1)>=2 operators
+    k0 = k1 = 2 ** (a - 2)  # First two quarters of circuit each implement 2^(a-2)>=1 operator(s).
+    l = k - k01
+    k2 = _ceil(2 ** (_ceil_log(l) - 1))
+    k3 = k - k01 - k2
 
+    # Open elbow (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
     first_half = (
         [X(and_wires[0]), X(and_wires[1])]
         + [TemporaryAnd(and_wires)]
         + [X(and_wires[0]), X(and_wires[1])]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
         + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
-        + _add_k_units(ops[k0 : k0 + k1], new_controls, new_work_wires, k1)
+        + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
     )
 
-    gap_bitstring = np.binary_repr(k - _k, width=(len(controls) + 1) // 2)
-    assert gap_bitstring[0] == "0"
-    i = list(gap_bitstring).index("1")
-    and_wires_sec_half = [controls[0], controls[2 * i - 1], controls[2 * i]]
-    new_controls_sec_half = controls[2 * i :]
-    new_work_wires_sec_half = work_wires + controls[: 2 * i]
-    if and_wires == and_wires_sec_half:
-        middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
+    if k - k01 == 1:
+        # Single op left to apply: Only the third quarter will be needed, and it will not need
+        # elbow gates at all
+        and_wires_sec_half = []
+        new_controls_sec_half = controls
+        new_work_wires_sec_half = work_wires
+        # Closing elbow for first half
+        middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])]
     else:
-        middle_part = [
-            X(and_wires[0]),
-            adjoint(TemporaryAnd)(and_wires),
-            X(and_wires[0]),
-            X(and_wires_sec_half[1]),
-            TemporaryAnd(and_wires_sec_half),
-            X(and_wires_sec_half[1]),
-        ]
-
-    second_half = (
-        _add_k_units(
-            ops[k0 + k1 : k0 + k1 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
-        )
-        + [CNOT(and_wires_sec_half[::2])]
-        + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, new_work_wires_sec_half, k3)
-        + [adjoint(TemporaryAnd)(and_wires_sec_half)]
+        c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
+        and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
+        new_controls_sec_half = controls[c_bar + 2 :]
+        new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
+        if c_bar == 0:
+            middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
+        else:
+            # Closing elbow for first half, opening elbow for second half
+            middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])] + [
+                X(and_wires_sec_half[1]),
+                TemporaryAnd(and_wires_sec_half),
+                X(and_wires_sec_half[1]),
+            ]
+    second_half = _add_k_units(
+        ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
     )
+    if and_wires_sec_half != []:
+        second_half += (
+            [CNOT(and_wires_sec_half[::2])]
+            + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, new_work_wires_sec_half, k3)
+            + [adjoint(TemporaryAnd)(and_wires_sec_half)]
+        )
 
     return first_half + middle_part + second_half
 
@@ -333,8 +352,11 @@ def _add_k_units(ops, controls, work_wires, k):
 
     This is _not_ used for the outer-most recursion level, see _add_first_k_units instead.
 
-    Given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ + 1`` control wires,
-    this function applies the circuit
+    We are given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ + 1`` control wires.
+    If ``k=0``, nothing is applied.
+    If ``k=1``, the single operator is applied, controlled on the first control wire.
+
+    In all other cases, this function applies the circuit
     ```
     ─╭●────╭●────●─╮─
     ─├○────│─────●─┤─
@@ -348,14 +370,21 @@ def _add_k_units(ops, controls, work_wires, k):
     ``k_second = k-k_first`` (i.e. the rest)
 
     operators, respectively. Accordingly, two control wires less are used.
+
     """
-    assert k == len(ops) > 0
+    assert k == len(ops)
+    if k == 0:
+        return []
     num_bits = _ceil_log(k)
     needed_controls = 2 * num_bits + 1
-    assert len(controls) == needed_controls, f"{len(controls)=}, {needed_controls=}"
+    assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
 
     if k == 1:
-        return [ctrl(ops[0], control=controls[-1], control_values=[1], work_wires=work_wires)]
+        assert num_bits == 0
+        return [ctrl(ops[0], control=controls[0], control_values=[1], work_wires=work_wires)]
+
+    assert num_bits != 0
+    controls = controls[:1] + controls[-(needed_controls - 1) :]
 
     and_wires = controls[:3]
     new_work_wires = work_wires + controls[:2]
@@ -370,7 +399,6 @@ def _add_k_units(ops, controls, work_wires, k):
     )
 
 
-# todo:
 def _unary_select_resources():
     return {
         Hadamard: 2,
@@ -388,19 +416,29 @@ def _unary_select(ops, control, work_wires):
     control wires (as usual for Select), and :math:`c-1` additional work wires.
 
     Note that there might be a slightly improved implementation if a modified embedding is allowed.
+
+    .. note::
+
+        This decomposition assumes that the state on the control wires does not have any overlap
+        with :math:`|i\rangle` for :math:`i\geq L`.
     """
     if len(ops) == 0:
         return []
 
     min_num_controls = max(_ceil_log(len(ops)), 1)
     assert len(control) >= min_num_controls
-    control = control[:min_num_controls]
+    control = control[-min_num_controls:]
     if len(work_wires) < len(control) - 1:
+        if len(control) > min_num_controls:
+            warnings.warn(
+                "It seems that you could be using some of the control wires as work wires.",
+                UserWarning,
+            )
         raise ValueError(
             f"Can't use this decomposition with less than {len(control) - 1} work wires for {len(control)} controls."
         )
     if 1 <= len(ops) <= 2:
-        # Don't need unary iterator!
+        # Don't need unary iterator, just control-apply the one/two operator(s) directly.
         return [
             ctrl(op, control=control[0], control_values=[i], work_wires=work_wires)
             for i, op in enumerate(ops)
