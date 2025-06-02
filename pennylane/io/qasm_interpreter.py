@@ -125,6 +125,7 @@ ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
 
 class ContextManager:
+    """Class with helper methods for managing, updating, checking context."""
 
     def __init__(self, context):
         self.context = context
@@ -136,7 +137,6 @@ class ContextManager:
         if "vars" not in self.context:
             self.context["vars"] = dict()
 
-
     def init_aliases(self):
         """
         Inits the aliases dict on the current context.
@@ -144,7 +144,12 @@ class ContextManager:
         if "aliases" not in self.context:
             self.context["aliases"] = dict()
 
-    def update_var(self, value: any, name: str, node: QASMNode, ):
+    def update_var(
+        self,
+        value: any,
+        name: str,
+        node: QASMNode,
+    ):
         """
         Updates a variable, or raises if it is constant.
         Args:
