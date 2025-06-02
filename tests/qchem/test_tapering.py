@@ -22,9 +22,10 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.math.utils import compute_kernel, reduced_row_echelon
+from pennylane.math.utils import reduced_row_echelon
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
+    _kernel,
     _split_pauli_sentence,
     _taper_pauli_sentence,
     clifford,
@@ -173,7 +174,7 @@ def test_kernel(binary_matrix, result):
         kernel.append(null_vector.tolist())
 
     # get the nullspace from the _kernel function.
-    nullspace = compute_kernel(binary_matrix)
+    nullspace = _kernel(binary_matrix)
 
     for nullvec in kernel:
         assert nullvec in nullspace.tolist()
