@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+  that can be subsequently loaded into QNodes and executed. 
+  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit", wires=[0, 1])
+  
+  @qml.qnode(dev)
+  def my_circuit():
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(my_circuit)())
+  0: ──RY(0.20)──X²─┤  <Z>
+  1: ──RX(1.00)─────┤  
+  ```
+  
+  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
+  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
+  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
+
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
@@ -422,6 +447,8 @@
 
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
+
+* Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
