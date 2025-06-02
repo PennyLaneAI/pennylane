@@ -23,6 +23,7 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 
+
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -42,6 +43,7 @@ Resource Estimation Base Classes:
 
     ~Resources
     ~ResourceOperator
+    ~CompressedResourceOp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~

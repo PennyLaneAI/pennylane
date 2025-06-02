@@ -185,7 +185,9 @@ class TestDifferentiability:
 
         jac = jac_fn(params)
         assert jac.shape == (4,)
-        assert np.allclose(jac, self.exp_grad, atol=0.05)
+
+        atol = 1e-5 if shots is None else 0.05
+        assert np.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -201,7 +203,8 @@ class TestDifferentiability:
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
         assert qml.math.shape(jac) == (4,)
-        assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
+        atol = 1e-5 if shots is None else 0.05
+        assert qml.math.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
