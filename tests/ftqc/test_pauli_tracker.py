@@ -234,11 +234,8 @@ class TestOfflineCorrection:
             [qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0])],
         ],
     )
-    @pytest.mark.parametrize("sample_wires", [0])
-    def test_unsupported_tape_offline_correction(self, num_shots, ops, sample_wires):
-        measurements = []
-
-        measurements.append(qml.sample(wires=sample_wires))
+    def test_unsupported_tape_offline_correction(self, num_shots, ops):
+        measurements = [qml.sample(wires=[0])]
 
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
 
@@ -304,12 +301,16 @@ class TestOfflineCorrection:
                 [1],
                 [[1], [1]],
             ),
+            (
+                [qml.RZ(-0.1, wires=[0]), qml.RZ(0.1, wires=[1]), qml.X(wires=[1])],
+                [0, 1, 0, 1, 1, 1, 0, 1],
+                [0, 1],
+                [[1, 0], [1, 1]],
+            ),
         ],
     )
-    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, measures_expected):
-        measurements = []
-
-        measurements.append(qml.sample(wires=sample_wires))
+    def test_non_clifford_offline_correction(self, ops, mid_meas, sample_wires, measures_expected):
+        measurements = [qml.sample(wires=sample_wires)]
 
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
@@ -317,4 +318,4 @@ class TestOfflineCorrection:
 
         corrected_meas = get_byproduct_corrections(tape, mid_meas, measures)
 
-        assert corrected_meas == expected
+        assert np.allclose(corrected_meas, expected)
