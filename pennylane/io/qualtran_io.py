@@ -514,6 +514,7 @@ def _map_to_bloq():
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
         from qualtran.bloqs.basic_gates import Toffoli
+
         if isinstance(op, qops.MultiControlledX):
             return ToBloq(op)
 
