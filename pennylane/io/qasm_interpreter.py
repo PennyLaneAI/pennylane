@@ -5,6 +5,7 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 import re
 from dataclasses import dataclass
+from numpy import uint
 from functools import partial
 from typing import Any, Callable
 
@@ -30,7 +31,7 @@ from openqasm3.ast import (
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    UnaryExpression,
+    UnaryExpression, IntType, FloatType, UintType, ComplexType, AngleType, BitType, BoolType, ArrayType,
 )
 from openqasm3.visitor import QASMNode
 
@@ -593,8 +594,31 @@ class QasmInterpreter:
         Args:
             node (Cast): The Cast expression.
             context (Context): The current context.
+
+        Returns:
+            Any: The argument casted to the appropriate type.
+
+        Raises:
+            TypeError: If the cast cannot be made.
         """
-        return self.visit(node.argument, context)
+        arg = self.visit(node.argument, context)
+        try:
+            if isinstance(node.type, IntType):
+                return int(arg)
+            if isinstance(node.type, UintType):
+                return uint(arg)
+            if isinstance(node.type, FloatType):
+                return float(arg)
+            if isinstance(node.type, ComplexType):
+                return complex(arg)
+            if isinstance(node.type, BoolType):
+                return bool(arg)
+            if isinstance(node.type, ArrayType):
+                return arg.val
+            # TODO: durations, angles, etc.
+        except TypeError as e:
+            raise TypeError(f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}") from e
+        return arg
 
     @visit.register(BinaryExpression)
     def visit_binary_expression(self, node: BinaryExpression, context: Context):

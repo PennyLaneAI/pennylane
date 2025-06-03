@@ -271,6 +271,40 @@ class TestVariables:
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
 
+    def test_cannot_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0 + 2.0im;
+            const uint l = uint(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match=escape("Unable to cast complex to UintType: int() argument must be a string, "
+                  "a bytes-like object or a real number, not 'complex'")
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
+
+    def test_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float i = 3.0;
+            const uint j = int(i);
+            float k = 3.0;
+            const complex l = complex(k);
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cast"})
+
+        assert type(context.vars["j"].val) == int
+        assert type(context.vars["l"].val) == complex
+
 
 @pytest.mark.external
 class TestGates:
