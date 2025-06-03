@@ -272,3 +272,11 @@ class TestPrivateHelpers:
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
+
+    @pytest.mark.unit
+    def test_invalid_gate_set(self):
+        """Tests that an invalid gate set raises a TypeError."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="Invalid gate_set type."):
+            qml.transforms.decompose(tape, gate_set=123)

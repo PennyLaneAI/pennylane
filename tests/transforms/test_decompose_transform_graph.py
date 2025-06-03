@@ -33,10 +33,15 @@ def test_weighted_graph_handles_negative_weight():
         qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
 
 
+@pytest.mark.jax
 @pytest.mark.unit
-def test_fixed_alt_decomps_not_available():
+@pytest.mark.parametrize("use_capture", [True, False])
+def test_fixed_alt_decomps_not_available(use_capture):
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""
+
+    if use_capture:
+        qml.capture.enable()
 
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
     def my_cnot(*_, **__):
@@ -49,6 +54,9 @@ def test_fixed_alt_decomps_not_available():
 
     with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
         qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
+
+    if use_capture:
+        qml.capture.disable()
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
