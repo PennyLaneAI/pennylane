@@ -281,7 +281,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
         elif isinstance(op, (RZ, RotXZX)):
             if _wires_used[op.wires[0]] > 1:
                 raise NotImplementedError(
-                    "Current implementation only support that one non-Clifford gate comes before Clifford and Pauli gates for each wire."
+                    "The current implementation requires that only a single non-Clifford gate comes before Clifford and Pauli gates for each wire."
                 )
             by_op = [_single_xz_corrections(op, *ms)]
         elif isinstance(op, _PAULIS):
