@@ -106,7 +106,7 @@ class TemporaryAnd(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix(**kwargs):
+    def compute_matrix(**kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
