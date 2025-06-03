@@ -399,9 +399,29 @@ class SO3Matrix:
         self.k = k
         self.so3mat = self.from_su2(su2mat)
 
+    def __str__(self: SO3Matrix) -> str:
+        """Return a string representation of the SO(3) matrix."""
+        elements = self.su2mat.flatten
+        str_repr = "[\n"
+        for i in range(3):
+            str_repr += (
+                f"[{elements[i * 3].a}, {elements[i * 3 + 1].a}, {elements[i * 3 + 2].a}], \n"
+            )
+        str_repr += "]"
+        return str_repr
+
+    def __repr__(self: SO3Matrix) -> str:
+        """Return a string representation of the SO(3) matrix."""
+        return f"SO3Matrix(k={self.k}, su2mat={self.su2mat})"
+
+    @property
+    def flatten(self: SO3Matrix) -> List[ZOmega]:
+        """Flatten the matrix to a 1D NumPy array."""
+        return [l for row in self.so3mat for l in row]
+
     def from_su2(self, su2mat) -> List[List[ZSqrtTwo]]:
         """Return the SO(3) matrix as a list of lists."""
-        su2_elems = su2mat.flatten()
+        su2_elems = su2mat.flatten
 
         k = 2 * su2mat.k
         if any(s.parity for s in su2_elems):
@@ -413,7 +433,7 @@ class SO3Matrix:
                 for s in su2_elems
             ]
 
-        a_, b_, c_, d_ = zip(*z_sqrt2)
+        a_, b_, c_, d_ = z_sqrt2
         so3_mat = [
             [
                 a_[0] * d_[0] + a_[1] * d_[1] + b_[0] * c_[0] + b_[1] * c_[1],
