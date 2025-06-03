@@ -316,18 +316,18 @@ class TestOfflineCorrection:
         "ops, mid_meas, sample_wires, measures, expected",
         [
             (
-                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1]), qml.Z(0)],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [0],
                 [1],
                 [0],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
+                [qml.RZ(0.1, wires=[0]), qml.S(wires=[0])],
                 [0, 0, 1, 1, 1, 1, 0, 0],
                 [0],
                 [1],
-                [0],
+                [1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
