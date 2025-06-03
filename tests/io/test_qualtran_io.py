@@ -431,8 +431,6 @@ class TestToBloq:
     def test_from_bloq_to_bloq(self):
         """Tests that FromBloq and to_bloq functions as intended"""
 
-        from qualtran.bloqs.basic_gates import CZPowGate
-
         qpe_op = qml.QuantumPhaseEstimation(
             unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
         )
@@ -518,6 +516,7 @@ class TestToBloq:
             XGate,
             YGate,
             ZGate,
+            CNOT,
         )
 
         to_bloq = _map_to_bloq
@@ -538,6 +537,7 @@ class TestToBloq:
         assert CYGate() == to_bloq()(qml.CY([0, 1]))
         assert ZGate() == to_bloq()(qml.PauliZ(0))
         assert CZ() == to_bloq()(qml.CZ([0, 1]))
+        assert CNOT() == to_bloq()(qml.CNOT([0, 1]))
 
     @pytest.mark.parametrize(
         (
