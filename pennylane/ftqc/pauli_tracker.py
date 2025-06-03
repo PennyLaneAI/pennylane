@@ -339,7 +339,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     by_ops = []
 
     mid_meas_offset = 0
-    _t_ops_record = [None] * tape.num_wires
+    _t_ops_record = [None] * (max(tape.wires) + 1)
     for idx, op in enumerate(ops):
         gate_offset = 4 if op.num_wires == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
@@ -351,7 +351,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
         elif isinstance(op, CNOT):
             by_op = _parse_cnot(ms)
         elif isinstance(op, (RZ, RotXZX)):
-            if _t_ops_record[op.wires[0]] is None and idx < tape.num_wires:
+            if _t_ops_record[op.wires[0]] is None and idx < max(tape.wires) + 1:
                 _t_ops_record[op.wires[0]] = op
             else:
                 raise NotImplementedError(
@@ -372,17 +372,20 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops
 
 
-def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Operator]):
+def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]], ops: List[Operator]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
-        num_wires (int): Number of wires of the quantum state.
+        tape (QuantumScript): A quantum tape.
         by_ops (list): List of byproduct operators for Clifford gates
         ops (list): List of Clifford/Pauli/StatePrep operations.
 
     Return:
         The final recorded x and z for each wire.
     """
+
+    num_wires = max(tape.wires) + 1
+
     x_record = math.zeros(num_wires, dtype=np.uint8)
     z_record = math.zeros(num_wires, dtype=np.uint8)
 
@@ -430,11 +433,9 @@ def _get_sample_corrections(tape: QuantumScript, x_record: math.array, measureme
         Return:
             A list of corrected measurement values.
     """
-    correct_meas = [1] * len(tape.measurements)
-    for idx, measurement in enumerate(tape.measurements):
-        wires = measurement.wires
-
-        correct_meas[idx] = measurement_vals[idx] ^ x_record[wires[0]]
+    measured_wires = tape.measurements[0].wires
+    x_at_target = np.array([x_record[w] for w in measured_wires])
+    correct_meas = np.bitwise_xor(np.array(measurement_vals), x_at_target)
 
     return correct_meas
 
@@ -552,6 +553,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
     """
     by_ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, _ = _get_xz_record(tape.num_wires, by_ops, tape.operations)
+    x_record, _ = _get_xz_record(tape, by_ops, tape.operations)
 
     return _get_sample_corrections(tape, x_record, measurement_vals)

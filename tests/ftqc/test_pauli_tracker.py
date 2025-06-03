@@ -314,6 +314,12 @@ class TestOfflineCorrection:
                 [[1], [0]],
             ),
             (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[2]), qml.Z(0)],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [0],
+                [[1], [0]],
+            ),
+            (
                 [qml.RZ(0.1, wires=[0]), qml.S(wires=[0])],
                 [0, 0, 1, 1, 1, 1, 0, 0],
                 [0],
