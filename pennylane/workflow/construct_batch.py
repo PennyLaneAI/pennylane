@@ -408,14 +408,15 @@ def construct_batch(
         program = user_program[:num_user_transforms]
         tapes, user_post_processing = program((initial_tape,))
 
-        execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
+        execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(
+            *args, **kwargs
+        )
         # pylint: disable = protected-access
         execution_config = qml.workflow.resolution._resolve_execution_config(
             execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
 
-        gradient_fn = execution_config.gradient_method
-
+        gradient_fn = execution_config.gradient_methodhas_gradient_expand
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
