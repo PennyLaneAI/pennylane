@@ -414,10 +414,6 @@ def construct_batch(
             config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
 
-        mcm_config = qml.devices.MCMConfig(
-            postselect_mode=qnode.execute_kwargs["postselect_mode"],
-            mcm_method=qnode.execute_kwargs["mcm_method"],
-        )
         gradient_fn = config.gradient_method
         execution_config = _make_execution_config(qnode, gradient_fn, mcm_config)
 
