@@ -291,6 +291,7 @@
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
     [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
+    [(#7499)](https://github.com/PennyLaneAI/pennylane/pull/7499)
 
   ```python
   @qml.register_resources({qml.RY: 1})
@@ -612,12 +613,16 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
+  Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
+  [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)
+  
 * The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated; non-native transforms being applied
   to QNodes wherein operators have dynamic wires can lead to incorrect results.
   [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
 
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
- [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
+  [(#7427)](https://github.com/PennyLaneAI/pennylane/pull/7427)
 
 * In the :doc:`/introduction/compiling_circuits` page, in the "Decomposition in stages" section,
   circuit drawings now render in a way that's easier to read.
@@ -630,6 +635,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The mapping to standard wires (consecutive integers) of `qml.tape.QuantumScript` has been fixed
+  to correctly consider work wires that are not used otherwise in the circuit.
+  [(#7581)](https://github.com/PennyLaneAI/pennylane/pull/7581)
 
 * Fixed a bug where certain transforms with a native program capture implementation give incorrect results when
   dynamic wires were present in the circuit. The affected transforms were:
