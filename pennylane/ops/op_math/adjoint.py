@@ -226,14 +226,8 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
         consts = jaxpr.consts
-        jaxpr = jax.extend.core.Jaxpr(
-            constvars=(),
-            invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
-            outvars=jaxpr.jaxpr.outvars,
-            eqns=jaxpr.jaxpr.eqns,
-            effects=jaxpr.jaxpr.effects,
-        )
-
+        j = jaxpr.jaxpr
+        jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
             *consts,

@@ -455,14 +455,9 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
         ) from exc
 
     consts = qfunc_jaxpr.consts
+    j = qfunc_jaxpr.jaxpr
+    qfunc_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
-    qfunc_jaxpr = jax.extend.core.Jaxpr(
-        constvars=(),
-        invars=qfunc_jaxpr.jaxpr.constvars + qfunc_jaxpr.jaxpr.invars,
-        outvars=qfunc_jaxpr.jaxpr.outvars,
-        eqns=qfunc_jaxpr.jaxpr.eqns,
-        effects=qfunc_jaxpr.jaxpr.effects,
-    )
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree, consts
 

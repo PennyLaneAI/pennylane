@@ -462,13 +462,8 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
     consts = jaxpr.consts
-    jaxpr = jax.extend.core.Jaxpr(
-        constvars=(),
-        invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
-        outvars=jaxpr.jaxpr.outvars,
-        eqns=jaxpr.jaxpr.eqns,
-        effects=jaxpr.jaxpr.effects,
-    )
+    j = jaxpr.jaxpr
+    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     return adjoint_transform_prim.bind(*consts, *invals, jaxpr=jaxpr, lazy=lazy)
 
 
@@ -479,18 +474,12 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     args = invals[:-n_control]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
     consts = jaxpr.consts
-    jaxpr = jax.extend.core.Jaxpr(
-        constvars=(),
-        invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
-        outvars=jaxpr.jaxpr.outvars,
-        eqns=jaxpr.jaxpr.eqns,
-        effects=jaxpr.jaxpr.effects,
-    )
+    j = jaxpr.jaxpr
+    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
     return ctrl_transform_prim.bind(
         *consts,
-        *args,
-        *invals[-n_control:],
+        *invals,
         n_control=n_control,
         jaxpr=jaxpr,
         control_values=control_values,
@@ -600,16 +589,11 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     """Handle a qnode primitive."""
 
     qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
-    new_qfunc_jaxpr = jax.extend.core.Jaxpr(
-        constvars=(),
-        invars=qfunc_jaxpr.jaxpr.constvars + qfunc_jaxpr.jaxpr.invars,
-        outvars=qfunc_jaxpr.jaxpr.outvars,
-        eqns=qfunc_jaxpr.jaxpr.eqns,
-        effects=qfunc_jaxpr.jaxpr.effects,
-    )
-
+    consts = qfunc_jaxpr.consts
+    j = qfunc_jaxpr.jaxpr
+    new_qfunc_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     return qnode_prim.bind(
-        *qfunc_jaxpr.consts,
+        *consts,
         *invals,
         shots=shots,
         qnode=qnode,

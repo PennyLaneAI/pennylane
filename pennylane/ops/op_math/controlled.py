@@ -281,13 +281,9 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *args
         )
         consts = jaxpr.consts
-        jaxpr = jax.extend.core.Jaxpr(
-            constvars=(),
-            invars=jaxpr.jaxpr.constvars + jaxpr.jaxpr.invars,
-            outvars=jaxpr.jaxpr.outvars,
-            eqns=jaxpr.jaxpr.eqns,
-            effects=jaxpr.jaxpr.effects,
-        )
+        j = jaxpr.jaxpr
+        jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
