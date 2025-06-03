@@ -443,7 +443,9 @@ class TestConstructBatch:
         qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.xfail(reason="This does not seem to be working since we want qnode to override device shots")
+    @pytest.mark.xfail(
+        reason="This does not seem to be working since we want qnode to override device shots"
+    )
     def test_qfunc_with_shots_arg(self):
         """Test that the tape uses device shots only when qfunc has a shots kwarg"""
 
