@@ -203,6 +203,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
         ...     qml.RX(2*x, 0)
         ...     qml.RY(y, 0)
         ...     return qml.expval(qml.Z(0))
+        ...
         >>> qml.qjit(qml.metric_tensor(c))(jnp.array(0.5), jnp.array(0.6))
         Array([[0.25      , 0.        ],
                 [0.        , 0.07298165]], dtype=float64)
