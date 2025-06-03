@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import math
+from functools import lru_cache
 from typing import List
 
 import numpy as np
@@ -36,7 +37,7 @@ class ZSqrtTwo:
         b (int): The coefficient of sqrt(2) in the element.
     """
 
-    def __init__(self, a: int, b: int) -> None:
+    def __init__(self, a: int = 0, b: int = 0) -> None:
         self.a = int(a)
         self.b = int(b)
 
@@ -150,7 +151,7 @@ class ZOmega:
         d (int): Constant term.
     """
 
-    def __init__(self, a: int, b: int, c: int, d: int) -> None:
+    def __init__(self, a: int = 0, b: int = 0, c: int = 0, d: int = 0) -> None:
         self.a = int(a)
         self.b = int(b)
         self.c = int(c)
@@ -281,7 +282,7 @@ class SU2Matrix:
 
     """
 
-    # pylint:disable = too-many-arguments
+    # pylint:disable = too-many-positional-arguments, too-many-arguments
     def __init__(self, a: ZOmega, b: ZOmega, c: ZOmega, d: ZOmega, k: int = 0) -> None:
         self.a = a
         self.b = b
@@ -421,8 +422,8 @@ class SO3Matrix:
                 a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
                 a_[0] * d_[0] + a_[1] * d_[1] - b_[0] * c_[0] - b_[1] * c_[1],
                 a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
-                ZSqrtTwo(2, 0) * (a_[0] * b_[0] + a_[1] * b_[1]),
-                ZSqrtTwo(2, 0) * (a_[1] * b_[0] - a_[0] * b_[1]),
+                2 * (a_[0] * b_[0] + a_[1] * b_[1]),
+                2 * (a_[1] * b_[0] - a_[0] * b_[1]),
                 a_[0] ** 2 + a_[1] ** 2 - b_[0] ** 2 - b_[1] ** 2,
             ]
         ]
@@ -430,3 +431,26 @@ class SO3Matrix:
 
     def reducek(self: SO3Matrix) -> SO3Matrix:
         """Reduce the k value of the SO(3) matrix."""
+
+
+@lru_cache
+def _clifford_gates_to_SU2():
+    """Return a dictionary mapping Clifford gates to their corresponding SU(2) matrices."""
+    return {
+        "I": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)),
+        "X": SU2Matrix(ZOmega(), ZOmega(d=1), ZOmega(d=1), ZOmega()),
+        "Y": SU2Matrix(ZOmega(), ZOmega(b=-1), ZOmega(b=1), ZOmega()),
+        "Z": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=-1)),
+        "H": SU2Matrix(ZOmega(d=1), ZOmega(d=1), ZOmega(d=1), ZOmega(d=-1), k=1),
+        "S": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(b=1)),
+        "T": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(c=1)),
+        "S*": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(b=-1)),
+        "T*": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(a=-1)),
+    }
+
+
+@lru_cache
+def _clifford_gates_to_SO3():
+    """Return a dictionary mapping Clifford gates to their corresponding SO(3) matrices."""
+    su2_matrices = _clifford_gates_to_SU2()
+    return {gate: SO3Matrix(su2, k=su2.k) for gate, su2 in su2_matrices.items()}
