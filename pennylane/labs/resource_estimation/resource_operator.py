@@ -14,32 +14,31 @@
 r"""Abstract base class for resource operators."""
 from __future__ import annotations
 
-from inspect import signature
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from inspect import signature
 from typing import Callable, List, Type
 
-from pennylane.wires import Wires
-from pennylane.queuing import QueuingManager
-from pennylane.operation import classproperty
-
-from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
+from pennylane.labs.resource_estimation.resources_base import Resources
+from pennylane.operation import classproperty
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 # pylint: disable=unused-argument
 
 
 class ResourceOperator(ABC):
-    r"""Base class to represent quantum operators according to the set of information 
+    r"""Base class to represent quantum operators according to the set of information
     required for resource estimation.
 
     Operators defined for the purpose of resource estimation require less detailed information.
     This is because the cost of a quantum gate can be well approximated without a full description
     of its parameters. For example two :class:`~.RX` gates have the same cost regardless
-    of their rotation angle parameters. 
+    of their rotation angle parameters.
 
-    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its 
-    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally, 
+    A :class:`~.pennylane.labs.resource_estimations.ResourceOperator` is uniquely defined by its
+    name (the class type) and its resource parameters ():code:`op.resource_params`). Additionally,
 
     .. details::
 
@@ -188,32 +187,32 @@ class ResourceOperator(ABC):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-		cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-	) -> List:
+        cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
+    ) -> List:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            ctrl_num_ctrl_wires (int): the number of qubits the 
+            ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
-            ctrl_num_ctrl_values (int): the number of control qubits, that are 
-		        controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_values (int): the number of control qubits, that are
+                        controlled when in the :math:`|0\rangle` state
         """
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
-		)
-    
+        )
+
     @classmethod
     def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -223,7 +222,7 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> List:
-        r"""Returns a list representing the resources for an operator 
+        r"""Returns a list representing the resources for an operator
         raised to a power.
 
         Args:
@@ -247,10 +246,11 @@ class ResourceOperator(ABC):
             _validate_signature(new_func, keys)
             cls.adjoint_resource_decomp = new_func
         if override_type == "ctrl":
-            keys = cls.resource_keys.union({"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"})
+            keys = cls.resource_keys.union(
+                {"ctrl_num_ctrl_wires", "ctrl_num_ctrl_values", "kwargs"}
+            )
             _validate_signature(new_func, keys)
             cls.controlled_resource_decomp = new_func
-        return
 
     def __repr__(self) -> str:
         str_rep = self.__class__.__name__ + "(" + str(self.resource_params) + ")"
@@ -277,15 +277,15 @@ class ResourceOperator(ABC):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
-    
+
     def __and__(self, other):
         if isinstance(other, self.__class__):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
-        
+
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     __radd__ = __add__
@@ -310,18 +310,18 @@ def _validate_signature(func: Callable, expected_args: set):
         func (Callable): function to match signature with
         expected_args (set): expected signature
     """
-    
+
     sig = signature(func)
     actual_args = set(sig.parameters)
 
-    if (extra_args := actual_args - expected_args):
+    if extra_args := actual_args - expected_args:
         raise ValueError(
             f"The function provided specifies addtional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
 
-    if (missing_args := expected_args - actual_args):
+    if missing_args := expected_args - actual_args:
         raise ValueError(
             f"The function is missing arguments ({missing_args}) which are expected. Please"
             + " update the function signature or modify the base class' `resource_keys` argument."
@@ -339,7 +339,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="ctrl")
 
-    
+
 def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="adj")
 
