@@ -313,72 +313,66 @@ class TestOfflineCorrection:
             _ = get_byproduct_corrections(tape, mid_meas, [1])
 
     @pytest.mark.parametrize(
-        "ops, mid_meas, sample_wires, measures, expected",
+        "ops, mid_meas, sample_wires, measures_expected",
         [
             (
                 [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1]), qml.Z(0)],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [0],
-                [1],
-                [0],
+                [1, 0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), qml.S(wires=[0])],
                 [0, 0, 1, 1, 1, 1, 0, 0],
                 [0],
-                [1],
-                [1],
+                [1, 1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [0],
-                [0],
-                [0],
+                [0, 0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 0, 1, 0, 1, 0, 0, 1],
                 [0],
-                [1],
-                [1],
+                [1, 1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [1],
-                [0],
-                [1],
+                [0, 1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
                 [0, 1, 1, 0, 1, 0, 0, 0],
                 [1],
-                [0],
-                [0],
+                [0, 0],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [1],
-                [0],
-                [1],
+                [0, 1],
             ),
             (
                 [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 1, 0, 1],
                 [1],
-                [1],
-                [1],
+                [1, 1],
             ),
         ],
     )
-    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, measures, expected):
+    def test_non_clifford_offline_correction(self, ops, sample_wires, mid_meas, measures_expected):
         measurements = []
 
         measurements.append(qml.sample(wires=sample_wires))
 
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        measures, expected = measures_expected
 
         corrected_meas = get_byproduct_corrections(tape, mid_meas, measures)
 
