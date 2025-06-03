@@ -27,14 +27,14 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane import math
 from pennylane.operation import (
     DecompositionUndefinedError,
     MatrixUndefinedError,
-    Operator,
     Operation,
+    Operator,
 )
-from pennylane.queuing import QueuingManager, AnnotatedQueue
-from pennylane import math
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.templates.state_preparations.superposition import _assign_states
 from pennylane.wires import WiresLike
