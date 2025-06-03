@@ -348,10 +348,6 @@ def test_stopping_condition_graph_enabled():
 def test_stopping_condition():
     """Tests that the stopping condition is respected."""
 
-    import pennylane as qml
-
-    qml.decomposition.enable_graph()
-
     # Prepare a unitary matrix that we want to decompose
     U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
 
