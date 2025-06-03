@@ -212,19 +212,20 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
         temp_all_args = args
 
     # Expand user transforms applied to the qfunc
+    accumulated_consts = []
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
         transformed_func = qml.capture.expand_plxpr_transforms(
             partial(qml.capture.eval_jaxpr, qfunc_jaxpr, [])
         )
 
         qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_all_args)
-        temp_all_args = tuple(qfunc_jaxpr.consts) + temp_all_args
+        accumulated_consts += qfunc_jaxpr.consts
         qj = qfunc_jaxpr.jaxpr
         qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
 
     # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, [], *temp_all_args)
-    temp_all_args = tuple(qfunc_jaxpr.consts) + tuple(temp_all_args)
+    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, [], *accumulated_consts, *temp_all_args)
+    accumulated_consts = qfunc_jaxpr.consts + accumulated_consts
     qj = qfunc_jaxpr.jaxpr
     qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
 
@@ -233,8 +234,7 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
     try:
         qml.decomposition.disable_graph()
         qfunc_jaxpr = device_program(qfunc_jaxpr, [], *temp_all_args)
-        consts = qfunc_jaxpr.consts
-        temp_all_args = tuple(consts) + temp_all_args
+        accumulated_consts = qfunc_jaxpr.consts + accumulated_consts
         qj = qfunc_jaxpr.jaxpr
         qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
     finally:
@@ -243,9 +243,9 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
 
     partial_eval = partial(device.eval_jaxpr, qfunc_jaxpr, [], execution_config=execution_config)
     if batch_dims is None:
-        return partial_eval(*temp_all_args)
-    print(temp_all_args)
-    return jax.vmap(partial_eval, batch_dims)(*temp_all_args)
+        return partial_eval(*accumulated_consts, *args)
+
+    return jax.vmap(partial_eval, batch_dims)(*accumulated_consts, *args)
 
 
 # pylint: disable=unused-argument

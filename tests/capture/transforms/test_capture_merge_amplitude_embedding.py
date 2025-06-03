@@ -615,6 +615,7 @@ class TestHigherOrderPrimitiveIntegration:
             qml.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
+        print(jaxpr)
         assert len(jaxpr.eqns) == 3
         # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive

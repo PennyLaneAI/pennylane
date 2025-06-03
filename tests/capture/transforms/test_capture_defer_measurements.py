@@ -675,17 +675,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         collector = CollectOpsandMeas()
-        if postselect is None:
-            collector.eval(inner_jaxpr, [], jax.numpy.arange(4), x)
-        else:
-            collector.eval(
-                inner_jaxpr,
-                [],
-                qml.math.array([postselect]),
-                qml.math.array([int(not postselect)]),
-                jax.numpy.arange(4),
-                x,
-            )
+        collector.eval(inner_jaxpr, [], *jaxpr.consts, x)
 
         ops = collector.state["ops"]
         expected_ops = [
