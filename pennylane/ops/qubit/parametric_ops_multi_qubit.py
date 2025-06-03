@@ -685,6 +685,8 @@ class PCPhase(Operation):
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
+    resource_keys = {"num_wires", "dim"}
+
     def generator(self) -> "qml.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
         The operator reads
@@ -722,6 +724,10 @@ class PCPhase(Operation):
 
         super().__init__(phi, wires=wires, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
 
     @staticmethod
     def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
