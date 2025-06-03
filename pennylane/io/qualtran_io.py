@@ -27,7 +27,12 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operator, Operation
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    MatrixUndefinedError,
+    Operator,
+    Operation,
+)
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
 
