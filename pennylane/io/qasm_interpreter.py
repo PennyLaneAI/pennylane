@@ -365,6 +365,7 @@ class QasmInterpreter:
             node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
         )  # str or Identifier
         res = self.visit(node.rvalue, context)
+        # TODO: different types of assignments
         context.update_var(res, name, node)
 
     @visit.register(AliasStatement)
@@ -583,8 +584,8 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        lhs = float(self.visit(node.lhs, context))
-        rhs = float(self.visit(node.rhs, context))
+        lhs = self.visit(node.lhs, context)
+        rhs = self.visit(node.rhs, context)
         if (
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
@@ -615,7 +616,7 @@ class QasmInterpreter:
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
             return eval(  # pylint: disable=eval-used
-                f"{node.op.name}{float(self.visit(node.expression, context))}"
+                f"{node.op.name}{self.visit(node.expression, context)}"
             )
         if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
             raise SyntaxError(

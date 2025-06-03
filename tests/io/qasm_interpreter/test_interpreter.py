@@ -86,6 +86,24 @@ class TestVariables:
             PauliX("q0") ** 24,
         ]
 
+    def test_visit_expression(self):
+        # parse the QASM
+        ast = parse(
+            """
+            bit[8] a = "1001";
+            a << 1;
+            let b = a;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "expression-visit"}
+        )
+
+        # exprs are not in-place modifierss without an assignment
+        assert context.aliases["b"](context).val == 9
+
     def test_param_as_expression(self):
         # parse the QASM
         ast = parse(
@@ -215,6 +233,7 @@ class TestVariables:
         assert context.vars["j"].val == 4
         assert context.vars["c"].val == 0
         assert context.vars["k"].val == 4
+        assert context.vars["comp"].val == 3.5j + 2.5
         assert context.aliases["arr_alias"](context) == [0.0, 1.0]
         assert context.aliases["literal_alias"](context) == 0.0
 
@@ -530,8 +549,6 @@ class TestGates:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "two-qubit-gates"})
@@ -559,8 +576,6 @@ class TestGates:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -590,8 +605,6 @@ class TestGates:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
@@ -619,8 +632,6 @@ class TestGates:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -661,8 +672,6 @@ class TestGates:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
