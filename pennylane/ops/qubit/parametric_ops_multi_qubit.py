@@ -929,7 +929,9 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     }
 
 
-def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
+def _ctrl_phase_shift(
+    phi, target_wire, subspace, control_wires, control_values, work_wires
+):  # pylint: disable=too-many-arguments
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 
