@@ -511,7 +511,6 @@ def _local_pes_threemode(
         )
         ref_dipole = _get_dipole(scf_result, method)
 
-    mode_combo = 0
     for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
 
         if (
@@ -707,7 +706,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
                     pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
                     end_idx += len(pes_chunk)
                     local_pes[init_idx:end_idx] = pes_chunk
-                    if local_dipole is not None:
+                    if dipole:
                         dipole_chunk = np.array_split(local_dipole_threebody, nmode_combos, axis=0)[
                             mode_combo
                         ]
