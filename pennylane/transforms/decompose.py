@@ -629,7 +629,7 @@ def decompose(
         types and/or names that is required by the graph-based decomposition solver, which chooses
         a decomposition rule for each operator that ultimately minimizes the total number of gates
         in terms of the target gate set (or the total cost if weights are provided). On the other
-        hand, the ``stopping_condition`` is a function that determines whether a concrete operator
+        hand, the ``stopping_condition`` is a function that determines whether an operator instance
         needs to be decomposed. In short, the ``gate_set`` is specified in terms of operator types,
         whereas the ``stopping_condition`` is specified in terms of operator instances.
 

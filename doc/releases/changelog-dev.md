@@ -323,7 +323,7 @@
   1: ────────────╰X──RY(-0.50)─┤
   ```
 
-* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument, which must be
+* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with graph-based decomposition enabled, which must be
   a function that returns `True` if an operator does not need to be decomposed (it meets the requirements as described
   in `stopping_condition`).
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
