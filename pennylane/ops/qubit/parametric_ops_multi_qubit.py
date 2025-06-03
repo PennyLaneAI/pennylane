@@ -1025,7 +1025,7 @@ def _decompose_pcphase_resource(num_wires, dim):
                     subspace,
                     n_control_wires=i,
                     n_zero_control_values=n_zero_control_values,
-                    n_work_wires=num_wires - i,
+                    n_work_wires=num_wires - i - 1,
                 )
             )
 
