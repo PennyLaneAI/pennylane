@@ -512,6 +512,7 @@ class TestToBloq:
             Rz,
             SGate,
             TGate,
+            Toffoli,
             TwoBitCSwap,
             TwoBitSwap,
             XGate,
@@ -538,6 +539,7 @@ class TestToBloq:
         assert ZGate() == to_bloq()(qml.PauliZ(0))
         assert CZ() == to_bloq()(qml.CZ([0, 1]))
         assert CNOT() == to_bloq()(qml.CNOT([0, 1]))
+        assert Toffoli() == to_bloq()(qml.Toffoli([0, 1, 2]))
 
     @pytest.mark.parametrize(
         (
