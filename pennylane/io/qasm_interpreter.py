@@ -134,6 +134,9 @@ ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 
 @dataclass
 class Variable:
+    """
+    A data class that represents a variables.
+    """
     ty: str
     val: Any
     size: int
@@ -232,7 +235,7 @@ class Context:
         if name in self.context:
             return self.context[name]
         raise NameError(
-            f"No attribute {name} on Context and no {name} key found on context {self.context}"
+            f"No attribute {name} on Context and no {name} key found on context {self.name}"
         )
 
 
@@ -251,7 +254,7 @@ def _index_into_var(var: dict, node: IndexExpression):
         The indexed slice of the variable.
     """
     if var.ty == "BitType":
-        var = bin(var.val)[2:].zfill(var.size)
+        var = _get_bit_type_val(var)
     else:
         var = var.val
     if isinstance(node.index[0], RangeDefinition):
@@ -417,7 +420,7 @@ class QasmInterpreter:
         )
 
     @visit.register(ImaginaryLiteral)
-    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):
+    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):   # pylint: disable=unused-argument no-self-use
         """
         Registers an imaginary literal.
 
@@ -647,7 +650,7 @@ class QasmInterpreter:
         var = context.retrieve_variable(node.collection.name)
         return _index_into_var(var, node)
 
-    def _alias(self, node: Identifier | IndexExpression, context: Context):
+    def _alias(self, node: Identifier | IndexExpression, context: Context):  # pylint: disable=no-self-use
         """
         An alias is registered as a callable since we need to be able to
         evaluate it at a later time.
@@ -659,7 +662,8 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-            return context.retrieve_variable(node.collection.name)
+            return context.retrieve_variable(node.collection.name) \
+                if getattr(node, "collection", None) else context.retrieve_variable(node.name)
         except NameError as e:
             raise NameError(
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
@@ -713,7 +717,7 @@ class QasmInterpreter:
     @visit.register(BooleanLiteral)
     @visit.register(BitstringLiteral)
     @visit.register(DurationLiteral)
-    def visit_literal(self, node: Expression, context: Context):
+    def visit_literal(self, node: Expression, context: Context):  # pylint: disable=unused-argument no-self-use
         """
         Visits a literal.
 

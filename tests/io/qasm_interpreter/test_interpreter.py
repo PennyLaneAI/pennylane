@@ -41,9 +41,23 @@ try:
 
     from openqasm3.parser import parse
 
-    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+    from pennylane.io.qasm_interpreter import QasmInterpreter, Context  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+@pytest.mark.external
+class TestContext:
+
+    def test_retrieve_non_existent_attr(self):
+        context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
+
+        with pytest.raises(
+            NameError,
+            match=r"No attribute potato on Context and no potato key found "
+                  r"on context retrieve-non-existent-attr",
+        ):
+            potato = context.potato
 
 
 @pytest.mark.external
@@ -93,7 +107,7 @@ class TestVariables:
     def test_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+            open("variables.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -128,10 +142,70 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_retrieve_wire(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit[0] q;
+            let s = q;
+            """,
+            permissive=True
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-retrieve"})
+
+        assert context.aliases["s"](context) == "q"
+
+    def test_ref_undeclared_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(TypeError, match="Attempt to use undeclared variable theta in undeclared-var"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "undeclared-var"})
+
+    def test_ref_uninitialized_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
+    def test_invalid_index(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            const float[2] arr = {0.0, 1.0};
+            let slice = arr[jalapeno];
+            """,
+            permissive=True
+        )
+
+        # run the program
+        with pytest.raises(
+            TypeError,
+            match="Array index is not a RangeDefinition or Literal at line 4."
+        ):
+            context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "bad-index"})
+            context.aliases["slice"](context)
+
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+            open("classical.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -140,11 +214,14 @@ class TestVariables:
         assert context.vars["i"].val == 4
         assert context.vars["j"].val == 4
         assert context.vars["c"].val == 0
+        assert context.vars["k"].val == 4
+        assert context.aliases["arr_alias"](context) == [0.0, 1.0]
+        assert context.aliases["literal_alias"](context) == 0.0
 
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
