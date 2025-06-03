@@ -3,6 +3,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 import pytest
+from re import escape
 
 from pennylane import (
     CH,
@@ -463,7 +464,7 @@ class TestGates:
 
         with pytest.raises(
             NameError,
-            match=r"Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
+            match=escape("Attempt to reference wire(s): {'q0'} that have not been declared in uninit-qubit"),
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-qubit"})
 
