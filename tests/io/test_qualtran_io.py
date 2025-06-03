@@ -32,7 +32,7 @@ def test_to_bloq_error():
     """Test import error message when ToBloq() is instantiated without qualtran installed"""
     try:
         import qualtran as qt
-    except (ModuleNotFoundError, ImportError) as import_error:
+    except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
             qml.ToBloq()
 
