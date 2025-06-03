@@ -12,3 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the iterative cancel inverses transform"""
+
+import pytest
+
+pytestmark = pytest.mark.external
+
+xdsl = pytest.importorskip("xdsl")
+filecheck = pytest.importorskip("filecheck")
+
+import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import IterativeCancelInversesPass
+
+
+class TestIterativeCancelInversesPass:
+    """Unit tests for IterativeCancelInversesPass."""
+
+    def test_no_inverses(self):
+        """Test that nothing changes when there are no inverses."""
+
+    def test_simple_self_inverses(self):
+        """Test that inverses are cancelled."""
+
+    def test_nested_self_inverses(self):
+        """Test that nested self-inverses are cancelled."""
+
+    def test_cond(self):
+        """Test that inverses are cancelled correctly when conditions
+        are present."""
+
+    def test_for_loop(self):
+        """Test that inverses are cancelled correctly when for loops
+        are present."""
+
+    def test_while_loop(self):
+        """Test that inverses are cancelled correctly when while loops
+        are present."""

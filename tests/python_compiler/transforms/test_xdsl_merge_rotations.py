@@ -12,3 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the merge rotations transform"""
+
+import pytest
+
+pytestmark = pytest.mark.external
+
+xdsl = pytest.importorskip("xdsl")
+
+import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import MergeRotationsPass
+
+
+class MergeRotationsPass:
+    """Unit tests for MergeRotationsPass."""
+
+    def test_no_composable_ops(self):
+        """Test that nothing changes when there are no composable gates."""
+
+    def test_composable_ops(self):
+        """Test that composable gates are cancelled."""
+
+    def test_cond(self):
+        """Test that composable gates are merged correctly when conditions
+        are present."""
+
+    def test_for_loop(self):
+        """Test that composable gates are merged correctly when for loops
+        are present."""
+
+    def test_while_loop(self):
+        """Test that composable gates are merged correctly when while loops
+        are present."""
