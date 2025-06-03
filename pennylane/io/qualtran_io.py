@@ -515,7 +515,7 @@ def _map_to_bloq():
     def _(op: qops.Controlled, **kwargs):
         if isinstance(op, qops.MultiControlledX):
             return ToBloq(op)
-        
+
         return _map_to_bloq()(op.base).controlled()
 
     @_to_qt_bloq.register
