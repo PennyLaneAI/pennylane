@@ -358,7 +358,8 @@ class TestConstructBatch:
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
-    def test_final_transform(self):
+    @pytest.mark.parametrize("x_val", (0.3, qml.numpy.array(0.3, requires_grad=True)))
+    def test_final_transform(self, x_val):
         """Test that the final transform is included when level=None."""
 
         @qml.gradients.param_shift
@@ -369,7 +370,6 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        x_val = qml.numpy.array(0.3, requires_grad=True)
         batch, fn = construct_batch(circuit, level=None)(x_val)
         assert len(batch) == 4
 
