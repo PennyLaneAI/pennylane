@@ -219,7 +219,7 @@ def queue_corrections(op, measurements):
 @singledispatch
 def _single_xz_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
-    two boolean elements, indicating the need for X-rotation and Z-rotation
+    two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively."""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
@@ -228,7 +228,7 @@ def _single_xz_corrections(op, m1, m2, m3, m4):
 @_single_xz_corrections.register(RZ)
 def _rotation_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
-    two boolean elements, indicating the need for X-rotation and Z-rotation
+    two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively. Note that these corrections also apply in the
     more specific rotation case, RZ = RotXZX(0, Z, 0)"""
     return m2 ^ m4, m1 ^ m3
@@ -237,7 +237,7 @@ def _rotation_corrections(op, m1, m2, m3, m4):
 @_single_xz_corrections.register(H)
 def _hadamard_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
-    two boolean elements, indicating the need for X-rotation and Z-rotation
+    two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively."""
     return parity(m1, m3, m4), m2 ^ m3
 
@@ -245,7 +245,7 @@ def _hadamard_corrections(op, m1, m2, m3, m4):
 @_single_xz_corrections.register(S)
 def _s_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
-    two boolean elements, indicating the need for X-rotation and Z-rotation
+    two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively."""
     return m2 ^ m4, parity(m1, m2, m3, 1)
 
@@ -322,7 +322,7 @@ def _cnot_xz_corrections(measurements):
     """Get the xz corrections for the control and target wire based on the measurements.
     Returns a list of two tuples indicating corrections for the control and target wires
     respectively. For each tuple, the first element is a boolean indicating whether an
-    X-rotation correction is needed, and the second element indicates whether a Z-rotation
+    PauliX correction is needed, and the second element indicates whether a PauliZ
     correction is needed."""
 
     # Numbering convention follows the procedure in Raussendorf et al. 2003,

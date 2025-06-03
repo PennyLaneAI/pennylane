@@ -140,6 +140,7 @@
   expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
   relevant gate-set with the `convert_to_mbqc_gateset` transform.
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
+  [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
