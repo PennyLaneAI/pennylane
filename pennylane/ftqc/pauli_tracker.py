@@ -25,6 +25,7 @@ from pennylane.operation import Operator
 from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from pennylane.tape import QuantumScript
 
+from .decomposition import _cnot_xz_corrections, _single_xz_corrections
 from .operations import RotXZX
 from .utils import parity
 
@@ -247,77 +248,6 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
-def _parse_s(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.S` gate.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        A list of tuples of xz encoding.
-    """
-    return [(mid_meas[1] ^ mid_meas[3], parity(mid_meas[0], mid_meas[1], mid_meas[2], 1))]
-
-
-def _parse_h(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.H` gate.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        A list of tuples of xz encoding.
-    """
-    return [(parity(mid_meas[0], mid_meas[2], mid_meas[3]), mid_meas[1] ^ mid_meas[2])]
-
-
-def _parse_cnot(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.CNOT` gate.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        A list of tuples of xz encoding.
-    """
-    # Control wire
-    by_op = [
-        (
-            parity(mid_meas[1], mid_meas[2], mid_meas[4], mid_meas[5]),
-            parity(
-                mid_meas[0],
-                mid_meas[2],
-                mid_meas[3],
-                mid_meas[4],
-                mid_meas[6],
-                mid_meas[7],
-                mid_meas[9],
-                1,
-            ),
-        )
-    ]
-    # Target wire
-    by_op.append(
-        (
-            parity(mid_meas[1], mid_meas[2], mid_meas[6], mid_meas[8], mid_meas[10], mid_meas[12]),
-            parity(mid_meas[7], mid_meas[9], mid_meas[11]),
-        )
-    )
-    return by_op
-
-
-def _parse_rotation(mid_meas: List):
-    """Parse the mid measurements of a :class:`~pennylane.RZ` or :class:`~pennylane.RotXZX` gate.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        A list of tuples of xz encoding.
-    """
-    return [(mid_meas[1] ^ mid_meas[3], mid_meas[0] ^ mid_meas[2])]
-
-
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     r"""Parse a serial of mid-measurement results of a quantum tape with a few number of non-Clifford
     gates (:class:`~pennylane.RZ` and :class:`~pennylane.ftqc.RotXZX`), up to the number of wires of
@@ -344,12 +274,10 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
         gate_offset = 4 if op.num_wires == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
         by_op = []
-        if isinstance(op, S):
-            by_op = _parse_s(ms)
-        elif isinstance(op, H):
-            by_op = _parse_h(ms)
+        if isinstance(op, (S, H)):
+            by_op = [_single_xz_corrections(op, *ms)]
         elif isinstance(op, CNOT):
-            by_op = _parse_cnot(ms)
+            by_op = _cnot_xz_corrections(ms)
         elif isinstance(op, (RZ, RotXZX)):
             if _t_ops_record[op.wires[0]] is None and idx < max(tape.wires) + 1:
                 _t_ops_record[op.wires[0]] = op
@@ -357,7 +285,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
                 raise NotImplementedError(
                     "Current implementation only support one non-Clifford gate per wire at the beginning of the circuit."
                 )
-            by_op = _parse_rotation(ms)
+            by_op = [_single_xz_corrections(op, *ms)]
         elif isinstance(op, _PAULIS):
             continue
         else:

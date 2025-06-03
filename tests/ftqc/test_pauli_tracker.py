@@ -21,11 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.ftqc import RotXZX, get_byproduct_corrections
 from pennylane.ftqc.pauli_tracker import (
-    _parse_cnot,
-    _parse_h,
     _parse_mid_measurements,
-    _parse_rotation,
-    _parse_s,
     commute_clifford_op,
     pauli_prod,
     pauli_to_xz,
@@ -210,59 +206,6 @@ class TestPauliTracker:
 
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
-
-    @pytest.mark.parametrize(
-        "mid_measures, expected",
-        [
-            ([0, 0, 0, 0], [(0, 1)]),
-            ([0, 0, 0, 1], [(1, 1)]),
-            ([1, 0, 0, 1], [(1, 0)]),
-            ([1, 1, 1, 1], [(0, 0)]),
-        ],
-    )
-    def test_parse_s(self, mid_measures, expected):
-        assert _parse_s(mid_measures) == expected
-
-    @pytest.mark.parametrize(
-        "mid_measures, expected",
-        [
-            ([0, 0, 0, 0], [(0, 0)]),
-            ([0, 0, 0, 1], [(1, 0)]),
-            ([1, 1, 0, 0], [(1, 1)]),
-            ([0, 0, 1, 1], [(0, 1)]),
-        ],
-    )
-    def test_parse_h(self, mid_measures, expected):
-        assert _parse_h(mid_measures) == expected
-
-    @pytest.mark.parametrize(
-        "mid_measures, expected",
-        [
-            ([0, 0, 0, 0], [(0, 0)]),
-            ([1, 1, 0, 0], [(1, 1)]),
-            ([1, 0, 1, 1], [(1, 0)]),
-            ([0, 0, 1, 0], [(0, 1)]),
-        ],
-    )
-    def test_parse_rotation(self, mid_measures, expected):
-        assert _parse_rotation(mid_measures) == expected
-
-    @pytest.mark.parametrize(
-        "mid_measures, expected",
-        [
-            ([0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0], [(0, 0), (0, 0)]),
-            ([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [(0, 1), (0, 0)]),
-            ([1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], [(1, 0), (0, 0)]),
-            ([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [(1, 1), (0, 0)]),
-            ([0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1], [(0, 0), (1, 0)]),
-            ([0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0], [(0, 0), (1, 1)]),
-            ([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [(1, 1), (1, 0)]),
-            ([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0], [(0, 1), (1, 0)]),
-            ([1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0], [(0, 1), (0, 1)]),
-        ],
-    )
-    def test_parse_cnot(self, mid_measures, expected):
-        assert _parse_cnot(mid_measures) == expected
 
     @pytest.mark.parametrize(
         "ops, mid_measures, expected",
