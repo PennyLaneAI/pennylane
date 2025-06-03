@@ -13,7 +13,11 @@
 # limitations under the License.
 """Quantum natural gradient optimizer for Jax/Catalyst interface"""
 
+import catalyst
+import jax
+
 from pennylane import math
+from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.optimize.qng import _reshape_and_regularize
 
@@ -30,7 +34,8 @@ class QNGOptimizerJax:
 
     def step(self, qnode, params, state, **kwargs):
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
-        grad = math.grad(qnode)(params, **kwargs)
+        grad_fn = catalyst.grad if active_compiler() == "catalyst" else jax.grad
+        grad = grad_fn(qnode)(params, **kwargs)
         new_params = self.apply_grad(mt, grad, params)
         return new_params, state
 
