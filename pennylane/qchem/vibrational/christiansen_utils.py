@@ -18,8 +18,8 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 from pennylane import concurrency
-from scipy.special import factorial
 from pennylane.data.base.hdf5 import h5py
+from scipy.special import factorial
 
 # pylint: disable = redefined-outer-name,
 
