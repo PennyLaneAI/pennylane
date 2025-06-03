@@ -57,9 +57,9 @@ builtin.module @circuit {
       // CHECK: [[VALUE:%.*]] = arith.constant 5.000000e-01 : f64
       // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
       // CHECK: [[QUBIT1:%.*]] = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
-      // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT1]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT2]]) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT3]]) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+      // CHECK: [[QUBIT2:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT1]]) <{gate_name = "RZ"
+      // CHECK: [[QUBIT3:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT2]]) <{gate_name = "RY"
+      // CHECK: [[LASTQUBIT:%.*]] = "quantum.custom"([[VALUE]], [[QUBIT3]]) <{gate_name = "RZ"
       // CHeCK: [[___]] = "quantum.insert"([[QUBITREGISTER]], [[LASTQUBIT]]) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
       %4 = "quantum.custom"(%0, %0, %0, %3) <{gate_name = "Rot", operandSegmentSizes = array<i32: 3, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, f64, f64, !quantum.bit) -> !quantum.bit
     }
