@@ -25,6 +25,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
@@ -676,6 +677,14 @@ class TestDecompositions:
 
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
+
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_new(self, dim, wires):
+        """Tests the PCPhase decomposition rules."""
+
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
+        for rule in qml.list_decomps(qml.PCPhase):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize(
