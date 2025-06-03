@@ -7,6 +7,7 @@
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+  [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
 
   ```python
   import pennylane as qml
