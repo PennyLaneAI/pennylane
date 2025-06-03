@@ -79,6 +79,7 @@ def skip_if_no_sklearn_support(sklearn_support):
     if not sklearn_support:
         pytest.skip("Skipped, sklearn support")
 
+
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
     """Fixture to determine whether mpi4py is installed."""
