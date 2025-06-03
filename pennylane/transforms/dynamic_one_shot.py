@@ -83,9 +83,10 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", shots=100)
+        dev = qml.device("default.qubit")
         params = np.pi / 4 * np.ones(2)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
         def func(x, y):
             qml.RX(x, wires=0)
