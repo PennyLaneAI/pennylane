@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import concurrency
 from pennylane.data.base.hdf5 import h5py
 
-# pylint: disable = redefined-outer-name,
+# pylint: disable = redefined-outer-name, too-many-positional-arguments
 
 
 def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial", path=None):
