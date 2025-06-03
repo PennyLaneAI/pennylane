@@ -27,7 +27,6 @@ from pennylane.tape import QuantumScript
 
 from .decomposition import _cnot_xz_corrections, _single_xz_corrections
 from .operations import RotXZX
-from .utils import parity
 
 _OPS_TO_XZ = {
     I: (0, 0),
