@@ -248,20 +248,18 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
 
 
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
-    r"""Parse a serial of mid-measurement results of a quantum tape with a few number of non-Clifford
-    gates (:class:`~pennylane.RZ` and :class:`~pennylane.ftqc.RotXZX`), up to the number of wires of
-    the tape and one non-Clifford gate per wire, at the beginning of the circuit, Pauli operators
-    (:class:`~pennylane.PauliY`, :class:`~pennylane.PauliZ` and :class:`~pennylane.Identity`) and a
-    set of Clifford gates (:class:`~pennylane.Hadamard`, :class:`~pennylane.S`, :class:`~pennylane.CNOT`).
-    Both nob-Clifford and Clifford gates mentioned above are measured in the way defined in
-    `Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
+    r"""Parse a series of mid-measurement results of a quantum tape where
+    all gates are from the set {X, Y, Z, I, H, S, CNOT, RZ, RotXZX}, and
+    where only the first gate on each wire is permitted to be a non-Clifford
+    gates (RZ, RotXZX). Both non-Clifford and Clifford gates mentioned above
+    are measured in the way defined in Raussendorf et al. <https://arxiv.org/abs/quant-ph/0301052>`__.
 
     Args:
         tape (QuantumScript): The quantum tape in the standard circuit mode (Gates are not transformed into the MBQC formalism).
         mid_meas (list): Mid-measurements results.
 
     Returns:
-        A list of `byproduct` ops in xz and a list of `operations` in a reversed manner.
+        A list of `byproduct` ops in a reversed manner.
     """
     ops = tape.operations
 
@@ -300,13 +298,12 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops
 
 
-def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]], ops: List[Operator]):
+def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
         tape (QuantumScript): A quantum tape.
         by_ops (list): List of byproduct operators for Clifford gates
-        ops (list): List of Clifford/Pauli/StatePrep operations.
 
     Return:
         The final recorded x and z for each wire.
@@ -317,7 +314,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]], ops: List
     x_record = math.zeros(num_wires, dtype=np.uint8)
     z_record = math.zeros(num_wires, dtype=np.uint8)
 
-    for op in ops:
+    for op in tape.operations:
         wires = list(op.wires)
 
         # Get the recorded xz
@@ -348,7 +345,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]], ops: List
     return x_record, z_record
 
 
-def _get_sample_corrections(tape: QuantumScript, x_record: math.array, measurement_vals: List):
+def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
     """Correct sample measurements in a tape. The samples is corrected based on the `samples`
     at `wires` with the corresponding recorded x.
 
@@ -369,7 +366,7 @@ def _get_sample_corrections(tape: QuantumScript, x_record: math.array, measureme
 
 
 def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_vals: List):
-    r"""Get measurement correction coefficients offline with a quantum script and mid-measurement results for each shot.
+    r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored with list and used in a stack manner. The calculation iteratively
     pops out the first operation in the tape and applies commutate rules for the first byproduct ops in the byproduct stack and
@@ -481,6 +478,6 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
     """
     by_ops = _parse_mid_measurements(tape, mid_meas)
 
-    x_record, _ = _get_xz_record(tape, by_ops, tape.operations)
+    x_record, _ = _get_xz_record(tape, by_ops)
 
-    return _get_sample_corrections(tape, x_record, measurement_vals)
+    return _correct_samples(tape, x_record, measurement_vals)
