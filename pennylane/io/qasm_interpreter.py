@@ -218,10 +218,7 @@ class Context:
         Raises:
             NameError: If the context is missing a wire.
         """
-        missing_wires = []
-        for wire in wires:
-            if wire not in self.wires:
-                missing_wires.append(wire)
+        missing_wires = set(wires) - set(self.wires)
         if len(missing_wires) > 0:
             raise NameError(
                 f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
