@@ -39,6 +39,11 @@ class QNGOptimizerJax:
         new_params = self.apply_grad(mt, grad, params)
         return new_params, state
 
+    def step_and_cost(self, qnode, params, state, **kwargs):
+        new_params, new_state = self.step(qnode, params, state, **kwargs)
+        cost = qnode(params, **kwargs)
+        return new_params, new_state, cost
+
     def apply_grad(self, mt, grad, params):
         mt = _reshape_and_regularize(mt, lam=self.lam)
         update = math.linalg.pinv(mt) @ grad
