@@ -417,7 +417,7 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     return x_record, z_record
 
 
-def _get_corrected_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
+def _get_sample_corrections(tape: QuantumScript, x_record: math.array, measurement_vals: List):
     """Correct sample measurements in a tape. The samples is corrected based on the `samples`
     at `wires` with the corresponding recorded x.
 
@@ -434,9 +434,7 @@ def _get_corrected_samples(tape: QuantumScript, x_record: math.array, measuremen
     for idx, measurement in enumerate(tape.measurements):
         wires = measurement.wires
 
-        correct_meas[idx] = (
-            1 - measurement_vals[idx] if x_record[wires[0]] == 1 else measurement_vals[idx]
-        )
+        correct_meas[idx] = measurement_vals[idx] ^ x_record[wires[0]]
 
     return correct_meas
 
@@ -556,4 +554,4 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
     x_record, _ = _get_xz_record(tape.num_wires, by_ops, tape.operations)
 
-    return _get_corrected_samples(tape, x_record, measurement_vals)
+    return _get_sample_corrections(tape, x_record, measurement_vals)
