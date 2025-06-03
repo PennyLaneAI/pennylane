@@ -629,10 +629,12 @@ def diagonalize_mcms(tape):
     .. code-block:: python3
 
         from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
+        from functools import partial
 
-        dev = qml.device("default.qubit", shots=1000)
+        dev = qml.device("default.qubit")
 
         @diagonalize_mcms
+        @partial(qml.set_shots, shots=1000)
         @qml.qnode(dev, mcm_method="one-shot")
         def circuit(x):
             qml.RX(x, wires=0)
