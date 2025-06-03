@@ -30,9 +30,6 @@ from pennylane.ftqc.pauli_tracker import (
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
-RTOL = 2.5e-2
-ATOL = 2.5e-2
-
 
 def generate_pauli_list(wire: int, num_ops: int):
     pauli_list = []

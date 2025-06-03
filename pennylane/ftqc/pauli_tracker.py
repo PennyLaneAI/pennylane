@@ -346,7 +346,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
 
 
 def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
-    """Correct sample measurements in a tape. The samples is corrected based on the `samples`
+    """Correct sample measurements in a tape. The samples are corrected based on the `samples`
     at `wires` with the corresponding recorded x.
 
         Args:
@@ -368,8 +368,8 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
 def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_vals: List):
     r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
-    and non-Clifford gates. Note that byproduct operations are stored with list and used in a stack manner. The calculation iteratively
-    pops out the first operation in the tape and applies commutate rules for the first byproduct ops in the byproduct stack and
+    and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively
+    pops out the first operation in the tape and applies commutation rules for the first byproduct ops in the byproduct stack and
     then the results are commutated to the byproduct of the current operations in the tape if it is a Clifford gate. The calculation
     starts from applying commutate rules for :class:`qml.I` gate or $encode\_xz(x,z)=(0,0)$ to the first gate in the tape. The
     measurement corrections are returned based on the observable operators and the xz recorded.
