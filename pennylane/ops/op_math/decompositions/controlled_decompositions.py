@@ -229,7 +229,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
                 num_work_wires=len_k1,
                 work_wire_type="dirty",
             ): 6,
-            # we only need Hadamard for the md case, but it still needs to be accounted for.
+            # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
             controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
         }
@@ -250,7 +250,7 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             num_work_wires=len_k2,
             work_wire_type="dirty",
         ): 2,
-        # we only need Hadamard for the md case, but it still needs to be accounted for.
+        # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
         controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
     }
