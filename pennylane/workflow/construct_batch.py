@@ -413,11 +413,17 @@ def construct_batch(
         config = qml.workflow.resolution._resolve_execution_config(
             config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
+
+        mcm_config = qml.devices.MCMConfig(
+            postselect_mode=qnode.execute_kwargs["postselect_mode"],
+            mcm_method=qnode.execute_kwargs["mcm_method"],
+        )
         gradient_fn = config.gradient_method
+        execution_config = _make_execution_config(qnode, gradient_fn, mcm_config)
+
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-
         level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
         level_slice = slice(
             max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
@@ -435,14 +441,7 @@ def construct_batch(
                 **qnode.gradient_kwargs,
             )
 
-        mcm_config = qml.devices.MCMConfig(
-            postselect_mode=qnode.execute_kwargs["postselect_mode"],
-            mcm_method=qnode.execute_kwargs["mcm_method"],
-        )
-
-        full_transform_program = program + qnode.device.preprocess_transforms(
-            _make_execution_config(qnode, gradient_fn, mcm_config)
-        )
+        full_transform_program = program + qnode.device.preprocess_transforms(execution_config)
 
         resolved_program = full_transform_program[level_slice]
 
