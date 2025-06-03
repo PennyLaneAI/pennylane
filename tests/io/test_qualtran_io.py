@@ -31,7 +31,7 @@ def skip_if_no_pl_qualtran_support():
 def test_to_bloq_error():
     """Test import error message when ToBloq() is instantiated without qualtran installed"""
     try:
-        import qualtran  # pylint: disable=unused-argument
+        import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
             qml.ToBloq()

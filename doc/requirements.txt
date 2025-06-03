@@ -13,7 +13,7 @@ packaging
 scipy
 docutils==0.20
 sphinx==8.1
-sphinx-automodapi==0.13
+sphinx-automodapi==0.19
 sphinx-copybutton
 sphinxcontrib-bibtex==2.6.3
 sphinxcontrib-applehelp==2.0.0

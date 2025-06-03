@@ -16,7 +16,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 """
 
 # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, no-member
 
 from collections import defaultdict
 from functools import cached_property, lru_cache, singledispatch
@@ -707,8 +707,7 @@ def _preprocess_bloq(bloq):
 
 
 class FromBloq(Operation):
-    r"""
-    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    r"""An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
     .. note::
@@ -1129,6 +1128,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
     return cls
 
 
+# pylint: disable=too-few-public-methods
 @_inherit_from_bloq
 class ToBloq:
     r"""
