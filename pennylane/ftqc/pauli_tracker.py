@@ -268,8 +268,11 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     by_ops = []
 
     mid_meas_offset = 0
-    _t_ops_record = [None] * (max(tape.wires) + 1)
+    _wires_used = [0] * (max(tape.wires) + 1)
     for idx, op in enumerate(ops):
+        for wire in op.wires:
+            _wires_used[wire] += 1
+
         gate_offset = 4 if op.num_wires == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
         by_op = []
@@ -278,11 +281,9 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
         elif isinstance(op, CNOT):
             by_op = _cnot_xz_corrections(ms)
         elif isinstance(op, (RZ, RotXZX)):
-            if _t_ops_record[op.wires[0]] is None and idx < max(tape.wires) + 1:
-                _t_ops_record[op.wires[0]] = op
-            else:
+            if _wires_used[op.wires[0]] > 1:
                 raise NotImplementedError(
-                    "Current implementation only support one non-Clifford gate per wire at the beginning of the circuit."
+                    "Current implementation only support that one non-Clifford gate comes before Clifford and Pauli gates for each wire."
                 )
             by_op = [_single_xz_corrections(op, *ms)]
         elif isinstance(op, _PAULIS):
