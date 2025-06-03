@@ -194,7 +194,7 @@ class TestVariables:
 
         # run the program
         with pytest.raises(
-            TypeError, match="Array index is not a RangeDefinition or Literal at line 4."
+            NotImplementedError, match="Array index is not a RangeDefinition or Literal at line 4."
         ):
             context = QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "bad-index"}
