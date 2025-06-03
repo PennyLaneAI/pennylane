@@ -231,7 +231,7 @@ def _index_into_var(var: Iterable | Variable, node: IndexExpression):
         return var[node.index[0].start.value : node.index[0].end.value]
     if re.search("Literal", node.index[0].__class__.__name__):
         return var[node.index[0].value]
-    raise TypeError(
+    raise NotImplementedError(
         f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
     )
 
