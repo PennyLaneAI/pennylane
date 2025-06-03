@@ -5,23 +5,25 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 import re
 from dataclasses import dataclass
+from numpy import uint
 from functools import partial
 from typing import Any, Iterable
 
-from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
+    BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
+    Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
     ConstantDeclaration,
     DurationLiteral,
-    EndStatement,
     Expression,
     ExpressionStatement,
     FloatLiteral,
+    EndStatement,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
@@ -29,6 +31,13 @@ from openqasm3.ast import (
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    UnaryExpression,
+    IntType,
+    FloatType,
+    UintType,
+    ComplexType,
+    BoolType,
+    ArrayType,
 )
 from openqasm3.visitor import QASMNode
 
@@ -69,6 +78,66 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
+EQUALS = "="
+ARROW = "->"
+PLUS = "+"
+DOUBLE_PLUS = "++"
+MINUS = "-"
+ASTERISK = "*"
+DOUBLE_ASTERISK = "**"
+SLASH = "/"
+PERCENT = "%"
+PIPE = "|"
+DOUBLE_PIPE = "||"
+AMPERSAND = "&"
+DOUBLE_AMPERSAND = "&&"
+CARET = "^"
+AT = "@"
+TILDE = "~"
+EXCLAMATION_POINT = "!"
+EQUALITY_OPERATORS = ["==", "!="]
+COMPOUND_ASSIGNMENT_OPERATORS = [
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "&=",
+    "|=",
+    "~=",
+    "^=",
+    "<<=",
+    ">>=",
+    "%=",
+    "**=",
+]
+COMPARISON_OPERATORS = [">", "<", ">=", "<="]
+BIT_SHIFT_OPERATORS = [">>", "<<"]
+
+NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
+    EQUALITY_OPERATORS
+    + COMPARISON_OPERATORS
+    + BIT_SHIFT_OPERATORS
+    + [
+        PLUS,
+        DOUBLE_PLUS,
+        MINUS,
+        ASTERISK,
+        DOUBLE_ASTERISK,
+        SLASH,
+        PERCENT,
+        PIPE,
+        DOUBLE_PIPE,
+        AMPERSAND,
+        DOUBLE_AMPERSAND,
+        CARET,
+        AT,
+        TILDE,
+        EXCLAMATION_POINT,
+    ]
+)
+
+ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
+
 
 @dataclass
 class Variable:
@@ -82,7 +151,6 @@ class Variable:
         line (int): The line number at which the variable was most recently updated.
         constant (bool): Whether the variable is a constant.
     """
-
     ty: str
     val: Any
     size: int
@@ -392,9 +460,7 @@ class QasmInterpreter:
         )
 
     @visit.register(ImaginaryLiteral)
-    def visit_imaginary_literal(
-        self, node: ImaginaryLiteral, context: Context
-    ):  # pylint: disable=unused-argument no-self-use
+    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):   # pylint: disable=unused-argument no-self-use
         """
         Registers an imaginary literal.
 
@@ -473,7 +539,10 @@ class QasmInterpreter:
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
-        wires = [_resolve_name(node.qubits[q]) for q in range(len(node.qubits))]
+        wires = [
+            _resolve_name(node.qubits[q])
+            for q in range(len(node.qubits))
+        ]
 
         context.require_wires(wires)
 
@@ -526,6 +595,89 @@ class QasmInterpreter:
         """
         return self.visit(node.expression, context)
 
+    @visit.register(Cast)
+    def visit_cast(self, node: Cast, context: Context):
+        """
+        Registers a Cast expression.
+
+        Args:
+            node (Cast): The Cast expression.
+            context (Context): The current context.
+
+        Returns:
+            Any: The argument casted to the appropriate type.
+
+        Raises:
+            TypeError: If the cast cannot be made.
+        """
+        arg = self.visit(node.argument, context)
+        try:
+            if isinstance(node.type, IntType):
+                return int(arg)
+            if isinstance(node.type, UintType):
+                return uint(arg)
+            if isinstance(node.type, FloatType):
+                return float(arg)
+            if isinstance(node.type, ComplexType):
+                return complex(arg)
+            if isinstance(node.type, BoolType):
+                return bool(arg)
+            if isinstance(node.type, ArrayType):
+                return arg.val
+            # TODO: durations, angles, etc.
+        except TypeError as e:
+            raise TypeError(f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}") from e
+        return arg
+
+    @visit.register(BinaryExpression)
+    def visit_binary_expression(self, node: BinaryExpression, context: Context):
+        """
+        Registers a binary expression.
+
+        Args:
+            node (BinaryExpression): The binary expression.
+            context (Context): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        lhs = self.visit(node.lhs, context)
+        rhs = self.visit(node.rhs, context)
+        if (
+            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+        ):  # makes sure we are not executing anything malicious
+            return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
+
+        # we shouldn't ever get thi error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
+            f"Invalid operator {node.op.name} encountered in binary expression "
+            f"on line {node.span.start_line}."
+        )  # pragma: no cover
+
+    @visit.register(UnaryExpression)
+    def visit_unary_expression(self, node: UnaryExpression, context: Context):
+        """
+        Registers a unary expression.
+
+        Args:
+            node (UnaryExpression): The unary expression.
+            context (Context): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        if (
+            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
+        ):  # makes sure we are not executing anything malicious
+            return eval(  # pylint: disable=eval-used
+                f"{node.op.name}{self.visit(node.expression, context)}"
+            )
+        # we shouldn't ever get thi error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
+            f"Invalid operator {node.op.name} encountered in unary expression "
+            f"on line {node.span.start_line}."
+        )  # pragma: no cover
+
     @visit.register(IndexExpression)
     def visit_index_expression(
         self, node: IndexExpression, context: Context, aliasing: bool = False
@@ -549,9 +701,7 @@ class QasmInterpreter:
         var = context.retrieve_variable(node.collection.name)
         return _index_into_var(var, node)
 
-    def _alias(
-        self, node: Identifier | IndexExpression, context: Context
-    ):  # pylint: disable=no-self-use
+    def _alias(self, node: Identifier | IndexExpression, context: Context):  # pylint: disable=no-self-use
         """
         An alias is registered as a callable since we need to be able to
         evaluate it at a later time.
@@ -563,11 +713,8 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-            return (
-                context.retrieve_variable(node.collection.name)
-                if getattr(node, "collection", None)
-                else context.retrieve_variable(node.name)
-            )
+            return context.retrieve_variable(node.collection.name) \
+                if getattr(node, "collection", None) else context.retrieve_variable(node.name)
         except TypeError as e:
             raise TypeError(
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
@@ -604,9 +751,7 @@ class QasmInterpreter:
     @visit.register(BooleanLiteral)
     @visit.register(BitstringLiteral)
     @visit.register(DurationLiteral)
-    def visit_literal(
-        self, node: Expression, context: Context
-    ):  # pylint: disable=unused-argument no-self-use
+    def visit_literal(self, node: Expression, context: Context):  # pylint: disable=unused-argument no-self-use
         """
         Visits a literal.
 
