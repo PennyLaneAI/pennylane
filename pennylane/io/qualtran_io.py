@@ -1164,17 +1164,10 @@ class ToBloq:
     _dependency_missing = True
     _error_message = (
         "Optional dependency 'qualtran' is required "
-        "for ToBloq functionality but is not installed."
+        "for ToBloq functionality but is not installed. Try `pip install qualtran`."
     )
 
-    # Prevent instantiation if the dependency is missing
     def __init__(self, *args, **kwargs):
-        raise ImportError(self._error_message)
-
-    def __getattr__(self, name):
-        raise ImportError(self._error_message)
-
-    def __call__(self, *args, **kwargs):
         raise ImportError(self._error_message)
 
 

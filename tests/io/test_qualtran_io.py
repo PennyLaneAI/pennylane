@@ -28,6 +28,12 @@ def skip_if_no_pl_qualtran_support():
     pytest.importorskip("qualtran")
 
 
+def test_to_bloq_error():
+    """Test import error message when ToBloq() is instantiated without qualtran installed"""
+    with pytest.raises(ImportError, match="Optional dependency"):
+        qml.ToBloq()
+
+
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestFromBloq:
