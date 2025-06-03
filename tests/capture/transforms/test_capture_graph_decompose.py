@@ -16,7 +16,7 @@
 Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system enabled.
 """
 
-# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position
+# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position, protected-access
 
 import numpy as np
 import pytest
