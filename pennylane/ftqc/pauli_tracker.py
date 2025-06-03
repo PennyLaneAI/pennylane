@@ -439,8 +439,9 @@ def _correct_measurements(tape: QuantumScript, x_record: math.array, measurement
             tape (tape: qml.tape.QuantumScript): A quantum tape.
             measurement_vals (List) : A list of measurement values.
             x_record (math.array): The array of recorded x for each wire.
+            measurement_vals (List): Measurement values.
         Return:
-            A list of sign factors for all measurements.
+            A list of corrected measurement values.
     """
     correct_meas = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
@@ -546,15 +547,15 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
             meas_res = res[0]
             mid_meas_res = res[1:]
+            corrected_meas_res = []
 
             script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
 
             for i in range(num_shots):
                 mid_meas = [row[i] for row in mid_meas_res]
-                phase_cor = get_byproduct_corrections(script, mid_meas)
-                meas_res[i] = meas_res[i] *phase_cor[0]
+                corrected_meas_res.extend(get_byproduct_corrections(script, mid_meas, [meas_res[i]]))
 
-            res = np.sum(meas_res) / num_shots
+            res = 1 - 2*np.sum(corrected_meas_res) / num_shots
 
             print(res)
 
