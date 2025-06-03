@@ -30,8 +30,8 @@ import pennylane.templates as qtemps
 from pennylane.operation import (
     DecompositionUndefinedError,
     MatrixUndefinedError,
-    Operator,
     Operation,
+    Operator,
 )
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
@@ -645,7 +645,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                 from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
-                    print(type(op))
                     raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 
                 self.op = op
