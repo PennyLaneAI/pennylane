@@ -219,9 +219,11 @@ class PrepSelPrep(Operation):
 
 
 # pylint: disable=unused-argument
-@PrepSelPrep._primitive.def_impl  # pylint: disable=protected-access
-def _(lcu, *control, n_wires, **kwargs):
-    return type.__call__(PrepSelPrep, lcu, control=control, **kwargs)
+if PrepSelPrep._primitive is not None:  # pylint: disable=protected-access
+
+    @PrepSelPrep._primitive.def_impl  # pylint: disable=protected-access
+    def _(lcu, *control, n_wires, **kwargs):
+        return type.__call__(PrepSelPrep, lcu, control=control, **kwargs)
 
 
 def _prod_resources(rep):
