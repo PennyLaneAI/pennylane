@@ -28,7 +28,7 @@ class TestTemporaryAnd:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.TemporaryAnd(wires=[0, "a", 2], control_values=(1, 0))
+        op = qml.TemporaryAnd(wires=[0, "a", 2], control_values=(0, 0))
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
