@@ -27,7 +27,7 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
+from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operator, Operation
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
 
@@ -639,8 +639,9 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             def __init__(self, op, map_ops=False, **kwargs):
                 from pennylane.workflow.qnode import QNode
 
-                if not isinstance(op, Operation) and not isinstance(op, QNode):
-                    raise TypeError(f"Input must be either an instance of {Operation} or {QNode}.")
+                if not isinstance(op, Operator) and not isinstance(op, QNode):
+                    print(type(op))
+                    raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 
                 self.op = op
                 self.map_ops = map_ops
