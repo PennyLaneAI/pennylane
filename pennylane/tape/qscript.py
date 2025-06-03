@@ -1355,7 +1355,7 @@ class QuantumScript:
         num_op_meas_wires = num_op_wires + len(meas_only_wires)
         work_only_wires = set(work_wires) - set(op_wires) - meas_only_wires
         # If the op wires are consecutive integers, followed by measurement-only wires, followed
-        # by work-only wires, we do not perform a mapping, signalled by returning `None`.
+        # by work-only wires, we do not perform a mapping, signaled by returning `None`.
         if (
             set(op_wires) == set(range(num_op_wires))
             and meas_only_wires == set(range(num_op_wires, num_op_wires + len(meas_only_wires)))
