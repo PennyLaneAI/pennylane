@@ -415,7 +415,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
 
             num_shots = 1000
-            dev = qml.device("default.qubit", shots=num_shots)
+            dev = qml.device("lightning.qubit", shots=num_shots)
 
             @diagonalize_mcms
             @qml.qnode(dev, mcm_method="one-shot")
@@ -455,8 +455,8 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
                     qml.sample(m8), qml.sample(m9), qml.sample(m10), qml.sample(m11)
                 )
 
-
-            res = circ(generate_random_state(1))
+            init_state = generate_random_state(1)
+            res = circ(init_state)
 
             ops = [qml.H(wires=[0]), qml.H(wires=[0]), qml.H(wires=[0])]
             measurements = [qml.sample(qml.Z(0))]
@@ -471,9 +471,20 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
                 mid_meas = [row[i] for row in mid_meas_res]
                 corrected_meas_res.extend(get_byproduct_corrections(script, mid_meas, [meas_res[i]]))
 
-            res = 1 - 2*np.sum(corrected_meas_res) / num_shots
+            res_corrected = 1 - 2*np.sum(corrected_meas_res) / num_shots
 
-            print(res)
+            dev_ref = qml.device("default.qubit")
+
+            @diagonalize_mcms
+            @qml.qnode(dev)
+            def circ_ref(start_state):
+                qml.StatePrep(start_state, wires=[0])
+                qml.H(0)
+                qml.H(0)
+                qml.H(0)
+                return qml.expval(qml.Z(0))
+
+            np.allclose(res_corrected, circ_ref(init_state))
 
     """
     by_ops = _parse_mid_measurements(tape, mid_meas)
