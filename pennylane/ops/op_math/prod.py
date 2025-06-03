@@ -234,6 +234,7 @@ class Prod(CompositeOp):
     resource_keys = frozenset({"resources"})
 
     @property
+    @handle_recursion_error
     def resource_params(self):
         resources = dict(Counter(qml.resource_rep(type(op), **op.resource_params) for op in self))
         return {"resources": resources}

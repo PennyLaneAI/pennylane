@@ -1694,7 +1694,7 @@ class TestDecomposition:
 
         op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
 
-        graph = qml.decomposition.DecompositionGraph([op], gate_set=qml.ops.__all__)
+        graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
         graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
             graph.decomposition(op)(**op.hyperparameters)
