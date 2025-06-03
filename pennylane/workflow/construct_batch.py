@@ -408,11 +408,11 @@ def construct_batch(
         program = user_program[:num_user_transforms]
         tapes, user_post_processing = program((initial_tape,))
 
-        config = qml.workflow.construct_execution_config(qnode, resolve=True)(*args, **kwargs)
+        config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access
-        # config = qml.workflow.resolution._resolve_execution_config(
-        #     config, qnode.device, tapes=tapes  # Use the user-transformed tapes
-        # )
+        config = qml.workflow.resolution._resolve_execution_config(
+            config, qnode.device, tapes=tapes  # Use the user-transformed tapes
+        )
         gradient_fn = config.gradient_method
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
@@ -422,6 +422,11 @@ def construct_batch(
         level_slice = slice(
             max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
         )
+        # If level_slice actually equivalent to empty, we can just return the user program.
+        # We don't need to wait until full transform constructtion, but it's difficult to check slices, so we just new a helper list here.
+        test_list = list(range(num_user_transforms + 1))
+        if len(test_list[level_slice]) == 0:
+            return tapes, user_post_processing
 
         program = qml.transforms.core.TransformProgram(user_program)
         if has_gradient_expand:
