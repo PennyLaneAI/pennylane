@@ -269,7 +269,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
 
     mid_meas_offset = 0
     _wires_used = [0] * (max(tape.wires) + 1)
-    for idx, op in enumerate(ops):
+    for op in enumerate(ops):
         for wire in op.wires:
             _wires_used[wire] += 1
 
