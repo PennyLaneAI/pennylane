@@ -341,3 +341,39 @@ def test_stopping_condition_graph_enabled():
     assert not stopping_condition(qml.RZ(0.1, wires=0))
     assert stopping_condition(qml.RZ(0, wires=1))
     assert gate_set == {"RX", "RY"}
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_stopping_condition():
+    """Tests that the stopping condition is respected."""
+
+    import pennylane as qml
+
+    qml.decomposition.enable_graph()
+
+    # Prepare a unitary matrix that we want to decompose
+    U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
+
+    def stopping_condition(op):
+
+        if isinstance(op, qml.QubitUnitary):
+            identity = qml.math.eye(2 ** len(op.wires))
+            return qml.math.allclose(op.matrix(), identity)
+
+        return False
+
+    tape = qml.tape.QuantumScript([qml.QubitUnitary(U, wires=[0, 1])])
+
+    [decomp], _ = qml.transforms.decompose(
+        tape,
+        gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+        stopping_condition=stopping_condition,
+    )
+
+    assert decomp.operations == [
+        qml.RZ(0.1, wires=[0]),
+        qml.RY(0.2, wires=[0]),
+        qml.RZ(0.3, wires=[0]),
+        qml.QubitUnitary(qml.math.eye(2), wires=[1]),
+    ]
