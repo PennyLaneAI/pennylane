@@ -420,17 +420,19 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
 def _get_corrected_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
     """Correct sample measurements in a tape. The samples is corrected based on the `samples`
     at `wires` with the corresponding recorded x.
+
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
             measurement_vals (List) : A list of measurement values.
             x_record (math.array): The array of recorded x for each wire.
             measurement_vals (List): Measurement values.
+
         Return:
             A list of corrected measurement values.
     """
     correct_meas = [1] * len(tape.measurements)
     for idx, measurement in enumerate(tape.measurements):
-        wires = measurement.wires.tolist()
+        wires = measurement.wires
 
         correct_meas[idx] = (
             1 - measurement_vals[idx] if x_record[wires[0]] == 1 else measurement_vals[idx]
@@ -454,6 +456,11 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
             and :class:`~pennylane.ftqc.RotXZX`) at the beginning of circuit in the standard circuit formalism. Note that one non-Clifford gate per wire
             at most is supported.
         mid_meas (list): MidMeasurement results per shot.
+        measurement_vals (list): Raw measurement results.
+
+    Return:
+        A list of corrected measurement results.
+
 
     **Note**
     This work is to be integrated into the MBQC transform pipeline.
