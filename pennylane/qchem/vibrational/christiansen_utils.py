@@ -15,11 +15,11 @@
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from scipy.special import factorial
 
 import numpy as np
 from pennylane import concurrency
 from pennylane.data.base.hdf5 import h5py
+from scipy.special import factorial
 
 # pylint: disable = redefined-outer-name, too-many-positional-arguments
 
