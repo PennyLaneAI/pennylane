@@ -240,6 +240,7 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
+# pylint: disable=unused-argument, no-self-use
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -247,9 +248,7 @@ class QasmInterpreter:
     """
 
     @functools.singledispatchmethod
-    def visit(
-        self, node: QASMNode, context: Context, aliasing: bool = False
-    ):  # pylint: disable=unused-argument
+    def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
         The purpose of this function is to pass each node to the appropriate handler.
@@ -293,7 +292,7 @@ class QasmInterpreter:
         return context
 
     @visit.register(EndStatement)
-    def visit_end_statement(self, node: QASMNode, context: Context):  # pylint: disable=no-self-use
+    def visit_end_statement(self, node: QASMNode, context: Context):
         """
         Ends the program.
         Args:
@@ -307,9 +306,7 @@ class QasmInterpreter:
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(
-        self, node: QubitDeclaration, context: Context
-    ):  # pylint: disable=no-self-use
+    def visit_qubit_declaration(self, node: QubitDeclaration, context: Context):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context.wires. Note: Qubit declarations must be global.
@@ -387,9 +384,7 @@ class QasmInterpreter:
         )
 
     @visit.register(ImaginaryLiteral)
-    def visit_imaginary_literal(
-        self, node: ImaginaryLiteral, context: Context
-    ):  # pylint: disable=unused-argument no-self-use
+    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):
         """
         Registers an imaginary literal.
 
@@ -544,9 +539,7 @@ class QasmInterpreter:
         var = context.retrieve_variable(node.collection.name)
         return _index_into_var(var, node)
 
-    def _alias(
-        self, node: Identifier | IndexExpression, context: Context
-    ):  # pylint: disable=no-self-use
+    def _alias(self, node: Identifier | IndexExpression, context: Context):
         """
         An alias is registered as a callable since we need to be able to
         evaluate it at a later time.
@@ -599,9 +592,7 @@ class QasmInterpreter:
     @visit.register(BooleanLiteral)
     @visit.register(BitstringLiteral)
     @visit.register(DurationLiteral)
-    def visit_literal(
-        self, node: Expression, context: Context
-    ):  # pylint: disable=unused-argument no-self-use
+    def visit_literal(self, node: Expression, context: Context):
         """
         Visits a literal.
 
