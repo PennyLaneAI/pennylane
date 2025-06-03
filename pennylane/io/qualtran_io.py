@@ -84,7 +84,7 @@ def _map_to_bloq():
         if kwargs.get("map_ops") is False:
             return ToBloq(op, **kwargs)
 
-        if (custom_map := kwargs.get("custom_mapping")) is not None: 
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
             return custom_map[op]
 
         return TextbookQPE(
