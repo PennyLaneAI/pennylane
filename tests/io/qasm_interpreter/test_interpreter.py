@@ -53,7 +53,7 @@ class TestContext:
         context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
 
         with pytest.raises(
-            NameError,
+            KeyError,
             match=r"No attribute potato on Context and no potato key found "
                   r"on context retrieve-non-existent-attr",
         ):
@@ -86,7 +86,7 @@ class TestVariables:
             PauliX("q0") ** 24,
         ]
 
-    def test_visit_expression(self):
+    def test_bare_expression(self):
         # parse the QASM
         ast = parse(
             """
@@ -101,7 +101,7 @@ class TestVariables:
             ast, context={"wire_map": None, "name": "expression-visit"}
         )
 
-        # exprs are not in-place modifierss without an assignment
+        # exprs are not in-place modifiers without an assignment
         assert context.aliases["b"](context).val == 9
 
     def test_param_as_expression(self):
@@ -198,7 +198,7 @@ class TestVariables:
             permissive=True,
         )
 
-        with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
 
     def test_invalid_index(self):
@@ -267,7 +267,7 @@ class TestVariables:
             permissive=True,
         )
 
-        with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
 
 
@@ -422,7 +422,7 @@ class TestGates:
         )
 
         with pytest.raises(
-            NameError,
+            ValueError,
             match="Attempt to reference uninitialized parameter phi!",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})

@@ -136,6 +136,13 @@ ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
 class Variable:
     """
     A data class that represents a variables.
+
+    Args:
+        ty (type): The type of the variable.
+        val (any): The value of the variable.
+        size (int): The size of the variable if it has a size, like an array.
+        line (int): The line number at which the variable was most recently updated.
+        constant (bool): Whether the variable is a constant.
     """
     ty: str
     val: Any
@@ -175,7 +182,7 @@ class Context:
             res = self.vars[name]
             if res.val is not None:
                 return res
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+            raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
         if name in self.wires:
             return name
         if name in self.aliases:
@@ -184,7 +191,7 @@ class Context:
                 return res
             if res.val is not None:
                 return res
-            raise NameError(f"Attempt to reference uninitialized parameter {name}!")
+            raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
@@ -200,13 +207,16 @@ class Context:
             name (str): the name of the variable.
             node (QASMNode): the QASMNode that corresponds to the update.
         """
-        if self.vars[name].constant:
-            raise ValueError(
-                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                f"defined on line {self.vars[name].line}"
-            )
-        self.vars[name].val = value
-        self.vars[name].line = node.span.start_line
+        if name in self.vars:
+            if self.vars[name].constant:
+                raise ValueError(
+                    f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                    f"defined on line {self.vars[name].line}"
+                )
+            self.vars[name].val = value
+            self.vars[name].line = node.span.start_line
+        else:
+            raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def require_wires(self, wires: list):
         """
@@ -231,16 +241,40 @@ class Context:
         """
         If the attribute is not found on the class, instead uses the attr name as an index
         into the context dictionary, for easy access.
+
+        Args:
+            name (str): the name of the attribute.
+
+        Returns:
+            Any: the value of the attribute.
+
+        Raises:
+            KeyError: if the attribute is not found on the context.
         """
         if name in self.context:
             return self.context[name]
-        raise NameError(
+        raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
         )
 
 
 def _get_bit_type_val(var):
     return bin(var.val)[2:].zfill(var.size)
+
+
+def _resolve_name(node: QASMNode):
+    """
+    Fully resolves the name of a node which may be provided as an Identifier or string,
+    and therefore may require referencing different attributes.
+
+    Args:
+        node (QASMNode): the QASMNode whose name is being resolved.
+
+    Returns:
+        str: the resolved name.
+    """
+    # parser will sometimes represent a name as a str and sometimes as an Identifier
+    return node.name if isinstance(node.name, str) else node.name.name
 
 
 def _index_into_var(var: dict, node: IndexExpression):
@@ -361,9 +395,7 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         # references to an unresolved value see a func for now
-        name = (
-            node.lvalue.name if isinstance(node.lvalue.name, str) else node.lvalue.name.name
-        )  # str or Identifier
+        name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
         # TODO: different types of assignments
         context.update_var(res, name, node)
@@ -501,12 +533,7 @@ class QasmInterpreter:
 
         # setup wires
         wires = [
-            # parser will sometimes represent as a str and sometimes as an Identifier
-            (
-                node.qubits[q].name
-                if isinstance(node.qubits[q].name, str)
-                else node.qubits[q].name.name
-            )
+            _resolve_name(node.qubits[q])
             for q in range(len(node.qubits))
         ]
 
