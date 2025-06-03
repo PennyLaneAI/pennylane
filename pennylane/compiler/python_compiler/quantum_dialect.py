@@ -288,6 +288,7 @@ class CustomOp(IRDLOperation):
             | None
         ) = None,
         adjoint: UnitAttr | bool = False,
+        decomp_level: int = None,
     ):
         params = () if params is None else params
         in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
@@ -310,6 +311,9 @@ class CustomOp(IRDLOperation):
         properties = {"gate_name": gate_name}
         if adjoint:
             properties["adjoint"] = UnitAttr()
+
+        if decomp_level:
+            properties["decomp_level"] = IntegerAttr(decomp_level, IntegerType(64))
 
         super().__init__(
             operands=(params, in_qubits, in_ctrl_qubits, in_ctrl_values),
