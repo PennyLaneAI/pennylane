@@ -26,6 +26,7 @@ from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
 from pennylane.tape import QuantumScript
 
 from .operations import RotXZX
+from .utils import parity
 
 _OPS_TO_XZ = {
     I: (0, 0),
@@ -246,19 +247,6 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
-def _sum_parity(*mid_meas):
-    """Get least significant bit (LSB) of the sum of the elements in a list.
-
-    Args:
-        mid_meas (List): A list of mid measurement results.
-
-    Returns:
-        The last bit of the sum.
-    """
-
-    return sum(mid_meas) & 1
-
-
 def _parse_s(mid_meas: List):
     """Parse the mid measurements of a :class:`~pennylane.S` gate.
 
@@ -268,7 +256,7 @@ def _parse_s(mid_meas: List):
     Returns:
         A list of tuples of xz encoding.
     """
-    return [(mid_meas[1] ^ mid_meas[3], _sum_parity(mid_meas[0], mid_meas[1], mid_meas[2], 1))]
+    return [(mid_meas[1] ^ mid_meas[3], parity(mid_meas[0], mid_meas[1], mid_meas[2], 1))]
 
 
 def _parse_h(mid_meas: List):
@@ -280,7 +268,7 @@ def _parse_h(mid_meas: List):
     Returns:
         A list of tuples of xz encoding.
     """
-    return [(_sum_parity(mid_meas[0], mid_meas[2], mid_meas[3]), mid_meas[1] ^ mid_meas[2])]
+    return [(parity(mid_meas[0], mid_meas[2], mid_meas[3]), mid_meas[1] ^ mid_meas[2])]
 
 
 def _parse_cnot(mid_meas: List):
@@ -295,8 +283,8 @@ def _parse_cnot(mid_meas: List):
     # Control wire
     by_op = [
         (
-            _sum_parity(mid_meas[1], mid_meas[2], mid_meas[4], mid_meas[5]),
-            _sum_parity(
+            parity(mid_meas[1], mid_meas[2], mid_meas[4], mid_meas[5]),
+            parity(
                 mid_meas[0],
                 mid_meas[2],
                 mid_meas[3],
@@ -311,10 +299,8 @@ def _parse_cnot(mid_meas: List):
     # Target wire
     by_op.append(
         (
-            _sum_parity(
-                mid_meas[1], mid_meas[2], mid_meas[6], mid_meas[8], mid_meas[10], mid_meas[12]
-            ),
-            _sum_parity(mid_meas[7], mid_meas[9], mid_meas[11]),
+            parity(mid_meas[1], mid_meas[2], mid_meas[6], mid_meas[8], mid_meas[10], mid_meas[12]),
+            parity(mid_meas[7], mid_meas[9], mid_meas[11]),
         )
     )
     return by_op
@@ -410,8 +396,7 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
         new_xz = []
         if isinstance(op, _NON_CLIFFORD_GATES_SUPPORTED):
             # Branch for non-Clifford gates
-            by_op = by_ops.pop()
-            new_xz.append(math.bitwise_xor(by_op[0], xz[0]))
+            new_xz.append(by_ops.pop()[0])
         elif isinstance(op, _CLIFFORD_GATES_SUPPORTED):
             # Branch for Clifford gates
             # Step 1: Commutate the recorded xz with the Clifford gate to a new xz.
@@ -432,9 +417,9 @@ def _get_xz_record(num_wires: int, by_ops: List[Tuple[int, int]], ops: List[Oper
     return x_record, z_record
 
 
-def _correct_measurements(tape: QuantumScript, x_record: math.array, measurement_vals: List):
-    """Get sign factor for all measurements in a tape. The sign factor
-    is calculated based on the `samples` at `wires` with the corresponding recorded x.
+def _get_corrected_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
+    """Correct sample measurements in a tape. The samples is corrected based on the `samples`
+    at `wires` with the corresponding recorded x.
         Args:
             tape (tape: qml.tape.QuantumScript): A quantum tape.
             measurement_vals (List) : A list of measurement values.
@@ -564,4 +549,4 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_v
 
     x_record, _ = _get_xz_record(tape.num_wires, by_ops, tape.operations)
 
-    return _correct_measurements(tape, x_record, measurement_vals)
+    return _get_corrected_samples(tape, x_record, measurement_vals)

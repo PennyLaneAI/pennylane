@@ -26,7 +26,6 @@ from pennylane.ftqc.pauli_tracker import (
     _parse_mid_measurements,
     _parse_rotation,
     _parse_s,
-    _sum_parity,
     commute_clifford_op,
     pauli_prod,
     pauli_to_xz,
@@ -211,13 +210,6 @@ class TestPauliTracker:
 
 class TestOfflineCorrection:
     """Tests for byproduct operation offline corrections."""
-
-    @pytest.mark.parametrize(
-        "mid_measures, expected",
-        [([0, 1, 1, 0, 1], 1), ([0, 1, 0, 1, 1, 1], 0), ([0, 1, 1, 0, 0], 0)],
-    )
-    def test_sum_parity(self, mid_measures, expected):
-        assert _sum_parity(*mid_measures) == expected
 
     @pytest.mark.parametrize(
         "mid_measures, expected",
