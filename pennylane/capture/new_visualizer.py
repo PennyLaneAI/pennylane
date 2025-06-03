@@ -17,17 +17,12 @@ class PlxprGraph:
         self.operator_attr = {
             "shape": "ellipse",
             "style": "filled",
-            "fillcolor": "lightgreen",
+            "fillcolor": "lightblue",
         }
         self.measurement_attr = {
             "shape": "diamond",
             "style": "filled",
-            "fillcolor": "lightblue",
-        }
-        self.cluster_attr = {
-            "style": "filled",
-            "fillcolor": "lightgrey",
-            "color": "black",
+            "fillcolor": "lightcoral",
         }
         # Set up data structures for tracking operations and measurements
         self.current_cluster = self.graph
@@ -131,26 +126,26 @@ class PlxprVisualizerNew(PlxprInterpreter):
 
     def interpret_operation_eqn(self, eqn):
 
+        print("Interpreting operation equation: ", eqn)
         invals = (self.read(invar) for invar in eqn.invars)
         with qml.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
+
+        # Use the equation parameters to determine the wires
+        operator_invars = eqn.invars
+        operator_wires = None
+        if n_wires := eqn.params["n_wires"]:
+            # If the operation has wires, we need to convert them to ASCII
+            operator_wires = operator_invars[-n_wires:]
+        assert operator_wires
+        print("Determined this operator acts on wires: ", operator_wires)
+
         if isinstance(eqn.outvars[0], jax.core.DropVar):
+
             # Create node in the graph for the operation
-            operator_node_uid = self.graph_obj.convert_name_to_uid(op.name)
-            print("Wires to node uid mapping: {}".format(self.graph_obj.map_wire_to_node_uid))
-            print(f"Creating node {operator_node_uid}")
-
-            print(eqn)
-            real_wires_with_id = eqn.invars[-eqn.params["n_wires"] :]
-            print("real wires with id: {}".format(real_wires_with_id))
-
-            op_wires_ascii = self.graph_obj.convert_wires_to_ascii(real_wires_with_id)
-            print("real wires but ascii: {}".format(op_wires_ascii))
-            print(
-                "adding node to current cluster: {}".format(
-                    self.graph_obj.current_cluster.get_label()
-                )
-            )
+            operator_node_uid = self.graph_obj.convert_name_to_uid("operator_" + op.name)
+            op_wires_ascii = self.graph_obj.convert_wires_to_ascii(operator_wires)
+            print("Determined the operator wires to be of ascii form: ", op_wires_ascii)
             self.graph_obj.add_operator_node(
                 operator_node_uid,
                 label=f"{op.name} : {op_wires_ascii}",
@@ -159,57 +154,71 @@ class PlxprVisualizerNew(PlxprInterpreter):
             for wire, wire_ascii in zip(op.wires, op_wires_ascii, strict=True):
 
                 if qml.math.is_abstract(wire):
-                    print(
-                        "Updating last seen dynamic wire to: {} (which is ascii {})".format(
-                            wire, wire_ascii
-                        )
-                    )
+                    print("Detected a dynamic wire in operation: {}".format(wire))
                     self.graph_obj.last_seen_dynamic_wire = wire_ascii
                     # Detected a dynamic wire, need to connect all seen nodes to this node
+                    # and purge the tracking of wires
                     for (
-                        _,
+                        seen_wire_ascii,
                         seen_node_uid,
                     ) in self.graph_obj.map_wire_to_node_uid.items():
-
+                        cluster_condition_name = self.graph_obj.current_cluster.get_node_list()[
+                            0
+                        ].get_name()
+                        can_not_connect = (
+                            "operator_" not in seen_node_uid
+                            and "measurement_" not in seen_node_uid
+                            and "qnode_"
+                            not in seen_node_uid  # work around since it is a source of wires
+                            and cluster_condition_name != seen_node_uid
+                        )
+                        if can_not_connect:
+                            # Only connect operators and measurements to the for loop condition
+                            continue
                         if not self.graph_obj.graph.get_edge(seen_node_uid, operator_node_uid):
-                            print("Connected {} to {}".format(seen_node_uid, operator_node_uid))
                             if seen_node_uid == operator_node_uid:
                                 # Seems to happen it it's a multi wire operation with multiple dynamic wires
                                 continue
+                            print("Connecting {} to {}".format(seen_node_uid, operator_node_uid))
                             edge = pydot.Edge(seen_node_uid, operator_node_uid, style="dotted")
                             self.graph_obj.graph.add_edge(edge)
+
+                    # Clear the map of wires to node UIDs
+                    # This is because we are now treating this node as the source of all future wires
+                    # since it is dynamic and could be anything
                     self.graph_obj.map_wire_to_node_uid.clear()
                     self.graph_obj.map_wire_to_node_uid[wire_ascii] = operator_node_uid
                     continue
 
-                print(self.graph_obj.map_wire_to_node_uid)
+                # Determine last seen node that had dynamic wires
                 last_dynamic_node_uid = self.graph_obj.map_wire_to_node_uid.get(
-                    self.graph_obj.last_seen_dynamic_wire, None
+                    self.graph_obj.last_seen_dynamic_wire
                 )
-                previous_node_uid_on_this_wire = self.graph_obj.map_wire_to_node_uid.get(
-                    str(wire), last_dynamic_node_uid
-                )
+                # Determine the last seen node that acted on this wire
+                previous_node_uid_on_this_wire = self.graph_obj.map_wire_to_node_uid.get(str(wire))
+                if not previous_node_uid_on_this_wire:
+                    # If no previous node was found, use the last dynamic node
+                    # since we don't know the concrete wire value
+                    previous_node_uid_on_this_wire = last_dynamic_node_uid
+                print("Last node on this wire: ", previous_node_uid_on_this_wire)
+
+                if previous_node_uid_on_this_wire == operator_node_uid:
+                    # Seems to happen it it's a multi wire operation with dynamic / concrete wire mix
+                    continue
 
                 print(
                     "Connecting {} to {}".format(previous_node_uid_on_this_wire, operator_node_uid)
                 )
-                if previous_node_uid_on_this_wire == operator_node_uid:
-                    # Seems to happen it it's a multi wire operation with dynamic / concrete wire mix
-                    continue
                 edge = pydot.Edge(
                     previous_node_uid_on_this_wire,
                     operator_node_uid,
-                    style=(
-                        "dotted"
-                        if previous_node_uid_on_this_wire == last_dynamic_node_uid
-                        else "solid"
-                    ),
                 )
                 self.graph_obj.graph.add_edge(edge)
 
-                # Map the wire to the node UID
+                # Map the wire to the node UID as the new source of this wire
                 self.graph_obj.map_wire_to_node_uid[str(wire)] = operator_node_uid
 
+            print("Done.")
             return self.interpret_operation(op)
 
         # Detected an operator that returns a value.
@@ -218,83 +227,90 @@ class PlxprVisualizerNew(PlxprInterpreter):
         print(
             f"Detected an operation {op} that returns a value, most likely involved in a measurement"
         )
-        print(eqn.outvars, eqn.invars, eqn.params)
+        # Map the outvar to the operator wires so we can later connect it to the measurement
         for outvar in eqn.outvars:
-            self.graph_obj.map_operator_outvar_to_mp_invar[str(outvar)] = {
-                "wires": eqn.invars[-eqn.params["n_wires"] :]
-            }
+            self.graph_obj.map_operator_outvar_to_mp_invar[str(outvar)] = {"wires": operator_wires}
         return op
 
     def interpret_measurement_eqn(self, eqn):
-        print(self.graph_obj.last_seen_dynamic_wire)
+        print("Interpreting measurement equation: ", eqn)
+
         invals = (self.read(invar) for invar in eqn.invars)
         with qml.QueuingManager.stop_recording():
             mp = eqn.primitive.impl(*invals, **eqn.params)
-        print(f"Detected a measurement {mp} being applied on {mp.obs}, with wires {mp.obs.wires}")
-        print(eqn.outvars, eqn.invars, eqn.params)
-        measurement_node_uid = self.graph_obj.convert_name_to_uid(str(mp._shortname))
 
-        real_wires = self.graph_obj.map_operator_outvar_to_mp_invar.get(str(eqn.invars[0]))["wires"]
-        print("Real wires for measurement: ", real_wires)
-        mp_wires_ascii = self.graph_obj.convert_wires_to_ascii(real_wires)
-
-        self.graph_obj.add_measurement_node(
-            measurement_node_uid,
-            label=f"{mp._shortname} : {mp.obs.name} : {mp_wires_ascii}",
+        # Find out what wires the measurement operator acts on
+        mp_invars = eqn.invars
+        measurement_operator_wires = self.graph_obj.map_operator_outvar_to_mp_invar.get(
+            str(mp_invars[0])
+        )["wires"]
+        measurement_operator_wires_ascii = self.graph_obj.convert_wires_to_ascii(
+            measurement_operator_wires
         )
 
-        for wire, wire_ascii in zip(mp.obs.wires, mp_wires_ascii, strict=True):
+        mp_name = str(mp._shortname)
+        measurement_node_uid = self.graph_obj.convert_name_to_uid("measurement_" + mp_name)
+        self.graph_obj.add_measurement_node(
+            measurement_node_uid,
+            label=f"{mp_name} : {mp.obs.name} : {measurement_operator_wires_ascii}",
+        )
+
+        for wire, wire_ascii in zip(mp.obs.wires, measurement_operator_wires_ascii, strict=True):
 
             if qml.math.is_abstract(wire):
-                print("Detected a dynamic wire in measurement observable: {}".format(wire))
-                # self.last_seen_dynamic_wire = wire_ascii
+                print("Detected a dynamic wire in measurement operator: {}".format(wire))
                 # Detected a dynamic wire, need to connect all seen nodes to this node
-                for _, seen_node_uid in self.graph_obj.map_wire_to_node_uid.items():
+                # and purge the tracking of wires
+                for (
+                    seen_wire_ascii,
+                    seen_node_uid,
+                ) in self.graph_obj.map_wire_to_node_uid.items():
+                    can_not_connect = (
+                        "operator_" not in seen_node_uid
+                        and "measurement_" not in seen_node_uid
+                        and "qnode_"
+                        not in seen_node_uid  # work around since it is a source of wires
+                    )
+                    if can_not_connect:
+                        # Only connect operators and measurements to the for loop condition
+                        continue
                     if not self.graph_obj.graph.get_edge(seen_node_uid, measurement_node_uid):
-                        print("Connected {} to {}".format(seen_node_uid, measurement_node_uid))
                         if seen_node_uid == measurement_node_uid:
                             # Seems to happen it it's a multi wire operation with multiple dynamic wires
                             continue
+                        print("Connecting {} to {}".format(seen_node_uid, measurement_node_uid))
                         edge = pydot.Edge(seen_node_uid, measurement_node_uid, style="dotted")
                         self.graph_obj.graph.add_edge(edge)
-                # self.graph_obj.map_wire_to_node_uid.clear()
-                # self.graph_obj.map_wire_to_node_uid[wire_ascii] = measurement_node_uid
+
                 continue
 
-            print("Inside measurement and mapping dict: ", self.graph_obj.map_wire_to_node_uid)
-            print("Dynamic wire seen: ", self.graph_obj.dyn_vars)
-            print("Last seen dynamic wire: ", self.graph_obj.last_seen_dynamic_wire)
+            # Determine last seen node that had dynamic wires
             last_dynamic_node_uid = self.graph_obj.map_wire_to_node_uid.get(
-                self.graph_obj.last_seen_dynamic_wire, None
+                self.graph_obj.last_seen_dynamic_wire
             )
-            print("wire", wire)
-            previous_node_uid_on_this_wire = self.graph_obj.map_wire_to_node_uid.get(
-                str(wire), last_dynamic_node_uid
-            )
-
-            if "wires" in previous_node_uid_on_this_wire:
-                # this is the device node, choose dynamic over it
+            # Determine the last seen node that acted on this wire
+            previous_node_uid_on_this_wire = self.graph_obj.map_wire_to_node_uid.get(str(wire))
+            if not previous_node_uid_on_this_wire:
+                # If no previous node was found, use the last dynamic node
+                # since we don't know the concrete wire value
                 previous_node_uid_on_this_wire = last_dynamic_node_uid
-                edge = pydot.Edge(
-                    previous_node_uid_on_this_wire,
-                    measurement_node_uid,
-                    style=(
-                        "dotted"
-                        if previous_node_uid_on_this_wire == last_dynamic_node_uid
-                        else "solid"
-                    ),
-                )
-                self.graph_obj.graph.add_edge(edge)
-                continue
-            print(
-                "Connecting {} to {}, with last dynamic node {}".format(
-                    previous_node_uid_on_this_wire, measurement_node_uid, last_dynamic_node_uid
-                )
+            print("Last node on this wire: ", previous_node_uid_on_this_wire)
+
+            can_not_connect = (
+                "operator_" not in previous_node_uid_on_this_wire
+                and "measurement_" not in previous_node_uid_on_this_wire
+                and "qnode_"
+                not in previous_node_uid_on_this_wire  # work around since it is a source of wires
             )
+            if can_not_connect:
+                # Only connect operators and measurements
+                previous_node_uid_on_this_wire = last_dynamic_node_uid
+
             if previous_node_uid_on_this_wire == measurement_node_uid:
                 # Seems to happen it it's a multi wire operation with dynamic / concrete wire mix
                 print("Skipping connection to self")
                 continue
+
             edge = pydot.Edge(
                 previous_node_uid_on_this_wire,
                 measurement_node_uid,
@@ -303,9 +319,6 @@ class PlxprVisualizerNew(PlxprInterpreter):
                 ),
             )
             self.graph_obj.graph.add_edge(edge)
-
-        # Map the wire to the node UID
-        # self.graph_obj.map_wire_to_node_uid[str(wire)] = measurement_node_uid
 
         return self.interpret_measurement(mp)
 
@@ -327,35 +340,51 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    # Visualization part
-    wires_node_uid = self.graph_obj.convert_name_to_uid("wires")
+    # Create a node for the wires of the device
+    wires_node_uid = self.graph_obj.convert_name_to_uid("wires_node")
     wires_node = pydot.Node(
         wires_node_uid,
         label=f"{qnode.device.name} : {str(device.wires.labels)}",
         style="filled",
-        fillcolor="red",
+        shape="rectangle",
+        fillcolor="lightgoldenrod2",
     )
+    # Add the wires node to the current cluster
     self.graph_obj.current_cluster.add_node(wires_node)
-    for wire in device.wires:
-        self.graph_obj.map_wire_to_node_uid[str(wire)] = wires_node_uid
 
-    invars = map(self.graph_obj.convert_dyn_wire_to_ascii, qfunc_jaxpr.invars)
-    qnode_node_uid = self.graph_obj.convert_name_to_uid(qnode.__name__)
-
+    qnode_node_uid = self.graph_obj.convert_name_to_uid("qnode_cluster")
     qnode_cluster = pydot.Cluster(
         qnode_node_uid,
-        label=f"{qnode.__name__}({','.join(invars)})",
+        label="",
         style="filled",
         fillcolor="lightgrey",
         color="black",
     )
+
+    # Find out what arguments the qnode takes and convert them to ASCII
+    # This is used to label the qnode node in the graph
+    qnode_invars = map(self.graph_obj.convert_dyn_wire_to_ascii, qfunc_jaxpr.invars)
+    qnode_node_uid = self.graph_obj.convert_name_to_uid("qnode_node")
+    qnode_cluster.add_node(
+        pydot.Node(
+            qnode_node_uid,
+            label=f"{qnode.__name__}({','.join(qnode_invars)})",
+            style="dotted",
+            shape="rectangle",
+        )
+    )
     self.graph_obj.current_cluster.add_subgraph(qnode_cluster)
 
-    print(self.graph_obj.current_cluster.get_label())
+    # Connect the wires node to the qnode node
+    self.graph_obj.graph.add_edge(pydot.Edge(wires_node_uid, qnode_node_uid, style="solid"))
+
+    # Record all wires of the device in the graph
+    # Treat the qnode_node as the "source" node for these wires
+    for wire in device.wires:
+        self.graph_obj.map_wire_to_node_uid[str(wire)] = qnode_node_uid
+
     copy_ = copy(self)
-    print(copy_.graph_obj.current_cluster.get_label())
     copy_.graph_obj.current_cluster = qnode_cluster
-    print(copy_.graph_obj.current_cluster.get_label())
     new_qfunc_jaxpr = jaxpr_to_jaxpr(copy_, qfunc_jaxpr, consts, *args)
 
     return qnode_prim.bind(
@@ -379,21 +408,59 @@ def handle_for_loop(
     init_state = args[args_slice]
     abstract_shapes = args[abstract_shapes_slice]
 
-    # Visualization part
+    # Create a cluster for the for loop
     for_loop_uid = self.graph_obj.convert_name_to_uid("for_loop")
-    loop_var = jaxpr_body_fn.invars
-    print(consts)
-    loop_var_ascii = self.graph_obj.convert_wires_to_ascii(loop_var)
-    print("Something inside for loop depends on outside variable: {}".format(consts))
-    self.graph_obj.dyn_vars[str(loop_var[0])] = loop_var_ascii[0]
     for_loop_cluster = pydot.Cluster(
         for_loop_uid,
-        label=f"for {loop_var_ascii[0]} in range({start}, {stop}, {step})",
+        label="",
         style="filled",
         fillcolor="lightgrey",
         color="black",
     )
     self.graph_obj.current_cluster.add_subgraph(for_loop_cluster)
+
+    # Store for loop invars (specifically the loop index) as a seen dynamic wire
+    for_loop_invars = jaxpr_body_fn.invars
+    for_loop_invars_ascii = list(map(self.graph_obj.convert_dyn_wire_to_ascii, for_loop_invars))
+    self.graph_obj.dyn_vars[str(for_loop_invars[0])] = for_loop_invars_ascii[0]
+
+    # Create a node for the for loop condition
+    for_node_uid = self.graph_obj.convert_name_to_uid("condition")
+    for_loop_cluster.add_node(
+        pydot.Node(
+            for_node_uid,
+            label=f"for {for_loop_invars_ascii[0]} in range({start}, {stop}, {step})",
+            style="dotted",
+            shape="rectangle",
+            fillcolor="white",
+        )
+    )
+
+    # Since we created the node, we need to connect all previously seen nodes to this node
+    print("seen wire to node uid mapping: {}".format(self.graph_obj.map_wire_to_node_uid))
+    for (
+        seen_wire_ascii,
+        seen_node_uid,
+    ) in self.graph_obj.map_wire_to_node_uid.items():
+        can_not_connect = (
+            "operator_" not in seen_node_uid
+            and "measurement_" not in seen_node_uid
+            and "qnode_" not in seen_node_uid  # work around since it is a source of wires
+        )
+        if can_not_connect:
+            # Only connect operators and measurements to the for loop condition
+            continue
+
+        if not self.graph_obj.graph.get_edge(seen_node_uid, for_node_uid):
+            print("Connected {} to {}".format(seen_node_uid, for_node_uid))
+            # if seen_node_uid == for_node_uid:
+            #     # Seems to happen it it's a multi wire operation with multiple dynamic wires
+            #     continue
+            edge = pydot.Edge(seen_node_uid, for_node_uid, style="dotted")
+            self.graph_obj.graph.add_edge(edge)
+        # Since we connected the node, we need to update the mapping
+        # to treat this node as the source for the wire
+        self.graph_obj.map_wire_to_node_uid[seen_wire_ascii] = for_node_uid
 
     copy_ = copy(self)
     copy_.graph_obj.current_cluster = for_loop_cluster
@@ -439,7 +506,7 @@ def handle_while_loop(
         # Start with input variables
         # Example: invars: [a:i32[], b:f32[]]
         # We'll map 'a' to 'carry_0', 'b' to 'carry_1'
-        var_map = {cond_jaxpr.invars[idx]: f"carry_{idx}" for idx in range(len(cond_jaxpr.invars))}
+        var_map = {cond_jaxpr.invars[idx]: f"invar_{idx}" for idx in range(len(cond_jaxpr.invars))}
 
         # Process constants (literals)
         # Literals are special in JAXPR: they are `core.Literal` objects.
@@ -527,6 +594,7 @@ def handle_while_loop(
     while_loop_uid = self.graph_obj.convert_name_to_uid("while_loop")
     while_loop_cluster = pydot.Cluster(
         while_loop_uid,
+        label="",
         style="filled",
         fillcolor="lightgrey",
         color="black",
@@ -536,15 +604,23 @@ def handle_while_loop(
         pydot.Node(
             while_node_uid,
             label=f"while {label}",
-            style="filled",
-            fillcolor="lightblue",
+            style="dotted",
+            shape="rectangle",
+            fillcolor="white",
         )
     )
     for (
         wire_ascii,
         seen_node_uid,
     ) in self.graph_obj.map_wire_to_node_uid.items():
-
+        # can_not_connect = (
+        #     "operator_" not in seen_node_uid
+        #     and "measurement_" not in seen_node_uid
+        #     and "qnode_" not in seen_node_uid  # work around since it is a source of wires
+        # )
+        # if can_not_connect:
+        #     # Only connect operators and measurements to the while loop condition
+        #     continue
         if not self.graph_obj.graph.get_edge(seen_node_uid, while_node_uid):
             print("Connected {} to {}".format(seen_node_uid, while_node_uid))
             if seen_node_uid == while_node_uid:
