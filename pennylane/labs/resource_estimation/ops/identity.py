@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for identity operations."""
-
+import pennylane.labs.resource_estimation as re
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
@@ -190,6 +192,50 @@ class ResourceGlobalPhase(ResourceOperator):
                 in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+    ) -> list[GateCount]:
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+
+        Resources:
+            The resources are generated from the fact that a global phase controlled on a
+            single qubit is equivalent to a local phase shift on that control qubit.
+
+            This idea can be generalized to a multi-qubit global phase by introducing one
+            'clean' auxilliary qubit which gets reset at the end of the computation. In this
+            case, we sandwich the phase shift operation with two multi-controlled X gates.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(re.ResourcePhaseShift))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(re.ResourceX), 2))
+
+            return gate_types
+
+        ps = resource_rep(re.ResourcePhaseShift)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [AllocWires(1), GateCount(ps), GateCount(mcx, 2), FreeWires(1)]
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
