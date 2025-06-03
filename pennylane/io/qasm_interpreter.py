@@ -20,10 +20,10 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     ConstantDeclaration,
     DurationLiteral,
-    EndStatement,
     Expression,
     ExpressionStatement,
     FloatLiteral,
+    EndStatement,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
@@ -31,7 +31,13 @@ from openqasm3.ast import (
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    UnaryExpression, IntType, FloatType, UintType, ComplexType, AngleType, BitType, BoolType, ArrayType,
+    UnaryExpression,
+    IntType,
+    FloatType,
+    UintType,
+    ComplexType,
+    BoolType,
+    ArrayType,
 )
 from openqasm3.visitor import QASMNode
 
@@ -297,6 +303,10 @@ def _index_into_var(var: Iterable | Variable, node: IndexExpression):
     raise TypeError(
         f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
     )
+
+
+class EndProgram(Exception):
+    """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
 class EndProgram(Exception):

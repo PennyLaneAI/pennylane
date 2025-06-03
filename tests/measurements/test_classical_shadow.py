@@ -1147,6 +1147,7 @@ def hadamard_circuit_mixed(wires, shots=10000, interface="autograd"):
     return circuit
 
 
+@pytest.mark.slow
 def test_hadamard_expval_mixed(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
