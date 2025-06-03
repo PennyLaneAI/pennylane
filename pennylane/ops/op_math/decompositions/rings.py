@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import math
+from typing import List
 
 import numpy as np
 
@@ -25,22 +26,17 @@ _OMEGA = (1 + 1j) / _SQRT2
 
 
 class ZSqrtTwo:
-    r"""
-    A class representing the ring of integers adjoined with the square root of 2.
+    r"""Represents the elements of the ring of integers adjoined with the square root of 2.
 
     ..math::
         \mathbb{Z}[\sqrt{2}] = \{ a + b\sqrt{2} \mid a, b \in \mathbb{Z} \}
 
+    Args:
+        a (int): The integer part of the element.
+        b (int): The coefficient of sqrt(2) in the element.
     """
 
-    def __init__(self, a: int, b: int):
-        """
-        Initialize the ZSqrtTwo object with integers a and b.
-
-        Args:
-            a (int): The integer part of the element.
-            b (int): The coefficient of sqrt(2) in the element.
-        """
+    def __init__(self, a: int, b: int) -> None:
         self.a = int(a)
         self.b = int(b)
 
@@ -140,8 +136,7 @@ class ZSqrtTwo:
 
 
 class ZOmega:
-    r"""
-    A class representing the ring of integers adjoined with the eight root of unity.
+    r"""Represents the elements of the ring of integers adjoined with :math:`\omega`, the eight root of unity.
 
     ..math::
         \mathbb{Z}[\omega] = \{ a\omega^3 + b\omega^2 + c\omega + d \mid a, b, c, d \in \mathbb{Z} \}
@@ -155,14 +150,14 @@ class ZOmega:
         d (int): Constant term.
     """
 
-    def __init__(self, a: int, b: int, c: int, d: int):
+    def __init__(self, a: int, b: int, c: int, d: int) -> None:
         self.a = int(a)
         self.b = int(b)
         self.c = int(c)
         self.d = int(d)
 
     def __str__(self: ZOmega) -> str:
-        return f"{self.a}ω^3 + {self.b}ω^2 + {self.c}ω + {self.d}"
+        return f"{self.a} ω^3 + {self.b} ω^2 + {self.c} ω + {self.d}"
 
     def __repr__(self: ZOmega) -> str:
         return f"ZOmega({self.a}, {self.b}, {self.c}, {self.d})"
@@ -226,6 +221,16 @@ class ZOmega:
             power -= 1
         return result
 
+    def __truediv__(self, other: int | float) -> ZOmega:
+        if isinstance(other, (int, float)):
+            return ZOmega(self.a / other, self.b / other, self.c / other, self.d / other)
+        if isinstance(other, ZOmega):
+            pass
+        raise TypeError(f"cannot divide Omega value by {other} of type {type(other).__name__}")
+
+    def __mod__(self, other: ZOmega) -> ZOmega:
+        pass
+
     def conj(self: ZOmega) -> ZOmega:
         """The complex conjugate."""
         return ZOmega(-self.c, -self.b, -self.a, self.d)
@@ -238,7 +243,11 @@ class ZOmega:
         """Return the norm squared."""
         return self * self.conj()
 
-    def to_root_two(self: ZOmega) -> ZSqrtTwo:
+    def parity(self: ZOmega) -> int:
+        """Return the parity."""
+        return (self.a + self.c) % 2
+
+    def to_sqrt_two(self: ZOmega) -> ZSqrtTwo:
         """
         Convert to the ring of integers adjoined with the square root of 2.
 
@@ -247,12 +256,177 @@ class ZOmega:
         """
         return ZSqrtTwo(self.a + self.b, self.c + self.d)
 
-    def __truediv__(self, other: int | float) -> ZOmega:
-        if isinstance(other, (int, float)):
-            return ZOmega(self.a / other, self.b / other, self.c / other, self.d / other)
-        if isinstance(other, ZOmega):
-            pass
-        raise TypeError(f"cannot divide Omega value by {other} of type {type(other).__name__}")
+    def sqrt2scale(self) -> ZOmega:
+        r"""Multiply the element by :math:`\sqrt{2}`"""
 
-    def __mod__(self, other: ZOmega) -> ZOmega:
-        pass
+
+class SU2Matrix:
+    r"""Represents the SU(2) matrices over the ring :math:`\mathbb{Z}[\omega]` (`~pennylane.ZOmega`).
+
+    .. math::        
+        \frac{1}{\sqrt{2}^k} 
+        \begin{pmatrix}
+        a & b \\
+        c & d
+        \end{pmatrix}
+
+    where :math:`a, b, c, d \in \mathbb{Z}[\omega]`, :math:`k \in \mathbb{Z}`, and the determinant is `1`.
+
+    Args:
+        a (ZOmega): Element at position (0, 0) of the matrix.
+        b (ZOmega): Element at position (0, 1) of the matrix.
+        c (ZOmega): Element at position (1, 0) of the matrix.
+        d (ZOmega): Element at position (1, 1) of the matrix.
+        k (int): Optional integer to scale the matrix by a factor of :math:`1 / \sqrt{2}^k`.
+
+    """
+
+    # pylint:disable = too-many-arguments
+    def __init__(self, a: ZOmega, b: ZOmega, c: ZOmega, d: ZOmega, k: int = 0) -> None:
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.k = k
+
+    def __str__(self: SU2Matrix) -> str:
+        return f"[[{self.a}, {self.b}], [{self.c}, {self.d}]]"
+
+    def __repr__(self: SU2Matrix) -> str:
+        return f"SU2Matrix({self.a}, {self.b}, {self.c}, {self.d})"
+
+    def __neg__(self: SU2Matrix) -> SU2Matrix:
+        return SU2Matrix(-self.a, -self.b, -self.c, -self.d, self.k)
+
+    def __eq__(self: SU2Matrix, other: SU2Matrix) -> bool:
+        """Check if two SU(2) matrices are equal."""
+        return (
+            self.a == other.a
+            and self.b == other.b
+            and self.c == other.c
+            and self.d == other.d
+            and self.k == other.k
+        )
+
+    def __mul__(self: SU2Matrix, other: int) -> SU2Matrix:
+        """Multiply the matrix by an integer."""
+        if isinstance(other, float) and other.is_integer():
+            other = int(other)
+
+        return SU2Matrix(
+            self.a * other,
+            self.b * other,
+            self.c * other,
+            self.d * other,
+            self.k,
+        )
+
+    def __matmul__(self: SU2Matrix, other: SU2Matrix) -> SU2Matrix:
+        """Multiply two SU(2) matrices."""
+        if not isinstance(other, SU2Matrix):
+            raise TypeError(f"Cannot multiply SU2Matrix with {type(other).__name__}")
+
+        return SU2Matrix(
+            a=self.a * other.a + self.b * other.c,
+            b=self.a * other.b + self.b * other.d,
+            c=self.c * other.a + self.d * other.c,
+            d=self.c * other.b + self.d * other.d,
+            k=self.k + other.k,
+        )
+
+    @property
+    def toarray(self: SU2Matrix) -> np.ndarray:
+        """Convert the matrix to a NumPy array."""
+        return _SQRT2**self.k * np.array(
+            [
+                [complex(self.a), complex(self.b)],
+                [complex(self.c), complex(self.d)],
+            ],
+            dtype=np.complex128,
+        )
+
+    @property
+    def flatten(self: SU2Matrix) -> List[ZOmega]:
+        """Flatten the matrix to a 1D NumPy array."""
+        return [self.a, self.b, self.c, self.d]
+
+    def conj(self: SU2Matrix) -> SU2Matrix:
+        """Return the conjugate of the matrix."""
+        return SU2Matrix(
+            self.a.conj(),
+            self.b.conj(),
+            self.c.conj(),
+            self.d.conj(),
+            self.k,
+        )
+
+    def adj2(self: SU2Matrix) -> SU2Matrix:
+        """Return the root-2 adjoint of the matrix."""
+        return SU2Matrix(
+            self.a.adj2(),
+            self.b.adj2(),
+            self.c.adj2(),
+            self.d.adj2(),
+            self.k,
+        )
+
+    def mult2k(self: SU2Matrix, k: int) -> SU2Matrix:
+        """Multiply the matrix by :math:`2^k`, i.e., an integer power of 2."""
+        if k == 0:
+            return self
+        (
+            e_scale,
+            k_scale,
+        ) = int(
+            math.pow(2, k)
+        ), int(2 * k)
+        return SU2Matrix(
+            self.a * e_scale,
+            self.b * e_scale,
+            self.c * e_scale,
+            self.d * e_scale,
+            self.k + k_scale,
+        )
+
+
+class SO3Matrix:
+    r"""Represents the SO(3) matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`)."""
+
+    def __init__(self, su2mat: SU2Matrix, k: int = 0) -> None:
+        """Initialize the SO(3) matrix with a SU(2) matrix and an integer k."""
+        self.su2mat = su2mat
+        self.k = k
+        self.so3mat = self.from_su2(su2mat)
+
+    def from_su2(self, su2mat) -> List[List[ZSqrtTwo]]:
+        """Return the SO(3) matrix as a list of lists."""
+        su2_elems = su2mat.flatten()
+
+        k = 2 * su2mat.k
+        if any(s.parity for s in su2_elems):
+            z_sqrt2 = [(ZSqrtTwo((s.c - s.a), s.d), ZSqrtTwo((s.c + s.a), s.b)) for s in su2_elems]
+            k += 2
+        else:
+            z_sqrt2 = [
+                (ZSqrtTwo(s.d, (s.c - s.a) // 2), ZSqrtTwo(s.b, (s.c + s.a) // 2))
+                for s in su2_elems
+            ]
+
+        a_, b_, c_, d_ = zip(*z_sqrt2)
+        so3_mat = [
+            [
+                a_[0] * d_[0] + a_[1] * d_[1] + b_[0] * c_[0] + b_[1] * c_[1],
+                a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0] - a_[0] * d_[1],
+                a_[0] * c_[0] + a_[1] * c_[1] - b_[0] * d_[0] - b_[1] * d_[1],
+                a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
+                a_[0] * d_[0] + a_[1] * d_[1] - b_[0] * c_[0] - b_[1] * c_[1],
+                a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
+                ZSqrtTwo(2, 0) * (a_[0] * b_[0] + a_[1] * b_[1]),
+                ZSqrtTwo(2, 0) * (a_[1] * b_[0] - a_[0] * b_[1]),
+                a_[0] ** 2 + a_[1] ** 2 - b_[0] ** 2 - b_[1] ** 2,
+            ]
+        ]
+        return so3_mat
+
+    def reducek(self: SO3Matrix) -> SO3Matrix:
+        """Reduce the k value of the SO(3) matrix."""
