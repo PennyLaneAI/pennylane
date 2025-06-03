@@ -17,15 +17,16 @@ This file contains the snapshots function which extracts measurements from the q
 import warnings
 from functools import partial
 
-import pennylane as qml
+from pennylane.devices import LegacyDeviceFacade
+from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
 def _is_snapshot_compatible(dev):
     # The `_debugger` attribute is a good enough proxy for snapshot compatibility
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, LegacyDeviceFacade):
         return _is_snapshot_compatible(dev.target_device)
     return hasattr(dev, "_debugger")
 
@@ -116,8 +117,10 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", shots=200, wires=2)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=200)
         @qml.snapshots
         @qml.qnode(dev, interface=None)
         def circuit():
@@ -135,8 +138,9 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("lightning.qubit", shots=100, wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=200)
         @qml.snapshots
         @qml.qnode(dev)
         def circuit():
@@ -190,7 +194,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     snapshot_tags = []
 
     for op in tape.operations:
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
             shots = (
