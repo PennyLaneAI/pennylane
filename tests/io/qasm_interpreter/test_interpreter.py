@@ -52,7 +52,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestContext:
+class TestVariables:
 
     def test_retrieve_non_existent_attr(self):
         context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
@@ -62,11 +62,7 @@ class TestContext:
             match=r"No attribute potato on Context and no potato key found "
             r"on context retrieve-non-existent-attr",
         ):
-            potato = context.potato
-
-
-@pytest.mark.external
-class TestVariables:
+            print(context.potato)
 
     def test_bad_alias(self):
         # parse the QASM
