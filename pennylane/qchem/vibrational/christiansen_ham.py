@@ -24,39 +24,15 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
     r"""Return Christiansen bosonic vibrational Hamiltonian.
 
-    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
-
-    .. math::
-
-        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} + \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i}
-        \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)} b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
-
-
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation operators, :math:`M` represents
-    the number of normal modes and :math:`N` is the number of modals. The coefficients :math:`C` represent the one-mode
-    and two-mode integrals defined as
-
-    .. math::
-
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) + V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
-
-    and
-
-    .. math::
-
-    C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j) V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
-
-    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T` represents
-    the kinetick energy operator and :math:`V` represents the potential energy operator. Similarly, the three-mode
-    integrals can be obtained following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    The construction of the Hamiltonian is based on Eqs. 19-21 of
+    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
 
     Args:
         one (TensorLike[float]): one-body matrix elements
-        two (TensorLike[float]): two-body matrix elements
-        three (TensorLike[float]): three-body matrix elements
         modes (int): number of vibrational modes. If ``None``, it is obtained from the length of ``one``.
         modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is obtained from the shape of ``one``.
+        two (TensorLike[float]): two-body matrix elements
+        three (TensorLike[float]): three-body matrix elements
         cutoff (float): tolerance for discarding the negligible coefficients
         ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
 
