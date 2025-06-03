@@ -61,9 +61,6 @@ class TestHadamard:
         op = re.ResourceHadamard(0)
         assert op.pow_resource_decomp(z) == expected_res
 
-        # op2 = re.ResourcePow(op, z)
-        # assert op2.resources(**op2.resource_params) == expected_res
-
 
 class TestS:
     """Tests for ResourceS"""
@@ -103,12 +100,6 @@ class TestS:
         ]
         assert re.ResourceS.adjoint_resource_decomp() == expected
 
-        # s = re.ResourceS(0)
-        # s_dag = re.ResourceAdjoint(s)
-
-        # r1 = re.get_resources(s) * 3
-        # r2 = re.get_resources(s_dag)
-        # assert r1 == r2
 
     pow_data = (
         (1, [re.GateCount(re.ResourceS.resource_rep(), 1)]),
@@ -192,7 +183,7 @@ class TestT:
                 re.GateCount(re.ResourceT.resource_rep(), 1),
             ],
         ),
-        (8, {re.ResourceIdentity.resource_rep(): 1}),
+        (8, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (
             14,
             [
@@ -208,13 +199,13 @@ class TestT:
                 re.GateCount(re.ResourceT.resource_rep(), 1),
             ],
         ),
-        (16, {re.ResourceIdentity.resource_rep(): 1}),
+        (16, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
     )
 
     @pytest.mark.parametrize("z, expected_res", pow_data)
     def test_pow_decomp(self, z, expected_res):
         """Test that the pow decomposition is correct."""
-        op = re.ResourceT(0)
+        op = re.ResourceT
         assert op.pow_resource_decomp(z) == expected_res
 
 
@@ -271,8 +262,10 @@ class TestY:
     def test_resources(self):
         """Test that ResourceT does not implement a decomposition"""
         expected = [
-            re.GateCount(re.ResourceS.resource_rep(), 6),
-            re.GateCount(re.ResourceHadamard.resource_rep(), 2),
+            re.GateCount(re.resource_rep(re.ResourceS), 1),
+            re.GateCount(re.resource_rep(re.ResourceZ), 1),
+            re.GateCount(re.resource_rep(re.ResourceAdjoint, {"base_cmpr_op": re.resource_rep(re.ResourceS)})),
+            re.GateCount(re.resource_rep(re.ResourceHadamard), 2)
         ]
         assert re.ResourceY.resource_decomp() == expected
 

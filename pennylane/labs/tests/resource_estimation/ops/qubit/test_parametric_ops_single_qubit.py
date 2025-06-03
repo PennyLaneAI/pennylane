@@ -55,7 +55,7 @@ class TestPauliRotation:
     def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test the compact representation"""
         op = resource_class(wires=0)
-        expected = re.CompressedResourceOp(resource_class, {})
+        expected = re.CompressedResourceOp(resource_class, {"eps": None})
         assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class", params_classes)
@@ -90,7 +90,7 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(0, 10)))
+    @pytest.mark.parametrize("z", list(range(1, 10)))
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 
@@ -119,7 +119,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = re.ResourceRot(wires=0)
-        expected = re.CompressedResourceOp(re.ResourceRot, {})
+        expected = re.CompressedResourceOp(re.ResourceRot, {"eps": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -146,7 +146,6 @@ class TestRot:
         assert re.ResourceRot.adjoint_resource_decomp() == expected
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(re.ResourceRot.resource_rep(), 1)]),
         (2, [re.GateCount(re.ResourceRot.resource_rep(), 1)]),
         (5, [re.GateCount(re.ResourceRot.resource_rep(), 1)]),
@@ -174,8 +173,8 @@ class TestPhaseShift:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        op = re.ResourcePhaseShift(None, wires=0)
-        expected = re.CompressedResourceOp(re.ResourcePhaseShift, {})
+        op = re.ResourcePhaseShift(wires=0)
+        expected = re.CompressedResourceOp(re.ResourcePhaseShift, {"eps": None})
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -202,7 +201,6 @@ class TestPhaseShift:
         assert re.ResourcePhaseShift.adjoint_resource_decomp() == expected
 
     pow_data = (
-        (0, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
         (1, [re.GateCount(re.ResourcePhaseShift.resource_rep(), 1)]),
         (2, [re.GateCount(re.ResourcePhaseShift.resource_rep(), 1)]),
         (5, [re.GateCount(re.ResourcePhaseShift.resource_rep(), 1)]),
