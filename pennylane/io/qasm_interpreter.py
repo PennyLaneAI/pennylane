@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from numpy import uint
 from functools import partial
-from typing import Any, Callable
+from typing import Any, Iterable
 
 from openqasm3.ast import (
     AliasStatement,
@@ -275,7 +275,7 @@ def _resolve_name(node: QASMNode):
     return node.name if isinstance(node.name, str) else node.name.name
 
 
-def _index_into_var(var: dict, node: IndexExpression):
+def _index_into_var(var: Iterable | Variable, node: IndexExpression):
     """
     Index into a variable using an IndexExpression.
 
@@ -285,10 +285,11 @@ def _index_into_var(var: dict, node: IndexExpression):
     Returns:
         The indexed slice of the variable.
     """
-    if var.ty == "BitType":
-        var = _get_bit_type_val(var)
-    else:
-        var = var.val
+    if not isinstance(var, Iterable):
+        if var.ty == "BitType":
+            var = _get_bit_type_val(var)
+        else:
+            var = var.val
     if isinstance(node.index[0], RangeDefinition):
         return var[node.index[0].start.value : node.index[0].end.value]
     if re.search("Literal", node.index[0].__class__.__name__):
@@ -324,8 +325,6 @@ class QasmInterpreter:
         Raises:
             NotImplementedError: When a (so far) unsupported node type is encountered.
         """
-        if callable(node):
-            return self.visit_callable(node, context)  # cannot register Callable
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
             f"was encountered on line {node.span.start_line}, in {context.name}."
@@ -638,15 +637,12 @@ class QasmInterpreter:
             node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
         ):  # makes sure we are not executing anything malicious
             return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
-        if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-            raise SyntaxError(
-                f"{node.op.name} assignment operators should only be used in classical assignments,"
-                f"not in binary expressions."
-            )
-        raise SyntaxError(
+
+        # we shouldn't ever get thi error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in binary expression "
             f"on line {node.span.start_line}."
-        )
+        )  # pragma: no cover
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -666,15 +662,11 @@ class QasmInterpreter:
             return eval(  # pylint: disable=eval-used
                 f"{node.op.name}{self.visit(node.expression, context)}"
             )
-        if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-            raise SyntaxError(
-                f"{node.op.name} assignment operators should only be used in classical assignments,"
-                f"not in unary expressions."
-            )
-        raise SyntaxError(
+        # we shouldn't ever get thi error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in unary expression "
             f"on line {node.span.start_line}."
-        )
+        )  # pragma: no cover
 
     @visit.register(IndexExpression)
     def visit_index_expression(
@@ -713,8 +705,8 @@ class QasmInterpreter:
         try:
             return context.retrieve_variable(node.collection.name) \
                 if getattr(node, "collection", None) else context.retrieve_variable(node.name)
-        except NameError as e:
-            raise NameError(
+        except TypeError as e:
+            raise TypeError(
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
             ) from e
 
@@ -737,29 +729,12 @@ class QasmInterpreter:
         try:
             var = context.retrieve_variable(node.name)
             value = var.val if isinstance(var, Variable) else var
-            if callable(value):
-                var.val = value(context)
-                var.line = node.span.start_line
-                value = var.val
+            var.line = node.span.start_line
             return value
         except NameError as e:
             raise NameError(
                 str(e) or f"Reference to an undeclared variable {node.name} in {context.name}."
             ) from e
-
-    @staticmethod
-    def visit_callable(func: Callable, context: Context):
-        """
-        Visits a Callable.
-
-        Args:
-            func (Callable): The callable.
-            context (Context): The current context.
-
-        Returns:
-            The result of the called callable.
-        """
-        return func(context)
 
     @visit.register(IntegerLiteral)
     @visit.register(FloatLiteral)

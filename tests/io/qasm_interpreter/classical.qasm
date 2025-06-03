@@ -1,5 +1,6 @@
 int i = 4;
 const int j = i;
+const int neg = -j;
 bit[3] c = "000";
 let alias = c;
 const bit k = j + alias;

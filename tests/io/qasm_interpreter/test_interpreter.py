@@ -87,6 +87,24 @@ class TestVariables:
             PauliX("q0") ** 24,
         ]
 
+    def test_bad_alias(self):
+        # parse the QASM
+        ast = parse(
+            """
+            let k = j;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Attempt to alias an undeclared variable j in bad-alias"
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-alias"}
+            )
+            context.aliases["k"](context)
+
     def test_bare_expression(self):
         # parse the QASM
         ast = parse(
@@ -122,6 +140,27 @@ class TestVariables:
             )
 
         assert q.queue == [PauliX("q0") ** 2]
+
+    def test_alias(self):
+        ast = parse(
+            """
+            bit[6] register = "011011";
+            let alias = register[0:5];
+            bool z = alias[0] + "1";
+            bit single = "0";
+            let single_alias = single;
+            bool x = single_alias + "0";
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "aliases"}
+        )
+        assert context.aliases["alias"](context) == "01101"
+        assert context.vars["z"].val == 1
+        assert context.vars["x"].val == 0
 
     def test_variables(self):
         # parse the QASM
@@ -234,6 +273,7 @@ class TestVariables:
         assert context.vars["j"].val == 4
         assert context.vars["c"].val == 0
         assert context.vars["k"].val == 4
+        assert context.vars["neg"].val == -4
         assert context.vars["comp"].val == 3.5j + 2.5
         assert context.aliases["arr_alias"](context) == [0.0, 1.0]
         assert context.aliases["literal_alias"](context) == 0.0
