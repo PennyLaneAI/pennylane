@@ -364,9 +364,9 @@ class TestToBloq:
 
     def test_allocate_and_free(self):
         """Tests that ToBloq functions on a FromBloq that has ghost wires"""
+        from qualtran._infra.data_types import QAny, QBit
         from qualtran.bloqs.basic_gates import CZPowGate
         from qualtran.bloqs.bookkeeping import Allocate, Free
-        from qualtran._infra.data_types import QAny, QBit
 
         # TODO: this would ideally be only 1 allocate and free
         assert (
@@ -409,7 +409,7 @@ class TestToBloq:
     def test_to_bloq_circuits(self):
         """Tests that to_bloq functions as intended for complex circuits"""
 
-        from qualtran.bloqs.basic_gates import Hadamard, CNOT
+        from qualtran.bloqs.basic_gates import CNOT, Hadamard
 
         dev = qml.device("default.qubit", wires=6)
 
@@ -456,7 +456,7 @@ class TestToBloq:
     def test_circuit_to_bloq_kwargs(self):
         """Tests that to_bloq functions as intended for circuits with kwargs"""
 
-        from qualtran.bloqs.basic_gates import Rx, GlobalPhase
+        from qualtran.bloqs.basic_gates import GlobalPhase, Rx
 
         dev = qml.device("default.qubit")
 
@@ -502,6 +502,7 @@ class TestToBloq:
     def test_map_to_bloq(self):
         """Tests that _map_to_bloq produces the correct Qualtran equivalent"""
         from qualtran.bloqs.basic_gates import (
+            CNOT,
             CZ,
             CYGate,
             GlobalPhase,
@@ -516,7 +517,6 @@ class TestToBloq:
             XGate,
             YGate,
             ZGate,
-            CNOT,
         )
 
         to_bloq = _map_to_bloq
