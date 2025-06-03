@@ -360,10 +360,14 @@ class TestPrepSelPrep:
         """Test that the decomposition is registered into the new pipelien."""
 
         ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
+        grep = qml.resource_rep(qml.GlobalPhase)
+        xrep = qml.resource_rep(qml.X)
         op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.ops.Prod, **ops[-1].resource_params),
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
+            qml.resource_rep(
+                qml.ops.Prod, resources={grep: 1, **ops[-1].resource_params["resources"]}
+            ),
         )
         lcu = qml.dot([1, 4, 9], ops)
         op = qml.PrepSelPrep(lcu, (3, 4))
@@ -389,10 +393,12 @@ class TestPrepSelPrep:
 
         q = q.queue
 
+        phase_ops = [op @ qml.GlobalPhase(0, wires=op.wires) for op in ops]
+
         prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qml.assert_equal(q[0], prep)
-        qml.assert_equal(q[1], qml.Select(ops, (3, 4)))
-        qml.asserT_equal(q[2], qml.adjoint(prep))
+        qml.assert_equal(q[1], qml.Select(phase_ops, (3, 4)))
+        qml.assert_equal(q[2], qml.adjoint(prep))
 
 
 def test_control_in_ops():

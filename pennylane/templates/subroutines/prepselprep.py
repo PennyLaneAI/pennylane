@@ -213,8 +213,14 @@ class PrepSelPrep(Operation):
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
 
+def _prod_resources(rep):
+    if rep.op_type == qml.ops.Prod:
+        return {qml.resource_rep(qml.GlobalPhase): 1, **rep.params["resources"]}
+    return {qml.resource_rep(qml.GlobalPhase): 1, rep: 1}
+
+
 def _prepselprep_resources(op_reps, num_control):
-    prod_resources = ({qml.resource_rep(qml.GlobalPhase): 1, rep: 1} for rep in op_reps)
+    prod_resources = (_prod_resources(rep) for rep in op_reps)
     mod_op_reps = tuple(qml.resource_rep(qml.ops.Prod, resources=res) for res in prod_resources)
     return {
         qml.resource_rep(qml.Select, op_reps=mod_op_reps, num_control_wires=num_control): 1,
