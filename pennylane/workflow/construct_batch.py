@@ -416,7 +416,7 @@ def construct_batch(
             execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
 
-        gradient_fn = execution_config.gradient_methodhas_gradient_expand
+        gradient_fn = execution_config.gradient_method
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
