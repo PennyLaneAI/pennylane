@@ -311,9 +311,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
 
     # Open elbow (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
     first_half = (
-        [X(and_wires[0]), X(and_wires[1])]
-        + [TemporaryAnd(and_wires)]
-        + [X(and_wires[0]), X(and_wires[1])]
+        [TemporaryAnd(and_wires, control_values = (0,0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
         + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
@@ -326,7 +324,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         new_controls_sec_half = controls
         new_work_wires_sec_half = work_wires
         # Closing elbow for first half
-        middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])]
+        middle_part = [adjoint(TemporaryAnd)(and_wires, control_values = (0,1))]
     else:
         c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
@@ -336,10 +334,8 @@ def _add_first_k_units(ops, controls, work_wires, k):
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
         else:
             # Closing elbow for first half, opening elbow for second half
-            middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])] + [
-                X(and_wires_sec_half[1]),
-                TemporaryAnd(and_wires_sec_half),
-                X(and_wires_sec_half[1]),
+            middle_part = [adjoint(TemporaryAnd)(and_wires, control_values = (0,1)) + [
+                TemporaryAnd(and_wires_sec_half, control_values = (1,0)),
             ]
     second_half = _add_k_units(
         ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
