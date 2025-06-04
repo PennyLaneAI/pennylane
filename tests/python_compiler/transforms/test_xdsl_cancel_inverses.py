@@ -13,20 +13,14 @@
 # limitations under the License.
 """Unit test module for the iterative cancel inverses transform"""
 
-import io
-
 import pytest
 
 pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
-filecheck = pytest.importorskip("filecheck")
 
 # pylint: disable=wrong-import-position
-from filecheck.finput import FInput
-from filecheck.matcher import Matcher
-from filecheck.options import parse_argv_options
-from filecheck.parser import Parser, pattern_for_opts
+
 from xdsl.context import Context
 from xdsl.dialects import arith, func, test
 
@@ -37,7 +31,7 @@ from pennylane.compiler.python_compiler.transforms import IterativeCancelInverse
 class TestIterativeCancelInversesPass:
     """Unit tests for IterativeCancelInversesPass."""
 
-    def test_no_inverses_same_qubit(self):
+    def test_no_inverses_same_qubit(self, run_filecheck):
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
@@ -60,15 +54,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_inverses_different_qubits(self):
+    def test_inverses_different_qubits(self, run_filecheck):
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
@@ -93,15 +81,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_simple_self_inverses(self):
+    def test_simple_self_inverses(self, run_filecheck):
         """Test that inverses are cancelled."""
         program = """
             func.func @test_func() {
@@ -122,15 +104,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_nested_self_inverses(self):
+    def test_nested_self_inverses(self, run_filecheck):
         """Test that nested self-inverses are cancelled."""
         program = """
             func.func @test_func() {
@@ -155,15 +131,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_cancel_ops_with_control_qubits(self):
+    def test_cancel_ops_with_control_qubits(self, run_filecheck):
         """Test that ops with control qubits can be cancelled."""
         program = """
             func.func @test_func() {
@@ -188,15 +158,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_cancel_ops_with_same_control_qubits_and_values(self):
+    def test_cancel_ops_with_same_control_qubits_and_values(self, run_filecheck):
         """Test that ops with control qubits and control values can be
         cancelled."""
         program = """
@@ -223,15 +187,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_ops_with_control_qubits_different_control_values(self):
+    def test_ops_with_control_qubits_different_control_values(self, run_filecheck):
         """Test that ops with the same control qubits but different
         control values don't cancel."""
         program = """
@@ -264,15 +222,9 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
-    def test_non_consecutive_self_inverse_ops(self):
+    def test_non_consecutive_self_inverse_ops(self, run_filecheck):
         """Test that self-inverse gates on the same qubit that are not
         consecutive are not cancelled."""
         program = """
@@ -298,13 +250,7 @@ class TestIterativeCancelInversesPass:
         pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
         pipeline.apply(ctx, module)
 
-        opts = parse_argv_options(["filecheck", __file__])
-        matcher = Matcher(
-            opts,
-            FInput("no-name", str(module)),
-            Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-        )
-        assert matcher.run() == 0
+        run_filecheck(program, module)
 
 
 if __name__ == "__main__":
