@@ -440,7 +440,7 @@ class TestSnapshotSupportedQNode:
         assert result["execution_results"] == expected["execution_results"]
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
+        result = qml.snapshots(qml.set_shots(circuit, shots=200))(add_bad_snapshot=False)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
@@ -595,7 +595,7 @@ class TestSnapshotSupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(shots=200)
+        result = qml.snapshots(qml.set_shots(circuit, shots=200))()
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
 
@@ -653,7 +653,7 @@ class TestSnapshotUnsupportedQNode:
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overridden correctly
-        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        counts, _ = tuple(zip(*(qml.snapshots((qml.set_shots(circuit, shots=1000)))().values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
