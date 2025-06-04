@@ -29,39 +29,54 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 
     .. math::
 
-        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} + \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i}
-        \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)} b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
 
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation operators, :math:`M` represents
-    the number of normal modes and :math:`N` is the number of modals. The coefficients :math:`C` represent the one-mode
-    and two-mode integrals defined as
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) + V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-    C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j) V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
-    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T` represents
-    the kinetick energy operator and :math:`V` represents the potential energy operator. Similarly, the three-mode
-    integrals can be obtained following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
+    represents the kinetick energy operator and :math:`V` represents the potential energy operator.
+    Similarly, the three-mode integrals can be obtained following
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
     Args:
         one (TensorLike[float]): one-body matrix elements
         two (TensorLike[float]): two-body matrix elements
         three (TensorLike[float]): three-body matrix elements
-        modes (int): number of vibrational modes. If ``None``, it is obtained from the length of ``one``.
-        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is obtained from the shape of ``one``.
+        modes (int): number of vibrational modes. If ``None``, it is obtained from the length
+            of ``one``.
+        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is
+            obtained from the shape of ``one``.
         cutoff (float): tolerance for discarding the negligible coefficients
         ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
 
     Returns:
         pennylane.bose.BoseSentence: the constructed bosonic operator
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> print(pes.freqs)
+    [0.02038828]
     """
     if modes is None:
         modes = np.shape(one)[0]
@@ -187,8 +202,8 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
-            wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
-            Defaults to ``None``.
+            wires. If ``None``, integers used to label the bosonic states will be used as wire
+            labels. Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
