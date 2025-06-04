@@ -218,6 +218,7 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
+    "reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",
