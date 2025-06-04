@@ -1059,8 +1059,8 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
     .. math::
 
-    C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-    V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents  the kinetick energy operator and :math:`V` represents the potential energy operator
@@ -1077,6 +1077,11 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+        num_workers (int): the number of concurrent units used for the computation. Default value is
+            set to 1.
+        backend (string): the executor backend from the list of supported backends. Available
+            options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
         TensorLike[float]: the integrals for the Christiansen Hamiltonian
@@ -1122,16 +1127,65 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="serial"):
     r"""Compute Christiansen vibrational dipole integrals.
 
+    The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
+    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
+    operator is defined as
+
+    .. math::
+
+        \mu = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
+
+    .. math::
+
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( \D_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+
+    and
+
+    .. math::
+
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        \D_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate and :math:`D`
+    represents the dipole function obtained from the expansion
+
+    .. math::
+
+    D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
+
+    Tthe three-mode integrals can be obtained in a similar way.
+
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends.
-            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
-
+        num_workers (int): the number of concurrent units used for the computation. Default value is
+            set to 1.
+        backend (string): the executor backend from the list of supported backends. Available
+            options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
         TensorLike[float]: the integrals for the Christiansen dipole operator
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol, dipole_level = 3, cubic=True)
+    >>> integrals = qml.qchem.vibrational.christiansen_integrals_dipole(pes,n_states=4)
+    >>> print(integrals[0][0])
+    [[[-9.31636026e-19 -1.33891348e-17  2.10011990e-17 -3.84033144e-18]
+      [-1.33891348e-17  2.87685444e-17 -2.55867452e-17  5.07982953e-17]
+      [ 2.10011990e-17 -2.55867452e-17  7.61334058e-17 -6.83190790e-17]
+      [-3.84033144e-18  5.07982953e-17 -6.83190790e-17  8.72907459e-17]]]
     """
     with TemporaryDirectory() as path:
         dipole_cform_onebody = _cform_onemode_dipole(

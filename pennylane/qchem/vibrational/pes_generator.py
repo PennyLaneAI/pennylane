@@ -753,11 +753,11 @@ def vibrational_pes(
         dipole_level (int): The level up to which dipole moment data are to be calculated. Input
             values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
             three-mode dipole, respectively. Default value is ``1``.
-        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends.
-            Available options : ``"mp_pool"``, ``"cf_procpool"``, ``"cf_threadpool"``,
-            ``"serial"``, ``"mpi4py_pool"``, ``"mpi4py_comm"``. Default value is set to
-            ``"serial"``.
+        num_workers (int): the number of concurrent units used for the computation. Default value is
+            set to 1.
+        backend (string): the executor backend from the list of supported backends. Available
+            options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
        ~.VibrationalPES object.
