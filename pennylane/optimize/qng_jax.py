@@ -36,16 +36,16 @@ class QNGOptimizerJax:
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
         grad_fn = catalyst.grad if active_compiler() == "catalyst" else jax.grad
         grad = grad_fn(qnode)(params, **kwargs)
-        new_params = self.apply_grad(mt, grad, params)
-        return new_params, state
+        new_params, new_state = self.apply_grad(mt, grad, params, state)
+        return new_params, new_state
 
     def step_and_cost(self, qnode, params, state, **kwargs):
         new_params, new_state = self.step(qnode, params, state, **kwargs)
         cost = qnode(params, **kwargs)
         return new_params, new_state, cost
 
-    def apply_grad(self, mt, grad, params):
+    def apply_grad(self, mt, grad, params, state):
         mt = _reshape_and_regularize(mt, lam=self.lam)
         update = math.linalg.pinv(mt) @ grad
         new_params = params - self.stepsize * update
-        return new_params
+        return new_params, state
