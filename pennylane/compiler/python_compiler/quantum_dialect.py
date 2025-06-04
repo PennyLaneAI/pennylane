@@ -245,9 +245,9 @@ class CustomOp(IRDLOperation):
 
     name = "quantum.custom"
 
-    # assembly_format = """
-    #        $gate_name `(` $params `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           $gate_name `(` $params `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -342,7 +342,7 @@ class DeviceInitOp(IRDLOperation):
 
     # assembly_format = """
     #      (`shots` `(` $shots^ `)`)? `[` $lib `,` $name `,` $kwargs `]` attr-dict
-    #    """
+    #   """
 
     shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
@@ -547,9 +547,9 @@ class MeasureOp(IRDLOperation):
 
     name = "quantum.measure"
 
-    # assembly_format = """
-    #        $in_qubit attr-dict `:` type(results)
-    #    """
+    assembly_format = """
+           $in_qubit (`postselect` $postselect^)? attr-dict `:` type(results)
+       """
 
     in_qubit = operand_def(BaseAttr(QubitType))
 
@@ -589,9 +589,9 @@ class MultiRZOp(IRDLOperation):
 
     name = "quantum.multirz"
 
-    # assembly_format = """
-    #        `(` $theta `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+              `(` $theta `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -667,9 +667,9 @@ class QubitUnitaryOp(IRDLOperation):
 
     name = "quantum.unitary"
 
-    # assembly_format = """
-    #        `(` $matrix `:` type($matrix) `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           `(` $matrix `:` type($matrix) `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
