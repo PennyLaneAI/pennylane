@@ -22,23 +22,78 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 # pylint: disable = too-many-branches, too-many-positional-arguments, too-many-arguments, too-many-nested-blocks,
 
 
-def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
+def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ordered=True):
     r"""Return Christiansen bosonic vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 19-21 of
-    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
+
+    .. math::
+
+        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
+
+    .. math::
+
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+
+    and
+
+    .. math::
+
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
+    represents the kinetick energy operator and :math:`V` represents the potential energy operator.
+    Similarly, the three-mode integrals can be obtained following
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
     Args:
         one (TensorLike[float]): one-body matrix elements
-        modes (int): number of vibrational modes. If ``None``, it is obtained from the length of ``one``.
-        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is obtained from the shape of ``one``.
         two (TensorLike[float]): two-body matrix elements
         three (TensorLike[float]): three-body matrix elements
+        modes (int): number of vibrational modes. If ``None``, it is obtained from the length
+            of ``one``.
+        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is
+            obtained from the shape of ``one``.
         cutoff (float): tolerance for discarding the negligible coefficients
         ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
 
     Returns:
         pennylane.bose.BoseSentence: the constructed bosonic operator
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> integrals = qml.qchem.vibrational.christiansen_integrals(pes,n_states=4)
+    >>> print(qml.qchem.christiansen_bosonic(integrals[0]))
+    0.010354801267111937 * b⁺(0) b(0)
+    + 0.0019394049410426685 * b⁺(0) b(1)
+    + 0.00046435758469677135 * b⁺(0) b(2)
+    + 0.001638099727072391 * b⁺(0) b(3)
+    + 0.0019394049410426685 * b⁺(1) b(0)
+    + 0.03139978085503162 * b⁺(1) b(1)
+    + 0.005580004725710029 * b⁺(1) b(2)
+    + 0.0013758584515161654 * b⁺(1) b(3)
+    + 0.00046435758469677135 * b⁺(2) b(0)
+    + 0.005580004725710029 * b⁺(2) b(1)
+    + 0.05314478483410301 * b⁺(2) b(2)
+    + 0.010479092552439511 * b⁺(2) b(3)
+    + 0.001638099727072391 * b⁺(3) b(0)
+    + 0.0013758584515161654 * b⁺(3) b(1)
+    + 0.010479092552439511 * b⁺(3) b(2)
+    + 0.07565063279464881 * b⁺(3) b(3)
     """
     if modes is None:
         modes = np.shape(one)[0]
@@ -140,10 +195,21 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
     r"""Return Christiansen vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 19-21 of
-    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
 
-    where the bosonic creation and annihilation operators are mapped to the Pauli operators as
+    .. math::
+
+        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+
+    The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
     .. math::
 
@@ -164,12 +230,39 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
-            wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
-            Defaults to ``None``.
+            wires. If ``None``, integers used to label the bosonic states will be used as wire
+            labels. Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         Operator: the Christiansen Hamiltonian in the qubit basis
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> qml.qchem.vibrational.christiansen_hamiltonian(pes,n_states=4)
+    (
+        0.08527499987546708 * I(0)
+      + -0.0051774006335491545 * Z(0)
+      + 0.0009697024705108074 * (X(0) @ X(1))
+      + 0.0009697024705108074 * (Y(0) @ Y(1))
+      + 0.0002321787923591865 * (X(0) @ X(2))
+      + 0.0002321787923591865 * (Y(0) @ Y(2))
+      + 0.0008190498635406456 * (X(0) @ X(3))
+      + 0.0008190498635406456 * (Y(0) @ Y(3))
+      + -0.015699890427524253 * Z(1)
+      + 0.002790002362847834 * (X(1) @ X(2))
+      + 0.002790002362847834 * (Y(1) @ Y(2))
+      + 0.000687929225764568 * (X(1) @ X(3))
+      + 0.000687929225764568 * (Y(1) @ Y(3))
+      + -0.026572392417060237 * Z(2)
+      + 0.005239546276220405 * (X(2) @ X(3))
+      + 0.005239546276220405 * (Y(2) @ Y(3))
+      + -0.037825316397333435 * Z(3)
+    )
     """
 
     h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
@@ -186,6 +279,37 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 def christiansen_dipole(pes, n_states=16):
     """Return Christiansen dipole operator.
 
+    The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
+    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
+    operator is defined as
+
+    .. math::
+
+        \mu = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+
+    The bosonic creation and annihilation operators are then mapped to the Pauli operators as
+
+    .. math::
+
+        b^\dagger_0 = \left(\frac{X_0 - iY_0}{2}\right), \:\: \text{...,} \:\:
+        b^\dagger_n = \left(\frac{X_n - iY_n}{2}\right),
+
+    and
+
+    .. math::
+
+        b_0 = \left(\frac{X_0 + iY_0}{2}\right), \:\: \text{...,} \:\:
+        b_n = \left(\frac{X_n + iY_n}{2}\right),
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
@@ -195,6 +319,22 @@ def christiansen_dipole(pes, n_states=16):
             - Operator: the Christiansen dipole operator in the qubit basis for x-displacements
             - Operator: the Christiansen dipole operator in the qubit basis for y-displacements
             - Operator: the Christiansen dipole operator in the qubit basis for z-displacements
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol, dipole_level=3, cubic=True)
+    >>> dipole = qml.qchem.vibrational.christiansen_dipole(pes,n_states=4)
+    >>> dipole[0]
+    (
+        (5.761507851990097e-16+0j) * I(0)
+      + (-1.199304972379678e-16+0j) * Z(0)
+      + (-1.8781128884815498e-16+0j) * Z(1)
+      + (-1.2206813605366886e-16+0j) * Z(2)
+      + (-1.4634086305921812e-16+0j) * Z(3)
+    )
     """
 
     d_arr = christiansen_integrals_dipole(pes, n_states=n_states)
