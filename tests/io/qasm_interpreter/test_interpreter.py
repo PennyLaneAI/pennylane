@@ -102,7 +102,9 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -236,7 +238,9 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
