@@ -14,10 +14,28 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
+from collections import defaultdict
+
 import numpy as np
 
+from pennylane.allocation import Allocate, Deallocate, DeallocateAll, DynamicWire
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Conditional, Controlled
+
+
+def wire_extent(layers, wire_map):
+    dynamic_wire_layers = defaultdict(list)
+    for layer_idx, layer in enumerate(layers):
+        for op in layer:
+            if not isinstance(op, (Allocate, Deallocate, DeallocateAll)):
+                for w in op.wires:
+                    if isinstance(w, DynamicWire):
+                        dynamic_wire_layers[w].append(layer_idx)
+    dyn = {w: (min(l) - 1, max(l) + 1) for w, l in dynamic_wire_layers.items()}
+    for wire in wire_map:
+        if wire not in dyn:
+            dyn[wire] = (-1, len(layers))
+    return {wire_map[w]: value for w, value in dyn.items()}
 
 
 def default_wire_map(tape):
