@@ -85,7 +85,7 @@ def _map_to_bloq():
             return ToBloq(op, **kwargs)
 
         if (custom_map := kwargs.get("custom_mapping")) is not None:
-            return kwargs["custom_mapping"][op]
+            return custom_map[op]
 
         return TextbookQPE(
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
