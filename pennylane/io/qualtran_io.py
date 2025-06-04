@@ -81,10 +81,10 @@ def _map_to_bloq():
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if "map_ops" in kwargs and not kwargs["map_ops"]:
+        if kwargs.get("map_ops") is False:
             return ToBloq(op, **kwargs)
 
-        if "custom_mapping" in kwargs:
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
             return kwargs["custom_mapping"][op]
 
         return TextbookQPE(
