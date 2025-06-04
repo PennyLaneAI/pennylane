@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/zxopt"""
+from typing import Callable
+
 import pytest
 import pyzx as zx
 
 import pennylane as qml
 from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce, todd
 from pennylane.labs.zxopt.util import _tape2pyzx
+from pennylane.tape import QuantumScript
 
 # arbitrary circuit
 circ1 = qml.tape.QuantumScript(
@@ -83,25 +86,41 @@ circ2_clifford_T = qml.tape.QuantumScript(
 @pytest.mark.parametrize("circ", [circ1, phase_poly1, circ1_clifford_T, circ2_clifford_T])
 def test_full_reduce(circ):
     """Test full_reduce"""
-    _ = full_reduce(circ)
+    batch, func = full_reduce(circ)
+
+    assert isinstance(batch, list)
+    assert isinstance(batch[0], QuantumScript)
+    assert isinstance(func, Callable)
 
 
 @pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
 def test_full_optimize(circ):
     """Test full_optimize"""
-    _ = full_optimize(circ)
+    batch, func = full_optimize(circ)
+
+    assert isinstance(batch, list)
+    assert isinstance(batch[0], QuantumScript)
+    assert isinstance(func, Callable)
 
 
 @pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
 def test_basic_optimization(circ):
     """Test basic_optimization"""
-    _ = basic_optimization(circ)
+    batch, func = basic_optimization(circ)
+
+    assert isinstance(batch, list)
+    assert isinstance(batch[0], QuantumScript)
+    assert isinstance(func, Callable)
 
 
 @pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
 def test_todd(circ):
     """Test TODD"""
-    _ = todd(circ)
+    batch, func = todd(circ)
+
+    assert isinstance(batch, list)
+    assert isinstance(batch[0], QuantumScript)
+    assert isinstance(func, Callable)
 
 
 @pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
