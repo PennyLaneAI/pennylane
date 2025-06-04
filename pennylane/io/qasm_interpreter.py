@@ -122,12 +122,7 @@ class Context:
         if name in self.wires:
             return name
         if name in self.aliases:
-            res = self.aliases[name](self)  # evaluate the alias and de-reference
-            if isinstance(res, str):
-                return res
-            if res.val is not None:
-                return res
-            raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
+            return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(

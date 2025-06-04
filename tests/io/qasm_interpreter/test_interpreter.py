@@ -199,6 +199,21 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "undeclared-var"})
 
+    def test_ref_uninitialized_alias_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            let alpha = theta;
+            const float phi = alpha;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
     def test_ref_uninitialized_var_in_expr(self):
         # parse the QASM program
         ast = parse(
