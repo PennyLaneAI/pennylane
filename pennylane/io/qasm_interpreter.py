@@ -3,7 +3,6 @@ This submodule contains the interpreter for OpenQASM 3.0.
 """
 
 import functools
-import re
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable
