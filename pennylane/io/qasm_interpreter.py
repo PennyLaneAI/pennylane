@@ -302,10 +302,7 @@ class QasmInterpreter:
             else:
                 var = var.val
         if len(node.index) == 1:
-            if isinstance(node.index[0], RangeDefinition):
-                return var[self.visit(node.index[0], context)]
-            if re.search("Literal", node.index[0].__class__.__name__):
-                return var[node.index[0].value]
+            return var[self.visit(node.index[0], context)]
         raise NotImplementedError(
             f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
         )

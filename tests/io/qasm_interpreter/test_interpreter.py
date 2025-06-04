@@ -103,7 +103,7 @@ class TestVariables:
     def test_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+            open("variables.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -183,30 +183,10 @@ class TestVariables:
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
 
-    def test_invalid_index(self):
-        # parse the QASM
-        ast = parse(
-            """
-            qubit q0;
-            const float[2] arr = {0.0, 1.0};
-            let slice = arr[jalapeno];
-            """,
-            permissive=True,
-        )
-
-        # run the program
-        with pytest.raises(
-            NotImplementedError, match="Array index is not a RangeDefinition or Literal at line 4."
-        ):
-            context = QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "bad-index"}
-            )
-            context.aliases["slice"](context)
-
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+            open("classical.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -222,7 +202,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
