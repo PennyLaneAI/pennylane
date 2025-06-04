@@ -124,7 +124,25 @@ def test_full_optimize_warns_clifford_t():
     )
 
     with pytest.warns(UserWarning, match="Input circuit is not in the"):
-        (new_circ,), _ = full_optimize(circ, clifford_t_args={"epsilon": 0.1})
+        (new_circ,), _ = full_optimize(circ)
+
+    assert not any(isinstance(op, qml.RZ) for op in new_circ.operations)
+    assert any(isinstance(op, (qml.S, qml.T, qml.Hadamard)) for op in new_circ.operations)
+
+
+def test_full_optimize_doesnt_warn_clifford_t():
+    """Test that no warning is raised when attempting to full_optimize a circuit with rotation gates but setting clifford_t_args"""
+    circ = qml.tape.QuantumScript(
+        [
+            qml.CNOT((0, 1)),
+            qml.T(0),
+            qml.RZ(0.5, 0),
+            qml.Hadamard(0),
+        ],
+        [],
+    )
+
+    (new_circ,), _ = full_optimize(circ, clifford_t_args={"epsilon": 0.1})
 
     assert not any(isinstance(op, qml.RZ) for op in new_circ.operations)
     assert any(isinstance(op, (qml.S, qml.T, qml.Hadamard)) for op in new_circ.operations)

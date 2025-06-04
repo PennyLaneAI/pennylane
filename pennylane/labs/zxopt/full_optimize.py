@@ -37,7 +37,7 @@ def full_optimize(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
 
-    Full optimization pipeline applying TODD and ZX-based T gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
+    Full optimization pipeline applying `TODD <https://arxiv.org/abs/1712.01557>`__ and ZX-based T gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     This function applies `zx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ and is basically a combination of :func:`~todd` and :func:`~full_reduce`.
 
@@ -100,7 +100,7 @@ def full_optimize(
     .. details::
         :title: Usage Details
 
-        There is the option to pass circuits that are not in the clifft gate set. Those circuits will be first decomposed using :func:`~clifford_t_decomposition`.
+        There is the option to pass circuits that are not in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set. Those circuits will be first decomposed using :func:`~clifford_t_decomposition`.
         We can pass optional keyword arguments to it via the ``clifford_t_args`` argument in the following way.
 
         .. code-block:: python
@@ -124,11 +124,11 @@ def full_optimize(
         pyzx_circ = zx.full_optimize(pyzx_circ)
 
     except TypeError:
-        warnings.warn(
-            "Input circuit is not in the (Clifford + T) basis, will attempt to decompose using qml.clifford_t_decomposition."
-        )
 
         if clifford_t_args is None:
+            warnings.warn(
+                "Input circuit is not in the (Clifford + T) basis, will attempt to decompose using qml.clifford_t_decomposition."
+            )
             clifford_t_args = {}
 
         (tape,), _ = qml.clifford_t_decomposition(tape, **clifford_t_args)
