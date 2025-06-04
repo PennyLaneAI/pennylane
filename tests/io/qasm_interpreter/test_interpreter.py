@@ -48,7 +48,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestContext:
+class TestVariables:
 
     def test_retrieve_non_existent_attr(self):
         context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
@@ -58,7 +58,7 @@ class TestContext:
             match=r"No attribute potato on Context and no potato key found "
                   r"on context retrieve-non-existent-attr",
         ):
-            potato = context.potato
+            print(context.potato)
 
 
 @pytest.mark.external
@@ -165,7 +165,7 @@ class TestVariables:
     def test_variables(self):
         # parse the QASM
         ast = parse(
-            open("variables.qasm", mode="r").read(), permissive=True
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -247,15 +247,16 @@ class TestVariables:
             """
             qubit q0;
             const float[2] arr = {0.0, 1.0};
-            let slice = arr[jalapeno];
+            const float[2] arr_two = {0.0, 1.0};
+            const [float[2]] index = {arr, arr_two};
+            let slice = arr[index];
             """,
             permissive=True
         )
 
         # run the program
         with pytest.raises(
-            TypeError,
-            match="Array index is not a RangeDefinition or Literal at line 4."
+            NotImplementedError, match="Array index does not evaluate to a single RangeDefinition or Literal at line 6."
         ):
             context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "bad-index"})
             context.aliases["slice"](context)
@@ -263,7 +264,7 @@ class TestVariables:
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
-            open("classical.qasm", mode="r").read(), permissive=True
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -281,7 +282,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 

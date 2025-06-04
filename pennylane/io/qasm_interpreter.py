@@ -281,38 +281,11 @@ def _resolve_name(node: QASMNode):
     return node.name if isinstance(node.name, str) else node.name.name
 
 
-def _index_into_var(var: Iterable | Variable, node: IndexExpression):
-    """
-    Index into a variable using an IndexExpression.
-
-    Args:
-        var (Variable): The data structure representing the variable to index.
-
-    Returns:
-        The indexed slice of the variable.
-    """
-    if not isinstance(var, Iterable):
-        if var.ty == "BitType":
-            var = _get_bit_type_val(var)
-        else:
-            var = var.val
-    if isinstance(node.index[0], RangeDefinition):
-        return var[node.index[0].start.value : node.index[0].end.value]
-    if re.search("Literal", node.index[0].__class__.__name__):
-        return var[node.index[0].value]
-    raise TypeError(
-        f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
-    )
-
-
 class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-class EndProgram(Exception):
-    """Exception raised when it encounters an end statement in the QASM circuit."""
-
-
+# pylint: disable=unused-argument, no-self-use
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -320,9 +293,7 @@ class QasmInterpreter:
     """
 
     @functools.singledispatchmethod
-    def visit(
-        self, node: QASMNode, context: Context, aliasing: bool = False
-    ):  # pylint: disable=unused-argument
+    def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
         """
         Visitor function is called on each node in the AST, which is traversed using recursive descent.
         The purpose of this function is to pass each node to the appropriate handler.
@@ -365,8 +336,49 @@ class QasmInterpreter:
             pass
         return context
 
+    @visit.register(RangeDefinition)
+    def visit_range(self, node: RangeDefinition, context: Context):
+        """
+        Processes a range definition.
+
+        Args:
+            node (RangeDefinition): The range to process.
+            context (Context): the current context.
+
+        Returns:
+            slice: The slice that corresponds to the range.
+        """
+        start = self.visit(node.start, context) if node.start else None
+        stop = self.visit(node.end, context) if node.end else None
+        step = self.visit(node.step, context) if node.step else None
+        return slice(start, stop, step)
+
+    def _index_into_var(self, var: Iterable | Variable, node: IndexExpression, context: Context):
+        """
+        Index into a variable using an IndexExpression.
+
+        Args:
+            var (Variable): The data structure representing the variable to index.
+            node (IndexExpression): The IndexExpression.
+            context (Context): the current context.
+
+        Returns:
+            The indexed slice of the variable.
+        """
+        if not isinstance(var, Iterable):
+            if var.ty == "BitType":
+                var = _get_bit_type_val(var)
+            else:
+                var = var.val
+        index = self.visit(node.index[0], context)
+        if not (isinstance(index, Iterable) and len(index) > 1):
+            return var[index]
+        raise NotImplementedError(
+            f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
+        )
+
     @visit.register(EndStatement)
-    def visit_end_statement(self, node: QASMNode, context: Context):  # pylint: disable=no-self-use
+    def visit_end_statement(self, node: QASMNode, context: Context):
         """
         Ends the program.
         Args:
@@ -380,9 +392,7 @@ class QasmInterpreter:
 
     # needs to have same signature as visit()
     @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(
-        self, node: QubitDeclaration, context: Context
-    ):  # pylint: disable=no-self-use
+    def visit_qubit_declaration(self, node: QubitDeclaration, context: Context):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context.wires. Note: Qubit declarations must be global.
@@ -460,7 +470,7 @@ class QasmInterpreter:
         )
 
     @visit.register(ImaginaryLiteral)
-    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):   # pylint: disable=unused-argument no-self-use
+    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):
         """
         Registers an imaginary literal.
 
@@ -695,13 +705,13 @@ class QasmInterpreter:
         """
 
         if aliasing:  # we are registering an alias
-            return lambda cntxt: _index_into_var(self._alias(node, cntxt), node)
+            return lambda cntxt: self._index_into_var(self._alias(node, cntxt), node, context)
 
         # else we are just evaluating an index
         var = context.retrieve_variable(node.collection.name)
-        return _index_into_var(var, node)
+        return self._index_into_var(var, node, context)
 
-    def _alias(self, node: Identifier | IndexExpression, context: Context):  # pylint: disable=no-self-use
+    def _alias(self, node: Identifier | IndexExpression, context: Context):
         """
         An alias is registered as a callable since we need to be able to
         evaluate it at a later time.
@@ -751,7 +761,7 @@ class QasmInterpreter:
     @visit.register(BooleanLiteral)
     @visit.register(BitstringLiteral)
     @visit.register(DurationLiteral)
-    def visit_literal(self, node: Expression, context: Context):  # pylint: disable=unused-argument no-self-use
+    def visit_literal(self, node: Expression, context: Context):
         """
         Visits a literal.
 
