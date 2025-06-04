@@ -562,6 +562,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Move program capture code closer to where it is used.
+
 * Enforce module dependencies in `pennylane` using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
