@@ -183,6 +183,28 @@ class TestVariables:
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
 
+    def test_invalid_index(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            const float[2] arr = {0.0, 1.0};
+            const float[2] arr_two = {0.0, 1.0};
+            const [float[2]] index = {arr, arr_two};
+            let slice = arr[index];
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError, match="Array index does not evaluate to a single RangeDefinition or Literal at line 6."
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-index"}
+            )
+            context.aliases["slice"](context)
+
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(

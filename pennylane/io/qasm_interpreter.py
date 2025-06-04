@@ -301,10 +301,11 @@ class QasmInterpreter:
                 var = _get_bit_type_val(var)
             else:
                 var = var.val
-        if len(node.index) == 1:
-            return var[self.visit(node.index[0], context)]
+        index = self.visit(node.index[0], context)
+        if not (isinstance(index, Iterable) and len(index) > 1):
+            return var[index]
         raise NotImplementedError(
-            f"Array index is not a RangeDefinition or Literal at line {node.span.start_line}."
+            f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
         )
 
     @visit.register(EndStatement)
