@@ -14,6 +14,7 @@
 """The functions related to the construction of the Christiansen form Hamiltonian."""
 
 import numpy as np
+
 from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole

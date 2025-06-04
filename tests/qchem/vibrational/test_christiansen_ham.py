@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 from pennylane.bose.bosonic import BoseWord
-
 from pennylane.qchem.vibrational.christiansen_ham import (
     christiansen_bosonic,
     christiansen_dipole,
