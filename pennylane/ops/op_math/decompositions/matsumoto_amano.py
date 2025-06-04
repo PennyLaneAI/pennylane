@@ -24,59 +24,34 @@ import pennylane as qml
 @lru_cache
 def _clifford_group_to_SO3():
     """Return a dictionary mapping Clifford group elements to their corresponding SO(3) matrices."""
+    I, X, Y, Z = qml.I(0), qml.X(0), qml.Y(0), qml.Z(0)
+    H, S, Sdg = qml.H(0), qml.S(0), qml.adjoint(qml.S(0))
+
     clifford_elems = {
-        qml.I(0): SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)),
-        qml.H(0): -SU2Matrix(ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=-1), k=1),
-        qml.S(0): SU2Matrix(ZOmega(a=-1), ZOmega(), ZOmega(), ZOmega(c=1)),
-        qml.X(0): SU2Matrix(ZOmega(), ZOmega(b=-1), ZOmega(b=-1), ZOmega()),
-        qml.Y(0): SU2Matrix(ZOmega(), ZOmega(d=-1), ZOmega(d=1), ZOmega()),
-        qml.Z(0): SU2Matrix(ZOmega(b=-1), ZOmega(), ZOmega(), ZOmega(b=1)),
-        qml.adjoint(qml.S(0)): SU2Matrix(ZOmega(c=-1), ZOmega(), ZOmega(), ZOmega(a=1)),
-        qml.H(0) @ qml.S(0): SU2Matrix(ZOmega(c=-1), ZOmega(a=-1), ZOmega(c=-1), ZOmega(a=1), k=1),
-        qml.H(0) @ qml.Z(0): SU2Matrix(ZOmega(d=1), ZOmega(d=-1), ZOmega(d=1), ZOmega(d=1), k=1),
-        qml.H(0)
-        @ qml.adjoint(qml.S(0)): SU2Matrix(
-            ZOmega(a=-1), ZOmega(c=-1), ZOmega(a=-1), ZOmega(c=1), k=1
-        ),
-        qml.S(0) @ qml.H(0): SU2Matrix(ZOmega(c=-1), ZOmega(c=-1), ZOmega(a=-1), ZOmega(a=1), k=1),
-        qml.S(0) @ qml.X(0): SU2Matrix(ZOmega(), ZOmega(c=-1), ZOmega(a=-1), ZOmega()),
-        qml.S(0) @ qml.Y(0): SU2Matrix(ZOmega(), ZOmega(a=1), ZOmega(c=1), ZOmega()),
-        qml.Z(0) @ qml.H(0): SU2Matrix(ZOmega(d=1), ZOmega(d=1), ZOmega(d=-1), ZOmega(d=1), k=1),
-        qml.adjoint(qml.S(0))
-        @ qml.H(0): SU2Matrix(ZOmega(a=-1), ZOmega(a=-1), ZOmega(c=-1), ZOmega(c=1), k=1),
-        qml.S(0)
-        @ qml.H(0)
-        @ qml.S(0): SU2Matrix(ZOmega(d=1), ZOmega(b=1), ZOmega(b=1), ZOmega(d=1), k=1),
-        qml.S(0)
-        @ qml.H(0)
-        @ qml.Z(0): SU2Matrix(ZOmega(a=-1), ZOmega(a=1), ZOmega(c=1), ZOmega(c=1), k=1),
-        qml.S(0)
-        @ qml.H(0)
-        @ qml.adjoint(qml.S(0)): SU2Matrix(
-            ZOmega(b=-1), ZOmega(d=-1), ZOmega(d=1), ZOmega(b=1), k=1
-        ),
-        qml.Z(0)
-        @ qml.H(0)
-        @ qml.S(0): SU2Matrix(ZOmega(a=-1), ZOmega(c=1), ZOmega(a=1), ZOmega(c=1), k=1),
-        qml.Z(0)
-        @ qml.H(0)
-        @ qml.Z(0): SU2Matrix(ZOmega(b=-1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), k=1),
-        qml.Z(0)
-        @ qml.H(0)
-        @ qml.adjoint(qml.S(0)): SU2Matrix(
-            ZOmega(c=-1), ZOmega(a=1), ZOmega(c=1), ZOmega(a=1), k=1
-        ),
-        qml.adjoint(qml.S(0))
-        @ qml.H(0)
-        @ qml.S(0): SU2Matrix(ZOmega(b=-1), ZOmega(d=1), ZOmega(d=-1), ZOmega(b=1), k=1),
-        qml.adjoint(qml.S(0))
-        @ qml.H(0)
-        @ qml.Z(0): SU2Matrix(ZOmega(c=-1), ZOmega(c=1), ZOmega(a=1), ZOmega(a=1), k=1),
-        qml.adjoint(qml.S(0))
-        @ qml.H(0)
-        @ qml.adjoint(qml.S(0)): SU2Matrix(
-            ZOmega(d=1), ZOmega(b=-1), ZOmega(b=-1), ZOmega(d=1), k=1
-        ),
+        I: SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)),
+        H: -SU2Matrix(ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=-1), k=1),
+        S: SU2Matrix(ZOmega(a=-1), ZOmega(), ZOmega(), ZOmega(c=1)),
+        X: SU2Matrix(ZOmega(), ZOmega(b=-1), ZOmega(b=-1), ZOmega()),
+        Y: SU2Matrix(ZOmega(), ZOmega(d=-1), ZOmega(d=1), ZOmega()),
+        Z: SU2Matrix(ZOmega(b=-1), ZOmega(), ZOmega(), ZOmega(b=1)),
+        Sdg: SU2Matrix(ZOmega(c=-1), ZOmega(), ZOmega(), ZOmega(a=1)),
+        H @ S: SU2Matrix(ZOmega(c=-1), ZOmega(a=-1), ZOmega(c=-1), ZOmega(a=1), k=1),
+        H @ Z: SU2Matrix(ZOmega(d=1), ZOmega(d=-1), ZOmega(d=1), ZOmega(d=1), k=1),
+        H @ Sdg: SU2Matrix(ZOmega(a=-1), ZOmega(c=-1), ZOmega(a=-1), ZOmega(c=1), k=1),
+        S @ H: SU2Matrix(ZOmega(c=-1), ZOmega(c=-1), ZOmega(a=-1), ZOmega(a=1), k=1),
+        S @ X: SU2Matrix(ZOmega(), ZOmega(c=-1), ZOmega(a=-1), ZOmega()),
+        S @ Y: SU2Matrix(ZOmega(), ZOmega(a=1), ZOmega(c=1), ZOmega()),
+        Z @ H: SU2Matrix(ZOmega(d=1), ZOmega(d=1), ZOmega(d=-1), ZOmega(d=1), k=1),
+        Sdg @ H: SU2Matrix(ZOmega(a=-1), ZOmega(a=-1), ZOmega(c=-1), ZOmega(c=1), k=1),
+        S @ H @ S: SU2Matrix(ZOmega(d=1), ZOmega(b=1), ZOmega(b=1), ZOmega(d=1), k=1),
+        S @ H @ Z: SU2Matrix(ZOmega(a=-1), ZOmega(a=1), ZOmega(c=1), ZOmega(c=1), k=1),
+        S @ H @ Sdg: SU2Matrix(ZOmega(b=-1), ZOmega(d=-1), ZOmega(d=1), ZOmega(b=1), k=1),
+        Z @ H @ S: SU2Matrix(ZOmega(a=-1), ZOmega(c=1), ZOmega(a=1), ZOmega(c=1), k=1),
+        Z @ H @ Z: SU2Matrix(ZOmega(b=-1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), k=1),
+        Z @ H @ Sdg: SU2Matrix(ZOmega(c=-1), ZOmega(a=1), ZOmega(c=1), ZOmega(a=1), k=1),
+        Sdg @ H @ S: SU2Matrix(ZOmega(b=-1), ZOmega(d=1), ZOmega(d=-1), ZOmega(b=1), k=1),
+        Sdg @ H @ Z: SU2Matrix(ZOmega(c=-1), ZOmega(c=1), ZOmega(a=1), ZOmega(a=1), k=1),
+        Sdg @ H @ Sdg: SU2Matrix(ZOmega(d=1), ZOmega(b=-1), ZOmega(b=-1), ZOmega(d=1), k=1),
     }
     return {gate: SO3Matrix(su2) for gate, su2 in clifford_elems.items()}
 
