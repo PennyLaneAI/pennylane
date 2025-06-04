@@ -21,8 +21,7 @@ from itertools import product
 import pytest
 
 import pennylane as qml
-from pennylane.capture import CaptureError
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import CaptureError, QuantumFunctionError
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 

@@ -162,16 +162,10 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from typing import Callable
+from typing import Callable, Type
 
 from .switches import disable, enable, enabled, pause
 from .capture_meta import CaptureMeta, ABCCaptureMeta
-from .capture_operators import create_operator_primitive
-from .capture_measurements import (
-    create_measurement_obs_primitive,
-    create_measurement_wires_primitive,
-    create_measurement_mcm_primitive,
-)
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
@@ -185,14 +179,16 @@ qnode_prim: "jax.extend.core.Primitive"
 PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
+QmlPrimitive: "Type[jax.extend.core.Primitive]"
 
 
-class CaptureError(Exception):
-    """Errors related to PennyLane's Program Capture execution pipeline."""
-
-
-# pylint: disable=import-outside-toplevel, redefined-outer-name
+# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
+    if key == "QmlPrimitive":
+        from .custom_primitives import QmlPrimitive
+
+        return QmlPrimitive
+
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator
 
@@ -233,10 +229,6 @@ __all__ = (
     "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
-    "create_operator_primitive",
-    "create_measurement_obs_primitive",
-    "create_measurement_wires_primitive",
-    "create_measurement_mcm_primitive",
     "determine_abstracted_axes",
     "expand_plxpr_transforms",
     "register_custom_staging_rule",
