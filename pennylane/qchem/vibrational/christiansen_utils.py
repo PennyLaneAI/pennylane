@@ -1046,9 +1046,9 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
 
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation operators, :math:`M` represents
-    the number of normal modes and :math:`N` is the number of modals. The coefficients :math:`C` represent the one-mode
-    and two-mode integrals defined as
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
 
     .. math::
 
