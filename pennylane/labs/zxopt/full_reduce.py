@@ -17,11 +17,22 @@ import pyzx as zx
 from pyzx.graph.base import BaseGraph
 
 import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
-from .zx_conversion import _tape2pyzx
+from .util import _tape2pyzx
 
 
-def full_reduce(tape):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
 
     ZX-based T gate reduction on an arbitrary PennyLane circuit.
@@ -37,10 +48,10 @@ def full_reduce(tape):
     In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit.
+        tape (QNode or QuantumTape or Callable): Input PennyLane circuit.
 
     Returns:
-        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: T gate optimized PennyLane circuit. See :func:`qml.transform <pennylane.transform>` for the different output formats depending on the input type.
 
     .. seealso:: :func:`~full_optimize`
 
@@ -70,7 +81,7 @@ def full_reduce(tape):
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = full_reduce(circ)
+        (new_circ,), _ = full_reduce(circ)
         print(f"Circuit after full_reduce:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
 
@@ -110,4 +121,4 @@ def full_reduce(tape):
     c_opt2 = c_opt.to_basic_gates()
 
     pl_circ = qml.transforms.from_zx(c_opt2.to_graph())
-    return pl_circ
+    return [pl_circ], null_postprocessing

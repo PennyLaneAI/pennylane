@@ -17,7 +17,7 @@ import pyzx as zx
 
 import pennylane as qml
 from pennylane.labs.zxopt import basic_optimization, full_optimize, full_reduce, todd
-from pennylane.labs.zxopt.zx_conversion import _tape2pyzx
+from pennylane.labs.zxopt.util import _tape2pyzx
 
 # arbitrary circuit
 circ1 = qml.tape.QuantumScript(
@@ -124,7 +124,7 @@ def test_full_optimize_warns_clifford_t():
     )
 
     with pytest.warns(UserWarning, match="Input circuit is not in the"):
-        new_circ = full_optimize(circ, clifford_t_args={"epsilon": 0.1})
+        (new_circ,), _ = full_optimize(circ, clifford_t_args={"epsilon": 0.1})
 
     assert not any(isinstance(op, qml.RZ) for op in new_circ.operations)
     assert any(isinstance(op, (qml.S, qml.T, qml.Hadamard)) for op in new_circ.operations)

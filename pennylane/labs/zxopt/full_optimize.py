@@ -17,11 +17,24 @@ import warnings
 import pyzx as zx
 
 import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
-from .zx_conversion import _tape2pyzx
+from .util import _tape2pyzx
 
 
-def full_optimize(tape, clifford_t_args=None):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def full_optimize(
+    tape: QuantumScript, clifford_t_args: dict = None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
 
     Full optimization pipeline applying TODD and ZX-based T gate reduction to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
@@ -31,11 +44,11 @@ def full_optimize(tape, clifford_t_args=None):
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`. Otherwise, :func:`~clifford_t_decomposition` is used to decompose the circuit to the (Clifford + T) gate set.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
+        tape (QNode or QuantumTape or Callable): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ gate set.
         clifford_t_args (dict): Optional arguments to be passed to :func:`~clifford_t_decomposition` when a circuit with continuous gates is passed.
 
     Returns:
-        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: T gate optimized PennyLane circuit. See :func:`qml.transform <pennylane.transform>` for the different output formats depending on the input type.
 
     .. seealso:: :func:`~full_reduce`, :func:`~todd`
 
@@ -64,7 +77,7 @@ def full_optimize(tape, clifford_t_args=None):
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = full_optimize(circ)
+        (new_circ,), _ = full_optimize(circ)
         print(f"Circuit after full_optimize:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
 
@@ -125,4 +138,4 @@ def full_optimize(tape, clifford_t_args=None):
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
-    return pl_circ
+    return [pl_circ], null_postprocessing

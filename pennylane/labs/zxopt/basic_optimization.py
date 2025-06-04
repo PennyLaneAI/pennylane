@@ -16,20 +16,31 @@
 import pyzx as zx
 
 import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
-from .zx_conversion import _tape2pyzx
+from .util import _tape2pyzx
 
 
-def basic_optimization(tape):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def basic_optimization(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
     Apply `zx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ to a PennyLane `phase polynomial <https://pennylane.ai/compilation/phase-polynomial-intermediate-representation>`__ circuit with :class:`~Hadamard` gates.
     This step can help improve phase polynomial based optimization schemes like :func:`~todd` or :func:`~full_optimize` by moving :class:`~Hadamard` gates in order to create big and few phase polynomial blocks.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit.
+        tape (QNode or QuantumTape or Callable): Input PennyLane circuit.
 
     Returns:
-        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: Improved PennyLane circuit. See :func:`qml.transform <pennylane.transform>` for the different output formats depending on the input type.
 
     .. seealso:: :func:`~full_reduce` (arbitrary circuits), :func:`~full_optimize` (`(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits)
 
@@ -63,7 +74,7 @@ def basic_optimization(tape):
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = basic_optimization(circ)
+        (new_circ,), _ = basic_optimization(circ)
         print(f"Circuit after basic_optimization:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
 
@@ -90,4 +101,4 @@ def basic_optimization(tape):
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
-    return pl_circ
+    return [pl_circ], null_postprocessing

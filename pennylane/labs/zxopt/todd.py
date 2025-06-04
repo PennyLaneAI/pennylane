@@ -16,11 +16,24 @@
 import pyzx as zx
 
 import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
-from .zx_conversion import _tape2pyzx
+from .util import _tape2pyzx
 
 
-def todd(tape, pre_optimize=True):
+def null_postprocessing(results):
+    """A postprocesing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
+@transform
+def todd(
+    tape: QuantumScript, pre_optimize: bool = True
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
 
     Apply Third Order Duplicate and Destroy (TODD) by means of `zx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
@@ -31,11 +44,11 @@ def todd(tape, pre_optimize=True):
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
     Args:
-        tape (qml.tape.QuantumScript): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
+        tape (QNode or QuantumTape or Callable): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
         pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is ``True``.
 
     Returns:
-        qml.tape.QuantumScript: T gate optimized PennyLane circuit.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: Improved PennyLane circuit. See :func:`qml.transform <pennylane.transform>` for the different output formats depending on the input type.
 
     .. seealso:: :func:`~full_reduce`, :func:`~full_optimize`, :func:`~basic_optimization`
 
@@ -92,4 +105,4 @@ def todd(tape, pre_optimize=True):
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
-    return pl_circ
+    return [pl_circ], null_postprocessing
