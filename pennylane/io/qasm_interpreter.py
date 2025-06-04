@@ -3,41 +3,40 @@ This submodule contains the interpreter for OpenQASM 3.0.
 """
 
 import functools
-import re
 from dataclasses import dataclass
-from numpy import uint
 from functools import partial
 from typing import Any, Iterable
 
+from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
+    ArrayType,
     BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
+    BoolType,
     Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
+    ComplexType,
     ConstantDeclaration,
     DurationLiteral,
+    EndStatement,
     Expression,
     ExpressionStatement,
     FloatLiteral,
-    EndStatement,
+    FloatType,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    UnaryExpression,
-    IntType,
-    FloatType,
     UintType,
-    ComplexType,
-    BoolType,
-    ArrayType,
+    UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -151,6 +150,7 @@ class Variable:
         line (int): The line number at which the variable was most recently updated.
         constant (bool): Whether the variable is a constant.
     """
+
     ty: str
     val: Any
     size: int
@@ -279,6 +279,24 @@ def _resolve_name(node: QASMNode):
     """
     # parser will sometimes represent a name as a str and sometimes as an Identifier
     return node.name if isinstance(node.name, str) else node.name.name
+
+
+def preprocess_operands(operand):
+    """
+    Interprets a string operand as an appropriate type.
+
+    Args:
+        operand (str): the string operand to interpret.
+
+    Returns:
+        The interpreted operand as an appropriate type.
+    """
+    if isinstance(operand, str):
+        if operand.isdigit():
+            operand = int(operand)
+        elif operand.isnumeric():
+            operand = float(operand)
+    return operand
 
 
 class EndProgram(Exception):
@@ -549,10 +567,7 @@ class QasmInterpreter:
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
-        wires = [
-            _resolve_name(node.qubits[q])
-            for q in range(len(node.qubits))
-        ]
+        wires = [_resolve_name(node.qubits[q]) for q in range(len(node.qubits))]
 
         context.require_wires(wires)
 
@@ -615,32 +630,35 @@ class QasmInterpreter:
             context (Context): The current context.
 
         Returns:
-            Any: The argument casted to the appropriate type.
+            Any: The argument cast to the appropriate type.
 
         Raises:
             TypeError: If the cast cannot be made.
         """
         arg = self.visit(node.argument, context)
+        ret = arg
         try:
             if isinstance(node.type, IntType):
-                return int(arg)
+                ret = int(arg)
             if isinstance(node.type, UintType):
-                return uint(arg)
+                ret = uint(arg)
             if isinstance(node.type, FloatType):
-                return float(arg)
+                ret = float(arg)
             if isinstance(node.type, ComplexType):
-                return complex(arg)
+                ret = complex(arg)
             if isinstance(node.type, BoolType):
-                return bool(arg)
+                ret = bool(arg)
             if isinstance(node.type, ArrayType):
-                return arg.val
+                ret = arg.val
             # TODO: durations, angles, etc.
         except TypeError as e:
-            raise TypeError(f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}") from e
-        return arg
+            raise TypeError(
+                f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}"
+            ) from e
+        return ret
 
     @visit.register(BinaryExpression)
-    def visit_binary_expression(self, node: BinaryExpression, context: Context):
+    def visit_binary_expression(self, node: BinaryExpression, context: Context):  # pylint: disable=too-many-branches
         """
         Registers a binary expression.
 
@@ -651,13 +669,51 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        lhs = self.visit(node.lhs, context)
-        rhs = self.visit(node.rhs, context)
-        if (
-            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
-        ):  # makes sure we are not executing anything malicious
-            return eval(f"{lhs}{node.op.name}{rhs}")  # pylint: disable=eval-used
-
+        lhs = preprocess_operands(self.visit(node.lhs, context))
+        rhs = preprocess_operands(self.visit(node.rhs, context))
+        ret = None
+        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
+            if node.op.name == EQUALITY_OPERATORS[0]:
+                ret = lhs == rhs
+            if node.op.name == EQUALITY_OPERATORS[1]:
+                ret = lhs != rhs
+            if node.op.name == COMPARISON_OPERATORS[0]:
+                ret = lhs > rhs
+            if node.op.name == COMPARISON_OPERATORS[1]:
+                ret = lhs < rhs
+            if node.op.name == COMPARISON_OPERATORS[2]:
+                ret = lhs >= rhs
+            if node.op.name == COMPARISON_OPERATORS[3]:
+                ret = lhs <= rhs
+            if node.op.name == BIT_SHIFT_OPERATORS[0]:
+                ret = lhs >> rhs
+            if node.op.name == BIT_SHIFT_OPERATORS[1]:
+                ret = lhs << rhs
+            if node.op.name == PLUS:
+                ret = lhs + rhs
+            if node.op.name == DOUBLE_PLUS:
+                ret = lhs + +rhs
+            if node.op.name == MINUS:
+                ret = lhs - rhs
+            if node.op.name == ASTERISK:
+                ret = lhs * rhs
+            if node.op.name == DOUBLE_ASTERISK:
+                ret = lhs**rhs
+            if node.op.name == SLASH:
+                ret = lhs / rhs
+            if node.op.name == PERCENT:
+                ret = lhs % rhs
+            if node.op.name == PIPE:
+                ret = lhs | rhs
+            if node.op.name == DOUBLE_PIPE:
+                ret = lhs or rhs
+            if node.op.name == AMPERSAND:
+                ret = lhs & rhs
+            if node.op.name == DOUBLE_AMPERSAND:
+                ret = lhs and rhs
+            if node.op.name == CARET:
+                ret = lhs ^ rhs
+            return ret
         # we shouldn't ever get thi error if the parser did its job right
         raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in binary expression "
@@ -676,12 +732,16 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        if (
-            node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS
-        ):  # makes sure we are not executing anything malicious
-            return eval(  # pylint: disable=eval-used
-                f"{node.op.name}{self.visit(node.expression, context)}"
-            )
+        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
+            operand = preprocess_operands(self.visit(node.expression, context))
+            if node.op.name == EXCLAMATION_POINT:
+                return not operand
+            if node.op.name == MINUS:
+                return -operand
+            if node.op.name == PLUS:
+                return +operand
+            if node.op.name == TILDE:
+                return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
         raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in unary expression "
@@ -723,8 +783,11 @@ class QasmInterpreter:
             The de-referenced alias.
         """
         try:
-            return context.retrieve_variable(node.collection.name) \
-                if getattr(node, "collection", None) else context.retrieve_variable(node.name)
+            return (
+                context.retrieve_variable(node.collection.name)
+                if getattr(node, "collection", None)
+                else context.retrieve_variable(node.name)
+            )
         except TypeError as e:
             raise TypeError(
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
