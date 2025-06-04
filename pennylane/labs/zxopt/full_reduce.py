@@ -46,6 +46,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     * `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
 
     In particular, this pipeline does not apply :func:`~todd` and thus is not restricted to `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuits.
+    The latter two functions are simply to retrieve the circuit from the ZX graph.
 
     Args:
         tape (QNode or QuantumTape or Callable): Input PennyLane circuit.
