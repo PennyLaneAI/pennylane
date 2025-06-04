@@ -240,9 +240,19 @@ class ZOmega:
             pass
         raise TypeError(f"cannot divide Omega value by {other} of type {type(other).__name__}")
 
+    def __floordiv__(self, other: int) -> ZOmega:
+        if isinstance(other, int):
+            return ZOmega(self.a // other, self.b // other, self.c // other, self.d // other)
+        raise TypeError(f"cannot floor divide Omega ring by {other} of type {type(other).__name__}")
+
     def __mod__(self, other: ZOmega) -> ZOmega:
         # TODO: Implement the logic
         pass
+
+    @property
+    def flatten(self: ZOmega) -> List[int]:
+        """Flatten the matrix to a 1D NumPy array."""
+        return [self.a, self.b, self.c, self.d]
 
     def conj(self: ZOmega) -> ZOmega:
         """The complex conjugate."""
@@ -302,6 +312,7 @@ class SU2Matrix:
         self.c = c
         self.d = d
         self.k = k
+        self.normalize()
 
     def __str__(self: SU2Matrix) -> str:
         return f"[[{self.a}, {self.b}], [{self.c}, {self.d}]]"
@@ -340,16 +351,41 @@ class SU2Matrix:
         if not isinstance(other, SU2Matrix):
             raise TypeError(f"Cannot multiply SU2Matrix with {type(other).__name__}")
 
-        return SU2Matrix(
+        su2_mat = SU2Matrix(
             a=self.a * other.a + self.b * other.c,
             b=self.a * other.b + self.b * other.d,
             c=self.c * other.a + self.d * other.c,
             d=self.c * other.b + self.d * other.d,
             k=self.k + other.k,
         )
+        su2_mat.normalize()
+        return su2_mat
+
+    def normalize(self: SO3Matrix) -> None:
+        """Reduce the k value of the SU(2) matrix."""
+        a, b, c, d = self.flatten
+        # Factoring 2: Derived using (1 - w^4) [a', b', c', d'] => [a, b, c, d]
+        while ((np.array(s.flatten) % 2 == 0).all() for s in self.flatten):
+            self.k -= 2
+            self.a, self.b, self.c, self.d = [s // 2 for s in self.flatten]
+
+        # Factoring sqrt(2): Derived using (w - w^3) [a', b', c', d'] => [a, b, c, d]
+        sqrt2_flag = True
+        while sqrt2_flag and self.k > 0:
+            for s in self.flatten:
+                if (s.a + s.c) % 2 or (s.b + s.d) % 2:
+                    sqrt2_flag = False
+                    break
+            if sqrt2_flag:
+                self.k -= 1
+                elements = self.flatten
+                for i in range(4):
+                    a, b, c, d = elements[i].flatten
+                    elements[i] = ZOmega((b - d) // 2, (c + a) // 2, (b + d) // 2, (c - a) // 2)
+                self.a, self.b, self.c, self.d = elements
 
     @property
-    def toarray(self: SU2Matrix) -> np.ndarray:
+    def ndarray(self: SU2Matrix) -> np.ndarray:
         """Convert the matrix to a NumPy array."""
         return (_SQRT2**-self.k) * np.array(
             [
@@ -513,9 +549,11 @@ class SO3Matrix:
     def normalize(self: SO3Matrix) -> None:
         """Reduce the k value of the SO(3) matrix."""
         elements = self.flatten
+        # Factoring 2: Derived using (a + b . √2) => 2 . (a//2 + b//2 . √2)
         while all(s.a % 2 == 0 and s.b % 2 == 0 for s in elements):
             self.k -= 2
             elements = [s // 2 for s in elements]
+        # Factoring sqrt(2): Derived using (a + b . √2) => √2 (b + a // 2 . √2)
         while all(s.a % 2 == 0 for s in elements) and self.k > 0:
             self.k -= 1
             elements = [ZSqrtTwo(s.b, s.a // 2) for s in elements]
