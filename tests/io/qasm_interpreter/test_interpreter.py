@@ -220,6 +220,21 @@ class TestExpressions:
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
 
+    def test_ref_uninitialized_alias_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            let alpha = theta;
+            const float phi = alpha;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
 
 @pytest.mark.external
 class TestVariables:
@@ -323,6 +338,36 @@ class TestVariables:
         )
 
         assert context.aliases["s"](context) == "q"
+
+    def test_retrieve_uninitialized_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float theta;
+            float phi;
+            phi = theta;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "ref-uninitialized-var"}
+            )
+
+    def test_update_non_existent_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            p = 1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
 
     def test_invalid_index(self):
         # parse the QASM
