@@ -16,7 +16,7 @@ written using xDSL."""
 
 import warnings
 from dataclasses import dataclass
-from typing import Dict, Iterable, Type, Union
+from typing import Dict, Iterable, Type, Union, Optional
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
@@ -67,32 +67,33 @@ def resolve_gate(name: str) -> Operator:
 
 
 def qml_to_xdsl_param(param: Union[int, float]) -> Union[IntegerAttr, FloatAttr]:
-    """Convert a PennyLane parameter to an xDSL SSAValue."""
+    """Convert a PennyLane parameter (int or float) into an xDSL constant-attr."""
     val = param.item() if hasattr(param, "item") else param
     if isinstance(val, int):
-        attr = IntegerAttr(val, IntegerType(64))
-    elif isinstance(val, float):
-        attr = FloatAttr(val, Float64Type())
-    else:
-        raise TypeError(f"Unsupported parameter type: {type(val)}")
-    return attr
+        return IntegerAttr(val, IntegerType(64))
+    if isinstance(val, float):
+        return FloatAttr(val, Float64Type())
+    raise TypeError(f"Unsupported parameter type: {type(val)}")
 
 
 # pylint: disable=too-many-instance-attributes
 class DecompositionTransform(pattern_rewriter.RewritePattern):
-    """A pattern that rewrites CustomOps to their decomposition."""
+    """A rewrite pattern that replaces every ``quantum.custom``
+    operation (i.e. CustomOp) with its PennyLane decomposition."""
 
-    def __init__(self, module):
+    # Several TODO for this pass:
+    # TODO: list all the TODO here
+
+    def __init__(self, module: builtin.ModuleOp):
         super().__init__()
-        self.module = module
+        self.module: builtin.ModuleOp = module
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
         self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
         self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
         self.quantum_register: Union[SSAValue, None] = None
 
         # TODO: These should be configurable (e.g., parameters of the pass)
-        self.max_expansion = None
-        self._current_depth = 0
+        self.max_expansion: Optional[int] = None
         self.gate_set: set[Type[Operator] | str] = {"CNOT", "RX", "RY", "RZ"}
 
     def gate_set_contains(self, op: Operator) -> bool:
@@ -101,7 +102,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
     def stopping_condition(self, op: Operator) -> bool:
         """Function to determine whether an operator needs to be decomposed or not."""
-
         if not op.has_decomposition:
             if not self.gate_set_contains(op):
                 warnings.warn(
@@ -111,44 +111,43 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     UserWarning,
                 )
             return True
-
         return self.gate_set_contains(op)
 
     def decompose_operation(self, op: Operator):
         """Decompose the operation if it is not in the gate set."""
 
+        # TODO: add support for max_expansion and graph-based decomposition
+        # when the time comes.
+
         if self.gate_set_contains(op):
             return [op]
-
-        max_expansion = (
-            self.max_expansion - self._current_depth if self.max_expansion is not None else None
-        )
-
         decomposition = list(
             _operator_decomposition_gen(
                 op,
                 self.stopping_condition,
-                max_expansion=max_expansion,
-                current_depth=self._current_depth,
+                max_expansion=None,
+                current_depth=0,
                 decomp_graph=None,
             )
         )
-
         return decomposition
 
     def resolve_constant_params(self, param: SSAValue) -> Union[float, int]:
         """Resolve the constant parameter from the SSA value."""
         op = param.owner
-        if isinstance(op, ConstantOp):
-            val = op.value
-            if isinstance(val, (FloatAttr, IntegerAttr)):
-                if val not in self.params_to_ssa_params:
-                    self.params_to_ssa_params[val] = op.result
-                return val.value.data
-        raise NotImplementedError(f"Cannot resolve parameters for operation {op}")
+        if not isinstance(op, ConstantOp):
+            raise NotImplementedError(f"Expected ConstantOp but got {type(op)}")
+        val = op.value
+        if not isinstance(val, (FloatAttr, IntegerAttr)):
+            raise NotImplementedError(f"Constant has unexpected attr type: {type(val)}")
+        if val not in self.params_to_ssa_params:
+            self.params_to_ssa_params[val] = param
+        return val.value.data
 
     def ssa_to_qml_params(self, op: CustomOp) -> list[float | int]:
         """Get the parameters from the operation."""
+        if not hasattr(op, "params"):
+            return []
         return [self.resolve_constant_params(p) for p in op.params if p is not None]
 
     def ssa_to_qml_wires(self, op: CustomOp) -> list[int]:
@@ -156,13 +155,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         if not hasattr(op, "in_qubits"):
             return []
         return [self.resolve_constant_wire(q) for q in op.in_qubits if q is not None]
-
-    def xdsl_to_qml_op(self, op: CustomOp) -> Operator:
-        """Convert an xDSL CustomOp to a PennyLane operation."""
-        gate_name = op.properties["gate_name"].data
-        parameters = self.ssa_to_qml_params(op)
-        wires = flatten(self.ssa_to_qml_wires(op))
-        return resolve_gate(gate_name)(*parameters, wires=wires)
 
     def resolve_constant_wire(self, in_qubit: SSAValue) -> int:
         """Resolve the wire for the given SSA qubit."""
@@ -178,32 +170,41 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             wire_position = in_qubit.index
             ssa_qubit = op.out_qubits[wire_position]
             return self.ssa_qubits_to_wires[ssa_qubit]
-
         # TODO: Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
         raise NotImplementedError(f"Cannot resolve wire for operation {op}")
+
+    def xdsl_to_qml_op(self, op: CustomOp) -> Operator:
+        """Given a ``quantum.custom`` xDSL op, convert it to a PennyLane operator."""
+        gate_name = op.properties["gate_name"].data
+        parameters = self.ssa_to_qml_params(op)
+        wires = flatten(self.ssa_to_qml_wires(op))
+        return resolve_gate(gate_name)(*parameters, wires=wires)
+
+    def initialize_qubit_mapping(self, funcOp: func.FuncOp):
+        """Scan the function to populate the quantum register and wire mappings."""
+        saw_alloc = False
+        for op in funcOp.body.walk():
+            if isinstance(op, AllocOp):
+                if saw_alloc:
+                    raise ValueError("Found more than one AllocOp for this FuncOp.")
+                saw_alloc = True
+                self.quantum_register = op.qreg
+            elif isinstance(op, ExtractOp):
+                wire = op.idx_attr.parameters[0].data
+                if wire not in self.wire_to_ssa_qubits:
+                    self.wire_to_ssa_qubits[wire] = op.qubit
+                    # We update the reverse mapping as well for completeness,
+                    # but this should not be used in practice for decompositions.
+                    self.ssa_qubits_to_wires[op.qubit] = wire
 
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Rewrite the function by replacing CustomOps with their decomposition."""
 
+        self.initialize_qubit_mapping(funcOp)
+
         for xdsl_op in funcOp.body.walk():
-
-            # This assumes that the AllocOp is placed at the top of the program
-            # TODO: I feel this should be moved out of the loop, but I am not sure how to do it yet.
-            if isinstance(xdsl_op, AllocOp):
-                self.quantum_register = xdsl_op.qreg
-                continue
-
-            # Pre-populate the extracted qubits
-            # TODO: I feel this should be moved out of the loop, but I am not sure how to do it yet.
-            if isinstance(xdsl_op, ExtractOp):
-                wire = xdsl_op.idx_attr.parameters[0].data
-                if wire in self.wire_to_ssa_qubits:
-                    continue
-                ssa_qubit = xdsl_op.qubit
-                self.wire_to_ssa_qubits[wire] = ssa_qubit
-                continue
 
             # TODO: Add decomposition for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
             if not isinstance(xdsl_op, CustomOp):
@@ -212,7 +213,11 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             if self.quantum_register is None:
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
 
+            if len(self.wire_to_ssa_qubits) == 0:
+                raise NotImplementedError("No wires extracted from the register have been found. ")
+
             qml_op = self.xdsl_to_qml_op(xdsl_op)
+
             qml_decomp_ops = self.decompose_operation(qml_op)
 
             for qml_decomp_op in qml_decomp_ops:
