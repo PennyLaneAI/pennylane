@@ -20,7 +20,7 @@ from functools import lru_cache
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
 
 class TemporaryAnd(Operation):
@@ -33,7 +33,9 @@ class TemporaryAnd(Operation):
 
     .. note::
 
-        For correct usage of the operator, the user must ensure that the input or output is :math:`|0\rangle`
+        For correct usage of the operator, the user must ensure
+        that the input before computation is :math:`|0\rangle`,
+        and that the output after uncomputation is :math:`|0\rangle`.
         on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
         different from the expected ``AND``.
 
@@ -45,6 +47,9 @@ class TemporaryAnd(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
             third one is the target wire.
+        control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
+            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+
 
     **Example**
 
@@ -77,18 +82,23 @@ class TemporaryAnd(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    resource_keys = set(["control_values"])
+
+    def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
+        wires = Wires(wires)
+        self.hyperparameters["control_values"] = tuple(control_values)
+        super().__init__(wires=wires, id=id)
 
     @property
     def resource_params(self) -> dict:
-        return {}
+        return {"control_values": self.hyperparameters["control_values"]}
 
     def _flatten(self):
-        return tuple(), (self.wires)
+        return tuple(), (self.wires, self.hyperparameters["control_values"])
 
     @classmethod
     def _unflatten(cls, _, metadata):
-        return cls(wires=metadata)
+        return cls(wires=metadata[0], control_values=metadata[1])
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -96,7 +106,7 @@ class TemporaryAnd(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix(**kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -118,7 +128,14 @@ class TemporaryAnd(Operation):
          [ 0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  1.+0.j  0.+0.j]]
         """
 
-        return qml.math.array(
+        control_values = kwargs["control_values"]
+        first_qubit = [qml.X(0), qml.I(0)]
+        second_qubit = [qml.X(1), qml.I(1)]
+
+        X_matrix = qml.matrix(
+            first_qubit[control_values[0]] @ second_qubit[control_values[1]] @ qml.I(2)
+        )
+        basis_matrix = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -131,8 +148,10 @@ class TemporaryAnd(Operation):
             ]
         )
 
+        return X_matrix @ basis_matrix @ X_matrix
+
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires: WiresLike, control_values):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -143,6 +162,8 @@ class TemporaryAnd(Operation):
         Args:
             wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
                 third one is the target wire.
+            control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
+                should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -162,7 +183,15 @@ class TemporaryAnd(Operation):
         Adjoint(S(2))]
         """
 
-        return [
+        list_decomp = []
+
+        if control_values[0] == 0:
+            list_decomp.append(qml.X(wires[0]))
+
+        if control_values[1] == 0:
+            list_decomp.append(qml.X(wires[1]))
+
+        list_decomp += [
             qml.Hadamard(wires=wires[2]),
             qml.T(wires=wires[2]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -175,9 +204,19 @@ class TemporaryAnd(Operation):
             qml.adjoint(qml.S(wires=wires[2])),
         ]
 
+        if control_values[0] == 0:
+            list_decomp.append(qml.X(wires[0]))
 
-def _temporary_and_resources():
+        if control_values[1] == 0:
+            list_decomp.append(qml.X(wires[1]))
+
+        return list_decomp
+
+
+def _temporary_and_resources(control_values):
+    number_xs = 4 - 2 * sum(control_values)
     return {
+        qml.X: number_xs,
         qml.Hadamard: 2,
         qml.CNOT: 3,
         qml.T: 2,
@@ -187,7 +226,13 @@ def _temporary_and_resources():
 
 
 @register_resources(_temporary_and_resources)
-def _temporary_and(wires: WiresLike):
+def _temporary_and(wires: WiresLike, control_values):
+    if control_values[0] == 0:
+        qml.X(wires[0])
+
+    if control_values[1] == 0:
+        qml.X(wires[1])
+
     qml.Hadamard(wires=wires[2])
     qml.T(wires=wires[2])
     qml.CNOT(wires=[wires[1], wires[2]])
@@ -198,6 +243,12 @@ def _temporary_and(wires: WiresLike):
     qml.adjoint(qml.T(wires=wires[2]))
     qml.Hadamard(wires=wires[2])
     qml.adjoint(qml.S(wires=wires[2]))
+
+    if control_values[0] == 0:
+        qml.X(wires[0])
+
+    if control_values[1] == 0:
+        qml.X(wires[1])
 
 
 add_decomps(TemporaryAnd, _temporary_and)

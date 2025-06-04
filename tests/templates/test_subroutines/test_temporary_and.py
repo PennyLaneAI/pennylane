@@ -28,7 +28,7 @@ class TestTemporaryAnd:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.TemporaryAnd(wires=[0, "a", 2])
+        op = qml.TemporaryAnd(wires=[0, "a", 2], control_values=(0, 0))
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
@@ -42,10 +42,10 @@ class TestTemporaryAnd:
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
-                qml.TemporaryAnd([0, 1, 2]),
+                qml.TemporaryAnd([0, 1, 2], control_values=[0, 1]),
                 qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
-                qml.adjoint(qml.TemporaryAnd([0, 1, 2])),
+                qml.adjoint(qml.TemporaryAnd([0, 1, 2], control_values=[0, 1])),
             ],
             [qml.state()],
         )
@@ -54,10 +54,14 @@ class TestTemporaryAnd:
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
+                qml.X(0),
                 qml.Toffoli([0, 1, 2]),
+                qml.X(0),
                 qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
+                qml.X(0),
                 qml.Toffoli([0, 1, 2]),
+                qml.X(0),
             ],
             [qml.state()],
         )
@@ -90,11 +94,11 @@ class TestTemporaryAnd:
         """Tests that TemporaryAnd is decomposed properly."""
 
         for rule in qml.list_decomps(qml.TemporaryAnd):
-            _test_decomposition_rule(qml.TemporaryAnd([0, 1, 2]), rule)
+            _test_decomposition_rule(qml.TemporaryAnd([0, 1, 2], control_values=(0, 0)), rule)
 
     def test_compute_matrix(self):
 
-        matrix = qml.TemporaryAnd([0, 1, "v"]).compute_matrix()
+        matrix = qml.TemporaryAnd([0, 1, "v"]).compute_matrix(control_values=(1, 1))
         matrix_target = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -121,7 +125,7 @@ class TestTemporaryAnd:
         def circuit():
             qml.Hadamard(0)
             qml.Hadamard(1)
-            qml.TemporaryAnd(wires=[0, 1, 2])
+            qml.TemporaryAnd(wires=[0, 1, 2], control_values=[0, 1])
             qml.CNOT(wires=[2, 3])
             qml.RY(1.2, 3)
             qml.adjoint(qml.TemporaryAnd([0, 1, 2]))

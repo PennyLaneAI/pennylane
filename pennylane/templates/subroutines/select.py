@@ -29,15 +29,22 @@ from pennylane.wires import Wires
 
 
 class Select(Operation):
-    r"""Applies specific input operations depending on the state of
-    the designated control qubits.
+    r"""Applies different operations depending on the state of
+    designated control qubits.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
 
     .. figure:: ../../../doc/_static/templates/subroutines/select.png
                     :align: center
-                    :width: 60%
+                    :width: 70%
                     :target: javascript:void(0);
+
+    This operator is also known as **multiplexer**, or multiplexed operation.
+    If the applied operations :math:`\{U_i\}` are all single-qubit Pauli rotations about the
+    same axis, with the angle determined by the control qubits, this is also called a
+    **uniformly controlled rotation** gate.
+
+    .. seealso:: :class:`~.SelectPauliRot`
 
     Args:
         ops (list[Operator]): operations to apply
@@ -45,10 +52,11 @@ class Select(Operation):
         id (str or None): String representing the operation (optional)
 
     .. note::
-        The position of the operation in the list determines which qubit state implements that operation.
-        For example, when the qubit register is in the state :math:`|00\rangle`, we will apply ``ops[0]``.
-        When the qubit register is in the state :math:`|10\rangle`, we will apply ``ops[2]``. To obtain the
-        binary bitstring representing the state for list position ``index`` we can use the following relationship:
+        The position of the operation in the list determines which qubit state implements that
+        operation. For example, when the qubit register is in the state :math:`|00\rangle`,
+        we will apply ``ops[0]``. When the qubit register is in the state :math:`|10\rangle`,
+        we will apply ``ops[2]``. To obtain the list position ``index`` for a given binary
+        bitstring representing the control state we can use the following relationship:
         ``index = int(state_string, 2)``. For example, ``2 = int('10', 2)``.
 
     **Example**
@@ -303,9 +311,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
 
     # Open elbow (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
     first_half = (
-        [X(and_wires[0]), X(and_wires[1])]
-        + [TemporaryAnd(and_wires)]
-        + [X(and_wires[0]), X(and_wires[1])]
+        [TemporaryAnd(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
         + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
@@ -318,7 +324,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         new_controls_sec_half = controls
         new_work_wires_sec_half = work_wires
         # Closing elbow for first half
-        middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])]
+        middle_part = [adjoint(TemporaryAnd)(and_wires, control_values=(0, 1))]
     else:
         c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
@@ -328,10 +334,9 @@ def _add_first_k_units(ops, controls, work_wires, k):
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
         else:
             # Closing elbow for first half, opening elbow for second half
-            middle_part = [X(and_wires[0]), adjoint(TemporaryAnd)(and_wires), X(and_wires[0])] + [
-                X(and_wires_sec_half[1]),
-                TemporaryAnd(and_wires_sec_half),
-                X(and_wires_sec_half[1]),
+            middle_part = [
+                adjoint(TemporaryAnd)(and_wires, control_values=(0, 1)),
+                TemporaryAnd(and_wires_sec_half, control_values=(1, 0)),
             ]
     second_half = _add_k_units(
         ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
