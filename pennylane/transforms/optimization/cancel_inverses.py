@@ -50,12 +50,7 @@ def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
 
 def _op_has_abstract(op: Operator) -> bool:
     """Checks if an operator has abstract wires or parameters."""
-    return any(
-        [
-            _contains_abstract(op.wires),
-            hasattr(op, "parameters") and _contains_abstract(op.parameters),
-        ]
-    )
+    return _contains_abstract(op.wires) or _contains_abstract((getattr(op, "data", ())))
 
 
 def _check_abstractness(op1: Operator, op2: Operator) -> bool:
