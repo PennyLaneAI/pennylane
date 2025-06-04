@@ -15,6 +15,7 @@
 
 from functools import lru_cache, partial
 
+from pennylane.math import is_abstract
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -120,7 +121,17 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
                 return super().interpret_operation(op)
 
             prev_op = self.previous_ops.get(op.wires[0], None)
-            if prev_op is None:
+            dyn_wires = {w for w in op.wires if is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if prev_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't cancel. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to cancel, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (prev_op is None or other_saved_wires):
+                    self.interpret_all_previous_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return []

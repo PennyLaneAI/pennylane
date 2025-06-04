@@ -339,6 +339,7 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
+                    "work_wire_type": "clean",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
@@ -354,6 +355,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+                "work_wire_type": "clean",
             },
         )
 
