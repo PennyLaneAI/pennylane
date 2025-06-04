@@ -278,6 +278,37 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 def christiansen_dipole(pes, n_states=16):
     """Return Christiansen dipole operator.
 
+    The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
+    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
+    operator is defined as
+
+    .. math::
+
+        \mu = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+
+    The bosonic creation and annihilation operators are then mapped to the Pauli operators as
+
+    .. math::
+
+        b^\dagger_0 = \left(\frac{X_0 - iY_0}{2}\right), \:\: \text{...,} \:\:
+        b^\dagger_n = \left(\frac{X_n - iY_n}{2}\right),
+
+    and
+
+    .. math::
+
+        b_0 = \left(\frac{X_0 + iY_0}{2}\right), \:\: \text{...,} \:\:
+        b_n = \left(\frac{X_n + iY_n}{2}\right),
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
@@ -287,6 +318,22 @@ def christiansen_dipole(pes, n_states=16):
             - Operator: the Christiansen dipole operator in the qubit basis for x-displacements
             - Operator: the Christiansen dipole operator in the qubit basis for y-displacements
             - Operator: the Christiansen dipole operator in the qubit basis for z-displacements
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol, dipole_level=3, cubic=True)
+    >>> dipole = qml.qchem.vibrational.christiansen_dipole(pes,n_states=4)
+    >>> dipole[0]
+    (
+        (5.761507851990097e-16+0j) * I(0)
+      + (-1.199304972379678e-16+0j) * Z(0)
+      + (-1.8781128884815498e-16+0j) * Z(1)
+      + (-1.2206813605366886e-16+0j) * Z(2)
+      + (-1.4634086305921812e-16+0j) * Z(3)
+    )
     """
 
     d_arr = christiansen_integrals_dipole(pes, n_states=n_states)
