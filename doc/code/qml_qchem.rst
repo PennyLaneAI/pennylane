@@ -24,7 +24,7 @@ number observables. It also includes functionalities to convert to and from Open
 .. automodapi:: pennylane.qchem
     :no-heading:
     :include-all-objects:
-    :skip: taper, symmetry_generators, paulix_ops, import_operator
+    :skip: taper, symmetry_generators, paulix_ops, import_operator, givens_decomposition
 
 Differentiable Hartree-Fock
 ---------------------------
