@@ -118,7 +118,6 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
     + BIT_SHIFT_OPERATORS
     + [
         PLUS,
-        DOUBLE_PLUS,
         MINUS,
         ASTERISK,
         DOUBLE_ASTERISK,
@@ -135,7 +134,7 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
     ]
 )
 
-ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS] + COMPOUND_ASSIGNMENT_OPERATORS
+ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS, DOUBLE_PLUS] + COMPOUND_ASSIGNMENT_OPERATORS
 
 
 @dataclass
@@ -224,28 +223,30 @@ class Context:
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[0]:
                     self.vars[name].val = value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[1]:
-                    self.vars[name].val += value
+                    self.vars[name].val = self.vars[name].val + 1
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[2]:
-                    self.vars[name].val -= value
+                    self.vars[name].val += value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[3]:
-                    self.vars[name].val = self.vars[name].val * value
+                    self.vars[name].val -= value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[4]:
-                    self.vars[name].val = self.vars[name].val / value
+                    self.vars[name].val = self.vars[name].val * value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[5]:
-                    self.vars[name].val = self.vars[name].val & value
+                    self.vars[name].val = self.vars[name].val / value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[6]:
-                    self.vars[name].val = self.vars[name].val | value
+                    self.vars[name].val = self.vars[name].val & value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
-                    self.vars[name].val = ~value
+                    self.vars[name].val = self.vars[name].val | value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
-                    self.vars[name].val = self.vars[name].val ^ value
+                    self.vars[name].val = ~value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
-                    self.vars[name].val = self.vars[name].val << value
+                    self.vars[name].val = self.vars[name].val ^ value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
-                    self.vars[name].val = self.vars[name].val >> value
+                    self.vars[name].val = self.vars[name].val << value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
-                    self.vars[name].val = self.vars[name].val % value
+                    self.vars[name].val = self.vars[name].val >> value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                    self.vars[name].val = self.vars[name].val % value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[13]:
                     self.vars[name].val = self.vars[name].val ** value
                 self.vars[name].line = node.span.start_line
             else:
@@ -724,8 +725,6 @@ class QasmInterpreter:
                 ret = lhs << rhs
             if node.op.name == PLUS:
                 ret = lhs + rhs
-            if node.op.name == DOUBLE_PLUS:
-                ret = lhs + +rhs
             if node.op.name == MINUS:
                 ret = lhs - rhs
             if node.op.name == ASTERISK:

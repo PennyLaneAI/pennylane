@@ -53,6 +53,45 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestExpressions:
+
+    def test_different_binary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("binary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "binary-exprs"}
+        )
+
+        # comparison expressions
+        assert context.vars["a"].val == (0 == 1)
+        assert context.vars["b"].val == (0 != 1)
+        assert context.vars["c"].val == (0 > 1)
+        assert context.vars["d"].val == (0 < 1)
+        assert context.vars["e"].val == (0 >= 1)
+        assert context.vars["f"].val == (0 <= 1)
+
+        # bitwise operations
+        assert context.vars["g"].val == 2 >> 1
+        assert context.vars["h"].val == 2 << 1
+        assert context.vars["i"].val == 2 | 1
+        assert context.vars["j"].val == 2 ^ 1
+        assert context.vars["k"].val == 2 & 1
+
+        # arithmetic operators
+        assert context.vars["m"].val == 3 + 2;
+        assert context.vars["o"].val == 3 - 2;
+        assert context.vars["p"].val == 3 * 2;
+        assert context.vars["q"].val == 3 ** 2;
+        assert context.vars["n"].val == 3 / 2;
+        assert context.vars["s"].val == 3 % 2;
+
+        # boolean operators
+        assert context.vars["t"].val == (True or False);
+        assert context.vars["u"].val == (True and False);
+
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
