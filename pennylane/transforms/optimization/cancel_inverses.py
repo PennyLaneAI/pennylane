@@ -18,7 +18,6 @@ from functools import lru_cache, partial
 from typing import Union
 
 from pennylane.math import is_abstract
-from pennylane.math import is_abstract
 from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
