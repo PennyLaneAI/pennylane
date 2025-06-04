@@ -1036,17 +1036,63 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order, path):
 def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend="serial"):
     r"""Compute Christiansen vibrational Hamiltonian integrals.
 
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
+
+    .. math::
+
+        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation operators, :math:`M` represents
+    the number of normal modes and :math:`N` is the number of modals. The coefficients :math:`C` represent the one-mode
+    and two-mode integrals defined as
+
+    .. math::
+
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) + V_1^{[i]}(Q_i) \right)
+        \phi_i^{h_i}(Q_i),
+
+    and
+
+    .. math::
+
+    C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+    V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
+    represents  the kinetick energy operator and :math:`V` represents the potential energy operator
+    obtained from the expansion
+
+    .. math::
+
+    V({Q}) = \sum_i V_1(Q_i) + \sum_{ij} V_2(Q_i,Q_j) + ....
+
+    Similarly, the three-mode integrals can be obtained
+    following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
-        num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
-        backend (string): the executor backend from the list of supported backends.
-            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
-
 
     Returns:
         TensorLike[float]: the integrals for the Christiansen Hamiltonian
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> integrals = qml.qchem.vibrational.christiansen_integrals(pes,n_states=4)
+    >>> print(integrals[0])
+    [[[0.0103548  0.0019394  0.00046436 0.0016381 ]
+      [0.0019394  0.03139978 0.00558    0.00137586]
+      [0.00046436 0.00558    0.05314478 0.01047909]
+      [0.0016381  0.00137586 0.01047909 0.07565063]]]
     """
     with TemporaryDirectory() as path:
         ham_cform_onebody = _cform_onemode(
