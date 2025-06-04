@@ -40,7 +40,7 @@ class ResourceOperator(ABC):
         **Example**
 
         This example shows how to create a custom :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
-        class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for 
+        class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
         simplicity.
 
         .. code-block:: python
@@ -49,7 +49,7 @@ class ResourceOperator(ABC):
 
             class ResourceQFT(plre.ResourceOperator):
 
-                resource_keys = {"num_wires"}  # the only parameter that its resources depend upon.     
+                resource_keys = {"num_wires"}  # the only parameter that its resources depend upon.
 
                 def __init__(self, num_wires, wires=None):  # wire labels are optional
                     self.num_wires = num_wires
@@ -62,7 +62,7 @@ class ResourceOperator(ABC):
                 @classmethod
                 def resource_rep(cls, num_wires):             # Takes the `resource_keys` as input
                     params = {"num_wires": num_wires}         #   and produces a compressed
-                    return plre.CompressedResourceOp(cls, params)  # representation of the operator 
+                    return plre.CompressedResourceOp(cls, params)  # representation of the operator
 
                 @classmethod
                 def default_resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
@@ -135,8 +135,8 @@ class ResourceOperator(ABC):
     @property
     @abstractmethod
     def resource_params(self) -> dict:
-        """A dictionary containing the minimal information needed to compute a resource estimate 
-        of the operator's decomposition. The keys of this dictionary should match the 
+        """A dictionary containing the minimal information needed to compute a resource estimate
+        of the operator's decomposition. The keys of this dictionary should match the
         ``resource_keys`` attribute of the operator class.
         """
 
@@ -223,9 +223,9 @@ class ResourceOperator(ABC):
     @classmethod
     def set_resources(cls, new_func: Callable, override_type: str = "base"):
         """Set a custom function to override the default resource decomposition.
-        
+
         This method allows users to replace any of the `resource_decomp`, `adjoint_resource_decomp`,
-        `ctrl_resource_decomp`, or `pow_resource_decomp` methods globally for every instance of 
+        `ctrl_resource_decomp`, or `pow_resource_decomp` methods globally for every instance of
         the class.
 
         """
@@ -329,13 +329,13 @@ class ResourcesNotDefined(Exception):
 
 
 def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
-    """Set a custom function to override the default resource decomposition. This 
+    """Set a custom function to override the default resource decomposition. This
     function will be set globally for every instance of the class.
-   
+
     Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the 
-    base resource operator class being overriden. 
-        
+    it replaces. Specificall, the signature should match the `resource_keys` of the
+    base resource operator class being overriden.
+
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
@@ -378,13 +378,13 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 
 def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
-    """Set a custom function to override the default controlled-resource decomposition. This 
+    """Set a custom function to override the default controlled-resource decomposition. This
     function will be set globally for every instance of the class.
-   
+
     Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the 
-    base resource operator class being overriden. 
-        
+    it replaces. Specificall, the signature should match the `resource_keys` of the
+    base resource operator class being overriden.
+
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
@@ -428,13 +428,13 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 
 def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
-    """Set a custom function to override the default adjoint-resource decomposition. This 
+    """Set a custom function to override the default adjoint-resource decomposition. This
     function will be set globally for every instance of the class.
-   
+
     Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the 
-    base resource operator class being overriden. 
-        
+    it replaces. Specificall, the signature should match the `resource_keys` of the
+    base resource operator class being overriden.
+
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
@@ -478,13 +478,13 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 
 def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
-    """Set a custom function to override the default pow-resource decomposition. This 
+    """Set a custom function to override the default pow-resource decomposition. This
     function will be set globally for every instance of the class.
-   
+
     Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the 
-    base resource operator class being overriden. 
-        
+    it replaces. Specificall, the signature should match the `resource_keys` of the
+    base resource operator class being overriden.
+
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
@@ -497,7 +497,7 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
             h = plre.resource_rep(plre.ResourceHadamard)
             s = plre.resource_rep(plre.ResourceS)
             id = plre.resource_rep(plre.ResourceIdentity)
-            
+
             if pow_z % 2 == 0:
                 return [plre.GateCount(id, 1)]
 
