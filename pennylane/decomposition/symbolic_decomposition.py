@@ -226,26 +226,18 @@ def make_controlled_decomp(base_decomposition):
     return _impl
 
 
-def flip_zero_control(inner_decomp):
+def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     def _condition_fn(**resource_params):
-        return inner_decomp.is_applicable(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
-        inner_resource = inner_decomp.compute_resources(
-            base_class=resource_params["base_class"],
-            base_params=resource_params["base_params"],
-            num_control_wires=resource_params["num_control_wires"],
-            num_zero_control_values=0,  # we will flip them.
-            num_work_wires=resource_params["num_work_wires"],
-        )
+        new_params = resource_params.copy()
+        new_params["num_zero_control_values"] = 0
+        inner_resource = inner_decomp.compute_resources(**new_params)
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
@@ -299,3 +291,66 @@ def flip_control_adjoint(*_, wires, control_wires, control_values, work_wires, b
             work_wires=work_wires,
         )
     )
+
+
+def _controlled_decomp_with_work_wire_condition(num_control_wires, num_work_wires, **__):
+    return num_work_wires > 1 and num_control_wires > 1
+
+
+def _controlled_decomp_with_work_wire_resource(
+    base_class, base_params, num_control_wires, num_work_wires, **__
+):
+    return {
+        controlled_resource_rep(qml.X, {}, num_control_wires, num_work_wires=num_work_wires - 1): 2,
+        controlled_resource_rep(base_class, base_params, 1, 0): 1,
+    }
+
+
+# pylint: disable=protected-access,unused-argument
+@register_condition(_controlled_decomp_with_work_wire_condition)
+@register_resources(_controlled_decomp_with_work_wire_resource)
+def _controlled_decomp_with_work_wire(
+    *params, wires, control_wires, control_values, work_wires, base, **__
+):
+    """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
+    base_op = base._unflatten(*base._flatten())
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+    qml.ctrl(base_op, control=work_wires[0])
+    qml.ctrl(
+        qml.X(work_wires[0]),
+        control=wires[: len(control_wires)],
+        control_values=control_values,
+        work_wires=work_wires[1:],
+    )
+
+
+controlled_decomp_with_work_wire = flip_zero_control(_controlled_decomp_with_work_wire)
+
+
+def _to_controlled_qu_condition(base_class, **__):
+    return base_class.has_matrix and base_class.num_wires == 1
+
+
+def _to_controlled_qu_resource(num_control_wires, num_zero_control_values, num_work_wires, **__):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary,
+            num_target_wires=1,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+        ): 1
+    }
+
+
+@register_condition(_to_controlled_qu_condition)
+@register_resources(_to_controlled_qu_resource)
+def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, base, **__):
+    """Convert a controlled operator to a controlled qubit unitary."""
+    matrix = base.matrix()
+    qml.ControlledQubitUnitary(matrix, wires, control_values=control_values, work_wires=work_wires)

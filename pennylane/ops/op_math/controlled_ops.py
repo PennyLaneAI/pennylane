@@ -23,9 +23,10 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+    flip_zero_control,
     pow_involutory,
     pow_rotation,
     self_adjoint,
@@ -36,6 +37,16 @@ from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+from .decompositions.controlled_decompositions import (
+    controlled_two_qubit_unitary_rule,
+    ctrl_decomp_bisect_rule,
+    decompose_mcx_with_many_workers,
+    decompose_mcx_with_no_worker,
+    decompose_mcx_with_one_worker,
+    decompose_mcx_with_two_workers,
+    multi_control_decomp_zyz_rule,
+    single_ctrl_decomp_zyz_rule,
+)
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -64,7 +75,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
-        control_values (List[int, bool]): a list providing the state of the control qubits to
+        control_values (List[int or bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
@@ -196,6 +207,15 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=values,
             work_wires=self.work_wires,
         )
+
+
+add_decomps(
+    ControlledQubitUnitary,
+    flip_zero_control(ctrl_decomp_bisect_rule),
+    flip_zero_control(single_ctrl_decomp_zyz_rule),
+    flip_zero_control(multi_control_decomp_zyz_rule),
+    controlled_two_qubit_unitary_rule,
+)
 
 
 class CH(ControlledOp):
@@ -1345,7 +1365,12 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_control_wires", "num_zero_control_values", "num_work_wires"}
+    resource_keys = {
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+        "work_wire_type",
+    }
 
     name = "MultiControlledX"
 
@@ -1448,6 +1473,7 @@ class MultiControlledX(ControlledOp):
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
+            "work_wire_type": self.work_wire_type,
         }
 
     def adjoint(self):
@@ -1566,6 +1592,37 @@ class MultiControlledX(ControlledOp):
         )
 
 
+def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
+    if num_control_wires == 1:
+        return {qml.CNOT: 1, qml.X: num_zero_control_values}
+    return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
+
+
+@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
+@register_resources(_mcx_to_cnot_or_toffoli_resource)
+def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
+    if len(wires) == 2 and not control_values[0]:
+        qml.CNOT(wires=wires)
+        qml.X(wires[1])
+    elif len(wires) == 2:
+        qml.CNOT(wires=wires)
+    elif len(wires) == 3:
+        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        for w in zero_control_wires:
+            qml.PauliX(w)
+        qml.Toffoli(wires=wires)
+        for w in zero_control_wires:
+            qml.PauliX(w)
+
+
+add_decomps(
+    MultiControlledX,
+    _mcx_to_cnot_or_toffoli,
+    decompose_mcx_with_many_workers,
+    decompose_mcx_with_two_workers,
+    decompose_mcx_with_one_worker,
+    decompose_mcx_with_no_worker,
+)
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
