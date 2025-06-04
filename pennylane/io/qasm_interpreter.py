@@ -695,12 +695,13 @@ class QasmInterpreter:
         # register the params
         for param in node.arguments:
             if not isinstance(param, QuantumArgument):
-                context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = {
-                    "ty": param.__class__.__name__,
-                    "val": None,
-                    "line": param.span.start_line,
-                    "dirty": False,
-                }
+                context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = Variable(
+                    ty=param.__class__.__name__,
+                    val=None,
+                    size=-1,
+                    line=param.span.start_line,
+                    constant=False
+                )
             else:
                 context.scopes["subroutines"][_resolve_name(node)].wires.append(_resolve_name(param))
 
