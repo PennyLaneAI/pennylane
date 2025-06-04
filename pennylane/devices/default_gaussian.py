@@ -30,6 +30,7 @@ import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity
 
 from .._version import __version__
@@ -895,7 +896,7 @@ class DefaultGaussian(Device):
     # pylint: disable=arguments-differ
     def execute(self, operations, observables):
         if len(observables) > 1:
-            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+            raise QuantumFunctionError("Default gaussian only support single measurements.")
         return super().execute(operations, observables)
 
     def batch_execute(self, circuits):

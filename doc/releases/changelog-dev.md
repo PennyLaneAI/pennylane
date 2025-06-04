@@ -89,7 +89,7 @@
 
 * The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
   circuits to a limited gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
 * Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
   iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
@@ -99,10 +99,15 @@
 
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
-  [(7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
+  expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
+  relevant gate-set with the `convert_to_mbqc_gateset` transform.
+  [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
@@ -248,8 +253,8 @@
     :func:`~.transforms.decompose` transform, allowing custom decomposition rules to be defined and
     registered for symbolic operators.
     [(#7347)](https://github.com/PennyLaneAI/pennylane/pull/7347)
-
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
+    [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
 
   ```python
   @qml.register_resources({qml.RY: 1})
@@ -294,6 +299,11 @@
   that contains fewer gates than the previous decomposition.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
 
+* A transform for applying `cancel_inverses` has been added that can be used with the experimental
+  xDSL Python compiler integration. This transform is optimized to cancel self-inverse operations
+  iteratively to cancel nested self-inverse operations.
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
+ 
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
@@ -435,6 +445,10 @@
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
+  [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
@@ -455,6 +469,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
+  [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
 * Fix subset of `pylint` errors in the `tests` folder.
   [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
@@ -502,6 +519,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Add new `pennylane.exceptions` module for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
+  [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
 
 * Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)

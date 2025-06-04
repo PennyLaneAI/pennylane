@@ -22,6 +22,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
@@ -535,7 +536,7 @@ class TestClassicalShadow:
         circuit = get_circuit(wires, None, seed)
 
         msg = "not accepted for analytic simulation on default.qubit"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             circuit()
 
     @pytest.mark.parametrize("shots", shots_list)
@@ -669,7 +670,7 @@ class TestExpvalMeasurement:
         H = qml.PauliZ(0)
 
         msg = "not accepted for analytic simulation on default.qubit"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             _ = circuit(H, k=10)
 
     def test_multi_measurement_allowed(self, seed):
