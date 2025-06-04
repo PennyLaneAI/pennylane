@@ -18,7 +18,6 @@ from openqasm3.ast import (
     DurationLiteral,
     EndStatement,
     Expression,
-    ExpressionStatement,
     FloatLiteral,
     Identifier,
     ImaginaryLiteral,
