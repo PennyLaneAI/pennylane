@@ -24,12 +24,15 @@ def xdsl_transform(cls):
     # avoid dependency on catalyst
     import catalyst  # pylint: disable=import-outside-toplevel
 
-    def null_transform():
+    def null_transform(tape):  # pylint: disable=unused-argument
         """Stub, we only need the name to be unique
         This will never be executed
         """
+        raise RuntimeError(
+            f"The {cls.name} pass cannot be used without using program capture and 'qml.qjit'."
+        )
 
-    null_transform.__name__ = "xdsl_transform" + cls.__name__
+    null_transform.__name__ = "XDSLTransform" + cls.__name__
     transform = qml.transform(null_transform)
 
     # Map from plxpr to register transform
