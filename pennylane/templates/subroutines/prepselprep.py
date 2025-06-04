@@ -81,11 +81,6 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    @classmethod
-    def _primitive_bind_call(cls, lcu, control, **kwargs):
-        # use wires for control so easy to handle their processing
-        return super()._primitive_bind_call(lcu, wires=control, **kwargs)
-
     def __init__(self, lcu, control=None, id=None):
 
         coeffs, ops = lcu.terms()
@@ -216,14 +211,6 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
-
-
-# pylint: disable=unused-argument
-if PrepSelPrep._primitive is not None:  # pylint: disable=protected-access
-
-    @PrepSelPrep._primitive.def_impl  # pylint: disable=protected-access
-    def _(lcu, *control, n_wires, **kwargs):
-        return type.__call__(PrepSelPrep, lcu, control=control, **kwargs)
 
 
 def _prod_resources(rep):

@@ -210,8 +210,6 @@ def assert_equal(
     )
     if isinstance(dispatch_result, str):
         raise AssertionError(dispatch_result)
-    if not dispatch_result:
-        raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
 def _equal(
@@ -225,7 +223,7 @@ def _equal(
     if not isinstance(op2, type(op1)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
-    return _equal_dispatch(
+    dispatch_result = _equal_dispatch(
         op1,
         op2,
         check_interface=check_interface,
@@ -233,6 +231,9 @@ def _equal(
         atol=atol,
         rtol=rtol,
     )
+    if not dispatch_result:
+        return f"{op1} and {op2} are not equal for an unspecified reason."
+    return dispatch_result
 
 
 @singledispatch
@@ -810,9 +811,7 @@ def _equal_prep_sel_prep(op1: Select, op2: Select, **kwargs):
             f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
         )
     for idx, (_t1, _t2) in enumerate(zip(t1, t2)):
-        comparer = _equal_dispatch(_t1, _t2, **kwargs)
+        comparer = _equal(_t1, _t2, **kwargs)
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
-        if comparer is False:
-            return f"got different operations at index {idx}: {_t1} and {_t2}."
     return True
