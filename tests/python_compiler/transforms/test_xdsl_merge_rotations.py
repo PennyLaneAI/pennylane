@@ -33,12 +33,12 @@ class TestMergeRotationsPass:
         """Test that nothing changes when there are no composable gates."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q2:%.*]] = "quantum.custom"(%arg0, [[Q1:%.*]]) <{gate_name = "RX"
-                // CHECK: "quantum.custom"(%arg1, [[Q2:%.*]]) <{gate_name = "RY"
-                %1 = "quantum.custom"(%arg0, %0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%arg1, %1) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
+                %1 = quantum.custom "RX"() %0 : !quantum.bit
+                %2 = quantum.custom "RY"() %1 : !quantum.bit
                 return
             }
         """
@@ -58,13 +58,13 @@ class TestMergeRotationsPass:
         """Test that composable gates are merged."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL1:%.*]] = arith.addf %arg0, %arg1 : f64
-                // CHECK: "quantum.custom"([[VAL1:%.*]], [[Q1:%.*]]) <{gate_name = "RX"
+                // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
+                // CHECK-DAG: quantum.custom "RX"([[phi0:%.*]]) [[q0:%.*]] : !quantum.bit
                 // CHECK-NOT: "quantum.custom"
-                %1 = "quantum.custom"(%arg0, %0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%arg1, %1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+                %1 = quantum.custom "RX"(%arg0) %0 : !quantum.bit
+                %2 = quantum.custom "RX"(%arg1) %1 : !quantum.bit
                 return
             }
         """
@@ -84,17 +84,17 @@ class TestMergeRotationsPass:
         """Test that more than 2 composable ops are merged correctly."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64, %arg2: f64, %arg3: f64) {
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL1:%.*]] = arith.addf %arg0, %arg1 : f64
-                // CHECK: [[VAL2:%.*]] = arith.addf [[VAL1:%.*]], %arg2 : f64
-                // CHECK: [[VAL3:%.*]] = arith.addf [[VAL2:%.*]], %arg3 : f64
-                // CHECK: "quantum.custom"([[VAL3:%.*]], [[Q1:%.*]]) <{gate_name = "RX"
+                // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
+                // CHECK-DAG: [[phi1:%.*]] = arith.addf [[phi0:%.*]], %arg2 : f64
+                // CHECK-DAG: [[phi2:%.*]] = arith.addf [[phi1:%.*]], %arg3 : f64
+                // CHECK-DAG: quantum.custom "RX"([[phi2:%.*]]) [[q0:%.*]] : !quantum.bit
                 // CHECK-NOT: "quantum.custom"
-                %1 = "quantum.custom"(%arg0, %0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%arg1, %1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%arg2, %2) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %4 = "quantum.custom"(%arg3, %3) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+                %1 = quantum.custom "RX"(%arg0) %0 : !quantum.bit
+                %2 = quantum.custom "RX"(%arg1) %1 : !quantum.bit
+                %3 = quantum.custom "RX"(%arg2) %2 : !quantum.bit
+                %4 = quantum.custom "RX"(%arg3) %3 : !quantum.bit
                 return
             }
         """
@@ -114,14 +114,14 @@ class TestMergeRotationsPass:
         """Test that non-consecutive composable gates are not merged."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q2:%.*]] = "quantum.custom"(%arg0, [[Q1:%.*]]) <{gate_name = "RX"
-                // CHECK: [[Q3:%.*]] = "quantum.custom"(%arg0, [[Q2:%.*]]) <{gate_name = "RY"
-                // CHECK: "quantum.custom"(%arg1, [[Q3:%.*]]) <{gate_name = "RX"
-                %1 = "quantum.custom"(%arg0, %0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%arg0, %1) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%arg1, %2) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+                // CHECK-DAG: [[q1:%.*]] = quantum.custom "RX"(%arg0) [[q0:%.*]] : !quantum.bit
+                // CHECK-DAG: [[q2:%.*]] = quantum.custom "RY"(%arg0) [[q1:%.*]] : !quantum.bit
+                // CHECK-DAG: quantum.custom "RX"(%arg1) [[q2:%.*]] : !quantum.bit
+                %1 = quantum.custom "RX"(%arg0) %0 : !quantum.bit
+                %2 = quantum.custom "RY"(%arg0) %1 : !quantum.bit
+                %3 = quantum.custom "RX"(%arg1) %2 : !quantum.bit
                 return
             }
         """
@@ -141,14 +141,14 @@ class TestMergeRotationsPass:
         """Test that composable gates on different qubits are not merged."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q2:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
-                // CHECK: "quantum.custom"(%arg0, [[Q1:%.*]]) <{gate_name = "RX"
-                // CHECK: "quantum.custom"(%arg1, [[Q2:%.*]]) <{gate_name = "RX"
-                %2 = "quantum.custom"(%arg0, %0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%arg1, %1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+                // CHECK-DAG: quantum.custom "RX"(%arg0) [[q0:%.*]] : !quantum.bit
+                // CHECK-DAG: quantum.custom "RX"(%arg1) [[q1:%.*]] : !quantum.bit
+                %2 = quantum.custom "RX"(%arg0) %0 : !quantum.bit
+                %3 = quantum.custom "RX"(%arg1) %1 : !quantum.bit
                 return
             }
         """
@@ -169,17 +169,17 @@ class TestMergeRotationsPass:
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 %cst = "arith.constant"() <{value = true}> : () -> i1
-                // CHECK-DAG: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q2:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q3:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL1:%.*]] = arith.addf %arg0, %arg1 : f64
-                // CHECK-DAG: "quantum.custom"([[VAL1:%.*]], [[Q1:%.*]], [[Q2:%.*]], [[Q3:%.*]], %cst, %cst) <{gate_name = "RX"
+                // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
+                // CHECK-DAG: quantum.custom "RX"([[phi0:%.*]]) [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals(%cst, %cst) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 // CHECK-NOT: "quantum.custom"
-                %3, %4, %5 = "quantum.custom"(%arg0, %0, %1, %2, %cst, %cst) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %6, %7, %8 = "quantum.custom"(%arg1, %3, %4, %5, %cst, %cst) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                %3, %4, %5 = quantum.custom "RX"(%arg0) %0 ctrls(%1, %2) ctrlvals(%cst, %cst) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %6, %7, %8 = quantum.custom "RX"(%arg1) %3 ctrls(%4, %5) ctrlvals(%cst, %cst) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
@@ -203,17 +203,17 @@ class TestMergeRotationsPass:
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 %cst0 = "arith.constant"() <{value = true}> : () -> i1
                 %cst1 = "arith.constant"() <{value = false}> : () -> i1
-                // CHECK-DAG: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q2:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q3:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL1:%.*]] = arith.addf %arg0, %arg1 : f64
-                // CHECK-DAG: "quantum.custom"([[VAL1:%.*]], [[Q1:%.*]], [[Q2:%.*]], [[Q3:%.*]], %cst0, %cst1) <{gate_name = "RX"
-                // CHECK-NOT: "quantum.custom"
-                %3, %4, %5 = "quantum.custom"(%arg0, %0, %1, %2, %cst0, %cst1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %6, %7, %8 = "quantum.custom"(%arg1, %3, %4, %5, %cst0, %cst1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
+                // CHECK-DAG: quantum.custom "RX"([[phi0:%.*]]) [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals(%cst0, %cst1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK-NOT: quantum.custom
+                %3, %4, %5 = quantum.custom "RX"(%arg0) %0 ctrls(%1, %2) ctrlvals(%cst0, %cst1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %6, %7, %8 = quantum.custom "RX"(%arg1) %3 ctrls(%4, %5) ctrlvals(%cst0, %cst1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
@@ -237,16 +237,16 @@ class TestMergeRotationsPass:
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 %cst0 = "arith.constant"() <{value = true}> : () -> i1
                 %cst1 = "arith.constant"() <{value = false}> : () -> i1
-                // CHECK-DAG: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q2:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q3:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK-DAG: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
-                // CHECK-DAG: [[Q4:%.*]], [[Q5:%.*]], [[Q6:%.*]] = "quantum.custom"(%arg0, [[Q1:%.*]], [[Q2:%.*]], [[Q3:%.*]], %cst0, %cst1) <{gate_name = "RX"
-                // CHECK-DAG: "quantum.custom"(%arg1, [[Q4:%.*]], [[Q5:%.*]], [[Q6:%.*]], %cst1, %cst0) <{gate_name = "RX"
-                %3, %4, %5 = "quantum.custom"(%arg0, %0, %1, %2, %cst0, %cst1) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %6, %7, %8 = "quantum.custom"(%arg1, %3, %4, %5, %cst1, %cst0) <{gate_name = "RX", operandSegmentSizes = array<i32: 1, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (f64, !quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                // CHECK-DAG: [[q3:%.*]], [[q4:%.*]], [[q5:%.*]] = quantum.custom "RX"(%arg0) [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals(%cst1, %cst0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK-DAG: quantum.custom "RX"(%arg1) [[q5:%.*]] ctrls([[q4:%.*]], [[q5:%.*]]) ctrlvals(%cst0, %cst1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %3, %4, %5 = quantum.custom "RX"(%arg0) %0 ctrls(%1, %2) ctrlvals(%cst1, %cst0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %6, %7, %8 = quantum.custom "RX"(%arg1) %3 ctrls(%4, %5) ctrlvals(%cst0, %cst1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
