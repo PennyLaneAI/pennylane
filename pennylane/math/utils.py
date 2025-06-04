@@ -593,7 +593,7 @@ def binary_finite_reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian
+        binary_matrix (array[int]): binary matrix representation of a Hamiltonian
     Returns:
         array[int]: reduced row-echelon form of the given `binary_matrix`
 
