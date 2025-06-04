@@ -249,11 +249,20 @@ def _add_first_k_units(ops, controls, work_wires, k):
     This function is used for the outer-most recursion level, and then calls _add_k_units
     for the inner recursion levels.
 
+    We will be drawing circuits here, using the symbol
+    ```
+    ─╭●──   and  ─●─╮─
+    ─├●──        ─●─┤─
+     ╰───        ───╯
+    ```
+    for :class:`~.TemporaryAnd` and its adjoint, respectively.
+
     Given ``k=len(ops)=2**a-b`` operators, where ``a`` is chosen as small as possible to obtain
     ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), and ``2 * a - 1`` control wires,
-    this function applies one of three circuits; in each variant, the first ``2**(a-1)`` are
-    applied in two equal portions of ``2**(a-2)`` operators, after which ``l=2**(a-1) -b``
-    operators remain. Now the three circuit variants are distinguished, based on ``l``:
+    this function applies one of three circuits; in each variant, the first ``2**(a-1)`` operators
+    are applied in two equal portions, containing ``2**(a-2)`` operators each.
+    After this, ``l=2**(a-1) -b`` operators remain and the three circuit variants are
+    distinguished, based on ``l``:
 
     - if ``l=1``, the following circuit is applied:
       ```
@@ -276,7 +285,8 @@ def _add_first_k_units(ops, controls, work_wires, k):
       ```
       where the second half may skip more than two control wires (the number of skipped control
       wires is ``c_bar`` in code). The single boxes in the second half are calls to
-      ``_add_k_units``, not single operators.
+      ``_add_k_units``, not single operators. The first call in the second half applies
+      ``2**(⌈log_2(l)⌉-1)`` operators.
 
     - if ``l >= 2**(a-2)``, the following, more generic, circuit is applied:
       ```
@@ -286,11 +296,13 @@ def _add_first_k_units(ops, controls, work_wires, k):
       ────├■─────├■────────├■─────├■──────
           ╰■     ╰■        ╰■     ╰■      .
       ```
-      Here, each triple box again symbolizes a call to _add_k_units.
+      Here, each triple box again symbolizes a call to _add_k_units. The first call in the
+      second half applies ``2**(⌈log_2(l)⌉-1)`` operators.
       This case is triggered if ``k`` is larger than or equal to 3/4 of the maximal capacity
       for ``2a-1`` control wires.
-      Note how the two middle elbows were merged into two CNOTs, which was not possible above
-      because they acted on distinct wire triples.
+      Note how the two middle TemporaryAnd gates were merged into two CNOTs, which was not
+      possible above because they acted on distinct wire triples.
+
     """
     assert k == len(ops) > 2
 
@@ -309,7 +321,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     k2 = _ceil(2 ** (_ceil_log(l) - 1))
     k3 = k - k01 - k2
 
-    # Open elbow (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
+    # Open TemporaryAnd (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
     first_half = (
         [TemporaryAnd(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
@@ -319,11 +331,11 @@ def _add_first_k_units(ops, controls, work_wires, k):
 
     if k - k01 == 1:
         # Single op left to apply: Only the third quarter will be needed, and it will not need
-        # elbow gates at all
+        # TemporaryAnd gates at all
         and_wires_sec_half = []
         new_controls_sec_half = controls
         new_work_wires_sec_half = work_wires
-        # Closing elbow for first half
+        # Closing TemporaryAnd for first half
         middle_part = [adjoint(TemporaryAnd)(and_wires, control_values=(0, 1))]
     else:
         c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
@@ -333,7 +345,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         if c_bar == 0:
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
         else:
-            # Closing elbow for first half, opening elbow for second half
+            # Closing TemporaryAnd for first half, opening TemporaryAnd for second half
             middle_part = [
                 adjoint(TemporaryAnd)(and_wires, control_values=(0, 1)),
                 TemporaryAnd(and_wires_sec_half, control_values=(1, 0)),
@@ -396,7 +408,7 @@ def _add_k_units(ops, controls, work_wires, k):
     new_controls = controls[2:]
     k_first = 2 ** (num_bits - 1)
     return (
-        [X(and_wires[1]), TemporaryAnd(and_wires), X(and_wires[1])]
+        [TemporaryAnd(and_wires, control_values=(1, 0))]
         + _add_k_units(ops[:k_first], new_controls, new_work_wires, k_first)
         + [CNOT(and_wires[::2])]
         + _add_k_units(ops[k_first:], new_controls, new_work_wires, k - k_first)
