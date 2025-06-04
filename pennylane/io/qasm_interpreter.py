@@ -770,8 +770,6 @@ class QasmInterpreter:
                 return not operand
             if node.op.name == MINUS:
                 return -operand
-            if node.op.name == PLUS:
-                return +operand
             if node.op.name == TILDE:
                 return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right

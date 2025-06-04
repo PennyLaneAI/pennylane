@@ -54,6 +54,22 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestExpressions:
 
+    def test_different_unary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("unary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "unary-exprs"}
+        )
+
+        # unary expressions
+        assert context.vars["a"].val == -1
+        assert context.vars["b"].val == ~2
+        assert context.vars["c"].val == (not False)
+
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
@@ -81,16 +97,16 @@ class TestExpressions:
         assert context.vars["k"].val == 2 & 1
 
         # arithmetic operators
-        assert context.vars["m"].val == 3 + 2;
-        assert context.vars["o"].val == 3 - 2;
-        assert context.vars["p"].val == 3 * 2;
-        assert context.vars["q"].val == 3 ** 2;
-        assert context.vars["n"].val == 3 / 2;
-        assert context.vars["s"].val == 3 % 2;
+        assert context.vars["m"].val == 3 + 2
+        assert context.vars["o"].val == 3 - 2
+        assert context.vars["p"].val == 3 * 2
+        assert context.vars["q"].val == 3**2
+        assert context.vars["n"].val == 3 / 2
+        assert context.vars["s"].val == 3 % 2
 
         # boolean operators
-        assert context.vars["t"].val == (True or False);
-        assert context.vars["u"].val == (True and False);
+        assert context.vars["t"].val == (True or False)
+        assert context.vars["u"].val == (True and False)
 
     def test_different_assignments(self):
         # parse the QASM
