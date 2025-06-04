@@ -324,8 +324,17 @@
   0: ──RX(-0.50)─╭●────────────┤  <Z>
   1: ────────────╰X──RY(-0.50)─┤
   ```
+  
+* Decomposition rules compatible with the new graph-based decomposition system have been implemented
+  for :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
+  * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
+  * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
+  [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
+  [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
 * Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
   The labels are grouped together like for other multi-qubit operations, and the drawing

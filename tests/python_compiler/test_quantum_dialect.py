@@ -137,7 +137,6 @@ def test_assembly_format():
     ctx.load_dialect(QuantumDialect)
 
     module = xdsl.parser.Parser(ctx, program).parse_module()
-    print(module)
 
     from filecheck.finput import FInput
     from filecheck.matcher import Matcher
