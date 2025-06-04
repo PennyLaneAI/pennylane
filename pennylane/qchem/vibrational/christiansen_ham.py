@@ -194,10 +194,21 @@ def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ord
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
     r"""Return Christiansen vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 19-21 of
-    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
 
-    where the bosonic creation and annihilation operators are mapped to the Pauli operators as
+    .. math::
+
+        H = \sum_{i}^M \sum_{k_i, l_i}^{N_i} C_{k_i, l_i}^{(i)} b_{k_i}^{\dagger} b_{l_i} +
+        \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
+        b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
+
+
+    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+
+    The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
     .. math::
 
@@ -224,6 +235,33 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
     Returns:
         Operator: the Christiansen Hamiltonian in the qubit basis
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> qml.qchem.vibrational.christiansen_hamiltonian(pes,n_states=4)
+    (
+        0.08527499987546708 * I(0)
+      + -0.0051774006335491545 * Z(0)
+      + 0.0009697024705108074 * (X(0) @ X(1))
+      + 0.0009697024705108074 * (Y(0) @ Y(1))
+      + 0.0002321787923591865 * (X(0) @ X(2))
+      + 0.0002321787923591865 * (Y(0) @ Y(2))
+      + 0.0008190498635406456 * (X(0) @ X(3))
+      + 0.0008190498635406456 * (Y(0) @ Y(3))
+      + -0.015699890427524253 * Z(1)
+      + 0.002790002362847834 * (X(1) @ X(2))
+      + 0.002790002362847834 * (Y(1) @ Y(2))
+      + 0.000687929225764568 * (X(1) @ X(3))
+      + 0.000687929225764568 * (Y(1) @ Y(3))
+      + -0.026572392417060237 * Z(2)
+      + 0.005239546276220405 * (X(2) @ X(3))
+      + 0.005239546276220405 * (Y(2) @ Y(3))
+      + -0.037825316397333435 * Z(3)
+    )
     """
 
     h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
