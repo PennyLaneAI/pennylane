@@ -608,7 +608,7 @@ class TestToBloq:
                 "qpe_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=RectangularWindowState(4),
-                )
+                ),
             }
 
             return qualtran_bloqs[qt_bloq]
