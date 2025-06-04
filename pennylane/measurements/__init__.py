@@ -172,8 +172,10 @@ so that we can verify our results mathematically.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1, shots=10000)
+    from functools import partial
+    dev = qml.device("default.qubit", wires=1)
 
+    @partial(qml.set_shots, shots=10000)
     @qml.qnode(dev)
     def circuit(x):
         qml.RX(x, wires=0)

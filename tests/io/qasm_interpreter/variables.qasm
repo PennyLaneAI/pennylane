@@ -10,3 +10,5 @@ angle[20] m = 3.14159 / 2;
 m = m * 3.3;
 float[32] a;
 a = 3.3333333;
+bit[6] register = "011011";
+let alias = register[0:5];

@@ -13,15 +13,17 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+from __future__ import annotations
 
 import contextlib
 import functools
 import inspect
 import math
 from collections.abc import Callable, Iterable
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
-from pennylane import QNode
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 try:
     import torch
@@ -112,10 +114,12 @@ class TorchLayer(Module):
 
         .. code-block::
 
+            from functools import partial
             def print_output_shape(measurements):
                 n_qubits = 2
-                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
+                dev = qml.device("default.qubit", wires=n_qubits)
 
+                @partial(qml.set_shots, shots=100)
                 @qml.qnode(dev)
                 def qnode(inputs, weights):
                     qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
