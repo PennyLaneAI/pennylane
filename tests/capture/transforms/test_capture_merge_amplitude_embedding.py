@@ -615,7 +615,6 @@ class TestHigherOrderPrimitiveIntegration:
             qml.RY(0, 1)
 
         jaxpr = jax.make_jaxpr(f)()
-        print(jaxpr)
         assert len(jaxpr.eqns) == 3
         # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
@@ -623,9 +622,10 @@ class TestHigherOrderPrimitiveIntegration:
         assert jaxpr.eqns[2].primitive == qml.RY._primitive
 
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+
+        assert inner_jaxpr.eqns[-2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[-2].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[-1].primitive == qml.X._primitive
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_transform_prim(self, lazy):
@@ -647,10 +647,10 @@ class TestHigherOrderPrimitiveIntegration:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
 
-        assert len(inner_jaxpr.eqns) == 2
-        assert inner_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(inner_jaxpr.eqns[0].params["n_wires"], 2)
-        assert inner_jaxpr.eqns[1].primitive == qml.X._primitive
+        assert len(inner_jaxpr.eqns) == 9
+        assert inner_jaxpr.eqns[-2].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(inner_jaxpr.eqns[-2].params["n_wires"], 2)
+        assert inner_jaxpr.eqns[-1].primitive == qml.X._primitive
 
     def test_cond_prim_only_true_branch(self):
         """Test that the transform works correctly when applied with cond_prim with just a true branch."""
@@ -816,12 +816,12 @@ class TestHigherOrderPrimitiveIntegration:
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert len(qfunc_jaxpr.eqns) == 4
-        assert qfunc_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
-        assert qml.math.allclose(qfunc_jaxpr.eqns[0].params["n_wires"], 2)
-        assert qfunc_jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert len(qfunc_jaxpr.eqns) == 11
+        assert qfunc_jaxpr.eqns[-4].primitive == qml.AmplitudeEmbedding._primitive
+        assert qml.math.allclose(qfunc_jaxpr.eqns[-4].params["n_wires"], 2)
+        assert qfunc_jaxpr.eqns[-3].primitive == qml.Hadamard._primitive
+        assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_grad_prim(self):
         """Test that the transform works correctly when applied with grad_prim."""
