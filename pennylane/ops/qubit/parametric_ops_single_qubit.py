@@ -200,6 +200,7 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 2,
     }
 
@@ -365,6 +366,7 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 2,
     }
 
@@ -567,6 +569,7 @@ def _controlled_rz_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 2,
     }
 
@@ -790,6 +793,7 @@ def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, **__)
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires - 1,
+            work_wire_type="clean",
         ): 2,
         qml.ControlledPhaseShift: 1,
     }
@@ -1035,6 +1039,7 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, **__):
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type="clean",
         ): 2,
     }
 
