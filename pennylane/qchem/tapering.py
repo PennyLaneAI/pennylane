@@ -23,7 +23,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.math.utils import reduced_row_echelon
+from pennylane.math.utils import binary_finite_reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
@@ -99,7 +99,7 @@ def symmetry_generators(h):
     binary_matrix = _binary_matrix_from_pws(list(ps), num_qubits)
 
     # Get reduced row echelon form of binary matrix
-    rref_binary_matrix = reduced_row_echelon(binary_matrix)
+    rref_binary_matrix = binary_finite_reduced_row_echelon(binary_matrix)
     rref_binary_matrix_red = rref_binary_matrix[
         ~np.all(rref_binary_matrix == 0, axis=1)
     ]  # remove all-zero rows
