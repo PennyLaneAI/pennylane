@@ -102,9 +102,7 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -155,6 +153,36 @@ class TestVariables:
 
         assert context.aliases["s"](context) == "q"
 
+    def test_retrieve_uninitialized_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float theta;
+            float phi;
+            phi = theta;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "ref-uninitialized-var"}
+            )
+
+    def test_update_non_existent_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            p = 1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
+
     def test_ref_undeclared_var_in_expr(self):
         # parse the QASM program
         ast = parse(
@@ -198,7 +226,8 @@ class TestVariables:
 
         # run the program
         with pytest.raises(
-            NotImplementedError, match="Array index does not evaluate to a single RangeDefinition or Literal at line 6."
+            NotImplementedError,
+            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
         ):
             context = QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "bad-index"}
@@ -207,9 +236,7 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
@@ -224,7 +251,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 

@@ -522,16 +522,6 @@ class QasmInterpreter:
 
         return next, wires
 
-    @visit.register(ExpressionStatement)
-    def visit_expression_statement(self, node: ExpressionStatement, context: Context):
-        """
-        Registers an expression statement.
-        Args:
-            node (ExpressionStatement): The expression statement.
-            context (Context): The current context.
-        """
-        return self.visit(node.expression, context)
-
     @visit.register(IndexExpression)
     def visit_index_expression(
         self, node: IndexExpression, context: Context, aliasing: bool = False
@@ -598,8 +588,8 @@ class QasmInterpreter:
             value = var.val if isinstance(var, Variable) else var
             var.line = node.span.start_line
             return value
-        except NameError as e:
-            raise NameError(
+        except TypeError as e:
+            raise TypeError(
                 str(e) or f"Reference to an undeclared variable {node.name} in {context.name}."
             ) from e
 
