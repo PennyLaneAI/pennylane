@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import math
-from functools import lru_cache
 from typing import List
 
 import numpy as np
@@ -42,6 +41,10 @@ class ZSqrtTwo:
         self.b = int(b)
 
     def __str__(self: ZSqrtTwo) -> str:
+        if self.b == 0:
+            return str(self.a)
+        if self.a == 0:
+            return f"{self.b}√2"
         return f"{self.a} + {self.b}√2"
 
     def __repr__(self: ZSqrtTwo) -> str:
@@ -92,6 +95,13 @@ class ZSqrtTwo:
 
     def __rtruediv__(self, other: ZSqrtTwo) -> ZSqrtTwo:
         return other / float(self)
+
+    def __floordiv__(self, other: int) -> ZSqrtTwo:
+        if isinstance(other, int):
+            return ZSqrtTwo(self.a // other, self.b // other)
+        raise TypeError(
+            f"cannot floor divide RootTwo ring by {other} of type {type(other).__name__}"
+        )
 
     def __eq__(self, other) -> bool:
         if isinstance(other, ZSqrtTwo):
@@ -230,6 +240,7 @@ class ZOmega:
         raise TypeError(f"cannot divide Omega value by {other} of type {type(other).__name__}")
 
     def __mod__(self, other: ZOmega) -> ZOmega:
+        # TODO: Implement the logic
         pass
 
     def conj(self: ZOmega) -> ZOmega:
@@ -255,10 +266,11 @@ class ZOmega:
         Returns:
             ZSqrtTwo: The corresponding element in the ZSqrtTwo ring.
         """
-        return ZSqrtTwo(self.a + self.b, self.c + self.d)
+        # TODO: Implement the logic
 
     def sqrt2scale(self) -> ZOmega:
         r"""Multiply the element by :math:`\sqrt{2}`"""
+        # TODO: Implement the logic
 
 
 class SU2Matrix:
@@ -338,7 +350,7 @@ class SU2Matrix:
     @property
     def toarray(self: SU2Matrix) -> np.ndarray:
         """Convert the matrix to a NumPy array."""
-        return _SQRT2**self.k * np.array(
+        return (_SQRT2**-self.k) * np.array(
             [
                 [complex(self.a), complex(self.b)],
                 [complex(self.c), complex(self.d)],
@@ -393,26 +405,34 @@ class SU2Matrix:
 class SO3Matrix:
     r"""Represents the SO(3) matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`)."""
 
-    def __init__(self, su2mat: SU2Matrix, k: int = 0) -> None:
+    def __init__(self, su2mat: SU2Matrix) -> None:
         """Initialize the SO(3) matrix with a SU(2) matrix and an integer k."""
         self.su2mat = su2mat
-        self.k = k
+        self.k = 0
         self.so3mat = self.from_su2(su2mat)
+        self.normalize()
 
     def __str__(self: SO3Matrix) -> str:
         """Return a string representation of the SO(3) matrix."""
-        elements = self.su2mat.flatten
-        str_repr = "[\n"
+        elements = self.flatten
+        str_repr = "["
         for i in range(3):
-            str_repr += (
-                f"[{elements[i * 3].a}, {elements[i * 3 + 1].a}, {elements[i * 3 + 2].a}], \n"
-            )
-        str_repr += "]"
+            str_repr += f"[{elements[i * 3]}, {elements[i * 3 + 1]}, {elements[i * 3 + 2]}], \n"
+        str_repr = str_repr.rstrip(", \n") + "]" + (f" * √2^-{self.k}" if self.k else "")
         return str_repr
 
     def __repr__(self: SO3Matrix) -> str:
         """Return a string representation of the SO(3) matrix."""
-        return f"SO3Matrix(k={self.k}, su2mat={self.su2mat})"
+        return f"SO3Matrix(su2mat={self.su2mat}, k={self.k})"
+
+    def __matmul__(self, other: SO3Matrix) -> SO3Matrix:
+        res = SO3Matrix(self.su2mat @ other.su2mat)
+        res.k = self.k + other.k
+        res.normalize()
+        return res
+
+    def __eq__(self: SO3Matrix, other: SO3Matrix) -> bool:
+        return self.k == other.k and all(x == y for (x, y) in zip(self.flatten, other.flatten))
 
     @property
     def flatten(self: SO3Matrix) -> List[ZOmega]:
@@ -439,38 +459,44 @@ class SO3Matrix:
                 a_[0] * d_[0] + a_[1] * d_[1] + b_[0] * c_[0] + b_[1] * c_[1],
                 a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0] - a_[0] * d_[1],
                 a_[0] * c_[0] + a_[1] * c_[1] - b_[0] * d_[0] - b_[1] * d_[1],
+            ],
+            [
                 a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
                 a_[0] * d_[0] + a_[1] * d_[1] - b_[0] * c_[0] - b_[1] * c_[1],
-                a_[0] * d_[1] - a_[1] * d_[0] + b_[0] * c_[1] - b_[1] * c_[0],
+                a_[0] * c_[1] - a_[1] * c_[0] - b_[0] * d_[1] + b_[1] * d_[0],
+            ],
+            [
                 2 * (a_[0] * b_[0] + a_[1] * b_[1]),
                 2 * (a_[1] * b_[0] - a_[0] * b_[1]),
                 a_[0] ** 2 + a_[1] ** 2 - b_[0] ** 2 - b_[1] ** 2,
-            ]
+            ],
         ]
+        self.k = k
         return so3_mat
 
-    def reducek(self: SO3Matrix) -> SO3Matrix:
+    def normalize(self: SO3Matrix) -> None:
         """Reduce the k value of the SO(3) matrix."""
+        elements = self.flatten
+        while all(s.a % 2 == 0 and s.b % 2 == 0 for s in elements):
+            self.k -= 2
+            elements = [s // 2 for s in elements]
+        while all(s.a % 2 == 0 for s in elements) and self.k > 0:
+            self.k -= 1
+            elements = [ZSqrtTwo(s.b, s.a // 2) for s in elements]
+        self.so3mat = [elements[i : i + 3] for i in range(0, len(elements), 3)]
 
+    @property
+    def ndarray(self: SU2Matrix) -> np.ndarray:
+        """Convert the matrix to a NumPy array."""
+        matrix = np.array(list(map(float, self.flatten)))
+        return (_SQRT2**-self.k) * matrix.reshape(3, 3)
 
-@lru_cache
-def _clifford_gates_to_SU2():
-    """Return a dictionary mapping Clifford gates to their corresponding SU(2) matrices."""
-    return {
-        "I": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)),
-        "X": SU2Matrix(ZOmega(), ZOmega(d=1), ZOmega(d=1), ZOmega()),
-        "Y": SU2Matrix(ZOmega(), ZOmega(b=-1), ZOmega(b=1), ZOmega()),
-        "Z": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=-1)),
-        "H": SU2Matrix(ZOmega(d=1), ZOmega(d=1), ZOmega(d=1), ZOmega(d=-1), k=1),
-        "S": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(b=1)),
-        "T": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(c=1)),
-        "S*": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(b=-1)),
-        "T*": SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(a=-1)),
-    }
+    @property
+    def parity_mat(self: SO3Matrix) -> np.ndarray[np.int8]:
+        """Return the parity of the SO(3) matrix."""
+        return np.array([[x.a % 2 for x in row] for row in self.so3mat], dtype=np.int8)
 
-
-@lru_cache
-def _clifford_gates_to_SO3():
-    """Return a dictionary mapping Clifford gates to their corresponding SO(3) matrices."""
-    su2_matrices = _clifford_gates_to_SU2()
-    return {gate: SO3Matrix(su2, k=su2.k) for gate, su2 in su2_matrices.items()}
+    @property
+    def parity_vec(self: SO3Matrix) -> np.ndarray:
+        """Return the permutation vector of the SO(3) matrix."""
+        return np.sum(self.parity_mat, axis=1)
