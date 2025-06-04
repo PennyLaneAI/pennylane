@@ -288,7 +288,6 @@ class CustomOp(IRDLOperation):
             | None
         ) = None,
         adjoint: UnitAttr | bool = False,
-        decomposed=False,
     ):
         params = () if params is None else params
         in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
@@ -311,8 +310,6 @@ class CustomOp(IRDLOperation):
         properties = {"gate_name": gate_name}
         if adjoint:
             properties["adjoint"] = UnitAttr()
-        if decomposed:
-            properties["decomposed"] = UnitAttr()
 
         super().__init__(
             operands=(params, in_qubits, in_ctrl_qubits, in_ctrl_values),

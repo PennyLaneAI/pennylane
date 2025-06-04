@@ -21,7 +21,7 @@ from typing import Dict, Iterable, Type, Union
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
-from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, StringAttr
+from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
@@ -30,8 +30,6 @@ from pennylane.compiler.python_compiler.quantum_dialect import (
     AllocOp,
     CustomOp,
     ExtractOp,
-    GlobalPhaseOp,
-    QubitType,
 )
 from pennylane.operation import Operator
 from pennylane.transforms.decompose import _operator_decomposition_gen
@@ -68,7 +66,7 @@ def resolve_gate(name: str) -> Operator:
         raise ValueError(f"Unsupported gate: {name}") from exc
 
 
-def from_qml_to_xdsl_param(param: Union[int, float]):
+def qml_to_xdsl_param(param: Union[int, float]) -> Union[IntegerAttr, FloatAttr]:
     """Convert a PennyLane parameter to an xDSL SSAValue."""
     val = param.item() if hasattr(param, "item") else param
     if isinstance(val, int):
@@ -138,55 +136,51 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
         return decomposition
 
-    def resolve_constant_params(self, op: Operator):
-        """Walk back to the producing op and resolve the constant parameters."""
-        while hasattr(op, "owner"):
-            op = op.owner
+    def resolve_constant_params(self, param: SSAValue) -> Union[float, int]:
+        """Resolve the constant parameter from the SSA value."""
+        op = param.owner
         if isinstance(op, ConstantOp):
             val = op.value
             if isinstance(val, (FloatAttr, IntegerAttr)):
                 if val not in self.params_to_ssa_params:
                     self.params_to_ssa_params[val] = op.result
                 return val.value.data
-        raise NotImplementedError(f"Cannot resolve params from {op}")
+        raise NotImplementedError(f"Cannot resolve parameters for operation {op}")
 
-    def from_qml_to_xdsl_params(self, op: Operator) -> list[float | int]:
+    def ssa_to_qml_params(self, op: CustomOp) -> list[float | int]:
         """Get the parameters from the operation."""
         return [self.resolve_constant_params(p) for p in op.params if p is not None]
 
-    def from_qml_to_xdsl_wires(self, op: Operator) -> list[int]:
+    def ssa_to_qml_wires(self, op: CustomOp) -> list[int]:
         """Get the wires from the operation."""
         if not hasattr(op, "in_qubits"):
             return []
-        return [self.resolve_constant_wire(w) for w in op.in_qubits if w is not None]
+        return [self.resolve_constant_wire(q) for q in op.in_qubits if q is not None]
 
-    def from_xdsl_to_qml_op(self, op: CustomOp):
+    def xdsl_to_qml_op(self, op: CustomOp) -> Operator:
         """Convert an xDSL CustomOp to a PennyLane operation."""
         gate_name = op.properties["gate_name"].data
-        parameters = self.from_qml_to_xdsl_params(op)
-        wires = flatten(self.from_qml_to_xdsl_wires(op))
+        parameters = self.ssa_to_qml_params(op)
+        wires = flatten(self.ssa_to_qml_wires(op))
         return resolve_gate(gate_name)(*parameters, wires=wires)
 
-    def resolve_constant_wire(self, operand: SSAValue) -> int:
-        """Resolve the wire index for a given SSAValue."""
-        op = operand.owner
+    def resolve_constant_wire(self, in_qubit: SSAValue) -> int:
+        """Resolve the wire for the given SSA qubit."""
+        op = in_qubit.owner
         if isinstance(op, ExtractOp):
             return op.idx_attr.parameters[0].data
-        if isinstance(operand, GlobalPhaseOp):
-            return None
-        if isinstance(operand, ConstantOp):
-            val = operand.value
+        if isinstance(op, ConstantOp):
+            val = op.value
             return val.value.data
         if isinstance(op, CustomOp):
-            wire_position = operand.index
+            # The CustomOp should be the last one that updated
+            # the mapping for this SSA qubit.
+            wire_position = in_qubit.index
             ssa_qubit = op.out_qubits[wire_position]
-            if op.properties.get("decomposed", None) is not None:
-                return self.ssa_qubits_to_wires[ssa_qubit]
-            return self.resolve_constant_wire(ssa_qubit)
+            return self.ssa_qubits_to_wires[ssa_qubit]
 
-        raise NotImplementedError(
-            f"Cannot resolve wire index for operand {operand}, owner={type(op)}"
-        )
+        # TODO: Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
+        raise NotImplementedError(f"Cannot resolve wire for operation {op}")
 
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
@@ -211,25 +205,21 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                 self.wire_to_ssa_qubits[wire] = ssa_qubit
                 continue
 
-            # TODO: This doesn't decompose PL operators that are not CustomOp (e.g., QubitUnaryOp)
+            # TODO: Add decomposition for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
             if not isinstance(xdsl_op, CustomOp):
                 continue
 
             if self.quantum_register is None:
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
 
-            if xdsl_op.properties.get("decomposed", None) is not None:
-                print(f"CustomOp {xdsl_op} is already decomposed, skipping further decomposition.")
-                continue
-
-            qml_op = self.from_xdsl_to_qml_op(xdsl_op)
+            qml_op = self.xdsl_to_qml_op(xdsl_op)
             qml_decomp_ops = self.decompose_operation(qml_op)
 
             for qml_decomp_op in qml_decomp_ops:
 
                 params_xdsl: list[SSAValue] = []
                 for param in qml_decomp_op.parameters:
-                    xdsl_param = from_qml_to_xdsl_param(param)
+                    xdsl_param = qml_to_xdsl_param(param)
                     if xdsl_param in self.params_to_ssa_params:
                         const_ssa = self.params_to_ssa_params[xdsl_param]
                     else:
@@ -242,46 +232,25 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
                 wires_xdsl: list[SSAValue] = []
                 for wire in qml_decomp_op.wires:
-                    if wire in self.wire_to_ssa_qubits:
-                        print(f"Re-using extracted qubit {wire} for {qml_decomp_op.name}.")
-                        qubit_ssa = self.wire_to_ssa_qubits[wire]
-                    else:
-                        # The logic is that each decomposed operator should act on a subset of wires
-                        # of the original operator, and these wires should have been extracted before.
-                        assert False, "This should not happen, wires should have been extracted"
-
+                    # Each decomposed operator should act on a subset of wires
+                    # of the original operator, and these wires should have been registered before.
+                    qubit_ssa = self.wire_to_ssa_qubits[wire]
                     wires_xdsl.append(qubit_ssa)
 
-                # At this stage, this is the only 'special' operator we handle (GlobalPhase does not have wires)
-                if qml_decomp_op.name == "GlobalPhase":
-                    # pylint: disable=unexpected-keyword-arg
-                    custom_op = GlobalPhaseOp(
-                        operands=(*params_xdsl, None, None),
-                        properties={
-                            "gate_name": StringAttr("GlobalPhase"),
-                        },
-                        attributes={},
-                        successors={},
-                        regions=(),
-                        result_types=(QubitType(),),
-                    )
+                custom_op = CustomOp(
+                    params=params_xdsl,
+                    in_qubits=wires_xdsl,
+                    gate_name=qml_decomp_op.name,
+                )
 
-                else:
-                    custom_op = CustomOp(
-                        params=params_xdsl,
-                        in_qubits=wires_xdsl,
-                        gate_name=qml_decomp_op.name,
-                        decomposed=True,
-                    )
-
-                    for idx, wire in enumerate(qml_decomp_op.wires):
-                        self.wire_to_ssa_qubits[wire] = custom_op.out_qubits[idx]
-                        self.ssa_qubits_to_wires[custom_op.out_qubits[idx]] = wire
+                for idx, wire in enumerate(qml_decomp_op.wires):
+                    self.wire_to_ssa_qubits[wire] = custom_op.out_qubits[idx]
+                    self.ssa_qubits_to_wires[custom_op.out_qubits[idx]] = wire
 
                 rewriter.insert_op(custom_op, InsertPoint.before(xdsl_op))
 
-            # After all decompositions, we replace the original CustomOp with the decomposed CustomOps.
-            # This based on the fact that the decomposed operations act on the same wires as the original operation.
+            # After all decompositions, we replace the results of the original CustomOp
+            # with the last SSA values of the decomposed CustomOps for each wire.
             for idx, wire in enumerate(qml_op.wires):
                 xdsl_op.results[idx].replace_by(self.wire_to_ssa_qubits[wire])
 
@@ -298,5 +267,5 @@ class DecompositionTransformPass(passes.ModulePass):
     def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
         pattern = DecompositionTransform(module)
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([pattern])
+            pattern_rewriter.GreedyRewritePatternApplier([pattern]), apply_recursively=False
         ).rewrite_module(module)
