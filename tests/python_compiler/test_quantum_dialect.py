@@ -111,6 +111,21 @@ def test_assembly_format():
     program = """
     // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
     %qreg = "test.op"() : () -> !quantum.reg
+
+    // CHECK: [[COMPBASIS:%.+]] = quantum.compbasis qreg [[QREG]] : !quantum.obs
+    %compbasis = quantum.compbasis qreg %qreg : !quantum.obs
+
+    // CHECK: quantum.counts [[COMPBASIS]] : tensor<2xf64>, tensor<2xi64>
+    %eigvals, %counts = quantum.counts %compbasis : tensor<2xf64>, tensor<2xi64>
+
+    // CHECK: [[PARAM:%.+]] = "test.op"() : () -> f64
+    %cst = "test.op"() : () -> f64
+
+    // CHECK: [[QUBIT:%.+]] = "quantum.extract"([[QREG]])
+    %qubit = "quantum.extract"(%qreg) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+
+    // CHEKC: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
+    %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
     """
 
     ctx = xdsl.context.Context()
