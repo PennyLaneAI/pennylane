@@ -206,7 +206,7 @@ class Context:
         value: any,
         name: str,
         node: QASMNode,
-    ):
+    ):  # pylint: disable=too-many-branches
         """
         Updates a variable, or raises if it is constant.
         Args:
