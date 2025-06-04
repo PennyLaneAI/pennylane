@@ -22,7 +22,7 @@ import pennylane as qml
 
 
 @lru_cache
-def _clifford_group_to_SO3():
+def _clifford_group_to_SO3() -> dict:
     """Return a dictionary mapping Clifford group elements to their corresponding SO(3) matrices."""
     I, X, Y, Z = qml.I(0), qml.X(0), qml.Y(0), qml.Z(0)
     H, S, Sdg = qml.H(0), qml.S(0), qml.adjoint(qml.S(0))
@@ -57,7 +57,7 @@ def _clifford_group_to_SO3():
 
 
 @lru_cache
-def _parity_transforms():
+def _parity_transforms() -> dict:
     """Return a dictionary mapping parity transformations to their corresponding SO(3) matrices."""
     transform_ops = {
         "C": (
@@ -87,8 +87,12 @@ def _parity_transforms():
     }
 
 
-def ma_normal_form(op: SO3Matrix):
-    """Decompose an SO(3) matrix into Matsumoto-Amano normal forms.
+def ma_normal_form(op: SO3Matrix) -> tuple[qml.operation.Operator]:
+    r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
+
+    A Matsumoto-Amano normal form - :math:`(T | \epsilon) (HT | SHT)^* \mathcal{C}`, consists of a rightmost
+    Clifford operator, followed by any number of syllables of the form ``HT`` or ``SHT``, followed by an
+    optional syllable ``T`` [`arXiv:1312.6584 <https://arxiv.org/abs/1312.6584>`_\ ].
 
     Args:
         op (SO3Matrix): The SO(3) matrix to decompose.
@@ -101,6 +105,7 @@ def ma_normal_form(op: SO3Matrix):
 
     so3_op = deepcopy(op)
 
+    # The following uses Lemmas 4.10 and 6.4 of arXiv:1312.6584.
     decomposition = qml.I(0)
     while (parity_vec := tuple(so3_op.parity_vec)) != (1, 1, 1):
         so3_val, op_gate = parity_transforms[parity_vec]

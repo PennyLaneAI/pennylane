@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from typing import List
 
 import numpy as np
@@ -426,8 +427,28 @@ class SO3Matrix:
         return f"SO3Matrix(su2mat={self.su2mat}, k={self.k})"
 
     def __matmul__(self, other: SO3Matrix) -> SO3Matrix:
-        res = SO3Matrix(self.su2mat @ other.su2mat)
+        res = deepcopy(self)
+        res.su2mat = self.su2mat @ other.su2mat
         res.k = self.k + other.k
+
+        us_self, us_other = self.flatten, other.flatten
+        res.so3mat = [
+            [
+                us_self[0] * us_other[0] + us_self[1] * us_other[3] + us_self[2] * us_other[6],
+                us_self[0] * us_other[1] + us_self[1] * us_other[4] + us_self[2] * us_other[7],
+                us_self[0] * us_other[2] + us_self[1] * us_other[5] + us_self[2] * us_other[8],
+            ],
+            [
+                us_self[3] * us_other[0] + us_self[4] * us_other[3] + us_self[5] * us_other[6],
+                us_self[3] * us_other[1] + us_self[4] * us_other[4] + us_self[5] * us_other[7],
+                us_self[3] * us_other[2] + us_self[4] * us_other[5] + us_self[5] * us_other[8],
+            ],
+            [
+                us_self[6] * us_other[0] + us_self[7] * us_other[3] + us_self[8] * us_other[6],
+                us_self[6] * us_other[1] + us_self[7] * us_other[4] + us_self[8] * us_other[7],
+                us_self[6] * us_other[2] + us_self[7] * us_other[5] + us_self[8] * us_other[8],
+            ],
+        ]
         res.normalize()
         return res
 
