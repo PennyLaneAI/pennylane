@@ -81,18 +81,26 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     """A rewrite pattern that replaces every ``quantum.custom``
     operation (i.e. CustomOp) with its PennyLane decomposition."""
 
-    # Several TODO for this pass:
-    # TODO: list all the TODO here
+    # Several TODO for this pass/transform:
+    #
+    # - Add support for dynamic wires and parameters.
+    # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
+    #   both in the decomposition and in the gate set.
+    # - Make the gate_set and max_expansion configurable (e.g., via pass parameters).
+    # - Add support for the decomp_graph
+    # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
 
     def __init__(self, module: builtin.ModuleOp):
         super().__init__()
         self.module: builtin.ModuleOp = module
+
+        # TODO: Move the mapping logic to a separate helper class
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
         self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
         self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
+
         self.quantum_register: Union[SSAValue, None] = None
 
-        # TODO: These should be configurable (e.g., parameters of the pass)
         self.max_expansion: Optional[int] = None
         self.gate_set: set[Type[Operator] | str] = {"CNOT", "RX", "RY", "RZ"}
 
@@ -115,10 +123,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
     def decompose_operation(self, op: Operator):
         """Decompose the operation if it is not in the gate set."""
-
-        # TODO: add support for max_expansion and graph-based decomposition
-        # when the time comes.
-
         if self.gate_set_contains(op):
             return [op]
         decomposition = list(
@@ -206,18 +210,14 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
         for xdsl_op in funcOp.body.walk():
 
-            # TODO: Add decomposition for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
             if not isinstance(xdsl_op, CustomOp):
                 continue
-
             if self.quantum_register is None:
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
-
             if len(self.wire_to_ssa_qubits) == 0:
                 raise NotImplementedError("No wires extracted from the register have been found. ")
 
             qml_op = self.xdsl_to_qml_op(xdsl_op)
-
             qml_decomp_ops = self.decompose_operation(qml_op)
 
             for qml_decomp_op in qml_decomp_ops:

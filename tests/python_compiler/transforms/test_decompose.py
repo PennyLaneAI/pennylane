@@ -34,7 +34,7 @@ from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 from pennylane.compiler.python_compiler.transforms.decompose import DecompositionTransformPass
 
 
-def test_rot_decomposition():
+def test_single_rot_decomposition():
     """Test that the Rot gate is decomposed into RZ and RY gates."""
 
     # qml.Rot(0.5, 0.5, 0.5, wires=0)
@@ -91,8 +91,8 @@ builtin.module @circuit {
     assert matcher.run() == 0
 
 
-def test_repeated_rot_decomposition():
-    """Test that the Rot gate is decomposed into RZ and RY gates."""
+def test_multiple_rot_decomposition():
+    """Test that multiple Rot gates are decomposed correctly into RZ and RY gates."""
 
     # qml.Rot(0.1, 0.2, 0.3, wires=0)
     # qml.Rot(0.4, 0.5, 0.6, wires=0)
@@ -123,6 +123,36 @@ builtin.module @circuit {
 
         "quantum.device_init"(%6) <{kwargs = "{'mcmc': False, 'num_burnin': 0, 'kernel_name': None}", lib = "...", name = "LightningSimulator"}> : (i64) -> ()
         %7 = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+        %8 = "quantum.extract"(%7) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+
+
+        // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+        // CHECK: [[QUBIT1:%.*]] = "quantum.extract"([[QUBITREGISTER]]) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+        // CHECK: [[QUBIT2:%.*]] = "quantum.custom"(%5, [[QUBIT1]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT3:%.*]] = "quantum.custom"(%4, [[QUBIT2]]) <{gate_name = "RY"
+        // CHECK: [[QUBIT4:%.*]] = "quantum.custom"(%3, [[QUBIT3]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT5:%.*]] = "quantum.custom"(%2, [[QUBIT4]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT6:%.*]] = "quantum.custom"(%1, [[QUBIT5]]) <{gate_name = "RY"
+        // CHECK: [[QUBIT7:%.*]] = "quantum.custom"(%0, [[QUBIT6]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT8:%.*]] = "quantum.extract"([[QUBITREGISTER]]) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+        // CHECK: [[QUBIT9:%.*]] = "quantum.custom"(%5, [[QUBIT8]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT10:%.*]] = "quantum.custom"(%5, [[QUBIT9]]) <{gate_name = "RY"
+        // CHECK: [[QUBIT11:%.*]] = "quantum.custom"(%5, [[QUBIT10]]) <{gate_name = "RZ"
+        // CHECK: [[QUBIT12:%.*]] = "quantum.insert"([[QUBITREGISTER]], [[QUBIT7]]) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+        // CHECK: [[QUBIT13:%.*]] = "quantum.insert"([[QUBIT12]], [[QUBIT11]]) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+
+        %9 = "quantum.custom"(%5, %8) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %10 = "quantum.custom"(%4, %9) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %11 = "quantum.custom"(%3, %10) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %12 = "quantum.custom"(%2, %11) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %13 = "quantum.custom"(%1, %12) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %14 = "quantum.custom"(%0, %13) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %15 = "quantum.extract"(%7) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+        %16 = "quantum.custom"(%5, %15) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %17 = "quantum.custom"(%5, %16) <{gate_name = "RY", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %18 = "quantum.custom"(%5, %17) <{gate_name = "RZ", operandSegmentSizes = array<i32: 1, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (f64, !quantum.bit) -> !quantum.bit
+        %19 = "quantum.insert"(%7, %14) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+        %20 = "quantum.insert"(%19, %18) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
 
     }
 }
