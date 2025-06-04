@@ -280,11 +280,11 @@ class SU2Matrix:
     .. math::        
         \frac{1}{\sqrt{2}^k} 
         \begin{pmatrix}
-        a & b \\
-        c & d
+        a_{00} & a_{01} \\
+        a_{10} & a_{11}
         \end{pmatrix}
 
-    where :math:`a, b, c, d \in \mathbb{Z}[\omega]`, :math:`k \in \mathbb{Z}`, and the determinant is `1`.
+    where :math:`a_{ij} \in \mathbb{Z}[\omega]`, :math:`k \in \mathbb{Z}`, and the determinant is `1`.
 
     Args:
         a (ZOmega): Element at position (0, 0) of the matrix.
@@ -404,7 +404,22 @@ class SU2Matrix:
 
 
 class SO3Matrix:
-    r"""Represents the SO(3) matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`)."""
+    r"""Represents the :math:`SO(3)` matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`).
+    
+    .. math::
+       
+        \frac{1}{\sqrt{2}^k}
+        \begin{pmatrix}
+        a_{00} & a_{01} & a_{11} \\
+        a_{10} & a_{11} & a_{12} \\
+        a_{20} & a_{21} & a_{22}
+        \end{pmatrix}
+
+    where :math:`a_{ij} \in \mathbb{Z}[\sqrt{2}]`, :math:`k \in \mathbb{Z}`, and the determinant is `1`.
+
+    Args:
+        su2mat (SU2Matrix): The :math:`SU(2)` matrix from which the :math:`SO(3)` matrix is derived.
+    """
 
     def __init__(self, su2mat: SU2Matrix) -> None:
         """Initialize the SO(3) matrix with a SU(2) matrix and an integer k."""

@@ -26,7 +26,7 @@ def _clifford_group_to_SO3() -> dict:
     """Return a dictionary mapping Clifford group elements to their corresponding SO(3) matrices."""
     I, X, Y, Z = qml.I(0), qml.X(0), qml.Y(0), qml.Z(0)
     H, S, Sdg = qml.H(0), qml.S(0), qml.adjoint(qml.S(0))
-
+    # These are the Clifford group elements with :math:`\{−1, 0, 1\}` as their matrix entries.
     clifford_elems = {
         I: SU2Matrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)),
         H: -SU2Matrix(ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=-1), k=1),
@@ -106,10 +106,10 @@ def ma_normal_form(op: SO3Matrix) -> tuple[qml.operation.Operator]:
     so3_op = deepcopy(op)
 
     # The following uses Lemmas 4.10 and 6.4 of arXiv:1312.6584.
+    # TODO: Verify the operator ordering.
     decomposition = qml.I(0)
     while (parity_vec := tuple(so3_op.parity_vec)) != (1, 1, 1):
         so3_val, op_gate = parity_transforms[parity_vec]
-        print(parity_vec, op_gate)
         decomposition = op_gate @ decomposition
         so3_op = so3_val @ so3_op
 
