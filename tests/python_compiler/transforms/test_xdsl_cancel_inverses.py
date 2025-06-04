@@ -35,12 +35,12 @@ class TestIterativeCancelInversesPass:
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[VAL1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL2:%.*]] = "quantum.custom"([[VAL1:%.*]]) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                // CHECK: "quantum.custom"([[VAL2:%.*]]) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %1 = "quantum.custom"(%0) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%1) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
+                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 return
             }
         """
@@ -60,14 +60,14 @@ class TestIterativeCancelInversesPass:
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[VAL1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL2:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
-                // CHECK: "quantum.custom"([[VAL1:%.*]]) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                // CHECK: "quantum.custom"([[VAL2:%.*]]) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%0) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%1) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q1:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %3 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
@@ -89,8 +89,8 @@ class TestIterativeCancelInversesPass:
             func.func @test_func() {
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK-NOT: quantum.custom
-                %1 = "quantum.custom"(%0) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%1) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
+                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliX"() %1 : !quantum.bit
                 return
             }
         """
@@ -112,12 +112,12 @@ class TestIterativeCancelInversesPass:
             func.func @test_func() {
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK-NOT: quantum.custom
-                %1 = "quantum.custom"(%0) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%1) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%2) <{gate_name = "PauliZ", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %4 = "quantum.custom"(%3) <{gate_name = "PauliZ", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %5 = "quantum.custom"(%4) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %6 = "quantum.custom"(%5) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
+                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliY"() %1 : !quantum.bit
+                %3 = quantum.custom "PauliZ"() %2 : !quantum.bit
+                %4 = quantum.custom "PauliZ"() %3 : !quantum.bit
+                %5 = quantum.custom "PauliY"() %4 : !quantum.bit
+                %6 = quantum.custom "PauliX"() %5 : !quantum.bit
                 return
             }
         """
@@ -141,9 +141,9 @@ class TestIterativeCancelInversesPass:
                 %1 = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
                 %3 = "test.op"() : () -> !quantum.bit
-                // CHECK-NOT: "quantum.custom"
-                %4:3 = "quantum.custom"(%1, %2, %3, %0, %0) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %5:3 = "quantum.custom"(%4#0, %4#1, %4#2, %0, %0) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                // CHECK-NOT: quantum.custom
+                %4, %5, %6 = quantum.custom "PauliY"() %1 ctrls(%2, %3) ctrlvals(%0, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %7, %8, %9 = quantum.custom "PauliY"() %4 ctrls(%5, %6) ctrlvals(%0, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
@@ -171,8 +171,8 @@ class TestIterativeCancelInversesPass:
                 %3 = "test.op"() : () -> !quantum.bit
                 %4 = "test.op"() : () -> !quantum.bit
                 // CHECK-NOT: "quantum.custom"
-                %5:3 = "quantum.custom"(%2, %3, %4, %1, %0) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %6:3 = "quantum.custom"(%5#0, %5#1, %5#2, %1, %0) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                %5, %6, %7 = quantum.custom "PauliY"() %2 ctrls(%3, %4) ctrlvals(%1, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %8, %9, %10 = quantum.custom "PauliY"() %5 ctrls(%6, %7) ctrlvals(%1, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
@@ -194,20 +194,20 @@ class TestIterativeCancelInversesPass:
         control values don't cancel."""
         program = """
             func.func @test_func() {
-                // CHECK-DAG: [[VAL1:%.*]] = arith.constant false
-                // CHECK-DAG: [[VAL2:%.*]] = arith.constant true
+                // CHECK-DAG: [[cval0:%.*]] = arith.constant false
+                // CHECK-DAG: [[cval1:%.*]] = arith.constant true
                 %0 = arith.constant false
                 %1 = arith.constant true
-                // CHECK: [[Q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q2:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q3:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
                 %3 = "test.op"() : () -> !quantum.bit
                 %4 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[Q4:%.*]], [[Q5:%.*]], [[Q6:%.*]] = "quantum.custom"([[Q1:%.*]], [[Q2:%.*]], [[Q3:%.*]], [[VAL2:%.*]], [[VAL1:%.*]]) <{gate_name = "PauliY"
-                // CHECK: "quantum.custom"([[Q4:%.*]], [[Q5:%.*]], [[Q6:%.*]], [[VAL1:%.*]], [[VAL2:%.*]]) <{gate_name = "PauliY"
-                %5:3 = "quantum.custom"(%2, %3, %4, %1, %0) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
-                %6:3 = "quantum.custom"(%5#0, %5#1, %5#2, %0, %1) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 2, 2>, resultSegmentSizes = array<i32: 1, 2>}> : (!quantum.bit, !quantum.bit, !quantum.bit, i1, i1) -> (!quantum.bit, !quantum.bit, !quantum.bit)
+                // CHECK: [[q3:%.*]], [[q4:%.*]], [[q5:%.*]] = quantum.custom "PauliY"() [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals([[cval1:%.*]], [[cval0:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q3:%.*]] ctrls([[q4:%.*]], [[q5:%.*]]) ctrlvals([[cval0:%.*]], [[cval1:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %5, %6, %7 = quantum.custom "PauliY"() %2 ctrls(%3, %4) ctrlvals(%1, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                %8, %9, %10 = quantum.custom "PauliY"() %5 ctrls(%6, %7) ctrlvals(%0, %1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
@@ -229,14 +229,14 @@ class TestIterativeCancelInversesPass:
         consecutive are not cancelled."""
         program = """
             func.func @test_func() {
-                // CHECK: [[VAL1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[VAL2:%.*]] = "quantum.custom"([[VAL1:%.*]]) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                // CHECK: [[VAL3:%.*]] = "quantum.custom"([[VAL2:%.*]]) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                // CHECK: "quantum.custom"([[VAL3:%.*]]) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %1 = "quantum.custom"(%0) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %2 = "quantum.custom"(%1) <{gate_name = "PauliY", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
-                %3 = "quantum.custom"(%2) <{gate_name = "PauliX", operandSegmentSizes = array<i32: 0, 1, 0, 0>, resultSegmentSizes = array<i32: 1, 0>}> : (!quantum.bit) -> !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: [[q2:%.*]] = quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q2:%.*]] : !quantum.bit
+                %1 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %2 = quantum.custom "PauliY"() %1 : !quantum.bit
+                %3 = quantum.custom "PauliX"() %2 : !quantum.bit
                 return
             }
         """
