@@ -35,12 +35,10 @@ class CollectResourceOps(FlattenedInterpreter):
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):  # pylint: disable=unused-argument
+def _(self, *invals, jaxpr, lazy):  # pylint: disable=unused-argument
     """Collect all operations in the base plxpr and create adjoint resource ops with them."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
     child = CollectResourceOps()
-    child.eval(jaxpr, consts, *args)
+    child.eval(jaxpr, [], *invals)
     for op in child.state["ops"]:
         self.state["ops"].add(adjoint_resource_rep(op.op_type, op.params))
     return []
