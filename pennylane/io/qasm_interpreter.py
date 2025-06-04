@@ -135,7 +135,7 @@ NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
     ]
 )
 
-ASSIGNMENT_CLASSICAL_OPERATORS = [ARROW, EQUALS, COMPOUND_ASSIGNMENT_OPERATORS]
+ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS] + COMPOUND_ASSIGNMENT_OPERATORS
 
 
 @dataclass
@@ -220,8 +220,40 @@ class Context:
                     f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                     f"defined on line {self.vars[name].line}"
                 )
-            self.vars[name].val = value
-            self.vars[name].line = node.span.start_line
+            if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[0]:
+                    self.vars[name].val = value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[1]:
+                    self.vars[name].val += value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[2]:
+                    self.vars[name].val -= value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[3]:
+                    self.vars[name].val = self.vars[name].val * value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[4]:
+                    self.vars[name].val = self.vars[name].val / value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[5]:
+                    self.vars[name].val = self.vars[name].val & value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[6]:
+                    self.vars[name].val = self.vars[name].val | value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
+                    self.vars[name].val = ~value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
+                    self.vars[name].val = self.vars[name].val ^ value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
+                    self.vars[name].val = self.vars[name].val << value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
+                    self.vars[name].val = self.vars[name].val >> value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
+                    self.vars[name].val = self.vars[name].val % value
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                    self.vars[name].val = self.vars[name].val ** value
+                self.vars[name].line = node.span.start_line
+            else:
+                # we shouldn't ever get thi error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in assignment expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
         else:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
@@ -432,7 +464,6 @@ class QasmInterpreter:
         # references to an unresolved value see a func for now
         name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
-        # TODO: different types of assignments
         context.update_var(res, name, node)
 
     @visit.register(AliasStatement)
@@ -658,7 +689,9 @@ class QasmInterpreter:
         return ret
 
     @visit.register(BinaryExpression)
-    def visit_binary_expression(self, node: BinaryExpression, context: Context):  # pylint: disable=too-many-branches
+    def visit_binary_expression(
+        self, node: BinaryExpression, context: Context
+    ):  # pylint: disable=too-many-branches
         """
         Registers a binary expression.
 

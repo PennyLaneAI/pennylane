@@ -53,6 +53,30 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestExpressions:
+    def test_different_assignments(self):
+        # parse the QASM
+        ast = parse(
+            open("assignment.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "assignment-exprs"}
+        )
+        assert context.vars["a"].val == 1
+        assert context.vars["b"].val == 1 + 2
+        assert context.vars["c"].val == 2 - 3
+        assert context.vars["d"].val == 3 * 4
+        assert context.vars["e"].val == 4 / 5
+        assert context.vars["f"].val == True and True
+        assert context.vars["g"].val == True or False
+        assert context.vars["h"].val == ~8
+        assert context.vars["i"].val == 2 ^ 9
+        assert context.vars["j"].val == 2 << 10
+        assert context.vars["k"].val == 3 >> 1
+        assert context.vars["l"].val == 5 % 2
+        assert context.vars["m"].val == 6**13
+
     def test_nested_expr(self):
         # parse the QASM
         ast = parse(
