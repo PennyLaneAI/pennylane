@@ -729,7 +729,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
 
 def vibrational_pes(
     molecule,
-    quad_order=9,
+    n_points=9,
     method="rhf",
     localize=True,
     bins=None,
@@ -741,17 +741,18 @@ def vibrational_pes(
     r"""Computes potential energy surfaces along vibrational normal modes.
 
     Args:
-        molecule (~qchem.molecule.Molecule): Molecule object
-        quad_order (int): Order for Gauss-Hermite quadratures. Default value is ``9``.
-        method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-        localize (bool): Flag to perform normal mode localization. Default is ``False``.
-        bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
-            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
-        cubic (bool)): Flag to include three-mode couplings. Default is ``False``.
-        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
-            ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is ``1``.
+        molecule (~qchem.molecule.Molecule): the molecule object
+        n_points (int): number of points for computing the potential energy surface. Default value is ``9``.
+        method (str): Electronic structure method used to perform geometry optimization.
+            Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
+            Hartree-Fock, respectively. Default is ``"rhf"``.
+        localize (bool): if ``True`` perform normal mode localization. Default is ``False``.
+        bins (List[float]): grid of frequencies for grouping normal modes.
+            Default is ``None`` which means all frequencies will be grouped in one bin.
+        cubic (bool)): if ``True`` include three-mode couplings. Default is ``False``.
+        dipole_level (int): The level up to which dipole moment data are to be calculated. Input
+            values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
+            three-mode dipole, respectively. Default value is ``1``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : ``"mp_pool"``, ``"cf_procpool"``, ``"cf_threadpool"``,
@@ -759,18 +760,16 @@ def vibrational_pes(
             ``"serial"``.
 
     Returns:
-        VibrationalPES object.
+       ~.VibrationalPES object.
 
     **Example**
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = vibrational_pes(mol)
-    >>> pes.pes_onemode
-    array([[ 6.26177771e-02,  3.62085556e-02,  1.72120120e-02,
-             4.71674655e-03, -2.84217094e-14,  6.06717218e-03,
-             2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
+    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> print(pes.freqs)
+    [0.02038828]
     """
     with TemporaryDirectory() as tmpdir:
         path = Path(tmpdir)
@@ -782,7 +781,7 @@ def vibrational_pes(
                 "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
                 "between 1 and 3."
             )
-        if quad_order < 1:
+        if n_points < 1:
             raise ValueError("Number of sample points cannot be less than 1.")
 
         geom_eq = optimize_geometry(molecule, method)
@@ -799,15 +798,13 @@ def vibrational_pes(
 
         scf_result = _single_point(mol_eq, method)
 
-        freqs = None
         uloc = None
-        vectors = None
 
         freqs, vectors = _harmonic_analysis(scf_result, method)
         if localize:
             freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
 
-        grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
+        grid, gauss_weights = np.polynomial.hermite.hermgauss(n_points)
 
         dipole = True
 
