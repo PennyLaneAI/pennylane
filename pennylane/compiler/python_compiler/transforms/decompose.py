@@ -16,7 +16,7 @@ written using xDSL."""
 
 import warnings
 from dataclasses import dataclass
-from typing import Dict, Iterable, Type, Union, Optional
+from typing import Dict, Optional, Type, Union
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
@@ -26,11 +26,7 @@ from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.quantum_dialect import (
-    AllocOp,
-    CustomOp,
-    ExtractOp,
-)
+from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, CustomOp, ExtractOp
 from pennylane.operation import Operator
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
@@ -45,17 +41,6 @@ from_str_to_PL_gate = {
     "PhaseShift": qml.PhaseShift,
     "PauliX": qml.PauliX,
 }
-
-
-def flatten(nested: Iterable):
-    """Recursively flatten an arbitrarily nested iterable (except strings)."""
-    flat = []
-    for item in nested:
-        if isinstance(item, Iterable) and not isinstance(item, (str, bytes)):
-            flat.extend(flatten(item))
-        else:
-            flat.append(item)
-    return flat
 
 
 def resolve_gate(name: str) -> Operator:
@@ -174,14 +159,13 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             wire_position = in_qubit.index
             ssa_qubit = op.out_qubits[wire_position]
             return self.ssa_qubits_to_wires[ssa_qubit]
-        # TODO: Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.)
         raise NotImplementedError(f"Cannot resolve wire for operation {op}")
 
     def xdsl_to_qml_op(self, op: CustomOp) -> Operator:
         """Given a ``quantum.custom`` xDSL op, convert it to a PennyLane operator."""
         gate_name = op.properties["gate_name"].data
         parameters = self.ssa_to_qml_params(op)
-        wires = flatten(self.ssa_to_qml_wires(op))
+        wires = self.ssa_to_qml_wires(op)
         return resolve_gate(gate_name)(*parameters, wires=wires)
 
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
