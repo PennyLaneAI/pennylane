@@ -21,7 +21,7 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 # pylint: disable = too-many-branches, too-many-positional-arguments, too-many-arguments, too-many-nested-blocks,
 
 
-def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
+def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ordered=True):
     r"""Return Christiansen bosonic vibrational Hamiltonian.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
@@ -75,8 +75,24 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> pes = qml.qchem.vibrational_pes(mol)
-    >>> print(pes.freqs)
-    [0.02038828]
+    >>> integrals = qml.qchem.vibrational.christiansen_integrals(pes,n_states=4)
+    >>> print(qml.qchem.christiansen_bosonic(integrals[0]))
+    0.010354801267111937 * b⁺(0) b(0)
+    + 0.0019394049410426685 * b⁺(0) b(1)
+    + 0.00046435758469677135 * b⁺(0) b(2)
+    + 0.001638099727072391 * b⁺(0) b(3)
+    + 0.0019394049410426685 * b⁺(1) b(0)
+    + 0.03139978085503162 * b⁺(1) b(1)
+    + 0.005580004725710029 * b⁺(1) b(2)
+    + 0.0013758584515161654 * b⁺(1) b(3)
+    + 0.00046435758469677135 * b⁺(2) b(0)
+    + 0.005580004725710029 * b⁺(2) b(1)
+    + 0.05314478483410301 * b⁺(2) b(2)
+    + 0.010479092552439511 * b⁺(2) b(3)
+    + 0.001638099727072391 * b⁺(3) b(0)
+    + 0.0013758584515161654 * b⁺(3) b(1)
+    + 0.010479092552439511 * b⁺(3) b(2)
+    + 0.07565063279464881 * b⁺(3) b(3)
     """
     if modes is None:
         modes = np.shape(one)[0]
