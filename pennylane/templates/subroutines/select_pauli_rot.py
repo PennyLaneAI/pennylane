@@ -16,7 +16,7 @@ Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
-from pennylane.decomposition import adjoint_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
@@ -205,3 +205,6 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
     elif rot_axis == "Y":
         qml.Hadamard(wires[-1])
         qml.S(wires[-1])
+
+
+add_decomps(SelectPauliRot, decompose_select_pauli_rot)
