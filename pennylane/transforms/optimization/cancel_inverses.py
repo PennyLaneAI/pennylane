@@ -33,29 +33,31 @@ from pennylane.wires import Wires
 from .optimization_utils import find_next_gate
 
 
+def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, Wires]) -> bool:
+    """Checks if two data objects are equal, considering abstractness."""
+
+    for d1, d2 in zip(items1, items2, strict=True):
+        if is_abstract(d1) or is_abstract(d2):
+            if d1 is not d2:
+                warnings.warn(
+                    "At least one of the operators has abstract wires or parameters. "
+                    "The cancel_inverses transform will not be applied to these operators. ",
+                    UserWarning,
+                )
+                return False
+        elif d1 != d2:
+            return False
+
+    return True
+
+
 def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
-        and (op1.data == op2.data)
-        and (op1.hyperparameters == op2.hyperparameters)
-        and (op1.wires == op2.wires)
+        and _check_equality(op1.data, op2.data)
+        and _check_equality(op1.wires, op2.wires)
     )
-
-
-def _contains_abstract(items: Union[Wires, TensorLike]) -> bool:
-    """Checks if any item in the iterable is abstract."""
-    return any(is_abstract(item) for item in items)
-
-
-def _op_has_abstract(op: Operator) -> bool:
-    """Checks if an operator has abstract wires or parameters."""
-    return _contains_abstract(op.wires) or _contains_abstract((getattr(op, "data", ())))
-
-
-def _check_abstractness(op1: Operator, op2: Operator) -> bool:
-    """Checks if either of the operators has abstract wires or parameters."""
-    return _op_has_abstract(op1) or _op_has_abstract(op2)
 
 
 def _are_inverses(op1: Operator, op2: Operator) -> bool:
@@ -71,17 +73,6 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
     # op1 is self-inverse and the next gate is also op1
     if op1 in self_inverses and op1.name == op2.name:
         return True
-
-    # If at least one of the operators has abstract wires or parameters,
-    # we cannot determine if they are inverses because we cannot compare them.
-    if _check_abstractness(op1, op2):
-        warnings.warn(
-            "At least one of the operators has abstract wires or parameters. "
-            "The cancel_inverses transform will not be applied to these operators. ",
-            UserWarning,
-        )
-
-        return False
 
     # op1 is an `Adjoint` class and its base is equal to op2
     if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
