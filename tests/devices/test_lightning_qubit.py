@@ -16,6 +16,7 @@ Tests for the accessibility of the Lightning-Qubit device
 """
 import pytest
 from flaky import flaky
+from functools import partial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -61,23 +62,27 @@ def test_no_backprop_auto_interface():
 def test_finite_shots_adjoint():
     """Test that shots and adjoint diff raises an error."""
 
-    dev = qml.device("lightning.qubit", wires=2, shots=2)
+    dev = qml.device("lightning.qubit", wires=2)
 
     def circuit():
         """Simple quantum function."""
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(QuantumFunctionError, match="does not support adjoint"):
-        qml.QNode(circuit, dev, diff_method="adjoint")()
+        qnode = qml.QNode(circuit, dev, diff_method="adjoint")
+        qml.set_shots(qnode, shots=2)()
 
 
 @flaky(max_runs=5)
 def test_finite_shots():
     """Test that shots in LQ and DQ give the same results."""
+    
+    shots = 50000
 
-    dev = qml.device("lightning.qubit", wires=2, shots=50000)
-    dq = qml.device("default.qubit", shots=50000)
+    dev = qml.device("lightning.qubit", wires=2)
+    dq = qml.device("default.qubit")
 
+    @partial(qml.set_shots, shots=shots)
     def circuit():
         qml.RX(np.pi / 4, 0)
         qml.RY(-np.pi / 4, 1)

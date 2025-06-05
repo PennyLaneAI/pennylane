@@ -15,6 +15,7 @@
 Unit tests for the debugging module.
 """
 from contextlib import nullcontext
+from functools import partial
 from unittest.mock import patch
 
 import numpy as np
@@ -404,10 +405,11 @@ class TestSnapshotSupportedQNode:
         # TODO: not sure what to do with this test so leaving this here for now.
         np.random.seed(9872653)
 
-        dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
+        dev = qml.device("default.qutrit.mixed", wires=2)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(add_bad_snapshot: bool):
             qml.THadamard(wires=0)
@@ -438,7 +440,7 @@ class TestSnapshotSupportedQNode:
         assert result["execution_results"] == expected["execution_results"]
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
+        result = qml.snapshots(qml.set_shots(circuit, shots=200))(add_bad_snapshot=False)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
@@ -556,8 +558,9 @@ class TestSnapshotSupportedQNode:
         # TODO: The fact that this entire test depends on a global seed is not good
         np.random.seed(9872653)
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1)
 
+        @partial(qml.set_shots, shots=10)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -592,7 +595,7 @@ class TestSnapshotSupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(shots=200)
+        result = qml.snapshots(qml.set_shots(circuit, shots=200))()
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
 
@@ -635,8 +638,9 @@ class TestSnapshotUnsupportedQNode:
 
     @flaky(max_runs=3)
     def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=500)
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=500)
         @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.Hadamard(0)
@@ -649,7 +653,7 @@ class TestSnapshotUnsupportedQNode:
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overridden correctly
-        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        counts, _ = tuple(zip(*(qml.snapshots((qml.set_shots(circuit, shots=1000)))().values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
