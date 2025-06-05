@@ -143,6 +143,25 @@
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
+<h4>Qualtran Integration 🔗</h4>
+
+* It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
+  [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
+  
+  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It 
+  requires one input and takes in two optional inputs:
+  * `circuit`: an initialized PennyLane operator or a QNode
+  * `map_ops`: whether or not if operators are mapped to a Qualtran Bloq or wrapped as a `ToBloq`
+  * `custom_mapping`: dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq
+  
+  The following example converts a PennyLane Operator into a Qualtran Bloq:
+
+  ```python
+  
+  >>> qml.to_bloq(qml.CNOT([0, 1]))
+  CNOT()
+  ```
+
 <h4>Resource-efficient Decompositions 🔎</h4>
 
 * The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
