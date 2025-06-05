@@ -646,6 +646,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             """
 
             def __init__(self, op, map_ops=False, **kwargs):
+                # TODO: Import top level when circular dependencies are fixed
                 from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
@@ -659,6 +660,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             @cached_property
             def signature(self) -> "qt.Signature":
                 """Compute and return Qualtran signature for given op or QNode."""
+                # TODO: Import top level when circular dependencies are fixed
                 from pennylane.workflow import construct_tape
                 from pennylane.workflow.qnode import QNode
 
@@ -673,6 +675,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                 """Decompose the bloq using the op's decomposition or the tape of the QNode"""
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
+                # TODO: Import top level when circular dependencies are fixed
                 from pennylane.workflow import construct_tape
                 from pennylane.workflow.qnode import QNode
 
