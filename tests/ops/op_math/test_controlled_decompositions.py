@@ -798,8 +798,9 @@ class TestMCXDecomposition:
             )
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5])
-    def test_decomposition_with_many_workers(self, n_ctrl_wires):
+    def test_decomposition_with_many_workers(self, n_ctrl_wires, work_wire_type):
         """Test that the decomposed MultiControlledX gate produces the correct matrix."""
 
         control_wires = list(range(1, n_ctrl_wires + 1))
@@ -807,8 +808,14 @@ class TestMCXDecomposition:
         num_work_wires = n_ctrl_wires - 2
         work_wires = list(range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires))
 
-        mcx = qml.MultiControlledX(wires=control_wires + [target_wire], work_wires=work_wires)
+        mcx = qml.MultiControlledX(
+            wires=control_wires + [target_wire],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
         with qml.queuing.AnnotatedQueue() as q:
+            if work_wire_type == "clean":
+                qml.Projector([0] * len(work_wires), wires=work_wires)
             decompose_mcx_with_many_workers(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
@@ -816,13 +823,20 @@ class TestMCXDecomposition:
         expected_gate_counts = {k: v for k, v in resource.gate_counts.items() if v > 0}
         actual_gate_counts = defaultdict(int)
         for _op in q.queue:
+            if isinstance(_op, qml.Projector):
+                continue
             resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
             actual_gate_counts[resource_rep] += 1
         assert actual_gate_counts == expected_gate_counts
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
-        expected_matrix = mcx.sparse_matrix(wire_order=control_wires + work_wires + [target_wire])
+        equivalent_op = mcx
+        if work_wire_type == "clean":
+            equivalent_op @= qml.Projector([0] * len(work_wires), wires=work_wires)
+        expected_matrix = equivalent_op.sparse_matrix(
+            wire_order=control_wires + work_wires + [target_wire]
+        )
 
         assert qml.math.allclose(matrix, expected_matrix)
 
