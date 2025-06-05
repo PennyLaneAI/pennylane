@@ -1187,7 +1187,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Superposition(**kwargs))
 
-    def test_and(self):
+    def test_temporary_and(self):
         """Test the primitive bind call of TemporaryAnd."""
 
         kwargs = {"wires": [0, 1, 2]}

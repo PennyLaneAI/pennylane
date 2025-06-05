@@ -35,7 +35,7 @@ class TemporaryAnd(Operation):
 
         For correct usage of the operator, the user must ensure
         that the input before computation is :math:`|0\rangle`,
-        and that the output after uncomputation is :math:`|0\rangle`.
+        and that the output after uncomputation is :math:`|0\rangle`
         on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
         different from the expected ``AND``.
 
@@ -47,8 +47,9 @@ class TemporaryAnd(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
             third one is the target wire.
-        control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
-            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        control_values (tuple[bool or int]): The values on the control wires for which
+            the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 
 
     **Example**
@@ -129,12 +130,9 @@ class TemporaryAnd(Operation):
         """
 
         control_values = kwargs["control_values"]
-        first_qubit = [qml.X(0), qml.I(0)]
-        second_qubit = [qml.X(1), qml.I(1)]
-
-        X_matrix = qml.matrix(
-            first_qubit[control_values[0]] @ second_qubit[control_values[1]] @ qml.I(2)
-        )
+        eye = np.eye(2)
+        single_qubit = [np.array([[0, 1], [1, 0]]), eye]
+        X_matrix = np.kron(single_qubit[control_values[0]], np.kron(single_qubit[control_values[1]], eye))
         basis_matrix = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
