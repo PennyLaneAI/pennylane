@@ -313,10 +313,16 @@ def _controlled_decomp_with_work_wire_condition(
 
 
 def _controlled_decomp_with_work_wire_resource(
-    base_class, base_params, num_control_wires, num_work_wires, **__
+    base_class, base_params, num_control_wires, num_work_wires, work_wire_type, **__
 ):
     return {
-        controlled_resource_rep(qml.X, {}, num_control_wires, num_work_wires=num_work_wires - 1): 2,
+        controlled_resource_rep(
+            qml.X,
+            {},
+            num_control_wires,
+            num_work_wires=num_work_wires - 1,
+            work_wire_type=work_wire_type,
+        ): 2,
         controlled_resource_rep(base_class, base_params, 1, 0): 1,
     }
 
