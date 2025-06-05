@@ -1589,7 +1589,7 @@ class ResourceQROM(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         if num_bit_flips is None:
-            num_bit_flips = (num_bitstrings * size_bitstring // 2)
+            num_bit_flips = num_bitstrings * size_bitstring // 2
 
         params = {
             "num_bitstrings": num_bitstrings,

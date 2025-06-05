@@ -261,8 +261,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
                 GateCount(
                     re.ResourceQROM.resource_rep(
                         num_bitstrings,
-                        num_bit_flips,
                         num_precision_wires,
+                        num_bit_flips,
                         clean=False,
                     )
                 )
@@ -304,8 +304,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
                 GateCount(
                     re.ResourceQROM.resource_rep(
                         2**num_state_qubits,
-                        2 ** (num_state_qubits - 1),
                         num_precision_wires,
+                        2 ** (num_state_qubits - 1),
                         clean=False,
                     )
                 )
