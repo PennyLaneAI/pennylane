@@ -633,7 +633,7 @@ def decompose(
         needs to be decomposed. In short, the ``gate_set`` is specified in terms of operator types,
         whereas the ``stopping_condition`` is specified in terms of operator instances.
 
-        Here is an example of using `stopping_condition` to not decompose a `qml.QubitUnitary`
+        Here is an example of using ``stopping_condition`` to not decompose a ``qml.QubitUnitary``
         instance if it's equivalent to the identity matrix.
 
         .. code-block:: python
@@ -654,7 +654,7 @@ def decompose(
 
                 return False
 
-        Note that the `stopping_condition` does not need to check whether the operator is in the
+        Note that the ``stopping_condition`` does not need to check whether the operator is in the
         target gate set. This will always be checked.
 
         .. code-block:: python
