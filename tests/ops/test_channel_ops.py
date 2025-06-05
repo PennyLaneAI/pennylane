@@ -911,6 +911,53 @@ class TestPauliError:
         jac = jac_fn(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
+    def test_equality(self):
+        # op1.data is (0.1,) and op2.data is (0.2,)
+
+        p1 = qml.RX(0.1, 0)
+        p2 = qml.RX(0.2, 0)
+
+        eq = qml.equal(p1, p2)
+        assert not eq
+
+        # works now as isclose() no longer called on op.data which is ('X', 0.1) and includes strings
+
+        # should be equal
+
+        e1 = qml.PauliError("XY", 0.1, wires=(0, 1))
+        e2 = qml.PauliError("XY", 0.1, wires=(0, 1))
+
+        eq = qml.equal(e1, e2)
+        assert eq
+
+        # id is not in op.data
+
+        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
+        e2 = qml.PauliError("XY", 0.1, wires=(0, 1), id="two")
+
+        eq = qml.equal(e1, e2)
+        assert eq
+
+        # more complex PauliErrors
+
+        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
+        e2 = qml.PauliError("XYZ", 0.1, wires=(0, 1, 2), id="two")
+
+        eq = qml.equal(e1, e2)
+        assert not eq
+
+        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
+        e2 = qml.PauliError("XZ", 0.1, wires=(0, 1), id="two")
+
+        eq = qml.equal(e1, e2)
+        assert not eq
+
+        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
+        e2 = qml.PauliError("XY", 0.1, wires=(0, 2), id="two")
+
+        eq = qml.equal(e1, e2)
+        assert not eq
+
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""

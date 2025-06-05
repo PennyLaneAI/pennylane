@@ -313,12 +313,6 @@ def _equal_pauli_errors(
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
 
-    if op1.hyperparameters != op2.hyperparameters:
-        return (
-            "The hyperparameters are not equal for op1 and op2.\n"
-            f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
-        )
-
     if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
@@ -326,12 +320,17 @@ def _equal_pauli_errors(
     if not op1.data[0] == op2.data[0]:
         return f"PauliErrors have different operators {op1.data[0]} and {op2.data[0]}."
 
+    op1_nums = set(filter(lambda d: isinstance(d, Number), op1.data))
+    op2_nums = set(filter(lambda d: isinstance(d, Number), op2.data))
+    op1_non_nums = set(op1.data) - op1_nums
+    op2_non_nums = set(op2.data) - op2_nums
+
     if not qml.math.allclose(
-        list(filter(lambda d: isinstance(d, Number), op1.data)),
-        list(filter(lambda d: isinstance(d, Number), op2.data)),
+        list(op1_nums),
+        list(op2_nums),
         rtol=rtol,
         atol=atol
-    ):
+    ) and all([(nn1 == nn2) for nn1, nn2 in zip(op1_non_nums, op2_non_nums)]):
         return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
