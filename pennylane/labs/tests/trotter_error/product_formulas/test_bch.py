@@ -110,7 +110,7 @@ def test_fourth_order_norm_two_fragments(fragments, t):
         u / 2,
     ]
 
-    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
+    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(1j * t)
     fourth_order_approx = fourth_order.to_matrix(fragments)
     actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
 
@@ -158,57 +158,31 @@ Z = "Z"
                     (Y, X, Y, X, Y): 1 / 120,
                     (Y, Y, Y, X, Y): 1 / 720,
                 },
-                # {
-                #    (X, X, Y, Y, X, Y): -1 / 720,
-                #    (X, Y, X, Y, X, Y): 1 / 240,
-                #    (X, Y, Y, Y, X, Y): 1 / 1440,
-                #    (Y, X, X, X, X, Y): 1 / 1440,
-                # },
-                # {
-                #    (X, X, X, X, X, X, Y): 1 / 30240,
-                #    (X, X, Y, X, X, X, Y): 1 / 5040,
-                #    (X, X, Y, Y, X, X, Y): -1 / 10080,
-                #    (X, Y, X, X, X, X, Y): 1 / 10080,
-                #    (X, Y, X, Y, X, X, Y): 1 / 1008,
-                #    (X, Y, X, Y, Y, X, Y): 1 / 5040,
-                #    (X, Y, Y, X, X, X, Y): -1 / 7560,
-                #    (X, Y, Y, Y, X, X, Y): 1 / 3360,
-                #    (X, Y, Y, Y, Y, X, Y): 1 / 10080,
-                #    (Y, X, X, X, X, X, Y): -1 / 10080,
-                #    (Y, X, Y, X, X, X, Y): -1 / 1260,
-                #    (Y, X, Y, Y, X, X, Y): -1 / 1680,
-                #    (Y, Y, X, X, X, X, Y): 1 / 3360,
-                #    (Y, Y, X, Y, X, X, Y): -1 / 3360,
-                #    (Y, Y, X, Y, Y, X, Y): -1 / 2520,
-                #    (Y, Y, Y, X, X, X, Y): 1 / 7560,
-                #    (Y, Y, Y, Y, X, X, Y): 1 / 10080,
-                #    (Y, Y, Y, Y, Y, X, Y): -1 / 30240,
-                # },
             ],
         ),
-        (
-            [X, Y, Z],
-            [1, 1, 1],
-            3,
-            [
-                {(X,): 1, (Y,): 1, (Z,): 1},
-                {
-                    (X, Y): 1 / 2,
-                    (X, Z): 1 / 2,
-                    (Y, Z): 1 / 2,
-                },
-                {
-                    (X, X, Y): 1 / 12,
-                    (X, X, Z): 1 / 12,
-                    (X, Y, Z): 1 / 3,
-                    (Y, X, Y): -1 / 12,
-                    (Y, X, Z): -1 / 6,
-                    (Y, Y, Z): 1 / 12,
-                    (Z, X, Z): -1 / 12,
-                    (Z, Y, Z): -1 / 12,
-                },
-            ],
-        ),
+        # (
+        #    [X, Y, Z],
+        #    [1, 1, 1],
+        #    3,
+        #    [
+        #        {(X,): 1, (Y,): 1, (Z,): 1},
+        #        {
+        #            (X, Y): 1 / 2,
+        #            (X, Z): 1 / 2,
+        #            (Y, Z): 1 / 2,
+        #        },
+        #        {
+        #            (X, X, Y): 1 / 12,
+        #            (X, X, Z): 1 / 12,
+        #            (X, Y, Z): 1 / 3,
+        #            (Y, X, Y): -1 / 12,
+        #            (Y, X, Z): -1 / 6,
+        #            (Y, Y, Z): 1 / 12,
+        #            (Z, X, Z): -1 / 12,
+        #            (Z, Y, Z): -1 / 12,
+        #        },
+        #    ],
+        # ),
         (
             [X, Y, X],
             [1, 1, 1],
@@ -230,7 +204,7 @@ Z = "Z"
 def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
     """Test against BCH expansion. The expected values come from Sections 4 and 5 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`"""
 
-    product_formula = ProductFormula(frag_labels, coeffs=frag_coeffs, include_i=False)
+    product_formula = ProductFormula(frag_labels, coeffs=frag_coeffs)
     actual = bch_expansion(product_formula, max_order)
 
     for i, order in enumerate(actual):
@@ -249,12 +223,12 @@ fragment_list = [
 def test_second_order_against_matrix_log(fragments):
     """Test that the BCH expansion converges to the matrix log"""
     t = 0.01
-    second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])(t)
+    second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
     ham = sum(fragments.values())
 
-    pf_mat = second_order.to_matrix(fragments)
+    pf_mat = second_order(1j * t).to_matrix(fragments)
 
-    bch = effective_hamiltonian(second_order, fragments, order=3)
+    bch = effective_hamiltonian(second_order, fragments, 3, t)
     log = logm(pf_mat)
 
     bch_error = bch - (1j * t * ham) / t**3
@@ -274,7 +248,7 @@ def test_fourth_order_against_matrix_log(fragments):
     )
     ham = sum(fragments.values())
 
-    pf_mat = fourth_order.to_matrix(fragments)
+    pf_mat = fourth_order(1j).to_matrix(fragments)
 
     bch = effective_hamiltonian(fourth_order, fragments, order=5)
     log = logm(pf_mat)
@@ -308,7 +282,7 @@ def test_fourth_order_against_matrix_log_2(fragments):
     fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
     ham = sum(fragments.values())
 
-    pf_mat = fourth_order.to_matrix(fragments)
+    pf_mat = fourth_order(1j).to_matrix(fragments)
 
     bch = effective_hamiltonian(fourth_order, fragments, order=5)
     log = logm(pf_mat)

@@ -71,7 +71,7 @@ def effective_hamiltonian(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = bch_expansion(product_formula(timestep), order)
+    bch = bch_expansion(product_formula(1j * timestep), order)
     eff = _AdditiveIdentity()
 
     for ith_order in bch:
@@ -147,7 +147,7 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = bch_expansion(product_formula(timestep), order)
+    bch = bch_expansion(product_formula(1j * timestep), order)
     commutators = {
         commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
     }

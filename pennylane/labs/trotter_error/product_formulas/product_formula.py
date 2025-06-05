@@ -34,7 +34,6 @@ class ProductFormula:
         coeffs: Sequence[float] = None,
         exponent: float = 1.0,
         label: str = None,
-        include_i: bool = True,
     ):
 
         if any(not isinstance(term, type(terms[0])) for term in terms):
@@ -64,9 +63,7 @@ class ProductFormula:
 
         self.terms = terms
 
-        if coeffs and include_i:
-            self.coeffs = [1j * coeff for coeff in coeffs]
-        elif coeffs:
+        if coeffs:
             self.coeffs = coeffs
         else:
             self.coeffs = [1] * len(self.terms)
