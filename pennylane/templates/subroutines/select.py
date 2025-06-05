@@ -21,7 +21,8 @@ import warnings
 
 import pennylane as qml
 from pennylane import math
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources, controlled_resource_rep
+from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, Hadamard, S, T, X, adjoint, ctrl
 from pennylane.templates.subroutines.temporary_and import TemporaryAnd
@@ -76,8 +77,10 @@ class Select(Operation):
 
     """
 
+    resource_keys = set(["ops"])
+
     def _flatten(self):
-        return (self.ops), (self.control)
+        return (self.ops), (self.control, self.hyperparameters["work_wires"])
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -85,7 +88,7 @@ class Select(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
-        return cls(data, metadata)
+        return cls(data, control=metadata[0], work_wires=metadata[1])
 
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control})"
@@ -233,6 +236,11 @@ class Select(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+    @property
+    def resource_params(self) -> dict:
+        return {"ops": [resource_rep(type(op),**op.resource_params) for op in self.hyperparameters["ops"]]}
+
 
 
 def _ceil(a):
@@ -416,18 +424,29 @@ def _add_k_units(ops, controls, work_wires, k):
     )
 
 
-def _unary_select_resources():
+def _unary_select_resources(ops):
+
+    num_ops = len(ops)
+
+    if math.log2(num_ops) - _ceil_log(num_ops) > 0.5:
+        return {
+            resource_rep(TemporaryAnd, control_values = (0,1)): (num_ops - 3),
+            adjoint_resource_rep(TemporaryAnd, base_params ={"control_values": (0,1)}): (num_ops-3),
+            CNOT: num_ops,
+            **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops}
+        }
+
     return {
-        Hadamard: 2,
-        CNOT: 3,
-        T: 2,
-        adjoint_resource_rep(T, {}): 2,
-        adjoint_resource_rep(S, {}): 1,
+        resource_rep(TemporaryAnd, control_values = (0,1)): (num_ops - 2),
+        adjoint_resource_rep(TemporaryAnd, base_params={"control_values": (0, 1)}): (num_ops - 2),
+        CNOT: num_ops - 2,
+        **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops}
     }
 
 
+
 @register_resources(_unary_select_resources)
-def _unary_select(ops, control, work_wires):
+def _unary_select(ops, control, work_wires, **kwargs):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`L` operators this decomposition requires at least :math:`c=\lceil\log_2 L\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
