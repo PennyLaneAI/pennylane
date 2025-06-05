@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/zxopt"""
-from typing import Callable, List
+from typing import List
 
 import pytest
 import pyzx as zx
@@ -90,7 +90,7 @@ def test_full_reduce(circ):
 
     assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
-    assert isinstance(func, Callable)
+    assert func([1]) == 1
 
 
 @pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
@@ -100,7 +100,7 @@ def test_full_optimize(circ):
 
     assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
-    assert isinstance(func, Callable)
+    assert func([1]) == 1
 
 
 @pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
@@ -110,7 +110,7 @@ def test_basic_optimization(circ):
 
     assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
-    assert isinstance(func, Callable)
+    assert func([1]) == 1
 
 
 @pytest.mark.parametrize("circ", [circ1_clifford_T, circ2_clifford_T])
@@ -120,7 +120,7 @@ def test_todd(circ):
 
     assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
-    assert isinstance(func, Callable)
+    assert func([1]) == 1
 
 
 @pytest.mark.parametrize("circ", [phase_poly1, circ1_clifford_T, circ2_clifford_T])
