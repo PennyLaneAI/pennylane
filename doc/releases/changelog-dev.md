@@ -656,6 +656,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.StatePrep` does not raise an error when the norm of input states is not 1.
+  Instead, only raise a `UserWarning`.
+  [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
+
 * `qml.metric_tensor` can now be calculated with catalyst.
   [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
 
