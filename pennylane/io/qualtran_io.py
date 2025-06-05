@@ -580,7 +580,7 @@ def _split_qubits(registers, qubits):  # pylint: disable=redefined-outer-name
     return qubit_regs
 
 
-def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
+def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
@@ -597,9 +597,7 @@ def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
             _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
         ] = bb.allocate(n_alloc)
 
-    if in_reg in qreg_to_qvar:
-        # This is the easy case when no split / joins are needed.
-        return
+    assert in_reg in qreg_to_qvar
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
