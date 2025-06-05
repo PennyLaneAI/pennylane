@@ -324,6 +324,12 @@
   0: ──RX(-0.50)─╭●────────────┤  <Z>
   1: ────────────╰X──RY(-0.50)─┤
   ```
+  
+* Decomposition rules compatible with the new graph-based decomposition system have been implemented
+  for :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
+  * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
+  * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
+  [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
 * The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with 
   graph-based decomposition enabled, which must be a function that returns `True` if an operator 
@@ -332,6 +338,9 @@
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
 <h3>Improvements 🛠</h3>
+
+* `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
+  [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
 * Improved the drawing of `GlobalPhase`, `ctrl(GlobalPhase)`, `Identity` and `ctrl(Identity)` operations.
   The labels are grouped together like for other multi-qubit operations, and the drawing
@@ -371,6 +380,8 @@
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
   [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
+  [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
+  [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -394,6 +405,9 @@
 * Add commutation rules for a Clifford gate set (`qml.H`, `qml.S`, `qml.CNOT`) to the `ftqc.pauli_tracker` module,
   accessible via the `commute_clifford_op` function.
   [(#7444)](https://github.com/PennyLaneAI/pennylane/pull/7444)
+
+* Add offline byproduct correction support to the `ftqc` module.
+  [(#7447)](https://github.com/PennyLaneAI/pennylane/pull/7447)
 
 * The `ftqc` module `measure_arbitrary_basis`, `measure_x` and `measure_y` functions
   can now be captured when program capture is enabled.
@@ -532,6 +546,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
   [(#7508)](https://github.com/PennyLaneAI/pennylane/pull/7508)
+  [(#7603)](https://github.com/PennyLaneAI/pennylane/pull/7603)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
   pennylane now depends on the more general `Operator` interface instead. The
@@ -553,6 +568,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Move `givens_decomposition` and private helpers from `qchem` to `math` module.
+  [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
 * Enforce module dependencies in `pennylane` using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
@@ -643,6 +661,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.metric_tensor` can now be calculated with catalyst.
+  [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
 
 * The mapping to standard wires (consecutive integers) of `qml.tape.QuantumScript` has been fixed
   to correctly consider work wires that are not used otherwise in the circuit.
