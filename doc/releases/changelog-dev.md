@@ -91,6 +91,7 @@
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+  [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
 
   ```python
   angles = np.array([1.0, 2.0, 3.0, 4.0])
