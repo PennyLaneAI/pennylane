@@ -30,10 +30,6 @@ quantum-classical programs.
     ~enable
     ~enabled
     ~pause
-    ~create_operator_primitive
-    ~create_measurement_obs_primitive
-    ~create_measurement_wires_primitive
-    ~create_measurement_mcm_primitive
     ~determine_abstracted_axes
     ~expand_plxpr_transforms
     ~eval_jaxpr
