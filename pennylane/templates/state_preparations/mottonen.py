@@ -120,6 +120,30 @@ def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
     return qml.math.reshape(qml.math.transpose(alpha), orig_shape)
 
 
+def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
+    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
+
+    Args:
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        control_wires (array[int]): wires that act as control
+        target_wire (int): wire that acts as target
+
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+
+    """
+
+    with qml.queuing.AnnotatedQueue() as q:
+        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
+
+    if qml.queuing.QueuingManager.recording():
+        for op in q.queue:
+            qml.apply(op)
+
+    return q.queue
+
+
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.
 
@@ -141,12 +165,9 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
 
-    Returns:
-          list[.Operator]: sequence of operators defined by this function
     """
-    op_list = []
-    gray_code_rank = len(control_wires)
 
+    gray_code_rank = len(control_wires)
     theta = compute_theta(alpha, num_qubits=gray_code_rank)
 
     if gray_code_rank == 0:
@@ -155,14 +176,14 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
             or qml.math.requires_grad(theta)
             or qml.math.all(theta[..., 0] != 0.0)
         ):
-            op_list.append(gate(theta[..., 0], wires=[target_wire]))
-        return op_list
+            gate(theta[..., 0], wires=[target_wire])
+        return
 
     code = gray_code(gray_code_rank)
     control_indices = np.log2(code ^ np.roll(code, -1)).astype(int)
 
-    # For abstract or differentiated theta we will never skip a rotation. Likewise if there is at
-    # least one non-zero angle (per batch if batched) for all rotations.
+    # For abstract or differentiated theta we will never skip a rotation. Likewise, if there
+    # is at least one non-zero angle (per batch if batched) for all rotations.
     skip_none = qml.math.is_abstract(theta) or qml.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
@@ -172,9 +193,8 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     for i, control_index in enumerate(control_indices):
         # If we do not _never_ skip, we might skip _some_ rotation
         if skip_none or qml.math.all(theta[..., i] != 0.0):
-            op_list.append(gate(theta[..., i], wires=[target_wire]))
-        op_list.append(qml.CNOT(wires=[control_wires[control_index], target_wire]))
-    return op_list
+            gate(theta[..., i], wires=[target_wire])
+        qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
 def _get_alpha_z(omega, n, k):
@@ -396,7 +416,7 @@ class MottonenStatePreparation(Operation):
             alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
             control = wires_reverse[k:]
             target = wires_reverse[k - 1]
-            op_list.extend(_apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target))
+            op_list.extend(_uniform_rotation_dagger_ops(qml.RY, alpha_y_k, control, target))
 
         # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
         if (
@@ -409,9 +429,7 @@ class MottonenStatePreparation(Operation):
                 control = wires_reverse[k:]
                 target = wires_reverse[k - 1]
                 if len(alpha_z_k) > 0:
-                    op_list.extend(
-                        _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
-                    )
+                    op_list.extend(_uniform_rotation_dagger_ops(qml.RZ, alpha_z_k, control, target))
 
             global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
             op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])

@@ -16,6 +16,7 @@ Contains the SelectPauliRot template.
 """
 
 import pennylane as qml
+from pennylane.decomposition import adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 
@@ -167,20 +168,40 @@ class SelectPauliRot(Operation):
         control_wires = qml.wires.Wires(control_wires)
         target_wire = qml.wires.Wires(target_wire)
 
-        op_list = []
+        with qml.queuing.AnnotatedQueue() as q:
+            decompose_select_pauli_rot(angles, control_wires + target_wire, rot_axis)
 
-        if rot_axis == "X":
-            op_list.append(qml.Hadamard(target_wire))
-        elif rot_axis == "Y":
-            op_list.extend([qml.adjoint(qml.S(target_wire)), qml.Hadamard(target_wire)])
+        if qml.queuing.QueuingManager.recording():
+            for op in q.queue:
+                qml.apply(op)
 
-        op_list.extend(
-            _apply_uniform_rotation_dagger(qml.RZ, angles, control_wires[::-1], target_wire[0])
-        )
+        return q.queue
 
-        if rot_axis == "X":
-            op_list.append(qml.Hadamard(target_wire))
-        elif rot_axis == "Y":
-            op_list.extend([qml.Hadamard(target_wire), qml.S(target_wire)])
 
-        return op_list
+def _select_pauli_rot_resource(num_wires, rot_axis):
+    return {
+        qml.RZ: 2 ** (num_wires - 1),
+        qml.CNOT: 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        qml.H: 0 if rot_axis == "Z" else 4,
+        qml.S: 1 if rot_axis == "Y" else 0,
+        adjoint_resource_rep(qml.S, {}): 1 if rot_axis == "Y" else 0,
+    }
+
+
+@register_resources(_select_pauli_rot_resource)
+def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
+    r"""Decomposes the SelectPauliRot"""
+
+    if rot_axis == "X":
+        qml.Hadamard(wires[-1])
+    elif rot_axis == "Y":
+        qml.adjoint(qml.S(wires[-1]))
+        qml.Hadamard(wires[-1])
+
+    _apply_uniform_rotation_dagger(qml.RZ, angles, wires[-2::-1], wires[-1])
+
+    if rot_axis == "X":
+        qml.Hadamard(wires[-1])
+    elif rot_axis == "Y":
+        qml.Hadamard(wires[-1])
+        qml.S(wires[-1])
