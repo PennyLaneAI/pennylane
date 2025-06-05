@@ -4,6 +4,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 from re import escape
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -100,13 +101,15 @@ class TestExpressions:
         assert context.vars["m"].val == 3 + 2
         assert context.vars["o"].val == 3 - 2
         assert context.vars["p"].val == 3 * 2
-        assert context.vars["q"].val == 3**2
+        assert context.vars["q"].val == 3 ** 2
         assert context.vars["n"].val == 3 / 2
         assert context.vars["s"].val == 3 % 2
 
         # boolean operators
         assert context.vars["t"].val == (True or False)
         assert context.vars["u"].val == (True and False)
+
+        assert context.vars["v"].val == np.isclose(0, 1)
 
     def test_different_assignments(self):
         # parse the QASM
@@ -125,12 +128,11 @@ class TestExpressions:
         assert context.vars["e"].val == 4 / 5
         assert context.vars["f"].val == True and True
         assert context.vars["g"].val == True or False
-        assert context.vars["h"].val == ~8
         assert context.vars["i"].val == 2 ^ 9
         assert context.vars["j"].val == 2 << 10
         assert context.vars["k"].val == 3 >> 1
         assert context.vars["l"].val == 5 % 2
-        assert context.vars["m"].val == 6**13
+        assert context.vars["m"].val == 6 ** 13
 
     def test_nested_expr(self):
         # parse the QASM

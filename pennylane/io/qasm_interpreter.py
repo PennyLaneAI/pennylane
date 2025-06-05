@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable
 
+import numpy as np
 from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
@@ -94,7 +95,7 @@ CARET = "^"
 AT = "@"
 TILDE = "~"
 EXCLAMATION_POINT = "!"
-EQUALITY_OPERATORS = ["==", "!="]
+EQUALITY_OPERATORS = ["==", "!=", "~="]
 COMPOUND_ASSIGNMENT_OPERATORS = [
     "+=",
     "-=",
@@ -102,7 +103,6 @@ COMPOUND_ASSIGNMENT_OPERATORS = [
     "/=",
     "&=",
     "|=",
-    "~=",
     "^=",
     "<<=",
     ">>=",
@@ -232,16 +232,14 @@ class Context:
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
                     self.vars[name].val = self.vars[name].val | value
                 if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
-                    self.vars[name].val = ~value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
                     self.vars[name].val = self.vars[name].val ^ value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
                     self.vars[name].val = self.vars[name].val << value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
                     self.vars[name].val = self.vars[name].val >> value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
                     self.vars[name].val = self.vars[name].val % value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[13]:
+                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
                     self.vars[name].val = self.vars[name].val ** value
                 self.vars[name].line = node.span.start_line
             else:
@@ -706,6 +704,8 @@ class QasmInterpreter:
                 ret = lhs == rhs
             if node.op.name == EQUALITY_OPERATORS[1]:
                 ret = lhs != rhs
+            if node.op.name == EQUALITY_OPERATORS[2]:
+                ret = np.isclose(lhs, rhs)
             if node.op.name == COMPARISON_OPERATORS[0]:
                 ret = lhs > rhs
             if node.op.name == COMPARISON_OPERATORS[1]:
