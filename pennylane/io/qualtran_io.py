@@ -27,6 +27,8 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane.workflow.qnode import QNode
+from pennylane.workflow import construct_tape
 from pennylane.operation import (
     DecompositionUndefinedError,
     MatrixUndefinedError,
@@ -654,9 +656,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             """
 
             def __init__(self, op, map_ops=False, **kwargs):
-                # TODO: Import top level when circular dependencies are fixed
-                from pennylane.workflow.qnode import QNode
-
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 
@@ -668,10 +667,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             @cached_property
             def signature(self) -> "qt.Signature":
                 """Compute and return Qualtran signature for given op or QNode."""
-                # TODO: Import top level when circular dependencies are fixed
-                from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
-
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
                     num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
@@ -682,10 +677,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             def decompose_bloq(self):  # pylint:disable=too-many-branches
                 """Decompose the bloq using the op's decomposition or the tape of the QNode"""
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
-
-                # TODO: Import top level when circular dependencies are fixed
-                from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):

@@ -75,21 +75,6 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-    ToBloq,
-    to_bloq,
-    from_qasm3,
-)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -117,6 +102,21 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    ToBloq,
+    to_bloq,
+    from_qasm3,
+)
 from pennylane.transforms import (
     transform,
     batch_params,
