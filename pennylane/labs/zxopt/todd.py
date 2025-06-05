@@ -40,7 +40,7 @@ def todd(
     to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     After running `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
-    A final :func:`~basic_optimization` is applied to the final circuit.
+    A final :func:`~basic_optimization` is applied to the final circuit (can be optionally turned off via the ``post_optimize`` argument).
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
