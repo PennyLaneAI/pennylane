@@ -49,6 +49,9 @@ if TYPE_CHECKING:
 
 @lru_cache
 def _get_op_call_graph():
+    # TODO: Integrate with resource operators and the new decomposition pipelines
+    """Return call graphs for given PennyLane Operator"""
+
     @singledispatch
     def _op_call_graph(op):
         return None
@@ -72,6 +75,10 @@ def _get_op_call_graph():
 # pylint: disable=import-outside-toplevel
 @lru_cache
 def _map_to_bloq():
+    """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
+    mapped to its Qualtran equivalent even if ``map_ops`` is set to True. Other operators are
+    given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
+
     @singledispatch
     def _to_qt_bloq(op, **kwargs):
         return ToBloq(op, **kwargs)
