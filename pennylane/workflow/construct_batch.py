@@ -73,45 +73,97 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
-def _interpret_level(
+def _interpret_level_initial(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
-    num_user: int,
-    has_gradient_expand: bool,
+    num_user_transforms: int,
 ) -> slice:
-    """Interpret the level specification and convert it to a slice and final transform flag.
+    """Interpret the level specification for the initial user transform slice.
+
+    This function handles slicing into the user transforms only, before any
+    gradient or device transforms are applied.
 
     Args:
         level: The level specification from user input
-        num_user: Number of user transforms (excluding final transform)
-        gradient_fn: The gradient function
+        num_user_transforms: Number of user transforms
 
     Returns:
-        tuple: (slice_obj, readd_final_transform)
-            - slice_obj: The slice to apply to the full transform program
-            - readd_final_transform: Whether to add back the final transform
+        slice: The slice to apply to the user transform program
     """
-    if level == "device":
-        return slice(0, None)
-
     if level == "top":
         return slice(0, 0)
 
-    if level == "user":
-        return slice(0, num_user)
-
-    if level == "gradient":
-        end_idx = num_user + int(has_gradient_expand)
-        return slice(0, end_idx)
+    if level in ("user", "device", "gradient"):
+        return slice(0, num_user_transforms)
 
     if isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
 
-    if level is None or isinstance(level, int):
-        return slice(0, level)
+    if level is None:
+        return slice(0, num_user_transforms)
 
-    # Default to slice, or it's handled as a slice and potential errors should be raised by whoever calls this level slice.
+    if isinstance(level, int):
+        return slice(0, min(level, num_user_transforms))
+
+    # Handle slice objects - clamp to user transform bounds
+    if isinstance(level, slice):
+        start = level.start if level.start is not None else 0
+        stop = level.stop if level.stop is not None else num_user_transforms
+        stop = min(stop, num_user_transforms) if stop > 0 else num_user_transforms + stop
+        return slice(max(start, 0), max(stop, 0), level.step)
+
+    return level
+
+
+def _interpret_level_inner(
+    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
+    num_user_transforms: int,
+    has_gradient_expand: bool,
+) -> slice:
+    """Interpret the level specification for the inner transform slice.
+
+    This function handles slicing into the remaining transforms (gradient + device)
+    after user transforms have already been applied.
+
+    Args:
+        level: The level specification from user input
+        num_user_transforms: Number of user transforms (already applied)
+        has_gradient_expand: Whether gradient expansion transform exists
+
+    Returns:
+        slice: The slice to apply to the remaining transform program
+    """
+    start = max(0, num_user_transforms)
+    if level in ("top", "user"):
+        return slice(start, 0)  # No additional transforms needed
+
+    if level == "gradient":
+        end_idx = int(has_gradient_expand)
+        return slice(start, num_user_transforms+end_idx)
+
+    if level == "device":
+        return slice(start, None)  # Include all remaining transforms
+
+    if isinstance(level, str):
+        raise ValueError(
+            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
+        )
+
+    if level is None:
+        return slice(start, None)  # Include all remaining transforms
+
+    if isinstance(level, int):
+        # Calculate how many transforms beyond user transforms are needed
+        return slice(start, level)
+
+    # Handle slice objects - adjust for the fact that user transforms are already applied
+    if isinstance(level, slice):
+        start = max(start, level.start) if level.start is not None else start
+        stop = level.stop
+
+        return slice(start, stop, level.step)
+
     return level
 
 
@@ -240,12 +292,28 @@ def get_transform_program(
         # final transform is placed after device transforms
         num_user -= 1
 
-    # flag: re-add the final transform
-    readd_final_transform = level in ("user", "gradient")
-    # Use the level interpreter to convert level to slice
-    level_slice = _interpret_level(level, num_user, has_gradient_expand)
+    readd_final_transform = False
 
-    resolved_program = full_transform_program[level_slice]
+    if level == "device":
+        level = None
+    elif level == "top":
+        level = 0
+    elif level == "user":
+        readd_final_transform = True
+        level = num_user
+    elif level == "gradient":
+        readd_final_transform = True
+
+        level = num_user + 1 if has_gradient_expand else num_user
+    elif isinstance(level, str):
+        raise ValueError(
+            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
+        )
+
+    if level is None or isinstance(level, int):
+        level = slice(0, level)
+
+    resolved_program = full_transform_program[level]
 
     if qnode.transform_program.has_final_transform and readd_final_transform:
         resolved_program += qnode.transform_program[-1:]
@@ -378,10 +446,10 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        level_slice = _interpret_level(
-            level, num_user_transforms, has_gradient_expand=False
+        level_slice_initial = _interpret_level_initial(
+            level, num_user_transforms
         )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
-        program = user_program[level_slice]
+        program = user_program[level_slice_initial]
         tapes, user_post_processing = program((initial_tape,))
 
         execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(
@@ -396,10 +464,7 @@ def construct_batch(
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand)
-        level_slice = slice(
-            max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
-        )
+        level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
 
         program = qml.transforms.core.TransformProgram(user_program)
         if has_gradient_expand:
@@ -410,7 +475,7 @@ def construct_batch(
 
         full_transform_program = program + qnode.device.preprocess_transforms(execution_config)
 
-        resolved_program = full_transform_program[level_slice]
+        resolved_program = full_transform_program[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(tapes)  # Use the user-transformed tapes
 
