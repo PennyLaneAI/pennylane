@@ -28,11 +28,11 @@ from pennylane.templates.subroutines.select import _unary_select
 
 def test_standard_checks():
     """Run standard validity tests."""
-    ops = [qml.PauliX(0) for _ in range(10)]
+    ops = [qml.PauliX(0) for _ in range(16)]
     control = [1, 2, 3, 4]
     work_wires = [5, 6, 7]
 
-    op = qml.Select(ops, control,work_wires)
+    op = qml.Select(ops, control, work_wires)
     assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op, heuristic_resources=True)
 

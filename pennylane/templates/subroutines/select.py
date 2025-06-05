@@ -21,7 +21,12 @@ import warnings
 
 import pennylane as qml
 from pennylane import math
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources, controlled_resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    controlled_resource_rep,
+)
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, Hadamard, S, T, X, adjoint, ctrl
@@ -239,8 +244,11 @@ class Select(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"ops": [resource_rep(type(op),**op.resource_params) for op in self.hyperparameters["ops"]]}
-
+        return {
+            "ops": [
+                resource_rep(type(op), **op.resource_params) for op in self.hyperparameters["ops"]
+            ]
+        }
 
 
 def _ceil(a):
@@ -333,7 +341,9 @@ def _add_first_k_units(ops, controls, work_wires, k):
     first_half = (
         [TemporaryAnd(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
-        + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
+        + [X(controls[0])]
+        + [CNOT([controls[0], controls[2]])]
+        + [X(controls[0])]
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
     )
 
@@ -430,19 +440,22 @@ def _unary_select_resources(ops):
 
     if math.log2(num_ops) - _ceil_log(num_ops) > 0.5:
         return {
-            resource_rep(TemporaryAnd, control_values = (0,1)): (num_ops - 3),
-            adjoint_resource_rep(TemporaryAnd, base_params ={"control_values": (0,1)}): (num_ops-3),
+            resource_rep(TemporaryAnd): (num_ops - 3),
+            adjoint_resource_rep(TemporaryAnd): (num_ops - 3),
             CNOT: num_ops,
-            **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops}
+            X: num_ops,
+            **{
+                controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops
+            },
         }
 
     return {
-        resource_rep(TemporaryAnd, control_values = (0,1)): (num_ops - 2),
-        adjoint_resource_rep(TemporaryAnd, base_params={"control_values": (0, 1)}): (num_ops - 2),
+        resource_rep(TemporaryAnd): (num_ops - 2),
+        adjoint_resource_rep(TemporaryAnd): (num_ops - 2),
         CNOT: num_ops - 2,
-        **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops}
+        X: num_ops - 2,
+        **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops},
     }
-
 
 
 @register_resources(_unary_select_resources)
