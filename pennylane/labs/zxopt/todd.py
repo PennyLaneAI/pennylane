@@ -32,7 +32,7 @@ def null_postprocessing(results):
 
 @transform
 def todd(
-    tape: QuantumScript, pre_optimize: bool = True
+    tape: QuantumScript, pre_optimize: bool = True, post_optimize: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
 
@@ -47,6 +47,7 @@ def todd(
     Args:
         tape (QNode or QuantumTape or Callable): Input PennyLane circuit. This circuit has to be in the `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ basis.
         pre_optimize (bool): Whether or not to call :func:`~basic_optimization` first. Default is ``True``.
+        pre_optimize (bool): Whether or not to call :func:`~basic_optimization` after TODD. Default is ``True``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: Improved PennyLane circuit. See :func:`qml.transform <pennylane.transform>` for the different output formats depending on the input type.
@@ -104,7 +105,8 @@ def todd(
 
     pyzx_circ = zx.phase_block_optimize(pyzx_circ, pre_optimize=pre_optimize)
 
-    pyzx_circ = zx.basic_optimization(pyzx_circ)
+    if post_optimize:
+        pyzx_circ = zx.basic_optimization(pyzx_circ)
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
