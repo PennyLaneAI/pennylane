@@ -78,9 +78,11 @@ class QNGOptimizerJax:
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
+        # reshape tensor into a matrix (acting on the flat grad vector)
         shape = math.shape(mt)
         size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
         mt_matrix = math.reshape(mt, shape=(size, size))
+        # apply regularization for matrix inversion
         if self.lam != 0:
             mt_matrix += self.lam * math.eye(size, like=mt_matrix)
         return mt_matrix
