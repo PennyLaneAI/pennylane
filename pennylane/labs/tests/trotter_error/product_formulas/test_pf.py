@@ -238,9 +238,7 @@ def test_matrix(fragment_dict):
 
     fourth_order_2 = ProductFormula(pfs, label="U4")
 
-    acc = np.eye(fragment_dict[0].shape[0], dtype=np.complex128)
-
-    mat1 = fourth_order_1.to_matrix(fragment_dict, acc)
-    mat2 = fourth_order_2.to_matrix(fragment_dict, acc)
+    mat1 = fourth_order_1.to_matrix(fragment_dict)
+    mat2 = fourth_order_2.to_matrix(fragment_dict)
 
     assert np.allclose(mat1, mat2)

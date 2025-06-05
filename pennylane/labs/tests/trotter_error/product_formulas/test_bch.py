@@ -111,7 +111,7 @@ def test_fourth_order_norm_two_fragments(fragments, t):
     ]
 
     fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
-    fourth_order_approx = fourth_order.to_matrix(fragments, np.eye(3, dtype=np.complex128))
+    fourth_order_approx = fourth_order.to_matrix(fragments)
     actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
 
     commutator_coeffs = {
@@ -252,7 +252,7 @@ def test_second_order_against_matrix_log(fragments):
     second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])(t)
     ham = sum(fragments.values())
 
-    pf_mat = second_order.to_matrix(fragments, np.eye(3, dtype=np.complex128))
+    pf_mat = second_order.to_matrix(fragments)
 
     bch = effective_hamiltonian(second_order, fragments, order=3)
     log = logm(pf_mat)
@@ -274,7 +274,7 @@ def test_fourth_order_against_matrix_log(fragments):
     )
     ham = sum(fragments.values())
 
-    pf_mat = fourth_order.to_matrix(fragments, np.eye(3, dtype=np.complex128))
+    pf_mat = fourth_order.to_matrix(fragments)
 
     bch = effective_hamiltonian(fourth_order, fragments, order=5)
     log = logm(pf_mat)
@@ -308,7 +308,7 @@ def test_fourth_order_against_matrix_log_2(fragments):
     fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(t)
     ham = sum(fragments.values())
 
-    pf_mat = fourth_order.to_matrix(fragments, np.eye(3, dtype=np.complex128))
+    pf_mat = fourth_order.to_matrix(fragments)
 
     bch = effective_hamiltonian(fourth_order, fragments, order=5)
     log = logm(pf_mat)

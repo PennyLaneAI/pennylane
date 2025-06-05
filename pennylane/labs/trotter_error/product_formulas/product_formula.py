@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable
-from typing import Dict, Sequence, Union
+from typing import Any, Dict, Sequence, Union
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
@@ -130,12 +130,12 @@ class ProductFormula:
 
         return "@".join([f"Exp({coeff}*H_{term})" for coeff, term in zip(self.coeffs, self.terms)])
 
-    def to_matrix(self, fragments: Dict[Hashable, Fragment], accumulator: Fragment) -> np.ndarray:
+    def to_matrix(self, fragments: Dict[Hashable, Fragment]) -> np.ndarray:
         """Returns a numpy representation of the product formula"""
-        acc = copy.copy(accumulator)
+        accumulator = _MultiplicativeIdentity()
         for term, coeff in zip(self.terms, self.coeffs):
             if isinstance(term, ProductFormula):
-                accumulator @= term.to_matrix(fragments, copy.copy(acc))
+                accumulator @= term.to_matrix(fragments)
             else:
                 accumulator @= expm(coeff * fragments[term])
 
@@ -157,3 +157,11 @@ class ProductFormula:
                 position += 1
 
         return ordered_fragments
+
+
+class _MultiplicativeIdentity:
+    def __matmul__(self, other: Any):
+        return other
+
+    def __rmatmul__(self, other: Any):
+        return other
