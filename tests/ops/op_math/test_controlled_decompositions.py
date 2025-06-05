@@ -1036,9 +1036,7 @@ class TestMCXDecomposition:
             )
         else:
             expected_decomp = _decompose_mcx_with_many_workers_old(
-                Wires(control_wires),
-                target_wire,
-                Wires(work_wires),
+                Wires(control_wires), target_wire, Wires(work_wires), work_wire_type
             )
 
         assert computed_decomp == expected_decomp
@@ -1054,16 +1052,11 @@ class TestMCXDecomposition:
 
         if n_ctrl_wires > 4:
             expected_decomp = _decompose_mcx_with_two_workers_old(
-                Wires(control_wires),
-                target_wire,
-                Wires(work_wires),
-                work_wire_type,
+                Wires(control_wires), target_wire, Wires(work_wires), work_wire_type
             )
         else:
             expected_decomp = _decompose_mcx_with_many_workers_old(
-                Wires(control_wires),
-                target_wire,
-                Wires(work_wires),
+                Wires(control_wires), target_wire, Wires(work_wires), work_wire_type
             )
 
         assert computed_decomp == expected_decomp
