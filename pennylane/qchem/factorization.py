@@ -23,7 +23,7 @@ import pennylane as qml
 
 has_jax_optax = True
 try:  # pragma: no cover
-    # pylint: disable=unused-import
+
     import optax
     from jax import jit
     from jax import numpy as jnp
@@ -742,7 +742,8 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
-        # pylint:disable=invalid-unary-operand-type
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=invalid-unary-operand-type
         one_body_coeffs = -np.einsum("prrs", chemist_two_body_coeffs)
 
         if chemist_one_body_coeffs is None:

@@ -334,6 +334,133 @@ class TestUpdate:
         assert copied._batch_size == 2
 
 
+class TestMapToStandardWires:
+    """Tests for the ``_get_standard_wire_map`` method."""
+
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qml.X(0)],
+            [qml.X(1), qml.Z(0)],
+            [qml.X(3), qml.IsingXY(0.6, [0, 2]), qml.Z(1)],
+        ],
+    )
+    def test_only_ops_do_nothing(self, ops):
+        """Test that no mapping is done if there are only operators and they act on standard wires."""
+        tape = QuantumScript(ops)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, meas",
+        [
+            ([qml.X(0)], [qml.expval(qml.Z(0))]),
+            ([qml.X(0)], [qml.expval(qml.Z(1))]),
+            ([qml.X(0)], [qml.probs(wires=[0, 1])]),
+            ([qml.X(0)], [qml.probs(wires=[1, 2])]),
+            ([qml.X(1), qml.Z(0)], [qml.expval(qml.X(0)), qml.probs(wires=[1, 2])]),
+            ([qml.X(1), qml.Z(0)], [qml.expval(qml.Y(2))]),
+            ([qml.X(1), qml.Z(0)], [qml.state()]),
+            ([qml.X(3), qml.IsingXY(0.6, [0, 2]), qml.Z(1)], [qml.probs(wires=[1])]),
+        ],
+    )
+    def test_op_and_meas_do_nothing(self, ops, meas):
+        """Test that no mapping is done if there are operators and measurements
+        and they act on standard wires.
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, meas",
+        [
+            ([qml.MultiControlledX([0, 1, 2], work_wires=[3, 4])], []),
+            ([qml.MultiControlledX([0, 2], work_wires=[3, 4]), qml.X(1)], [qml.expval(qml.Z(1))]),
+            (
+                [qml.RX(0.6, 0), qml.MultiControlledX([1, 2, 3], work_wires=[5])],
+                [qml.probs([0, 4, 2, 1])],
+            ),
+        ],
+    )
+    def test_with_work_wires_do_nothing(self, ops, meas):
+        """Test that no mapping is done if there are operators with work wires (and measurements)
+        and they act on standard wires.
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map is None
+
+    @pytest.mark.parametrize(
+        "ops, expected",
+        [
+            ([qml.X(0), qml.RX(0.8, 2)], {0: 0, 2: 1}),
+            ([qml.X(1), qml.Z(0), qml.X("a")], {1: 0, 0: 1, "a": 2}),
+            ([qml.X(3), qml.IsingXY(0.6, ["b", 2]), qml.Z(99)], {3: 0, "b": 1, 2: 2, 99: 3}),
+        ],
+    )
+    def test_only_ops(self, ops, expected):
+        """Test that the mapping is correct if there are only operators."""
+        tape = QuantumScript(ops)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+    @pytest.mark.parametrize(
+        "ops, meas, expected",
+        [
+            ([qml.X("a")], [qml.expval(qml.Z("a"))], {"a": 0}),
+            ([qml.X(1)], [qml.expval(qml.Z(0))], {1: 0, 0: 1}),
+            ([qml.X("z")], [qml.probs(wires=[0, 1])], {"z": 0, 0: 1, 1: 2}),
+            ([qml.X(2)], [qml.probs(wires=[1, 2])], {2: 0, 1: 1}),
+            ([qml.X(1), qml.Z(2)], [qml.expval(qml.Y(0))], {1: 0, 2: 1, 0: 2}),
+            ([qml.X(1), qml.Z(3)], [qml.state()], {1: 0, 3: 1}),
+            (
+                [qml.X(3), qml.IsingXY(0.6, [4, 2]), qml.Z(1)],
+                [qml.probs()],
+                {3: 0, 4: 1, 2: 2, 1: 3},
+            ),
+        ],
+    )
+    def test_op_and_meas(self, ops, meas, expected):
+        """Test that the mapping is correct if there are operators and measurements."""
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+    @pytest.mark.parametrize(
+        "ops, meas, expected",
+        [
+            (
+                [qml.MultiControlledX([2, 3, 4], work_wires=[0, 1])],
+                [],
+                {2: 0, 3: 1, 4: 2, 0: 3, 1: 4},
+            ),
+            (
+                [qml.MultiControlledX([0, 1, 3], work_wires=[2, 4])],
+                [],
+                {0: 0, 1: 1, 3: 2, 2: 3, 4: 4},
+            ),
+            (
+                [qml.MultiControlledX([0, 2], work_wires=[3, 4])],
+                [qml.expval(qml.Z(1))],
+                {0: 0, 2: 1, 1: 2, 3: 3, 4: 4},
+            ),
+            (
+                [qml.MultiControlledX([1, 2, 3], work_wires=[5])],
+                [qml.probs([0, 4, 2, 1])],
+                {1: 0, 2: 1, 3: 2, 0: 3, 4: 4, 5: 5},
+            ),
+        ],
+    )
+    def test_with_work_wires(self, ops, meas, expected):
+        """Test that the mapping is correct if there are operators with work wires
+        (and measurements).
+        """
+        tape = QuantumScript(ops, meas)
+        wire_map = tape._get_standard_wire_map()
+        assert wire_map == expected
+
+
 class TestIteration:
     """Test the capabilities related to iterating over quantum script."""
 

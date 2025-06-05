@@ -25,16 +25,30 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
+from typing import Sequence, TypeAlias
+
 from xdsl.dialects.builtin import (
     AnyAttr,
     AnyOf,
     BaseAttr,
     Float64Type,
+    IntegerAttr,
     IntegerType,
     StringAttr,
     UnitAttr,
 )
-from xdsl.ir import Dialect, ParametrizedAttribute, TypeAttribute
+from xdsl.ir import (
+    Block,
+    Dialect,
+    EnumAttribute,
+    Operation,
+    ParametrizedAttribute,
+    Region,
+    SpacedOpaqueSyntaxAttribute,
+    SSAValue,
+    StrEnum,
+    TypeAttribute,
+)
 from xdsl.irdl import (
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
@@ -52,6 +66,11 @@ from xdsl.irdl import (
     var_operand_def,
     var_result_def,
 )
+from xdsl.utils.exceptions import VerifyException
+
+################################################################
+######################## ATTRIBUTES ############################
+################################################################
 
 
 @irdl_attr_definition
@@ -82,11 +101,31 @@ class ResultType(ParametrizedAttribute, TypeAttribute):
     name = "quantum.res"
 
 
+class NamedObservable(StrEnum):
+    """Known named observables"""
+
+    Identity = "Identity"
+    PauliX = "PauliX"
+    PauliY = "PauliY"
+    PauliZ = "PauliZ"
+    Hadamard = "Hadamard"
+
+
 @irdl_attr_definition
-class NamedObservableAttr(ParametrizedAttribute):
+class NamedObservableAttr(EnumAttribute[NamedObservable], SpacedOpaqueSyntaxAttribute):
     """Known named observables"""
 
     name = "quantum.named_observable"
+
+
+################################################################
+######################## OPERATIONS ############################
+################################################################
+
+
+QubitSSAValue: TypeAlias = SSAValue[QubitType]
+QuregSSAValue: TypeAlias = SSAValue[QuregType]
+ObservableSSAValue: TypeAlias = SSAValue[ObservableType]
 
 
 @irdl_op_definition
@@ -105,6 +144,13 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
+    def __init__(
+        self,
+        qreg: QuregSSAValue | Operation,
+        region: Region | Sequence[Operation] | Sequence[Block],
+    ):
+        super().__init__(operands=(qreg,), result_types=(QuregType(),), regions=(region,))
+
 
 @irdl_op_definition
 class AllocOp(IRDLOperation):
@@ -118,9 +164,30 @@ class AllocOp(IRDLOperation):
 
     nqubits = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
-    nqubits_attr = opt_prop_def(AnyAttr())
+    nqubits_attr = opt_prop_def(IntegerType(64))
 
     qreg = result_def(BaseAttr(QuregType))
+
+    def __init__(self, nqubits: SSAValue[IntegerType] | Operation | int | IntegerAttr):
+        if isinstance(nqubits, int):
+            nqubits = IntegerAttr.from_int_and_width(nqubits, 64)
+
+        if isinstance(nqubits, IntegerAttr):
+            operands = (None,)
+            properties = {"nqubits_attr": nqubits}
+        else:
+            operands = (nqubits,)
+            properties = {}
+
+        super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
+
+    def verify_(self):
+        """Verify operation when rewriting."""
+        if self.nqubits_attr is None:
+            return
+
+        if self.nqubits_attr.value.data < 0:  # pylint: disable=no-member
+            raise VerifyException("Cannot allocate less than zero qubits.")
 
 
 @irdl_op_definition
@@ -178,9 +245,9 @@ class CustomOp(IRDLOperation):
 
     name = "quantum.custom"
 
-    # assembly_format = """
-    #        $gate_name `(` $params `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           $gate_name `(` $params `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -203,6 +270,53 @@ class CustomOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
 
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        in_qubits: QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation],
+        gate_name: str | StringAttr,
+        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
+    ):
+        params = () if params is None else params
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(params, Sequence):
+            params = (params,)
+        if not isinstance(in_qubits, Sequence):
+            in_qubits = (in_qubits,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        if isinstance(gate_name, str):
+            gate_name = StringAttr(data=gate_name)
+
+        out_qubits = tuple(QubitType() for _ in in_qubits)
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+        properties = {"gate_name": gate_name}
+        if adjoint:
+            properties["adjoint"] = UnitAttr()
+
+        super().__init__(
+            operands=(params, in_qubits, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_qubits, out_ctrl_qubits),
+            properties=properties,
+        )
+
 
 @irdl_op_definition
 class DeallocOp(IRDLOperation):
@@ -216,6 +330,9 @@ class DeallocOp(IRDLOperation):
 
     qreg = operand_def(BaseAttr(QuregType))
 
+    def __init__(self, qreg: QuregSSAValue | Operation):
+        super().__init__(operands=(qreg,))
+
 
 @irdl_op_definition
 class DeviceInitOp(IRDLOperation):
@@ -225,7 +342,7 @@ class DeviceInitOp(IRDLOperation):
 
     # assembly_format = """
     #      (`shots` `(` $shots^ `)`)? `[` $lib `,` $name `,` $kwargs `]` attr-dict
-    #    """
+    #   """
 
     shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
@@ -259,6 +376,9 @@ class ExpvalOp(IRDLOperation):
 
     expval = result_def(EqAttrConstraint(Float64Type()))
 
+    def __init__(self, obs: ObservableSSAValue | Operation):
+        super().__init__(operands=(obs,), result_types=(Float64Type(),))
+
 
 @irdl_op_definition
 class ExtractOp(IRDLOperation):
@@ -277,6 +397,27 @@ class ExtractOp(IRDLOperation):
     idx_attr = opt_prop_def(AnyAttr())
 
     qubit = result_def(BaseAttr(QubitType))
+
+    def __init__(
+        self,
+        qreg: QuregSSAValue | Operation,
+        idx: int | SSAValue[IntegerType] | Operation | IntegerAttr,
+    ):
+        if isinstance(idx, int):
+            idx = IntegerAttr.from_int_and_width(idx, 64)
+
+        if isinstance(idx, IntegerAttr):
+            operands = (qreg, None)
+            properties = {"idx_attr": idx}
+        else:
+            operands = (qreg, idx)
+            properties = {}
+
+        super().__init__(
+            operands=operands,
+            result_types=(QubitType(),),
+            properties=properties,
+        )
 
 
 @irdl_op_definition
@@ -381,6 +522,24 @@ class InsertOp(IRDLOperation):
 
     out_qreg = result_def(BaseAttr(QuregType))
 
+    def __init__(
+        self,
+        in_qreg: QuregSSAValue | Operation,
+        idx: SSAValue[IntegerType] | Operation | int | IntegerAttr,
+        qubit: QubitSSAValue | Operation,
+    ):
+        if isinstance(idx, int):
+            idx = IntegerAttr.from_int_and_width(idx, 64)
+
+        if isinstance(idx, IntegerAttr):
+            operands = (in_qreg, None, qubit)
+            properties = {"idx_attr": idx}
+        else:
+            operands = (in_qreg, idx, qubit)
+            properties = {}
+
+        super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
+
 
 @irdl_op_definition
 class MeasureOp(IRDLOperation):
@@ -388,17 +547,40 @@ class MeasureOp(IRDLOperation):
 
     name = "quantum.measure"
 
-    # assembly_format = """
-    #        $in_qubit attr-dict `:` type(results)
-    #    """
+    assembly_format = """
+           $in_qubit (`postselect` $postselect^)? attr-dict `:` type(results)
+       """
 
     in_qubit = operand_def(BaseAttr(QubitType))
 
-    postselect = opt_prop_def(AnyAttr())
+    postselect = opt_prop_def(IntegerType(32))
 
     mres = result_def(EqAttrConstraint(IntegerType(1)))
 
     out_qubit = result_def(BaseAttr(QubitType))
+
+    def __init__(
+        self, in_qubit: QubitSSAValue | Operation, postselect: int | IntegerAttr | None = None
+    ):
+        if isinstance(postselect, int):
+            postselect = IntegerAttr.from_int_and_width(postselect, 32)
+
+        if postselect is None:
+            properties = {}
+        else:
+            properties = {"postselect": postselect}
+
+        super().__init__(
+            operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
+        )
+
+    def verify_(self):
+        """Verify operation when rewriting."""
+        if self.postselect is None:
+            return
+
+        if self.postselect.value.data not in [0, 1]:  # pylint: disable=no-member
+            raise VerifyException("'postselect' must be 0 or 1.")
 
 
 @irdl_op_definition
@@ -407,9 +589,9 @@ class MultiRZOp(IRDLOperation):
 
     name = "quantum.multirz"
 
-    # assembly_format = """
-    #        `(` $theta `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+              `(` $theta `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -447,6 +629,11 @@ class NamedObsOp(IRDLOperation):
 
     obs = result_def(BaseAttr(ObservableType))
 
+    def __init__(self, qubit: QubitSSAValue | Operation, obs_type: NamedObservableAttr):
+        super().__init__(
+            operands=(qubit,), properties={"type": obs_type}, result_types=(ObservableType(),)
+        )
+
 
 @irdl_op_definition
 class ProbsOp(IRDLOperation):
@@ -480,9 +667,9 @@ class QubitUnitaryOp(IRDLOperation):
 
     name = "quantum.unitary"
 
-    # assembly_format = """
-    #        `(` $matrix `:` type($matrix) `)` $in_qubits attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           `(` $matrix `:` type($matrix) `)` $in_qubits (`adj` $adjoint^)? attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` type($out_qubits) (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),

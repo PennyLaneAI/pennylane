@@ -14,7 +14,7 @@
 r"""
 Contains the ArbitraryStatePreparation template.
 """
-# pylint: disable=trailing-comma-tuple
+
 import functools
 
 import pennylane as qml
