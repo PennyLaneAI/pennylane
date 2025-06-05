@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 if qualtran:
     from qualtran.bloqs import basic_gates as qt_gates
 
+
 @lru_cache
 def _get_op_call_graph():
     # TODO: Integrate with resource operators and the new decomposition pipelines
