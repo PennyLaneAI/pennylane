@@ -712,6 +712,7 @@ class TestControlledDecomposition:
                         "num_control_wires": 1,
                         "num_zero_control_values": 0,
                         "num_work_wires": 0,
+                        "work_wire_type": "dirty",
                     },
                 ): 1
             }
@@ -767,6 +768,7 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=2,
+                    work_wire_type="dirty",
                 ): 1
             }
         )
