@@ -186,7 +186,7 @@ class TestInputs:
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.warns(UserWarning, match="The state must be a vector of norm 1.0"):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):

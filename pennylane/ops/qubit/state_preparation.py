@@ -351,7 +351,7 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
-        validate_norm: bool = True,
+        validate_norm: bool = False,
     ):
         self.is_sparse = False
         if sp.sparse.issparse(state):
@@ -511,10 +511,9 @@ class StatePrep(StatePrepBase):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
-                warn(
+                raise ValueError(
                     f"The state must be a vector of norm 1.0; got norm {norm}. "
-                    "Use 'normalize=True' to automatically normalize.",
-                    UserWarning,
+                    "Use 'normalize=True' to automatically normalize."
                 )
 
         return state
@@ -568,10 +567,9 @@ class StatePrep(StatePrepBase):
             state /= norm
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            warn(
+            raise ValueError(
                 f"The state must be a vector of norm 1.0; got norm {norm}. "
-                "Use 'normalize=True' to automatically normalize.",
-                UserWarning,
+                "Use 'normalize=True' to automatically normalize."
             )
         return state
 

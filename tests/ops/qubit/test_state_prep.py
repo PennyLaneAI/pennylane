@@ -275,7 +275,7 @@ class TestStateVector:
     def test_StatePrep_state_norm_not_one_fails(self, vec):
         """Tests that the state-vector provided must have norm equal to 1."""
 
-        with pytest.warns(UserWarning, match="The state must be a vector of norm 1"):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
             _ = qml.StatePrep(vec, wires=[0, 1])
 
     def test_StatePrep_wrong_param_size_fails(self):
@@ -536,7 +536,7 @@ class TestSparseStateVector:
     def test_preprocess_normalize_false(self):
         """Test that the state tensor is normalized to one if normalize is False."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0])
-        with pytest.warns(UserWarning, match="The state must be a vector of norm 1.0; got norm"):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0; got norm"):
             qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=True
             )
