@@ -46,6 +46,8 @@ except (ModuleNotFoundError, ImportError) as import_error:
 if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
+if qualtran:
+    from qualtran.bloqs import basic_gates as qt_gates
 
 @lru_cache
 def _get_op_call_graph():
@@ -58,10 +60,8 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
-        from qualtran.bloqs.basic_gates import Hadamard  # pylint: disable=import-outside-toplevel
-
         return {
-            Hadamard(): len(op.estimation_wires),
+            qt_gates.Hadamard(): len(op.estimation_wires),
             _map_to_bloq()(op.hyperparameters["unitary"]).controlled(): (
                 2 ** len(op.estimation_wires)
             )
