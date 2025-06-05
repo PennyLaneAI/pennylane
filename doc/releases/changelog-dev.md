@@ -374,6 +374,7 @@
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
   [(#7462)](https://github.com/PennyLaneAI/pennylane/pull/7462)
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
+  [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
   [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
 
 * PennyLane supports `JAX` version 0.6.0.
@@ -561,6 +562,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Move `givens_decomposition` and private helpers from `qchem` to `math` module.
+  [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
 * Enforce module dependencies in `pennylane` using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
