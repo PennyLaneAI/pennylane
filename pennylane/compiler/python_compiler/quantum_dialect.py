@@ -340,9 +340,11 @@ class DeviceInitOp(IRDLOperation):
 
     name = "quantum.device_init"
 
-    # assembly_format = """
-    #      (`shots` `(` $shots^ `)`)? `[` $lib `,` $name `,` $kwargs `]` attr-dict
-    #   """
+    assembly_format = """
+         (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
+      """
+
+    device_name = prop_def(BaseAttr(StringAttr))
 
     shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
@@ -807,11 +809,11 @@ class YieldOp(IRDLOperation):
 
     name = "quantum.yield"
 
-    # assembly_format = """
-    #        attr-dict ($results^ `:` type($results))?
-    #    """
+    assembly_format = """
+           attr-dict ($retvals^ `:` type($retvals))?
+       """
 
-    results = var_operand_def(BaseAttr(QuregType))
+    retvals = var_operand_def(BaseAttr(QuregType))
 
 
 QuantumDialect = Dialect(
