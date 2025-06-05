@@ -565,6 +565,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Move program capture code closer to where it is used.
   [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
 
+* Move `givens_decomposition` and private helpers from `qchem` to `math` module.
+  [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
+
 * Enforce module dependencies in `pennylane` using `tach`.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
