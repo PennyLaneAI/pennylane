@@ -29,7 +29,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, Hadamard, S, T, X, adjoint, ctrl
+from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.templates.subroutines.temporary_and import TemporaryAnd
 from pennylane.wires import Wires
 
@@ -459,7 +459,7 @@ def _unary_select_resources(ops):
 
 
 @register_resources(_unary_select_resources)
-def _unary_select(ops, control, work_wires, **kwargs):
+def _unary_select(ops, control, work_wires, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`L` operators this decomposition requires at least :math:`c=\lceil\log_2 L\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
