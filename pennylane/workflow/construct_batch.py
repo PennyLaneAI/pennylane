@@ -361,23 +361,8 @@ def construct_batch(
     user_program = qnode.transform_program
     num_user_transforms = len(user_program)
 
-    # Two cases are recognized as "empty": 1. defined as empty by either "top" or 0; 2. a slice that starts beyond the range of user transforms.
-    # is_empty_top = level in ("top", 0) or (
-    #     isinstance(level, slice) and level.start >= num_user_transforms
-    # )
-
-    # Simple case where we have no final transform and the level is either "user" or a range that is within the user transforms.
-    # is_simple_user = (
-    #     level == "user"
-    #     or (isinstance(level, int) and level <= num_user_transforms)
-    #     or (
-    #         isinstance(level, slice)
-    #         and level.stop is not None
-    #         and level.stop <= num_user_transforms
-    #     )
-    # )
-
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+        """Create a batch of tapes and a post processing function."""
         if has_shots_param:
             shots = default_shots
         else:
@@ -393,19 +378,9 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        # # Simply empty, do nothing
-        # if is_empty_top:
-        #     return qml.transforms.core.TransformProgram()((initial_tape,))
-
-        # # Simply just pure user transform no final, just return the program
-        # if is_simple_user:
-        #     level_slice = _interpret_level(level, num_user_transforms, False)
-        #     program = user_program[level_slice]
-        #     return program((initial_tape,))
-
-        # Otherwise, not simply at all, we have to process the gradient fn and device transforms.
-        # Apply user transforms first
-        level_slice = _interpret_level(level, num_user_transforms, has_gradient_expand=False)
+        level_slice = _interpret_level(
+            level, num_user_transforms, has_gradient_expand=False
+        )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
         program = user_program[level_slice]
         tapes, user_post_processing = program((initial_tape,))
 
@@ -425,11 +400,6 @@ def construct_batch(
         level_slice = slice(
             max(level_slice.start, num_user_transforms), level_slice.stop, level_slice.step
         )
-        # If level_slice actually equivalent to empty, we can just return the user program.
-        # We don't need to wait until full transform constructtion, but it's difficult to check slices, so we just new a helper list here.
-        # test_list = list(range(num_user_transforms + 1))
-        # if len(test_list[level_slice]) == 0:
-        #     return tapes, user_post_processing
 
         program = qml.transforms.core.TransformProgram(user_program)
         if has_gradient_expand:
