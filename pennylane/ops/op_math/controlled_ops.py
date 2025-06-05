@@ -123,6 +123,7 @@ class ControlledQubitUnitary(ControlledOp):
         "num_control_wires",
         "num_zero_control_values",
         "num_work_wires",
+        "work_wire_type",
     }
 
     grad_method = None
