@@ -18,6 +18,7 @@ from functools import lru_cache, partial
 from typing import Optional
 
 import pennylane as qml
+from pennylane import math
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -89,7 +90,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             """Handle an operation that cannot be fused into a Rot gate."""
 
             previous_ops_on_wires = self._retrieve_prev_ops_same_wire(op)
-            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            dyn_wires = {w for w in op.wires if math.is_abstract(w)}
             other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
 
             if dyn_wires and other_saved_wires:
@@ -101,7 +102,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             for prev_op in previous_ops_on_wires:
                 with qml.capture.pause():
                     rot = qml.Rot(
-                        *qml.math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
+                        *math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
                     )
                 res.append(super().interpret_operation(rot))
 
@@ -116,7 +117,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             op_wire = op.wires[0]
 
             prev_op = self.previous_ops.get(op.wires[0], None)
-            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            dyn_wires = {w for w in op.wires if math.is_abstract(w)}
             other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
 
             if prev_op is None or (dyn_wires and other_saved_wires):
@@ -131,16 +132,14 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                     self.previous_ops[w] = op
                 return []
 
-            prev_op_angles = qml.math.stack(prev_op.single_qubit_rot_angles())
+            prev_op_angles = math.stack(prev_op.single_qubit_rot_angles())
             cumulative_angles = fuse_rot_angles(prev_op_angles, cumulative_angles)
 
             if (
-                qml.math.is_abstract(cumulative_angles)
-                or qml.math.requires_grad(cumulative_angles)
-                or not qml.math.allclose(
-                    qml.math.stack(
-                        [cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]
-                    ),
+                math.is_abstract(cumulative_angles)
+                or math.requires_grad(cumulative_angles)
+                or not math.allclose(
+                    math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
                     0.0,
                     atol=self.atol,
                     rtol=0,
@@ -173,7 +172,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                 return super().interpret_operation(op)
 
             try:
-                cumulative_angles = qml.math.stack(op.single_qubit_rot_angles())
+                cumulative_angles = math.stack(op.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 return self._handle_non_fusible_op(op)
 
@@ -489,6 +488,7 @@ def single_qubit_fusion(
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
     new_operations = []
+    global_phase = 0
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
@@ -503,7 +503,9 @@ def single_qubit_fusion(
         # Look for single_qubit_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = qml.math.stack(current_gate.single_qubit_rot_angles())
+            cumulative_angles = math.stack(current_gate.single_qubit_rot_angles())
+            _, phase = math.convert_to_su2(current_gate.matrix(), return_global_phase=True)
+            global_phase += phase
         except (NotImplementedError, AttributeError):
             new_operations.append(current_gate)
             list_copy.pop(0)
@@ -541,7 +543,9 @@ def single_qubit_fusion(
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = qml.math.stack(next_gate.single_qubit_rot_angles())
+                next_gate_angles = math.stack(next_gate.single_qubit_rot_angles())
+                _, phase = math.convert_to_su2(next_gate.matrix(), return_global_phase=True)
+                global_phase += phase
             except (NotImplementedError, AttributeError):
                 break
             cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
@@ -554,10 +558,10 @@ def single_qubit_fusion(
         # If not tracing or differentiating, check whether total rotation is trivial by checking
         # if the RY angle and the sum of the RZ angles are close to 0
         if (
-            qml.math.is_abstract(cumulative_angles)
-            or qml.math.requires_grad(cumulative_angles)
-            or not qml.math.allclose(
-                qml.math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
+            math.is_abstract(cumulative_angles)
+            or math.requires_grad(cumulative_angles)
+            or not math.allclose(
+                math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
                 0.0,
                 atol=atol,
                 rtol=0,
@@ -569,6 +573,8 @@ def single_qubit_fusion(
         # Remove the starting gate from the list
         list_copy.pop(0)
 
+    if math.is_abstract(global_phase) or not math.allclose(global_phase, 0):
+        new_operations.append(qml.GlobalPhase(-global_phase))
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
