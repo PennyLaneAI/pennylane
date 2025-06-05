@@ -700,46 +700,47 @@ class QasmInterpreter:
         rhs = preprocess_operands(self.visit(node.rhs, context))
         ret = None
         if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            if node.op.name == EQUALITY_OPERATORS[0]:
-                ret = lhs == rhs
-            if node.op.name == EQUALITY_OPERATORS[1]:
-                ret = lhs != rhs
-            if node.op.name == EQUALITY_OPERATORS[2]:
-                ret = np.isclose(lhs, rhs)
-            if node.op.name == COMPARISON_OPERATORS[0]:
-                ret = lhs > rhs
-            if node.op.name == COMPARISON_OPERATORS[1]:
-                ret = lhs < rhs
-            if node.op.name == COMPARISON_OPERATORS[2]:
-                ret = lhs >= rhs
-            if node.op.name == COMPARISON_OPERATORS[3]:
-                ret = lhs <= rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[0]:
-                ret = lhs >> rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[1]:
-                ret = lhs << rhs
-            if node.op.name == PLUS:
-                ret = lhs + rhs
-            if node.op.name == MINUS:
-                ret = lhs - rhs
-            if node.op.name == ASTERISK:
-                ret = lhs * rhs
-            if node.op.name == DOUBLE_ASTERISK:
-                ret = lhs**rhs
-            if node.op.name == SLASH:
-                ret = lhs / rhs
-            if node.op.name == PERCENT:
-                ret = lhs % rhs
-            if node.op.name == PIPE:
-                ret = lhs | rhs
-            if node.op.name == DOUBLE_PIPE:
-                ret = lhs or rhs
-            if node.op.name == AMPERSAND:
-                ret = lhs & rhs
-            if node.op.name == DOUBLE_AMPERSAND:
-                ret = lhs and rhs
-            if node.op.name == CARET:
-                ret = lhs ^ rhs
+            match node.op.name:
+                case EQUALITY_OPERATORS[0]:
+                    ret = lhs == rhs
+                case EQUALITY_OPERATORS[1]:
+                    ret = lhs != rhs
+                case EQUALITY_OPERATORS[2]:
+                    ret = np.isclose(lhs, rhs)
+                case COMPARISON_OPERATORS[0]:
+                    ret = lhs > rhs
+                case COMPARISON_OPERATORS[1]:
+                    ret = lhs < rhs
+                case COMPARISON_OPERATORS[2]:
+                    ret = lhs >= rhs
+                case COMPARISON_OPERATORS[3]:
+                    ret = lhs <= rhs
+                case BIT_SHIFT_OPERATORS[0]:
+                    ret = lhs >> rhs
+                case BIT_SHIFT_OPERATORS[1]:
+                    ret = lhs << rhs
+                case PLUS:
+                    ret = lhs + rhs
+                case MINUS:
+                    ret = lhs - rhs
+                case ASTERISK:
+                    ret = lhs * rhs
+                case DOUBLE_ASTERISK:
+                    ret = lhs**rhs
+                case SLASH:
+                    ret = lhs / rhs
+                case PERCENT:
+                    ret = lhs % rhs
+                case PIPE:
+                    ret = lhs | rhs
+                case DOUBLE_PIPE:
+                    ret = lhs or rhs
+                case AMPERSAND:
+                    ret = lhs & rhs
+                case DOUBLE_AMPERSAND:
+                    ret = lhs and rhs
+                case CARET:
+                    ret = lhs ^ rhs
             return ret
         # we shouldn't ever get thi error if the parser did its job right
         raise SyntaxError(  # pragma: no cover
