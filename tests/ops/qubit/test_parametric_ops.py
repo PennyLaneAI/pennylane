@@ -724,6 +724,19 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, exp)
 
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    def test_controlled_phase_shift_decomp_new(self, work_wire_type):
+        """tests the new controlled phase shift decomposition"""
+
+        op = qml.ctrl(
+            qml.PhaseShift(0.123, wires=0),
+            control=[1, 2, 3],
+            work_wires=[4, 5],
+            work_wire_type=work_wire_type,
+        )
+        for rule in qml.list_decomps("C(PhaseShift)"):
+            _test_decomposition_rule(op, rule)
+
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
 
