@@ -182,7 +182,7 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
     return {
         qml.RZ: 2 ** (num_wires - 1),
         qml.CNOT: 2 ** (num_wires - 1) if num_wires > 1 else 0,
-        qml.H: 0 if rot_axis == "Z" else 4,
+        qml.H: 0 if rot_axis == "Z" else 2,
         qml.S: 1 if rot_axis == "Y" else 0,
         adjoint_resource_rep(qml.S, {}): 1 if rot_axis == "Y" else 0,
     }
