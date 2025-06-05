@@ -15,9 +15,7 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 
-# TODO: Remove unused-argument when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# no-member is disabled because pylint does not recognize that ToBloq inherits Qualtran's Bloq
-# and thinks ToBloq does not have the attributes/methods of Bloq.
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=unused-argument, no-member
 
 from collections import defaultdict
@@ -37,7 +35,6 @@ from pennylane.operation import (
 )
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
-from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -66,7 +63,7 @@ def _get_op_call_graph():
                 2 ** len(op.estimation_wires)
             )
             - 1,
-            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires))).adjoint(): 1,
+            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
         }
 
     return _op_call_graph
@@ -187,7 +184,7 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Adjoint, **kwargs):
-        return _map_to_bloq()(op.base).adjoint()
+        return _map_to_bloq()(op.base, **kwargs).adjoint()
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
@@ -196,7 +193,7 @@ def _map_to_bloq():
         if isinstance(op, qops.Toffoli):
             return Toffoli()
 
-        return _map_to_bloq()(op.base).controlled()
+        return _map_to_bloq()(op.base, **kwargs).controlled()
 
     @_to_qt_bloq.register
     def _(op: qmeas.MeasurementProcess, **kwargs):
@@ -649,6 +646,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             """
 
             def __init__(self, op, map_ops=False, **kwargs):
+                from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
@@ -662,6 +660,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             def signature(self) -> "qt.Signature":
                 """Compute and return Qualtran signature for given op or QNode."""
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
@@ -675,6 +674,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
                 from pennylane.workflow import construct_tape
+                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):
