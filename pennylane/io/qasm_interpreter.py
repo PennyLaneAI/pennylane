@@ -290,10 +290,7 @@ class QasmInterpreter:
             The indexed slice of the variable.
         """
         if not isinstance(var, Iterable):
-            if var.ty == "BitType":
-                var = _get_bit_type_val(var)
-            else:
-                var = var.val
+            var = _get_bit_type_val(var) if var.ty == "BitType" else var.val
         index = self.visit(node.index[0], context)
         if not (isinstance(index, Iterable) and len(index) > 1):
             return var[index]
