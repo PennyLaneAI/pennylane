@@ -208,11 +208,7 @@ class TemporaryAnd(Operation):
             qml.adjoint(qml.S(wires=wires[2])),
         ]
 
-        if control_values[0] == 0:
-            list_decomp.append(qml.X(wires[0]))
-
-        if control_values[1] == 0:
-            list_decomp.append(qml.X(wires[1]))
+        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         return list_decomp
 
