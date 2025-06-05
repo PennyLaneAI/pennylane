@@ -21,6 +21,7 @@ from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
 from ..quantum_dialect import CustomOp
+from .utils import xdsl_transform
 
 self_inverses = [
     "Identity",
@@ -84,6 +85,7 @@ class IterativeCancelInversesPattern(
                 op = op.in_qubits[0].owner
 
 
+@xdsl_transform
 @dataclass(frozen=True)
 class IterativeCancelInversesPass(passes.ModulePass):
     """Pass for iteratively cancelling consecutive self-inverse gates."""
