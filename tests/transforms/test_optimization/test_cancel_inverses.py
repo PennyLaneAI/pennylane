@@ -133,6 +133,20 @@ class TestCancelInverses:
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
+    def test_diff_ops_adj_no_cancelled(self):
+        """Test that different operations do not cancel."""
+
+        def qfunc():
+            qml.RX(0.1, wires=0)
+            qml.adjoint(qml.RX)(0.2, wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+
+        names_expected = ["RX", "Adjoint(RX)"]
+        wires_expected = [Wires(0), Wires(0)]
+        compare_operation_lists(ops, names_expected, wires_expected)
+
     def test_three_qubits_toffolis(self):
         """Test that Toffolis on different permutations of wires cancel correctly."""
 
