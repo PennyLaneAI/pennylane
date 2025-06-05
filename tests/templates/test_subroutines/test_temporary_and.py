@@ -16,6 +16,7 @@ Tests for the TemporaryAnd template.
 """
 
 import pytest
+
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
