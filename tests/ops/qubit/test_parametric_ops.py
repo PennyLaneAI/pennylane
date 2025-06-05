@@ -678,6 +678,7 @@ class TestDecompositions:
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.unit
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_new(self, dim, wires):
         """Tests the PCPhase decomposition rules."""
@@ -685,6 +686,23 @@ class TestDecompositions:
         op = qml.PCPhase(np.random.random(), dim, wires=wires)
         for rule in qml.list_decomps(qml.PCPhase):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pcphase_decomposition_graph(self):
+        """Tests that the PCPhase can be decomposed all the way down."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        expected_matrix = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        [decomp], _ = qml.transforms.decompose(
+            tape, gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.X, qml.Toffoli, qml.GlobalPhase}
+        )
+        mat = qml.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+        assert qml.math.allclose(mat, expected_matrix)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize(
