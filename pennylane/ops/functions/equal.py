@@ -317,9 +317,6 @@ def _equal_pauli_errors(
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
-    if not op1.data[0] == op2.data[0]:
-        return f"PauliErrors have different operators {op1.data[0]} and {op2.data[0]}."
-
     op1_nums = set(filter(lambda d: isinstance(d, Number), op1.data))
     op2_nums = set(filter(lambda d: isinstance(d, Number), op2.data))
     op1_non_nums = set(op1.data) - op1_nums
