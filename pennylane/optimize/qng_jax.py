@@ -16,7 +16,6 @@
 from pennylane import math
 from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
-from pennylane.optimize.qng import _reshape_and_regularize
 
 has_catalyst = True
 try:
@@ -42,31 +41,46 @@ class QNGOptimizerJax:
         return None
 
     def step(self, qnode, params, state, **kwargs):
-        grad = self._compute_grad(qnode, params, **kwargs)
-        mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
-        mt = _reshape_and_regularize(mt, lam=self.lam)
+        mt = self._get_metric_tensor(qnode, params, **kwargs)
+        grad = self._get_grad(qnode, params, **kwargs)
         new_params, new_state = self._apply_grad(mt, grad, params, state)
         return new_params, new_state
 
     def step_and_cost(self, qnode, params, state, **kwargs):
-        new_params, new_state = self.step(qnode, params, state, **kwargs)
-        cost = qnode(params, **kwargs)
+        mt = self._get_metric_tensor(qnode, params, **kwargs)
+        cost, grad = self._get_value_and_grad(qnode, params, **kwargs)
+        new_params, new_state = self._apply_grad(mt, grad, params, state)
         return new_params, new_state, cost
 
-    def _compute_grad(self, qnode, params, **kwargs):
+    @staticmethod
+    def _get_grad(qnode, params, **kwargs):
         if active_compiler() == "catalyst":
             if has_catalyst:
-                grad = catalyst.grad
+                return catalyst.grad(qnode)(params, **kwargs)
             else:
-                # temp error message
                 raise ImportError("Catalyst is required.")
+        if has_jax:
+            return jax.grad(qnode)(params, **kwargs)
         else:
-            if has_jax:
-                grad = jax.grad
+            raise ImportError("Jax is required.")
+
+    @staticmethod
+    def _get_value_and_grad(qnode, params, **kwargs):
+        if active_compiler() == "catalyst":
+            if has_catalyst:
+                return catalyst.value_and_grad(qnode)(params, **kwargs)
             else:
-                # temp error message
-                raise ImportError("Jax is required.")
-        return grad(qnode)(params, **kwargs)
+                raise ImportError("Catalyst is required.")
+        if has_jax:
+            return jax.value_and_grad(qnode)(params, **kwargs)
+        else:
+            raise ImportError("Jax is required.")
+
+    def _get_metric_tensor(self, qnode, params, **kwargs):
+        mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
+        if self.lam != 0:
+            mt += self.lam * math.eye(math.shape(mt)[0], like=mt)
+        return mt
 
     def _apply_grad(self, mt, grad, params, state):
         update = math.linalg.pinv(mt) @ grad
