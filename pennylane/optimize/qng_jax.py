@@ -78,11 +78,17 @@ class QNGOptimizerJax:
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
+        shape = math.shape(mt)
+        size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
+        mt_matrix = math.reshape(mt, (size, size))
         if self.lam != 0:
-            mt += self.lam * math.eye(math.shape(mt)[0], like=mt)
-        return mt
+            mt_matrix += self.lam * math.eye(size, like=mt)
+        return mt_matrix
 
     def _apply_grad(self, mt, grad, params, state):
-        update = math.linalg.pinv(mt) @ grad
+        shape = math.shape(grad)
+        grad_flat = math.flatten(grad)
+        update_flat = math.linalg.pinv(mt) @ grad_flat
+        update = math.reshape(update_flat, shape=shape)
         new_params = params - self.stepsize * update
         return new_params, state
