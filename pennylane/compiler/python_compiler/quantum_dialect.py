@@ -344,11 +344,11 @@ class DeviceInitOp(IRDLOperation):
          (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
       """
 
-    device_name = prop_def(BaseAttr(StringAttr))
-
     shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
     lib = prop_def(BaseAttr(StringAttr))
+
+    device_name = prop_def(BaseAttr(StringAttr))
 
     kwargs = prop_def(BaseAttr(StringAttr))
 
