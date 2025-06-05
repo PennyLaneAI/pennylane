@@ -659,8 +659,10 @@ def to_openqasm(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -688,8 +690,10 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2, shots=100)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=2)
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
@@ -710,8 +714,10 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2, shots=100)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=2)
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
@@ -842,8 +848,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
-        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. The remaining standard library gates are
-        all supported. End statements, robust variables, subroutines, control flow, measurements, built-in mathematical
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. The remaining standard library gates as well
+        as ``end`` statements are supported. Robust variables, subroutines, control flow, measurements, built-in mathematical
         functions and constants, custom gates, and pulses are not yet supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
