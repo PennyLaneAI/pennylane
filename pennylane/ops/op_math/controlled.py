@@ -83,8 +83,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
         work_wire_type (str): The type of work wires provided, can be ``"clean"`` or ``"dirty"``.
-            ``"clean"`` work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
-            ``"dirty"`` work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+            clean work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
+            dirty work wires can be in any arbitrary state. Defaults to ``"dirty"``.
 
     Returns:
         function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
@@ -423,8 +423,8 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
         work_wire_type (str): The type of work wires provided, can be ``"clean"`` or ``"dirty"``.
-            ``"clean"`` work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
-            ``"dirty"`` work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+            clean work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
+            dirty work wires can be in any arbitrary state. Defaults to ``"dirty"``.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
