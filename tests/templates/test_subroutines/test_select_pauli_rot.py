@@ -54,7 +54,7 @@ class TestSelectPauliRot:
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
