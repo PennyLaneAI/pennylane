@@ -31,7 +31,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd, PauliError
+from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, PauliError, Pow, SProd
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
@@ -290,6 +290,7 @@ def _equal_circuit(
         return False
     return True
 
+
 @_equal_dispatch.register
 def _equal_pauli_errors(
     op1: qml.PauliError,
@@ -322,12 +323,10 @@ def _equal_pauli_errors(
     op1_non_nums = set(op1.data) - op1_nums
     op2_non_nums = set(op2.data) - op2_nums
 
-    if not (qml.math.allclose(
-        list(op1_nums),
-        list(op2_nums),
-        rtol=rtol,
-        atol=atol
-    ) and all([nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)])):
+    if not (
+        qml.math.allclose(list(op1_nums), list(op2_nums), rtol=rtol, atol=atol)
+        and all([nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)])
+    ):
         return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
@@ -351,6 +350,7 @@ def _equal_pauli_errors(
                 )
 
     return True
+
 
 @_equal_dispatch.register
 def _equal_operators(

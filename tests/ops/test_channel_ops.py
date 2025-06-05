@@ -916,16 +916,17 @@ class TestPauliError:
         ["XY", 0.1, (0, 1), "one"],
         ["XY", 0.1, (0, 1), "one"],
         ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"]
+        ["XY", 0.1, (0, 1), "one"],
     ]
     ARGS_TWO = [
         ["XY", 0.1, (0, 1)],
         ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
         ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
         ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
-        ["XY", 0.1, (0, 2), "two"]  # different wire numbers
+        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
     ]
     EQS = [True, True, False, False, False]
+
     @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
     def test_equality(self, args1, args2, eqs):
         e1 = qml.PauliError(*args1)
