@@ -50,8 +50,6 @@ if TYPE_CHECKING:
 
 @lru_cache
 def _get_op_call_graph():
-    from qualtran.bloqs import basic_gates as qt_gates
-
     @singledispatch
     def _op_call_graph(op):
         return None
