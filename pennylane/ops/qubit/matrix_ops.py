@@ -396,13 +396,13 @@ def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
 
 
 @register_resources(_controlled_qubit_unitary_resource)
-def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wirer_type, **__):
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **__):
     qml.ControlledQubitUnitary(
         U,
         wires,
         control_values=control_values,
         work_wires=work_wires,
-        work_wire_type=work_wirer_type,
+        work_wire_type=work_wire_type,
     )
 
 

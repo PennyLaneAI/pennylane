@@ -64,7 +64,7 @@ def ctrl(
     work_wire_type: Optional[str] = "dirty",
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="dirty"):
-    """Create a method that applies a controlled version of the provided op.
+    r"""Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
 
     .. note::
@@ -76,16 +76,15 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
-
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"``
-            indicates that the work wires are in the state :math:`|0\rangle`, while ``"dirty"``
-            indicates that the work wires are in an arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type: The type of work wire(s), can be ``"clean"`` or ``"dirty"``. ``"clean"``
+            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"dirty"``
+            work wires can be in any arbitrary state. Defaults to ``"dirty"``.
 
     Returns:
         function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
@@ -412,7 +411,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
-    """Symbolic operator denoting a controlled operator.
+    r"""Symbolic operator denoting a controlled operator.
 
     Args:
         base (~.operation.Operator): the operator that is controlled
@@ -423,10 +422,9 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"``
-            indicates that the work wires are in the state :math:`|0\rangle`, while ``"dirty"``
-            indicates that the work wires are in an arbitrary state. Defaults to ``"dirty"``.
-
+        work_wire_type: The type of work wire(s), can be ``"clean"`` or ``"dirty"``. ``"clean"``
+            indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"dirty"``
+            work wires can be in any arbitrary state. Defaults to ``"dirty"``.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
