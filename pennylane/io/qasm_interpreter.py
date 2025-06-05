@@ -816,33 +816,19 @@ class QasmInterpreter:
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     @visit.register(QuantumMeasurementStatement)
-    def visit_quantum_measurement_statement(self, node: QASMNode, context: dict):
+    def visit_quantum_measurement_statement(self, node: QASMNode, context: Context):
         """
         Registers a quantum measurement.
 
         Args:
             node (QASMNode): the quantum measurement node.
-            context (dict): the current context.
+            context (Context): the current context.
         """
-        if isinstance(node.measure.qubit, Identifier):
-            meas = partial(measure, node.measure.qubit.name)
-
-        elif isinstance(node.measure.qubit, IntegerLiteral):  # TODO: are all these cases necessary
-            meas = partial(measure, node.measure.qubit.value)
-
-        elif isinstance(node.measure.qubit, list):
-            for qubit in node.measure.qubit:
-                if isinstance(qubit, Identifier):
-                    meas = partial(measure, qubit.name)
-
-                elif isinstance(qubit, IntegerLiteral):
-                    meas = partial(measure, qubit.value)
-
-        name = (
-            node.target.name if isinstance(node.target.name, str) else node.target.name.name
-        )  # str or Identifier
+        meas = partial(measure, self.visit(node.measure.qubit, context))
+        name = _resolve_name(node.target)  # str or Identifier
         res = meas()
-        self._update_var(res, name, node, context)
+        # TODO: since a MeasurementValue is involved, create its processing function which captures the classical logic
+        context.update_var(res, name, node)
         return res
 
     @visit.register(QuantumReset)
@@ -854,19 +840,7 @@ class QasmInterpreter:
             node (QASMNode): the quantum reset node.
             context (dict): the current context.
         """
-        self._init_gates_list(context)
-        if isinstance(node.qubits, Identifier):
-            measure(node.qubits.name, reset=True)
-        elif isinstance(
-            node.qubits, IntegerLiteral
-        ):  # TODO: are all these cases necessary / supported
-            measure(node.qubits.value, reset=True)
-        elif isinstance(node.qubits, list):
-            for qubit in node.qubits:
-                if isinstance(qubit, Identifier):
-                    measure(qubit.name, reset=True)
-                elif isinstance(qubit, IntegerLiteral):
-                    measure(qubit.value, reset=True)
+        measure(self.visit(node.qubits, context), reset=True)
 
     @visit.register(FunctionCall)
     def visit_function_call(self, node: FunctionCall, context: Context):
@@ -1278,7 +1252,6 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
         ret = None
@@ -1340,7 +1313,6 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        # TODO: if a MeasurementValue is involved, create its processing function which captures the classical logic
         if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
             operand = preprocess_operands(self.visit(node.expression, context))
             if node.op.name == EXCLAMATION_POINT:
