@@ -20,6 +20,7 @@ This module contains the qml.equal function.
 # pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
+from numbers import Number
 from typing import Union
 
 import pennylane as qml
@@ -30,7 +31,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
+from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd, PauliError
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
@@ -42,8 +43,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
-    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence, PauliError],
+    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence, PauliError],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -289,6 +290,71 @@ def _equal_circuit(
         return False
     return True
 
+@_equal_dispatch.register
+def _equal_pauli_errors(
+    op1: qml.PauliError,
+    op2: qml.PauliError,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Function to determine whether two PauliError objects are equal."""
+
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+
+    if op1.arithmetic_depth > 0:
+        # Other dispatches cover cases of operations with arithmetic depth > 0.
+        # If any new operations are added with arithmetic depth > 0, a new dispatch
+        # should be created for them.
+        return f"op1 and op2 have arithmetic depth > 0. Got arithmetic depth {op1.arithmetic_depth}"
+
+    if op1.wires != op2.wires:
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+
+    if op1.hyperparameters != op2.hyperparameters:
+        return (
+            "The hyperparameters are not equal for op1 and op2.\n"
+            f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
+        )
+
+    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
+        # assume all tracers are independent
+        return "Data contains a tracer. Abstract tracers are assumed to be unique."
+
+    if not op1.data[0] == op2.data[0]:
+        return f"PauliErrors have different operators {op1.data[0]} and {op2.data[0]}."
+
+    if not qml.math.allclose(
+        list(filter(lambda d: isinstance(d, Number), op1.data)),
+        list(filter(lambda d: isinstance(d, Number), op2.data)),
+        rtol=rtol,
+        atol=atol
+    ):
+        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+
+    if check_trainability:
+        for params1, params2 in zip(op1.data, op2.data):
+            params1_train = qml.math.requires_grad(params1)
+            params2_train = qml.math.requires_grad(params2)
+            if params1_train != params2_train:
+                return (
+                    "Parameters have different trainability.\n "
+                    f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
+                )
+
+    if check_interface:
+        for params1, params2 in zip(op1.data, op2.data):
+            params1_interface = qml.math.get_interface(params1)
+            params2_interface = qml.math.get_interface(params2)
+            if params1_interface != params2_interface:
+                return (
+                    "Parameters have different interfaces.\n "
+                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
+                )
+
+    return True
 
 @_equal_dispatch.register
 def _equal_operators(
