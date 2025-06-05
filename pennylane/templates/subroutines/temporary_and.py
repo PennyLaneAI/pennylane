@@ -26,16 +26,16 @@ from pennylane.wires import Wires, WiresLike
 class TemporaryAnd(Operation):
     r"""TemporaryAnd(wires)
 
-    The TemporaryAnd operator is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
+    The ``TemporaryAnd`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
     about the target wire to enable more efficient circuit decompositions. The ``TemporaryAnd`` assumes the target qubit
     to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAnd)`` assumes the target output to be :math:`|0\rangle`.
-    For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
+    For more details, see Fig. 4 in `Ryan Babbush et al.(2018) <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of the operator, the user must ensure
         that the input before computation is :math:`|0\rangle`,
-        and that the output after uncomputation is :math:`|0\rangle`.
+        and that the output after uncomputation is :math:`|0\rangle`
         on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
         different from the expected ``AND``.
 
@@ -47,8 +47,9 @@ class TemporaryAnd(Operation):
     Args:
         wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
             third one is the target wire.
-        control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
-            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        control_values (tuple[bool or int]): The values on the control wires for which
+            the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+            Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 
 
     **Example**
@@ -82,7 +83,7 @@ class TemporaryAnd(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set(["control_values"])
+    resource_keys = set()
 
     def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
         wires = Wires(wires)
@@ -91,7 +92,7 @@ class TemporaryAnd(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"control_values": self.hyperparameters["control_values"]}
+        return {}
 
     def _flatten(self):
         return tuple(), (self.wires, self.hyperparameters["control_values"])
@@ -129,13 +130,16 @@ class TemporaryAnd(Operation):
         """
 
         control_values = kwargs["control_values"]
-        first_qubit = [qml.X(0), qml.I(0)]
-        second_qubit = [qml.X(1), qml.I(1)]
 
-        X_matrix = qml.matrix(
-            first_qubit[control_values[0]] @ second_qubit[control_values[1]] @ qml.I(2)
-        )
-        basis_matrix = qml.math.array(
+        mask = 0
+
+        if control_values[0] == 0:
+            mask ^= 4
+
+        if control_values[1] == 0:
+            mask ^= 2
+
+        result_matrix = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -145,10 +149,14 @@ class TemporaryAnd(Operation):
                 [0, 0, 0, 0, 0, 1j, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, -1j],
                 [0, 0, 0, 0, 0, 0, 1, 0],
-            ]
+            ],
+            dtype=complex,
         )
 
-        return X_matrix @ basis_matrix @ X_matrix
+        perm = qml.math.arange(8) ^ mask
+        result_matrix = result_matrix[perm][:, perm]
+
+        return result_matrix
 
     @staticmethod
     def compute_decomposition(wires: WiresLike, control_values):  # pylint: disable=arguments-differ
@@ -185,11 +193,7 @@ class TemporaryAnd(Operation):
 
         list_decomp = []
 
-        if control_values[0] == 0:
-            list_decomp.append(qml.X(wires[0]))
-
-        if control_values[1] == 0:
-            list_decomp.append(qml.X(wires[1]))
+        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         list_decomp += [
             qml.Hadamard(wires=wires[2]),
@@ -204,17 +208,13 @@ class TemporaryAnd(Operation):
             qml.adjoint(qml.S(wires=wires[2])),
         ]
 
-        if control_values[0] == 0:
-            list_decomp.append(qml.X(wires[0]))
-
-        if control_values[1] == 0:
-            list_decomp.append(qml.X(wires[1]))
+        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         return list_decomp
 
 
-def _temporary_and_resources(control_values):
-    number_xs = 4 - 2 * sum(control_values)
+def _temporary_and_resources():
+    number_xs = 4  # worst case scenario
     return {
         qml.X: number_xs,
         qml.Hadamard: 2,
@@ -226,7 +226,8 @@ def _temporary_and_resources(control_values):
 
 
 @register_resources(_temporary_and_resources)
-def _temporary_and(wires: WiresLike, control_values):
+def _temporary_and(wires: WiresLike, **kwargs):
+    control_values = kwargs["control_values"]
     if control_values[0] == 0:
         qml.X(wires[0])
 

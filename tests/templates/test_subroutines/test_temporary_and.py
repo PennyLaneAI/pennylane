@@ -18,7 +18,6 @@ Tests for the TemporaryAnd template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -72,7 +71,7 @@ class TestTemporaryAnd:
 
         tape = program([qs_toffoli])
         output_toffoli = dev.execute(tape[0])[0]
-        assert np.allclose(output_toffoli, output_and)
+        assert qml.math.allclose(output_toffoli, output_and)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
         M_and = qml.matrix(qml.TemporaryAnd(wires=[0, 1, 2]))
@@ -87,8 +86,8 @@ class TestTemporaryAnd:
         iso_M_and_adj = M_and_adj[::2, :]
         iso_toffoli_adj = M_toffoli[::2, :]
 
-        assert np.allclose(iso_and, iso_toffoli)
-        assert np.allclose(iso_M_and_adj, iso_toffoli_adj)
+        assert qml.math.allclose(iso_and, iso_toffoli)
+        assert qml.math.allclose(iso_M_and_adj, iso_toffoli_adj)
 
     def test_and_decompositions(self):
         """Tests that TemporaryAnd is decomposed properly."""
@@ -96,10 +95,10 @@ class TestTemporaryAnd:
         for rule in qml.list_decomps(qml.TemporaryAnd):
             _test_decomposition_rule(qml.TemporaryAnd([0, 1, 2], control_values=(0, 0)), rule)
 
-    def test_compute_matrix(self):
+    @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    def test_compute_matrix_temporary_and(self, control_values):
 
-        matrix = qml.TemporaryAnd([0, 1, "v"]).compute_matrix(control_values=(1, 1))
-        matrix_target = qml.math.array(
+        matrix_base = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -109,10 +108,19 @@ class TestTemporaryAnd:
                 [0, 0, 0, 0, 0, 1j, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, -1j],
                 [0, 0, 0, 0, 0, 0, 1, 0],
-            ]
+            ],
+            dtype=complex,
         )
 
-        assert np.allclose(matrix, matrix_target)
+        eye = qml.math.eye(2)
+        single_qubit = [qml.math.array([[0, 1], [1, 0]]), eye]
+        X_matrix = qml.math.kron(
+            single_qubit[control_values[0]], qml.math.kron(single_qubit[control_values[1]], eye)
+        )
+        assert qml.math.allclose(
+            X_matrix @ matrix_base @ X_matrix,
+            qml.matrix(qml.TemporaryAnd([0, 1, 2], control_values)),
+        )
 
     @pytest.mark.jax
     def test_jax_jit(self):
