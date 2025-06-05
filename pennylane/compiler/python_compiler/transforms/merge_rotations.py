@@ -108,7 +108,6 @@ class MergeRotationsPattern(
                 op = new_op
 
 
-@xdsl_transform
 @dataclass(frozen=True)
 class MergeRotationsPass(passes.ModulePass):
     """Pass for merging consecutive composable rotation gates."""
@@ -121,3 +120,6 @@ class MergeRotationsPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([MergeRotationsPattern()])
         ).rewrite_module(module)
+
+
+merge_rotations_pass = xdsl_transform(MergeRotationsPass)

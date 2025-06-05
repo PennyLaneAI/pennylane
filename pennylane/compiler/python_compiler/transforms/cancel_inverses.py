@@ -85,7 +85,6 @@ class IterativeCancelInversesPattern(
                 op = op.in_qubits[0].owner
 
 
-@xdsl_transform
 @dataclass(frozen=True)
 class IterativeCancelInversesPass(passes.ModulePass):
     """Pass for iteratively cancelling consecutive self-inverse gates."""
@@ -98,3 +97,6 @@ class IterativeCancelInversesPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([IterativeCancelInversesPattern()])
         ).rewrite_module(module)
+
+
+iterative_cancel_inverses_pass = xdsl_transform(IterativeCancelInversesPass)
