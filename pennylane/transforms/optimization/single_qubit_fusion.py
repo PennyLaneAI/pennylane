@@ -264,7 +264,7 @@ SingleQubitFusionInterpreter, single_qubit_plxpr_to_plxpr = _get_plxpr_single_qu
 
 
 @partial(transform, plxpr_transform=single_qubit_plxpr_to_plxpr)
-def single_qubit_fusion(
+def single_qubit_fusion(  # pylint: disable=too-many-branches
     tape: QuantumScript, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
