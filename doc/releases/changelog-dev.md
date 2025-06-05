@@ -760,6 +760,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   using `diagonalize_mcms`.
   [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
+* Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
+  off from the original tape by a global phase.
+  [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
