@@ -83,7 +83,7 @@ class TemporaryAnd(Operation):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set(["control_values"])
+    resource_keys = set()
 
     def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
         wires = Wires(wires)
@@ -92,7 +92,7 @@ class TemporaryAnd(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"control_values": self.hyperparameters["control_values"]}
+        return {}
 
     def _flatten(self):
         return tuple(), (self.wires, self.hyperparameters["control_values"])
@@ -130,10 +130,16 @@ class TemporaryAnd(Operation):
         """
 
         control_values = kwargs["control_values"]
-        eye = np.eye(2)
-        single_qubit = [np.array([[0, 1], [1, 0]]), eye]
-        X_matrix = np.kron(single_qubit[control_values[0]], np.kron(single_qubit[control_values[1]], eye))
-        basis_matrix = qml.math.array(
+
+        mask = 0
+
+        if control_values[0] == 0:
+            mask ^= 4
+
+        if control_values[1] == 0:
+            mask ^= 2
+
+        result_matrix = qml.math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -143,10 +149,14 @@ class TemporaryAnd(Operation):
                 [0, 0, 0, 0, 0, 1j, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, -1j],
                 [0, 0, 0, 0, 0, 0, 1, 0],
-            ]
+            ],
+            dtype=complex,
         )
 
-        return X_matrix @ basis_matrix @ X_matrix
+        perm = qml.math.arange(8) ^ mask
+        result_matrix = result_matrix[perm][:, perm]
+
+        return result_matrix
 
     @staticmethod
     def compute_decomposition(wires: WiresLike, control_values):  # pylint: disable=arguments-differ
@@ -211,8 +221,8 @@ class TemporaryAnd(Operation):
         return list_decomp
 
 
-def _temporary_and_resources(control_values):
-    number_xs = 4 - 2 * sum(control_values)
+def _temporary_and_resources():
+    number_xs = 4  # worst case scenario
     return {
         qml.X: number_xs,
         qml.Hadamard: 2,
@@ -224,7 +234,8 @@ def _temporary_and_resources(control_values):
 
 
 @register_resources(_temporary_and_resources)
-def _temporary_and(wires: WiresLike, control_values):
+def _temporary_and(wires: WiresLike, **kwargs):
+    control_values = kwargs["control_values"]
     if control_values[0] == 0:
         qml.X(wires[0])
 
