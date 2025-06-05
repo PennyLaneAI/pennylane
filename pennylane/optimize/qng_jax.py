@@ -13,13 +13,22 @@
 # limitations under the License.
 """Quantum natural gradient optimizer for Jax/Catalyst interface"""
 
-import catalyst
-import jax
-
 from pennylane import math
 from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.optimize.qng import _reshape_and_regularize
+
+has_catalyst = True
+try:
+    import catalyst
+except ImportError:
+    has_catalyst = False
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
 
 
 class QNGOptimizerJax:
@@ -33,10 +42,10 @@ class QNGOptimizerJax:
         return None
 
     def step(self, qnode, params, state, **kwargs):
+        grad = self._compute_grad(qnode, params, **kwargs)
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
-        grad_fn = catalyst.grad if active_compiler() == "catalyst" else jax.grad
-        grad = grad_fn(qnode)(params, **kwargs)
-        new_params, new_state = self.apply_grad(mt, grad, params, state)
+        mt = _reshape_and_regularize(mt, lam=self.lam)
+        new_params, new_state = self._apply_grad(mt, grad, params, state)
         return new_params, new_state
 
     def step_and_cost(self, qnode, params, state, **kwargs):
@@ -44,8 +53,22 @@ class QNGOptimizerJax:
         cost = qnode(params, **kwargs)
         return new_params, new_state, cost
 
-    def apply_grad(self, mt, grad, params, state):
-        mt = _reshape_and_regularize(mt, lam=self.lam)
+    def _compute_grad(self, qnode, params, **kwargs):
+        if active_compiler() == "catalyst":
+            if has_catalyst:
+                grad = catalyst.grad
+            else:
+                # temp error message
+                raise ImportError("Catalyst is required.")
+        else:
+            if has_jax:
+                grad = jax.grad
+            else:
+                # temp error message
+                raise ImportError("Jax is required.")
+        return grad(qnode)(params, **kwargs)
+
+    def _apply_grad(self, mt, grad, params, state):
         update = math.linalg.pinv(mt) @ grad
         new_params = params - self.stepsize * update
         return new_params, state
