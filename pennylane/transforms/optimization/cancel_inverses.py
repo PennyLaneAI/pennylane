@@ -57,6 +57,7 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
         op1.__class__ is op2.__class__
         and _check_equality(op1.data, op2.data)
         and _check_equality(op1.wires, op2.wires)
+        and (op1.hyperparameters == op2.hyperparameters)
     )
 
 
