@@ -76,15 +76,16 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type (str): The type of work wires provided, can be ``"clean"`` or ``"dirty"``.
-            clean work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
-            dirty work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"``
+            indicates that the work wires are in the state :math:`|0\rangle`, while ``"dirty"``
+            indicates that the work wires are in an arbitrary state. Defaults to ``"dirty"``.
 
     Returns:
         function or :class:`~.operation.Operator`: If an Operator is provided, returns a Controlled version of the Operator.
@@ -422,9 +423,10 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        work_wire_type (str): The type of work wires provided, can be ``"clean"`` or ``"dirty"``.
-            clean work wires are guaranteed to be in the :math:`|0\rangle` state, whereas
-            dirty work wires can be in any arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"``
+            indicates that the work wires are in the state :math:`|0\rangle`, while ``"dirty"``
+            indicates that the work wires are in an arbitrary state. Defaults to ``"dirty"``.
+
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
