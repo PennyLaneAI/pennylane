@@ -120,6 +120,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     c_opt = zx.extract_circuit(g.copy())
 
     c_opt2 = c_opt.to_basic_gates()
+    c_opt2 = zx.basic_optimization(c_opt2)
 
     pl_circ = qml.transforms.from_zx(c_opt2.to_graph())
     return [pl_circ], null_postprocessing
