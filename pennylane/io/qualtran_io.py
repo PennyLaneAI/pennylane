@@ -63,7 +63,7 @@ def _get_op_call_graph():
                 2 ** len(op.estimation_wires)
             )
             - 1,
-            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires))).adjoint(): 1,
+            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
         }
 
     return _op_call_graph
@@ -196,7 +196,7 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Adjoint, **kwargs):
-        return _map_to_bloq()(op.base).adjoint()
+        return _map_to_bloq()(op.base, **kwargs).adjoint()
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
@@ -205,7 +205,7 @@ def _map_to_bloq():
         if isinstance(op, qops.Toffoli):
             return Toffoli()
 
-        return _map_to_bloq()(op.base).controlled()
+        return _map_to_bloq()(op.base, **kwargs).controlled()
 
     @_to_qt_bloq.register
     def _(op: qmeas.MeasurementProcess, **kwargs):
