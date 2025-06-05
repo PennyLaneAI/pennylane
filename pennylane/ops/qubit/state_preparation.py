@@ -511,9 +511,10 @@ class StatePrep(StatePrepBase):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
-                raise UserWarning(
+                warn(
                     f"The state must be a vector of norm 1.0; got norm {norm}. "
-                    "Use 'normalize=True' to automatically normalize."
+                    "Use 'normalize=True' to automatically normalize.",
+                    UserWarning,
                 )
 
         return state
@@ -567,9 +568,10 @@ class StatePrep(StatePrepBase):
             state /= norm
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            raise UserWarning(
+            warn(
                 f"The state must be a vector of norm 1.0; got norm {norm}. "
-                "Use 'normalize=True' to automatically normalize."
+                "Use 'normalize=True' to automatically normalize.",
+                UserWarning,
             )
         return state
 
