@@ -40,6 +40,7 @@ def todd(
     to a PennyLane `(Clifford + T) <https://pennylane.ai/compilation/clifford-t-gate-set>`__ circuit.
 
     After running `TODD <https://arxiv.org/abs/1712.01557>`__, this pipeline uses `parity synthesis <https://arxiv.org/abs/1712.01859>`__ to synthesize the optimized phase polynomial.
+    A final :func:`~basic_optimization` is applied to the final circuit.
 
     When there are continuous rotation gates such as :class:`~RZ`, we suggest to use :func:`~full_reduce`.
 
@@ -77,7 +78,7 @@ def todd(
         print(f"Circuit before:")
         print(qml.drawer.tape_text(circ, wire_order=range(4)))
 
-        new_circ = todd(circ)
+        (new_circ,), _ = todd(circ)
         print(f"Circuit after phase_block_optimize:")
         print(qml.drawer.tape_text(new_circ, wire_order=range(4)))
 
@@ -102,6 +103,8 @@ def todd(
     pyzx_circ = _tape2pyzx(tape)
 
     pyzx_circ = zx.phase_block_optimize(pyzx_circ, pre_optimize=pre_optimize)
+
+    pyzx_circ = zx.basic_optimization(pyzx_circ)
 
     pl_circ = qml.transforms.from_zx(pyzx_circ.to_graph())
 
