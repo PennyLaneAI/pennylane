@@ -338,7 +338,7 @@ class DeallocOp(IRDLOperation):
 class DeviceInitOp(IRDLOperation):
     """Initialize a quantum device."""
 
-    name = "quantum.device_init"
+    name = "quantum.device"
 
     assembly_format = """
          (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
