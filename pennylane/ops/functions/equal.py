@@ -327,7 +327,7 @@ def _equal_pauli_errors(
         list(op2_nums),
         rtol=rtol,
         atol=atol
-    ) and all([(nn1 == nn2) for nn1, nn2 in zip(op1_non_nums, op2_non_nums)])):
+    ) and all([nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)])):
         return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
