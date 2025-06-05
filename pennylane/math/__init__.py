@@ -100,6 +100,7 @@ from .utils import (
     in_backprop,
     requires_grad,
     is_abstract,
+    binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
     get_canonical_interface_name,
@@ -112,6 +113,7 @@ from .interface_utils import (
 )
 from .grad import grad, jacobian
 from . import decomposition
+from .decomposition import givens_decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj
@@ -216,6 +218,7 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
+    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",
@@ -229,5 +232,6 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "vn_entanglement_entropy",
+    "givens_decomposition",
     "where",
 ]
