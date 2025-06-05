@@ -742,6 +742,11 @@ class TestControlledDecomposition:
         op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
         assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
+        op = qml.ctrl(
+            qml.RX(0.5, wires=0), control=[1, 2, 3], work_wires=[4, 5], work_wire_type="dirty"
+        )
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
+
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
