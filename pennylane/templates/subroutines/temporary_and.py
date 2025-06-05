@@ -26,10 +26,10 @@ from pennylane.wires import Wires, WiresLike
 class TemporaryAnd(Operation):
     r"""TemporaryAnd(wires)
 
-    The TemporaryAnd operator is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
+    The ``TemporaryAnd`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
     about the target wire to enable more efficient circuit decompositions. The ``TemporaryAnd`` assumes the target qubit
     to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAnd)`` assumes the target output to be :math:`|0\rangle`.
-    For more details, see `Ryan Babbush et al.(2018), Fig 4 <https://arxiv.org/abs/1805.03662>`_.
+    For more details, see Fig. 4 in `Ryan Babbush et al.(2018) <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
@@ -193,11 +193,7 @@ class TemporaryAnd(Operation):
 
         list_decomp = []
 
-        if control_values[0] == 0:
-            list_decomp.append(qml.X(wires[0]))
-
-        if control_values[1] == 0:
-            list_decomp.append(qml.X(wires[1]))
+        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         list_decomp += [
             qml.Hadamard(wires=wires[2]),
