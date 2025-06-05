@@ -104,93 +104,63 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase, **kwargs):
-        from qualtran.bloqs.basic_gates import GlobalPhase
-
-        return GlobalPhase(exponent=op.data[0] / np.pi)
+        return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
     @_to_qt_bloq.register
     def _(op: qops.Hadamard, **kwargs):
-        from qualtran.bloqs.basic_gates import Hadamard
-
-        return Hadamard()
+        return qt_gates.Hadamard()
 
     @_to_qt_bloq.register
     def _(op: qops.Identity, **kwargs):
-        from qualtran.bloqs.basic_gates import Identity
-
-        return Identity()
+        return qt_gates.Identity()
 
     @_to_qt_bloq.register
     def _(op: qops.RX, **kwargs):
-        from qualtran.bloqs.basic_gates import Rx
-
-        return Rx(angle=float(op.data[0]))
+        return qt_gates.Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.RY, **kwargs):
-        from qualtran.bloqs.basic_gates import Ry
-
-        return Ry(angle=float(op.data[0]))
+        return qt_gates.Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.RZ, **kwargs):
-        from qualtran.bloqs.basic_gates import Rz
-
-        return Rz(angle=float(op.data[0]))
+        return qt_gates.Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.S, **kwargs):
-        from qualtran.bloqs.basic_gates import SGate
-
-        return SGate()
+        return qt_gates.SGate()
 
     @_to_qt_bloq.register
     def _(op: qops.SWAP, **kwargs):
-        from qualtran.bloqs.basic_gates import TwoBitSwap
-
-        return TwoBitSwap()
+        return qt_gates.TwoBitSwap()
 
     @_to_qt_bloq.register
     def _(op: qops.CSWAP, **kwargs):
-        from qualtran.bloqs.basic_gates import TwoBitCSwap
-
-        return TwoBitCSwap()
+        return qt_gates.TwoBitCSwap()
 
     @_to_qt_bloq.register
     def _(op: qops.T, **kwargs):
-        from qualtran.bloqs.basic_gates import TGate
-
-        return TGate()
+        return qt_gates.TGate()
 
     @_to_qt_bloq.register
     def _(op: qops.X, **kwargs):
-        from qualtran.bloqs.basic_gates import XGate
-
-        return XGate()
+        return qt_gates.XGate()
 
     @_to_qt_bloq.register
     def _(op: qops.Y, **kwargs):
-        from qualtran.bloqs.basic_gates import YGate
-
-        return YGate()
+        return qt_gates.YGate()
 
     @_to_qt_bloq.register
     def _(op: qops.CY, **kwargs):
-        from qualtran.bloqs.basic_gates import CYGate
-
-        return CYGate()
+        return qt_gates.CYGate()
 
     @_to_qt_bloq.register
     def _(op: qops.Z, **kwargs):
-        from qualtran.bloqs.basic_gates import ZGate
-
-        return ZGate()
+        return qt_gates.ZGate()
 
     @_to_qt_bloq.register
     def _(op: qops.CZ, **kwargs):
-        from qualtran.bloqs.basic_gates import CZ
-
-        return CZ()
+        return qt_gates.CZ()
 
     @_to_qt_bloq.register
     def _(op: qops.Adjoint, **kwargs):
@@ -198,10 +168,8 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
-        from qualtran.bloqs.basic_gates import Toffoli
-
         if isinstance(op, qops.Toffoli):
-            return Toffoli()
+            return qt_gates.Toffoli()
 
         return _map_to_bloq()(op.base, **kwargs).controlled()
 
