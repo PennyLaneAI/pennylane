@@ -38,6 +38,7 @@ from pennylane.transforms.optimization.cancel_inverses import (
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
+# pylint: disable=too-many-public-methods
 class TestCancelInversesInterpreter:
     """Unit tests for the CancelInversesInterpreter for canceling adjacent inverse
     operations in plxpr."""
