@@ -911,52 +911,31 @@ class TestPauliError:
         jac = jac_fn(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
-    def test_equality(self):
-        # op1.data is (0.1,) and op2.data is (0.2,)
-
-        p1 = qml.RX(0.1, 0)
-        p2 = qml.RX(0.2, 0)
-
-        eq = qml.equal(p1, p2)
-        assert not eq
-
-        # works now as isclose() no longer called on op.data which is ('X', 0.1) and includes strings
-
-        # should be equal
-
-        e1 = qml.PauliError("XY", 0.1, wires=(0, 1))
-        e2 = qml.PauliError("XY", 0.1, wires=(0, 1))
-
-        eq = qml.equal(e1, e2)
-        assert eq
-
-        # id is not in op.data
-
-        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
-        e2 = qml.PauliError("XY", 0.1, wires=(0, 1), id="two")
+    ARGS_ONE = [
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"]
+    ]
+    ARGS_TWO = [
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
+        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
+        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
+        ["XY", 0.1, (0, 2), "two"]  # different wire numbers
+    ]
+    EQS = [True, True, False, False, False]
+    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
+    def test_equality(self, args1, args2, eqs):
+        e1 = qml.PauliError(*args1)
+        e2 = qml.PauliError(*args2)
 
         eq = qml.equal(e1, e2)
-        assert eq
-
-        # more complex PauliErrors
-
-        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
-        e2 = qml.PauliError("XYZ", 0.1, wires=(0, 1, 2), id="two")
-
-        eq = qml.equal(e1, e2)
-        assert not eq
-
-        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
-        e2 = qml.PauliError("XZ", 0.1, wires=(0, 1), id="two")
-
-        eq = qml.equal(e1, e2)
-        assert not eq
-
-        e1 = qml.PauliError("XY", 0.1, wires=(0, 1), id="one")
-        e2 = qml.PauliError("XY", 0.1, wires=(0, 2), id="two")
-
-        eq = qml.equal(e1, e2)
-        assert not eq
+        if eqs:
+            assert eq
+        else:
+            assert not eq
 
 
 class TestQubitChannel:
