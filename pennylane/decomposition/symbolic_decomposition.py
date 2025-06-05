@@ -274,7 +274,7 @@ def _flip_control_adjoint_resource(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(

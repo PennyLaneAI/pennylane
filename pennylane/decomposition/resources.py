@@ -434,7 +434,7 @@ def _controlled_qubit_unitary_rep(
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-) -> CompressedResourceOp:
+) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
     """Helper function that handles the custom logic for controlled qubit unitaries."""
 
     if base_class is qml.QubitUnitary:
