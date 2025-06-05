@@ -40,7 +40,7 @@ expected_ops_names = {
     "CountsOp": "quantum.counts",
     "CustomOp": "quantum.custom",
     "DeallocOp": "quantum.dealloc",
-    "DeviceInitOp": "quantum.device_init",
+    "DeviceInitOp": "quantum.device",
     "DeviceReleaseOp": "quantum.device_release",
     "ExpvalOp": "quantum.expval",
     "ExtractOp": "quantum.extract",
