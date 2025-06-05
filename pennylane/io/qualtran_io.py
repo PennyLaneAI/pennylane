@@ -15,7 +15,9 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# TODO: Remove unused-argument when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# no-member is disabled because pylint does not recognize that ToBloq inherits Qualtran's Bloq
+# and thinks ToBloq does not have the attributes/methods of Bloq.
 # pylint: disable=unused-argument, no-member
 
 from collections import defaultdict
