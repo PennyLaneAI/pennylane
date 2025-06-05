@@ -576,7 +576,7 @@ class Controlled(SymbolicOp):
         id=None,
     ):
         control_wires = Wires(control_wires)
-        work_wires = work_wires or Wires([])
+        work_wires = Wires(work_wires or Wires([]))
 
         if control_values is None:
             control_values = [True] * len(control_wires)
@@ -903,7 +903,10 @@ class Controlled(SymbolicOp):
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
                 work_wire_type=resolve_work_wire_type(
-                    base.work_wires, base.work_wire_type, self.work_wires, self.work_wire_type
+                    self.base.work_wires,
+                    self.base.work_wire_type,
+                    self.work_wires,
+                    self.work_wire_type,
                 ),
             )
 

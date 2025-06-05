@@ -331,6 +331,10 @@
   * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
   [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
+* A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and :class:`~pennylane.ControlledQubitUnitary`
+  for more fine-grained control over the type of work wire used in their decompositions.
+  [(#7612)](https://github.com/PennyLaneAI/pennylane/pull/7612)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
