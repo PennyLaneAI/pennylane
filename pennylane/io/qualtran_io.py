@@ -35,6 +35,7 @@ from pennylane.operation import (
 )
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
+from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -49,6 +50,8 @@ if TYPE_CHECKING:
 
 @lru_cache
 def _get_op_call_graph():
+    from qualtran.bloqs import basic_gates as qt_gates
+
     @singledispatch
     def _op_call_graph(op):
         return None
@@ -646,7 +649,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             """
 
             def __init__(self, op, map_ops=False, **kwargs):
-                from pennylane.workflow.qnode import QNode
 
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
@@ -660,7 +662,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             def signature(self) -> "qt.Signature":
                 """Compute and return Qualtran signature for given op or QNode."""
                 from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
 
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
@@ -674,7 +675,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
                 from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):
