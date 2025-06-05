@@ -44,10 +44,11 @@ composable_rotations = [
 def _can_merge(op: CustomOp, next_op: Operation) -> bool:
     if isinstance(next_op, CustomOp):
         if op.gate_name.data == next_op.gate_name.data:
-            if op.out_qubits == next_op.in_qubits and op.out_ctrl_qubits == next_op.in_ctrl_qubits:
-                for v1, v2 in zip(op.in_ctrl_values, next_op.in_ctrl_values, strict=True):
-                    if v1.data != v2.data:
-                        return False
+            if (
+                op.out_qubits == next_op.in_qubits
+                and op.out_ctrl_qubits == next_op.in_ctrl_qubits
+                and op.in_ctrl_values == next_op.in_ctrl_values
+            ):
                 return True
 
     return False
@@ -107,7 +108,6 @@ class MergeRotationsPattern(
                 op = new_op
 
 
-@xdsl_transform
 @dataclass(frozen=True)
 class MergeRotationsPass(passes.ModulePass):
     """Pass for merging consecutive composable rotation gates."""
@@ -120,3 +120,6 @@ class MergeRotationsPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([MergeRotationsPattern()])
         ).rewrite_module(module)
+
+
+merge_rotations_pass = xdsl_transform(MergeRotationsPass)
