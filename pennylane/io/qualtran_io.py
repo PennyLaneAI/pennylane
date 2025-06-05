@@ -27,8 +27,6 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane.workflow.qnode import QNode
-from pennylane.workflow import construct_tape
 from pennylane.operation import (
     DecompositionUndefinedError,
     MatrixUndefinedError,
@@ -37,6 +35,8 @@ from pennylane.operation import (
 )
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
+from pennylane.workflow import construct_tape
+from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
