@@ -332,6 +332,12 @@
   * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
   [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
+* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with 
+  graph-based decomposition enabled, which must be a function that returns `True` if an operator 
+  does not need to be decomposed (it meets the requirements as described in `stopping_condition`).
+  See the documentation for more details.
+  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
