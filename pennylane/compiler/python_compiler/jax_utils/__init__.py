@@ -33,10 +33,11 @@ from xdsl.dialects import scf as xscf
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
 from xdsl.dialects import transform as xtransform
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
 from xdsl.parser import Parser as xParser
 from xdsl.context import Context as xContext
+
+from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
 
