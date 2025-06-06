@@ -300,7 +300,7 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("coeffs, ops",test_hamiltonians)
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
         from jax import numpy as jnp
