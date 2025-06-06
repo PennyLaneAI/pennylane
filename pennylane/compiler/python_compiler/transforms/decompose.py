@@ -243,6 +243,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             for idx, wire in enumerate(qml_op.wires):
                 xdsl_op.results[idx].replace_by(self.wire_to_ssa_qubits[wire])
 
+            # pylint: disable=missing-function-docstring
             rewriter.erase_op(xdsl_op)
 
 
