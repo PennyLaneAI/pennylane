@@ -19,7 +19,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc.pauli_tracker import commute_clifford_op, pauli_prod, pauli_to_xz, xz_to_pauli
+from pennylane.ftqc import RotXZX, get_byproduct_corrections
+from pennylane.ftqc.pauli_tracker import (
+    _parse_mid_measurements,
+    commute_clifford_op,
+    pauli_prod,
+    pauli_to_xz,
+    xz_to_pauli,
+)
 
 _PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
 
@@ -31,6 +38,12 @@ def generate_pauli_list(wire: int, num_ops: int):
         pauli_list.append(random.choice(_PAULIS)(wire))
 
     return pauli_list
+
+
+def generate_random_state(n, seed=0):
+    rng = np.random.default_rng(seed=seed)
+    input_state = rng.random(2**n) + 1j * rng.random(2**n)
+    return input_state / np.linalg.norm(input_state)
 
 
 class TestPauliTracker:
@@ -186,3 +199,120 @@ class TestPauliTracker:
             match="Please ensure xz are either 0 or 1.",
         ):
             _ = commute_clifford_op(clifford_op, xz)
+
+
+class TestOfflineCorrection:
+    """Tests for byproduct operation offline corrections."""
+
+    @pytest.mark.parametrize(
+        "ops, mid_measures, expected",
+        [
+            (
+                [qml.CNOT(wires=[0, 1]), qml.X(0), qml.X(1)],
+                [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0],
+                [[(0, 1), (0, 1)]],
+            ),
+            ([qml.S(0), qml.Y(0)], [1, 0, 0, 1], [[(1, 0)]]),
+            ([qml.H(0), qml.Z(0)], [1, 1, 0, 0], [[(1, 1)]]),
+            ([qml.RZ(0.1, wires=[0]), qml.X(0)], [1, 0, 1, 1], [[(1, 0)]]),
+        ],
+    )
+    def test_parse_mid_measurements(self, ops, mid_measures, expected):
+        tape = qml.tape.QuantumScript(ops=ops)
+        by_ops = _parse_mid_measurements(tape, mid_measures)
+        assert by_ops == expected
+
+    @pytest.mark.parametrize("num_shots", [250])
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[0])],
+            [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[0])],
+            [qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0])],
+        ],
+    )
+    def test_unsupported_tape_offline_correction(self, num_shots, ops):
+        measurements = [qml.sample(wires=[0])]
+
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
+
+        mid_meas = [random.choice([0, 1]) for _ in range(8)]
+
+        with pytest.raises(NotImplementedError):
+            _ = get_byproduct_corrections(tape, mid_meas, [1])
+
+    @pytest.mark.parametrize(
+        "ops, mid_meas, sample_wires, measures_expected",
+        [
+            (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1]), qml.Z(0)],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [0],
+                [[1], [0]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[2]), qml.Z(0)],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [0],
+                [[1], [0]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), qml.S(wires=[0])],
+                [0, 0, 1, 1, 1, 1, 0, 0],
+                [0],
+                [[1], [1]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 0, 0, 1],
+                [0],
+                [[0], [0]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 0, 1, 0, 1, 0, 0, 1],
+                [0],
+                [[1], [1]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 1, 0, 0],
+                [1],
+                [[0], [1]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
+                [0, 1, 1, 0, 1, 0, 0, 0],
+                [1],
+                [[0], [0]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 0, 0, 1],
+                [1],
+                [[0], [1]],
+            ),
+            (
+                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [0, 1, 0, 1, 1, 1, 0, 1],
+                [1],
+                [[1], [1]],
+            ),
+            (
+                [qml.RZ(-0.1, wires=[0]), qml.RZ(0.1, wires=[1]), qml.X(wires=[1])],
+                [0, 1, 0, 1, 1, 1, 0, 1],
+                [0, 1],
+                [[1, 0], [1, 1]],
+            ),
+        ],
+    )
+    def test_non_clifford_offline_correction(self, ops, mid_meas, sample_wires, measures_expected):
+        measurements = [qml.sample(wires=sample_wires)]
+
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        measures, expected = measures_expected
+
+        corrected_meas = get_byproduct_corrections(tape, mid_meas, measures)
+
+        assert np.allclose(corrected_meas, expected)
