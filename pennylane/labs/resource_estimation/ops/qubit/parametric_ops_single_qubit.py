@@ -172,28 +172,28 @@ class ResourceRX(ResourceOperator):
     The resources for this operation are computed as:
 
     >>> op = plre.estimate_resources(plre.ResourceRX)()
-    >>> str(op)
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 21
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_rx": 1e-3}
+    >>> config = {"error_rx": 1e-4}
     >>> op = plre.estimate_resources(plre.ResourceRX, config=config)()
-    >>> str(op)
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 21}
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -296,28 +296,28 @@ class ResourceRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.estimate_resources(plre.ResourceRY)
+    >>> op = plre.estimate_resources(plre.ResourceRY)()
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 1
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_ry": 1e-3}
-    >>> plre.estimate_resources(plre.ResourceRY, config=config)
+    >>> config = {"error_ry": 1e-4}
+    >>> op = plre.estimate_resources(plre.ResourceRY, config=config)()
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
-
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -422,28 +422,29 @@ class ResourceRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.estimate_resources(plre.ResourceRZ)
+    >>> op = plre.estimate_resources(plre.ResourceRZ)()
+    >>> op
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 21
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_rz": 1e-3}
-    >>> plre.estimate_resources(plre.ResourceRZ, config=config)
+    >>> config = {"error_rz": 1e-4}
+    >>> op = plre.estimate_resources(plre.ResourceRZ, config=config)()
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
-
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -541,7 +542,7 @@ class ResourceRot(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> plre.ResourceRot.resource_decomp()
-    {RY: 1, RZ: 2}
+    [(1 x RY), (2 x RZ)]
     """
 
     num_wires = 1
