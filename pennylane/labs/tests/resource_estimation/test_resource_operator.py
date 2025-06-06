@@ -32,7 +32,7 @@ from pennylane.labs.resource_estimation import (
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ
 
 
 @dataclass(frozen=True)
@@ -135,6 +135,7 @@ class ResourceCNOT(DummyOp):
 
 
 class TestResourceOperator:
+    """Tests for the ResourceOperator class"""
 
     res_op_error_lst = [
         DummyOp_no_resource_rep,
