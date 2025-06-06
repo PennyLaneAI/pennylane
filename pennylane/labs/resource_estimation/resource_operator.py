@@ -445,7 +445,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
             s = plre.resource_rep(plre.ResourceS)
             return [plre.GateCount(h, 2), plre.GateCount(s, 2)]
 
-    .. code-block:: bash
+    .. code-block:: pycon
 
         >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
         --- Resources: ---
