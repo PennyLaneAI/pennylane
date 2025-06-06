@@ -670,9 +670,7 @@ class TestToBloq:
                 },
             ),
             (
-                qml.QROMStatePreparation(
-                    np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]
-                ),
+                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
                     (
                         qml.QROM(
@@ -741,10 +739,13 @@ class TestToBloq:
                         True,
                     ): 1,
                     (qml.CRY(0.0, wires=[0, 1]), True): 6,
-                    (qml.ctrl(
-                        qml.GlobalPhase((2*np.pi), wires=[1]),
-                        control=0,
-                    ), True): 3
+                    (
+                        qml.ctrl(
+                            qml.GlobalPhase((2 * np.pi), wires=[1]),
+                            control=0,
+                        ),
+                        True,
+                    ): 3,
                 },
             ),
             (
