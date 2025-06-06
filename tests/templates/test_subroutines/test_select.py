@@ -473,13 +473,13 @@ class TestUnaryIterator:
         assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
 
     @pytest.mark.parametrize(
-        ("num_ops", "control", "work"),
+        ("num_ops", "control", "work", "msg_match"),
         [
             (
                 9,
                 4,
                 1,
-                ("Can't use this decomposition"),
+                "Can't use this decomposition",
             ),
         ],
     )
@@ -492,7 +492,7 @@ class TestUnaryIterator:
         ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
 
         with pytest.raises(ValueError, match=msg_match):
-            _unary_select(ops, control=control, work_wires=work)
+            _unary_select(ops, control=wires["control"], work_wires=wires["work"])
 
     @pytest.mark.xfail(strict=False, reason="#7580", raises=ValueError)
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
