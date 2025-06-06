@@ -668,6 +668,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
+  [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
+
 * `qml.metric_tensor` can now be calculated with catalyst.
   [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
 
