@@ -1259,6 +1259,21 @@ class TestPauliErrorEqual:
 
         assert qml.equal(op1, op2) is False
 
+    @pytest.mark.torch
+    def test_trainability_and_interface(self):
+        """Test that trainability and interface are compared correctly."""
+
+        x1 = qml.numpy.array(0.5, requires_grad=True)
+        pes = [qml.PauliError("XY", x1, (0, 1)), qml.PauliError("XZ", 0.5, (0, 1))]
+
+        assert qml.equal(pes[0], pes[1]) is False
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(pes[0], pes[1])
+
+        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+            assert_equal(pes[0], pes[1], check_trainability=False)
+
+
 # pylint: disable=too-few-public-methods
 class TestPauliWordsEqual:
     """Tests for qml.equal with PauliSentences."""

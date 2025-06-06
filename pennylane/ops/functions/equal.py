@@ -302,26 +302,8 @@ def _equal_pauli_errors(
 ):
     """Function to determine whether two PauliError objects are equal."""
 
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
-
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-
-    if any(qml.math.is_abstract(d) for d in op1.data + op2.data):
-        # assume all tracers are independent
-        return "Data contains a tracer. Abstract tracers are assumed to be unique."
-
-    op1_nums = set(filter(lambda d: isinstance(d, Number), op1.data))
-    op2_nums = set(filter(lambda d: isinstance(d, Number), op2.data))
-    op1_non_nums = set(op1.data) - op1_nums
-    op2_non_nums = set(op2.data) - op2_nums
-
-    if not (
-        qml.math.allclose(list(op1_nums), list(op2_nums), rtol=rtol, atol=atol)
-        and all((nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)))
-    ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data):
@@ -342,6 +324,17 @@ def _equal_pauli_errors(
                     "Parameters have different interfaces.\n "
                     f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
                 )
+
+    op1_nums = set(filter(lambda d: isinstance(d, Number), op1.data))
+    op2_nums = set(filter(lambda d: isinstance(d, Number), op2.data))
+    op1_non_nums = set(op1.data) - op1_nums
+    op2_non_nums = set(op2.data) - op2_nums
+
+    if not (
+        qml.math.allclose(list(op1_nums), list(op2_nums), rtol=rtol, atol=atol)
+        and all((nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)))
+    ):
+        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
 
     return True
 
