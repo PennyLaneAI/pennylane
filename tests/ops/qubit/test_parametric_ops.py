@@ -692,7 +692,9 @@ class TestDecompositions:
     def test_pcphase_decomposition_graph(self):
         """Tests that the PCPhase can be decomposed all the way down."""
 
-        tape = qml.tape.QuantumScript([qml.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], [])
+        tape = qml.tape.QuantumScript(
+            [qml.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], []
+        )
         expected_matrix = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
 
         [decomp], _ = qml.transforms.decompose(
