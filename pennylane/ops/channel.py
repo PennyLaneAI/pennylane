@@ -17,6 +17,7 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
+from typing import Any, Iterable, Hashable
 
 from pennylane import math as np
 from pennylane.operation import Channel
@@ -591,6 +592,21 @@ class PauliError(Channel):
             warnings.warn(
                 f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
             )
+
+    @classmethod
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
+        """
+        Constructs a PauliError from its serialized version.
+
+        Args:
+            data (Iterable[Any]): the data of the PauliError.
+            metadata (Hashable): the hyperparameters of the PauliError.
+
+        Returns:
+            A constructed PauliError.
+        """
+        hyperparameters_dict = dict(metadata[1])
+        return PauliError(hyperparameters_dict['operators'], data[0], wires=metadata[0])
 
     @staticmethod
     def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
