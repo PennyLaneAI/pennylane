@@ -19,19 +19,22 @@ import copy
 
 import numpy as np
 import pytest
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.subroutines.select import _unary_select
 
 
 def test_standard_checks():
     """Run standard validity tests."""
-    ops = [qml.PauliX(0), qml.PauliY(0)]
-    control = [1]
+    ops = [qml.PauliX(0) for _ in range(16)]
+    control = [1, 2, 3, 4]
+    work_wires = [5, 6, 7]
 
-    op = qml.Select(ops, control)
+    op = qml.Select(ops, control, work_wires)
     assert op.target_wires == qml.wires.Wires(0)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
 
 def test_repr():
@@ -425,3 +428,78 @@ class TestInterfaces:
         jit_circuit = jax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
+
+
+num_controls_and_num_ops = (
+    [(nc, i) for nc in range(1, 5) for i in range(1, 2**nc + 1)]
+    + [(5, 1), (5, 2), (5, 17), (5, 24), (5, 31)]
+    + [(6, 3), (6, 8), (6, 27)]
+)
+
+
+class TestUnaryIterator:
+    """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
+
+    @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
+    def test_identity_with_basis_states(self, num_controls, num_ops):
+        """Test that the unary iterator is correct by asserting that the identity
+        matrix is created by preparing the i-th computational basis state conditioned on the
+        i-th basis state in the control qubits."""
+
+        dev = qml.device("default.qubit")
+
+        # Create angle set so that feeding angles[i] into RX on the i-th control wire will
+        # yield broadcasted BasisEmbedding (which does not support broadcasting atm)
+        angles = (
+            np.pi
+            * np.array(
+                [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
+            ).T
+        )
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+        target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
+
+        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+
+        @qml.qnode(dev)
+        def circuit():
+            for w, angle in zip(control, angles, strict=True):
+                qml.RX(angle, w)
+            _unary_select(ops, control=control, work_wires=work)
+            return qml.probs(target)
+
+        probs = circuit()
+        assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
+
+    @pytest.mark.xfail(strict=False, reason="#7580", raises=ValueError)
+    @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
+    def test_comparison_with_select(self, num_controls, num_ops, seed):
+        """Test that the unary iterator is correct by comparing it to the standard Select
+        decomposition."""
+        # This test is being blocked by https://github.com/PennyLaneAI/pennylane/issues/7580
+
+        angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
+        angles = np.pi * np.array(angles).T
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+        target = [2 * num_controls - 1, 2 * num_controls]
+
+        dev = qml.device("default.qubit", wires=control + work + target)
+        unitaries = unitary_group.rvs(4, size=num_ops, random_state=seed)
+        if num_ops == 1:
+            unitaries = np.array([unitaries])
+        ops = [qml.QubitUnitary(U, wires=target) for U in unitaries]
+        adj_ops = [qml.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
+
+        @qml.qnode(dev)
+        def circuit():
+            for w, angle in zip(control, angles, strict=True):
+                qml.RX(angle, w)
+            _unary_select(ops, control=control, work_wires=work)
+            qml.Select(adj_ops, control=control, work_wires=None)
+            return qml.probs(target)
+
+        probs = circuit()
+        exp = np.eye(4)[0]
+        assert np.allclose(probs, exp)
