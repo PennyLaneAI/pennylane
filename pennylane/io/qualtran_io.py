@@ -597,6 +597,7 @@ def _ensure_in_reg_exists(
             _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
         ] = bb.allocate(n_alloc)
 
+    # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
     assert in_reg in qreg_to_qvar
 
 
