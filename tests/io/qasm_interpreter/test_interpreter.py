@@ -58,7 +58,7 @@ class TestExpressions:
     def test_different_unary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("unary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -74,7 +74,7 @@ class TestExpressions:
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("binary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -114,7 +114,7 @@ class TestExpressions:
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
-            open("assignment.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
             permissive=True,
         )
 
