@@ -31,7 +31,7 @@ OPENFERMION_XFAIL_INFO = (
     "This test requires numpy 1.x. Double check OpenFermion compatibility with numpy 2.x."
 )
 xfail_on_numpy2 = pytest.mark.xfail(
-    condition=IS_NUMPY_2,
+    condition=False,
     reason=OPENFERMION_XFAIL_INFO,
 )
 
