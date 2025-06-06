@@ -397,7 +397,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
             work_wire_type=work_wire_type,
         )
 
-    work_wires = work_wires or []
+    work_wires = Wires([] if work_wires is None else work_wires)
     work_wire_type = resolve_work_wire_type(
         op.work_wires, op.work_wire_type, work_wires, work_wire_type
     )
