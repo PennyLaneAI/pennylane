@@ -412,7 +412,8 @@ class TestToBloq:
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(qml.Hadamard(0), map_ops=False) == Hadamard()
+        assert qml.ToBloq(qml.H(0)).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
 
     def test_to_bloq_circuits(self):
@@ -459,7 +460,7 @@ class TestToBloq:
             qml.FromBloq(_map_to_bloq()(expected_decomp_ops[5]), wires=[2, 0]),
             qml.FromBloq(_map_to_bloq()(expected_decomp_ops[6]), wires=[3, 0]),
             qml.FromBloq(_map_to_bloq()(expected_decomp_ops[7]), wires=[4, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8]), wires=range(1, 5)),
+            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8], map_ops=False), wires=range(1, 5)),
         ]
 
     def test_circuit_to_bloq_kwargs(self):
@@ -490,7 +491,7 @@ class TestToBloq:
         """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
         import qualtran as qt
 
-        with pytest.raises(qt.DecomposeNotImplementedError):
+        with pytest.raises(qt.DecomposeTypeError):
             qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
 
     def test_call_graph(self):
@@ -505,7 +506,7 @@ class TestToBloq:
         assert cg == {
             qml.to_bloq(qml.Hadamard(0), True): 4,
             qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
         }
 
     def test_map_to_bloq(self):
@@ -564,7 +565,7 @@ class TestToBloq:
                 {
                     (qml.Hadamard(0), True): 4,
                     (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
                 },
             ),
         ],
@@ -574,10 +575,7 @@ class TestToBloq:
         bloq_call_graph = {}
 
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            if k[1]:  # bool decides whether or not to use map
-                bloq_call_graph[qml.to_bloq(k[0])] = v
-            else:
-                bloq_call_graph[qml.ToBloq(k[0])] = v
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph()(op)
         assert dict(call_graph) == bloq_call_graph
