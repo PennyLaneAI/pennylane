@@ -32,6 +32,8 @@ from .rotoselect import RotoselectOptimizer
 from .rotosolve import RotosolveOptimizer
 from .shot_adaptive import ShotAdaptiveOptimizer
 from .spsa import SPSAOptimizer
+from .qng_jax import QNGOptimizerJax
+from .momentum_qng_jax import MomentumQNGOptimizerJax
 
 # Optimizers to display in the docs
 __all__ = [
@@ -50,4 +52,6 @@ __all__ = [
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",
     "SPSAOptimizer",
+    "QNGOptimizerJax",
+    "MomentumQNGOptimizerJax",
 ]
