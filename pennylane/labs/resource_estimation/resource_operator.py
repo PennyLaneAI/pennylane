@@ -46,7 +46,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
         >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
         >>> print(op_tp)
-        Hadamard(num_wires=1)
+        CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
     """
 
     def __init__(
@@ -465,7 +465,7 @@ class GateCount:
 
 
 def resource_rep(
-    resource_op: Type[ResourceOperator], resource_params: Dict,
+    resource_op: Type[ResourceOperator], resource_params: Dict=None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
