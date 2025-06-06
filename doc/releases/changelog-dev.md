@@ -8,6 +8,7 @@
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
+  [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
 
   ```python
   import pennylane as qml
@@ -366,11 +367,13 @@
 * An xDSL `qml.compiler.python_compiler.transforms.MergeRotationsPass` pass for applying `merge_rotations` to an
   xDSL module has been added for the experimental xDSL Python compiler integration.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
 
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
@@ -568,6 +571,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
+  [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
 * Move `givens_decomposition` and private helpers from `qchem` to `math` module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
