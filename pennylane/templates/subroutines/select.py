@@ -30,7 +30,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.templates.subroutines.temporary_and import TemporaryAnd
+from pennylane.templates.subroutines.temporary_and import TemporaryAND
 from pennylane.wires import Wires
 
 
@@ -271,7 +271,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     ─├●──        ─●─┤─
      ╰───        ───╯
     ```
-    for :class:`~.TemporaryAnd` and its adjoint, respectively.
+    for :class:`~.TemporaryAND` and its adjoint, respectively.
 
     Given ``k=len(ops)=2**a-b`` operators, where ``a`` is chosen as small as possible to obtain
     ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), ``a`` control wires, and ``a - 1`` work wires,
@@ -316,7 +316,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
       second half applies ``2**(⌈log_2(l)⌉-1)`` operators.
       This case is triggered if ``k`` is larger than or equal to 3/4 of the maximal capacity
       for ``a`` control wires.
-      Note how the two middle TemporaryAnd gates were merged into two CNOTs, which was not
+      Note how the two middle TemporaryAND gates were merged into two CNOTs, which was not
       possible above because they acted on distinct wire triples.
 
     """
@@ -337,9 +337,9 @@ def _add_first_k_units(ops, controls, work_wires, k):
     k2 = _ceil(2 ** (_ceil_log(l) - 1))
     k3 = k - k01 - k2
 
-    # Open TemporaryAnd (controlled on |00>) + first quarter + CX (controlled on |0>) + second quarter
+    # Open TemporaryAND (controlled on |00>) + first quarter + CX (controlled on |0>) + second quarter
     first_half = (
-        [TemporaryAnd(and_wires, control_values=(0, 0))]
+        [TemporaryAND(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
         + [X(controls[0])]
         + [CNOT([controls[0], controls[2]])]
@@ -350,12 +350,12 @@ def _add_first_k_units(ops, controls, work_wires, k):
     if l == 1:  # first variant
 
         # Single operation left to apply: Only the third quarter will be needed, and it will not need
-        # TemporaryAnd gates at all
+        # TemporaryAND gates at all
         and_wires_sec_half = []
         new_controls_sec_half = controls
         new_work_wires_sec_half = work_wires
-        # Closing TemporaryAnd for first half
-        middle_part = [adjoint(TemporaryAnd)(and_wires, control_values=(0, 1))]
+        # Closing TemporaryAND for first half
+        middle_part = [adjoint(TemporaryAND)(and_wires, control_values=(0, 1))]
 
     else:
         c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
@@ -364,10 +364,10 @@ def _add_first_k_units(ops, controls, work_wires, k):
         new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
 
         if c_bar > 0:  # second variant
-            # Closing TemporaryAnd for first half, opening TemporaryAnd for second half
+            # Closing TemporaryAND for first half, opening TemporaryAND for second half
             middle_part = [
-                adjoint(TemporaryAnd)(and_wires, control_values=(0, 1)),
-                TemporaryAnd(and_wires_sec_half, control_values=(1, 0)),
+                adjoint(TemporaryAND)(and_wires, control_values=(0, 1)),
+                TemporaryAND(and_wires_sec_half, control_values=(1, 0)),
             ]
         else:  # third variant
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
@@ -379,7 +379,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         second_half += (
             [CNOT(and_wires_sec_half[::2])]
             + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, new_work_wires_sec_half, k3)
-            + [adjoint(TemporaryAnd)(and_wires_sec_half)]
+            + [adjoint(TemporaryAND)(and_wires_sec_half)]
         )
 
     return first_half + middle_part + second_half
@@ -430,11 +430,11 @@ def _add_k_units(ops, controls, work_wires, k):
     new_controls = controls[2:]
     k_first = 2 ** (num_bits - 1)
     return (
-        [TemporaryAnd(and_wires, control_values=(1, 0))]
+        [TemporaryAND(and_wires, control_values=(1, 0))]
         + _add_k_units(ops[:k_first], new_controls, new_work_wires, k_first)
         + [CNOT(and_wires[::2])]
         + _add_k_units(ops[k_first:], new_controls, new_work_wires, k - k_first)
-        + [adjoint(TemporaryAnd)(and_wires)]
+        + [adjoint(TemporaryAND)(and_wires)]
     )
 
 
@@ -444,8 +444,8 @@ def _unary_select_resources(ops):
 
     if math.log2(num_ops) - _ceil_log(num_ops) > 0.5:
         return {
-            resource_rep(TemporaryAnd): (num_ops - 3),
-            adjoint_resource_rep(TemporaryAnd): (num_ops - 3),
+            resource_rep(TemporaryAND): (num_ops - 3),
+            adjoint_resource_rep(TemporaryAND): (num_ops - 3),
             CNOT: num_ops,
             X: num_ops,
             **{
@@ -454,8 +454,8 @@ def _unary_select_resources(ops):
         }
 
     return {
-        resource_rep(TemporaryAnd): (num_ops - 2),
-        adjoint_resource_rep(TemporaryAnd): (num_ops - 2),
+        resource_rep(TemporaryAND): (num_ops - 2),
+        adjoint_resource_rep(TemporaryAND): (num_ops - 2),
         CNOT: num_ops - 2,
         X: num_ops - 2,
         **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops},
