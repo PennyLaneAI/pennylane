@@ -39,7 +39,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     effectively in collections where uniqueness and quick lookups are important.
 
     Args:
-        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        op_type (Type): the class object of an operation which inherits from :class:'~.pennylane.labs.resource_estimation.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator
         name (str, optional): A custom name for the compressed operator. If not
