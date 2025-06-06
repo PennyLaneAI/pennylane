@@ -243,7 +243,7 @@ class Context:
                     self.vars[name].val = self.vars[name].val ** value
                 self.vars[name].line = node.span.start_line
             else:
-                # we shouldn't ever get thi error if the parser did its job right
+                # we shouldn't ever get this error if the parser did its job right
                 raise SyntaxError(  # pragma: no cover
                     f"Invalid operator {node.op.name} encountered in assignment expression "
                     f"on line {node.span.start_line}."
