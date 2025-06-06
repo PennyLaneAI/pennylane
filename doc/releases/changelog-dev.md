@@ -212,6 +212,7 @@
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
   * :class:`~.DiagonalQubitUnitary`
+    [(#7625)](https://github.com/PennyLaneAI/pennylane/pull/7625)
 
 * Decomposition rules that can be accessed with the new graph-based decomposition system are implemented
   for :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
