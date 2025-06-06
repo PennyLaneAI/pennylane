@@ -24,8 +24,8 @@ from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    register_resources,
     controlled_resource_rep,
+    register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
@@ -274,8 +274,8 @@ def _add_first_k_units(ops, controls, work_wires, k):
     for :class:`~.TemporaryAnd` and its adjoint, respectively.
 
     Given ``k=len(ops)=2**a-b`` operators, where ``a`` is chosen as small as possible to obtain
-    ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), and ``2 * a - 1`` control wires,
-    this function applies one of three circuits; in each variant, the first ``2**(a-1)`` operators
+    ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), ``a`` control wires, and ``a - 1`` work wires,
+    this function applies one of three circuits. In each variant, the first ``2**(a-1)`` operators
     are applied in two equal portions, containing ``2**(a-2)`` operators each.
     After this, ``l=2**(a-1) -b`` operators remain and the three circuit variants are
     distinguished, based on ``l``:
@@ -315,7 +315,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
       Here, each triple box again symbolizes a call to _add_k_units. The first call in the
       second half applies ``2**(⌈log_2(l)⌉-1)`` operators.
       This case is triggered if ``k`` is larger than or equal to 3/4 of the maximal capacity
-      for ``2a-1`` control wires.
+      for ``a`` control wires.
       Note how the two middle TemporaryAnd gates were merged into two CNOTs, which was not
       possible above because they acted on distinct wire triples.
 
@@ -337,7 +337,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     k2 = _ceil(2 ** (_ceil_log(l) - 1))
     k3 = k - k01 - k2
 
-    # Open TemporaryAnd (controlled on |00>), first quarter, CX (controlled on |0>), second quarter
+    # Open TemporaryAnd (controlled on |00>) + first quarter + CX (controlled on |0>) + second quarter
     first_half = (
         [TemporaryAnd(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, new_work_wires, k0)
@@ -347,27 +347,32 @@ def _add_first_k_units(ops, controls, work_wires, k):
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
     )
 
-    if k - k01 == 1:
-        # Single op left to apply: Only the third quarter will be needed, and it will not need
+    if l == 1: # first variant
+
+        # Single operation left to apply: Only the third quarter will be needed, and it will not need
         # TemporaryAnd gates at all
         and_wires_sec_half = []
         new_controls_sec_half = controls
         new_work_wires_sec_half = work_wires
         # Closing TemporaryAnd for first half
         middle_part = [adjoint(TemporaryAnd)(and_wires, control_values=(0, 1))]
+
     else:
         c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
         new_controls_sec_half = controls[c_bar + 2 :]
         new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
-        if c_bar == 0:
-            middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
-        else:
+
+        if c_bar > 0: # second variant
             # Closing TemporaryAnd for first half, opening TemporaryAnd for second half
             middle_part = [
                 adjoint(TemporaryAnd)(and_wires, control_values=(0, 1)),
                 TemporaryAnd(and_wires_sec_half, control_values=(1, 0)),
             ]
+        else: # third variant
+            middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
+
+
     second_half = _add_k_units(
         ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
     )
@@ -397,8 +402,8 @@ def _add_k_units(ops, controls, work_wires, k):
     ─├○────│─────●─┤─
      ╰──■──╰X─■────╯
     ```
-    where each box symbolizes calls to _add_k_units on the next recursion level.
-    The next-level calls to _add_k_units use
+    where each box symbolizes calls to ``_add_k_units`` on the next recursion level.
+    The next-level calls to ``_add_k_units` use
 
     ``k_first = 2 ** (⌈log_2(k)⌉-1)`` (i.e. half of ``k``, rounded up to the next power of two)
     and
