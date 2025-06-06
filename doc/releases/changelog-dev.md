@@ -572,6 +572,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
+  [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
+
 * Move `givens_decomposition` and private helpers from `qchem` to `math` module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
