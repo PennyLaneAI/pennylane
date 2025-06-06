@@ -23,6 +23,14 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~ResourceOperator
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,4 +76,3 @@ from .resource_operator import (
     set_decomp,
     set_pow_decomp,
 )
-from .resources_base import Resources
