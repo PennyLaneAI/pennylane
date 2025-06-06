@@ -460,7 +460,8 @@ class TestVariables:
             NotImplementedError,
             match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
         ):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
+            context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "index-error"})
+            context.aliases["slice"](context)
 
     def test_retrieve_wire(self):
         # parse the QASM
