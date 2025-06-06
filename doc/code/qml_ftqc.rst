@@ -28,3 +28,4 @@ This module contains functions for tracking, commuting Pauli operations in a Cli
     ~xz_to_pauli
     ~pauli_prod
     ~commute_clifford_op
+    ~get_byproduct_corrections
