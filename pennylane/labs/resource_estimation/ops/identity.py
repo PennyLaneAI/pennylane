@@ -36,6 +36,12 @@ class ResourceIdentity(ResourceOperator):
 
     .. seealso:: :class:`~.Identity`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceIdentity.resource_decomp()
+    []
     """
 
     def __init__(self, wires=None):
@@ -58,8 +64,8 @@ class ResourceIdentity(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The Identity gate is treated as a free gate and thus it cannot be decomposed
@@ -113,7 +119,7 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Identity gate acts trivially when raised to a power. The resources of this
@@ -131,16 +137,20 @@ class ResourceGlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        phi (TensorLike): the global phase
         wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: :class:`~.GlobalPhase`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceGlobalPhase.resource_decomp()
+    []
 
     """
 
@@ -164,8 +174,8 @@ class ResourceGlobalPhase(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
@@ -196,7 +206,7 @@ class ResourceGlobalPhase(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a global phase produces a sum of global phases.

@@ -55,8 +55,6 @@ Qubit Management Classes:
     ~FreeWires
 
 """
-
-
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resource_mapping import map_to_resource_op
 from .resource_operator import (
