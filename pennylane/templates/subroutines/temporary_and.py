@@ -23,8 +23,8 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
 
-class TemporaryAnd(Operation):
-    r"""TemporaryAnd(wires)
+class TemporaryAND(Operation):
+    r"""TemporaryAnd(wires, control_values)
 
     The ``TemporaryAnd`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
     about the target wire to enable more efficient circuit decompositions. The ``TemporaryAnd`` assumes the target qubit
@@ -33,11 +33,11 @@ class TemporaryAnd(Operation):
 
     .. note::
 
-        For correct usage of the operator, the user must ensure
+        For correct usage of this operation, the user must ensure
         that the input before computation is :math:`|0\rangle`,
         and that the output after uncomputation is :math:`|0\rangle`
-        on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively. Otherwise, the behavior could be
-        different from the expected ``AND``.
+        on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively.
+        Otherwise, behaviour may differ from the expected ``AND``.
 
     **Details:**
 
@@ -254,3 +254,21 @@ def _temporary_and(wires: WiresLike, **kwargs):
 
 add_decomps(TemporaryAnd, _temporary_and)
 # TODO: add add_decomps("Adjoint(TemporaryAnd)", _adjoint_TemporaryAnd) when MCMs supported by the pipeline
+
+Elbow = TemporaryAND
+r"""Elbow(wire, control_values)
+The Elbow, or :class:`~TemporaryAND` operator
+
+.. seealso:: The equivalent alias :class:`~TemporaryAND` for more details.
+
+**Details:**
+
+* Number of wires: 3
+
+Args:
+    wires (Sequence[int] or int): the subsystem the gate acts on.
+        The first two wires are the control wires and the third one is the target wire.
+    control_values (tuple[bool or int]): The values on the control wires for which
+        the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
+"""
