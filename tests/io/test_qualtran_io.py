@@ -695,6 +695,26 @@ class TestToBloq:
                     (qml.RZ(phi=0.6, wires=0), True): 1,
                 },
             ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=2,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.RX(phi=0.012, wires=[0]), True): 2,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
+                    (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
         ],
     )
     def test_build_call_graph(self, op, qml_call_graph):
