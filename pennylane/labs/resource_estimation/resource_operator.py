@@ -144,7 +144,7 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_rep(cls, *args, **kwargs):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to estimate the resources."""
 
     def resource_rep_from_op(self):
         r"""Returns a compressed representation directly from the operator"""
@@ -255,16 +255,14 @@ class ResourceOperator(ABC):
     def __mul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        qubit_manager = QubitManager(0)
-        qubit_manager._logic_qubit_counts = self.num_wires
+        qubit_manager = QubitManager(0, algo_wires=self.num_wires)
 
         return Resources(qubit_manager, gate_types)
 
     def __matmul__(self, scalar: int):
         assert isinstance(scalar, int)
         gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
-        qubit_manager = QubitManager(0)
-        qubit_manager._logic_qubit_counts = scalar * self.num_wires
+        qubit_manager = QubitManager(0, algo_wires=scalar * self.num_wires)
 
         return Resources(qubit_manager, gate_types)
 
