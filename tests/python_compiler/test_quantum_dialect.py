@@ -130,10 +130,10 @@ def test_assembly_format():
     // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
     quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
 
-    // quantum.adjoint([[QREG]])
+    // CHECK: quantum.adjoint([[QREG]])
     quantum.adjoint(%qreg) : !quantum.reg {
       ^bb0(%arg0: !quantum.reg):
-      // quantum.yield %arg0
+      // CHECK: quantum.yield %arg0
       quantum.yield %arg0: !quantum.reg
     }
     """
