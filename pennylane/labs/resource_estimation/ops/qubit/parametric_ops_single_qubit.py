@@ -15,7 +15,7 @@ r"""Resource operators for parametric single qubit operations."""
 
 import numpy as np
 
-import pennylane.labs.resource_estimation as re
+import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -44,7 +44,7 @@ def _rotation_resources(epsilon=10e-3):
             in the decomposition.
     """
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-    t = resource_rep(re.ResourceT)
+    t = resource_rep(plre.ResourceT)
     return [GateCount(t, num_gates)]
 
 
@@ -69,8 +69,8 @@ class ResourcePhaseShift(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> re.ResourcePhaseShift.resources()
-    {RZ: 1, GlobalPhase: 1}
+    >>> plre.ResourcePhaseShift.resource_decomp()
+    [(1 x RZ), (1 x GlobalPhase)]
     """
 
     num_wires = 1
@@ -99,8 +99,8 @@ class ResourcePhaseShift(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The phase shift gate is equivalent to a Z-rotation upto some global phase,
@@ -112,7 +112,7 @@ class ResourcePhaseShift(ResourceOperator):
                     \end{bmatrix}.
         """
         rz = resource_rep(ResourceRZ, {"eps": eps})
-        global_phase = resource_rep(re.ResourceGlobalPhase)
+        global_phase = resource_rep(plre.ResourceGlobalPhase)
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
@@ -171,7 +171,8 @@ class ResourceRX(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> re.estimate_resources(re.ResourceRX)
+    >>> op = plre.estimate_resources(plre.ResourceRX)()
+    >>> str(op)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -184,14 +185,15 @@ class ResourceRX(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rx": 1e-3}
-    >>> re.estimate_resources(re.ResourceRX, config=config)
+    >>> op = plre.estimate_resources(plre.ResourceRX, config=config)()
+    >>> str(op)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
     Qubit breakdown:
     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
     Gate breakdown:
-    {'T': 17}
+    {'T': 21}
     """
 
     num_wires = 1
@@ -220,8 +222,8 @@ class ResourceRX(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Keyword Args:
             eps (float): the error threshold
@@ -240,7 +242,7 @@ class ResourceRX(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a single qubit rotation changes the sign of the rotation angle,
@@ -255,7 +257,7 @@ class ResourceRX(ResourceOperator):
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
@@ -294,7 +296,7 @@ class ResourceRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.estimate_resources(re.ResourceRY)
+    >>> plre.estimate_resources(plre.ResourceRY)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -307,7 +309,7 @@ class ResourceRY(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_ry": 1e-3}
-    >>> re.estimate_resources(re.ResourceRY, config=config)
+    >>> plre.estimate_resources(plre.ResourceRY, config=config)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -344,8 +346,8 @@ class ResourceRY(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Keyword Args:
             eps (float): the error threshold
@@ -366,7 +368,7 @@ class ResourceRY(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a single qubit rotation changes the sign of the rotation angle,
@@ -381,7 +383,7 @@ class ResourceRY(ResourceOperator):
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
@@ -420,7 +422,7 @@ class ResourceRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.estimate_resources(re.ResourceRZ)
+    >>> plre.estimate_resources(plre.ResourceRZ)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -433,7 +435,7 @@ class ResourceRZ(ResourceOperator):
     qubit error threshold, which can be set using a config dictionary.
 
     >>> config = {"error_rz": 1e-3}
-    >>> re.estimate_resources(re.ResourceRZ, config=config)
+    >>> plre.estimate_resources(plre.ResourceRZ, config=config)
     --- Resources: ---
     Total qubits: 1
     Total gates : 1
@@ -470,8 +472,8 @@ class ResourceRZ(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -489,7 +491,7 @@ class ResourceRZ(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a single qubit rotation changes the sign of the rotation angle,
@@ -504,7 +506,7 @@ class ResourceRZ(ResourceOperator):
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to
@@ -538,7 +540,7 @@ class ResourceRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceRot.resource_decomp()
+    >>> plre.ResourceRot.resource_decomp()
     {RY: 1, RZ: 2}
     """
 
@@ -568,8 +570,8 @@ class ResourceRot(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The resources are obtained according to the definition of the :class:`Rot` gate:
@@ -584,7 +586,7 @@ class ResourceRot(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+        r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
             The adjoint of a general single qubit rotation changes the sign of the rotation angles,
@@ -599,7 +601,7 @@ class ResourceRot(ResourceOperator):
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
+        r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
             pow_z (int): the power that the operator is being raised to

@@ -209,7 +209,7 @@ def resources_from_qfunc(
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
             _counts_from_compressed_res_op(
-                cmp_rep_op, gate_counts, gate_set=gate_set, config=config
+                cmp_rep_op, gate_counts, qm, gate_set=gate_set, config=config
             )
 
         return Resources(qubit_manager=qm, gate_types=gate_counts)
@@ -306,7 +306,7 @@ def _counts_from_compressed_res_op(
 def _sum_allocated_wires(decomp):
     s = 0
     for action in decomp:
-        if isinstance(action, GrabWires):
+        if isinstance(action, AllocWires):
             s += action.num_wires
         if isinstance(action, FreeWires):
             s -= action.num_wires
