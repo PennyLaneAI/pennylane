@@ -27,4 +27,4 @@ from .io import (
     plugin_converters,
     from_qasm3,
 )
-from .qualtran_io import FromBloq, bloq_registers
+from .qualtran_io import FromBloq, bloq_registers, ToBloq, to_bloq
