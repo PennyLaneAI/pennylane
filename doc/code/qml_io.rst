@@ -30,4 +30,4 @@ Classes
 .. autosummary::
     :toctree: api
 
-    FromBloq
+    ~FromBloq
