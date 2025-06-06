@@ -200,6 +200,188 @@ class ResourceS(ResourceOperator):
 
         return [GateCount(re.ResourceZ.resource_rep()), GateCount(cls.resource_rep())]
 
+class ResourceSWAP(ResourceOperator):
+    r"""Resource class for the SWAP gate.
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+
+    Resources:
+        The resources come from the following identity expressing SWAP as the product of
+        three :class:`~.CNOT` gates:
+
+        .. math::
+
+            SWAP = \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 0 & 1 & 0\\
+                        0 & 1 & 0 & 0\\
+                        0 & 0 & 0 & 1
+                    \end{bmatrix}
+            =  \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0\\
+                    0 & 1 & 0 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+            \end{bmatrix}.
+
+    .. seealso:: :class:`~.SWAP`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceSWAP.resource_decomp()
+    
+    """
+
+    num_wires = 2
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+        """
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation."""
+        return CompressedResourceOp(cls, {})
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
+
+        Resources:
+            The resources come from the following identity expressing SWAP as the product of
+            three CNOT gates:
+
+            .. math::
+
+                SWAP = \begin{bmatrix}
+                            1 & 0 & 0 & 0 \\
+                            0 & 0 & 1 & 0\\
+                            0 & 1 & 0 & 0\\
+                            0 & 0 & 0 & 1
+                        \end{bmatrix}
+                =  \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 1 & 0 & 0\\
+                        0 & 0 & 0 & 1\\
+                        0 & 0 & 1 & 0
+                    \end{bmatrix}
+                    \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 1\\
+                        0 & 0 & 1 & 0\\
+                        0 & 1 & 0 & 0
+                    \end{bmatrix}
+                    \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 1 & 0 & 0\\
+                        0 & 0 & 0 & 1\\
+                        0 & 0 & 1 & 0
+                \end{bmatrix}.
+        """
+        cnot = resource_rep(re.ResourceCNOT)
+        return [GateCount(cnot, 3)]
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls) -> list[GateCount]:
+        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+        Resources:
+            This operation is self-adjoint, so the resources of the adjoint operation results
+            in the original operation.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
+    ) -> listt[GateCount]:
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Resources:
+            For a single control wire, the cost is a single instance of :class:`~.ResourceCSWAP`.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
+            it is zero-controlled.
+
+            In the case where multiple controlled wires are provided, the resources are given by
+            two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceMultiControlledX` gate. This
+            is because of the symmetric resource decomposition of the SWAP gate. By controlling on
+            the middle CNOT gate, we obtain the required controlled operation.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(re.ResourceCSWAP))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(ResourceX), 2))
+
+            return gate_types
+
+        cnot = resource_rep(re.ResourceCNOT)
+        mcx = resource_rep(
+            re.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+        return [GateCount(cnot, 2), GateCount(mcx)]
+
+    @classmethod
+    def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:
+        r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+        Args:
+            pow_z (int): the power that the operator is being raised to
+
+        Resources:
+            The SWAP gate raised to even powers produces identity and raised
+            to odd powers it produces itself.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears
+                in the decomposition.
+        """
+        if pow_z % 2 == 0:
+            return [GateCount(resource_rep(re.ResourceIdentity))]
+        return [GateCount(cls.resource_rep())]
+
 
 class ResourceT(ResourceOperator):
     r"""Resource class for the T-gate.
