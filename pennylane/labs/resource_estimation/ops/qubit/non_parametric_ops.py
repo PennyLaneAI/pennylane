@@ -198,6 +198,7 @@ class ResourceS(ResourceOperator):
 
         return [GateCount(resource_rep(ResourceZ)), GateCount(cls.resource_rep())]
 
+
 class ResourceSWAP(ResourceOperator):
     r"""Resource class for the SWAP gate.
 
@@ -241,8 +242,9 @@ class ResourceSWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceSWAP.resource_decomp()
-    
+    >>> plre.ResourceSWAP.resource_decomp()
+    [(3 x CNOT)]
+
     """
 
     num_wires = 2
@@ -298,7 +300,7 @@ class ResourceSWAP(ResourceOperator):
                         0 & 0 & 1 & 0
                 \end{bmatrix}.
         """
-        cnot = resource_rep(re.ResourceCNOT)
+        cnot = resource_rep(plre.ResourceCNOT)
         return [GateCount(cnot, 3)]
 
     @classmethod
@@ -319,7 +321,7 @@ class ResourceSWAP(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values
-    ) -> listt[GateCount]:
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
@@ -343,16 +345,16 @@ class ResourceSWAP(ResourceOperator):
                 in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_types = [GateCount(resource_rep(re.ResourceCSWAP))]
+            gate_types = [GateCount(resource_rep(plre.ResourceCSWAP))]
 
             if ctrl_num_ctrl_values:
                 gate_types.append(GateCount(resource_rep(ResourceX), 2))
 
             return gate_types
 
-        cnot = resource_rep(re.ResourceCNOT)
+        cnot = resource_rep(plre.ResourceCNOT)
         mcx = resource_rep(
-            re.ResourceMultiControlledX,
+            plre.ResourceMultiControlledX,
             {
                 "num_ctrl_wires": ctrl_num_ctrl_wires,
                 "num_ctrl_values": ctrl_num_ctrl_values,
@@ -377,7 +379,7 @@ class ResourceSWAP(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 

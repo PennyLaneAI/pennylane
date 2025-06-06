@@ -85,6 +85,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceRot,
     ResourceIdentity,
+    ResourceSWAP,
     ResourceCH,
     ResourceCY,
     ResourceCZ,

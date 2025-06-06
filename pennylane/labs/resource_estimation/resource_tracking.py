@@ -218,7 +218,6 @@ def resources_from_qfunc(
         for cmp_rep_op in compressed_res_ops_lst:
             _counts_from_compressed_res_op(
                 cmp_rep_op, gate_counts, qm, gate_set=gate_set, config=config
-                cmp_rep_op, gate_counts, qbit_mngr=qm, gate_set=gate_set, config=config
             )
 
         return Resources(qubit_manager=qm, gate_types=gate_counts)
