@@ -36,6 +36,7 @@ from xdsl.dialects.builtin import (
     IntegerType,
     StringAttr,
     UnitAttr,
+    i64,
 )
 from xdsl.ir import (
     Block,
@@ -162,13 +163,13 @@ class AllocOp(IRDLOperation):
     #        `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
     #    """
 
-    nqubits = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    nqubits = opt_operand_def(i64)
 
-    nqubits_attr = opt_prop_def(IntegerType(64))
+    nqubits_attr = opt_prop_def(IntegerAttr)
 
     qreg = result_def(BaseAttr(QuregType))
 
-    def __init__(self, nqubits: SSAValue[IntegerType] | Operation | int | IntegerAttr):
+    def __init__(self, nqubits):
         if isinstance(nqubits, int):
             nqubits = IntegerAttr.from_int_and_width(nqubits, 64)
 
@@ -183,6 +184,7 @@ class AllocOp(IRDLOperation):
 
     def verify_(self):
         """Verify operation when rewriting."""
+        breakpoint()
         if self.nqubits_attr is None:
             return
 

@@ -124,8 +124,18 @@ def test_assembly_format():
     // CHECK: [[QUBIT:%.+]] = "quantum.extract"([[QREG]])
     %qubit = "quantum.extract"(%qreg) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
 
-    // CHEKC: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
+    // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
+
+    // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
+    quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
+
+    // quantum.adjoint([[QREG]])
+    quantum.adjoint(%qreg) : !quantum.reg {
+      ^bb0(%arg0: !quantum.reg):
+      // quantum.yield %arg0
+      quantum.yield %arg0: !quantum.reg
+    }
     """
 
     ctx = xdsl.context.Context()

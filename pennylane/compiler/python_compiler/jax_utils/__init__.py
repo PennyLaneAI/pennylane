@@ -33,6 +33,7 @@ from xdsl.dialects import scf as xscf
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
 from xdsl.dialects import transform as xtransform
+from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
 from xdsl.parser import Parser as xParser
 from xdsl.context import Context as xContext
@@ -88,6 +89,7 @@ def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:  # pragma: 
     ctx.load_dialect(xstablehlo.StableHLO)
     ctx.load_dialect(xtensor.Tensor)
     ctx.load_dialect(xtransform.Transform)
+    ctx.load_dialect(QuantumDialect)
     moduleOp: xbuiltin.ModuleOp = xParser(ctx, program).parse_module()
     return moduleOp
 
