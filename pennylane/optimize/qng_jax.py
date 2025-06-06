@@ -38,6 +38,8 @@ class QNGOptimizerJax:
         self.lam = lam
 
     def init(self, params):
+        # pylint:disable=unused-argument
+        # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):
@@ -57,26 +59,23 @@ class QNGOptimizerJax:
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.grad(qnode)(params, **kwargs)
-            else:
-                raise ImportError("Catalyst is required.")
+            raise ImportError("Catalyst is required.")
         if has_jax:
             return jax.grad(qnode)(params, **kwargs)
-        else:
-            raise ImportError("Jax is required.")
+        raise ImportError("Jax is required.")
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.value_and_grad(qnode)(params, **kwargs)
-            else:
-                raise ImportError("Catalyst is required.")
+            raise ImportError("Catalyst is required.")
         if has_jax:
             return jax.value_and_grad(qnode)(params, **kwargs)
-        else:
-            raise ImportError("Jax is required.")
+        raise ImportError("Jax is required.")
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
+        # pylint: disable=not-callable
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
         # reshape tensor into a matrix (acting on the flat grad vector)
         shape = math.shape(mt)
