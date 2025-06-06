@@ -763,6 +763,20 @@ class TestToBloq:
                 },
             ),
             (
+                qml.ModExp(
+                    x_wires=[0, 1, 2],
+                    output_wires=[3, 4, 5],
+                    base=3,
+                    mod=8,
+                    work_wires=[6, 7, 8, 9, 10],
+                ),
+                {
+                    (qml.ctrl(qml.QFT(range(3)), control=[4]), True): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 21,
+                },
+            ),
+            (
                 qml.QSVT(
                     UA=qml.H(0),
                     projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
