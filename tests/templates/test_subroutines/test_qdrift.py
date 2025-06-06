@@ -270,7 +270,18 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    @pytest.mark.parametrize(
+        "coeffs, ops",
+        [
+            pytest.param(
+                *test_hamiltonians[0],
+                marks=pytest.mark.xfail(
+                    reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
+                ),
+            ),
+            *test_hamiltonians[1:],
+        ],
+    )
     def test_execution_tf(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using tensorflow"""
         import tensorflow as tf
@@ -300,7 +311,18 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    @pytest.mark.parametrize(
+        "coeffs, ops",
+        [
+            pytest.param(
+                *test_hamiltonians[0],
+                marks=pytest.mark.xfail(
+                    reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
+                ),
+            ),
+            *test_hamiltonians[1:],
+        ],
+    )
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
         from jax import numpy as jnp

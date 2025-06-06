@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for non parametric single qubit operations."""
-import pennylane.labs.resource_estimation as re
+import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -41,8 +41,8 @@ class ResourceHadamard(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -51,7 +51,7 @@ class ResourceHadamard(ResourceOperator):
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
-        raise re.ResourcesNotDefined
+        raise plre.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -100,7 +100,7 @@ class ResourceHadamard(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(plre.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep())]
 
 
@@ -119,21 +119,21 @@ class ResourceS(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceS.resource_decomp()
-    {T: 2}
+    >>> plre.ResourceS.resource_decomp()
+    [(2 x T)]
     """
 
     num_wires = 1
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The S-gate decomposes into two T-gates.
         """
-        t = ResourceT.resource_rep()
+        t = resource_rep(ResourceT)
         return [GateCount(t, 2)]
 
     @property
@@ -164,9 +164,7 @@ class ResourceS(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears
                 in the decomposition.
         """
-
-        z = re.ResourceZ.resource_rep()
-
+        z = resource_rep(ResourceZ)
         return [GateCount(z, 1), GateCount(cls.resource_rep(), 1)]
 
     @classmethod
@@ -192,13 +190,13 @@ class ResourceS(ResourceOperator):
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         if mod_4 == 1:
             return [GateCount(cls.resource_rep())]
         if mod_4 == 2:
-            return [GateCount(re.ResourceZ.resource_rep())]
+            return [GateCount(resource_rep(ResourceZ))]
 
-        return [GateCount(re.ResourceZ.resource_rep()), GateCount(cls.resource_rep())]
+        return [GateCount(resource_rep(ResourceZ)), GateCount(cls.resource_rep())]
 
 
 class ResourceT(ResourceOperator):
@@ -219,8 +217,8 @@ class ResourceT(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The T-gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -229,7 +227,7 @@ class ResourceT(ResourceOperator):
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
-        raise re.ResourcesNotDefined
+        raise plre.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -292,7 +290,7 @@ class ResourceT(ResourceOperator):
         """
 
         if (mod_8 := pow_z % 8) == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
 
         gate_lst = []
         if mod_8 >= 4:
@@ -334,16 +332,16 @@ class ResourceX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceX.resource_decomp()
-    {S: 2, Hadamard: 2}
+    >>> plre.ResourceX.resource_decomp()
+    [(2 x Hadamard), (2 x S)]
     """
 
     num_wires = 1
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The X-gate can be decomposed according to the following identities:
@@ -358,8 +356,8 @@ class ResourceX(ResourceOperator):
             Thus the resources for an X-gate are two :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        s = resource_rep(ResourceS)
+        h = resource_rep(ResourceHadamard)
 
         return [GateCount(h, 2), GateCount(s, 2)]
 
@@ -410,7 +408,7 @@ class ResourceX(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -441,16 +439,16 @@ class ResourceY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceY.resource_decomp()
-    {S: 6, Hadamard: 2}
+    >>> plre.ResourceY.resource_decomp()
+    [(6 x S), (2 x Hadamard)]
     """
 
     num_wires = 1
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The Y-gate can be decomposed according to the following identities:
@@ -467,8 +465,8 @@ class ResourceY(ResourceOperator):
             Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
             two :class:`~.ResourceHadamard` gates.
         """
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        s = resource_rep(ResourceS)
+        h = resource_rep(ResourceHadamard)
 
         return [GateCount(s, 6), GateCount(h, 2)]
 
@@ -519,7 +517,7 @@ class ResourceY(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -542,16 +540,16 @@ class ResourceZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceZ.resource_decomp()
-    {S: 2}
+    >>> plre.ResourceZ.resource_decomp()
+    [(2 x S)]
     """
 
     num_wires = 1
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The Z-gate can be decomposed according to the following identities:
@@ -560,7 +558,7 @@ class ResourceZ(ResourceOperator):
 
             thus the resources for a Z-gate are two :class:`~.ResourceS` gates.
         """
-        s = re.ResourceS.resource_rep()
+        s = resource_rep(ResourceS)
         return [GateCount(s, 2)]
 
     @property
@@ -610,5 +608,5 @@ class ResourceZ(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]

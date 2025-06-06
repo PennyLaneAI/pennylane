@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Core resource tracking logic."""
+import copy
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
@@ -71,9 +72,9 @@ DefaultGateSet = {
 
 # parameters for further configuration of the decompositions
 resource_config = {
-    "error_rx": 10e-3,
-    "error_ry": 10e-3,
-    "error_rz": 10e-3,
+    "error_rx": 1e-3,
+    "error_ry": 1e-3,
+    "error_rz": 1e-3,
     "precision_multiplexer": 1e-3,
     "precision_qrom_state_prep": 1e-3,
 }
@@ -86,6 +87,7 @@ def estimate_resources(
     config: Dict = resource_config,
     work_wires=0,
     tight_budget=False,
+    single_qubit_rotation_error=None,
 ) -> Union[Resources, Callable]:
     r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
@@ -94,6 +96,8 @@ def estimate_resources(
         obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
         gate_set (Set, optional): python set of strings specifying the names of operations to track
         config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
+        single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing single 
+            qubit rotations to `T`-gates using a Clifford + T approximation.
 
     Returns:
         Resources: the total resources of the quantum circuit
@@ -181,8 +185,12 @@ def resources_from_qfunc(
     config: Dict = resource_config,
     work_wires=0,
     tight_budget=False,
+    single_qubit_rotation_error=None,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
+
+    if single_qubit_rotation_error is not None:
+        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
@@ -210,6 +218,7 @@ def resources_from_qfunc(
         for cmp_rep_op in compressed_res_ops_lst:
             _counts_from_compressed_res_op(
                 cmp_rep_op, gate_counts, qm, gate_set=gate_set, config=config
+                cmp_rep_op, gate_counts, qbit_mngr=qm, gate_set=gate_set, config=config
             )
 
         return Resources(qubit_manager=qm, gate_types=gate_counts)
@@ -224,7 +233,11 @@ def resources_from_resource(
     config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
+    single_qubit_rotation_error=None,
 ) -> Callable:
+    
+    if single_qubit_rotation_error is not None:
+        config = _update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
     existing_qm = obj.qubit_manager
     if work_wires is not None:
@@ -249,6 +262,21 @@ def resources_from_resource(
 
     # Update:
     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
+
+
+@estimate_resources.register
+def resources_from_resource_ops(
+    obj: ResourceOperator,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=None,
+    tight_budget=None,
+    single_qubit_rotation_error=None,
+) -> Callable:
+
+    return estimate_resources(
+        1*obj, gate_set, config, work_wires, tight_budget, single_qubit_rotation_error
+    )
 
 
 def _counts_from_compressed_res_op(
@@ -289,7 +317,7 @@ def _counts_from_compressed_res_op(
             )
             continue
 
-        if isinstance(action, GrabWires):
+        if isinstance(action, AllocWires):
             if qubit_alloc_sum !=0 and scalar > 1:
                 qbit_mngr.grab_clean_qubits(action.num_wires * scalar)
             else:
@@ -311,6 +339,14 @@ def _sum_allocated_wires(decomp):
         if isinstance(action, FreeWires):
             s -= action.num_wires
     return s
+
+
+def _update_config_single_qubit_rot_error(config, error):
+    new_config = copy.copy(config)
+    new_config["error_rx"] = error
+    new_config["error_ry"] = error
+    new_config["error_rz"] = error
+    return new_config
 
 
 @QueuingManager.stop_recording()
