@@ -17,7 +17,7 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
-from typing import Any, Iterable, Hashable
+from typing import Any, Hashable, Iterable
 
 from pennylane import math as np
 from pennylane.operation import Channel
@@ -606,7 +606,7 @@ class PauliError(Channel):
             A constructed PauliError.
         """
         hyperparameters_dict = dict(metadata[1])
-        return PauliError(hyperparameters_dict['operators'], data[0], wires=metadata[0])
+        return PauliError(hyperparameters_dict["operators"], data[0], wires=metadata[0])
 
     @staticmethod
     def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
