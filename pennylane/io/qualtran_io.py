@@ -27,13 +27,16 @@ import numpy as np
 import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane import math
 from pennylane.operation import (
     DecompositionUndefinedError,
     MatrixUndefinedError,
     Operation,
     Operator,
 )
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
+from pennylane.templates.state_preparations.superposition import _assign_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -52,6 +55,7 @@ if qualtran:
     from qualtran.bloqs import basic_gates as qt_gates
 
 
+# pylint: disable=too-many-statements
 @lru_cache
 def _get_op_call_graph():
     # TODO: Integrate with resource operators and the new decomposition pipelines
@@ -71,6 +75,313 @@ def _get_op_call_graph():
             - 1,
             _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
         }
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.TrotterizedQfunc):
+        n = op.hyperparameters["n"]
+        order = op.hyperparameters["order"]
+        k = order // 2
+        qfunc = op.hyperparameters["qfunc"]
+        qfunc_args = op.parameters[1:]
+
+        with QueuingManager.stop_recording():
+            with AnnotatedQueue() as q:
+                base_hyper_params = ("n", "order", "qfunc", "reverse")
+
+                qfunc_args = op.parameters
+                qfunc_kwargs = {
+                    k: v for k, v in op.hyperparameters.items() if not k in base_hyper_params
+                }
+
+                qfunc = op.hyperparameters["qfunc"]
+                qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
+
+        call_graph = defaultdict(int, {})
+        num_gates = 2 * n * (5 ** (k - 1))
+        for q_op in q.queue:
+            call_graph[_map_to_bloq()(q_op)] += num_gates
+
+        return call_graph
+
+    @_op_call_graph.register
+    def _(op: qtemps.state_preparations.Superposition):
+        gate_types = {}
+        wires = op.wires
+        coeffs = op.coeffs
+        bases = op.hyperparameters["bases"]
+        num_basis_states = len(bases)
+        size_basis_state = len(bases[0])  # assuming they are all the same size
+
+        dic_state = dict(zip(bases, coeffs))
+        perms = _assign_states(bases)
+        new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
+
+        sorted_coefficients = [
+            value
+            for key, value in sorted(
+                new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
+            )
+        ]
+        msp = qops.StatePrep(
+            math.stack(sorted_coefficients),
+            wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
+            pad_with=0,
+        )
+        gate_types[_map_to_bloq()(msp)] = 1
+
+        cnot = qt_gates.CNOT()
+        num_zero_ctrls = size_basis_state // 2
+        control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
+
+        multi_x = _map_to_bloq()(
+            qops.MultiControlledX(wires=range(size_basis_state + 1), control_values=control_values)
+        )
+
+        basis_size = 2**size_basis_state
+        prob_matching_basis_states = num_basis_states / basis_size
+        num_permutes = round(num_basis_states * (1 - prob_matching_basis_states))
+        if num_permutes:
+            gate_types[cnot] = num_permutes * (
+                size_basis_state // 2
+            )  # average number of bits to flip
+            gate_types[multi_x] = 2 * num_permutes  # for compute and uncompute
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.state_preparations.QROMStatePreparation):
+        gate_types = defaultdict(int, {})
+        state_vector = op.state_vector
+        positive_and_real = True
+
+        for c in state_vector:
+            if c.imag != 0 or c.real < 0:
+                positive_and_real = False
+                break
+
+        num_state_qubits = int(math.log2(len(op.state_vector)))
+        precision_wires = op.hyperparameters["precision_wires"]
+        input_wires = op.hyperparameters["input_wires"]
+        work_wires = op.hyperparameters["work_wires"]
+        num_precision_wires = len(precision_wires)
+
+        bitstrings = ["0" * (num_precision_wires - 1) + "1"]
+        qrom_op = qtemps.QROM(
+            bitstrings=bitstrings,
+            target_wires=precision_wires,
+            control_wires=[],
+            work_wires=work_wires,
+            clean=False,
+        )
+        gate_types[_map_to_bloq()(qrom_op)] += 1
+        gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+
+        for i in range(1, num_state_qubits):
+            num_bit_flips = 2 ** (i - 1)
+            zero_string = "0" * num_precision_wires
+            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
+            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
+                one_string for _ in range(num_bit_flips)
+            ]
+
+            qrom_op = qtemps.QROM(
+                bitstrings=bitstrings,
+                target_wires=precision_wires,
+                control_wires=input_wires[:i],
+                work_wires=work_wires,
+                clean=False,
+            )
+
+            gate_types[_map_to_bloq()(qrom_op)] += 1
+            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+
+        gate_types[_map_to_bloq()(qops.CRY(0, wires=[0, 1]))] = (
+            num_precision_wires * num_state_qubits
+        )
+
+        if not positive_and_real:
+            num_bit_flips = 2 ** (num_state_qubits - 1)
+            zero_string = "0" * num_precision_wires
+            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
+            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
+                one_string for _ in range(num_bit_flips)
+            ]
+
+            qrom_op = qtemps.QROM(
+                bitstrings=bitstrings,
+                target_wires=precision_wires,
+                control_wires=input_wires,
+                work_wires=work_wires,
+                clean=False,
+            )
+
+            gate_types[_map_to_bloq()(qrom_op)] += 1
+            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+            gate_types[
+                _map_to_bloq()(
+                    qops.ctrl(
+                        qops.GlobalPhase((2 * np.pi), wires=input_wires[0]),
+                        control=0,
+                    )
+                )
+            ] = num_precision_wires
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qops.BasisState):
+        gate_types = {}
+        gate_types[qt_gates.XGate()] = sum(op.parameters[0])
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QROM):
+        gate_types = defaultdict(int)
+        bitstrings = op.hyperparameters["bitstrings"]
+        num_bitstrings = len(bitstrings)
+
+        num_bit_flips = 0
+        for bit_string in bitstrings:
+            num_bit_flips += bit_string.count("1")
+
+        num_work_wires = len(op.hyperparameters["work_wires"])
+        size_bitstring = len(op.hyperparameters["target_wires"])
+        num_control_wires = len(op.hyperparameters["control_wires"])
+        clean = op.hyperparameters["clean"]
+
+        if num_control_wires == 0:
+            gate_types[qt_gates.XGate()] = num_bit_flips
+            return gate_types
+
+        cnot = qt_gates.CNOT()
+        hadamard = qt_gates.Hadamard()
+        num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
+        # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
+
+        square_fact = math.floor(
+            math.sqrt(num_bitstrings)
+        )  # use a square scheme for rows and cloumns
+        num_parallel_computations = min(num_parallel_computations, square_fact)
+
+        num_swap_wires = math.floor(math.log2(num_parallel_computations))
+        num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+        assert num_swap_wires + num_select_wires <= num_control_wires
+
+        swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
+        free_work_wires = num_work_wires - swap_work_wires
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            gate_types[hadamard] = 2 * size_bitstring
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        gate_types[cnot] = num_bit_flips  # each unitary in the select is just a CNOT
+
+        num_select_wires = int(num_select_wires)
+        multi_x = _map_to_bloq()(
+            qops.MultiControlledX(
+                wires=range(num_select_wires + 1),
+                control_values=[True] * num_select_wires,
+                work_wires=range(num_select_wires + 1, num_select_wires + 1 + free_work_wires),
+            )
+        )
+
+        num_total_ctrl_possibilities = 2**num_select_wires
+        gate_types[multi_x] = select_clean_prefactor * (
+            2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
+        )
+        num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
+        gate_types[qt_gates.XGate()] = select_clean_prefactor * (
+            num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
+        )
+        # SWAP cost:
+        ctrl_swap = qt_gates.TwoBitCSwap()
+        gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QFT):
+
+        gate_types = {}
+        num_wires = len(op.wires)
+        gate_types[qt_gates.Hadamard()] = num_wires
+        gate_types[_map_to_bloq()(qops.ControlledPhaseShift(1, [0, 1]))] = (
+            num_wires * (num_wires - 1) // 2
+        )
+        gate_types[qt_gates.TwoBitSwap()] = num_wires // 2
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.QSVT):
+        gate_types = defaultdict(int, {})
+        UA = op.hyperparameters["UA"]
+        projectors = op.hyperparameters["projectors"]
+        num_projectors = len(projectors)
+
+        for _, proj_op in enumerate(projectors[:-1]):
+            gate_types[_map_to_bloq()(proj_op)] += 1
+
+        gate_types[_map_to_bloq()(UA)] += num_projectors // 2
+        gate_types[_map_to_bloq()(UA).adjoint()] += (num_projectors - 1) // 2
+        gate_types[_map_to_bloq()(projectors[-1])] += 1
+
+        return gate_types
+
+    @_op_call_graph.register
+    def _(op: qtemps.subroutines.ModExp):
+
+        mod = op.hyperparameters["mod"]
+        num_work_wires = len(op.hyperparameters["work_wires"])
+        num_x_wires = len(op.hyperparameters["x_wires"])
+
+        mult_resources = {}
+        if mod == 2**num_x_wires:
+            num_aux_wires = num_x_wires
+            num_aux_swap = num_x_wires
+        else:
+            num_aux_wires = num_work_wires - 1
+            num_aux_swap = num_aux_wires - 1
+
+        qft = _map_to_bloq()(qtemps.QFT(wires=range(num_aux_wires)))
+        qft_dag = qft.adjoint()
+
+        sequence = _map_to_bloq()(
+            qtemps.ControlledSequence(
+                qtemps.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
+            )
+        )
+
+        sequence_dag = sequence.adjoint()
+
+        cnot = qt_gates.CNOT()
+
+        mult_resources = {}
+        mult_resources[qft] = 2
+        mult_resources[qft_dag] = 2
+        mult_resources[sequence] = 1
+        mult_resources[sequence_dag] = 1
+        mult_resources[cnot] = min(num_x_wires, num_aux_swap)
+
+        gate_types = {}
+        for comp_rep, _ in mult_resources.items():
+            new_rep = comp_rep.controlled()
+            # cancel out QFTs from consecutive Multipliers
+            if hasattr(comp_rep, "op"):
+                if comp_rep.op.name == "QFT":
+                    gate_types[new_rep] = 1
+            elif hasattr(comp_rep, "subbloq"):
+                if comp_rep.subbloq.op.name == "QFT":
+                    gate_types[new_rep] = 1
+            else:
+                gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+
+        return gate_types
 
     return _op_call_graph
 
@@ -168,6 +479,9 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
+        if isinstance(op, qops.MultiControlledX):
+            return ToBloq(op)
+
         if isinstance(op, qops.Toffoli):
             return qt_gates.Toffoli()
 
