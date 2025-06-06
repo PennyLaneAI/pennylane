@@ -52,7 +52,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
     **Example**
 
-    >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
+    >>> op_tp = plre.CompressedResourceOp(plre.ResourceHadamard, {"num_wires":1})
     >>> print(op_tp)
     CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
     """
