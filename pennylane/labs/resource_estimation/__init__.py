@@ -30,6 +30,18 @@ Resource Estimation Base Classes:
     :toctree: api
 
     ~Resources
+    ~ResourceOperator
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,3 +57,11 @@ Qubit Management Classes:
 
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
+from .resource_operator import (
+    ResourceOperator,
+    ResourcesNotDefined,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+)

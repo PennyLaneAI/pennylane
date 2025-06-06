@@ -505,6 +505,10 @@
 * Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
   [(#7406)](https://github.com/PennyLaneAI/pennylane/pull/7406)
 
+* Added the base `pennylane.labs.ResourceOperator` class which will be used to implement all quantum 
+  operators for resource estimation.
+  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
+
 <h3>Breaking changes 💔</h3>
 
 * A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
