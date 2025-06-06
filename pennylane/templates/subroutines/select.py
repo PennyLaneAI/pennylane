@@ -17,7 +17,6 @@ Contains the Select template.
 
 import copy
 import itertools
-import warnings
 
 import pennylane as qml
 from pennylane import math
