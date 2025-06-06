@@ -10,6 +10,7 @@ m2r2
 numpy
 pygments-github-lexers
 packaging
+pyzx
 scipy
 docutils==0.20
 sphinx==8.1

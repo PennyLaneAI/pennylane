@@ -69,5 +69,5 @@ jobs:
       pytest_test_directory: pennylane/labs/tests
       additional_pip_packages: |
         geometric h5py basis_set_exchange pyscf galois
-        geometric h5py basis-set-exchange pyscf galois optax
+        geometric h5py basis-set-exchange pyscf galois optax pyzx
         ${{ needs.default-dependency-versions.outputs.jax-version }}
