@@ -7,27 +7,31 @@ Overview
 This module contains functions and classes for translating quantum objects from external frameworks
 into PennyLane circuits and operators.
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane.io
+.. automodapi:: pennylane.io
+    :no-heading:
+    :no-inherited-members:
+    :skip: available_styles
+    :skip: use_style
+.. Functions
+.. ^^^^^^^^^
 
-Functions
-^^^^^^^^^
+.. .. autosummary::
+..     :toctree: api
 
-.. autosummary::
-    :toctree: api
+..     ~bloq_registers
+..     ~from_pyquil
+..     ~from_qasm
+..     ~from_qiskit
+..     ~from_qiskit_noise
+..     ~from_qiskit_op
+..     ~from_quil
+..     ~from_quil_file
 
-    ~bloq_registers
-    ~from_pyquil
-    ~from_qasm
-    ~from_qiskit
-    ~from_qiskit_noise
-    ~from_qiskit_op
-    ~from_quil
-    ~from_quil_file
+.. Classes
+.. ^^^^^^^
 
-Classes
-^^^^^^^
+.. .. autosummary::
+..     :toctree: api
 
-.. autosummary::
-    :toctree: api
-
-    ~FromBloq
+..     ~FromBloq
