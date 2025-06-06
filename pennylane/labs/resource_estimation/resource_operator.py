@@ -20,6 +20,7 @@ from inspect import signature
 from typing import Callable, Hashable, List, Optional, Type
 
 import numpy as np
+
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import classproperty
@@ -32,20 +33,28 @@ from pennylane.wires import Wires
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     r"""Instantiate a light weight class corresponding to the operator type and parameters.
 
+    This class provides a minimal representation of an operation, containing
+    only the operator type and the necessary parameters to estimate its resources.
+    It's designed for efficient hashing and comparison, allowing it to be used
+    effectively in collections where uniqueness and quick lookups are important.
+
     Args:
         op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator
+        name (str, optional): A custom name for the compressed operator. If not
+            provided, a name will be generated using `op_type.tracking_name`
+            with the given parameters.
 
     .. details::
 
         This representation is the minimal amount of information required to estimate resources for the operator.
 
-        **Example**
+    **Example**
 
-        >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
-        >>> print(op_tp)
-        Hadamard(num_wires=1)
+    >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
+    >>> print(op_tp)
+    Hadamard(num_wires=1)
     """
 
     def __init__(
