@@ -354,15 +354,12 @@ class TestCancelInversesInterfaces:
         @cancel_inverses
         @qml.qnode(dev)
         def circuit(x):
-            qml.adjoint(qml.RX(x + 0.1, 0))
+            qml.adjoint(qml.RX(x + 0.0, 0))
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        with pytest.warns(
-            UserWarning,
-            match="At least one of the operators has abstract wires or parameters. ",
-        ):
-            circuit(jax.numpy.array(0))
+        res = circuit(jax.numpy.array(0))
+        qml.math.allclose(res, 1.0)
 
 
 ### Tape

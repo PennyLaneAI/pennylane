@@ -274,12 +274,7 @@ class TestCancelInversesInterpreter:
             return qml.expval(qml.Z(0))
 
         dyn_param1, dyn_param2 = jax.numpy.array(0.1), jax.numpy.array(0.2)
-
-        with pytest.warns(
-            UserWarning,
-            match="At least one of the operators has abstract wires or parameters. ",
-        ):
-            jaxpr = jax.make_jaxpr(f)(dyn_param1, dyn_param2)
+        jaxpr = jax.make_jaxpr(f)(dyn_param1, dyn_param2)
 
         assert len(jaxpr.eqns) == 7
         collector = CollectOpsandMeas()

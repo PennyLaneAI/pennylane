@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
-import warnings
 from functools import lru_cache, partial
 from typing import Union
 
@@ -39,11 +38,6 @@ def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, 
     for d1, d2 in zip(items1, items2, strict=True):
         if is_abstract(d1) or is_abstract(d2):
             if d1 is not d2:
-                warnings.warn(
-                    "At least one of the operators has abstract wires or parameters. "
-                    "The cancel_inverses transform will not be applied to these operators. ",
-                    UserWarning,
-                )
                 return False
         elif d1 != d2:
             return False
