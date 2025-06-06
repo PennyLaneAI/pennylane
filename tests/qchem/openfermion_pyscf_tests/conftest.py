@@ -16,9 +16,7 @@ Pytest configuration file for PennyLane quantum chemistry open fermion test suit
 """
 import shutil
 
-import numpy as np
 import pytest
-from packaging.version import Version
 
 import pennylane as qml
 
