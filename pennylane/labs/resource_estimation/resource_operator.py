@@ -46,7 +46,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
         >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
         >>> print(op_tp)
-        Hadamard(num_wires=1)
+        CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
     """
 
     def __init__(

@@ -36,6 +36,12 @@ class ResourceIdentity(ResourceOperator):
 
     .. seealso:: :class:`~.Identity`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceIdentity.resource_decomp()
+    []
     """
 
     def __init__(self, wires=None):
@@ -131,16 +137,20 @@ class ResourceGlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        phi (TensorLike): the global phase
         wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
         further. Requesting the resources of this gate returns an empty list.
 
     .. seealso:: :class:`~.GlobalPhase`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceGlobalPhase.resource_decomp()
+    []
 
     """
 

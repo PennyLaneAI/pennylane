@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for non parametric single qubit operations."""
-import pennylane.labs.resource_estimation as re
+import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -51,7 +51,7 @@ class ResourceHadamard(ResourceOperator):
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
-        raise re.ResourcesNotDefined
+        raise plre.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -100,7 +100,7 @@ class ResourceHadamard(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(re.ResourceIdentity.resource_rep())]
+            return [GateCount(plre.ResourceIdentity.resource_rep())]
         return [GateCount(cls.resource_rep())]
 
 
@@ -119,8 +119,8 @@ class ResourceS(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceS.resource_decomp()
-    {T: 2}
+    >>> plre.ResourceS.resource_decomp()
+    [(2 x T)]
     """
 
     num_wires = 1
@@ -190,7 +190,7 @@ class ResourceS(ResourceOperator):
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         if mod_4 == 1:
             return [GateCount(cls.resource_rep())]
         if mod_4 == 2:
@@ -227,7 +227,7 @@ class ResourceT(ResourceOperator):
         Raises:
             ResourcesNotDefined: This gate is fundamental, no further decomposition defined.
         """
-        raise re.ResourcesNotDefined
+        raise plre.ResourcesNotDefined
 
     @property
     def resource_params(self) -> dict:
@@ -290,7 +290,7 @@ class ResourceT(ResourceOperator):
         """
 
         if (mod_8 := pow_z % 8) == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
 
         gate_lst = []
         if mod_8 >= 4:
@@ -332,8 +332,8 @@ class ResourceX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceX.resource_decomp()
-    {S: 2, Hadamard: 2}
+    >>> plre.ResourceX.resource_decomp()
+    [(2 x Hadamard), (2 x S)]
     """
 
     num_wires = 1
@@ -408,7 +408,7 @@ class ResourceX(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -439,8 +439,8 @@ class ResourceY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceY.resource_decomp()
-    {S: 6, Hadamard: 2}
+    >>> plre.ResourceY.resource_decomp()
+    [(6 x S), (2 x Hadamard)]
     """
 
     num_wires = 1
@@ -517,7 +517,7 @@ class ResourceY(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -540,8 +540,8 @@ class ResourceZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceZ.resource_decomp()
-    {S: 2}
+    >>> plre.ResourceZ.resource_decomp()
+    [(2 x S)]
     """
 
     num_wires = 1
@@ -608,5 +608,5 @@ class ResourceZ(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(resource_rep(re.ResourceIdentity))]
+            return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
