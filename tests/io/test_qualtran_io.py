@@ -670,6 +670,19 @@ class TestToBloq:
                 },
             ),
             (
+                qml.QROM(
+                    bitstrings=["001"],
+                    control_wires=[],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                # From ResourceQROM
+                {
+                    (qml.X(0), True): 1,
+                },
+            ),
+            (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
                     (
