@@ -159,7 +159,7 @@ class ControlledQubitUnitary(ControlledOp):
         work_wire_type="dirty",
     ):
 
-        work_wires = work_wires or Wires([])
+        work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
             base,
             wires=wires,
@@ -1447,8 +1447,8 @@ class MultiControlledX(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: Literal["clean", "dirty"] = "dirty",
     ):
-        wires = wires or ()
-        work_wires = work_wires or ()
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
         self._validate_control_values(control_values)
 
         if len(wires) == 0:
@@ -1580,7 +1580,7 @@ class MultiControlledX(ControlledOp):
         Toffoli(wires=[0, 1, 'aux'])]
 
         """
-        wires = wires or Wires([])
+        wires = Wires(() if wires is None else wires)
 
         if len(wires) < 2:
             raise ValueError(f"Wrong number of wires. {len(wires)} given. Need at least 2.")

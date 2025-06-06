@@ -427,6 +427,21 @@ def custom_ctrl_op_to_base():
     }
 
 
+def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
+    """Resolves the overall work wire type when the base op comes with work wires."""
+
+    # If any of the work wires is dirty, we treat all work wires as dirty. We can be
+    # more flexible in the future with dynamic qubit management, but for now we're
+    # just going to live with this.
+    if base_work_wires and base_work_wire_type == "dirty":
+        return "dirty"
+
+    if work_wires and work_wire_type == "dirty":
+        return "dirty"
+
+    return "clean"
+
+
 def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments
     base_class,
     base_params,
@@ -501,18 +516,3 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
-    """Resolves the overall work wire type when the base op comes with work wires."""
-
-    # If any of the work wires is dirty, we treat all work wires as dirty. We can be
-    # more flexible in the future with dynamic qubit management, but for now we're
-    # just going to live with this.
-    if base_work_wires and base_work_wire_type == "dirty":
-        return "dirty"
-
-    if work_wires and work_wire_type == "dirty":
-        return "dirty"
-
-    return "clean"
