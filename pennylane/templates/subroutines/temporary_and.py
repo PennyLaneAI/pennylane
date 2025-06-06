@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the TemporaryAnd template.
+Contains the TemporaryAND template.
 """
 
 from functools import lru_cache
@@ -24,11 +24,11 @@ from pennylane.wires import Wires, WiresLike
 
 
 class TemporaryAND(Operation):
-    r"""TemporaryAnd(wires, control_values)
+    r"""TemporaryAND(wires, control_values)
 
-    The ``TemporaryAnd`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
-    about the target wire to enable more efficient circuit decompositions. The ``TemporaryAnd`` assumes the target qubit
-    to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAnd)`` assumes the target output to be :math:`|0\rangle`.
+    The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
+    about the target wire to enable more efficient circuit decompositions. The ``TemporaryAND`` assumes the target qubit
+    to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
     For more details, see Fig. 4 in `Ryan Babbush et al.(2018) <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
@@ -36,7 +36,7 @@ class TemporaryAND(Operation):
         For correct usage of this operation, the user must ensure
         that the input before computation is :math:`|0\rangle`,
         and that the output after uncomputation is :math:`|0\rangle`
-        on the target wire when using ``TemporaryAnd`` or ``Adjoint(TemporaryAnd)``, respectively.
+        on the target wire when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
         Otherwise, behaviour may differ from the expected ``AND``.
 
     **Details:**
@@ -61,9 +61,9 @@ class TemporaryAND(Operation):
         def circuit():
             qml.X(0)
             qml.X(1)
-            qml.TemporaryAnd([0,1,2])
+            qml.TemporaryAND([0,1,2])
             qml.CNOT([2,3])
-            qml.adjoint(qml.TemporaryAnd([0,1,2])) # We can apply the adjoint TemporaryAnd because after applying a Toffoli,
+            qml.adjoint(qml.TemporaryAND([0,1,2])) # We can apply the adjoint TemporaryAND because after applying a Toffoli,
                                                    # the target wire would be |0>.
 
             return qml.sample(wires=[0,1,2,3])
@@ -118,7 +118,7 @@ class TemporaryAND(Operation):
 
         **Example**
 
-        >>> print(qml.TemporaryAnd.compute_matrix())
+        >>> print(qml.TemporaryAND.compute_matrix())
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -165,7 +165,7 @@ class TemporaryAND(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.TemporaryAnd.decomposition`.
+        .. seealso:: :meth:`~.TemporaryAND.decomposition`.
 
         Args:
             wires (Sequence[int]): the subsystem the gate acts on. The first two wires are the control wires and the
@@ -178,7 +178,7 @@ class TemporaryAND(Operation):
 
         **Example:**
 
-        >>> qml.TemporaryAnd.compute_decomposition((0,1,2))
+        >>> qml.TemporaryAND.compute_decomposition((0,1,2))
         [H(2),
         T(2),
         CNOT(wires=[1, 2]),
@@ -252,8 +252,8 @@ def _temporary_and(wires: WiresLike, **kwargs):
         qml.X(wires[1])
 
 
-add_decomps(TemporaryAnd, _temporary_and)
-# TODO: add add_decomps("Adjoint(TemporaryAnd)", _adjoint_TemporaryAnd) when MCMs supported by the pipeline
+add_decomps(TemporaryAND, _temporary_and)
+# TODO: add add_decomps("Adjoint(TemporaryAND)", _adjoint_TemporaryAND) when MCMs supported by the pipeline
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

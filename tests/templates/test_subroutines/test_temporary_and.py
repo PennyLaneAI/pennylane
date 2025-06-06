@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the TemporaryAnd template.
+Tests for the TemporaryAND template.
 """
 
 import pytest
@@ -21,17 +21,22 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-class TestTemporaryAnd:
-    """Tests specific to the TemporaryAnd operation"""
+class TestTemporaryAND:
+    """Tests specific to the TemporaryAND operation"""
+
+    def test_alis(self):
+        "Test that Elbow is an alias of TemporaryAND"
+        op = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
+        qml.ops.functions.assert_valid(op)
 
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        op = qml.TemporaryAnd(wires=[0, "a", 2], control_values=(0, 0))
+        op = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
         qml.ops.functions.assert_valid(op)
 
     def test_correctness(self):
-        """Tests the correctness of the TemporaryAnd operator.
+        """Tests the correctness of the TemporaryAND operator.
         This is done by comparing the results with the Toffoli operator
         """
 
@@ -41,10 +46,10 @@ class TestTemporaryAnd:
             [
                 qml.Hadamard(0),
                 qml.Hadamard(1),
-                qml.TemporaryAnd([0, 1, 2], control_values=[0, 1]),
+                qml.TemporaryAND([0, 1, 2], control_values=[0, 1]),
                 qml.CNOT([2, 3]),
                 qml.RX(1.2, 3),
-                qml.adjoint(qml.TemporaryAnd([0, 1, 2], control_values=[0, 1])),
+                qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[0, 1])),
             ],
             [qml.state()],
         )
@@ -74,8 +79,8 @@ class TestTemporaryAnd:
         assert qml.math.allclose(output_toffoli, output_and)
 
         # Compare the contracted isometries with the third qubit fixed to |0>
-        M_and = qml.matrix(qml.TemporaryAnd(wires=[0, 1, 2]))
-        M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAnd(wires=[0, 1, 2])))
+        M_and = qml.matrix(qml.TemporaryAND(wires=[0, 1, 2]))
+        M_and_adj = qml.matrix(qml.adjoint(qml.TemporaryAND(wires=[0, 1, 2])))
         M_toffoli = qml.matrix(qml.Toffoli(wires=[0, 1, 2]))
 
         # When the third qubit starts in |0>, we only check the odd columns
@@ -90,10 +95,10 @@ class TestTemporaryAnd:
         assert qml.math.allclose(iso_M_and_adj, iso_toffoli_adj)
 
     def test_and_decompositions(self):
-        """Tests that TemporaryAnd is decomposed properly."""
+        """Tests that TemporaryAND is decomposed properly."""
 
-        for rule in qml.list_decomps(qml.TemporaryAnd):
-            _test_decomposition_rule(qml.TemporaryAnd([0, 1, 2], control_values=(0, 0)), rule)
+        for rule in qml.list_decomps(qml.TemporaryAND):
+            _test_decomposition_rule(qml.TemporaryAND([0, 1, 2], control_values=(0, 0)), rule)
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):
@@ -119,12 +124,12 @@ class TestTemporaryAnd:
         )
         assert qml.math.allclose(
             X_matrix @ matrix_base @ X_matrix,
-            qml.matrix(qml.TemporaryAnd([0, 1, 2], control_values)),
+            qml.matrix(qml.TemporaryAND([0, 1, 2], control_values)),
         )
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        """Tests that TemporaryAnd works with jax and jit"""
+        """Tests that TemporaryAND works with jax and jit"""
         import jax
 
         dev = qml.device("default.qubit")
@@ -133,10 +138,10 @@ class TestTemporaryAnd:
         def circuit():
             qml.Hadamard(0)
             qml.Hadamard(1)
-            qml.TemporaryAnd(wires=[0, 1, 2], control_values=[0, 1])
+            qml.TemporaryAND(wires=[0, 1, 2], control_values=[0, 1])
             qml.CNOT(wires=[2, 3])
             qml.RY(1.2, 3)
-            qml.adjoint(qml.TemporaryAnd([0, 1, 2]))
+            qml.adjoint(qml.TemporaryAND([0, 1, 2]))
             return qml.probs([0, 1, 2, 3])
 
         jit_circuit = jax.jit(circuit)

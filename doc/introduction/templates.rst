@@ -369,7 +369,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
 
 .. gallery-item::
-    :description: :doc:`TemporaryAnd <../code/api/pennylane.TemporaryAnd>`
+    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
     :figure: _static/templates/subroutines/temporary_and.png
 
 .. raw:: html
