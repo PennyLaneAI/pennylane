@@ -668,6 +668,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.StatePrep` does not validate the norm of statevectors any more, default to `False` during initialization.
+  [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
+
 * `qml.PhaseShift` operation is now working correctly with a batch size of 1.
   [(#7622)](https://github.com/PennyLaneAI/pennylane/pull/7622)
 
