@@ -30,6 +30,8 @@ from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, CustomOp
 from pennylane.operation import Operator
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
+# pylint: disable=missing-function-docstring
+
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 from_str_to_PL_gate = {
     "RX": qml.RX,
@@ -68,10 +70,12 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
     # Several TODO for this pass/transform:
     #
-    # - Add support for dynamic wires and parameters.
+    # - Add support for dynamic wires and parameters
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
     #   both in the decomposition and in the gate set.
     # - Make the gate_set and max_expansion configurable (e.g., via pass parameters).
+    # - Add support for qml.ctrl
+    # - Add support for qml.adjoint
     # - Add support for the decomp_graph
     # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
 
@@ -243,7 +247,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             for idx, wire in enumerate(qml_op.wires):
                 xdsl_op.results[idx].replace_by(self.wire_to_ssa_qubits[wire])
 
-            # pylint: disable=missing-function-docstring
             rewriter.erase_op(xdsl_op)
 
 
