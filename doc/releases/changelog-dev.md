@@ -481,7 +481,7 @@
 
 * Added the base `pennylane.labs.ResourceOperator` class which will be used to implement all quantum 
   operators for resource estimation.
-  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)  
+  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
 
 <h3>Breaking changes 💔</h3>
 
