@@ -471,6 +471,9 @@
 * Updated GitHub Actions workflows (`rtd.yml`, `readthedocs.yml`, and `docs.yml`) to use `ubuntu-24.04` runners.
  [(#7396)](https://github.com/PennyLaneAI/pennylane/pull/7396)
 
+* Updated `qml.equal` dispatch for `MeasurementProcess` to return informative string messages when observables are not equal.
+ [(#7421)](https://github.com/PennyLaneAI/pennylane/pull/7421)
+
 * Updated requirements and pyproject files to include the other package.  
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
