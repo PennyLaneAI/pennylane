@@ -17,7 +17,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from inspect import signature
-from typing import Callable, List, Type
+from typing import Callable, Hashable, List, Optional, Type
+
+import numpy as np
 
 from pennylane.labs.resource_estimation.qubit_manager import QubitManager
 from pennylane.labs.resource_estimation.resources_base import Resources
@@ -26,6 +28,100 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=unused-argument, no-member
+
+
+class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+    r"""Instantiate a light weight class corresponding to the operator type and parameters.
+
+    This class provides a minimal representation of an operation, containing
+    only the operator type and the necessary parameters to estimate its resources.
+    It's designed for efficient hashing and comparison, allowing it to be used
+    effectively in collections where uniqueness and quick lookups are important.
+
+    Args:
+        op_type (Type): the class object of an operation which inherits from :class:'~.pennylane.labs.resource_estimation.ResourceOperator'
+        params (dict): a dictionary containing the minimal pairs of parameter names and values
+            required to compute the resources for the given operator
+        name (str, optional): A custom name for the compressed operator. If not
+            provided, a name will be generated using `op_type.tracking_name`
+            with the given parameters.
+
+    .. details::
+
+        This representation is the minimal amount of information required to estimate resources for the operator.
+
+    **Example**
+
+    >>> op_tp = plre.CompressedResourceOp(plre.ResourceHadamard, {"num_wires":1})
+    >>> print(op_tp)
+    CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
+    """
+
+    def __init__(
+        self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None
+    ):
+
+        if not issubclass(op_type, ResourceOperator):
+            raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
+        self.op_type = op_type
+        self.params = params or {}
+        self._hashable_params = _make_hashable(params) if params else ()
+        self._name = name or op_type.tracking_name(**self.params)
+
+    def __hash__(self) -> int:
+        return hash((self.op_type, self._hashable_params))
+
+    def __eq__(self, other: CompressedResourceOp) -> bool:
+        return (
+            isinstance(other, CompressedResourceOp)
+            and self.op_type == other.op_type
+            and self.params == other.params
+        )
+
+    def __repr__(self) -> str:
+
+        class_name = self.__class__.__qualname__
+        op_type_name = self.op_type.__name__
+
+        params_arg_str = ""
+        if self.params:
+            params = sorted(self.params.items())
+            params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
+            params_arg_str = f", params={{{params_str}}}"
+
+        return f"{class_name}({op_type_name}{params_arg_str})"
+
+    @property
+    def name(self) -> str:
+        r"""Returns the name of operator."""
+        return self._name
+
+
+def _make_hashable(d) -> tuple:
+    r"""Converts a potentially non-hashable object into a hashable tuple.
+
+    Args:
+        d : The object to potentially convert to a hashable tuple.
+           This can be a dictionary, list, set, or an array.
+
+    Returns:
+        A hashable tuple representation of the input.
+
+    """
+
+    if isinstance(d, Hashable):
+        return d
+
+    if isinstance(d, dict):
+        return tuple(sorted((_make_hashable(k), _make_hashable(v)) for k, v in d.items()))
+    if isinstance(d, (list, tuple)):
+        return tuple(_make_hashable(elem) for elem in d)
+    if isinstance(d, set):
+        return tuple(sorted(_make_hashable(elem) for elem in d))
+    if isinstance(d, np.ndarray):
+        return _make_hashable(d.tolist())
+
+    raise TypeError(f"Object of type {type(d)} is not hashable and cannot be converted.")
 
 
 class ResourceOperator(ABC):
@@ -93,9 +189,9 @@ class ResourceOperator(ABC):
         Total qubits: 3
         Total gates : 7
         Qubit breakdown:
-            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+         clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
         Gate breakdown:
-            {'SWAP': 1, 'Hadamard': 3, 'ControlledPhaseShift': 3}
+         {'SWAP': 1, 'Hadamard': 3, 'ControlledPhaseShift': 3}
 
     """
 
