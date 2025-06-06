@@ -58,7 +58,7 @@ class TestExpressions:
     def test_different_unary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("unary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -74,7 +74,7 @@ class TestExpressions:
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("binary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -114,7 +114,7 @@ class TestExpressions:
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
-            open("assignment.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -160,9 +160,7 @@ class TestExpressions:
 
     def test_nested_end(self):
         # parse the QASM
-        ast = parse(
-            open("nested_end.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -326,9 +324,7 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(
-            open("variables.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -397,9 +393,7 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(
-            open("classical.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
@@ -416,7 +410,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -424,12 +418,7 @@ class TestVariables:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
-        assert q.queue == [
-            PauliX('q0'),
-            PauliY('q0'),
-            RX(0.1, wires=['q0']),
-            PauliY('q0')
-        ]
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"]), PauliY("q0")]
 
     def test_uninitialized_var(self):
 
@@ -615,7 +604,7 @@ class TestGates:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -633,7 +622,7 @@ class TestGates:
     def test_loops(self, mocker):
 
         # parse the QASM
-        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -652,7 +641,7 @@ class TestGates:
     def test_switch(self, mocker):
 
         # parse the QASM
-        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -664,7 +653,7 @@ class TestGates:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")

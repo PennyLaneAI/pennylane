@@ -148,15 +148,13 @@ class Context:
         if isinstance(node, WhileLoop):
             self.scopes["loops"][f"while_{node.span.start_line}"] = (
                 self.init_clause_in_same_namespace(
-                    self, f'{self.name}_while_{node.span.start_line}'
+                    self, f"{self.name}_while_{node.span.start_line}"
                 )
             )
 
         elif isinstance(node, ForInLoop):
             self.scopes["loops"][f"for_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(
-                    self, f'{self.name}_for_{node.span.start_line}'
-                )
+                self.init_clause_in_same_namespace(self, f"{self.name}_for_{node.span.start_line}")
             )
 
     def init_switches_scope(self, node: QASMNode):
@@ -347,7 +345,7 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
-        elif getattr(self.context, name, None):
+        if getattr(self.context, name, None):
             return getattr(self.context, name)
         raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
@@ -517,20 +515,24 @@ class QasmInterpreter:
         context.init_branches_scope(node)
 
         # create the true body context
-        context.scopes["branches"][f"branch_{node.span.start_line}"].update({
-            "true_body": context.init_clause_in_same_namespace(
-                context, f'{context.name}_branch_{node.span.start_line}_true_body'
-            )
-        })
+        context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+            {
+                "true_body": context.init_clause_in_same_namespace(
+                    context, f"{context.name}_branch_{node.span.start_line}_true_body"
+                )
+            }
+        )
 
         if hasattr(node, "else_block"):
 
             # create the false body context
-            context.scopes["branches"][f"branch_{node.span.start_line}"].update({
-                "false_body": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_branch_{node.span.start_line}_false_body'
-                )
-            })
+            context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+                {
+                    "false_body": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_branch_{node.span.start_line}_false_body"
+                    )
+                }
+            )
 
         ops.cond(
             self.visit(node.condition, context),
@@ -563,20 +565,25 @@ class QasmInterpreter:
 
         # switches need to have access to the outer context but not get called unless the condition is met
 
+        i = 0
         # we need to keep track of each clause individually
-        for i, case in enumerate(node.cases):
-            context.scopes["switches"][f"switch_{node.span.start_line}"].update({
-                f"cond_{i}": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_switch_{node.span.start_line}_cond_{i}'
-                )
-            })
+        for i in range(len(node.cases)):
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i}"
+                    )
+                }
+            )
 
         if hasattr(node, "default") and node.default is not None:
-            context.scopes["switches"][f"switch_{node.span.start_line}"].update({
-                f"cond_{i + 1}": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_switch_{node.span.start_line}_cond_{i + 1}'
-                )
-            })
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i + 1}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i + 1}"
+                    )
+                }
+            )
 
         target = self.visit(node.target, context)
         ops.cond(
@@ -590,9 +597,7 @@ class QasmInterpreter:
                 partial(
                     self.visit,
                     node.default.statements,
-                    context.scopes["switches"][f"switch_{node.span.start_line}"][
-                        f"cond_{i + 1}"
-                    ],
+                    context.scopes["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
                 )
                 if hasattr(node, "default") and node.default is not None
                 else None
@@ -607,9 +612,7 @@ class QasmInterpreter:
                     ),
                 )
                 for j, case in enumerate(
-                    list(context.scopes["switches"][f"switch_{node.span.start_line}"].keys())[
-                        1:-1
-                    ]
+                    list(context.scopes["switches"][f"switch_{node.span.start_line}"].keys())[1:-1]
                 )
             ],
         )()
@@ -625,7 +628,7 @@ class QasmInterpreter:
         """
         try:
             loop(execution_context)
-        except BreakException as e:
+        except BreakException:
             pass  # evaluation of the loop stops
 
     @visit.register(WhileLoop)
@@ -651,7 +654,7 @@ class QasmInterpreter:
             try:
                 # updates vars in context... need to propagate these to outer scope
                 self.visit(node.block, context.scopes["loops"][f"while_{node.span.start_line}"])
-            except ContinueException as e:
+            except ContinueException:
                 pass  # evaluation of this iteration ends, and we continue to the next
 
             inner_context = context.scopes["loops"][f"while_{node.span.start_line}"]
@@ -701,7 +704,7 @@ class QasmInterpreter:
                     val=i,
                     size=-1,
                     line=node.span.start_line,
-                    constant=False
+                    constant=False,
                 )
                 try:
                     # we only want to execute the gates in the loop's scope
@@ -709,7 +712,7 @@ class QasmInterpreter:
                     self.visit(
                         node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                     )
-                except ContinueException as e:
+                except ContinueException:
                     pass  # evaluation of the current iteration stops and we continue
                 inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
                 context.vars = inner_context.vars
@@ -726,7 +729,7 @@ class QasmInterpreter:
         elif isinstance(
             loop_params, Iterable
         ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
-            iter = [val for val in loop_params]
+            iter = loop_params
 
             def unrolled(execution_context):
                 for i in iter:
@@ -744,7 +747,7 @@ class QasmInterpreter:
                         self.visit(
                             node.block, context.scopes["loops"][f"for_{node.span.start_line}"]
                         )  # updates vars in sub context if any measurements etc. occur
-                    except ContinueException as e:
+                    except ContinueException:
                         pass  # eval of current iteration stops and we continue
 
             self._handle_break(unrolled, context)
@@ -1222,7 +1225,7 @@ class QasmInterpreter:
         if node.op.name == "!":
             return not operand
         if node.op.name == "-":
-            return -operand
+            return -operand  # pylint: disable=invalid-unary-operand-type
         if node.op.name == "~":
             return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
