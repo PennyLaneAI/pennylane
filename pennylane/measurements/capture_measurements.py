@@ -19,7 +19,9 @@ from collections.abc import Callable
 from functools import lru_cache
 from typing import Optional, Type
 
-import pennylane as qml
+from pennylane import capture
+from pennylane.math import is_abstract
+from pennylane.wires import Wires
 
 has_jax = True
 try:
@@ -126,9 +128,7 @@ def create_measurement_obs_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
-
-    primitive = QmlPrimitive(name + "_obs")
+    primitive = capture.QmlPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -165,10 +165,7 @@ def create_measurement_mcm_primitive(
 
     if not has_jax:
         return None
-
-    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
-
-    primitive = QmlPrimitive(name + "_mcm")
+    primitive = capture.QmlPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
@@ -204,7 +201,7 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
+    from ..capture.custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
     primitive = QmlPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
@@ -212,13 +209,11 @@ def create_measurement_wires_primitive(
     @primitive.def_impl
     def _(*args, has_eigvals=False, **kwargs):
         if has_eigvals:
-            wires = qml.wires.Wires(
-                tuple(w if qml.math.is_abstract(w) else int(w) for w in args[:-1])
-            )
+            wires = Wires(tuple(w if is_abstract(w) else int(w) for w in args[:-1]))
             kwargs["eigvals"] = args[-1]
         else:
-            wires = tuple(w if qml.math.is_abstract(w) else int(w) for w in args)
-            wires = qml.wires.Wires(wires)
+            wires = tuple(w if is_abstract(w) else int(w) for w in args)
+            wires = Wires(wires)
         return type.__call__(measurement_type, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_measurement()

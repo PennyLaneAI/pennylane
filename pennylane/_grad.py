@@ -15,7 +15,7 @@
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
-from functools import partial, wraps
+from functools import lru_cache, partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -23,19 +23,101 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane.capture import determine_abstracted_axes, enabled
-from pennylane.capture.capture_diff import _get_grad_prim, _get_jacobian_prim
-from pennylane.capture.flatfn import FlatFn
+from pennylane import capture
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
 
 
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
+
+@lru_cache
+def _get_grad_prim():
+    """Create a primitive for gradient computations.
+    This primitive is used when capturing ``qml.grad``.
+    """
+    if not has_jax:  # pragma: no cover
+        return None
+
+    grad_prim = capture.QmlPrimitive("grad")
+    grad_prim.multiple_results = True
+    grad_prim.prim_type = "higher_order"
+
+    @grad_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        if method or h:  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+        consts = args[:n_consts]
+        args = args[n_consts:]
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)[0]
+
+        return jax.grad(func, argnums=argnum)(*args)
+
+    # pylint: disable=unused-argument
+    @grad_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
+            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
+        return tuple(args[i + n_consts] for i in argnum)
+
+    return grad_prim
+
+
+def _shape(shape, dtype):
+    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
+        return jax.core.DShapedArray(shape, dtype)
+    return jax.core.ShapedArray(shape, dtype)
+
+
+@lru_cache
+def _get_jacobian_prim():
+    """Create a primitive for Jacobian computations.
+    This primitive is used when capturing ``qml.jacobian``.
+    """
+    if not has_jax:  # pragma: no cover
+        return None
+
+    jacobian_prim = capture.QmlPrimitive("jacobian")
+    jacobian_prim.multiple_results = True
+    jacobian_prim.prim_type = "higher_order"
+
+    @jacobian_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        if method or h:  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+        consts = args[:n_consts]
+        args = args[n_consts:]
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+
+        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnum)(*args))
+
+    # pylint: disable=unused-argument
+    @jacobian_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        in_avals = tuple(args[i + n_consts] for i in argnum)
+        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
+        return [
+            _shape(out_shape + in_aval.shape, in_aval.dtype)
+            for out_shape in out_shapes
+            for in_aval in in_avals
+        ]
+
+    return jacobian_prim
+
+
 def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    import jax
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
     if argnum is None:
@@ -70,9 +152,9 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         flat_argnum = sum(flat_argnum_gen, start=[])
 
         # Create fully flattened function (flat inputs & outputs)
-        flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
+        flat_fn = capture.FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
         flat_args = sum(flat_args, start=[])
-        abstracted_axes, abstract_shapes = determine_abstracted_axes(tuple(flat_args))
+        abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args)
 
         num_abstract_shapes = len(abstract_shapes)
@@ -165,7 +247,7 @@ class grad:
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(func, method=method, h=h, argnums=argnum)
 
-        if enabled():
+        if capture.enabled():
             return _capture_diff(func, argnum, _get_grad_prim(), method=method, h=h)
 
         if method or h:  # pragma: no cover
@@ -496,7 +578,7 @@ def jacobian(func, argnum=None, method=None, h=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
 
-    if enabled():
+    if capture.enabled():
         return _capture_diff(func, argnum, _get_jacobian_prim(), method=method, h=h)
 
     if method or h:
