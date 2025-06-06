@@ -103,6 +103,18 @@ def _map_to_bloq():
         )
 
     @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.QFT, **kwargs):
+        from qualtran.bloqs.qft import QFTTextBook
+
+        if kwargs.get("map_ops") is False:
+            return ToBloq(op, **kwargs)
+
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
+            return custom_map[op]
+
+        return QFTTextBook(len(op.wires))
+
+    @_to_qt_bloq.register
     def _(op: qops.GlobalPhase, **kwargs):
         return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
@@ -881,9 +893,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     """
 
-    if map_ops:
-        if custom_mapping:
-            return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
-        return _map_to_bloq()(circuit, map_ops=True, **kwargs)
+    if map_ops and custom_mapping:
+        return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
 
-    return ToBloq(circuit, **kwargs)
+    return _map_to_bloq()(circuit, map_ops=map_ops, **kwargs)
