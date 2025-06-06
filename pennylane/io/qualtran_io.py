@@ -181,7 +181,6 @@ def _get_op_call_graph():
 
         for i in range(1, num_state_qubits):
             num_bit_flips = 2 ** (i - 1)
-
             zero_string = "0" * num_precision_wires
             one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
             bitstrings = [zero_string for _ in range(num_bit_flips)] + [
@@ -210,9 +209,6 @@ def _get_op_call_graph():
             bitstrings = [zero_string for _ in range(num_bit_flips)] + [
                 one_string for _ in range(num_bit_flips)
             ]
-
-            if i == 0:
-                bitstrings = ["0" * (num_precision_wires - 1) + "1"]
 
             qrom_op = qtemps.QROM(
                 bitstrings=bitstrings,
