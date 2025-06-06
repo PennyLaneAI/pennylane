@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops import channel
 from pennylane.wires import WireError
+
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
@@ -909,6 +910,7 @@ class TestPauliError:
         jac_fn = jax.jacobian(fn, holomorphic=True)
         jac = jac_fn(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
+
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""
