@@ -39,7 +39,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     effectively in collections where uniqueness and quick lookups are important.
 
     Args:
-        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        op_type (Type): the class object of an operation which inherits from :class:'~.pennylane.labs.resource_estimation.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
             required to compute the resources for the given operator
         name (str, optional): A custom name for the compressed operator. If not
@@ -52,7 +52,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
 
     **Example**
 
-    >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
+    >>> op_tp = plre.CompressedResourceOp(plre.ResourceHadamard, {"num_wires":1})
     >>> print(op_tp)
     CompressedResourceOp(ResourceHadamard, params={'num_wires':1})
     """
