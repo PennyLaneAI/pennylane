@@ -31,7 +31,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Operator
-from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, PauliError, Pow, SProd
+from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
@@ -43,8 +43,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence, PauliError],
-    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence, PauliError],
+    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -288,54 +288,6 @@ def _equal_circuit(
         return False
     if op1.trainable_params != op2.trainable_params:
         return False
-    return True
-
-
-@_equal_dispatch.register
-def _equal_pauli_errors(
-    op1: qml.PauliError,
-    op2: qml.PauliError,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    """Function to determine whether two PauliError objects are equal."""
-
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-
-    if check_trainability:
-        for params1, params2 in zip(op1.data, op2.data):
-            params1_train = qml.math.requires_grad(params1)
-            params2_train = qml.math.requires_grad(params2)
-            if params1_train != params2_train:
-                return (
-                    "Parameters have different trainability.\n "
-                    f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
-                )
-
-    if check_interface:
-        for params1, params2 in zip(op1.data, op2.data):
-            params1_interface = qml.math.get_interface(params1)
-            params2_interface = qml.math.get_interface(params2)
-            if params1_interface != params2_interface:
-                return (
-                    "Parameters have different interfaces.\n "
-                    f"{params1} interface is {params1_interface} and {params2} interface is {params2_interface}"
-                )
-
-    op1_nums = set(filter(lambda d: isinstance(d, Number), op1.data))
-    op2_nums = set(filter(lambda d: isinstance(d, Number), op2.data))
-    op1_non_nums = set(op1.data) - op1_nums
-    op2_non_nums = set(op2.data) - op2_nums
-
-    if not (
-        qml.math.allclose(list(op1_nums), list(op2_nums), rtol=rtol, atol=atol)
-        and all((nn1 == nn2 for (nn1, nn2) in zip(op1_non_nums, op2_non_nums)))
-    ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
-
     return True
 
 

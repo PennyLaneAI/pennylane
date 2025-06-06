@@ -1264,7 +1264,7 @@ class TestPauliErrorEqual:
         """Test that trainability and interface are compared correctly."""
 
         x1 = qml.numpy.array(0.5, requires_grad=True)
-        pes = [qml.PauliError("XY", x1, (0, 1)), qml.PauliError("XZ", 0.5, (0, 1))]
+        pes = [qml.PauliError("XY", x1, (0, 1)), qml.PauliError("XY", 0.5, (0, 1))]
 
         assert qml.equal(pes[0], pes[1]) is False
         with pytest.raises(AssertionError, match="Parameters have different trainability"):

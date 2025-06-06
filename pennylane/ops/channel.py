@@ -578,6 +578,9 @@ class PauliError(Channel):
         if len(self.wires) != len(operators):
             raise ValueError("The number of operators must match the number of wires")
 
+        self.hyperparameters["operators"] = operators
+        self.data = self.data[1:]
+
         nq = len(self.wires)
 
         if nq > 20:
