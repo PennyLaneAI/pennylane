@@ -36,7 +36,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     Args:
         op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
-                    required to compute the resources for the given operator
+            required to compute the resources for the given operator
 
     .. details::
 
