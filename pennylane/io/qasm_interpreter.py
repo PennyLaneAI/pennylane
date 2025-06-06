@@ -215,31 +215,31 @@ class Context:
                     f"defined on line {self.vars[name].line}"
                 )
             if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[0]:
+                if node.op.name == "=":
                     self.vars[name].val = value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[1]:
+                if node.op.name == "++":
                     self.vars[name].val = self.vars[name].val + 1
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[2]:
+                if node.op.name == "+=":
                     self.vars[name].val += value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[3]:
+                if node.op.name == "-=":
                     self.vars[name].val -= value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[4]:
+                if node.op.name == "*=":
                     self.vars[name].val = self.vars[name].val * value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[5]:
+                if node.op.name == "/=":
                     self.vars[name].val = self.vars[name].val / value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[6]:
+                if node.op.name == "&=":
                     self.vars[name].val = self.vars[name].val & value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
+                if node.op.name == "|=":
                     self.vars[name].val = self.vars[name].val | value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
+                if node.op.name == "^=":
                     self.vars[name].val = self.vars[name].val ^ value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
+                if node.op.name == "<<=":
                     self.vars[name].val = self.vars[name].val << value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
+                if node.op.name == ">>=":
                     self.vars[name].val = self.vars[name].val >> value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
+                if node.op.name == "%=":
                     self.vars[name].val = self.vars[name].val % value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                if node.op.name == "**=":
                     self.vars[name].val = self.vars[name].val ** value
                 self.vars[name].line = node.span.start_line
             else:
@@ -323,6 +323,144 @@ def preprocess_operands(operand):
         elif operand.isnumeric():
             operand = float(operand)
     return operand
+
+
+@dataclass
+class Variable:
+    """
+    A data class that represents a variables.
+
+    Args:
+        ty (type): The type of the variable.
+        val (any): The value of the variable.
+        size (int): The size of the variable if it has a size, like an array.
+        line (int): The line number at which the variable was most recently updated.
+        constant (bool): Whether the variable is a constant.
+    """
+
+    ty: str
+    val: Any
+    size: int
+    line: int
+    constant: bool
+
+
+class Context:
+    """Class with helper methods for managing, updating, checking context."""
+
+    def __init__(self, context):
+        if "vars" not in context:
+            context["vars"] = {}
+        if "aliases" not in context:
+            context["aliases"] = {}
+        if "wires" not in context:
+            context["wires"] = []
+        self.context = context
+
+    def retrieve_variable(self, name: str):
+        """
+        Attempts to retrieve a variable from the current context by name.
+
+        Args:
+            name (str): the name of the variable to retrieve.
+
+        Returns:
+            The value of the variable in the current context.
+
+        Raises:
+             NameError: if the variable is not initialized.
+             TypeError: if the variable is not declared.
+        """
+
+        if name in self.vars:
+            res = self.vars[name]
+            if res.val is not None:
+                return res
+            raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
+        if name in self.wires:
+            return name
+        if name in self.aliases:
+            return self.aliases[name](self)  # evaluate the alias and de-reference
+        raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+
+    def update_var(
+        self,
+        value: any,
+        name: str,
+        node: QASMNode,
+    ):
+        """
+        Updates a variable, or raises if it is constant.
+        Args:
+            value (any): the value to set.
+            name (str): the name of the variable.
+            node (QASMNode): the QASMNode that corresponds to the update.
+        """
+        if name in self.vars:
+            if self.vars[name].constant:
+                raise ValueError(
+                    f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                    f"defined on line {self.vars[name].line}"
+                )
+            self.vars[name].val = value
+            self.vars[name].line = node.span.start_line
+        else:
+            raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+
+    def require_wires(self, wires: list):
+        """
+        Simple helper that checks if we have wires in the current context.
+
+        Args:
+            wires (list): The wires that are required.
+
+        Raises:
+            NameError: If the context is missing a wire.
+        """
+        missing_wires = set(wires) - set(self.wires)
+        if len(missing_wires) > 0:
+            raise NameError(
+                f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
+            )
+
+    def __getattr__(self, name: str):
+        """
+        If the attribute is not found on the class, instead uses the attr name as an index
+        into the context dictionary, for easy access.
+
+        Args:
+            name (str): the name of the attribute.
+
+        Returns:
+            Any: the value of the attribute.
+
+        Raises:
+            KeyError: if the attribute is not found on the context.
+        """
+        if name in self.context:
+            return self.context[name]
+        raise KeyError(
+            f"No attribute {name} on Context and no {name} key found on context {self.name}"
+        )
+
+
+def _get_bit_type_val(var):
+    return bin(var.val)[2:].zfill(var.size)
+
+
+def _resolve_name(node: QASMNode):
+    """
+    Fully resolves the name of a node which may be provided as an Identifier or string,
+    and therefore may require referencing different attributes.
+
+    Args:
+        node (QASMNode): the QASMNode whose name is being resolved.
+
+    Returns:
+        str: the resolved name.
+    """
+    # parser will sometimes represent a name as a str and sometimes as an Identifier
+    return node.name if isinstance(node.name, str) else node.name.name
 
 
 class EndProgram(Exception):
@@ -410,10 +548,7 @@ class QasmInterpreter:
             The indexed slice of the variable.
         """
         if not isinstance(var, Iterable):
-            if var.ty == "BitType":
-                var = _get_bit_type_val(var)
-            else:
-                var = var.val
+            var = _get_bit_type_val(var) if var.ty == "BitType" else var.val
         index = self.visit(node.index[0], context)
         if not (isinstance(index, Iterable) and len(index) > 1):
             return var[index]
@@ -701,45 +836,45 @@ class QasmInterpreter:
         ret = None
         if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
             match node.op.name:
-                case EQUALITY_OPERATORS[0]:
+                case "==":
                     ret = lhs == rhs
-                case EQUALITY_OPERATORS[1]:
+                case "!=":
                     ret = lhs != rhs
-                case EQUALITY_OPERATORS[2]:
+                case "~=":
                     ret = np.isclose(lhs, rhs)
-                case COMPARISON_OPERATORS[0]:
+                case ">":
                     ret = lhs > rhs
-                case COMPARISON_OPERATORS[1]:
+                case "<":
                     ret = lhs < rhs
-                case COMPARISON_OPERATORS[2]:
+                case ">=":
                     ret = lhs >= rhs
-                case COMPARISON_OPERATORS[3]:
+                case "<=":
                     ret = lhs <= rhs
-                case BIT_SHIFT_OPERATORS[0]:
+                case ">>":
                     ret = lhs >> rhs
-                case BIT_SHIFT_OPERATORS[1]:
+                case "<<":
                     ret = lhs << rhs
-                case PLUS:
+                case "+":
                     ret = lhs + rhs
-                case MINUS:
+                case "-":
                     ret = lhs - rhs
-                case ASTERISK:
+                case "*":
                     ret = lhs * rhs
-                case DOUBLE_ASTERISK:
+                case "**":
                     ret = lhs**rhs
-                case SLASH:
+                case "/":
                     ret = lhs / rhs
-                case PERCENT:
+                case "%":
                     ret = lhs % rhs
-                case PIPE:
+                case "|":
                     ret = lhs | rhs
-                case DOUBLE_PIPE:
+                case "||":
                     ret = lhs or rhs
-                case AMPERSAND:
+                case "&":
                     ret = lhs & rhs
-                case DOUBLE_AMPERSAND:
+                case "&&":
                     ret = lhs and rhs
-                case CARET:
+                case "^":
                     ret = lhs ^ rhs
             return ret
         # we shouldn't ever get thi error if the parser did its job right
@@ -762,17 +897,40 @@ class QasmInterpreter:
         """
         if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
             operand = preprocess_operands(self.visit(node.expression, context))
-            if node.op.name == EXCLAMATION_POINT:
+            if node.op.name == "!":
                 return not operand
-            if node.op.name == MINUS:
+            if node.op.name == "-":
                 return -operand
-            if node.op.name == TILDE:
+            if node.op.name == "~":
                 return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
         raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in unary expression "
             f"on line {node.span.start_line}."
         )  # pragma: no cover
+
+    @visit.register(IndexExpression)
+    def visit_index_expression(
+        self, node: IndexExpression, context: Context, aliasing: bool = False
+    ):
+        """
+        Registers an index expression.
+
+        Args:
+            node (IndexExpression): The index expression.
+            context (Context): The current context.
+            aliasing (bool): If ``True``, the expression will be treated as an alias.
+
+        Returns:
+            The slice of the indexed value.
+        """
+
+        if aliasing:  # we are registering an alias
+            return lambda cntxt: self._index_into_var(self._alias(node, cntxt), node, context)
+
+        # else we are just evaluating an index
+        var = context.retrieve_variable(node.collection.name)
+        return self._index_into_var(var, node, context)
 
     @visit.register(IndexExpression)
     def visit_index_expression(
