@@ -5,7 +5,7 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import functools
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 from numpy import uint
@@ -17,17 +17,21 @@ from openqasm3.ast import (
     BitstringLiteral,
     BooleanLiteral,
     BoolType,
+    BranchingStatement,
+    BreakStatement,
     Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
     ComplexType,
     ConstantDeclaration,
+    ContinueStatement,
     DurationLiteral,
     EndStatement,
     Expression,
     ExpressionStatement,
     FloatLiteral,
     FloatType,
+    ForInLoop,
     FunctionCall,
     Identifier,
     ImaginaryLiteral,
@@ -40,12 +44,15 @@ from openqasm3.ast import (
     RangeDefinition,
     ReturnStatement,
     SubroutineDefinition,
+    SwitchStatement,
     UintType,
     UnaryExpression,
+    WhileLoop,
 )
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
+from pennylane.control_flow import for_loop, while_loop
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -106,7 +113,13 @@ class Variable:
 class Context:
     """Class with helper methods for managing, updating, checking context."""
 
-    def __init__(self, context):
+    def __init__(self, context: dict):
+        """
+        Initializes the context.
+
+        Args:
+            context (dict): A dictionary that contains some information about the context.
+        """
         if "vars" not in context:
             context["vars"] = {}
         if "aliases" not in context:
@@ -121,14 +134,52 @@ class Context:
             context["wire_map"] = dict()
         self.context = context
 
-    def update(self, update: dict):
+    def init_loops_scope(self, node: ForInLoop | WhileLoop):
         """
-        Updated the context dict.
+        Inits the loops scope on the current context.
 
         Args:
-            update (dict): The dict containing the updates.
+            node (ForInLoop | WhileLoop): the loop node.
         """
-        self.context.update(update)
+        if "loops" not in self.scopes:
+            self.scopes["loops"] = dict()
+
+        # the namespace is shared with the outer scope, but we need to keep track of the gates separately
+        if isinstance(node, WhileLoop):
+            self.scopes["loops"][f"while_{node.span.start_line}"] = (
+                self.init_clause_in_same_namespace(
+                    self, f"{self.name}_while_{node.span.start_line}"
+                )
+            )
+
+        elif isinstance(node, ForInLoop):
+            self.scopes["loops"][f"for_{node.span.start_line}"] = (
+                self.init_clause_in_same_namespace(self, f"{self.name}_for_{node.span.start_line}")
+            )
+
+    def init_switches_scope(self, node: QASMNode):
+        """
+        Inits the switches scope on the current context.
+
+        Args:
+            node (QASMNode): the switch node.
+        """
+        if "switches" not in self.scopes:
+            self.scopes["switches"] = dict()
+
+        self.scopes["switches"][f"switch_{node.span.start_line}"] = dict()
+
+    def init_branches_scope(self, node: QASMNode):
+        """
+        Inits the branches scope on the current context.
+
+        Args:
+            node (BranchingStatement): the branch node.
+        """
+        if "branches" not in self.scopes:
+            self.scopes["branches"] = dict()
+
+        self.scopes["branches"][f"branch_{node.span.start_line}"] = dict()
 
     def init_subroutine_scope(self, node: SubroutineDefinition):
         """
@@ -139,7 +190,7 @@ class Context:
 
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
-        self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+        self.scopes["subroutines"][node.name.name] = self.init_clause_in_same_namespace(
             self, f"{self.name}_{node.name.name}"
         )
         self.scopes["subroutines"][node.name.name].update(
@@ -151,7 +202,7 @@ class Context:
         )
 
     @staticmethod
-    def _init_clause_in_same_namespace(outer_context, name: str):
+    def init_clause_in_same_namespace(outer_context, name: str):
         """
         Initializes a clause that shares the namespace of the outer scope, but contains its own
         set of gates, operations, expressions, logic, etc.
@@ -272,7 +323,7 @@ class Context:
         Raises:
             NameError: If the context is missing a wire.
         """
-        missing_wires = set(wires) - set(self.wires)
+        missing_wires = set(wires) - set(self.wires) - set(self.outer_wires)
         if len(missing_wires) > 0:
             raise NameError(
                 f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
@@ -294,9 +345,23 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
+        if getattr(self.context, name, None):
+            return getattr(self.context, name)
         raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
         )
+
+    def __getitem__(self, item):
+        """
+        Allows accessing items on the context by subscripting.
+
+        Args:
+            item: the name of the key to retrieve.
+
+        Returns:
+            Any: the value corresponding to the key.
+        """
+        return self.context[item]
 
 
 def _get_bit_type_val(var):
@@ -336,6 +401,14 @@ def preprocess_operands(operand):
     return operand
 
 
+class BreakException(Exception):  # pragma: no cover
+    """Exception raised when encountering a break statement."""
+
+
+class ContinueException(Exception):  # pragma: no cover
+    """Exception raised when encountering a continue statement."""
+
+
 class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
@@ -359,15 +432,18 @@ class QasmInterpreter:
             aliasing (bool): whether we are aliasing a variable in the context.
 
         Raises:
-            NotImplementedError: When a (so far) unsupported node type is encountered.
+            NotImplementedError: when an unsupported QASMNode type is found.
+            aliasing (bool): whether we are aliasing a variable in the context.
         """
+        if node is None:
+            return None
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
             f"was encountered on line {node.span.start_line}, in {context.name}."
         )
 
     @visit.register(list)
-    def visit_list(self, node_list: list, context: dict):
+    def visit_list(self, node_list: list, context: Context):
         """
         Visits a list of QASMNodes.
 
@@ -378,7 +454,7 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: Context):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
@@ -402,6 +478,281 @@ class QasmInterpreter:
         except EndProgram:
             pass
         return context
+
+    @visit.register(BreakStatement)
+    def visit_break_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a break statement.
+
+        Args:
+            node (QASMNode): the break QASMNode.
+            context (Context): the current context.
+        """
+
+        raise BreakException(f"Break statement encountered in {context.name}")
+
+    @visit.register(ContinueStatement)
+    def visit_continue_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a continue statement.
+
+        Args:
+            node (QASMNode): the continue QASMNode.
+            context (Context): the current context.
+        """
+
+        raise ContinueException(f"Continue statement encountered in {context.name}")
+
+    @visit.register(BranchingStatement)
+    def visit_branching_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a branching statement. Like switches, uses qml.cond.
+
+        Args:
+            node (QASMNode): the branch QASMNode.
+            context (Context): the current context.
+        """
+        context.init_branches_scope(node)
+
+        # create the true body context
+        context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+            {
+                "true_body": context.init_clause_in_same_namespace(
+                    context, f"{context.name}_branch_{node.span.start_line}_true_body"
+                )
+            }
+        )
+
+        if hasattr(node, "else_block"):
+
+            # create the false body context
+            context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+                {
+                    "false_body": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_branch_{node.span.start_line}_false_body"
+                    )
+                }
+            )
+
+        ops.cond(
+            self.visit(node.condition, context),
+            partial(
+                self.visit,
+                node.if_block,
+                context.scopes["branches"][f"branch_{node.span.start_line}"]["true_body"],
+            ),
+            (
+                partial(
+                    self.visit,
+                    node.else_block,
+                    context.scopes["branches"][f"branch_{node.span.start_line}"]["false_body"],
+                )
+                if hasattr(node, "else_block")
+                else None
+            ),
+        )()
+
+    @visit.register(SwitchStatement)
+    def visit_switch_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a switch statement.
+
+        Args:
+            node (QASMNode): the switch QASMNode.
+            context (Context): the current context.
+        """
+        context.init_switches_scope(node)
+
+        # switches need to have access to the outer context but not get called unless the condition is met
+
+        i = 0
+        # we need to keep track of each clause individually
+        for i in range(len(node.cases)):
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i}"
+                    )
+                }
+            )
+
+        if hasattr(node, "default") and node.default is not None:
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i + 1}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i + 1}"
+                    )
+                }
+            )
+
+        target = self.visit(node.target, context)
+        ops.cond(
+            target == self.visit(node.cases[0][0][0], context),
+            partial(
+                self.visit,
+                node.cases[0][1].statements,
+                context.scopes["switches"][f"switch_{node.span.start_line}"]["cond_0"],
+            ),
+            (
+                partial(
+                    self.visit,
+                    node.default.statements,
+                    context.scopes["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
+                )
+                if hasattr(node, "default") and node.default is not None
+                else None
+            ),
+            [
+                (
+                    target == self.visit(node.cases[j + 1][0][0], context),
+                    partial(
+                        self.visit,
+                        node.cases[j + 1][1].statements,
+                        context.scopes["switches"][f"switch_{node.span.start_line}"][case],
+                    ),
+                )
+                for j, case in enumerate(
+                    list(context.scopes["switches"][f"switch_{node.span.start_line}"].keys())[1:-1]
+                )
+            ],
+        )()
+
+    @staticmethod
+    def _handle_break(loop: Callable, execution_context: Context):
+        """
+        Handles when a break is encountered in the loop.
+
+        Args:
+            loop (Callable): the loop function.
+            execution_context (Context): the context passed at execution time with current variable values, etc.
+        """
+        try:
+            loop(execution_context)
+        except BreakException:
+            pass  # evaluation of the loop stops
+
+    @visit.register(WhileLoop)
+    def visit_while_loop(self, node: WhileLoop, context: Context):
+        """
+        Registers a while loop.
+
+        Args:
+            node (QASMNode): the loop node.
+            context (Context): the current context.
+        """
+        context.init_loops_scope(node)
+
+        @while_loop(partial(self.visit, node.while_condition))  # traces data dep through context
+        def loop(context):
+            """
+            Executes a traceable while loop.
+
+            Args:
+                loop_context (Context): the context used to compile the while loop.
+                execution_context (Context): the context passed at execution time with current variable values, etc.
+            """
+            try:
+                # updates vars in context... need to propagate these to outer scope
+                self.visit(node.block, context.scopes["loops"][f"while_{node.span.start_line}"])
+            except ContinueException:
+                pass  # evaluation of this iteration ends, and we continue to the next
+
+            inner_context = context.scopes["loops"][f"while_{node.span.start_line}"]
+            context.vars = inner_context.vars
+            context.wires += inner_context.wires
+
+            return context
+
+        self._handle_break(loop, context)
+
+    @visit.register(ForInLoop)
+    def visit_for_in_loop(self, node: ForInLoop, context: Context):
+        """
+        Registers a for loop.
+
+        Args:
+            node (QASMNode): the loop node.
+            context (Context): the current context.
+        """
+        context.init_loops_scope(node)
+
+        loop_params = node.set_declaration
+
+        # de-referencing
+        if isinstance(loop_params, Identifier):
+            loop_params = context.retrieve_variable(loop_params.name)
+            if isinstance(loop_params, Variable):
+                if loop_params.ty == "BitType":
+                    loop_params = _get_bit_type_val(loop_params)
+                else:
+                    loop_params = loop_params.val
+
+        # TODO: support dynamic start, stop, step?
+        if isinstance(loop_params, RangeDefinition):
+            start = self.visit(loop_params.start, context)
+            stop = self.visit(loop_params.end, context)
+            step = self.visit(loop_params.step, context)
+            if step is None:
+                step = 1
+
+            @for_loop(start, stop, step)
+            def loop(i, execution_context):
+                execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
+                    node.identifier.name
+                ] = Variable(
+                    ty=i.__class__.__name__,
+                    val=i,
+                    size=-1,
+                    line=node.span.start_line,
+                    constant=False,
+                )
+                try:
+                    # we only want to execute the gates in the loop's scope
+                    # updates vars in sub context... need to propagate these to outer context
+                    self.visit(
+                        node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
+                    )
+                except ContinueException:
+                    pass  # evaluation of the current iteration stops and we continue
+                inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
+                context.vars = inner_context.vars
+                context.wires += inner_context.wires
+
+                return execution_context
+
+            self._handle_break(loop, context)
+
+        # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
+        # accepts (start, stop, step) and not a list of values.
+        elif isinstance(loop_params, ArrayLiteral):
+            iter = [self.visit(literal, context) for literal in loop_params.values]
+        elif isinstance(
+            loop_params, Iterable
+        ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
+            iter = loop_params
+
+            def unrolled(execution_context):
+                for i in iter:
+                    execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
+                        node.identifier.name
+                    ] = Variable(
+                        ty=i.__class__.__name__,
+                        val=i,
+                        size=-1,
+                        line=node.span.start_line,
+                        constant=False,
+                    )
+                    try:
+                        # visit the nodes once per loop iteration
+                        self.visit(
+                            node.block, context.scopes["loops"][f"for_{node.span.start_line}"]
+                        )  # updates vars in sub context if any measurements etc. occur
+                    except ContinueException:
+                        pass  # eval of current iteration stops and we continue
+
+            self._handle_break(unrolled, context)
+        elif loop_params is None:
+            print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     @visit.register(FunctionCall)
     def visit_function_call(self, node: FunctionCall, context: Context):
@@ -550,6 +901,7 @@ class QasmInterpreter:
         """
         Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
         Python type variables that can be readily used in expression eval, etc.
+
         Args:
             node (QASMNode): The constant QASMNode.
             context (Context): The current context.
@@ -873,7 +1225,7 @@ class QasmInterpreter:
         if node.op.name == "!":
             return not operand
         if node.op.name == "-":
-            return -operand
+            return -operand  # pylint: disable=invalid-unary-operand-type
         if node.op.name == "~":
             return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
