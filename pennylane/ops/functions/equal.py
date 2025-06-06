@@ -20,7 +20,6 @@ This module contains the qml.equal function.
 # pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
-from numbers import Number
 from typing import Union
 
 import pennylane as qml

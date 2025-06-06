@@ -143,7 +143,7 @@ def _pl_op_to_stim(op):
     if isinstance(op, qml.operation.Channel):
         stim_op += f"({op.parameters[-1]})"  # get the probability
         if op.name == "PauliError":
-            stim_tg = [pauli + wire for pauli, wire in zip(op.parameters[0], stim_tg)]
+            stim_tg = [pauli + wire for pauli, wire in zip(op.hyperparameters['operators'], stim_tg)]
 
     return stim_op, " ".join(stim_tg)
 
