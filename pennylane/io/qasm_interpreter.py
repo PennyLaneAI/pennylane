@@ -796,7 +796,7 @@ class QasmInterpreter:
     @visit.register(BinaryExpression)
     def visit_binary_expression(
         self, node: BinaryExpression, context: Context
-    ):  # pylint: disable=too-many-branches
+    ):  # pylint: disable=too-many-branches, too-many-return-statements
         """
         Registers a binary expression.
 
@@ -876,12 +876,11 @@ class QasmInterpreter:
             return -operand
         if node.op.name == "~":
             return ~operand  # pylint: disable=invalid-unary-operand-type
-        else:
-            # we shouldn't ever get thi error if the parser did its job right
-            raise SyntaxError(  # pragma: no cover
-                f"Invalid operator {node.op.name} encountered in unary expression "
-                f"on line {node.span.start_line}."
-            )  # pragma: no cover
+        # we shouldn't ever get thi error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
+            f"Invalid operator {node.op.name} encountered in unary expression "
+            f"on line {node.span.start_line}."
+        )  # pragma: no cover
 
     @visit.register(IndexExpression)
     def visit_index_expression(
