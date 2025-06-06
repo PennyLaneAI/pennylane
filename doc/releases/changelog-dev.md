@@ -643,6 +643,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a failing integration test in the `tests/templates/test_subroutines/test_qdrift.py` file
+  which multiplied the operators of the decompostion incorrectly to evolve the state.
+  [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
+
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
