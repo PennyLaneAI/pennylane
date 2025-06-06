@@ -28,14 +28,18 @@ from openqasm3.ast import (
     ExpressionStatement,
     FloatLiteral,
     FloatType,
+    FunctionCall,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
     IntegerLiteral,
     IntType,
+    QuantumArgument,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
     UintType,
     UnaryExpression,
 )
@@ -109,7 +113,72 @@ class Context:
             context["aliases"] = {}
         if "wires" not in context:
             context["wires"] = []
+        if "scopes" not in context:
+            context["scopes"] = {"subroutines": dict()}
+        if "outer_wires" not in context:
+            context["outer_wires"] = []
+        if "wire_map" not in context or context["wire_map"] is None:
+            context["wire_map"] = dict()
         self.context = context
+
+    def update(self, update: dict):
+        """
+        Updated the context dict.
+
+        Args:
+            update (dict): The dict containing the updates.
+        """
+        self.context.update(update)
+
+    def init_subroutine_scope(self, node: SubroutineDefinition):
+        """
+        Inits the outer wires list on a sub context.
+        Args:
+            node (SubroutineDefinition): the subroutine definition.
+        """
+
+        # outer scope variables are available to inner scopes... but not vice versa!
+        # names prefixed with outer scope names for specificity
+        self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+            self, f"{self.name}_{node.name.name}"
+        )
+        self.scopes["subroutines"][node.name.name].update(
+            {
+                "sub": True,
+                "body": node.body,
+                "params": [param.name.name for param in node.arguments],
+            }
+        )
+
+    @staticmethod
+    def _init_clause_in_same_namespace(outer_context, name: str):
+        """
+        Initializes a clause that shares the namespace of the outer scope, but contains its own
+        set of gates, operations, expressions, logic, etc.
+        Args:
+            outer_context (Context): the context of the outer scope.
+            name (str): the name of the clause.
+        Returns:
+            dict: the inner context.
+        """
+        # we want wires declared in outer scopes to be available
+        outer_wires = outer_context.wires + outer_context.outer_wires
+        context = {
+            "vars": outer_context.vars,  # same namespace
+            "outer_wires": outer_wires,
+            "wire_map": outer_context.wire_map,
+            "wires": [],
+            "name": name,
+            # we want subroutines declared in outer scopes to be available
+            "outer_scopes": {
+                # no recursion here please! hence the filter
+                "subroutines": {
+                    k: v for k, v in outer_context.scopes["subroutines"].items() if k != name
+                }
+            },
+        }
+
+        return Context(context)
 
     def retrieve_variable(self, name: str):
         """
@@ -271,7 +340,7 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable=unused-argument, no-self-use
+# pylint: disable=unused-argument, no-self-use, too-many-public-methods
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -297,13 +366,25 @@ class QasmInterpreter:
             f"was encountered on line {node.span.start_line}, in {context.name}."
         )
 
+    @visit.register(list)
+    def visit_list(self, node_list: list, context: dict):
+        """
+        Visits a list of QASMNodes.
+
+        Args:
+            node_list (list): the list of QASMNodes to visit.
+            context (Context): the current context.
+        """
+        for sub_node in node_list:
+            self.visit(sub_node, context)
+
     def interpret(self, node: QASMNode, context: dict):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (dict): The initial context populated with the name of the program (the outermost scope).
+            context (Context): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
@@ -321,6 +402,53 @@ class QasmInterpreter:
         except EndProgram:
             pass
         return context
+
+    @visit.register(FunctionCall)
+    def visit_function_call(self, node: FunctionCall, context: Context):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (Context): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        name = _resolve_name(node)  # str or Identifier
+        if (
+            name not in context.scopes["subroutines"]
+            and name not in context.outer_scopes["subroutines"]
+        ):
+            raise NameError(f"Reference to an undeclared subroutine {name} in {context.name}.")
+        if name in context.scopes["subroutines"]:
+            func_context = context.scopes["subroutines"][name]
+        elif name in context.outer_scopes["subroutines"]:
+            func_context = context.outer_scopes["subroutines"][name]
+        else:
+            raise NameError(
+                f"Reference to subroutine {name} not available in calling namespace"
+                f"on line {node.span.start_line}."
+            )
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                func_context.vars[param] = evald_arg
+            else:
+                if not param == evald_arg:
+                    func_context.wire_map[param] = evald_arg
+
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
+
+        # the return value
+        try:
+            return getattr(func_context, "return")
+        except KeyError:
+            return None
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
@@ -409,6 +537,14 @@ class QasmInterpreter:
         """
         context.aliases[node.target.name] = self.visit(node.value, context, aliasing=True)
 
+    @visit.register(ReturnStatement)
+    def visit_return_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a return statement. Points to the var that needs to be set in an outer scope when this
+        subroutine is called.
+        """
+        context.context["return"] = self.visit(node.expression, context)
+
     @visit.register(ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: Context):
         """
@@ -479,6 +615,34 @@ class QasmInterpreter:
         """
         return [self.visit(literal, context) for literal in node.values]
 
+    @visit.register(SubroutineDefinition)
+    def visit_subroutine_definition(self, node: QASMNode, context: Context):
+        """
+        Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
+        its parameters.
+        Args:
+            node (QASMNode): the subroutine node.
+            context (Context): the current context.
+        """
+        context.init_subroutine_scope(node)
+
+        # register the params
+        for param in node.arguments:
+            if not isinstance(param, QuantumArgument):
+                context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = (
+                    Variable(
+                        ty=param.__class__.__name__,
+                        val=None,
+                        size=-1,
+                        line=param.span.start_line,
+                        constant=False,
+                    )
+                )
+            else:
+                context.scopes["subroutines"][_resolve_name(node)].wires.append(
+                    _resolve_name(param)
+                )
+
     @visit.register(QuantumGate)
     def visit_quantum_gate(self, node: QuantumGate, context: Context):
         """
@@ -535,10 +699,17 @@ class QasmInterpreter:
 
         context.require_wires(wires)
 
+        resolved_wires = []
         if context.wire_map is not None:
-            wires = list(map(lambda wire: context.wire_map[wire], wires))
+            for wire in wires:
+                resolving = wire
+                while resolving in context.wire_map:
+                    resolving = context.wire_map[resolving]
+                resolved_wires.append(resolving)
+        else:
+            resolved_wires = wires
 
-        return gate, args, wires
+        return gate, args, resolved_wires
 
     def apply_modifier(self, mod: QuantumGate, previous: Operator, context: Context, wires: list):
         """
@@ -578,6 +749,7 @@ class QasmInterpreter:
     def visit_expression_statement(self, node: ExpressionStatement, context: Context):
         """
         Registers an expression statement.
+
         Args:
             node (ExpressionStatement): The expression statement.
             context (Context): The current context.
@@ -773,8 +945,11 @@ class QasmInterpreter:
         # else we are evaluating an alias
         try:
             var = context.retrieve_variable(node.name)
-            value = var.val if isinstance(var, Variable) else var
-            var.line = node.span.start_line
+            if isinstance(var, Variable):
+                value = var.val
+                var.line = node.span.start_line
+            else:
+                value = var
             return value
         except TypeError as e:
             raise TypeError(
