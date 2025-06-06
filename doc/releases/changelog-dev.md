@@ -8,6 +8,7 @@
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
+  [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
 
   ```python
   import pennylane as qml
@@ -571,6 +572,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
+  [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
+
 * Move `givens_decomposition` and private helpers from `qchem` to `math` module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
@@ -666,6 +670,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
+
+* `qml.PhaseShift` operation is now working correctly with a batch size of 1.
+  [(#7622)](https://github.com/PennyLaneAI/pennylane/pull/7622)
 
 * `qml.metric_tensor` can now be calculated with catalyst.
   [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
