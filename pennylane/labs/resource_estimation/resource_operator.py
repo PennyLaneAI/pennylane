@@ -35,69 +35,67 @@ class ResourceOperator(ABC):
     A :class:`~.pennylane.labs.resource_estimation.ResourceOperator` is uniquely defined by its
     name (the class type) and its resource parameters (:code:`op.resource_params`).
 
-    .. details::
+    **Example**
 
-        **Example**
+    This example shows how to create a custom :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+    class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
+    simplicity.
 
-        This example shows how to create a custom :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
-        class for resource estimation. We use :class:`~.pennylane.QFT` as a well known gate for
-        simplicity.
+    .. code-block:: python
 
-        .. code-block:: python
+        from pennylane.labs import resource_estimation as plre
 
-            from pennylane.labs import resource_estimation as plre
+        class ResourceQFT(plre.ResourceOperator):
 
-            class ResourceQFT(plre.ResourceOperator):
+            resource_keys = {"num_wires"}  # the only parameter that its resources depend upon.
 
-                resource_keys = {"num_wires"}  # the only parameter that its resources depend upon.
+            def __init__(self, num_wires, wires=None):  # wire labels are optional
+                self.num_wires = num_wires
+                super().__init__(wires=wires)
 
-                def __init__(self, num_wires, wires=None):  # wire labels are optional
-                    self.num_wires = num_wires
-                    super().__init__(wires=wires)
+            @property
+            def resource_params(self) -> dict:        # The keys must match the `resource_keys`
+                return {"num_wires": self.num_wires}  # and values obtained from the operator.
 
-                @property
-                def resource_params(self) -> dict:        # The keys must match the `resource_keys`
-                    return {"num_wires": self.num_wires}  # and values obtained from the operator.
+            @classmethod
+            def resource_rep(cls, num_wires):             # Takes the `resource_keys` as input
+                params = {"num_wires": num_wires}         #   and produces a compressed
+                return plre.CompressedResourceOp(cls, params)  # representation of the operator
 
-                @classmethod
-                def resource_rep(cls, num_wires):             # Takes the `resource_keys` as input
-                    params = {"num_wires": num_wires}         #   and produces a compressed
-                    return plre.CompressedResourceOp(cls, params)  # representation of the operator
+            @classmethod
+            def default_resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
 
-                @classmethod
-                def default_resource_decomp(cls, num_wires, **kwargs):  # `resource_keys` are input
+                # Get compressed reps for each gate in the decomposition:
 
-                    # Get compressed reps for each gate in the decomposition:
+                swap = plre.resource_rep(plre.ResourceSWAP)
+                hadamard = plre.resource_rep(plre.ResourceHadamard)
+                ctrl_phase_shift = plre.resource_rep(plre.ResourceControlledPhaseShift)
 
-                    swap = plre.resource_rep(plre.ResourceSWAP)
-                    hadamard = plre.resource_rep(plre.ResourceHadamard)
-                    ctrl_phase_shift = plre.resource_rep(plre.ResourceControlledPhaseShift)
+                # Figure out the associated counts for each type of gate:
 
-                    # Figure out the associated counts for each type of gate:
+                swap_counts = num_wires // 2
+                hadamard_counts = num_wires
+                ctrl_phase_shift_counts = num_wires*(num_wires - 1) // 2
 
-                    swap_counts = num_wires // 2
-                    hadamard_counts = num_wires
-                    ctrl_phase_shift_counts = num_wires*(num_wires - 1) // 2
+                return [                                  # Return the decomposition
+                    plre.GateCount(swap, swap_counts),
+                    plre.GateCount(hadamard, hadamard_counts),
+                    plre.GateCount(ctrl_phase_shift, ctrl_phase_shift_counts),
+                ]
 
-                    return [                                  # Return the decomposition
-                        plre.GateCount(swap, swap_counts),
-                        plre.GateCount(hadamard, hadamard_counts),
-                        plre.GateCount(ctrl_phase_shift, ctrl_phase_shift_counts),
-                    ]
+    Which can be instantiated as a normal operation, but now contains the resources:
 
-        Which can be instantiated as a normal operation, but now contains the resources:
+    .. code-block:: bash
 
-        .. code-block:: bash
-
-            >>> op = ResourceQFT(num_wires=3)
-            >>> print(plre.estimate_resources(op, gate_set={'Hadamard', 'SWAP', 'ControlledPhaseShift'}))
-            --- Resources: ---
-            Total qubits: 3
-            Total gates : 7
-            Qubit breakdown:
-             clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
-            Gate breakdown:
-             {'SWAP': 1, 'Hadamard': 3, 'ControlledPhaseShift': 3}
+        >>> op = ResourceQFT(num_wires=3)
+        >>> print(plre.estimate_resources(op, gate_set={'Hadamard', 'SWAP', 'ControlledPhaseShift'}))
+        --- Resources: ---
+        Total qubits: 3
+        Total gates : 7
+        Qubit breakdown:
+            clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+        Gate breakdown:
+            {'SWAP': 1, 'Hadamard': 3, 'ControlledPhaseShift': 3}
 
     """
 
@@ -267,7 +265,7 @@ class ResourceOperator(ABC):
         return Resources(qubit_manager, gate_types)
 
     def __add__(self, other):
-        if isinstance(other, self.__class__):
+        if isinstance(other, ResourceOperator):
             return (1 * self) + (1 * other)
         if isinstance(other, Resources):
             return (1 * self) + other
@@ -275,7 +273,7 @@ class ResourceOperator(ABC):
         raise TypeError(f"Cannot add resource operator {self} with type {type(other)}.")
 
     def __and__(self, other):
-        if isinstance(other, self.__class__):
+        if isinstance(other, ResourceOperator):
             return (1 * self) & (1 * other)
         if isinstance(other, Resources):
             return (1 * self) & other
@@ -330,13 +328,15 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default resource decomposition. This
     function will be set globally for every instance of the class.
 
-    Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the
-    base resource operator class being overriden.
-
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
+
+    .. note::
+
+        The new decomposition function should have the same signature as the one it replaces.
+        Specificall, the signature should match the :code:`resource_keys` of the base resource
+        operator class being overriden.
 
     **Example**
 
@@ -356,16 +356,14 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
         Total qubits: 1
         Total gates : 3
         Qubit breakdown:
-        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+         clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
         Gate breakdown:
-        {'Z': 1, 'Hadamard': 2}
-        >>>
+         {'Z': 1, 'Hadamard': 2}
         >>> plre.set_decomp(plre.ResourceX, custom_res_decomp)
-        >>>
         >>> print(plre.estimate_resources(plre.ResourceX(), gate_set={"Hadamard", "Z", "S"}))
         --- Resources: ---
         Total qubits: 1
-        Total gates : 3
+        Total gates : 4
         Qubit breakdown:
          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
         Gate breakdown:
@@ -379,13 +377,16 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default controlled-resource decomposition. This
     function will be set globally for every instance of the class.
 
-    Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the
-    base resource operator class being overriden.
-
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
+
+    .. note::
+
+        The new decomposition function should have the same signature as the one it replaces.
+        Specificall, the signature should match the `resource_keys` of the base resource operator
+        class being overriden. Addtionally, the controlled decomposition requires two additional
+        arguments: :code:`ctrl_num_ctrl_wires` and :code:`ctrl_num_ctrl_values`.
 
     **Example**
 
@@ -409,13 +410,11 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
         Gate breakdown:
          {'CNOT': 1}
-        >>>
         >>> plre.set_ctrl_decomp(plre.ResourceX, custom_ctrl_decomp)
-        >>>
         >>> print(plre.estimate_resources(cx, gate_set={"CNOT", "Hadamard", "CZ"}))
         --- Resources: ---
         Total qubits: 2
-        Total gates : 1
+        Total gates : 3
         Qubit breakdown:
          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
         Gate breakdown:
@@ -429,13 +428,15 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default adjoint-resource decomposition. This
     function will be set globally for every instance of the class.
 
-    Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the
-    base resource operator class being overriden.
-
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
+
+    .. note::
+
+        The new decomposition function should have the same signature as the one it replaces.
+        Specificall, the signature should match the `resource_keys` of the base resource operator
+        class being overriden.
 
     **Example**
 
@@ -459,9 +460,7 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
         Gate breakdown:
          {'X': 1}
-        >>>
         >>> plre.set_adj_decomp(plre.ResourceX, custom_adj_decomp)
-        >>>
         >>> print(plre.estimate_resources(adj_x, gate_set={"X", "Hadamard", "S"}))
         --- Resources: ---
         Total qubits: 1
@@ -479,13 +478,18 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default pow-resource decomposition. This
     function will be set globally for every instance of the class.
 
-    Note, the new decomposition function should have the same signature as the one
-    it replaces. Specificall, the signature should match the `resource_keys` of the
-    base resource operator class being overriden.
-
     Args:
         cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
+
+    .. note::
+
+        The new decomposition function should have the same signature as the one it replaces.
+        Specificall, the signature should match the `resource_keys` of the base resource operator
+        class being overriden. Addtionally, the pow-decomposition requires an additional argument:
+        :code:`pow_z`.
+
+    **Example**
 
     .. code-block:: python
 
@@ -512,9 +516,7 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
         Gate breakdown:
          {'X': 1}
-        >>>
         >>> plre.set_pow_decomp(plre.ResourceX, custom_pow_decomp)
-        >>>
         >>> print(plre.estimate_resources(pow_x, gate_set={"X", "Hadamard", "S"}))
         --- Resources: ---
         Total qubits: 1

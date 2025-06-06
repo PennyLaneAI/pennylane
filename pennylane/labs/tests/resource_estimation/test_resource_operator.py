@@ -14,12 +14,21 @@
 """
 Test the base and abstract Resource class
 """
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import List
 
 import pytest
 
-from pennylane.labs.resource_estimation import QubitManager, ResourceOperator, Resources
+from pennylane.labs.resource_estimation import (
+    QubitManager,
+    ResourceOperator,
+    Resources,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+)
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -36,6 +45,8 @@ class DummyCmprsRep:
 
 class DummyOp(ResourceOperator):
     """A dummy class to test ResourceOperator instatiation."""
+
+    resource_keys = {"x"}
 
     def __init__(self, x=None, wires=None):
         self.x = x
@@ -168,34 +179,208 @@ class TestResourceOperator:
         assert dummy_op2.wires == Wires([0, 1, 2])
         assert dummy_op2.num_wires == 3
 
+    @pytest.mark.parametrize("s", [1, 2, 3])
+    def test_mul(self, s):
+        """Test multiply dunder method"""
+        op = ResourceRX(1.23)
+        resources = s * op
+
+        gt = defaultdict(int, {DummyCmprsRep("ResourceRX", 1.23): s})
+        qm = QubitManager(work_wires=0, algo_wires=1)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
+
+    @pytest.mark.parametrize("s", [1, 2, 3])
+    def test_mat_mul(self, s):
+        """Test matrix-multiply dunder method"""
+        op = ResourceCNOT()
+        resources = s @ op
+
+        gt = defaultdict(int, {DummyCmprsRep("ResourceCNOT", None): s})
+        qm = QubitManager(work_wires=0, algo_wires=s * 2)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
+
     def test_add(self):
-        """Test addition dunder method"""
+        """Test addition dunder method between two ResourceOperator classes"""
+        op1 = ResourceRX(1.23)
+        op2 = ResourceCNOT()
+        resources = op1 + op2
+
+        gt = defaultdict(
+            int,
+            {
+                DummyCmprsRep("ResourceRX", 1.23): 1,
+                DummyCmprsRep("ResourceCNOT", None): 1,
+            },
+        )
+        qm = QubitManager(work_wires=0, algo_wires=2)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
+
+    def test_add_resources(self):
+        """Test addition dunder method between a ResourceOperator and a Resources object"""
+        op1 = ResourceRX(1.23)
+        gt2 = defaultdict(int, {DummyCmprsRep("ResourceCNOT", None): 1})
+        qm2 = QubitManager(work_wires=0, algo_wires=2)
+        res2 = Resources(qubit_manager=qm2, gate_types=gt2)
+        resources = op1 + res2
+
+        gt = defaultdict(
+            int,
+            {
+                DummyCmprsRep("ResourceRX", 1.23): 1,
+                DummyCmprsRep("ResourceCNOT", None): 1,
+            },
+        )
+        qm = QubitManager(work_wires=0, algo_wires=2)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
+
+    def test_add_error(self):
+        """Test addition dunder method raises error when adding with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot add resource operator"):
+            op1 = ResourceRX(1.23)
+            _ = op1 + True
 
     def test_and(self):
-        """Test and dunder method"""
+        """Test and dunder method between two ResourceOperator classes"""
+        op1 = ResourceRX(1.23)
+        op2 = ResourceCNOT()
+        resources = op1 & op2
 
-    def test_mul(self):
-        """Test multiply dunder method"""
+        gt = defaultdict(
+            int,
+            {
+                DummyCmprsRep("ResourceRX", 1.23): 1,
+                DummyCmprsRep("ResourceCNOT", None): 1,
+            },
+        )
+        qm = QubitManager(work_wires=0, algo_wires=3)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
 
-    def test_mat_mul(self):
-        """Test mat multiply dunder method"""
+    def test_and_resources(self):
+        """Test and dunder method between a ResourceOperator and a Resources object"""
+        op1 = ResourceRX(1.23)
+        gt2 = defaultdict(int, {DummyCmprsRep("ResourceCNOT", None): 1})
+        qm2 = QubitManager(work_wires=0, algo_wires=2)
+        res2 = Resources(qubit_manager=qm2, gate_types=gt2)
+        resources = op1 & res2
+
+        gt = defaultdict(
+            int,
+            {
+                DummyCmprsRep("ResourceRX", 1.23): 1,
+                DummyCmprsRep("ResourceCNOT", None): 1,
+            },
+        )
+        qm = QubitManager(work_wires=0, algo_wires=3)
+        expected_resources = Resources(qubit_manager=qm, gate_types=gt)
+        assert resources == expected_resources
+
+    def test_and_error(self):
+        """Test and dunder method raises error when adding with unsupported type"""
+        with pytest.raises(TypeError, match="Cannot add resource operator"):
+            op1 = ResourceRX(1.23)
+            _ = op1 & True
 
 
 def test_set_decomp():
     """Test that the set_decomp function works as expected."""
-    assert True
+    op1 = DummyOp(x=5)
+    assert DummyOp.resource_decomp(**op1.resource_params) == [5]
+
+    def custom_res_decomp(x, **kwargs):
+        return [x + 1]
+
+    set_decomp(DummyOp, custom_res_decomp)
+
+    assert DummyOp.resource_decomp(**op1.resource_params) == [6]
+
+    def custom_res_decomp_error(y):  # must match signature of default_resource_decomp
+        return [y + 1]
+
+    with pytest.raises(ValueError):
+        set_decomp(DummyOp, custom_res_decomp_error)
 
 
-def test_set_decomp():
+def test_set_adj_decomp():
     """Test that the set_decomp function works as expected."""
-    assert True
+
+    class DummyAdjOp(DummyOp):
+        """Dummy Adjoint Op class"""
+
+        @classmethod
+        def default_adjoint_resource_decomp(cls, x):
+            return cls.default_resource_decomp(x=x)
+
+    op1 = DummyAdjOp(x=5)
+    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [5]
+
+    def custom_res_decomp(x, **kwargs):
+        return [x + 1]
+
+    set_adj_decomp(DummyAdjOp, custom_res_decomp)
+
+    assert DummyAdjOp.adjoint_resource_decomp(**op1.resource_params) == [6]
+
+    def custom_res_decomp_error(y):  # must match signature of default_adjoint_resource_decomp
+        return [y + 1]
+
+    with pytest.raises(ValueError):
+        set_adj_decomp(DummyAdjOp, custom_res_decomp_error)
 
 
-def test_set_decomp():
+def test_set_ctrl_decomp():
     """Test that the set_decomp function works as expected."""
-    assert True
+
+    class DummyCtrlOp(DummyOp):
+        """Dummy Controlled Op class"""
+
+        @classmethod
+        def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
+            return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
+
+    op1 = DummyCtrlOp(x=5)
+    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [5]
+
+    def custom_res_decomp(ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x, **kwargs):
+        return [x + ctrl_num_ctrl_wires]
+
+    set_ctrl_decomp(DummyCtrlOp, custom_res_decomp)
+
+    assert DummyCtrlOp.controlled_resource_decomp(1, 0, **op1.resource_params) == [6]
+
+    def custom_res_decomp_error(x):  # must match signature of default_controlled_resource_decomp
+        return [x + 1]
+
+    with pytest.raises(ValueError):
+        set_ctrl_decomp(DummyCtrlOp, custom_res_decomp_error)
 
 
-def test_set_decomp():
+def test_set_pow_decomp():
     """Test that the set_decomp function works as expected."""
-    assert True
+
+    class DummyPowOp(DummyOp):
+        """Dummy Pow Op class"""
+
+        @classmethod
+        def default_pow_resource_decomp(cls, pow_z, x):
+            return cls.default_resource_decomp(x=x)
+
+    op1 = DummyPowOp(x=5)
+    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [5]
+
+    def custom_res_decomp(pow_z, x, **kwargs):
+        return [x * pow_z]
+
+    set_pow_decomp(DummyPowOp, custom_res_decomp)
+
+    assert DummyPowOp.pow_resource_decomp(pow_z=3, **op1.resource_params) == [15]
+
+    def custom_res_decomp_error(x):  # must match signature of default_pow_resource_decomp
+        return [x + 1]
+
+    with pytest.raises(ValueError):
+        set_pow_decomp(DummyPowOp, custom_res_decomp_error)
