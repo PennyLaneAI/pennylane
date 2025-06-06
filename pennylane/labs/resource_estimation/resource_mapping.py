@@ -39,5 +39,5 @@ def map_to_resource_op(op: Operation):
         raise TypeError(f"The op {op} is not a valid operation.")
 
     raise NotImplementedError(
-        "Operation doesn't have a resource equivalent and doesn't define" + " a decomposition."
+        "Operation doesn't have a resource equivalent and doesn't define a decomposition."
     )

@@ -476,7 +476,7 @@
 * `pennylane.labs.QubitManager`, `pennylane.labs.AllocWires`, and `pennylane.labs.FreeWires` classes have been added to track and manage auxilliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
 
-* `pennylane.labs.map_to_resource_op` class has been added to map PennyLane Operations to their resource equivalents.
+* `pennylane.labs.map_to_resource_op` function has been added to map PennyLane Operations to their resource equivalents.
   [(#7434)](https://github.com/PennyLaneAI/pennylane/pull/7434)
 
 * Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
