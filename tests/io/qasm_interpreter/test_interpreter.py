@@ -158,6 +158,7 @@ class TestExpressions:
             PauliX("q0") ** 24,
         ]
 
+
 @pytest.mark.external
 class TestVariables:
 
@@ -462,6 +463,7 @@ class TestVariables:
                 ast, context={"wire_map": None, "name": "bad-index"}
             )
             context.aliases["slice"](context)
+
 
 @pytest.mark.external
 class TestGates:
