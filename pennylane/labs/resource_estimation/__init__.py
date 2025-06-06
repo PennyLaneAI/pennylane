@@ -55,22 +55,6 @@ Qubit Management Classes:
     ~FreeWires
 
 """
-
-from .ops import (
-    ResourceGlobalPhase,
-    ResourceHadamard,
-    ResourceIdentity,
-    ResourceS,
-    ResourceT,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceRot,
-    ResourcePhaseShift,
-)
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resource_mapping import map_to_resource_op
 from .resource_operator import (
@@ -86,3 +70,34 @@ from .resource_operator import (
 )
 from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
 from .resources_base import Resources
+
+from .ops import (
+    ResourceHadamard,
+    ResourceS,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceT,
+    ResourcePhaseShift,
+    ResourceGlobalPhase,
+    ResourceRot,
+    ResourceIdentity,
+    ResourceSWAP,
+    ResourceCH,
+    ResourceCY,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCNOT,
+    ResourceToffoli,
+    ResourceMultiControlledX,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCRot,
+    ResourceControlledPhaseShift,
+    ResourceTempAND,
+)

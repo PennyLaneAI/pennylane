@@ -84,7 +84,6 @@ class TestPauliRotation:
     @pytest.mark.parametrize("epsilon", params_errors)
     def test_adjoint_decomposition(self, resource_class, epsilon):
         """Test that the adjoint decompositions are correct."""
-
         expected = [plre.GateCount(resource_class(epsilon).resource_rep(), 1)]
         assert resource_class(epsilon).adjoint_resource_decomp() == expected
 
