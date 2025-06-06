@@ -28,3 +28,5 @@ bool left = true;
 bool right = false;
 int t = left || right;
 int u = left && right;
+
+bool v = lhs ~= rhs;

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable
 
+import numpy as np
 from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
@@ -25,20 +26,20 @@ from openqasm3.ast import (
     EndStatement,
     Expression,
     ExpressionStatement,
-    FunctionCall,
     FloatLiteral,
     FloatType,
+    FunctionCall,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
-    QuantumArgument,
-    ReturnStatement,
-    SubroutineDefinition,
     IntegerLiteral,
     IntType,
+    QuantumArgument,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
     UintType,
     UnaryExpression,
 )
@@ -81,65 +82,6 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = "="
-ARROW = "->"
-PLUS = "+"
-DOUBLE_PLUS = "++"
-MINUS = "-"
-ASTERISK = "*"
-DOUBLE_ASTERISK = "**"
-SLASH = "/"
-PERCENT = "%"
-PIPE = "|"
-DOUBLE_PIPE = "||"
-AMPERSAND = "&"
-DOUBLE_AMPERSAND = "&&"
-CARET = "^"
-AT = "@"
-TILDE = "~"
-EXCLAMATION_POINT = "!"
-EQUALITY_OPERATORS = ["==", "!="]
-COMPOUND_ASSIGNMENT_OPERATORS = [
-    "+=",
-    "-=",
-    "*=",
-    "/=",
-    "&=",
-    "|=",
-    "~=",
-    "^=",
-    "<<=",
-    ">>=",
-    "%=",
-    "**=",
-]
-COMPARISON_OPERATORS = [">", "<", ">=", "<="]
-BIT_SHIFT_OPERATORS = [">>", "<<"]
-
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
-    EQUALITY_OPERATORS
-    + COMPARISON_OPERATORS
-    + BIT_SHIFT_OPERATORS
-    + [
-        PLUS,
-        MINUS,
-        ASTERISK,
-        DOUBLE_ASTERISK,
-        SLASH,
-        PERCENT,
-        PIPE,
-        DOUBLE_PIPE,
-        AMPERSAND,
-        DOUBLE_AMPERSAND,
-        CARET,
-        AT,
-        TILDE,
-        EXCLAMATION_POINT,
-    ]
-)
-
-ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS, DOUBLE_PLUS] + COMPOUND_ASSIGNMENT_OPERATORS
-
 
 @dataclass
 class Variable:
@@ -172,9 +114,7 @@ class Context:
         if "wires" not in context:
             context["wires"] = []
         if "scopes" not in context:
-            context["scopes"] = {
-                "subroutines": dict()
-            }
+            context["scopes"] = {"subroutines": dict()}
         if "outer_wires" not in context:
             context["outer_wires"] = []
         if "wire_map" not in context or context["wire_map"] is None:
@@ -200,15 +140,15 @@ class Context:
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
         self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
-            self, f'{self.name}_{node.name.name}'
+            self, f"{self.name}_{node.name.name}"
         )
-        self.scopes["subroutines"][node.name.name].update({
-            "sub": True,
-            "body": node.body,
-            "params": [
-                param.name.name for param in node.arguments
-            ]
-        })
+        self.scopes["subroutines"][node.name.name].update(
+            {
+                "sub": True,
+                "body": node.body,
+                "params": [param.name.name for param in node.arguments],
+            }
+        )
 
     @staticmethod
     def _init_clause_in_same_namespace(outer_context, name: str):
@@ -235,7 +175,7 @@ class Context:
                 "subroutines": {
                     k: v for k, v in outer_context.scopes["subroutines"].items() if k != name
                 }
-            }
+            },
         }
 
         return Context(context)
@@ -285,42 +225,40 @@ class Context:
                     f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                     f"defined on line {self.vars[name].line}"
                 )
-            if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[0]:
+            match node.op.name:
+                case "=":
                     self.vars[name].val = value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[1]:
+                case "++":
                     self.vars[name].val = self.vars[name].val + 1
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[2]:
+                case "+=":
                     self.vars[name].val += value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[3]:
+                case "-=":
                     self.vars[name].val -= value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[4]:
+                case "*=":
                     self.vars[name].val = self.vars[name].val * value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[5]:
+                case "/=":
                     self.vars[name].val = self.vars[name].val / value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[6]:
+                case "&=":
                     self.vars[name].val = self.vars[name].val & value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
+                case "|=":
                     self.vars[name].val = self.vars[name].val | value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
-                    self.vars[name].val = ~value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
+                case "^=":
                     self.vars[name].val = self.vars[name].val ^ value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
+                case "<<=":
                     self.vars[name].val = self.vars[name].val << value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
+                case ">>=":
                     self.vars[name].val = self.vars[name].val >> value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                case "%=":
                     self.vars[name].val = self.vars[name].val % value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[13]:
+                case "**=":
                     self.vars[name].val = self.vars[name].val ** value
-                self.vars[name].line = node.span.start_line
-            else:
-                # we shouldn't ever get thi error if the parser did its job right
-                raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {node.op.name} encountered in assignment expression "
-                    f"on line {node.span.start_line}."
-                )  # pragma: no cover
+                case _:
+                    # we shouldn't ever get this error if the parser did its job right
+                    raise SyntaxError(  # pragma: no cover
+                        f"Invalid operator {node.op.name} encountered in assignment expression "
+                        f"on line {node.span.start_line}."
+                    )  # pragma: no cover
+            self.vars[name].line = node.span.start_line
         else:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
@@ -402,7 +340,7 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable=unused-argument, no-self-use
+# pylint: disable=unused-argument, no-self-use, too-many-public-methods
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -479,39 +417,38 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if name not in context.scopes["subroutines"] and name not in context.outer_scopes["subroutines"]:
-            raise NameError(
-                f"Reference to an undeclared subroutine {name} in {context.name}."
-            )
+        if (
+            name not in context.scopes["subroutines"]
+            and name not in context.outer_scopes["subroutines"]
+        ):
+            raise NameError(f"Reference to an undeclared subroutine {name} in {context.name}.")
+        if name in context.scopes["subroutines"]:
+            func_context = context.scopes["subroutines"][name]
+        elif name in context.outer_scopes["subroutines"]:
+            func_context = context.outer_scopes["subroutines"][name]
         else:
-            # TODO: use ChainMap to get this from scopes or outer_scopes
-            if name in context.scopes["subroutines"]:
-                func_context = context.scopes["subroutines"][name]
-            elif name in context.outer_scopes["subroutines"]:
-                func_context = context.outer_scopes["subroutines"][name]
+            raise NameError(
+                f"Reference to subroutine {name} not available in calling namespace"
+                f"on line {node.span.start_line}."
+            )
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                func_context.vars[param] = evald_arg
             else:
-                raise NameError(
-                    f"Reference to subroutine {name} not available in calling namespace"
-                    f"on line {node.span.start_line}."
-                )
+                if not param == evald_arg:
+                    func_context.wire_map[param] = evald_arg
 
-            # bind subroutine arguments
-            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
-            for evald_arg, param in list(zip(evald_args, func_context.params)):
-                if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    func_context.vars[param] = evald_arg
-                else:
-                    if not param == evald_arg:
-                        func_context.wire_map[param] = evald_arg
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
 
-            # execute the subroutine
-            self.visit(func_context.body, func_context)
-
-            # the return value
-            try:
-                return getattr(func_context, "return")
-            except KeyError:
-                return None
+        # the return value
+        try:
+            return getattr(func_context, "return")
+        except KeyError:
+            return None
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
@@ -543,10 +480,7 @@ class QasmInterpreter:
             The indexed slice of the variable.
         """
         if not isinstance(var, Iterable):
-            if var.ty == "BitType":
-                var = _get_bit_type_val(var)
-            else:
-                var = var.val
+            var = _get_bit_type_val(var) if var.ty == "BitType" else var.val
         index = self.visit(node.index[0], context)
         if not (isinstance(index, Iterable) and len(index) > 1):
             return var[index]
@@ -695,15 +629,19 @@ class QasmInterpreter:
         # register the params
         for param in node.arguments:
             if not isinstance(param, QuantumArgument):
-                context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = Variable(
-                    ty=param.__class__.__name__,
-                    val=None,
-                    size=-1,
-                    line=param.span.start_line,
-                    constant=False
+                context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = (
+                    Variable(
+                        ty=param.__class__.__name__,
+                        val=None,
+                        size=-1,
+                        line=param.span.start_line,
+                        constant=False,
+                    )
                 )
             else:
-                context.scopes["subroutines"][_resolve_name(node)].wires.append(_resolve_name(param))
+                context.scopes["subroutines"][_resolve_name(node)].wires.append(
+                    _resolve_name(param)
+                )
 
     @visit.register(QuantumGate)
     def visit_quantum_gate(self, node: QuantumGate, context: Context):
@@ -871,52 +809,53 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        ret = None
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            if node.op.name == EQUALITY_OPERATORS[0]:
-                ret = lhs == rhs
-            if node.op.name == EQUALITY_OPERATORS[1]:
-                ret = lhs != rhs
-            if node.op.name == COMPARISON_OPERATORS[0]:
-                ret = lhs > rhs
-            if node.op.name == COMPARISON_OPERATORS[1]:
-                ret = lhs < rhs
-            if node.op.name == COMPARISON_OPERATORS[2]:
-                ret = lhs >= rhs
-            if node.op.name == COMPARISON_OPERATORS[3]:
-                ret = lhs <= rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[0]:
-                ret = lhs >> rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[1]:
-                ret = lhs << rhs
-            if node.op.name == PLUS:
-                ret = lhs + rhs
-            if node.op.name == MINUS:
-                ret = lhs - rhs
-            if node.op.name == ASTERISK:
-                ret = lhs * rhs
-            if node.op.name == DOUBLE_ASTERISK:
-                ret = lhs**rhs
-            if node.op.name == SLASH:
-                ret = lhs / rhs
-            if node.op.name == PERCENT:
-                ret = lhs % rhs
-            if node.op.name == PIPE:
-                ret = lhs | rhs
-            if node.op.name == DOUBLE_PIPE:
-                ret = lhs or rhs
-            if node.op.name == AMPERSAND:
-                ret = lhs & rhs
-            if node.op.name == DOUBLE_AMPERSAND:
-                ret = lhs and rhs
-            if node.op.name == CARET:
-                ret = lhs ^ rhs
-            return ret
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
-            f"Invalid operator {node.op.name} encountered in binary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        match node.op.name:
+            case "==":
+                return lhs == rhs
+            case "!=":
+                return lhs != rhs
+            case "~=":
+                return np.isclose(lhs, rhs)
+            case ">":
+                return lhs > rhs
+            case "<":
+                return lhs < rhs
+            case ">=":
+                return lhs >= rhs
+            case "<=":
+                return lhs <= rhs
+            case ">>":
+                return lhs >> rhs
+            case "<<":
+                return lhs << rhs
+            case "+":
+                return lhs + rhs
+            case "-":
+                return lhs - rhs
+            case "*":
+                return lhs * rhs
+            case "**":
+                return lhs**rhs
+            case "/":
+                return lhs / rhs
+            case "%":
+                return lhs % rhs
+            case "|":
+                return lhs | rhs
+            case "||":
+                return lhs or rhs
+            case "&":
+                return lhs & rhs
+            case "&&":
+                return lhs and rhs
+            case "^":
+                return lhs ^ rhs
+            case _:
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -930,19 +869,19 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            operand = preprocess_operands(self.visit(node.expression, context))
-            if node.op.name == EXCLAMATION_POINT:
-                return not operand
-            if node.op.name == MINUS:
-                return -operand
-            if node.op.name == TILDE:
-                return ~operand  # pylint: disable=invalid-unary-operand-type
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
-            f"Invalid operator {node.op.name} encountered in unary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        operand = preprocess_operands(self.visit(node.expression, context))
+        if node.op.name == "!":
+            return not operand
+        if node.op.name == "-":
+            return -operand
+        if node.op.name == "~":
+            return ~operand  # pylint: disable=invalid-unary-operand-type
+        else:
+            # we shouldn't ever get thi error if the parser did its job right
+            raise SyntaxError(  # pragma: no cover
+                f"Invalid operator {node.op.name} encountered in unary expression "
+                f"on line {node.span.start_line}."
+            )  # pragma: no cover
 
     @visit.register(IndexExpression)
     def visit_index_expression(

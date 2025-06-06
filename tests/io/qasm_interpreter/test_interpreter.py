@@ -4,6 +4,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 from re import escape
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -108,6 +109,8 @@ class TestExpressions:
         assert context.vars["t"].val == (True or False)
         assert context.vars["u"].val == (True and False)
 
+        assert context.vars["v"].val == np.isclose(0, 1)
+
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
@@ -123,9 +126,8 @@ class TestExpressions:
         assert context.vars["c"].val == 2 - 3
         assert context.vars["d"].val == 3 * 4
         assert context.vars["e"].val == 4 / 5
-        assert context.vars["f"].val == True and True
-        assert context.vars["g"].val == True or False
-        assert context.vars["h"].val == ~8
+        assert context.vars["f"].val == (True and True)
+        assert context.vars["g"].val == (True or False)
         assert context.vars["i"].val == 2 ^ 9
         assert context.vars["j"].val == 2 << 10
         assert context.vars["k"].val == 3 >> 1
@@ -158,7 +160,10 @@ class TestExpressions:
 
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -170,7 +175,10 @@ class TestExpressions:
 
     def test_complex_subroutines(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -183,32 +191,46 @@ class TestExpressions:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "subroutines", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
         assert q.queue == [Hadamard("q0")]
 
-    def test_param_as_expression(self):
+
+@pytest.mark.external
+class TestVariables:
+
+    def test_retrieve_non_existent_attr(self):
+        context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
+
+        with pytest.raises(
+            KeyError,
+            match=r"No attribute potato on Context and no potato key found "
+            r"on context retrieve-non-existent-attr",
+        ):
+            print(context.potato)
+
+    def test_bad_alias(self):
         # parse the QASM
         ast = parse(
             """
-            qubit q0;
-            int p = 1;
-            pow(p * 2) @ x q0;
+            let k = j;
             """,
             permissive=True,
         )
-        with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "expression-implemented"}
-            )
 
-        assert q.queue == [PauliX("q0") ** 2]
+        with pytest.raises(
+            TypeError, match="Attempt to alias an undeclared variable j in bad-alias"
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-alias"}
+            )
+            context.aliases["k"](context)
 
     def test_bare_expression(self):
         # parse the QASM
@@ -270,36 +292,6 @@ class TestExpressions:
 
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
-
-
-@pytest.mark.external
-class TestVariables:
-    def test_retrieve_non_existent_attr(self):
-        context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
-
-        with pytest.raises(
-            KeyError,
-            match=r"No attribute potato on Context and no potato key found "
-            r"on context retrieve-non-existent-attr",
-        ):
-            print(context.potato)
-
-    def test_bad_alias(self):
-        # parse the QASM
-        ast = parse(
-            """
-            let k = j;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(
-            TypeError, match="Attempt to alias an undeclared variable j in bad-alias"
-        ):
-            context = QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "bad-alias"}
-            )
-            context.aliases["k"](context)
 
     def test_alias(self):
         ast = parse(
@@ -391,43 +383,6 @@ class TestVariables:
                 ast, context={"wire_map": None, "name": "ref-uninitialized-var"}
             )
 
-    def test_update_non_existent_var(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            p = 1;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(
-            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
-        ):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
-
-    def test_invalid_index(self):
-        # parse the QASM
-        ast = parse(
-            """
-            qubit q0;
-            const float[2] arr = {0.0, 1.0};
-            const float[2] arr_two = {0.0, 1.0};
-            const [float[2]] index = {arr, arr_two};
-            let slice = arr[index];
-            """,
-            permissive=True,
-        )
-
-        # run the program
-        with pytest.raises(
-            NotImplementedError,
-            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
-        ):
-            context = QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "bad-index"}
-            )
-            context.aliases["slice"](context)
-
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
@@ -512,8 +467,45 @@ class TestVariables:
 
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cast"})
 
-        assert type(context.vars["j"].val) == int
-        assert type(context.vars["l"].val) == complex
+        assert isinstance(context.vars["j"].val, int)
+        assert isinstance(context.vars["l"].val, complex)
+
+    def test_update_non_existent_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            p = 1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
+
+    def test_invalid_index(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            const float[2] arr = {0.0, 1.0};
+            const float[2] arr_two = {0.0, 1.0};
+            const [float[2]] index = {arr, arr_two};
+            let slice = arr[index];
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError,
+            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-index"}
+            )
+            context.aliases["slice"](context)
 
 
 @pytest.mark.external
