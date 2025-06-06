@@ -13,25 +13,3 @@ into PennyLane circuits and operators.
     :no-inherited-members:
     :skip: available_styles
     :skip: use_style
-.. Functions
-.. ^^^^^^^^^
-
-.. .. autosummary::
-..     :toctree: api
-
-..     ~bloq_registers
-..     ~from_pyquil
-..     ~from_qasm
-..     ~from_qiskit
-..     ~from_qiskit_noise
-..     ~from_qiskit_op
-..     ~from_quil
-..     ~from_quil_file
-
-.. Classes
-.. ^^^^^^^
-
-.. .. autosummary::
-..     :toctree: api
-
-..     ~FromBloq
