@@ -489,6 +489,7 @@
   for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
+  [(#7629)](https://github.com/PennyLaneAI/pennylane/pull/7629)
   
 * The `pennylane.labs.vibrational` module is upgraded to use features from the `concurrency` module
   to perform multiprocess and multithreaded execution of workloads. 
@@ -670,6 +671,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
+
+* `qml.StatePrep` does not validate the norm of statevectors any more, default to `False` during initialization.
+  [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
 
 * `qml.PhaseShift` operation is now working correctly with a batch size of 1.
   [(#7622)](https://github.com/PennyLaneAI/pennylane/pull/7622)
