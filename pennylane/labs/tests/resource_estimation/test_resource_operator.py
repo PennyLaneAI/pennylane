@@ -167,7 +167,7 @@ class DummyCmprsRep:
 
 
 class DummyOp(ResourceOperator):
-    """A dummy class to test ResourceOperator instatiation."""
+    """A dummy class to test ResourceOperator instantiation."""
 
     resource_keys = {"x"}
 
@@ -192,7 +192,7 @@ class DummyOp(ResourceOperator):
 
 
 class DummyOp_no_resource_rep(ResourceOperator):
-    """A dummy class to test ResourceOperator instatiation."""
+    """A dummy class to test ResourceOperator instantiation."""
 
     def __init__(self, x, wires=None):
         self.x = x
@@ -208,7 +208,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
 
 
 class DummyOp_no_resource_params(ResourceOperator):
-    """A dummy class to test ResourceOperator instatiation."""
+    """A dummy class to test ResourceOperator instantiation."""
 
     def __init__(self, x, wires=None):
         self.x = x
