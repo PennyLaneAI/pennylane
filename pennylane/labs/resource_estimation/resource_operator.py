@@ -85,7 +85,7 @@ class ResourceOperator(ABC):
 
     Which can be instantiated as a normal operation, but now contains the resources:
 
-    .. code-block:: bash
+    .. code-block:: pycon
 
         >>> op = ResourceQFT(num_wires=3)
         >>> print(plre.estimate_resources(op, gate_set={'Hadamard', 'SWAP', 'ControlledPhaseShift'}))
@@ -178,7 +178,7 @@ class ResourceOperator(ABC):
             ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are
-                        controlled when in the :math:`|0\rangle` state
+                controlled when in the :math:`|0\rangle` state
         """
         raise ResourcesNotDefined
 
@@ -192,7 +192,7 @@ class ResourceOperator(ABC):
             ctrl_num_ctrl_wires (int): the number of qubits the
                 operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are
-                        controlled when in the :math:`|0\rangle` state
+                controlled when in the :math:`|0\rangle` state
         """
         return cls.default_controlled_resource_decomp(
             ctrl_num_ctrl_wires, ctrl_num_ctrl_values, *args, **kwargs
@@ -308,7 +308,7 @@ def _validate_signature(func: Callable, expected_args: set):
 
     if extra_args := actual_args - expected_args:
         raise ValueError(
-            f"The function provided specifies addtional arguments ({extra_args}) from"
+            f"The function provided specifies additional arguments ({extra_args}) from"
             + f" the expected arguments ({expected_args}). Please update the function signature or"
             + " modify the base class' `resource_keys` argument."
         )
@@ -329,13 +329,13 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     function will be set globally for every instance of the class.
 
     Args:
-        cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
+        cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
 
     .. note::
 
         The new decomposition function should have the same signature as the one it replaces.
-        Specificall, the signature should match the :code:`resource_keys` of the base resource
+        Specifically, the signature should match the :code:`resource_keys` of the base resource
         operator class being overriden.
 
     **Example**
@@ -378,13 +378,13 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     function will be set globally for every instance of the class.
 
     Args:
-        cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
+        cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
 
     .. note::
 
         The new decomposition function should have the same signature as the one it replaces.
-        Specificall, the signature should match the `resource_keys` of the base resource operator
+        Specifically, the signature should match the `resource_keys` of the base resource operator
         class being overriden. Addtionally, the controlled decomposition requires two additional
         arguments: :code:`ctrl_num_ctrl_wires` and :code:`ctrl_num_ctrl_values`.
 
@@ -399,7 +399,7 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
             cz = plre.resource_rep(plre.ResourceCZ)
             return [plre.GateCount(h, 2), plre.GateCount(cz, 1)]
 
-    .. code-block:: bash
+    .. code-block:: pycon
 
         >>> cx = plre.ResourceControlled(plre.ResourceX(), 1, 0)
         >>> print(plre.estimate_resources(cx, gate_set={"CNOT", "Hadamard", "CZ"}))
@@ -429,13 +429,13 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     function will be set globally for every instance of the class.
 
     Args:
-        cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
+        cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
 
     .. note::
 
         The new decomposition function should have the same signature as the one it replaces.
-        Specificall, the signature should match the `resource_keys` of the base resource operator
+        Specifically, the signature should match the `resource_keys` of the base resource operator
         class being overriden.
 
     **Example**
@@ -449,7 +449,7 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
             s = plre.resource_rep(plre.ResourceS)
             return [plre.GateCount(h, 2), plre.GateCount(s, 2)]
 
-    .. code-block:: bash
+    .. code-block:: pycon
 
         >>> adj_x = plre.ResourceAdjoint(plre.ResourceX())
         >>> print(plre.estimate_resources(adj_x, gate_set={"X", "Hadamard", "S"}))
@@ -479,13 +479,13 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     function will be set globally for every instance of the class.
 
     Args:
-        cls (Type[ResourceOperator]): the operator class whos decompositions is being overriden.
+        cls (Type[ResourceOperator]): the operator class whose decomposition is being overriden.
         decomp_func (Callable): the new resource decomposition function to be set as default.
 
     .. note::
 
         The new decomposition function should have the same signature as the one it replaces.
-        Specificall, the signature should match the `resource_keys` of the base resource operator
+        Specifically, the signature should match the `resource_keys` of the base resource operator
         class being overriden. Addtionally, the pow-decomposition requires an additional argument:
         :code:`pow_z`.
 
@@ -505,7 +505,7 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
             return [plre.GateCount(h, 2), plre.GateCount(s, 2)]
 
-    .. code-block:: bash
+    .. code-block:: pycon
 
         >>> pow_x = plre.ResourcePow(plre.ResourceX(), 3)
         >>> print(plre.estimate_resources(pow_x, gate_set={"X", "Hadamard", "S"}))
