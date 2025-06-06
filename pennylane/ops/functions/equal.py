@@ -305,12 +305,6 @@ def _equal_pauli_errors(
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
-    if op1.arithmetic_depth > 0:
-        # Other dispatches cover cases of operations with arithmetic depth > 0.
-        # If any new operations are added with arithmetic depth > 0, a new dispatch
-        # should be created for them.
-        return f"op1 and op2 have arithmetic depth > 0. Got arithmetic depth {op1.arithmetic_depth}"
-
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
 

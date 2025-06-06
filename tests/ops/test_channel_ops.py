@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops import channel
 from pennylane.wires import WireError
-
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
@@ -910,34 +909,6 @@ class TestPauliError:
         jac_fn = jax.jacobian(fn, holomorphic=True)
         jac = jac_fn(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
-
-    ARGS_ONE = [
-        ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-    ]
-    ARGS_TWO = [
-        ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
-        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
-        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
-        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
-    ]
-    EQS = [True, True, False, False, False]
-
-    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
-    def test_equality(self, args1, args2, eqs):
-        e1 = qml.PauliError(*args1)
-        e2 = qml.PauliError(*args2)
-
-        eq = qml.equal(e1, e2)
-        if eqs:
-            assert eq
-        else:
-            assert not eq
-
 
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""

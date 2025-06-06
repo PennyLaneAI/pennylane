@@ -1222,6 +1222,43 @@ equal_pauli_words = [
 ]
 
 
+class TestPauliErrorEqual:
+    """Tests for qml.equal with PauliErrors."""
+
+    ARGS_ONE = [
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1), "one"],
+    ]
+    ARGS_TWO = [
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
+        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
+        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
+        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
+    ]
+    EQS = [True, True, False, False, False]
+
+    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
+    def test_equality(self, args1, args2, eqs):
+        e1 = qml.PauliError(*args1)
+        e2 = qml.PauliError(*args2)
+
+        eq = qml.equal(e1, e2)
+        if eqs:
+            assert eq
+        else:
+            assert not eq
+
+    def test_equal_with_different_arithmetic_depth(self):
+        """Test equal method with two operators with different arithmetic depth."""
+        op1 = qml.PauliError("XY", 0.1, (0, 1))
+        op2 = DepthIncreaseOperator(op1)
+
+        assert qml.equal(op1, op2) is False
+
 # pylint: disable=too-few-public-methods
 class TestPauliWordsEqual:
     """Tests for qml.equal with PauliSentences."""
