@@ -78,64 +78,6 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = "="
-ARROW = "->"
-PLUS = "+"
-DOUBLE_PLUS = "++"
-MINUS = "-"
-ASTERISK = "*"
-DOUBLE_ASTERISK = "**"
-SLASH = "/"
-PERCENT = "%"
-PIPE = "|"
-DOUBLE_PIPE = "||"
-AMPERSAND = "&"
-DOUBLE_AMPERSAND = "&&"
-CARET = "^"
-AT = "@"
-TILDE = "~"
-EXCLAMATION_POINT = "!"
-EQUALITY_OPERATORS = ["==", "!=", "~="]
-COMPOUND_ASSIGNMENT_OPERATORS = [
-    "+=",
-    "-=",
-    "*=",
-    "/=",
-    "&=",
-    "|=",
-    "^=",
-    "<<=",
-    ">>=",
-    "%=",
-    "**=",
-]
-COMPARISON_OPERATORS = [">", "<", ">=", "<="]
-BIT_SHIFT_OPERATORS = [">>", "<<"]
-
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
-    EQUALITY_OPERATORS
-    + COMPARISON_OPERATORS
-    + BIT_SHIFT_OPERATORS
-    + [
-        PLUS,
-        MINUS,
-        ASTERISK,
-        DOUBLE_ASTERISK,
-        SLASH,
-        PERCENT,
-        PIPE,
-        DOUBLE_PIPE,
-        AMPERSAND,
-        DOUBLE_AMPERSAND,
-        CARET,
-        AT,
-        TILDE,
-        EXCLAMATION_POINT,
-    ]
-)
-
-ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS, DOUBLE_PLUS] + COMPOUND_ASSIGNMENT_OPERATORS
-
 
 @dataclass
 class Variable:
@@ -214,40 +156,40 @@ class Context:
                     f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                     f"defined on line {self.vars[name].line}"
                 )
-            if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                if node.op.name == "=":
+            match node.op.name:
+                case "=":
                     self.vars[name].val = value
-                if node.op.name == "++":
+                case "++":
                     self.vars[name].val = self.vars[name].val + 1
-                if node.op.name == "+=":
+                case "+=":
                     self.vars[name].val += value
-                if node.op.name == "-=":
+                case "-=":
                     self.vars[name].val -= value
-                if node.op.name == "*=":
+                case "*=":
                     self.vars[name].val = self.vars[name].val * value
-                if node.op.name == "/=":
+                case "/=":
                     self.vars[name].val = self.vars[name].val / value
-                if node.op.name == "&=":
+                case "&=":
                     self.vars[name].val = self.vars[name].val & value
-                if node.op.name == "|=":
+                case "|=":
                     self.vars[name].val = self.vars[name].val | value
-                if node.op.name == "^=":
+                case "^=":
                     self.vars[name].val = self.vars[name].val ^ value
-                if node.op.name == "<<=":
+                case "<<=":
                     self.vars[name].val = self.vars[name].val << value
-                if node.op.name == ">>=":
+                case ">>=":
                     self.vars[name].val = self.vars[name].val >> value
-                if node.op.name == "%=":
+                case "%=":
                     self.vars[name].val = self.vars[name].val % value
-                if node.op.name == "**=":
+                case "**=":
                     self.vars[name].val = self.vars[name].val ** value
-                self.vars[name].line = node.span.start_line
-            else:
-                # we shouldn't ever get thi error if the parser did its job right
-                raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {node.op.name} encountered in assignment expression "
-                    f"on line {node.span.start_line}."
-                )  # pragma: no cover
+                case _:
+                    # we shouldn't ever get thi error if the parser did its job right
+                    raise SyntaxError(  # pragma: no cover
+                        f"Invalid operator {node.op.name} encountered in assignment expression "
+                        f"on line {node.span.start_line}."
+                    )  # pragma: no cover
+            self.vars[name].line = node.span.start_line
         else:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
@@ -695,55 +637,53 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        ret = None
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            match node.op.name:
-                case "==":
-                    ret = lhs == rhs
-                case "!=":
-                    ret = lhs != rhs
-                case "~=":
-                    ret = np.isclose(lhs, rhs)
-                case ">":
-                    ret = lhs > rhs
-                case "<":
-                    ret = lhs < rhs
-                case ">=":
-                    ret = lhs >= rhs
-                case "<=":
-                    ret = lhs <= rhs
-                case ">>":
-                    ret = lhs >> rhs
-                case "<<":
-                    ret = lhs << rhs
-                case "+":
-                    ret = lhs + rhs
-                case "-":
-                    ret = lhs - rhs
-                case "*":
-                    ret = lhs * rhs
-                case "**":
-                    ret = lhs**rhs
-                case "/":
-                    ret = lhs / rhs
-                case "%":
-                    ret = lhs % rhs
-                case "|":
-                    ret = lhs | rhs
-                case "||":
-                    ret = lhs or rhs
-                case "&":
-                    ret = lhs & rhs
-                case "&&":
-                    ret = lhs and rhs
-                case "^":
-                    ret = lhs ^ rhs
-            return ret
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
-            f"Invalid operator {node.op.name} encountered in binary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        match node.op.name:
+            case "==":
+                return lhs == rhs
+            case "!=":
+                return lhs != rhs
+            case "~=":
+                return np.isclose(lhs, rhs)
+            case ">":
+                return lhs > rhs
+            case "<":
+                return lhs < rhs
+            case ">=":
+                return lhs >= rhs
+            case "<=":
+                return lhs <= rhs
+            case ">>":
+                return lhs >> rhs
+            case "<<":
+                return lhs << rhs
+            case "+":
+                return lhs + rhs
+            case "-":
+                return lhs - rhs
+            case "*":
+                return lhs * rhs
+            case "**":
+                return lhs**rhs
+            case "/":
+                return lhs / rhs
+            case "%":
+                return lhs % rhs
+            case "|":
+                return lhs | rhs
+            case "||":
+                return lhs or rhs
+            case "&":
+                return lhs & rhs
+            case "&&":
+                return lhs and rhs
+            case "^":
+                return lhs ^ rhs
+            case _:
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -757,19 +697,19 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            operand = preprocess_operands(self.visit(node.expression, context))
-            if node.op.name == "!":
-                return not operand
-            if node.op.name == "-":
-                return -operand
-            if node.op.name == "~":
-                return ~operand  # pylint: disable=invalid-unary-operand-type
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
-            f"Invalid operator {node.op.name} encountered in unary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        operand = preprocess_operands(self.visit(node.expression, context))
+        if node.op.name == "!":
+            return not operand
+        if node.op.name == "-":
+            return -operand
+        if node.op.name == "~":
+            return ~operand  # pylint: disable=invalid-unary-operand-type
+        else:
+            # we shouldn't ever get thi error if the parser did its job right
+            raise SyntaxError(  # pragma: no cover
+                f"Invalid operator {node.op.name} encountered in unary expression "
+                f"on line {node.span.start_line}."
+            )  # pragma: no cover
 
     @visit.register(IndexExpression)
     def visit_index_expression(
