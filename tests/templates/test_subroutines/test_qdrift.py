@@ -32,7 +32,7 @@ test_hamiltonians = (
     ),
     (
         [1.23, -0.45j],
-        [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliZ(0), qml.PauliX(1))],
+        [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliZ(0), qml.PauliX(1))],  #  Here we chose such hamiltonian to have non-commutability
     ),  # op arith
     (
         [1, -0.5, 0.5],
