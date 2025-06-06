@@ -17,6 +17,7 @@
 # pylint: disable=wrong-import-position
 
 import io
+
 import pytest
 
 # pytestmark = pytest.mark.external
@@ -24,11 +25,12 @@ import pytest
 xdsl = pytest.importorskip("xdsl")
 
 # For lit tests of xdsl passes, we use https://github.com/AntonLydike/filecheck/,
-# a Python re-implementation of FileCheck 
+# a Python re-implementation of FileCheck
 filecheck = pytest.importorskip("filecheck")
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import MeasurementsFromSamplesPass
+
 
 def test_transform():
     program = """
@@ -43,17 +45,23 @@ def test_transform():
     module = xdsl.parser.Parser(ctx, program).parse_module()
     pipeline = xdsl.passes.PipelinePass((MeasurementsFromSamplesPass(),))
     pipeline.apply(ctx, module)
+    from filecheck.finput import FInput
     from filecheck.matcher import Matcher
     from filecheck.options import parse_argv_options
     from filecheck.parser import Parser, pattern_for_opts
-    from filecheck.finput import FInput
+
     opts = parse_argv_options(["filecheck", __file__])
-    matcher = Matcher(opts, FInput("no-name", str(module)), Parser(opts, io.StringIO(program),*pattern_for_opts(opts)))
+    matcher = Matcher(
+        opts,
+        FInput("no-name", str(module)),
+        Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
+    )
     assert matcher.run() == 0
 
 
 class TestMeasurementsFromSamplesExecution:
     """TODO"""
+
     def test_measurements_from_samples_basic(self):
         """TODO"""
         from catalyst.passes import xdsl_plugin
@@ -63,18 +71,18 @@ class TestMeasurementsFromSamplesExecution:
         dev = qml.device("lightning.qubit", wires=2, shots=10)
 
         @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
-        # @qml.qjit(keep_intermediate=True, pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         @MeasurementsFromSamplesPass
         @qml.qnode(dev)
-        def deleteme():
+        def circuit():
             qml.H(0)
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-            # return qml.sample(wires=0), qml.sample(wires=1)
 
         print("\n")
-        print(deleteme())
+        print(circuit())
         print("\n")
-        print(deleteme.mlir)
+        print(circuit.mlir)
+
+        # TODO: Add asserts!
 
         qml.capture.disable()
 

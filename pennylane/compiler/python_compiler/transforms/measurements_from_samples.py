@@ -19,53 +19,13 @@ from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
-
-from xdsl import context, passes, pattern_rewriter, ir
-from xdsl.dialects import builtin, func, tensor
+from xdsl import context, passes, pattern_rewriter
+from xdsl.dialects import arith, builtin, func
 from xdsl.rewriter import InsertPoint
 
 from pennylane.compiler.python_compiler import quantum_dialect as quantum
 from pennylane.compiler.python_compiler.jax_utils import xdsl_module
-
-# ----- Stuff that should be upstreamed ---------------------------------------------------------- #
-
-import pennylane as qml
-from pennylane.devices.preprocess import null_postprocessing
-
-from .apply_transform_sequence import register_pass
-
-
-def xdsl_transform(_klass):
-    """Register the xdsl transform into the plxpr to catalyst map.
-
-    NOTE: This function will eventually live somewhere in the pennylane.compiler.python_compiler
-    module, we have to add it here locally until it's added upstream.
-    """
-
-    # avoid dependency on catalyst
-    import catalyst  # pylint: disable=import-outside-toplevel
-
-    def identity_transform(tape):
-        """Stub, we only need the name to be unique"""
-        return tape, null_postprocessing
-
-    identity_transform.__name__ = "xdsl_transform" + _klass.__name__
-    transform = qml.transform(identity_transform)
-
-    # Map from plxpr to register transform
-    catalyst.from_plxpr.register_transform(transform, _klass.name, False)
-
-    # Register this pass as available in the apply-transform-sequence
-    # interpreter
-    def get_pass_instance():
-        return _klass
-
-    # breakpoint()
-    register_pass(_klass.name, get_pass_instance)
-    return transform
-
-
-# ----- (END) Stuff that should be upstreamed ---------------------------------------------------- #
+from pennylane.compiler.python_compiler.transforms.utils import xdsl_transform
 
 
 @xdsl_module
@@ -112,14 +72,6 @@ class MeasurementsFromSamplesPattern(pattern_rewriter.RewritePattern):
                 f"PauliZ operations are permitted"
             )
 
-    # @classmethod
-    # def _get_shots_from_device_op(cls, op: quantum.DeviceInitOp):
-    #     """TODO"""
-    #     assert isinstance(op, quantum.DeviceInitOp), (
-    #         f"Expected op to be a quantum.DeviceInitOp, but got {type(op)}"
-    #     )
-    #     return op.shots
-
     # pylint: disable=arguments-differ,no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
@@ -131,12 +83,17 @@ class MeasurementsFromSamplesPattern(pattern_rewriter.RewritePattern):
         measure_ops = supported_measure_ops + unsupported_measure_ops
 
         shots = None
-        have_inserted_postproc = False
+
+        print("[DEBUG]: Starting walk")
 
         for op in funcOp.body.walk():
+            print(f"[DEBUG]: Visiting op {op.name}")
+
             if shots is None and isinstance(op, quantum.DeviceInitOp):
-                # shots = self._get_shots_from_device_op(op)
                 shots = op.shots
+                static_shots_val = (
+                    shots.owner.operands[0].owner.properties["value"].get_int_values()[0]
+                )
 
             if not isinstance(op, measure_ops):
                 continue
@@ -148,9 +105,10 @@ class MeasurementsFromSamplesPattern(pattern_rewriter.RewritePattern):
                 )
 
             if isinstance(op, quantum.SampleOp):
-                return
+                continue
 
             if isinstance(op, quantum.ExpvalOp):
+                print("[DEBUG]: Found expval op")
                 observable_op = op.operands[0].owner
                 self._validate_observable_op(observable_op)
 
@@ -168,19 +126,27 @@ class MeasurementsFromSamplesPattern(pattern_rewriter.RewritePattern):
 
                 # TODO: this assumes MP acts on 1 wire, what if there are more?
                 sample_op = quantum.SampleOp(
-                    operands=[compbasis_op.results[0], shots, None],
-                    result_types=[builtin.TensorType(builtin.Float64Type(), [-1, 1])],
+                    operands=[compbasis_op.results[0], None, None],
+                    result_types=[builtin.TensorType(builtin.Float64Type(), [static_shots_val, 1])],
                 )
                 rewriter.insert_op(sample_op, insertion_point=InsertPoint.after(compbasis_op))
 
-                # TODO: We can't delete these yet because there are other ops that use their output
-                # rewriter.erase_matched_op()
-                # rewriter.erase_op(observable_op)
-
                 # Insert the post-processing function
+                postprocessing_func_name = f"expval_from_samples.tensor.{static_shots_val}x1xf64"
+                block_ops = funcOp.parent.ops
+                have_inserted_postproc = False
+                for block_op in block_ops:
+                    if (
+                        isinstance(block_op, func.FuncOp)
+                        and block_op.sym_name.data == postprocessing_func_name
+                    ):
+                        print(f"[DEBUG]: funcOp '{postprocessing_func_name}' already defined")
+                        postprocessing_func = block_op
+                        have_inserted_postproc = True
+
                 if not have_inserted_postproc:
                     postprocessing_module = postprocessing_expval(
-                        jax.core.ShapedArray([10, 1], int), 1  # FIXME
+                        jax.core.ShapedArray([static_shots_val, 1], float), 1  # FIXME
                     )
 
                     for _func in postprocessing_module.body.walk():
@@ -188,21 +154,28 @@ class MeasurementsFromSamplesPattern(pattern_rewriter.RewritePattern):
                         break
                     postprocessing_func = postprocessing_func.clone()
 
-                    postprocessing_func.sym_name = builtin.StringAttr(data="expval_from_samples")
+                    postprocessing_func.sym_name = builtin.StringAttr(data=postprocessing_func_name)
 
                     funcOp.parent.insert_op_after(postprocessing_func, funcOp)
 
-                    have_inserted_postproc = True
-
                 # Insert the call to the post-processing function
+                value_zero = builtin.IntegerAttr(0, value_type=64)
+                value_zero_op = arith.ConstantOp(
+                    builtin.DenseIntOrFPElementsAttr.create_dense_int(
+                        type=builtin.TensorType(value_zero.type, shape=()), data=value_zero
+                    )
+                )
+                rewriter.insert_op(value_zero_op, insertion_point=InsertPoint.after(sample_op))
                 postprocessing_func_call_op = func.CallOp(
                     callee=builtin.FlatSymbolRefAttr(postprocessing_func.sym_name),
-                    arguments=[sample_op.results[0], in_qubit],  # FIXME
-                    return_types=[builtin.Float64Type()],
+                    arguments=[sample_op.results[0], value_zero_op],
+                    return_types=[builtin.TensorType(builtin.Float64Type(), shape=())],
                 )
-                rewriter.insert_op(
-                    postprocessing_func_call_op, insertion_point=InsertPoint.after(sample_op)
-                )
+
+                op_to_replace = list(op.results[0].uses)[0].operation
+                rewriter.replace_op(op_to_replace, postprocessing_func_call_op)
+                rewriter.erase_op(op)
+                rewriter.erase_op(observable_op)
 
             elif isinstance(op, quantum.VarianceOp):
                 pass
