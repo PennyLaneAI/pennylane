@@ -31,6 +31,7 @@ Resource Estimation Base Classes:
 
     ~Resources
     ~ResourceOperator
+    ~CompressedResourceOp
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,16 +43,6 @@ Resource Estimation Functions:
     ~set_adj_decomp
     ~set_ctrl_decomp
     ~set_pow_decomp
-
-Resource Estimation Base Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Resources
-    ~ResourceOperator
-    ~CompressedResourceOp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
