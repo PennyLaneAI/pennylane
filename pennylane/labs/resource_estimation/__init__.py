@@ -58,6 +58,7 @@ Qubit Management Classes:
 
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
+from .resource_mapping import map_to_resource_op
 from .resource_operator import (
     CompressedResourceOp,
     ResourceOperator,
