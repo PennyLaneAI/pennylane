@@ -105,9 +105,6 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.Superposition):
-        # pylint: disable=import-outside-toplevel
-        from qualtran.bloqs.basic_gates import CNOT
-
         gate_types = {}
         wires = op.wires
         coeffs = op.coeffs
@@ -132,7 +129,7 @@ def _get_op_call_graph():
         )
         gate_types[_map_to_bloq()(msp)] = 1
 
-        cnot = CNOT()
+        cnot = qt_gates.CNOT()
         num_zero_ctrls = size_basis_state // 2
         control_values = [1] * num_zero_ctrls + [0] * (size_basis_state - num_zero_ctrls)
 
@@ -233,19 +230,13 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qops.BasisState):
-        # pylint: disable=import-outside-toplevel
-        from qualtran.bloqs.basic_gates import XGate
-
         gate_types = {}
-        gate_types[XGate()] = sum(op.parameters[0])
+        gate_types[qt_gates.XGate()] = sum(op.parameters[0])
 
         return gate_types
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QROM):
-        # pylint: disable=import-outside-toplevel
-        from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitCSwap, XGate
-
         gate_types = defaultdict(int)
         bitstrings = op.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
@@ -260,11 +251,11 @@ def _get_op_call_graph():
         clean = op.hyperparameters["clean"]
 
         if num_control_wires == 0:
-            gate_types[XGate()] = num_bit_flips
+            gate_types[qt_gates.XGate()] = num_bit_flips
             return gate_types
 
-        cnot = CNOT()
-        hadamard = Hadamard()
+        cnot = qt_gates.CNOT()
+        hadamard = qt_gates.Hadamard()
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
         # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
 
@@ -305,27 +296,25 @@ def _get_op_call_graph():
             2 * num_total_ctrl_possibilities  # two applications targetting the aux qubit
         )
         num_zero_controls = (2 * num_total_ctrl_possibilities * num_select_wires) // 2
-        gate_types[XGate()] = select_clean_prefactor * (
+        gate_types[qt_gates.XGate()] = select_clean_prefactor * (
             num_zero_controls * 2  # conjugate 0 controls on the multi-qubit x gates from above
         )
         # SWAP cost:
-        ctrl_swap = TwoBitCSwap()
+        ctrl_swap = qt_gates.TwoBitCSwap()
         gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
 
         return gate_types
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QFT):
-        # pylint: disable=import-outside-toplevel
-        from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 
         gate_types = {}
         num_wires = len(op.wires)
-        gate_types[Hadamard()] = num_wires
+        gate_types[qt_gates.Hadamard()] = num_wires
         gate_types[_map_to_bloq()(qops.ControlledPhaseShift(1, [0, 1]))] = (
             num_wires * (num_wires - 1) // 2
         )
-        gate_types[TwoBitSwap()] = num_wires // 2
+        gate_types[qt_gates.TwoBitSwap()] = num_wires // 2
         return gate_types
 
     @_op_call_graph.register
@@ -346,8 +335,6 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.ModExp):
-        # pylint: disable=import-outside-toplevel
-        from qualtran.bloqs.basic_gates import CNOT
 
         mod = op.hyperparameters["mod"]
         num_work_wires = len(op.hyperparameters["work_wires"])
@@ -372,7 +359,7 @@ def _get_op_call_graph():
 
         sequence_dag = sequence.adjoint()
 
-        cnot = CNOT()
+        cnot = qt_gates.CNOT()
 
         mult_resources = {}
         mult_resources[qft] = 2
