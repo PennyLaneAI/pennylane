@@ -35,6 +35,7 @@ from pennylane import (
     Toffoli,
     queuing,
 )
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -168,6 +169,16 @@ class TestExpressions:
 
         assert q.queue == [PauliX("q0")]
 
+    def test_processing_measurement(self):
+        # parse the QASM
+        ast = parse(open("measurements.qasm", mode="r").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(ast, context={"name": "measurements", "wire_map": None})
+
+        assert context["vars"]["c"] == []
+
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(
@@ -209,7 +220,8 @@ class TestExpressions:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
-        assert q.queue == [Hadamard("q0")]
+        assert q.queue[0] == Hadamard("q0")
+        assert isinstance(q.queue[1], MidMeasureMP)
 
 
 @pytest.mark.external

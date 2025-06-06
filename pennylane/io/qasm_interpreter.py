@@ -40,6 +40,8 @@ from openqasm3.ast import (
     IntType,
     QuantumArgument,
     QuantumGate,
+    QuantumMeasurementStatement,
+    QuantumReset,
     QubitDeclaration,
     RangeDefinition,
     ReturnStatement,
@@ -48,11 +50,13 @@ from openqasm3.ast import (
     UintType,
     UnaryExpression,
     WhileLoop,
+    Expression,
 )
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
+from pennylane.measurements import measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -754,6 +758,33 @@ class QasmInterpreter:
         elif loop_params is None:
             print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
+    @visit.register(QuantumMeasurementStatement)
+    def visit_quantum_measurement_statement(self, node: QASMNode, context: Context):
+        """
+        Registers a quantum measurement.
+
+        Args:
+            node (QASMNode): the quantum measurement node.
+            context (Context): the current context.
+        """
+        meas = partial(measure, self.visit(node.measure.qubit, context))
+        name = _resolve_name(node.target)  # str or Identifier
+        res = meas()
+        # TODO: since a MeasurementValue is involved, create its processing function which captures the classical logic
+        context.update_var(res, name, node)
+        return res
+
+    @visit.register(QuantumReset)
+    def visit_quantum_reset(self, node: QASMNode, context: dict):
+        """
+        Registers a reset of a quantum gate.
+
+        Args:
+            node (QASMNode): the quantum reset node.
+            context (dict): the current context.
+        """
+        measure(self.visit(node.qubits, context), reset=True)
+
     @visit.register(FunctionCall)
     def visit_function_call(self, node: FunctionCall, context: Context):
         """
@@ -1229,7 +1260,7 @@ class QasmInterpreter:
         if node.op.name == "~":
             return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
+        raise SyntaxError(  # pragma: no covers
             f"Invalid operator {node.op.name} encountered in unary expression "
             f"on line {node.span.start_line}."
         )  # pragma: no cover
