@@ -16,24 +16,23 @@ Test the base and abstract Resource class
 """
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Hashable
+from typing import Hashable, List
 
-import pytest
 import numpy as np
-import pennylane as qml
+import pytest
 
+import pennylane as qml
 from pennylane.labs.resource_estimation import (
-    Resources,
+    CompressedResourceOp,
     QubitManager,
     ResourceOperator,
-    CompressedResourceOp,
+    Resources,
     set_adj_decomp,
     set_ctrl_decomp,
     set_decomp,
     set_pow_decomp,
 )
 from pennylane.labs.resource_estimation.resource_operator import _make_hashable
-
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
