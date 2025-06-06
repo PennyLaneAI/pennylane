@@ -670,6 +670,84 @@ class TestToBloq:
                 },
             ),
             (
+                qml.QROMStatePreparation(
+                    np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    (
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "000", "001", "001"],
+                            control_wires=[4, 5],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "000", "001", "001"],
+                                control_wires=[4, 5],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                    (qml.ctrl(
+                        qml.GlobalPhase((2*np.pi), wires=[1]),
+                        control=0,
+                    ), True): 3
+                },
+            ),
+            (
                 qml.ModExp(
                     x_wires=[0, 1],
                     output_wires=[2, 3, 4],
