@@ -617,9 +617,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
     if qualtran:
 
         class ToBloq(qt.Bloq):  # pylint: disable=redefined-outer-name
-            r"""
-            Adapter class to convert PennyLane operators into Qualtran Bloqs
-            """
+            r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
 
             def __init__(self, op, map_ops=False, **kwargs):
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
