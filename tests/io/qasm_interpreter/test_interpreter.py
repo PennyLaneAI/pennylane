@@ -126,8 +126,8 @@ class TestExpressions:
         assert context.vars["c"].val == 2 - 3
         assert context.vars["d"].val == 3 * 4
         assert context.vars["e"].val == 4 / 5
-        assert context.vars["f"].val == True and True
-        assert context.vars["g"].val == True or False
+        assert context.vars["f"].val == (True and True)
+        assert context.vars["g"].val == (True or False)
         assert context.vars["i"].val == 2 ^ 9
         assert context.vars["j"].val == 2 << 10
         assert context.vars["k"].val == 3 >> 1
@@ -423,8 +423,8 @@ class TestVariables:
 
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cast"})
 
-        assert type(context.vars["j"].val) == int
-        assert type(context.vars["l"].val) == complex
+        assert isinstance(context.vars["j"].val, int)
+        assert isinstance(context.vars["l"].val, complex)
 
     def test_update_non_existent_var(self):
         # parse the QASM program
