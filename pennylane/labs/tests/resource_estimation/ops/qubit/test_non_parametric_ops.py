@@ -61,9 +61,6 @@ class TestHadamard:
         op = re.ResourceHadamard(0)
         assert op.pow_resource_decomp(z) == expected_res
 
-        # op2 = re.ResourcePow(op, z)
-        # assert op2.resources(**op2.resource_params) == expected_res
-
 
 class TestS:
     """Tests for ResourceS"""
@@ -102,13 +99,6 @@ class TestS:
             re.GateCount(re.ResourceS.resource_rep(), 1),
         ]
         assert re.ResourceS.adjoint_resource_decomp() == expected
-
-        # s = re.ResourceS(0)
-        # s_dag = re.ResourceAdjoint(s)
-
-        # r1 = re.get_resources(s) * 3
-        # r2 = re.get_resources(s_dag)
-        # assert r1 == r2
 
     pow_data = (
         (1, [re.GateCount(re.ResourceS.resource_rep(), 1)]),
@@ -243,13 +233,6 @@ class TestX:
         """Test that the adjoint resources are correct."""
         expected = [re.GateCount(re.ResourceX.resource_rep(), 1)]
         assert re.ResourceX.adjoint_resource_decomp() == expected
-
-        # x = re.ResourceX(0)
-        # x_dag = re.ResourceAdjoint(x)
-
-        # r1 = re.get_resources(x)
-        # r2 = re.get_resources(x_dag)
-        # assert r1 == r2
 
     pow_data = (
         (1, [re.GateCount(re.ResourceX.resource_rep(), 1)]),
