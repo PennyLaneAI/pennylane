@@ -35,6 +35,8 @@ from pennylane.operation import (
 )
 from pennylane.registers import registers
 from pennylane.wires import WiresLike
+from pennylane.workflow import construct_tape
+from pennylane.workflow.qnode import QNode
 
 try:
     import qualtran as qt
@@ -46,19 +48,23 @@ except (ModuleNotFoundError, ImportError) as import_error:
 if TYPE_CHECKING:
     from qualtran.cirq_interop._bloq_to_cirq import _QReg
 
+if qualtran:
+    from qualtran.bloqs import basic_gates as qt_gates
+
 
 @lru_cache
 def _get_op_call_graph():
+    # TODO: Integrate with resource operators and the new decomposition pipelines
+    """Return call graphs for given PennyLane Operator"""
+
     @singledispatch
     def _op_call_graph(op):
         return None
 
     @_op_call_graph.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
-        from qualtran.bloqs.basic_gates import Hadamard  # pylint: disable=import-outside-toplevel
-
         return {
-            Hadamard(): len(op.estimation_wires),
+            qt_gates.Hadamard(): len(op.estimation_wires),
             _map_to_bloq()(op.hyperparameters["unitary"]).controlled(): (
                 2 ** len(op.estimation_wires)
             )
@@ -72,6 +78,10 @@ def _get_op_call_graph():
 # pylint: disable=import-outside-toplevel
 @lru_cache
 def _map_to_bloq():
+    """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
+    mapped to its Qualtran equivalent even if ``map_ops`` is set to True. Other operators are
+    given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
+
     @singledispatch
     def _to_qt_bloq(op, **kwargs):
         return ToBloq(op, **kwargs)
@@ -106,93 +116,63 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.GlobalPhase, **kwargs):
-        from qualtran.bloqs.basic_gates import GlobalPhase
-
-        return GlobalPhase(exponent=op.data[0] / np.pi)
+        return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
     @_to_qt_bloq.register
     def _(op: qops.Hadamard, **kwargs):
-        from qualtran.bloqs.basic_gates import Hadamard
-
-        return Hadamard()
+        return qt_gates.Hadamard()
 
     @_to_qt_bloq.register
     def _(op: qops.Identity, **kwargs):
-        from qualtran.bloqs.basic_gates import Identity
-
-        return Identity()
+        return qt_gates.Identity()
 
     @_to_qt_bloq.register
     def _(op: qops.RX, **kwargs):
-        from qualtran.bloqs.basic_gates import Rx
-
-        return Rx(angle=float(op.data[0]))
+        return qt_gates.Rx(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.RY, **kwargs):
-        from qualtran.bloqs.basic_gates import Ry
-
-        return Ry(angle=float(op.data[0]))
+        return qt_gates.Ry(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.RZ, **kwargs):
-        from qualtran.bloqs.basic_gates import Rz
-
-        return Rz(angle=float(op.data[0]))
+        return qt_gates.Rz(angle=float(op.data[0]))
 
     @_to_qt_bloq.register
     def _(op: qops.S, **kwargs):
-        from qualtran.bloqs.basic_gates import SGate
-
-        return SGate()
+        return qt_gates.SGate()
 
     @_to_qt_bloq.register
     def _(op: qops.SWAP, **kwargs):
-        from qualtran.bloqs.basic_gates import TwoBitSwap
-
-        return TwoBitSwap()
+        return qt_gates.TwoBitSwap()
 
     @_to_qt_bloq.register
     def _(op: qops.CSWAP, **kwargs):
-        from qualtran.bloqs.basic_gates import TwoBitCSwap
-
-        return TwoBitCSwap()
+        return qt_gates.TwoBitCSwap()
 
     @_to_qt_bloq.register
     def _(op: qops.T, **kwargs):
-        from qualtran.bloqs.basic_gates import TGate
-
-        return TGate()
+        return qt_gates.TGate()
 
     @_to_qt_bloq.register
     def _(op: qops.X, **kwargs):
-        from qualtran.bloqs.basic_gates import XGate
-
-        return XGate()
+        return qt_gates.XGate()
 
     @_to_qt_bloq.register
     def _(op: qops.Y, **kwargs):
-        from qualtran.bloqs.basic_gates import YGate
-
-        return YGate()
+        return qt_gates.YGate()
 
     @_to_qt_bloq.register
     def _(op: qops.CY, **kwargs):
-        from qualtran.bloqs.basic_gates import CYGate
-
-        return CYGate()
+        return qt_gates.CYGate()
 
     @_to_qt_bloq.register
     def _(op: qops.Z, **kwargs):
-        from qualtran.bloqs.basic_gates import ZGate
-
-        return ZGate()
+        return qt_gates.ZGate()
 
     @_to_qt_bloq.register
     def _(op: qops.CZ, **kwargs):
-        from qualtran.bloqs.basic_gates import CZ
-
-        return CZ()
+        return qt_gates.CZ()
 
     @_to_qt_bloq.register
     def _(op: qops.Adjoint, **kwargs):
@@ -200,10 +180,8 @@ def _map_to_bloq():
 
     @_to_qt_bloq.register
     def _(op: qops.Controlled, **kwargs):
-        from qualtran.bloqs.basic_gates import Toffoli
-
         if isinstance(op, qops.Toffoli):
-            return Toffoli()
+            return qt_gates.Toffoli()
 
         return _map_to_bloq()(op.base, **kwargs).controlled()
 
@@ -614,7 +592,7 @@ def _split_qubits(registers, qubits):  # pylint: disable=redefined-outer-name
     return qubit_regs
 
 
-def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
+def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
@@ -631,9 +609,8 @@ def _ensure_in_reg_exists(  # pylint: disable=too-many-branches
             _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
         ] = bb.allocate(n_alloc)
 
-    if in_reg in qreg_to_qvar:
-        # This is the easy case when no split / joins are needed.
-        return
+    # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
+    assert in_reg in qreg_to_qvar
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
@@ -653,13 +630,9 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
     if qualtran:
 
         class ToBloq(qt.Bloq):  # pylint: disable=redefined-outer-name
-            r"""
-            Adapter class to convert PennyLane operators into Qualtran Bloqs
-            """
+            r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
 
             def __init__(self, op, map_ops=False, **kwargs):
-                from pennylane.workflow.qnode import QNode
-
                 if not isinstance(op, Operator) and not isinstance(op, QNode):
                     raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 
@@ -671,9 +644,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             @cached_property
             def signature(self) -> "qt.Signature":
                 """Compute and return Qualtran signature for given op or QNode."""
-                from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
-
                 if isinstance(self.op, QNode):
                     self.op.name = "QNode"
                     num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
@@ -684,9 +654,6 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
             def decompose_bloq(self):  # pylint:disable=too-many-branches
                 """Decompose the bloq using the op's decomposition or the tape of the QNode"""
                 from qualtran.cirq_interop._cirq_to_bloq import _QReg
-
-                from pennylane.workflow import construct_tape
-                from pennylane.workflow.qnode import QNode
 
                 try:
                     if isinstance(self.op, QNode):
