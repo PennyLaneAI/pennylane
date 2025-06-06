@@ -347,7 +347,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         + _add_k_units(ops[k0:k01], new_controls, new_work_wires, k1)
     )
 
-    if l == 1: # first variant
+    if l == 1:  # first variant
 
         # Single operation left to apply: Only the third quarter will be needed, and it will not need
         # TemporaryAnd gates at all
@@ -363,15 +363,14 @@ def _add_first_k_units(ops, controls, work_wires, k):
         new_controls_sec_half = controls[c_bar + 2 :]
         new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
 
-        if c_bar > 0: # second variant
+        if c_bar > 0:  # second variant
             # Closing TemporaryAnd for first half, opening TemporaryAnd for second half
             middle_part = [
                 adjoint(TemporaryAnd)(and_wires, control_values=(0, 1)),
                 TemporaryAnd(and_wires_sec_half, control_values=(1, 0)),
             ]
-        else: # third variant
+        else:  # third variant
             middle_part = [CNOT(and_wires[::2]), CNOT(and_wires[1:])]
-
 
     second_half = _add_k_units(
         ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
@@ -483,11 +482,6 @@ def _unary_select(ops, control, work_wires, **_):
     assert len(control) >= min_num_controls
     control = control[-min_num_controls:]
     if len(work_wires) < len(control) - 1:
-        if len(control) > min_num_controls:
-            warnings.warn(
-                "It seems that you could be using some of the control wires as work wires.",
-                UserWarning,
-            )
         raise ValueError(
             f"Can't use this decomposition with less than {len(control) - 1} work wires for {len(control)} controls."
         )
