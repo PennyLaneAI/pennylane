@@ -559,12 +559,17 @@ class PauliError(Channel):
                [0.70710678, 0.        ]])
     """
 
-    num_params = 2
+    num_params = 1
+
+    resource_keys = {
+        "operators",
+    }
+
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, operators, p, wires: WiresLike, id=None):
         wires = Wires(wires)
-        super().__init__(operators, p, wires=wires, id=id)
+        super().__init__(p, wires=wires, id=id)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z"}):
@@ -579,7 +584,6 @@ class PauliError(Channel):
             raise ValueError("The number of operators must match the number of wires")
 
         self.hyperparameters["operators"] = operators
-        self.data = self.data[1:]
 
         nq = len(self.wires)
 
@@ -589,7 +593,7 @@ class PauliError(Channel):
             )
 
     @staticmethod
-    def compute_kraus_matrices(operators, p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
         """Kraus matrices representing the PauliError channel.
 
         Args:
