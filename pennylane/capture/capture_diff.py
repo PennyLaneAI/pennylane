@@ -55,9 +55,15 @@ def _get_grad_prim():
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        return tuple(jaxpr.invars[i].aval for i in argnum)
+        return tuple(args[i + n_consts] for i in argnum)
 
     return grad_prim
+
+
+def _shape(shape, dtype):
+    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
+        return jax.core.DShapedArray(shape, dtype)
+    return jax.core.ShapedArray(shape, dtype)
 
 
 @lru_cache
@@ -89,10 +95,10 @@ def _get_jacobian_prim():
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
     def _(*args, argnum, jaxpr, n_consts, method, h):
-        in_avals = [jaxpr.invars[i].aval for i in argnum]
-        out_shapes = (outvar.aval.shape for outvar in jaxpr.outvars)
+        in_avals = tuple(args[i + n_consts] for i in argnum)
+        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
-            jax.core.ShapedArray(out_shape + in_aval.shape, in_aval.dtype)
+            _shape(out_shape + in_aval.shape, in_aval.dtype)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
