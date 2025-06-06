@@ -1004,6 +1004,7 @@ class DefaultQubit(Device):
             key=key,
             execution_config=execution_config,
         )
+
         return interpreter.eval(jaxpr, consts, *args)
 
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):

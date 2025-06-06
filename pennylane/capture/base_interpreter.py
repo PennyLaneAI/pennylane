@@ -458,34 +458,32 @@ def _(self, *dyn_shape, dimension, dtype, shape, sharding):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-
-    return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
-    )
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
+    consts = jaxpr.consts
+    j = jaxpr.jaxpr
+    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    return adjoint_transform_prim.bind(*consts, *invals, jaxpr=jaxpr, lazy=lazy)
 
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires):
     """Interpret a ctrl transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    args = invals[:-n_control]
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
+    consts = jaxpr.consts
+    j = jaxpr.jaxpr
+    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
     return ctrl_transform_prim.bind(
-        *jaxpr.consts,
-        *args,
-        *invals[-n_control:],
+        *consts,
+        *invals,
         n_control=n_control,
-        jaxpr=jaxpr.jaxpr,
+        jaxpr=jaxpr,
         control_values=control_values,
         work_wires=work_wires,
-        n_consts=len(jaxpr.consts),
     )
 
 
@@ -587,22 +585,21 @@ def handle_while_loop(
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
+def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr):
     """Handle a qnode primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
-
+    qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
+    consts = qfunc_jaxpr.consts
+    j = qfunc_jaxpr.jaxpr
+    new_qfunc_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     return qnode_prim.bind(
-        *new_qfunc_jaxpr.consts,
-        *args,
+        *consts,
+        *invals,
         shots=shots,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
-        qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
-        n_consts=len(new_qfunc_jaxpr.consts),
+        qfunc_jaxpr=new_qfunc_jaxpr,
     )
 
 

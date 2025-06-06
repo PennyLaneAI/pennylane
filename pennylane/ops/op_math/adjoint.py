@@ -198,13 +198,11 @@ def _get_adjoint_qfunc_prim():
     adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy, n_consts):
+    def _(*args, jaxpr, lazy):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-        consts = args[:n_consts]
-        args = args[n_consts:]
         collector = CollectOpsandMeas()
-        collector.eval(jaxpr, consts, *args)
+        collector.eval(jaxpr, [], *args)
         for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
@@ -227,14 +225,16 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        consts = jaxpr.consts
+        j = jaxpr.jaxpr
+        jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *jaxpr.consts,
+            *consts,
             *abstract_shapes,
             *flat_args,
-            jaxpr=jaxpr.jaxpr,
+            jaxpr=jaxpr,
             lazy=lazy,
-            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc

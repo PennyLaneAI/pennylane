@@ -331,9 +331,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
     # pylint: disable=too-many-arguments
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
-        consts = invals[:n_consts]
-        args = invals[n_consts:-n_control]
+    def _(self, *invals, n_control, jaxpr, control_values, work_wires):
+        args = invals[:-n_control]
         control_wires = invals[-n_control:]
 
         unroller = ControlTransformInterpreter(
@@ -341,7 +340,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         )
 
         def wrapper(*inner_args):
-            return unroller.eval(jaxpr, consts, *inner_args)
+            return unroller.eval(jaxpr, [], *inner_args)
 
         jaxpr = jax.make_jaxpr(wrapper)(*args)
         return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
