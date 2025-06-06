@@ -31,7 +31,7 @@ from pennylane.wires import Wires
 
 
 class CompressedResourceOp:  # pylint: disable=too-few-public-methods
-    r"""Instantiate the light weight class corresponding to the operator type and parameters.
+    r"""Instantiate a light weight class corresponding to the operator type and parameters.
 
     Args:
         op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
