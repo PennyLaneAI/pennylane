@@ -212,7 +212,7 @@ def create_controlled_op(op, control, control_values=None, work_wires=None, work
     # Flatten nested controlled operations to a multi-controlled operation for better
     # decomposition algorithms. This includes special cases like CRX, CRot, etc.
     if isinstance(op, Controlled):
-        work_wires = work_wires or ()
+        work_wires = Wires(() if work_wires is None else work_wires)
         work_wire_type = resolve_work_wire_type(
             op.work_wires, op.work_wire_type, work_wires, work_wire_type
         )
@@ -397,7 +397,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
             work_wire_type=work_wire_type,
         )
 
-    work_wires = work_wires or []
+    work_wires = Wires([] if work_wires is None else work_wires)
     work_wire_type = resolve_work_wire_type(
         op.work_wires, op.work_wire_type, work_wires, work_wire_type
     )

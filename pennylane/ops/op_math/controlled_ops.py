@@ -1447,8 +1447,8 @@ class MultiControlledX(ControlledOp):
         work_wires: WiresLike = (),
         work_wire_type: Literal["clean", "dirty"] = "dirty",
     ):
-        wires = wires or ()
-        work_wires = work_wires or ()
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
         self._validate_control_values(control_values)
 
         if len(wires) == 0:
