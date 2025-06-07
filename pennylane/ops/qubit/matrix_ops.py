@@ -639,6 +639,7 @@ def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
     }
 
 
+@register_resources(_diagonal_qu_resource)
 def _diagonal_qu_decomp(D, wires):
     angles = qml.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
@@ -649,6 +650,9 @@ def _diagonal_qu_decomp(D, wires):
     else:
         qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
         qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
 
 
 def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
