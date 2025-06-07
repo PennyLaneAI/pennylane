@@ -26,6 +26,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.wires import Wires
@@ -872,6 +873,21 @@ class TestDiagonalQubitUnitary:
         assert decomp2[0].data[0].dtype == c_dtype
         assert decomp1[1].data[0].dtype == r_dtype
         assert decomp2[1].data[0].dtype == r_dtype
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.DiagonalQubitUnitary(np.array([1j, -1]), wires=[0]),
+            qml.DiagonalQubitUnitary(np.exp(1j * np.array([1, -1, 0.5, 1])), wires=[0, 1]),
+            qml.DiagonalQubitUnitary(
+                np.exp(1j * np.array([1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3])), wires=[0, 1, 2]
+            ),
+        ],
+    )
+    def test_decomposition_rule_new(self, op):
+        """Tests the decomposition rule compatible with the graph-based interface."""
+        for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
+            _test_decomposition_rule(op, rule)
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
