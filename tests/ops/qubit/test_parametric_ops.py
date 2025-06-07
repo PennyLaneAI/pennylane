@@ -25,6 +25,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
@@ -696,6 +697,19 @@ class TestDecompositions:
         exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    def test_controlled_phase_shift_decomp_new(self, work_wire_type):
+        """tests the new controlled phase shift decomposition"""
+
+        op = qml.ctrl(
+            qml.PhaseShift(0.123, wires=0),
+            control=[1, 2, 3],
+            work_wires=[4, 5],
+            work_wire_type=work_wire_type,
+        )
+        for rule in qml.list_decomps("C(PhaseShift)"):
+            _test_decomposition_rule(op, rule)
 
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
