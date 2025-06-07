@@ -4,6 +4,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 from re import escape
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -52,6 +53,113 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestExpressions:
+
+    def test_different_unary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "unary-exprs"}
+        )
+
+        # unary expressions
+        assert context.vars["a"].val == -1
+        assert context.vars["b"].val == ~2
+        assert context.vars["c"].val == (not False)
+
+    def test_different_binary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "binary-exprs"}
+        )
+
+        # comparison expressions
+        assert context.vars["a"].val == (0 == 1)
+        assert context.vars["b"].val == (0 != 1)
+        assert context.vars["c"].val == (0 > 1)
+        assert context.vars["d"].val == (0 < 1)
+        assert context.vars["e"].val == (0 >= 1)
+        assert context.vars["f"].val == (0 <= 1)
+
+        # bitwise operations
+        assert context.vars["g"].val == 2 >> 1
+        assert context.vars["h"].val == 2 << 1
+        assert context.vars["i"].val == 2 | 1
+        assert context.vars["j"].val == 2 ^ 1
+        assert context.vars["k"].val == 2 & 1
+
+        # arithmetic operators
+        assert context.vars["m"].val == 3 + 2
+        assert context.vars["o"].val == 3 - 2
+        assert context.vars["p"].val == 3 * 2
+        assert context.vars["q"].val == 3**2
+        assert context.vars["n"].val == 3 / 2
+        assert context.vars["s"].val == 3 % 2
+
+        # boolean operators
+        assert context.vars["t"].val == (True or False)
+        assert context.vars["u"].val == (True and False)
+
+        assert context.vars["v"].val == np.isclose(0, 1)
+
+    def test_different_assignments(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "assignment-exprs"}
+        )
+        assert context.vars["a"].val == 1
+        assert context.vars["b"].val == 1 + 2
+        assert context.vars["c"].val == 2 - 3
+        assert context.vars["d"].val == 3 * 4
+        assert context.vars["e"].val == 4 / 5
+        assert context.vars["f"].val == (True and True)
+        assert context.vars["g"].val == (True or False)
+        assert context.vars["i"].val == 2 ^ 9
+        assert context.vars["j"].val == 2 << 10
+        assert context.vars["k"].val == 3 >> 1
+        assert context.vars["l"].val == 5 % 2
+        assert context.vars["m"].val == 6**13
+
+    def test_nested_expr(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            int p = 3 + 3;
+            pow(p * 2) @ x q0;
+            pow(p * (2 + 1)) @ x q0;
+            pow((8.0 - 0.0) * (2.0 + 1)) @ x q0;
+            """,
+            permissive=True,
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "expression-implemented"}
+            )
+
+        assert q.queue == [
+            PauliX("q0") ** 12,
+            PauliX("q0") ** 18,
+            PauliX("q0") ** 24,
+        ]
+
+
+@pytest.mark.external
 class TestVariables:
 
     def test_retrieve_non_existent_attr(self):
@@ -81,15 +189,76 @@ class TestVariables:
             )
             context.aliases["k"](context)
 
+    def test_bare_expression(self):
+        # parse the QASM
+        ast = parse(
+            """
+            bit[8] a = "1001";
+            a << 1;
+            let b = a;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "expression-visit"}
+        )
+
+        # exprs are not in-place modifiers without an assignment
+        assert context.aliases["b"](context).val == 9
+
+    def test_ref_undeclared_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable theta in undeclared-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "undeclared-var"})
+
+    def test_ref_uninitialized_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
+    def test_ref_uninitialized_alias_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            let alpha = theta;
+            const float phi = alpha;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
     def test_alias(self):
         ast = parse(
             """
             bit[6] register = "011011";
             let alias = register[0:5];
-            bool z = alias[0];
+            bool z = alias[0] + "1";
             bit single = "0";
             let single_alias = single;
-            bool x = single_alias;
+            bool x = single_alias + "0";
             """,
             permissive=True,
         )
@@ -97,8 +266,8 @@ class TestVariables:
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "aliases"})
         assert context.aliases["alias"](context) == "01101"
-        assert int(context.vars["z"].val) == 0
-        assert int(context.vars["x"].val) == 0
+        assert context.vars["z"].val == 1
+        assert context.vars["x"].val == 0
 
     def test_variables(self):
         # parse the QASM
@@ -119,7 +288,7 @@ class TestVariables:
 
         # dynamic vars
         assert context.vars["l"].val
-        assert context.vars["m"].val == 3.3
+        assert context.vars["m"].val == (3.14159 / 2) * 3.3
         assert context.vars["a"].val == 3.3333333
         assert context.aliases["alias"](context) == "01101"
 
@@ -171,86 +340,6 @@ class TestVariables:
                 ast, context={"wire_map": None, "name": "ref-uninitialized-var"}
             )
 
-    def test_update_non_existent_var(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            p = 1;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(
-            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
-        ):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
-
-    def test_ref_undeclared_var_in_expr(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            const float phi = theta;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(
-            TypeError, match="Attempt to use undeclared variable theta in undeclared-var"
-        ):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "undeclared-var"})
-
-    def test_ref_uninitialized_alias_in_expr(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            qubit q0;
-            float theta;
-            let alpha = theta;
-            const float phi = alpha;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
-
-    def test_ref_uninitialized_var_in_expr(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            qubit q0;
-            float theta;
-            const float phi = theta;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
-
-    def test_invalid_index(self):
-        # parse the QASM
-        ast = parse(
-            """
-            qubit q0;
-            const float[2] arr = {0.0, 1.0};
-            const float[2] arr_two = {0.0, 1.0};
-            const [float[2]] index = {arr, arr_two};
-            let slice = arr[index];
-            """,
-            permissive=True,
-        )
-
-        # run the program
-        with pytest.raises(
-            NotImplementedError,
-            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
-        ):
-            context = QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "bad-index"}
-            )
-            context.aliases["slice"](context)
-
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
@@ -263,7 +352,9 @@ class TestVariables:
         assert context.vars["i"].val == 4
         assert context.vars["j"].val == 4
         assert context.vars["c"].val == 0
-        assert context.vars["comp"].val == 3.5j
+        assert context.vars["k"].val == 4
+        assert context.vars["neg"].val == -4
+        assert context.vars["comp"].val == 3.5j + 2.5
         assert context.aliases["arr_alias"](context) == [0.0, 1.0]
         assert context.aliases["literal_alias"](context) == 0.0
 
@@ -299,6 +390,79 @@ class TestVariables:
 
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
+
+    def test_cannot_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0 + 2.0im;
+            const uint l = uint(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match=escape(
+                "Unable to cast complex to UintType: int() argument must be a string, "
+                "a bytes-like object or a real number, not 'complex'"
+            ),
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
+
+    def test_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float i = 3.0;
+            const uint j = int(i);
+            float k = 3.0;
+            const complex l = complex(k);
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cast"})
+
+        assert isinstance(context.vars["j"].val, int)
+        assert isinstance(context.vars["l"].val, complex)
+
+    def test_update_non_existent_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            p = 1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
+
+    def test_invalid_index(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            const float[2] arr = {0.0, 1.0};
+            const float[2] arr_two = {0.0, 1.0};
+            const [float[2]] index = {arr, arr_two};
+            let slice = arr[index];
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError,
+            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-index"}
+            )
+            context.aliases["slice"](context)
 
 
 @pytest.mark.external
