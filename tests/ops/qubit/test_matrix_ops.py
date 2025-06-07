@@ -729,7 +729,7 @@ class TestWalshHadamardTransform:
         assert qml.math.allclose(output, exp)
 
 
-class TestDiagonalQubitUnitary:
+class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     """Test the DiagonalQubitUnitary operation."""
 
     def test_decomposition_single_qubit(self):
