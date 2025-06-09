@@ -278,7 +278,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
             num_control_wires=1,
             num_zero_control_values=1,
             num_work_wires=0,
-        ): num_x_wires,.
+        ): num_x_wires,
         qml.CNOT: 1,
     }
 
