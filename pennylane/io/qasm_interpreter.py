@@ -142,7 +142,6 @@ class Context:
         )
         self.scopes["subroutines"][node.name.name].update(
             {
-                "sub": True,
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
