@@ -180,7 +180,7 @@ class TemporaryAND(Operation):
 
         **Example:**
 
-        >>> qml.TemporaryAND.compute_decomposition((0,1,2))
+        >>> print(qml.TemporaryAND.compute_decomposition((0,1,2)))
         [H(2),
         T(2),
         CNOT(wires=[1, 2]),
