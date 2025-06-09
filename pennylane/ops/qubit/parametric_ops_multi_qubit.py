@@ -2574,3 +2574,11 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 add_decomps(CPhaseShift10, _cphaseshift10)
 add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
 add_decomps("Pow(CPhaseShift10)", pow_rotation)
+
+class HamEvol(Operation):
+    def __init__(self, H: TensorLike, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(H, wires=wires)
+
+    
+    def compute_matrix(self):
+        return self.data[0]

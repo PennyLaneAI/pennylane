@@ -24,6 +24,8 @@ import pennylane as qml
 from pennylane import math
 from pennylane.measurements import MidMeasureMP
 from pennylane.ops import Conditional
+from pennylane.ops.qubit.parametric_ops_multi_qubit import HamEvol
+from scipy.sparse.linalg import expm_multiply
 
 SQRT2INV = 1 / math.sqrt(2)
 
@@ -243,6 +245,17 @@ def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
     full_state = math.reshape(state, [-1, 2**num_wires])  # expected: [batch_size, 2**num_wires]
     state_opT = full_state @ op.sparse_matrix(wire_order=range(num_wires)).T
     state_reshaped = math.reshape(state_opT, original_shape)
+    return state_reshaped
+
+@apply_operation.register
+def apply_ham_evolution(op : HamEvol, state, is_state_batched: bool = False, debugger=None, **_):
+    print("hello")
+    original_shape = math.shape(state)
+    num_wires = len(original_shape) - int(is_state_batched)
+    full_state = math.reshape(state, [2**num_wires])  # expected: [batch_size, 2**num_wires]
+    state_opT = expm_multiply(-1j*op.compute_matrix(), full_state)
+    state_reshaped = math.reshape(state_opT, original_shape)
+
     return state_reshaped
 
 
