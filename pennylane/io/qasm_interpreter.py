@@ -113,8 +113,6 @@ class Context:
             context["wires"] = []
         if "scopes" not in context:
             context["scopes"] = {"subroutines": {}}
-        if "outer_wires" not in context:
-            context["outer_wires"] = []
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
         self.context = context
@@ -160,12 +158,10 @@ class Context:
             dict: the inner context.
         """
         # we want wires declared in outer scopes to be available
-        outer_wires = outer_context.wires + outer_context.outer_wires
         context = {
             "vars": outer_context.vars,  # same namespace
-            "outer_wires": outer_wires,
             "wire_map": outer_context.wire_map,
-            "wires": [],
+            "wires": outer_context.wires,
             "name": name,
             # we want subroutines declared in the global scope to be available
             "scopes": {
