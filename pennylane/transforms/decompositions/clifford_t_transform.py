@@ -337,6 +337,7 @@ class _CachedCallable:
     Args:
         method (str): The method to be used for decomposition.
         epsilon (float): The maximum permissible operator norm error for the decomposition.
+        cache_size (int): The size of the cache built for the decomposition function based on the angle.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
     """
 
