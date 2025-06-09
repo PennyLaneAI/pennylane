@@ -34,7 +34,7 @@ from pennylane import (
     Toffoli,
     queuing,
 )
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -53,7 +53,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
-@pytest.mark.parameterize
+@pytest.mark.external
 class TestMeasurement:
 
     def test_processing_measurement(self):
@@ -66,7 +66,7 @@ class TestMeasurement:
                 ast, context={"name": "measurements", "wire_map": None}
             )
 
-        assert context["vars"]["c"] == []
+        assert isinstance(context["vars"]["c"].val, MeasurementValue)
 
 
 @pytest.mark.external

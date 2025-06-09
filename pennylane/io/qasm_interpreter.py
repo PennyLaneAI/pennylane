@@ -53,7 +53,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import measure
+from pennylane.measurements import MeasurementValue, measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -89,6 +89,83 @@ PARAMETERIZED_GATES = {
     "CRY": ops.CRY,
     "CRZ": ops.CRZ,
 }
+
+
+def _eval_unary_op(operand: any, node: QASMNode):
+    """
+    Evaluates a unary operator.
+
+    Args:
+        operand (any): The only operand.
+        node (QASMNode): The operator node.
+    """
+    if node.op.name == "!":
+        return not operand
+    if node.op.name == "-":
+        return -operand  # pylint: disable=invalid-unary-operand-type
+    if node.op.name == "~":
+        return ~operand  # pylint: disable=invalid-unary-operand-type
+    # we shouldn't ever get thi error if the parser did its job right
+    raise SyntaxError(  # pragma: no covers
+        f"Invalid operator {node.op.name} encountered in unary expression "
+        f"on line {node.span.start_line}."
+    )  # pragma: no cover
+
+
+def _eval_binary_op(lhs: any, node: QASMNode, rhs: any):
+    """
+    Evaluates a binary operator.
+
+    Args:
+         lhs (any): the first operand, usually a variable or a MeasurementValue.
+         op (QASMNode): the operation QASMNode.
+         rhs (any): the second operand.
+    """
+    match node.op.name:
+        case "==":
+            return lhs == rhs
+        case "!=":
+            return lhs != rhs
+        case ">":
+            return lhs > rhs
+        case "<":
+            return lhs < rhs
+        case ">=":
+            return lhs >= rhs
+        case "<=":
+            return lhs <= rhs
+        case ">>":
+            return lhs >> rhs
+        case "<<":
+            return lhs << rhs
+        case "+":
+            return lhs + rhs
+        case "-":
+            return lhs - rhs
+        case "*":
+            return lhs * rhs
+        case "**":
+            return lhs**rhs
+        case "/":
+            return lhs / rhs
+        case "%":
+            return lhs % rhs
+        case "|":
+            return lhs | rhs
+        case "||":
+            return lhs or rhs
+        case "&":
+            return lhs & rhs
+        case "&&":
+            return lhs and rhs
+        case "^":
+            return lhs ^ rhs
+        case _:  # pragma: no cover
+            # we shouldn't ever get this error if the parser did its job right
+            raise SyntaxError(  # pragma: no cover
+                f"Invalid operator {node.op.name} encountered in binary expression "
+                f"on line {node.span.start_line}."
+            )  # pragma: no cover
 
 
 @dataclass
@@ -257,6 +334,12 @@ class Context:
         if name in self.aliases:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+
+    def process_measurement(self, value: any, prev: Variable, node: QASMNode):
+        def new_processing_fn(*args):
+            _eval_binary_op(prev.val.processing_fn(*args), node, value)
+
+        prev.val = MeasurementValue(prev.val.measurements, new_processing_fn)
 
     def update_var(
         self,
@@ -765,8 +848,8 @@ class QasmInterpreter:
         meas = partial(measure, self.visit(node.measure.qubit, context))
         name = _resolve_name(node.target)  # str or Identifier
         res = meas()
-        # TODO: since a MeasurementValue is involved, create its processing function which captures the classical logic
-        context.update_var(res, name, node)
+        context.vars[name].val = res
+        context.vars[name].line = node.span.start_line
         return res
 
     @visit.register(QuantumReset)
@@ -902,7 +985,11 @@ class QasmInterpreter:
         # references to an unresolved value see a func for now
         name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
-        context.update_var(res, name, node)
+        prev = context.retrieve_variable(name)
+        if isinstance(prev.val, MeasurementValue):
+            context.process_measurement(res, prev, node)
+        else:
+            context.update_var(res, name, node)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: Context):
@@ -1185,51 +1272,7 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        match node.op.name:
-            case "==":
-                return lhs == rhs
-            case "!=":
-                return lhs != rhs
-            case ">":
-                return lhs > rhs
-            case "<":
-                return lhs < rhs
-            case ">=":
-                return lhs >= rhs
-            case "<=":
-                return lhs <= rhs
-            case ">>":
-                return lhs >> rhs
-            case "<<":
-                return lhs << rhs
-            case "+":
-                return lhs + rhs
-            case "-":
-                return lhs - rhs
-            case "*":
-                return lhs * rhs
-            case "**":
-                return lhs**rhs
-            case "/":
-                return lhs / rhs
-            case "%":
-                return lhs % rhs
-            case "|":
-                return lhs | rhs
-            case "||":
-                return lhs or rhs
-            case "&":
-                return lhs & rhs
-            case "&&":
-                return lhs and rhs
-            case "^":
-                return lhs ^ rhs
-            case _:  # pragma: no cover
-                # we shouldn't ever get this error if the parser did its job right
-                raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {node.op.name} encountered in binary expression "
-                    f"on line {node.span.start_line}."
-                )  # pragma: no cover
+        _eval_binary_op(lhs, node, rhs)
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -1244,17 +1287,7 @@ class QasmInterpreter:
             The result of the evaluated expression.
         """
         operand = preprocess_operands(self.visit(node.expression, context))
-        if node.op.name == "!":
-            return not operand
-        if node.op.name == "-":
-            return -operand  # pylint: disable=invalid-unary-operand-type
-        if node.op.name == "~":
-            return ~operand  # pylint: disable=invalid-unary-operand-type
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no covers
-            f"Invalid operator {node.op.name} encountered in unary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        _eval_unary_op(operand, node)
 
     @visit.register(IndexExpression)
     def visit_index_expression(
