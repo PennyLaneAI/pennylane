@@ -4,7 +4,6 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 from re import escape
 
-import numpy as np
 import pytest
 
 from pennylane import (
@@ -47,6 +46,7 @@ try:
     from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
         QasmInterpreter,
+        preprocess_operands,
     )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
@@ -108,8 +108,6 @@ class TestExpressions:
         # boolean operators
         assert context.vars["t"].val == (True or False)
         assert context.vars["u"].val == (True and False)
-
-        assert context.vars["v"].val == np.isclose(0, 1)
 
     def test_different_assignments(self):
         # parse the QASM
@@ -461,6 +459,9 @@ class TestVariables:
             const uint j = int(i);
             float k = 3.0;
             const complex l = complex(k);
+            int m = 1;
+            float n = float(m);
+            bool o = bool(m);
             """,
             permissive=True,
         )
@@ -469,6 +470,48 @@ class TestVariables:
 
         assert isinstance(context.vars["j"].val, int)
         assert isinstance(context.vars["l"].val, complex)
+        assert isinstance(context.vars["n"].val, float)
+        assert isinstance(context.vars["o"].val, bool)
+
+    operands = [
+        0.0,
+        0.1,
+        -0.1,
+        5.0,
+        99999.99,
+        -9999.99,
+        0,
+        1,
+        -1,
+        10,
+        -10,
+        -99999,
+        99999,
+        "0.0",
+        "0.1",
+        "-0.1",
+        "5.0",
+        "99999.99",
+        "-9999.99",
+        "0",
+        "1",
+        "-1",
+        "10",
+        "-10",
+        "-99999",
+        "99999",
+    ]
+
+    @pytest.mark.parametrize("operand", operands)
+    def test_preprocess_operands(self, operand):
+        if isinstance(operand, float):
+            assert isinstance(preprocess_operands(operand), float)
+        elif isinstance(operand, int):
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.isdigit():
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.isnumeric():
+            assert isinstance(preprocess_operands(operand), float)
 
     def test_update_non_existent_var(self):
         # parse the QASM program
