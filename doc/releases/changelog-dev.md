@@ -203,7 +203,7 @@
   Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered *less* 
   efficient. When they have relatively low weights, a decomposition involving them is considered *more* efficient.
 
-* More decomposition rules that can be accessed with the new graph-based decomposition system are
+* Decomposition rules that can be accessed with the new graph-based decomposition system are
   implemented for the following operators:
 
   * :class:`~.QubitUnitary`
@@ -214,12 +214,10 @@
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
   * :class:`~.DiagonalQubitUnitary`
     [(#7625)](https://github.com/PennyLaneAI/pennylane/pull/7625)
-
-* Decomposition rules that can be accessed with the new graph-based decomposition system are implemented
-  for :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
-  * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
-  * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
-  [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
+  * :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
+    * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
+    * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
+    [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
