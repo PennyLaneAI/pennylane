@@ -25,16 +25,47 @@ if TYPE_CHECKING:
     from pennylane.labs.trotter_error import ProductFormula
 
 
-def bch_expansion(product_formula: ProductFormula, order: int) -> Dict[Tuple[int], complex]:
+def bch_expansion(
+    product_formula: ProductFormula, order: int
+) -> List[Dict[Tuple[Hashable], complex]]:
+    r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
+
+    Args:
+        product_formula (:class:`~.pennylane.labs.trotter_error.ProductFormula`): A :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
+        order (int) The maximum order of the expansion to return.
+    Returns:
+        List[Dict[Tuple[Hashable], complex]]: A list of dictionaries. The ``ith`` dictionary contains the ``ith`` order commutators and their coefficients.
+
+    **Example**
+
+    >>> from pprint import pp
+    >>> from pennylane.labs.trotter_error import ProductFormula, bch_expansion
+    >>> frag_labels = ["A", "B", "C", "B", "A"]
+    >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
+    >>> second_order = ProductFormula(frag_labels, frag_coeffs)
+    >>> pprint(bch_expansion(second_order, order=3))
+    [defaultdict(<class 'complex'>,
+                 {('A',): (1+0j),
+                  ('B',): (1+0j),
+                  ('C',): (1+0j)}),
+     defaultdict(<class 'complex'>, {}),
+     defaultdict(<class 'complex'>,
+                 {('A', 'A', 'B'): (-0.04166666666666667+0j),
+                  ('B', 'A', 'B'): (-0.08333333333333333+0j),
+                  ('C', 'A', 'B'): (-0.08333333333333334+0j),
+                  ('A', 'A', 'C'): (-0.04166666666666667+0j),
+                  ('B', 'A', 'C'): (-0.08333333333333334+0j),
+                  ('B', 'B', 'C'): (-0.04166666666666667+0j),
+                  ('C', 'A', 'C'): (-0.08333333333333333+0j),
+                  ('C', 'B', 'C'): (-0.08333333333333333+0j)})]
+    """
     return _drop_zeros(_bch_expansion(product_formula, order, {}))
 
 
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
 ) -> Dict[Tuple[Hashable], complex]:
-    """Returns the commutators of order ``order`` of the BCH expansion of ``product_formula``.
-    This method follows the procedure outlined in `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
-    """
+    """Recursively applies BCH to the product formula."""
 
     bch = _bch(
         product_formula.terms,
@@ -102,6 +133,9 @@ def _apply_exponent(bch, exponent):
 def _kth_order_terms(
     fragments: Sequence[Hashable], coeffs: Sequence[complex], k: int
 ) -> Dict[Tuple[int], complex]:
+    r"""Computes the kth order commutators of the BCH expansion of the product formula.
+    See Proposition 1 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
+
     n = len(fragments)
 
     terms = defaultdict(complex)
@@ -161,21 +195,21 @@ def _add_dicts(d1, d2):
     return d1
 
 
-def _partitions_nonnegative(n: int, m: int) -> Generator[Tuple[int]]:
-    """Return tuples containing number of ways n ordered integers can sum to m"""
+def _partitions_nonnegative(m: int, n: int) -> Generator[Tuple[int]]:
+    """Yields tuples of m nonnegative integers that sum to n"""
 
-    if n == 1:
-        yield (m,)
+    if m == 1:
+        yield (n,)
     elif m == 0:
-        yield (0,) * n
+        yield (0,) * m
     else:
-        for i in range(m + 1):
-            for partition in _partitions_nonnegative(n - 1, m - i):
+        for i in range(n + 1):
+            for partition in _partitions_nonnegative(m - 1, n - i):
                 yield (i,) + partition
 
 
 def _partitions_positive(m: int, n: int):
-    """number of ways to sum m positive integers to n"""
+    """Yields tuples of m positive integers that sum to n"""
 
     if m == 1:
         yield (n,)
@@ -190,6 +224,7 @@ def _partitions_positive(m: int, n: int):
 
 
 def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
+    """Implements equation 13 from `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
     n = len(fragments)
     terms = defaultdict(complex)
 
@@ -202,6 +237,8 @@ def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
 
 
 def _n_descents(permutation: Sequence[int]) -> int:
+    """Returns the number of descents in a permutation. For a permutation sigma, a descent in sigma
+    is a pair i,i+1 such that sigma(i) > sigma(i+1)."""
     n = 0
 
     for i in range(len(permutation) - 1):
@@ -215,11 +252,12 @@ def _remove_redundancies(
     term_dicts: List[Dict[Tuple[int], float]],
     term_order: Dict[Hashable, int],
 ) -> List[Dict[Tuple[int], float]]:
-    """Applies the following identites to the dictionary of commutators:
+    """Applies the following identities to the commutators
 
-    1. [A, A] = 0
-    2. [A, [C, B]] = -[A, [B, C]]
-    3. [B, [A, [C, D]]] = [A, [B, [C, D]]]
+    1. Express the commutator as a linear combination of right-nested commutators
+    2. Apply [A, A] = 0
+    3. Apply [A, B] = -[A, B]
+    4. Apply [A, B, B, A] = [A, B, A, B]
     """
 
     def less_than(x, y):
@@ -315,6 +353,7 @@ def _make_right_nested(terms):
 
 
 def _right_nested(commutator) -> Dict[Tuple, float]:
+    """Express the commutator as a linear combation of right-nested commutators"""
     if isinstance(commutator[-1], tuple):
         commutator = commutator[:-1] + commutator[-1]
 
