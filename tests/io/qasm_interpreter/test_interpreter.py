@@ -156,6 +156,63 @@ class TestExpressions:
             PauliX("q0") ** 24,
         ]
 
+    def test_bare_expression(self):
+        # parse the QASM
+        ast = parse(
+            """
+            bit[8] a = "1001";
+            a << 1;
+            let b = a;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "expression-visit"}
+        )
+
+        # exprs are not in-place modifiers without an assignment
+        assert context.aliases["b"](context).val == 9
+
+    operands = [
+        0.0,
+        0.1,
+        -0.1,
+        5.0,
+        99999.99,
+        -9999.99,
+        0,
+        1,
+        -1,
+        10,
+        -10,
+        -99999,
+        99999,
+        "0.0",
+        "0.1",
+        "-0.1",
+        "5.0",
+        "99999.99",
+        "-9999.99",
+        "0",
+        "1",
+        "-1",
+        "10",
+        "-10",
+        "-99999",
+        "99999",
+    ]
+
+    @pytest.mark.parametrize("operand", operands)
+    def test_preprocess_operands(self, operand):
+        if isinstance(operand, float):
+            assert isinstance(preprocess_operands(operand), float)
+        elif isinstance(operand, int):
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.isdigit():
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.replace(".", "").isnumeric():
+            assert isinstance(preprocess_operands(operand), float)
 
 @pytest.mark.external
 class TestVariables:
@@ -186,24 +243,6 @@ class TestVariables:
                 ast, context={"wire_map": None, "name": "bad-alias"}
             )
             context.aliases["k"](context)
-
-    def test_bare_expression(self):
-        # parse the QASM
-        ast = parse(
-            """
-            bit[8] a = "1001";
-            a << 1;
-            let b = a;
-            """,
-            permissive=True,
-        )
-
-        context = QasmInterpreter().interpret(
-            ast, context={"wire_map": None, "name": "expression-visit"}
-        )
-
-        # exprs are not in-place modifiers without an assignment
-        assert context.aliases["b"](context).val == 9
 
     def test_ref_undeclared_var_in_expr(self):
         # parse the QASM program
@@ -429,46 +468,6 @@ class TestVariables:
         assert isinstance(context.vars["l"].val, complex)
         assert isinstance(context.vars["n"].val, float)
         assert isinstance(context.vars["o"].val, bool)
-
-    operands = [
-        0.0,
-        0.1,
-        -0.1,
-        5.0,
-        99999.99,
-        -9999.99,
-        0,
-        1,
-        -1,
-        10,
-        -10,
-        -99999,
-        99999,
-        "0.0",
-        "0.1",
-        "-0.1",
-        "5.0",
-        "99999.99",
-        "-9999.99",
-        "0",
-        "1",
-        "-1",
-        "10",
-        "-10",
-        "-99999",
-        "99999",
-    ]
-
-    @pytest.mark.parametrize("operand", operands)
-    def test_preprocess_operands(self, operand):
-        if isinstance(operand, float):
-            assert isinstance(preprocess_operands(operand), float)
-        elif isinstance(operand, int):
-            assert isinstance(preprocess_operands(operand), int)
-        elif operand.isdigit():
-            assert isinstance(preprocess_operands(operand), int)
-        elif operand.replace(".", "").isnumeric():
-            assert isinstance(preprocess_operands(operand), float)
 
     def test_update_non_existent_var(self):
         # parse the QASM program
