@@ -148,14 +148,13 @@
   dev = qml.device("default.qubit", shots=1)
   @qml.qnode(dev)
   def circuit():
-      qml.X(0)
-      qml.X(1)
-      qml.TemporaryAND([0,1,2])
-      qml.CNOT([2,3])
-      # We can now apply the adjoint TemporaryAND,
-      # because after applying a Toffoli, the target wire would be |0>.
-      qml.adjoint(qml.TemporaryAND([0,1,2]))
-
+      # |0000⟩
+      qml.X(0) # |1000⟩
+      qml.X(1) # |1100⟩
+      # The target wire is in state |0>, so we can apply TemporaryAND
+      qml.TemporaryAND([0,1,2]) # |1110⟩
+      qml.CNOT([2,3]) # |1111⟩
+      qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
       return qml.sample(wires=[0,1,2,3])
   ```
   
