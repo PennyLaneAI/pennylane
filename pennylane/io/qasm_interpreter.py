@@ -696,7 +696,7 @@ class QasmInterpreter:
             return -operand
         if node.op.name == "~":
             return ~operand  # pylint: disable=invalid-unary-operand-type
-        # we shouldn't ever get thi error if the parser did its job right
+        # we shouldn't ever get this error if the parser did its job right
         raise SyntaxError(  # pragma: no cover
             f"Invalid operator {node.op.name} encountered in unary expression "
             f"on line {node.span.start_line}."
