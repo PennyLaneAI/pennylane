@@ -113,8 +113,6 @@ class Context:
             context["wires"] = []
         if "scopes" not in context:
             context["scopes"] = {"subroutines": {}}
-        if "outer_scopes" not in context:
-            context["outer_scopes"] = {"subroutines": {}}
         if "outer_wires" not in context:
             context["outer_wires"] = []
         if "wire_map" not in context or context["wire_map"] is None:
@@ -169,8 +167,8 @@ class Context:
             "wire_map": outer_context.wire_map,
             "wires": [],
             "name": name,
-            # we want subroutines declared in outer scopes to be available
-            "outer_scopes": {
+            # we want subroutines declared in the global scope to be available
+            "scopes": {
                 # no recursion here please! hence the filter
                 "subroutines": {
                     k: v for k, v in outer_context.scopes["subroutines"].items() if k != name
@@ -414,8 +412,6 @@ class QasmInterpreter:
         name = _resolve_name(node)  # str or Identifier
         if name in context.scopes["subroutines"]:
             func_context = context.scopes["subroutines"][name]
-        elif name in context.outer_scopes["subroutines"]:
-            func_context = context.outer_scopes["subroutines"][name]
         else:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
