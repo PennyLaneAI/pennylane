@@ -34,7 +34,7 @@ class TestDecompositionPass:
     def test_single_rot_decomposition(self, run_filecheck):
         """Test that the Rot gate is decomposed into RZ and RY gates."""
 
-        # qml.Rot(0.5, 0.5, 0.5, wires=0)
+        # Rot(0.5, 0.5, 0.5, wires=0)
         # ---->
         # RZ(0.5, wires=0)
         # RY(0.5, wires=0)
@@ -76,9 +76,9 @@ class TestDecompositionPass:
     def test_multiple_rot_decomposition(self, run_filecheck):
         """Test that multiple Rot gates are decomposed correctly into RZ and RY gates."""
 
-        # qml.Rot(0.1, 0.2, 0.3, wires=0)
-        # qml.Rot(0.4, 0.5, 0.6, wires=0)
-        # qml.Rot(0.1, 0.1, 0.1, wires=1)
+        # Rot(0.1, 0.2, 0.3, wires=0)
+        # Rot(0.4, 0.5, 0.6, wires=0)
+        # Rot(0.1, 0.1, 0.1, wires=1)
         # ---->
         # RZ(0.1, wires=0)
         # RY(0.2, wires=0)
@@ -152,23 +152,23 @@ class TestDecompositionPass:
     def test_rot_cnot_decomposition(self, run_filecheck):
         """Test that a circuit with Rot and CNOT gates is decomposed correctly."""
 
-        # qml.CNOT(wires=[0, 1])
-        # qml.CNOT(wires=[0, 2])
-        # qml.Rot(0.1, 0.2, 0.3, wires=0)
-        # qml.Rot(0.4, 0.5, 0.6, wires=1)
-        # qml.CNOT(wires=[1, 0])
-        # qml.CNOT(wires=[1, 2])
+        # CNOT(wires=[0, 1])
+        # CNOT(wires=[0, 2])
+        # Rot(0.1, 0.2, 0.3, wires=0)
+        # Rot(0.4, 0.5, 0.6, wires=1)
+        # CNOT(wires=[1, 0])
+        # CNOT(wires=[1, 2])
         # ---->
-        # qml.CNOT(wires=[0, 1])
-        # qml.CNOT(wires=[0, 2])
+        # CNOT(wires=[0, 1])
+        # CNOT(wires=[0, 2])
         # RZ(0.1, wires=0)
         # RY(0.2, wires=0)
         # RZ(0.3, wires=0)
         # RZ(0.4, wires=1)
         # RY(0.5, wires=1)
         # RZ(0.6, wires=1)
-        # qml.CNOT(wires=[1, 0])
-        # qml.CNOT(wires=[1, 2])
+        # CNOT(wires=[1, 0])
+        # CNOT(wires=[1, 2])
 
         program = """
     func.func @test_func() {
@@ -213,6 +213,73 @@ class TestDecompositionPass:
             %21 = "quantum.insert"(%7, %18) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
             %22 = "quantum.insert"(%21, %19) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
             %23 = "quantum.insert"(%22, %20) <{idx_attr = 2 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+
+        }
+    """
+
+        ctx = xdsl.context.Context()
+        ctx.allow_unregistered_dialects = True
+        ctx.load_dialect(xdsl.dialects.builtin.Builtin)
+        ctx.load_dialect(xdsl.dialects.func.Func)
+        ctx.load_dialect(xdsl.dialects.transform.Transform)
+        ctx.load_dialect(xdsl.dialects.arith.Arith)
+        ctx.load_dialect(Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_hadamard_decomposition(self, run_filecheck):
+        """Test that the Hadamard gate is decomposed into RZ and RY gates."""
+
+        # qml.Hadamard(wires=0)
+        # qml.Hadamard(wires=0)
+        # qml.Hadamard(wires=1)
+        # ---->
+        # RZ(0.5 * pi, wires=0)
+        # RX(0.5 * pi, wires=0)
+        # RZ(0.5 * pi, wires=0)
+        # RZ(0.5 * pi, wires=0)
+        # RX(0.5 * pi, wires=0)
+        # RZ(0.5 * pi, wires=0)
+        # RZ(0.5 * pi, wires=1)
+        # RX(0.5 * pi, wires=1)
+        # RZ(0.5 * pi, wires=1)
+
+        program = """
+    func.func @test_func() {
+
+            %0 = arith.constant 0 : i64
+
+            %1 = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+            %2 = "quantum.extract"(%1) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+
+            // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+            // CHECK-NEXT: [[QUBIT1:%.*]] = "quantum.extract"([[QUBITREGISTER]]) <{idx_attr = 0 : i64}>
+            // CHECK-NEXT: [[HALFPI:%.*]] = arith.constant 1.5707963267948966 : f64
+            // CHECK-NEXT: [[QUBIT2:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT1]]
+            // CHECK-NEXT: [[QUBIT3:%.*]] = quantum.custom "RX"([[HALFPI]]) [[QUBIT2]]
+            // CHECK-NEXT: [[QUBIT4:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT3]]
+            // CHECK-NEXT: [[QUBIT5:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT4]]
+            // CHECK-NEXT: [[QUBIT6:%.*]] = quantum.custom "RX"([[HALFPI]]) [[QUBIT5]]
+            // CHECK-NEXT: [[QUBIT7:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT6]]
+            // CHECK-NEXT: [[QUBIT8:%.*]] = "quantum.extract"([[QUBITREGISTER]]) <{idx_attr = 1 : i64}>
+            // CHECK-NEXT: [[QUBIT9:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT8]]
+            // CHECK-NEXT: [[QUBIT10:%.*]] = quantum.custom "RX"([[HALFPI]]) [[QUBIT9]]
+            // CHECK-NEXT: [[QUBIT11:%.*]] = quantum.custom "RZ"([[HALFPI]]) [[QUBIT10]]
+            // CHECK-NEXT: [[QUBIT12:%.*]] = "quantum.insert"([[QUBITREGISTER]], [[QUBIT7]]) <{idx_attr = 0 : i64}>
+            // CHECK-NEXT: [[___:%.*]] = "quantum.insert"([[QUBIT12]], [[QUBIT11]]) <{idx_attr = 1 : i64}>
+            
+            
+            %3 = quantum.custom "Hadamard"() %2 : !quantum.bit
+            %4 = quantum.custom "Hadamard"() %3 : !quantum.bit
+            %5 = "quantum.extract"(%1) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+            %6 = quantum.custom "Hadamard"() %5 : !quantum.bit
+            %7 = "quantum.insert"(%1, %4) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+            %8 = "quantum.insert"(%7, %6) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
 
         }
     """
