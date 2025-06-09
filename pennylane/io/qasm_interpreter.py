@@ -392,7 +392,7 @@ def preprocess_operands(operand):
     if isinstance(operand, str):
         if operand.isdigit():
             operand = int(operand)
-        elif operand.isnumeric():
+        elif operand.replace(".", "").isnumeric():
             operand = float(operand)
     return operand
 
