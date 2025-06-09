@@ -172,13 +172,13 @@ class TestDyadicMatrix:
         )
         assert dyadic_matrix.conj() == DyadicMatrix(z1.conj(), z2.conj(), z1.conj(), z2.conj())
         assert dyadic_matrix.adj2() == DyadicMatrix(z1.adj2(), z2.adj2(), z1.adj2(), z2.adj2())
-        assert dyadic_matrix * 2 == dyadic_matrix.mult2k(
-            k=1
-        ) and dyadic_matrix == dyadic_matrix.mult2k(k=0)
+        assert dyadic_matrix * 2 == dyadic_matrix.mult2k(k=1)
+        assert dyadic_matrix * 1.0 == dyadic_matrix.mult2k(k=0)
         assert dyadic_matrix + 2.0 == DyadicMatrix(z1, z2, z1, z2) + (2 + 0j) == dyadic_matrix + 2
-        assert dyadic_matrix + DyadicMatrix(ZOmega(), ZOmega(), ZOmega(), ZOmega()) == DyadicMatrix(
-            z1, z2, z1, z2
-        )
+
+        z3 = DyadicMatrix(z1, z2, z1, z2, k=2)
+        z4, z5 = ZOmega(a=-3, b=6, c=9, d=3), ZOmega(a=-3, b=18, c=21, d=3)
+        assert dyadic_matrix + z3 == DyadicMatrix(z4, z5, z4, z5, k=1)
 
     def test_arithmetic_errors(self):
         """Test that arithmetic operations raise errors for invalid types."""
@@ -217,3 +217,6 @@ class TestSO3Matrix:
             so3_matrix.parity_mat, np.array([[1, 0, 0], [0, 0, 0], [1, 0, 0]])
         )  # Computed manually
         assert np.allclose(so3_matrix.parity_vec, [1, 0, 1])  # Computed manually
+
+        z3 = ZOmega()
+        assert np.allclose(SO3Matrix(DyadicMatrix(z3, z3, z3, z3)).ndarray, 0.0)

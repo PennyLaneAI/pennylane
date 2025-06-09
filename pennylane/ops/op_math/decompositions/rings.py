@@ -98,9 +98,6 @@ class ZSqrtTwo:
                 return ZSqrtTwo(self.a // other, self.b // other)
         raise TypeError(f"Unsupported type {type(other)} for dividing ZSqrtTwo")
 
-    def __rtruediv__(self, other: int) -> ZSqrtTwo:
-        return other * self.adj2() / abs(self)
-
     def __floordiv__(self, other: int) -> ZSqrtTwo:
         if isinstance(other, int):
             return ZSqrtTwo(self.a // other, self.b // other)
@@ -140,7 +137,7 @@ class ZSqrtTwo:
             if zrt * zrt == self:
                 return zrt
             art = zrt.adj2()
-            if art * art == self:
+            if art * art == self:  # pragma: no cover
                 return art
         return None
 
@@ -369,6 +366,7 @@ class DyadicMatrix:
         for b_elem in B.flatten:
             a, b, c, d = [s * k_scale for s in b_elem.flatten]
             if k_parity != 0:  # sqrt(2) factor
+                print(f"Applying sqrt(2) factor to {b_elem}")
                 a, b, c, d = [(b - d), (c + a), (b + d), (c - a)]
             b_elems.append(ZOmega(a, b, c, d))
 
@@ -446,6 +444,7 @@ class DyadicMatrix:
         # a, b, c, d = self.flatten
         # Factoring 2: Derived using (1 - w^4) [a', b', c', d'] => [a, b, c, d]
         if all(ZOmega() == s for s in self.flatten):
+            self.k = 0
             return
 
         while all(np.allclose([_s % 2 for _s in s.flatten], 0) for s in self.flatten):
@@ -562,7 +561,7 @@ class SO3Matrix:
         if any(s.parity for s in su2_elems):
             z_sqrt2 = [(ZSqrtTwo((s.c - s.a), s.d), ZSqrtTwo((s.c + s.a), s.b)) for s in su2_elems]
             k += 2
-        else:
+        else:  # pragma: no cover
             z_sqrt2 = [
                 (ZSqrtTwo(s.d, (s.c - s.a) // 2), ZSqrtTwo(s.b, (s.c + s.a) // 2))
                 for s in su2_elems
@@ -593,6 +592,7 @@ class SO3Matrix:
         """Reduce the k value of the SO(3) matrix."""
         elements = self.flatten
         if all(s.a == 0 and s.b == 0 for s in elements):
+            self.k = 0
             return
         # Factoring 2: Derived using (a + b . √2) => 2 . (a//2 + b//2 . √2)
         while all(s.a % 2 == 0 and s.b % 2 == 0 for s in elements):
