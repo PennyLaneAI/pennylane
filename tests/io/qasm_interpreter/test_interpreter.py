@@ -98,6 +98,7 @@ class TestSubroutine:
 
         assert q.queue == [Hadamard("q0")]
 
+
 @pytest.mark.external
 class TestExpressions:
 

@@ -410,11 +410,6 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if (
-            name not in context.scopes["subroutines"]
-            and name not in context.outer_scopes["subroutines"]
-        ):
-            raise NameError(f"Reference to an undeclared subroutine {name} in {context.name}.")
         if name in context.scopes["subroutines"]:
             func_context = context.scopes["subroutines"][name]
         elif name in context.outer_scopes["subroutines"]:
