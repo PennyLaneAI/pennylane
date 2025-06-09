@@ -132,10 +132,10 @@ class SparseState(AbstractState):
     * ``zero_state``: returns a representation of the zero state
     * ``dot``: implments the dot product of two states
     """
-    def __init__(self, csr_matrix: csr_matrix):
+    def __init__(self, matrix: csr_matrix):
         """Initialize the SparseState.
         """
-        self.csr_matrix = csr_matrix
+        self.csr_matrix = matrix
 
     def __add__(self, other: SparseState) -> SparseState:
         return SparseState(self.csr_matrix + other.csr_matrix)
