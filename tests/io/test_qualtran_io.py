@@ -592,6 +592,14 @@ class TestToBloq:
                 ),
                 "qpe_bloq",
             ),
+            (
+                qml.QFT(wires=range(4)),
+                "qft_bloq"
+            ),
+            (
+                qml.ModExp(x_wires=[0, 1], output_wires=[2, 3, 4], base=2, mod=7, work_wires=[5, 6, 7, 8, 9]),
+                "modexp_bloq"
+            )
         ],
     )
     def test_default_mapping(self, op, qt_bloq):
@@ -601,12 +609,16 @@ class TestToBloq:
             """Factory function inside for parametrization of test cases"""
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+            from qualtran.bloqs.qft import QFTTextBook
+            from qualtran.bloqs.cryptography.rsa import ModExp
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=RectangularWindowState(4),
                 ),
+                "qft_bloq": QFTTextBook(4),
+                "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3)
             }
 
             return qualtran_bloqs[qt_bloq]

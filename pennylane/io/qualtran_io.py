@@ -115,6 +115,35 @@ def _map_to_bloq():
         return QFTTextBook(len(op.wires))
 
     @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.QFT, **kwargs):
+        from qualtran.bloqs.qft import QFTTextBook
+
+        if kwargs.get("map_ops") is False:
+            return ToBloq(op, **kwargs)
+
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
+            return custom_map[op]
+
+        return QFTTextBook(len(op.wires))
+
+    @_to_qt_bloq.register
+    def _(op: qtemps.subroutines.ModExp, **kwargs):
+        from qualtran.bloqs.cryptography.rsa import ModExp
+
+        if kwargs.get("map_ops") is False:
+            return ToBloq(op, **kwargs)
+
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
+            return custom_map[op]
+
+        return ModExp(
+            base=op.hyperparameters["base"],
+            mod=op.hyperparameters["mod"],
+            exp_bitsize=len(op.hyperparameters["x_wires"]),
+            x_bitsize=len(op.hyperparameters["output_wires"]),
+        )
+
+    @_to_qt_bloq.register
     def _(op: qops.GlobalPhase, **kwargs):
         return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
