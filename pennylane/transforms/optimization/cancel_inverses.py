@@ -38,7 +38,7 @@ def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, 
     for d1, d2 in zip(items1, items2, strict=True):
         if (is_abstract(d1) or is_abstract(d2)) and (d1 is not d2):
             return False
-        elif d1 != d2:
+        if d1 != d2:
             return False
 
     return True
