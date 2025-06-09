@@ -14,15 +14,8 @@
 """
 This submodule contains the `promote_consts` util.
 """
-from typing import TYPE_CHECKING
 
 from pennylane.typing import TensorLike
-
-if TYPE_CHECKING:
-    try:
-        import jax
-    except ImportError:
-        pass
 
 
 def promote_consts(
