@@ -203,34 +203,27 @@
   Here, when the Hadamard and ``CRZ`` have relatively high weights, a decomposition involving them is considered *less* 
   efficient. When they have relatively low weights, a decomposition involving them is considered *more* efficient.
 
-* The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
-  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+* Decomposition rules that can be accessed with the new graph-based decomposition system are
+  implemented for the following operators:
 
-* New decomposition rules comprising rotation gates and global phases have been added to `QubitUnitary` 
-  and `ControlledQubitUnitary` that can be accessed with the new graph-based decomposition system. 
-  The most efficient set of rotations to decompose into will be chosen based on the target gate set.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-  [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
+  * :class:`~.QubitUnitary`
+    [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-  ```python
-  from functools import partial
-  import numpy as np
-  import pennylane as qml
-  
-  qml.decomposition.enable_graph()
-  
-  U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-  
-  @partial(qml.transforms.decompose, gate_set={"RX", "RY", "GlobalPhase"})
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.QubitUnitary(np.array([[1, 1], [1, -1]]) / np.sqrt(2), wires=[0])
-      return qml.expval(qml.PauliZ(0))
-  ```
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──RX(0.00)──RY(1.57)──RX(3.14)──GlobalPhase(-1.57)─┤  <Z>
-  ```
+  * :class:`~.ControlledQubitUnitary`
+    [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
+
+  * :class:`~.MultiControlledX`
+    [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
+
+  * :class:`~pennylane.ops.Exp`. 
+    [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
+
+    Specifically, the following decompositions have been added:
+    * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
+    * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
+
+  * :class:`~.PCPhase`
+    [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
 * A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
@@ -326,12 +319,6 @@
   0: ──RX(-0.50)─╭●────────────┤  <Z>
   1: ────────────╰X──RY(-0.50)─┤
   ```
-  
-* Decomposition rules compatible with the new graph-based decomposition system have been implemented
-  for :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
-  * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
-  * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
-  [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
 * A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and :class:`~pennylane.ControlledQubitUnitary`
   for more fine-grained control over the type of work wire used in their decompositions.
@@ -353,7 +340,10 @@
   no longer depends on the wires of `GlobalPhase` or `Identity`. Control nodes of controlled global phases
   and identities no longer receive the operator label, which is in line with other controlled operations.
   [(#7457)](https://github.com/PennyLaneAI/pennylane/pull/7457)
-  
+
+* The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
+  [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
   This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
   [(#7277)](https://github.com/PennyLaneAI/pennylane/pull/7277)
@@ -673,6 +663,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
+  [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
 
 * `qml.StatePrep` does not validate the norm of statevectors any more, default to `False` during initialization.
   [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
