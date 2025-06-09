@@ -18,6 +18,12 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+)
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -144,6 +150,8 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     grad_method = None
 
+    resource_keys = {"base_resource_rep", "num_estimation_wires"}
+
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
         metadata = (self.hyperparameters["estimation_wires"],)
@@ -156,6 +164,16 @@ class QuantumPhaseEstimation(ErrorOperation):
     @classmethod
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
         return cls(data[0], estimation_wires=metadata[0])
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_resource_rep": qml.resource_rep(
+                type(self.hyperparameters["unitary"]),
+                **self.hyperparameters["unitary"].resource_params,
+            ),
+            "num_estimation_wires": len(self.estimation_wires),
+        }
 
     def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
         if isinstance(unitary, Operator):
@@ -281,3 +299,35 @@ class QuantumPhaseEstimation(ErrorOperation):
         op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list
+
+
+def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
+    gate_count = {
+        qml.H: num_estimation_wires,
+        adjoint_resource_rep(qml.QFT, {"num_wires": num_estimation_wires}): 1,
+    }
+    for i in range(num_estimation_wires):
+        gate_count[
+            controlled_resource_rep(
+                qml.Pow,
+                {
+                    "base_class": base_resource_rep.op_type,
+                    "base_params": base_resource_rep.params,
+                    "z": i,
+                },
+                num_control_wires=1,
+            )
+        ] = 1
+    return gate_count
+
+
+@register_resources(_qpe_decomp_resource)
+def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unused-argument
+    for w in estimation_wires:
+        qml.H(w)
+    for i, w in enumerate(estimation_wires):
+        qml.ctrl(qml.pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
+    qml.adjoint(qml.templates.QFT(wires=estimation_wires))
+
+
+add_decomps(QuantumPhaseEstimation, _qpe_decomp)
