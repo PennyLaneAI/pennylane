@@ -11,7 +11,6 @@ from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
-    ArrayType,
     BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
@@ -92,65 +91,6 @@ PARAMETERIZED_GATES = {
     "CRZ": ops.CRZ,
 }
 
-EQUALS = "="
-ARROW = "->"
-PLUS = "+"
-DOUBLE_PLUS = "++"
-MINUS = "-"
-ASTERISK = "*"
-DOUBLE_ASTERISK = "**"
-SLASH = "/"
-PERCENT = "%"
-PIPE = "|"
-DOUBLE_PIPE = "||"
-AMPERSAND = "&"
-DOUBLE_AMPERSAND = "&&"
-CARET = "^"
-AT = "@"
-TILDE = "~"
-EXCLAMATION_POINT = "!"
-EQUALITY_OPERATORS = ["==", "!="]
-COMPOUND_ASSIGNMENT_OPERATORS = [
-    "+=",
-    "-=",
-    "*=",
-    "/=",
-    "&=",
-    "|=",
-    "~=",
-    "^=",
-    "<<=",
-    ">>=",
-    "%=",
-    "**=",
-]
-COMPARISON_OPERATORS = [">", "<", ">=", "<="]
-BIT_SHIFT_OPERATORS = [">>", "<<"]
-
-NON_ASSIGNMENT_CLASSICAL_OPERATORS = (
-    EQUALITY_OPERATORS
-    + COMPARISON_OPERATORS
-    + BIT_SHIFT_OPERATORS
-    + [
-        PLUS,
-        MINUS,
-        ASTERISK,
-        DOUBLE_ASTERISK,
-        SLASH,
-        PERCENT,
-        PIPE,
-        DOUBLE_PIPE,
-        AMPERSAND,
-        DOUBLE_AMPERSAND,
-        CARET,
-        AT,
-        TILDE,
-        EXCLAMATION_POINT,
-    ]
-)
-
-ASSIGNMENT_CLASSICAL_OPERATORS = [EQUALS, DOUBLE_PLUS] + COMPOUND_ASSIGNMENT_OPERATORS
-
 
 @dataclass
 class Variable:
@@ -210,15 +150,13 @@ class Context:
         if isinstance(node, WhileLoop):
             self.scopes["loops"][f"while_{node.span.start_line}"] = (
                 self.init_clause_in_same_namespace(
-                    self, f'{self.name}_while_{node.span.start_line}'
+                    self, f"{self.name}_while_{node.span.start_line}"
                 )
             )
 
         elif isinstance(node, ForInLoop):
             self.scopes["loops"][f"for_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(
-                    self, f'{self.name}_for_{node.span.start_line}'
-                )
+                self.init_clause_in_same_namespace(self, f"{self.name}_for_{node.span.start_line}")
             )
 
     def init_switches_scope(self, node: QASMNode):
@@ -340,42 +278,38 @@ class Context:
                     f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
                     f"defined on line {self.vars[name].line}"
                 )
-            if node.op.name in ASSIGNMENT_CLASSICAL_OPERATORS:
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[0]:
+            match node.op.name:
+                case "=":
                     self.vars[name].val = value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[1]:
-                    self.vars[name].val = self.vars[name].val + 1
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[2]:
+                case "+=":
                     self.vars[name].val += value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[3]:
+                case "-=":
                     self.vars[name].val -= value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[4]:
+                case "*=":
                     self.vars[name].val = self.vars[name].val * value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[5]:
+                case "/=":
                     self.vars[name].val = self.vars[name].val / value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[6]:
+                case "&=":
                     self.vars[name].val = self.vars[name].val & value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[7]:
+                case "|=":
                     self.vars[name].val = self.vars[name].val | value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[8]:
-                    self.vars[name].val = ~value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[9]:
+                case "^=":
                     self.vars[name].val = self.vars[name].val ^ value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[10]:
+                case "<<=":
                     self.vars[name].val = self.vars[name].val << value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[11]:
+                case ">>=":
                     self.vars[name].val = self.vars[name].val >> value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[12]:
+                case "%=":
                     self.vars[name].val = self.vars[name].val % value
-                if node.op.name == ASSIGNMENT_CLASSICAL_OPERATORS[13]:
+                case "**=":
                     self.vars[name].val = self.vars[name].val ** value
-                self.vars[name].line = node.span.start_line
-            else:
-                # we shouldn't ever get thi error if the parser did its job right
-                raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {node.op.name} encountered in assignment expression "
-                    f"on line {node.span.start_line}."
-                )  # pragma: no cover
+                case _:  # pragma: no cover
+                    # we shouldn't ever get this error if the parser did its job right
+                    raise SyntaxError(  # pragma: no cover
+                        f"Invalid operator {node.op.name} encountered in assignment expression "
+                        f"on line {node.span.start_line}."
+                    )  # pragma: no cover
+            self.vars[name].line = node.span.start_line
         else:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
@@ -411,7 +345,7 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
-        elif getattr(self.context, name, None):
+        if getattr(self.context, name, None):
             return getattr(self.context, name)
         raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
@@ -479,7 +413,7 @@ class EndProgram(Exception):
     """Exception raised when it encounters an end statement in the QASM circuit."""
 
 
-# pylint: disable=unused-argument, no-self-use
+# pylint: disable=unused-argument, no-self-use, too-many-public-methods
 class QasmInterpreter:
     """
     Takes the top level node of the AST as a parameter and recursively descends the AST, calling the
@@ -581,20 +515,24 @@ class QasmInterpreter:
         context.init_branches_scope(node)
 
         # create the true body context
-        context.scopes["branches"][f"branch_{node.span.start_line}"].update({
-            "true_body": context.init_clause_in_same_namespace(
-                context, f'{context.name}_branch_{node.span.start_line}_true_body'
-            )
-        })
+        context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+            {
+                "true_body": context.init_clause_in_same_namespace(
+                    context, f"{context.name}_branch_{node.span.start_line}_true_body"
+                )
+            }
+        )
 
         if hasattr(node, "else_block"):
 
             # create the false body context
-            context.scopes["branches"][f"branch_{node.span.start_line}"].update({
-                "false_body": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_branch_{node.span.start_line}_false_body'
-                )
-            })
+            context.scopes["branches"][f"branch_{node.span.start_line}"].update(
+                {
+                    "false_body": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_branch_{node.span.start_line}_false_body"
+                    )
+                }
+            )
 
         ops.cond(
             self.visit(node.condition, context),
@@ -627,20 +565,25 @@ class QasmInterpreter:
 
         # switches need to have access to the outer context but not get called unless the condition is met
 
+        i = 0
         # we need to keep track of each clause individually
-        for i, case in enumerate(node.cases):
-            context.scopes["switches"][f"switch_{node.span.start_line}"].update({
-                f"cond_{i}": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_switch_{node.span.start_line}_cond_{i}'
-                )
-            })
+        for i in range(len(node.cases)):
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i}"
+                    )
+                }
+            )
 
         if hasattr(node, "default") and node.default is not None:
-            context.scopes["switches"][f"switch_{node.span.start_line}"].update({
-                f"cond_{i + 1}": context.init_clause_in_same_namespace(
-                    context, f'{context.name}_switch_{node.span.start_line}_cond_{i + 1}'
-                )
-            })
+            context.scopes["switches"][f"switch_{node.span.start_line}"].update(
+                {
+                    f"cond_{i + 1}": context.init_clause_in_same_namespace(
+                        context, f"{context.name}_switch_{node.span.start_line}_cond_{i + 1}"
+                    )
+                }
+            )
 
         target = self.visit(node.target, context)
         ops.cond(
@@ -654,9 +597,7 @@ class QasmInterpreter:
                 partial(
                     self.visit,
                     node.default.statements,
-                    context.scopes["switches"][f"switch_{node.span.start_line}"][
-                        f"cond_{i + 1}"
-                    ],
+                    context.scopes["switches"][f"switch_{node.span.start_line}"][f"cond_{i + 1}"],
                 )
                 if hasattr(node, "default") and node.default is not None
                 else None
@@ -671,9 +612,7 @@ class QasmInterpreter:
                     ),
                 )
                 for j, case in enumerate(
-                    list(context.scopes["switches"][f"switch_{node.span.start_line}"].keys())[
-                        1:-1
-                    ]
+                    list(context.scopes["switches"][f"switch_{node.span.start_line}"].keys())[1:-1]
                 )
             ],
         )()
@@ -689,7 +628,7 @@ class QasmInterpreter:
         """
         try:
             loop(execution_context)
-        except BreakException as e:
+        except BreakException:
             pass  # evaluation of the loop stops
 
     @visit.register(WhileLoop)
@@ -715,7 +654,7 @@ class QasmInterpreter:
             try:
                 # updates vars in context... need to propagate these to outer scope
                 self.visit(node.block, context.scopes["loops"][f"while_{node.span.start_line}"])
-            except ContinueException as e:
+            except ContinueException:
                 pass  # evaluation of this iteration ends, and we continue to the next
 
             inner_context = context.scopes["loops"][f"while_{node.span.start_line}"]
@@ -765,7 +704,7 @@ class QasmInterpreter:
                     val=i,
                     size=-1,
                     line=node.span.start_line,
-                    constant=False
+                    constant=False,
                 )
                 try:
                     # we only want to execute the gates in the loop's scope
@@ -773,7 +712,7 @@ class QasmInterpreter:
                     self.visit(
                         node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
                     )
-                except ContinueException as e:
+                except ContinueException:
                     pass  # evaluation of the current iteration stops and we continue
                 inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
                 context.vars = inner_context.vars
@@ -790,7 +729,7 @@ class QasmInterpreter:
         elif isinstance(
             loop_params, Iterable
         ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
-            iter = [val for val in loop_params]
+            iter = loop_params
 
             def unrolled(execution_context):
                 for i in iter:
@@ -808,7 +747,7 @@ class QasmInterpreter:
                         self.visit(
                             node.block, context.scopes["loops"][f"for_{node.span.start_line}"]
                         )  # updates vars in sub context if any measurements etc. occur
-                    except ContinueException as e:
+                    except ContinueException:
                         pass  # eval of current iteration stops and we continue
 
             self._handle_break(unrolled, context)
@@ -861,35 +800,33 @@ class QasmInterpreter:
             and name not in context.outer_scopes["subroutines"]
         ):
             raise NameError(f"Reference to an undeclared subroutine {name} in {context.name}.")
+        if name in context.scopes["subroutines"]:
+            func_context = context.scopes["subroutines"][name]
+        elif name in context.outer_scopes["subroutines"]:
+            func_context = context.outer_scopes["subroutines"][name]
         else:
-            # TODO: use ChainMap to get this from scopes or outer_scopes
-            if name in context.scopes["subroutines"]:
-                func_context = context.scopes["subroutines"][name]
-            elif name in context.outer_scopes["subroutines"]:
-                func_context = context.outer_scopes["subroutines"][name]
+            raise NameError(
+                f"Reference to subroutine {name} not available in calling namespace"
+                f"on line {node.span.start_line}."
+            )
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                func_context.vars[param] = evald_arg
             else:
-                raise NameError(
-                    f"Reference to subroutine {name} not available in calling namespace"
-                    f"on line {node.span.start_line}."
-                )
+                if not param == evald_arg:
+                    func_context.wire_map[param] = evald_arg
 
-            # bind subroutine arguments
-            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
-            for evald_arg, param in list(zip(evald_args, func_context.params)):
-                if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    func_context.vars[param] = evald_arg
-                else:
-                    if not param == evald_arg:
-                        func_context.wire_map[param] = evald_arg
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
 
-            # execute the subroutine
-            self.visit(func_context.body, func_context)
-
-            # the return value
-            try:
-                return getattr(func_context, "return")
-            except KeyError:
-                return None
+        # the return value
+        try:
+            return getattr(func_context, "return")
+        except KeyError:
+            return None
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
@@ -921,10 +858,7 @@ class QasmInterpreter:
             The indexed slice of the variable.
         """
         if not isinstance(var, Iterable):
-            if var.ty == "BitType":
-                var = _get_bit_type_val(var)
-            else:
-                var = var.val
+            var = _get_bit_type_val(var) if var.ty == "BitType" else var.val
         index = self.visit(node.index[0], context)
         if not (isinstance(index, Iterable) and len(index) > 1):
             return var[index]
@@ -1229,8 +1163,6 @@ class QasmInterpreter:
                 ret = complex(arg)
             if isinstance(node.type, BoolType):
                 ret = bool(arg)
-            if isinstance(node.type, ArrayType):
-                ret = arg.val
             # TODO: durations, angles, etc.
         except TypeError as e:
             raise TypeError(
@@ -1241,7 +1173,7 @@ class QasmInterpreter:
     @visit.register(BinaryExpression)
     def visit_binary_expression(
         self, node: BinaryExpression, context: Context
-    ):  # pylint: disable=too-many-branches
+    ):  # pylint: disable=too-many-branches, too-many-return-statements
         """
         Registers a binary expression.
 
@@ -1254,52 +1186,51 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        ret = None
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            if node.op.name == EQUALITY_OPERATORS[0]:
-                ret = lhs == rhs
-            if node.op.name == EQUALITY_OPERATORS[1]:
-                ret = lhs != rhs
-            if node.op.name == COMPARISON_OPERATORS[0]:
-                ret = lhs > rhs
-            if node.op.name == COMPARISON_OPERATORS[1]:
-                ret = lhs < rhs
-            if node.op.name == COMPARISON_OPERATORS[2]:
-                ret = lhs >= rhs
-            if node.op.name == COMPARISON_OPERATORS[3]:
-                ret = lhs <= rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[0]:
-                ret = lhs >> rhs
-            if node.op.name == BIT_SHIFT_OPERATORS[1]:
-                ret = lhs << rhs
-            if node.op.name == PLUS:
-                ret = lhs + rhs
-            if node.op.name == MINUS:
-                ret = lhs - rhs
-            if node.op.name == ASTERISK:
-                ret = lhs * rhs
-            if node.op.name == DOUBLE_ASTERISK:
-                ret = lhs**rhs
-            if node.op.name == SLASH:
-                ret = lhs / rhs
-            if node.op.name == PERCENT:
-                ret = lhs % rhs
-            if node.op.name == PIPE:
-                ret = lhs | rhs
-            if node.op.name == DOUBLE_PIPE:
-                ret = lhs or rhs
-            if node.op.name == AMPERSAND:
-                ret = lhs & rhs
-            if node.op.name == DOUBLE_AMPERSAND:
-                ret = lhs and rhs
-            if node.op.name == CARET:
-                ret = lhs ^ rhs
-            return ret
-        # we shouldn't ever get thi error if the parser did its job right
-        raise SyntaxError(  # pragma: no cover
-            f"Invalid operator {node.op.name} encountered in binary expression "
-            f"on line {node.span.start_line}."
-        )  # pragma: no cover
+        match node.op.name:
+            case "==":
+                return lhs == rhs
+            case "!=":
+                return lhs != rhs
+            case ">":
+                return lhs > rhs
+            case "<":
+                return lhs < rhs
+            case ">=":
+                return lhs >= rhs
+            case "<=":
+                return lhs <= rhs
+            case ">>":
+                return lhs >> rhs
+            case "<<":
+                return lhs << rhs
+            case "+":
+                return lhs + rhs
+            case "-":
+                return lhs - rhs
+            case "*":
+                return lhs * rhs
+            case "**":
+                return lhs**rhs
+            case "/":
+                return lhs / rhs
+            case "%":
+                return lhs % rhs
+            case "|":
+                return lhs | rhs
+            case "||":
+                return lhs or rhs
+            case "&":
+                return lhs & rhs
+            case "&&":
+                return lhs and rhs
+            case "^":
+                return lhs ^ rhs
+            case _:  # pragma: no cover
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -1313,14 +1244,13 @@ class QasmInterpreter:
         Returns:
             The result of the evaluated expression.
         """
-        if node.op.name in NON_ASSIGNMENT_CLASSICAL_OPERATORS:
-            operand = preprocess_operands(self.visit(node.expression, context))
-            if node.op.name == EXCLAMATION_POINT:
-                return not operand
-            if node.op.name == MINUS:
-                return -operand
-            if node.op.name == TILDE:
-                return ~operand  # pylint: disable=invalid-unary-operand-type
+        operand = preprocess_operands(self.visit(node.expression, context))
+        if node.op.name == "!":
+            return not operand
+        if node.op.name == "-":
+            return -operand  # pylint: disable=invalid-unary-operand-type
+        if node.op.name == "~":
+            return ~operand  # pylint: disable=invalid-unary-operand-type
         # we shouldn't ever get thi error if the parser did its job right
         raise SyntaxError(  # pragma: no covers
             f"Invalid operator {node.op.name} encountered in unary expression "
