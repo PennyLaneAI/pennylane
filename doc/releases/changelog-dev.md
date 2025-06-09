@@ -207,14 +207,20 @@
 
   * :class:`~.QubitUnitary`
     [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
   * :class:`~.ControlledQubitUnitary`
     [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
+
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
-  * :class:`~pennylane.ops.Exp`. Specifically, the following decompositions have been added:
+
+  * :class:`~pennylane.ops.Exp`. 
+    [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
+
+    Specifically, the following decompositions have been added:
     * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
     * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
-    [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
+
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
