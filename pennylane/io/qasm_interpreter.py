@@ -113,6 +113,8 @@ class Context:
             context["wires"] = []
         if "scopes" not in context:
             context["scopes"] = {"subroutines": dict()}
+        if "outer_scopes" not in context:
+            context["outer_scopes"] = {"subroutines": dict()}
         if "outer_wires" not in context:
             context["outer_wires"] = []
         if "wire_map" not in context or context["wire_map"] is None:
@@ -415,7 +417,7 @@ class QasmInterpreter:
             func_context = context.outer_scopes["subroutines"][name]
         else:
             raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace"
+                f"Reference to subroutine {name} not available in calling namespace "
                 f"on line {node.span.start_line}."
             )
 

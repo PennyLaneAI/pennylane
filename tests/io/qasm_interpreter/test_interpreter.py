@@ -55,10 +55,24 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_subroutine_not_defined(self):
+        ast = parse(
+            """
+            undefined_subroutine();
+            """,
+            permissive=True
+        )
+
+        with pytest.raises(NameError, match="Reference to subroutine undefined_subroutine not "
+                                            "available in calling namespace on line 2."):
+            QasmInterpreter().interpret(
+                ast, context={"name": "undefined-subroutine", "wire_map": None}
+            )
+
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            open("standalone_subroutines.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -73,7 +87,7 @@ class TestSubroutine:
     def test_complex_subroutines(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            open("complex_subroutines.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -89,7 +103,7 @@ class TestSubroutine:
     def test_subroutines(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+            open("subroutines.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -105,7 +119,7 @@ class TestExpressions:
     def test_different_unary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
+            open("unary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -121,7 +135,7 @@ class TestExpressions:
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
+            open("binary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -159,7 +173,7 @@ class TestExpressions:
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
+            open("assignment.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -357,7 +371,7 @@ class TestVariables:
     def test_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+            open("variables.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -428,7 +442,7 @@ class TestVariables:
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+            open("classical.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -446,7 +460,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
