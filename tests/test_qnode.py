@@ -1468,6 +1468,57 @@ class TestShots:
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
+    def test_shots_initialization(self):
+        """Test that _shots is correctly initialized from the device."""
+        dev = qml.device("default.qubit", wires=1, shots=42)
+        qnode = qml.QNode(dummyfunc, dev)
+        assert qnode._shots == qml.measurements.Shots(42)
+
+        dev_analytic = qml.device("default.qubit", wires=1)
+        qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
+        assert qnode_analytic._shots is None or qnode_analytic._shots.total_shots is None
+
+    def test_shots_update_with_device(self):
+        """Test that _shots is updated when updating the QNode with a new device."""
+        dev1 = qml.device("default.qubit", wires=1, shots=100)
+        qnode = qml.QNode(dummyfunc, dev1)
+        assert qnode._shots == qml.measurements.Shots(100)
+
+        dev2 = qml.device("default.qubit", wires=1, shots=200)
+        updated_qnode = qnode.update(device=dev2)
+        assert updated_qnode._shots == qml.measurements.Shots(200)
+
+    def test_shots_preserved_in_other_updates(self):
+        """Test that _shots is preserved when updating other QNode parameters."""
+        dev = qml.device("default.qubit", wires=1, shots=50)
+        qnode = qml.QNode(dummyfunc, dev)
+        assert qnode._shots == qml.measurements.Shots(50)
+
+        # Update something unrelated to shots or device
+        updated_qnode = qnode.update(diff_method="parameter-shift")
+        assert updated_qnode._shots == qml.measurements.Shots(50)
+
+    def test_shots_direct_update(self):
+        """Test that _shots can be updated via the shots parameter in update()."""
+        dev = qml.device("default.qubit", wires=1, shots=30)
+        qnode = qml.QNode(dummyfunc, dev)
+        assert qnode._shots == qml.measurements.Shots(30)
+
+        # Update shots directly
+        updated_qnode = qnode.update(shots=75)
+        assert updated_qnode._shots == qml.measurements.Shots(75)
+
+    def test_private_shots_update_warning(self):
+        """Test that attempting to update _shots directly raises a warning."""
+        dev = qml.device("default.qubit", wires=1, shots=25)
+        qnode = qml.QNode(dummyfunc, dev)
+
+        with pytest.warns(UserWarning, match="gradient_kwarg _shots"):
+            updated_qnode = qnode.update(_shots=999)
+
+        # The _shots value should not have changed
+        assert updated_qnode._shots == qml.measurements.Shots(25)
+
 
 class TestTransformProgramIntegration:
     """Tests for the integration of the transform program with the qnode."""

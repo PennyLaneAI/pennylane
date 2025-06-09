@@ -639,6 +639,8 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
+        self._shots = getattr(device, "shots", None)
+
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -743,6 +745,13 @@ class QNode:
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
+
+        # For shots, we allow `shots=...` to be passed as a keyword argument
+        shots = self._shots
+        shots_to_update = "shots" in kwargs
+        if shots_to_update:
+            shots = qml.measurements.Shots(kwargs.pop("shots"))
+
         original_init_args = self._init_args.copy()
         # gradient_kwargs defaults to None
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
@@ -754,6 +763,11 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
+
+        # If device was updated, get shots from the new device
+        if shots_to_update:
+            updated_qn._shots = shots
+
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
