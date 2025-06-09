@@ -32,7 +32,6 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint
 from pennylane.operation import FlatPytree, Operation
-from pennylane.ops import Identity
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
