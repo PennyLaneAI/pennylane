@@ -221,31 +221,6 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-def _hadamard_rz_rx_resources():
-    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_rz_rx_resources)
-def _hadamard_to_rz_rx(wires: WiresLike, **__):
-    qml.RZ(np.pi / 2, wires=wires)
-    qml.RX(np.pi / 2, wires=wires)
-    qml.RZ(np.pi / 2, wires=wires)
-    qml.GlobalPhase(-np.pi / 2, wires=wires)
-
-
-def _hadamard_rz_ry_resources():
-    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_rz_ry_resources)
-def _hadamard_to_rz_ry(wires: WiresLike, **__):
-    qml.RZ(np.pi, wires=wires)
-    qml.RY(np.pi / 2, wires=wires)
-    qml.GlobalPhase(-np.pi / 2)
-
-
-add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry)
-
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -361,8 +336,6 @@ class PauliX(Observable, Operation):
     resource_keys = set()
 
     batch_size = None
-
-    resource_keys = set()
 
     _queue_category = "_ops"
 
@@ -2167,23 +2140,6 @@ def _pow_iswap_to_zz(wires, **__):
 add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), _pow_iswap_to_zz, _pow_iswap_to_siswap)
 
 
-def _iswap_decomp_resources():
-    return {qml.S: 2, qml.Hadamard: 2, qml.CNOT: 2}
-
-
-@register_resources(_iswap_decomp_resources)
-def _iswap_decomp(wires, **__):
-    S(wires=wires[0])
-    S(wires=wires[1])
-    Hadamard(wires=wires[0])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    Hadamard(wires=wires[1])
-
-
-add_decomps(ISWAP, _iswap_decomp)
-
-
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
@@ -2381,27 +2337,5 @@ def _pow_siswap_to_zz(wires, **_):
 
 add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), _pow_siswap_to_zz, _pow_siswap_to_iswap)
 
-
-def _siswap_decomp_resources():
-    return {SX: 6, qml.RZ: 4, qml.CNOT: 2}
-
-
-@register_resources(_siswap_decomp_resources)
-def _siswap_decomp(wires, **__):
-    SX(wires=wires[0])
-    qml.RZ(np.pi / 2, wires=wires[0])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    SX(wires=wires[0])
-    qml.RZ(7 * np.pi / 4, wires=wires[0])
-    SX(wires=wires[0])
-    qml.RZ(np.pi / 2, wires=wires[0])
-    SX(wires=wires[1])
-    qml.RZ(7 * np.pi / 4, wires=wires[1])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    SX(wires=wires[0])
-    SX(wires=wires[1])
-
-
-add_decomps(SISWAP, _siswap_decomp)
 
 SQISW = SISWAP
