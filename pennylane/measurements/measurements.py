@@ -29,6 +29,12 @@ from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .capture_measurements import (
+    create_measurement_mcm_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+)
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -60,9 +66,9 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         name = cls._shortname or cls.__name__
-        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
-        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
-        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
+        cls._wires_primitive = create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
