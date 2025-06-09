@@ -45,6 +45,17 @@ Resource Estimation Base Classes:
     ~ResourceOperator
     ~CompressedResourceOp
 
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
+
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -78,3 +89,13 @@ from .resource_tracking import (
     estimate_resources,
 )
 from .resources_base import Resources
+from .resource_mapping import map_to_resource_op
+from .resource_operator import (
+    CompressedResourceOp,
+    ResourceOperator,
+    ResourcesNotDefined,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+)

@@ -21,14 +21,13 @@ from pennylane.operation import Operation
 
 @singledispatch
 def map_to_resource_op(op: Operation):
-    r"""A function which maps an instance of :class:`~.Operation` to
-    its associated :class:`~.ResourceOperator`.
+    r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`.
 
     Args:
         op (~.Operation): base operation to be mapped
 
     Return:
-        (~.ResourceOperator): the resource operator equal of the base operator
+        (~.pennylane.labs.resource_estimation.ResourceOperator): the resource operator equal of the base operator
 
     Raises:
         TypeError: The op is not a valid operation
@@ -40,5 +39,5 @@ def map_to_resource_op(op: Operation):
         raise TypeError(f"The op {op} is not a valid operation.")
 
     raise NotImplementedError(
-        "Operation doesn't have a resource equivalent and doesn't define" + " a decomposition."
+        "Operation doesn't have a resource equivalent and doesn't define a decomposition."
     )
