@@ -119,7 +119,7 @@ class TemporaryAND(Operation):
 
         **Example**
 
-        >>> print(qml.TemporaryAND.compute_matrix())
+        >>> print(qml.TemporaryAND.compute_matrix(control_values = (1,1)))
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -160,7 +160,9 @@ class TemporaryAND(Operation):
         return result_matrix
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike, control_values):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike, control_values=(1, 1)
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
