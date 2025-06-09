@@ -1246,7 +1246,6 @@ class QasmInterpreter:
             TypeError: If the cast cannot be made.
         """
         arg = self.visit(node.argument, context)
-        ret = arg
         try:
             if isinstance(node.type, IntType):
                 ret = int(arg)
@@ -1281,7 +1280,15 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
+        if isinstance(lhs, Variable) and isinstance(rhs, Variable) and isinstance(lhs.val, MeasurementValue) \
+            and isinstance(rhs.val, MeasurementValue):
+            context.process_two_measurements(lhs, rhs, node.op.name, node.span.start_line)
+        elif isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue):
+            context.process_measurement(rhs, lhs, node.op.name, node.span.start_line)
+        elif isinstance(rhs, Variable) and isinstance(rhs.val, MeasurementValue):
+            context.process_measurement_on_right(lhs, rhs, node.op.name, node.span.start_line)
+        else:
+            _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
