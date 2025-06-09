@@ -15,13 +15,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
+from scipy.sparse import csr_matrix
+from scipy.sparse.linalg import norm
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import norm
-from abc import abstractmethod
 
 def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
@@ -35,9 +34,7 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
 
 
     **Example**
-    #todo:
-
-    This code example demonstrates building fragments from numpy matrices.
+    This code example demonstrates building fragments from scipy sparse matrices.
 
     >>> from pennylane.labs.trotter_error import sparse_fragments
     >>> from scipy.sparse import csr_matrix
@@ -79,7 +76,7 @@ class SparseFragment(Fragment):
     [SparseFragment(type=<class 'scipy.sparse.csr_matrix'>), SparseFragment(type=<class 'scipy.sparse.csr_matrix'>)]
     """
 
-    def __init__(self, fragment: csr_matrix, bond_dim: int = 10):
+    def __init__(self, fragment: csr_matrix):
         self.fragment = fragment
 
     def __add__(self, other: SparseFragment):
@@ -136,16 +133,12 @@ class SparseState(AbstractState):
     * ``dot``: implments the dot product of two states
     """
     def __init__(self, csr_matrix: csr_matrix):
-        """Initialize the MPSState with a specified bond dimension.
-
-        Args:
-            bond_dim (int): The bond dimension for the MPSState. Defaults to 10.
+        """Initialize the SparseState.
         """
         self.csr_matrix = csr_matrix
 
     def __add__(self, other: SparseState) -> SparseState:
         return SparseState(self.csr_matrix + other.csr_matrix)
-        
 
     def __sub__(self, other: SparseState) -> SparseState:
         return SparseState(self.csr_matrix - other.csr_matrix)
@@ -177,7 +170,7 @@ class SparseState(AbstractState):
         # Handle _AdditiveIdentity (zero state)
         if hasattr(other, '__class__') and 'AdditiveIdentity' in other.__class__.__name__:
             return 0.0
-        
+
         # Handle SparseState objects
         if isinstance(other, SparseState):
             return self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())[0,0]
