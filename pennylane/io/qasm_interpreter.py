@@ -7,12 +7,10 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Iterable
 
-import numpy as np
 from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
-    ArrayType,
     BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
@@ -279,8 +277,6 @@ class Context:
             match node.op.name:
                 case "=":
                     self.vars[name].val = value
-                case "++":
-                    self.vars[name].val = self.vars[name].val + 1
                 case "+=":
                     self.vars[name].val += value
                 case "-=":
@@ -303,7 +299,7 @@ class Context:
                     self.vars[name].val = self.vars[name].val % value
                 case "**=":
                     self.vars[name].val = self.vars[name].val ** value
-                case _:
+                case _:  # pragma: no cover
                     # we shouldn't ever get this error if the parser did its job right
                     raise SyntaxError(  # pragma: no cover
                         f"Invalid operator {node.op.name} encountered in assignment expression "
@@ -1136,8 +1132,6 @@ class QasmInterpreter:
                 ret = complex(arg)
             if isinstance(node.type, BoolType):
                 ret = bool(arg)
-            if isinstance(node.type, ArrayType):
-                ret = arg.val
             # TODO: durations, angles, etc.
         except TypeError as e:
             raise TypeError(
@@ -1166,8 +1160,6 @@ class QasmInterpreter:
                 return lhs == rhs
             case "!=":
                 return lhs != rhs
-            case "~=":
-                return np.isclose(lhs, rhs)
             case ">":
                 return lhs > rhs
             case "<":
@@ -1202,7 +1194,7 @@ class QasmInterpreter:
                 return lhs and rhs
             case "^":
                 return lhs ^ rhs
-            case _:
+            case _:  # pragma: no cover
                 # we shouldn't ever get this error if the parser did its job right
                 raise SyntaxError(  # pragma: no cover
                     f"Invalid operator {node.op.name} encountered in binary expression "

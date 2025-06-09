@@ -10,7 +10,6 @@ bit j = "10";
 bit k = "11";
 int l = 5;
 int m = 6;
-int n = 2;
 a = 1;
 b += 2;
 c -= 3;
