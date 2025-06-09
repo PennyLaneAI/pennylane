@@ -577,11 +577,12 @@ class IntegerComparator(Operation):
 
         **Example:**
 
-        >>> print(qml.IntegerComparator.compute_decomposition(4, wires=[0, 1, 2, 3]))
-        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 0, 0]),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 0, 1]),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 1, 0]),
-         MultiControlledX(wires=[0, 1, 2, 3], control_values=[1, 1, 1])]
+        >>> print(qml.draw(qml.IntegerComparator.compute_decomposition)(4, wires=[0, 1, 2, 3]))
+        0: ─╭●────╭●────╭●────┤
+        1: ─├●──X─├●────├●──X─┤
+        2: ─│─────├●──X─├●──X─┤
+        3: ─╰X────╰X────╰X────┤
+
         """
 
         if not isinstance(value, int):
