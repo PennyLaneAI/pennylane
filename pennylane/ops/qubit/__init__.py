@@ -70,6 +70,7 @@ from .parametric_ops_multi_qubit import (
     CPhaseShift00,
     CPhaseShift01,
     CPhaseShift10,
+    HamEvol
 )
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, Rot, U1, U2, U3
 from .qchem_ops import (
