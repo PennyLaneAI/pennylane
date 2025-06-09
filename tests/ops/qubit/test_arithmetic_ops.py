@@ -435,8 +435,7 @@ class TestIntegerComparator:
 
     @pytest.mark.parametrize("geq", [True, False])
     @pytest.mark.parametrize("value", list(range(9)))
-    @pytest.mark.parametrize("initial_state", list(itertools.product([0, 1], repeat=3)))
-    def test_decomposition_qfuncs(self, value, geq, initial_state):
+    def test_decomposition_qfuncs(self, value, geq):
         """Tests the qfunc decompositions of the IntegerComparator operator."""
         op = qml.IntegerComparator(value, wires=[0, 1, 2, 3], geq=geq)
         for rule in qml.list_decomps(qml.IntegerComparator):
