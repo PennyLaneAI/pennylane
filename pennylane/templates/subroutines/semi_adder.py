@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Contains the SemiAdder template.
-"""
+"""Contains the SemiAdder template for performing the semi-out-place addition."""
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
