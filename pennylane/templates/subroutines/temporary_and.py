@@ -65,7 +65,7 @@ class TemporaryAND(Operation):
             qml.CNOT([2,3])
             # We can now apply the adjoint TemporaryAND,
             # because after applying a Toffoli, the target wire would be |0>.
-            qml.adjoint(qml.TemporaryAND([0,1,2])) 
+            qml.adjoint(qml.TemporaryAND([0,1,2]))
 
             return qml.sample(wires=[0,1,2,3])
 
