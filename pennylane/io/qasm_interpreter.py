@@ -91,37 +91,39 @@ PARAMETERIZED_GATES = {
 }
 
 
-def _eval_unary_op(operand: any, node: QASMNode):
+def _eval_unary_op(operand: any, operator: str, line: int):
     """
     Evaluates a unary operator.
 
     Args:
         operand (any): The only operand.
-        node (QASMNode): The operator node.
+        operator (str): The unary operation.
+        line (int): The line number.
     """
-    if node.op.name == "!":
+    if operator == "!":
         return not operand
-    if node.op.name == "-":
+    if operator == "-":
         return -operand  # pylint: disable=invalid-unary-operand-type
-    if node.op.name == "~":
+    if operator == "~":
         return ~operand  # pylint: disable=invalid-unary-operand-type
     # we shouldn't ever get thi error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
-        f"Invalid operator {node.op.name} encountered in unary expression "
-        f"on line {node.span.start_line}."
+        f"Invalid operator {operator} encountered in unary expression "
+        f"on line {line}."
     )  # pragma: no cover
 
 
-def _eval_binary_op(lhs: any, node: QASMNode, rhs: any):
+def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
 
     Args:
          lhs (any): the first operand, usually a variable or a MeasurementValue.
-         op (QASMNode): the operation QASMNode.
+         operator (str): the operation.
          rhs (any): the second operand.
+         line (int): the line number the operation occurs on.
     """
-    match node.op.name:
+    match operator:
         case "==":
             return lhs == rhs
         case "!=":
@@ -163,8 +165,8 @@ def _eval_binary_op(lhs: any, node: QASMNode, rhs: any):
         case _:  # pragma: no cover
             # we shouldn't ever get this error if the parser did its job right
             raise SyntaxError(  # pragma: no cover
-                f"Invalid operator {node.op.name} encountered in binary expression "
-                f"on line {node.span.start_line}."
+                f"Invalid operator {operator} encountered in binary expression "
+                f"on line {line}."
             )  # pragma: no cover
 
 
@@ -335,65 +337,72 @@ class Context:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def process_measurement(self, value: any, prev: Variable, node: QASMNode):
+    def process_measurement(self, value: any, prev: Variable, operator: str, line: int):
+        """
+        Updates a MeasurementValue's processing function to reflect classical logic applied to
+        the MeasurementValue.
+
+        Args:
+            value (any): The second operand of the operation involving the MeasurementValue.
+            prev (Variable): The Variables whose value is a MeasurementValue.
+            operator (str): The operator to apply to the MeasurementValue.
+            line (int): The line number at which the operator occurs.
+        """
         def new_processing_fn(*args):
-            _eval_binary_op(prev.val.processing_fn(*args), node, value)
+            _eval_binary_op(prev.val.processing_fn(*args), operator, value, line)
 
         prev.val = MeasurementValue(prev.val.measurements, new_processing_fn)
 
     def update_var(
-        self,
-        value: any,
-        name: str,
-        node: QASMNode,
+        self, value: any, name: str, operator: str, line: int
     ):  # pylint: disable=too-many-branches
         """
         Updates a variable, or raises if it is constant.
         Args:
             value (any): the value to set.
             name (str): the name of the variable.
-            node (QASMNode): the QASMNode that corresponds to the update.
+            operator (str): the assignment operator.
+            line (int): the line number at which we encountered the assignment node.
         """
-        if name in self.vars:
-            if self.vars[name].constant:
-                raise ValueError(
-                    f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                    f"defined on line {self.vars[name].line}"
-                )
-            match node.op.name:
-                case "=":
-                    self.vars[name].val = value
-                case "+=":
-                    self.vars[name].val += value
-                case "-=":
-                    self.vars[name].val -= value
-                case "*=":
-                    self.vars[name].val = self.vars[name].val * value
-                case "/=":
-                    self.vars[name].val = self.vars[name].val / value
-                case "&=":
-                    self.vars[name].val = self.vars[name].val & value
-                case "|=":
-                    self.vars[name].val = self.vars[name].val | value
-                case "^=":
-                    self.vars[name].val = self.vars[name].val ^ value
-                case "<<=":
-                    self.vars[name].val = self.vars[name].val << value
-                case ">>=":
-                    self.vars[name].val = self.vars[name].val >> value
-                case "%=":
-                    self.vars[name].val = self.vars[name].val % value
-                case "**=":
-                    self.vars[name].val = self.vars[name].val ** value
-                case _:  # pragma: no cover
-                    # we shouldn't ever get this error if the parser did its job right
-                    raise SyntaxError(  # pragma: no cover
-                        f"Invalid operator {node.op.name} encountered in assignment expression "
-                        f"on line {node.span.start_line}."
-                    )  # pragma: no cover
-            self.vars[name].line = node.span.start_line
-        else:
+        if name not in self.vars:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+        if self.vars[name].constant:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {line} that was "
+                f"defined on line {self.vars[name].line}"
+            )
+        match operator:
+            case "=":
+                self.vars[name].val = value
+            case "+=":
+                self.vars[name].val += value
+            case "-=":
+                self.vars[name].val -= value
+            case "*=":
+                self.vars[name].val = self.vars[name].val * value
+            case "/=":
+                self.vars[name].val = self.vars[name].val / value
+            case "&=":
+                self.vars[name].val = self.vars[name].val & value
+            case "|=":
+                self.vars[name].val = self.vars[name].val | value
+            case "^=":
+                self.vars[name].val = self.vars[name].val ^ value
+            case "<<=":
+                self.vars[name].val = self.vars[name].val << value
+            case ">>=":
+                self.vars[name].val = self.vars[name].val >> value
+            case "%=":
+                self.vars[name].val = self.vars[name].val % value
+            case "**=":
+                self.vars[name].val = self.vars[name].val ** value
+            case _:  # pragma: no cover
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {operator} encountered in assignment expression "
+                    f"on line {line}."
+                )  # pragma: no cover
+        self.vars[name].line = line
 
     def require_wires(self, wires: list):
         """
@@ -987,9 +996,9 @@ class QasmInterpreter:
         res = self.visit(node.rvalue, context)
         prev = context.retrieve_variable(name)
         if isinstance(prev.val, MeasurementValue):
-            context.process_measurement(res, prev, node)
+            context.process_measurement(res, prev, node.op.name, node.span.start_line)
         else:
-            context.update_var(res, name, node)
+            context.update_var(res, name, node.op.name, node.span.start_line)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: Context):
@@ -1272,7 +1281,7 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        _eval_binary_op(lhs, node, rhs)
+        _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -1287,7 +1296,7 @@ class QasmInterpreter:
             The result of the evaluated expression.
         """
         operand = preprocess_operands(self.visit(node.expression, context))
-        _eval_unary_op(operand, node)
+        _eval_unary_op(operand, node.op.name, node.span.start_line)
 
     @visit.register(IndexExpression)
     def visit_index_expression(
