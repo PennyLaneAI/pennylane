@@ -109,7 +109,10 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 
 
 def ctrl_decomp_zyz(
-    target_operation: Operator, control_wires: Wires, work_wires: Optional[Wires] = None
+    target_operation: Operator,
+    control_wires: Wires,
+    work_wires: Optional[Wires] = None,
+    work_wire_type: Optional[str] = "dirty",
 ) -> list[Operation]:
     """Decompose the controlled version of a target single-qubit operation
 
@@ -122,6 +125,7 @@ def ctrl_decomp_zyz(
         target_operation (~.operation.Operator): the target operation or matrix to decompose
         control_wires (~.wires.Wires): the control wires of the operation.
         work_wires (~.wires.Wires): the work wires available for this decomposition
+        work_wire_type (str): the type of work wires, either "clean" or "dirty".
 
     Returns:
         list[Operation]: the decomposed operations
@@ -189,10 +193,17 @@ def ctrl_decomp_zyz(
     with queuing.AnnotatedQueue() as q:
         all_wires = control_wires + target_wire
         if len(control_wires) > 1:
-            _multi_control_zyz(*rot_angles, wires=all_wires, work_wires=work_wires)
+            _multi_control_zyz(
+                *rot_angles, wires=all_wires, work_wires=work_wires, work_wire_type=work_wire_type
+            )
         else:
             _single_control_zyz(*rot_angles, wires=all_wires)
-        ops.cond(_not_zero(global_phase), _ctrl_global_phase)(global_phase, control_wires)
+        ops.cond(_not_zero(global_phase), _ctrl_global_phase)(
+            global_phase,
+            control_wires,
+            work_wires,
+            work_wire_type,
+        )
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -231,7 +242,13 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             ): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
-            controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+            controlled_resource_rep(
+                ops.GlobalPhase,
+                {},
+                num_control_wires=num_control_wires,
+                num_work_wires=1,
+                work_wire_type="dirty",
+            ): 1,
         }
     return {
         resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
@@ -252,7 +269,13 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         ): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
         ops.Hadamard: 2,
-        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+        controlled_resource_rep(
+            ops.GlobalPhase,
+            {},
+            num_control_wires=num_control_wires,
+            num_work_wires=1,
+            work_wire_type="dirty",
+        ): 1,
     }
 
 
@@ -277,7 +300,7 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
             )
         ],
     )(U, wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
+    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "dirty")
 
 
 def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
@@ -308,7 +331,7 @@ def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, **__):
+def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wire_type, **__):
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
@@ -317,24 +340,43 @@ def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, **__):
             {},
             num_control_wires=num_control_wires - 1,
             num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
         ): 2,
-        controlled_resource_rep(ops.GlobalPhase, {}, num_control_wires=num_control_wires): 1,
+        controlled_resource_rep(
+            ops.GlobalPhase,
+            {},
+            num_control_wires=num_control_wires,
+            num_work_wires=1,
+            work_wire_type="dirty",
+        ): 1,
     }
 
 
 @register_condition(_multi_ctrl_decomp_zyz_condition)
 @register_resources(_multi_ctrl_decomp_zyz_resources)
-def multi_control_decomp_zyz_rule(U, wires, work_wires, **__):
+def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
-    _multi_control_zyz(phi, theta, omega, wires=wires, work_wires=work_wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
+    _multi_control_zyz(
+        phi,
+        theta,
+        omega,
+        wires=wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "dirty")
 
 
 def _controlled_two_qubit_unitary_resource(
-    num_target_wires, num_control_wires, num_zero_control_values, num_work_wires, **__
+    num_target_wires,
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type,
+    **__,
 ):
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
@@ -344,6 +386,7 @@ def _controlled_two_qubit_unitary_resource(
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
         ): count
         for base_op_rep, count in base_resources.gate_counts.items()
     }
@@ -353,7 +396,7 @@ def _controlled_two_qubit_unitary_resource(
 
 @register_condition(lambda num_target_wires, **_: num_target_wires == 2)
 @register_resources(_controlled_two_qubit_unitary_resource)
-def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__):
+def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
     zero_control_wires = [w for w, val in zip(wires[:-2], control_values) if not val]
     for w in zero_control_wires:
@@ -362,6 +405,7 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, **__
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
+        work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
     for w in zero_control_wires:
         ops.PauliX(w)
@@ -371,14 +415,20 @@ def _decompose_mcx_with_many_workers_condition(num_control_wires, num_work_wires
     return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
 
 
-def _decompose_mcx_with_many_workers_resource(num_control_wires, **__):
-    return {ops.Toffoli: 4 * (num_control_wires - 2)}
+def _decompose_mcx_with_many_workers_resource(num_control_wires, work_wire_type, **__):
+    return {
+        ops.Toffoli: (
+            4 * (num_control_wires - 2)
+            if work_wire_type == "dirty"
+            else 2 * (num_control_wires - 2) + 1
+        )
+    }
 
 
 # pylint: disable=no-value-for-parameter
 @register_condition(_decompose_mcx_with_many_workers_condition)
 @register_resources(_decompose_mcx_with_many_workers_resource)
-def _decompose_mcx_with_many_workers(wires, work_wires, **__):
+def _decompose_mcx_with_many_workers(wires, work_wires, work_wire_type, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
@@ -394,14 +444,18 @@ def _decompose_mcx_with_many_workers(wires, work_wires, **__):
     def loop_down(i):
         ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-    loop_up()
+    if work_wire_type == "dirty":
+        ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
+        loop_up()
+
     ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
     loop_down()
     ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
     loop_up()
     ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()
+
+    if work_wire_type == "dirty":
+        loop_down()
 
 
 decompose_mcx_with_many_workers = flip_zero_control(_decompose_mcx_with_many_workers)
@@ -792,20 +846,26 @@ def _single_control_zyz(phi, theta, omega, wires):
     ops.cond(_not_zero(omega - phi), _RZ)((omega - phi) / 2, wires=wires[-1])
 
 
-def _multi_control_zyz(phi, theta, omega, wires, work_wires):
+def _multi_control_zyz(
+    phi, theta, omega, wires, work_wires, work_wire_type
+):  # pylint: disable=too-many-arguments
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
     ops.cond(_not_zero(phi), _CRZ)(phi, wires=wires[-2:])
     ops.cond(_not_zero(theta), _CRY)(theta / 2, wires=wires[-2:])
 
-    ops.ctrl(ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires)
+    ops.ctrl(
+        ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
+    )
 
     # Operator B
     ops.cond(_not_zero(theta), _CRY)(-theta / 2, wires=wires[-2:])
     ops.cond(_not_zero(phi + omega), _CRZ)(-(phi + omega) / 2, wires=wires[-2:])
 
-    ops.ctrl(ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires)
+    ops.ctrl(
+        ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
+    )
 
     # Operator C
     ops.cond(_not_zero(omega - phi), _CRZ)((omega - phi) / 2, wires=wires[-2:])
@@ -827,8 +887,13 @@ def _CRY(phi, wires):
     ops.CRY(phi, wires=wires)
 
 
-def _ctrl_global_phase(phase, control_wires):
-    ops.ctrl(ops.GlobalPhase(-phase), control=control_wires)
+def _ctrl_global_phase(phase, control_wires, work_wires=None, work_wire_type="dirty"):
+    ops.ctrl(
+        ops.GlobalPhase(-phase),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 def _controlled_x(target_wire, control, work_wires, work_wire_type):

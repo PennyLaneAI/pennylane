@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane._deprecated_observable import Observable
+from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
@@ -113,7 +114,7 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.PauliError("X", 0.5, wires=0),
-        AssertionError,  # each data element must be tensorlike
+        DeviceError,  # not supported with default.qubit and does not provide a decomposition
     ),
     (
         qml.THermitian(np.eye(3), wires=0),
