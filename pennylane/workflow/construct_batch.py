@@ -110,8 +110,9 @@ def _interpret_level_initial(
     if isinstance(level, slice):
         start = level.start if level.start is not None else 0
         stop = level.stop if level.stop is not None else num_user_transforms
-        stop = min(stop, num_user_transforms) if stop > 0 else num_user_transforms + stop
-        return slice(max(start, 0), max(stop, 0), level.step)
+        if stop >= 0:
+            stop = min(stop, num_user_transforms)
+        return slice(start, stop, level.step)
 
     return level
 
@@ -140,7 +141,7 @@ def _interpret_level_inner(
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
-        return slice(start, num_user_transforms+end_idx)
+        return slice(start, num_user_transforms + end_idx)
 
     if level == "device":
         return slice(start, None)  # Include all remaining transforms
