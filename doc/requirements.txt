@@ -13,9 +13,9 @@ packaging
 scipy
 docutils==0.20
 sphinx==8.1
-sphinx-automodapi==0.19
+sphinx-automodapi==0.13
 sphinx-copybutton
-sphinxcontrib-bibtex==2.6.3
+sphinxcontrib-bibtex==2.4.2
 sphinxcontrib-applehelp==2.0.0
 sphinxcontrib-devhelp==2.0.0
 sphinxcontrib-qthelp==2.0.0
@@ -26,7 +26,7 @@ tensorflow_macos==2.9.0; sys_platform == "darwin" and platform_machine == "arm64
 tensornetwork==0.3
 tomlkit
 torch==2.5.1
-jinja2>=3.1
+jinja2>=3.0
 rustworkx>=0.14.0
 networkx==3.1
 requests==2.32.3
@@ -37,4 +37,3 @@ tomli~=2.0.0 # Drop once minimum Python version is 3.11
 sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
 diastatic-malt
-galois
