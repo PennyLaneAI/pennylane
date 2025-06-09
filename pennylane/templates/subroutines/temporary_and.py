@@ -29,7 +29,7 @@ class TemporaryAND(Operation):
     The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
     about the target wire to enable more efficient circuit decompositions. The ``TemporaryAND`` assumes the target qubit
     to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
-    For more details, see Fig. 4 in `Ryan Babbush et al.(2018) <https://arxiv.org/abs/1805.03662>`_.
+    For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
