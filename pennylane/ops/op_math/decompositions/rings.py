@@ -291,11 +291,11 @@ class ZOmega:
 class DyadicMatrix:
     r"""Represents the matrices over the ring :math:`\mathbb{D}[\omega]`,
     the ring of dyadic integers adjoined with :math:`\omega`.
-    
+
     The `~pennylane.ZOmega` (or :math:`\mathbb{Z}[\omega]) represents a subset of this ring,
     and can be used to construct its elements. The matrix form is usually represented as:
 
-    .. math::        
+    .. math::
         \frac{1}{\sqrt{2}^k}
         \begin{pmatrix}
         a_{00} & a_{01} \\
@@ -472,7 +472,7 @@ class SO3Matrix:
     r"""Represents the :math:`SO(3)` matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`).
 
     .. math::
-       
+
         \frac{1}{\sqrt{2}^k}
         \begin{pmatrix}
         a_{00} & a_{01} & a_{11} \\
@@ -547,7 +547,7 @@ class SO3Matrix:
         return (_SQRT2**-self.k) * matrix.reshape(3, 3)
 
     @property
-    def parity_mat(self: SO3Matrix) -> np.ndarray[np.int8]:
+    def parity_mat(self: SO3Matrix) -> np.ndarray:
         """Return the parity of the SO(3) matrix."""
         return np.array([[x.a % 2 for x in row] for row in self.so3mat], dtype=np.int8)
 
