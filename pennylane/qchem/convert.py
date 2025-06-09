@@ -14,12 +14,16 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=too-many-function-args
+
 import warnings
 from itertools import product
 
 import numpy as np
 
-# pylint: disable= import-outside-toplevel,no-member,too-many-function-args
+# pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -194,7 +198,6 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-# pylint:disable=too-many-branches
 def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
@@ -209,7 +212,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
-            accepted. If None, will map sorted wires from all `ops` to consecutive int.
+            accepted. If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): whether to keep the imaginary part of the coefficients if they are smaller
             than the provided tolerance.
 
@@ -248,7 +251,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
-        qubit_indexed_wires = all_wires
+        qubit_indexed_wires = qml.wires.Wires(range(max(all_wires) + 1))
 
     coeffs = np.array(coeffs)
     if (np.abs(coeffs.imag) < tol).all():
@@ -330,6 +333,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
     >>> print(h_pl)
     (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
     """
+    format = format.strip().lower()
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")
 

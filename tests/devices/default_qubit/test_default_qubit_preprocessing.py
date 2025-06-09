@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
+from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
@@ -97,7 +98,7 @@ class TestConfigSetup:
     def test_error_if_device_option_not_available(self):
         """Test that an error is raised if a device option is requested but not a valid option."""
         config = qml.devices.ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             qml.device("default.qubit").preprocess(config)
 
     def test_choose_best_gradient_method(self):
@@ -399,7 +400,7 @@ class TestPreprocessing:
         program = device.preprocess_transforms()
 
         if not supported:
-            with pytest.raises(qml.DeviceError):
+            with pytest.raises(DeviceError):
                 program([tape])
         else:
             program([tape])
@@ -630,7 +631,7 @@ class TestPreprocessingIntegration:
         ]
 
         program = qml.device("default.qubit").preprocess_transforms()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(
@@ -651,7 +652,7 @@ class TestPreprocessingIntegration:
         execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         program = qml.device("default.qubit").preprocess_transforms(execution_config)
-        with pytest.raises(qml.DeviceError, match=message):
+        with pytest.raises(DeviceError, match=message):
             program([qs])
 
     def test_preprocess_tape_for_adjoint(self):
@@ -805,7 +806,7 @@ class TestAdjointDiffTapeValidation:
         program = qml.device("default.qubit").preprocess_transforms(execution_config)
 
         msg = "Finite shots are not supported with"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             program((tape,))
 
     def test_non_diagonal_non_expval(self):
@@ -820,7 +821,7 @@ class TestAdjointDiffTapeValidation:
         )
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match=r"adjoint diff supports either all expectation values or only measurements without observables",
         ):
             program((qs,))
@@ -864,29 +865,31 @@ class TestAdjointDiffTapeValidation:
         res = res[0]
 
         assert isinstance(res, qml.tape.QuantumScript)
-        assert len(res.operations) == 7
+        assert len(res.operations) == 8
         qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
         qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
         qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-        qml.assert_equal(res[3], qml.CNOT([0, 1]))
-        qml.assert_equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
-        qml.assert_equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
-        qml.assert_equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
         qs.trainable_params = [2, 3]
         res, _ = program((qs,))
         res = res[0]
         assert isinstance(res, qml.tape.QuantumScript)
-        assert len(res.operations) == 7
+        assert len(res.operations) == 8
         qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
         qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
         qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-        qml.assert_equal(res[3], qml.CNOT([0, 1]))
-        qml.assert_equal(res[4], qml.RZ(qml.numpy.array(0.1), 0))
-        qml.assert_equal(res[5], qml.RY(qml.numpy.array(0.2), 0))
-        qml.assert_equal(res[6], qml.RZ(qml.numpy.array(0.3), 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
     def test_u3_non_trainable_params(self):
         """Test that a warning is raised and all parameters are trainable in the expanded

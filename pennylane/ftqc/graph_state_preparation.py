@@ -25,6 +25,18 @@ from pennylane.wires import Wires
 from .qubit_graph import QubitGraph
 
 
+def make_graph_state(graph, wires, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ):
+    """A program-capture compatible way to create a GraphStatePrep template.
+    We can't capture the graph object in plxpr, so instead, if capture is enabled,
+    we capture the operations generated in computing the decomposition."""
+    if qml.capture.enabled():
+        GraphStatePrep.compute_decomposition(wires, graph, one_qubit_ops, two_qubit_ops)
+    else:
+        GraphStatePrep(
+            graph=graph, wires=wires, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops
+        )
+
+
 class GraphStatePrep(Operation):
     r"""
     Encode a graph state with a single graph operation applied on each qubit, and an entangling
@@ -47,11 +59,15 @@ class GraphStatePrep(Operation):
         (:class:`~.pennylane.CZ` gate) operation.
 
     Args:
-        graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit to wires.
-        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Default to :class:`~.pennylane.H`.
-        two_qubit_ops (Operation): Operator to entangle nearest qubits. Default to :class:`~.pennylane.CZ`.
-        wires (Optional[Wires]): Wires the operator applies on. Wires will be mapped 1:1 to graph nodes. Optional only `graph`
-          is a QubitGraph. If no wires are provided, the ``children`` of the provided ``QubitGraph`` will be used as wires.
+        graph (Union[QubitGraph, networkx.Graph]): QubitGraph or networkx.Graph object mapping qubit
+            to wires. The node labels of ``graph`` must be sortable.
+        one_qubit_ops (Operation): Operator to prepare the initial state of each qubit. Defaults to
+            :class:`~.pennylane.Hadamard`.
+        two_qubit_ops (Operation): Operator to entangle nearest qubits. Defaults to
+            :class:`~.pennylane.CZ`.
+        wires (Optional[Wires]): Wires the operator applies on. Wires are be mapped 1:1 to the graph
+            nodes sorted in ascending order. Optional only `graph` is a QubitGraph. If no wires are
+            provided, the ``children`` of the provided ``QubitGraph`` will be used as wires.
 
     .. todo::
 
@@ -99,6 +115,72 @@ class GraphStatePrep(Operation):
         2: ──Y─╰X────│──╭●─┤  Probs
         3: ──Y───────╰X─╰X─┤  Probs
 
+    .. details::
+        :title: A Note on Node Ordering
+
+        The graph structures used for defining qubit connectivity are inherently *unordered* data
+        structures. Mapping the nodes in the graph to the *ordered* sequence of wires can therefore
+        result in ambiguity. To ensure this mapping is reliable and deterministic, the sequence of
+        wires is mapped to the list of graph nodes sorted in ascending order.
+
+        Consider the following example:
+
+        .. code-block:: python3
+
+            import networkx as nx
+            import pennylane as qml
+            from pennylane.ftqc import GraphStatePrep
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit(graph, wires):
+                GraphStatePrep(graph=graph, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ, wires=wires)
+                return qml.state()
+
+        Defining a graph structure and drawing the circuit shows how the graph node labels have been
+        mapped to wires:
+
+        >>> g1 = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])  # (a) -- (b) -- (c) -- (d)
+        >>> print(qml.draw(circuit, level="device")(g1, wires=range(4)))
+        0: ──H─╭●───────┤  State
+        1: ──H─╰Z─╭●────┤  State
+        2: ──H────╰Z─╭●─┤  State
+        3: ──H───────╰Z─┤  State
+
+        In other words, ``GraphStatePrep`` has defined the node-label-to-wire mapping::
+
+            {"a": 0, "b": 1, "c": 2, "d": 3}
+
+        which corresponds to the graph structure with wire indices::
+
+            (0) -- (1) -- (2) -- (3)
+
+        as shown in the circuit diagram with ``CZ`` operations applied along each edge in the graph.
+
+        Drawing the circuit for a graph with the same structure but with different node labels
+        gives:
+
+        >>> g2 = nx.Graph([("b", "a"), ("a", "c"), ("c", "d")])  # (b) -- (a) -- (c) -- (d)
+        >>> print(qml.draw(circuit, level="device")(g2, wires=range(4)))
+        0: ──H─╭Z─╭●────┤  State
+        1: ──H─╰●─│─────┤  State
+        2: ──H────╰Z─╭●─┤  State
+        3: ──H───────╰Z─┤  State
+
+        As before, ``GraphStatePrep`` defined the node-label-to-wire mapping to be::
+
+            {"a": 0, "b": 1, "c": 2, "d": 3}
+
+        but now, this corresponds to the graph structure with wire indices::
+
+            (1) -- (0) -- (2) -- (3)
+
+        as shown in the circuit diagram.
+
+        While these two circuit might appear to be the same, they are indeed distinct for this
+        sequence of wires, and result in different state vectors. It is therefore important to
+        remember that the node labels influence how nearest-neighbour wires are interpreted.
     """
 
     def __init__(
@@ -149,7 +231,7 @@ class GraphStatePrep(Operation):
         graph: Union[nx.Graph, QubitGraph],
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::
@@ -171,12 +253,21 @@ class GraphStatePrep(Operation):
 
         op_list = []
 
-        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
         nodes = graph.node_labels if isinstance(graph, QubitGraph) else graph.nodes
+        try:
+            sorted_nodes = sorted(nodes)
+        except TypeError as e:
+            # Attempting to sort a list with a mix of incompatible types results in a TypeError:
+            # >>> sorted([0, 'a'])
+            # TypeError: '<' not supported between instances of 'str' and 'int'
+            raise TypeError(
+                "GraphStatePrep requires the node labels of the input graph to be sortable"
+            ) from e
 
-        if set(wires) != set(nodes):
-            wire_map = dict(zip(nodes, wires))
-            edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
+        wire_map = dict(zip(sorted_nodes, wires))
+
+        edges = graph.edge_labels if isinstance(graph, QubitGraph) else graph.edges
+        edges = [(wire_map[edge[0]], wire_map[edge[1]]) for edge in edges]
 
         for wire in wires:
             op_list.append(one_qubit_ops(wires=wire))

@@ -196,7 +196,7 @@ jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
 When capturing higher order primitives, we call `jax.make_jaxpr(f)` with arguments whose shapes are tracers.  
 
-When calling `jax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads in an error:
+When calling `jax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads to an error:
 
 
 ```python
@@ -284,7 +284,7 @@ We can now take these learnings to make a custom higher order primitive that sup
 
 
 ```python
-prim = jax.core.Primitive("hop")
+prim = jax.extend.core.Primitive("hop")
 prim.multiple_results = True
 
 @prim.def_impl
@@ -368,7 +368,7 @@ For example, with for loops and while loops, we can insist that the output shape
 
 
 ```python
-prim2 = jax.core.Primitive("hop")
+prim2 = jax.extend.core.Primitive("hop")
 prim2.multiple_results = True
 
 @prim2.def_impl
@@ -420,9 +420,9 @@ What if the shape isn't accessible? What if we wanted to resize one of the input
 That now gets a bit trickier.  The solution has several issues:
 
 1) A bit more difficult to read and follow
-2) Relies on unstable componets of jax internals
+2) Relies on unstable components of jax internals
 
-But why let those concerns stop us now! Let's do it.
+But why let those concerns stop us now? Let's do it.
 
 What we need to do in this case in hi-jack how `DynamicJaxTracer` creates an equation for the relevant primitive. It will no longer use the default logic relying on the `abstract_eval`, but our own pipeline.
 
@@ -430,7 +430,7 @@ Here we are going to create a primitive that accepts an argument `n`, and return
 
 
 ```python
-prim3 = jax.core.Primitive("dynamic_output")
+prim3 = jax.extend.core.Primitive("dynamic_output")
 prim3.multiple_results = True
 ```
 
@@ -438,7 +438,7 @@ prim3.multiple_results = True
 
 
 ```python
-from jax._src.interpreters import partial_eval as pe
+from jax.interpreters import partial_eval as pe
 
 def custom_staging_rule(jaxpr_trace, *invars, **params):
     new_shapes = [jax.core.DShapedArray((invars[0],2), jax.numpy.float32.dtype)]

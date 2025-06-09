@@ -32,13 +32,12 @@ def _get_grad_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    grad_prim = NonInterpPrimitive("grad")
-    grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    grad_prim = QmlPrimitive("grad")
+    grad_prim.multiple_results = True
     grad_prim.prim_type = "higher_order"
 
-    # pylint: disable=too-many-arguments
     @grad_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
@@ -56,9 +55,15 @@ def _get_grad_prim():
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        return tuple(jaxpr.invars[i].aval for i in argnum)
+        return tuple(args[i + n_consts] for i in argnum)
 
     return grad_prim
+
+
+def _shape(shape, dtype):
+    if jax.config.jax_dynamic_shapes and any(not isinstance(s, int) for s in shape):
+        return jax.core.DShapedArray(shape, dtype)
+    return jax.core.ShapedArray(shape, dtype)
 
 
 @lru_cache
@@ -69,13 +74,12 @@ def _get_jacobian_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    from .custom_primitives import NonInterpPrimitive  # pylint: disable=import-outside-toplevel
+    from .custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
 
-    jacobian_prim = NonInterpPrimitive("jacobian")
-    jacobian_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
+    jacobian_prim = QmlPrimitive("jacobian")
+    jacobian_prim.multiple_results = True
     jacobian_prim.prim_type = "higher_order"
 
-    # pylint: disable=too-many-arguments
     @jacobian_prim.def_impl
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
@@ -91,10 +95,10 @@ def _get_jacobian_prim():
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
     def _(*args, argnum, jaxpr, n_consts, method, h):
-        in_avals = [jaxpr.invars[i].aval for i in argnum]
-        out_shapes = (outvar.aval.shape for outvar in jaxpr.outvars)
+        in_avals = tuple(args[i + n_consts] for i in argnum)
+        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
-            jax.core.ShapedArray(out_shape + in_aval.shape, in_aval.dtype)
+            _shape(out_shape + in_aval.shape, in_aval.dtype)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]

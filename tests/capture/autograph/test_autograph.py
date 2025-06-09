@@ -54,6 +54,40 @@ def enable_disable_plxpr():
 class TestPennyLaneTransformer:
     """Tests for the PennyLane child class of the diastatic-malt PytoPy transformer"""
 
+    def test_lambda_function_error(self):
+        """Test that a lambda function raises an error when passed to the transformer"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
+
+        def bad_circuit():
+
+            @qml.while_loop(lambda x: x < 10)
+            def loop(i):
+                return i + 1
+
+            return loop(0)
+
+        def good_circuit():
+
+            condition = lambda x: x < 10
+
+            @qml.while_loop(condition)
+            def loop(i):
+                return i + 1
+
+            return loop(0)
+
+        with pytest.raises(
+            AutoGraphError,
+            match="AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`.",
+        ):
+            transformer.transform(bad_circuit, user_context)
+
+        # Check that the good circuit does not raise an error
+        new_fn, _, _ = transformer.transform(good_circuit, user_context)
+        assert new_fn() == 10
+
     def test_transform_on_function(self):
         """Test the transform method on a function works as expected"""
 

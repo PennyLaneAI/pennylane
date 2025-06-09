@@ -21,7 +21,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Purity, StateMeasurement
+from .measurements import StateMeasurement
 
 
 def purity(wires) -> "PurityMP":
@@ -77,7 +77,7 @@ class PurityMP(StateMeasurement):
     def __str__(self):
         return "purity"
 
-    _shortname = Purity  #! Note: deprecated. Change the value to "purity" in v0.42
+    _shortname = "purity"
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)

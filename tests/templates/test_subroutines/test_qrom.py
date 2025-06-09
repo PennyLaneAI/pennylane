@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -192,6 +192,25 @@ class TestQROM:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
 
+    def test_zero_control_wires(self):
+        """Test that the edge case of zero control wires works"""
+
+        dev = qml.device("default.qubit", wires=2)
+        qs = qml.tape.QuantumScript(
+            qml.QROM.compute_decomposition(
+                ["10"], target_wires=[0, 1], work_wires=None, control_wires=[], clean=False
+            ),
+            [qml.probs(wires=[0, 1])],
+        )
+
+        program, _ = dev.preprocess()
+        tape = program([qs])
+        output = dev.execute(tape[0])[0]
+
+        assert len(tape[0][0].operations) == 1
+        assert qml.equal(tape[0][0][0], qml.BasisEmbedding([1, 0], wires=[0, 1]))
+        assert qml.math.allclose(output, [0, 0, 1, 0])
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
@@ -246,7 +265,7 @@ def test_repr():
     op = qml.QROM(
         ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
     )
-    res = op.__repr__()
+    res = repr(op)
     expected = "QROM(control_wires=Wires([0, 1]), target_wires=Wires([2]),  work_wires=Wires([3]), clean=True)"
     assert res == expected
 
@@ -280,6 +299,23 @@ def test_none_work_wires_case():
     gates_clean = qml.QROM.compute_decomposition(["1", "0", "0", "1"], [0, 1], [2], [], clean=True)
     expected_gates = qml.QROM.compute_decomposition(
         ["1", "0", "0", "1"], [0, 1], [2], [], clean=False
+    )
+
+    assert gates_clean == expected_gates
+
+
+def test_too_many_work_wires_case():
+    """Test that QROM works when more work wires are given than necessary"""
+
+    gates_clean = qml.QROM.compute_decomposition(
+        ["1", "0", "0", "1"], [0, 1], [2], [3, 4, 5], clean=False
+    )
+    expected_gates = qml.QROM.compute_decomposition(
+        ["1", "0", "0", "1"],
+        [0, 1],
+        [2],
+        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        clean=False,
     )
 
     assert gates_clean == expected_gates

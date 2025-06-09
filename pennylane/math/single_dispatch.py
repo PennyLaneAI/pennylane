@@ -13,7 +13,7 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
@@ -78,56 +78,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 # that whenever the backend is 'scipy', the input is a SciPy sparse matrix.
 
 
-def _det_sparse(x):
-    """Compute determinant of sparse matrices without densification"""
-
-    assert sp.sparse.issparse(x), TypeError(f"Expected SciPy sparse, got {type(x)}")
-
-    x = sp.sparse.csr_matrix(x)
-    if x.shape == (2, 2):
-        # Direct array access
-        indptr, indices, data = x.indptr, x.indices, x.data
-        values = {(i, j): 0.0 for i in range(2) for j in range(2)}
-        for i in range(2):
-            for j_idx in range(indptr[i], indptr[i + 1]):
-                j = indices[j_idx]
-                values[(i, j)] = data[j_idx]
-        return values[(0, 0)] * values[(1, 1)] - values[(0, 1)] * values[(1, 0)]
-    return _generic_sparse_det(x)
-
-
-def _generic_sparse_det(A):
-    """Compute the determinant of a sparse matrix using LU decomposition."""
-
-    assert hasattr(A, "tocsc"), TypeError(f"Expected SciPy sparse, got {type(A)}")
-
-    A_csc = A.tocsc()
-    lu = sp.sparse.linalg.splu(A_csc)
-    U_diag = lu.U.diagonal()
-    det_A = np.prod(U_diag)
-    parity = _permutation_parity(lu.perm_r)
-    return det_A * parity
-
-
-def _permutation_parity(perm):
-    """Compute the parity of a permutation."""
-
-    parity = 1
-    visited = [False] * len(perm)
-    for i in range(len(perm)):
-        if not visited[i]:
-            cycle_length = 0
-            j = i
-            while not visited[j]:
-                visited[j] = True
-                j = perm[j]
-                cycle_length += 1
-
-            if cycle_length:
-                parity *= (-1) ** (cycle_length - 1)
-    return parity
-
-
 def sparse_matrix_power(A, n):
     """Dispatch to the appropriate sparse matrix power function."""
     try:  # pragma: no cover
@@ -175,7 +125,6 @@ def _sparse_matrix_power_bruteforce(A, n):
     return result
 
 
-ar.register_function("scipy", "linalg.det", _det_sparse)
 ar.register_function("scipy", "linalg.inv", sp.sparse.linalg.inv)
 ar.register_function("scipy", "linalg.expm", sp.sparse.linalg.expm)
 ar.register_function("scipy", "linalg.matrix_power", sparse_matrix_power)
@@ -214,7 +163,7 @@ def _scatter_numpy(indices, array, shape):
     return new_array
 
 
-def _scatter_element_add_numpy(tensor, index, value):
+def _scatter_element_add_numpy(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     new_tensor = tensor.copy()
@@ -313,7 +262,7 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-def _scatter_element_add_autograd(tensor, index, value):
+def _scatter_element_add_autograd(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
     assignment, we have to be clever and use ravel_multi_index."""
@@ -577,7 +526,7 @@ def _scatter_tf(indices, array, new_dims):
     return tf.scatter_nd(indices, array, new_dims)
 
 
-def _scatter_element_add_tf(tensor, index, value):
+def _scatter_element_add_tf(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     import tensorflow as tf
@@ -849,7 +798,7 @@ def _scatter_torch(indices, tensor, new_dimensions):
     return new_tensor
 
 
-def _scatter_element_add_torch(tensor, index, value):
+def _scatter_element_add_torch(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Note that Torch only supports index assignments
     on non-leaf nodes; if the node is a leaf, we must clone it first."""
@@ -920,11 +869,13 @@ ar.register_function("torch", "cond", _cond)
 
 
 def _to_numpy_jax(x):
-    from jax.errors import TracerArrayConversionError
+    from jax.core import concrete_or_error
+    from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 
     try:
-        return np.array(getattr(x, "val", x))
-    except TracerArrayConversionError as e:
+        x = concrete_or_error(None, x)
+        return np.array(x)
+    except (ConcretizationTypeError, TracerArrayConversionError) as e:
         raise ValueError(
             "Converting a JAX array to a NumPy array not supported when using the JAX JIT."
         ) from e
@@ -973,7 +924,7 @@ ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: x.at[tuple(index)].add(value),
+    lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda

@@ -28,7 +28,7 @@ from .optimization_utils import find_next_gate
 
 
 @lru_cache
-def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -160,6 +160,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 for op in self.op_deque:
                     super().interpret_operation(op)
                 self.op_deque.clear()
+                self.current_index = 0
                 return
 
             # If the direction is right, push the gates in each sub-list
@@ -170,11 +171,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 super().interpret_operation(op)
             self.op_deque.clear()
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 

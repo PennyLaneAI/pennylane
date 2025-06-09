@@ -24,9 +24,9 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qml
-from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import TransformError, transform
+from pennylane.transforms.core import TransformError, TransformProgram, transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -130,6 +130,36 @@ class TestCaptureTransforms:
         for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
+    def test_transform_qfunc_pytree_args(self):
+        """Test that transforming an object that accepts pytree arguments is correct."""
+
+        def func(x):
+            y = x[0] * 5 + x[1]
+            return y**0.5
+
+        args = ([1.5, 2.5],)
+        targs = [0, 1]
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
+
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
+
+        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
+
+        params = transform_eqn.params
+        assert params["args_slice"] == slice(0, 2)
+        assert params["consts_slice"] == slice(2, 2)
+        assert params["targs_slice"] == slice(2, None)
+        assert params["tkwargs"] == tkwargs
+
+        inner_jaxpr = params["inner_jaxpr"]
+        expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
+        for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
+            assert eqn1.primitive == eqn2.primitive
+
+        # Verifying that transformed function can execute
+        _ = transformed_func(*args)
+
     def test_transform_qnode_capture(self):
         """Test that a transformed QNode is captured correctly."""
         dev = qml.device("default.qubit", wires=2)
@@ -148,31 +178,38 @@ class TestCaptureTransforms:
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
         assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
-        params = transform_eqn.params
-        qnode_jaxpr = params["inner_jaxpr"]
-        assert qnode_jaxpr.eqns[0].primitive == qml.capture.qnode_prim
+        qnode_jaxpr = transform_eqn.params["inner_jaxpr"]
+        assert qnode_jaxpr.eqns[0].primitive == qnode_prim
+
+        qnode = qnode_jaxpr.eqns[0].params["qnode"]
+        expected_program = TransformProgram()
+        expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
+        # Manually change targs from tuple to list
+        expected_program[0]._args = targs  # pylint: disable=protected-access
+        assert qnode.transform_program == expected_program
 
         qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]
         expected_jaxpr = jax.make_jaxpr(func)(*args).eqns[0].params["qfunc_jaxpr"]
         for eqn1, eqn2 in zip(qfunc_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
-    def test_transform_primitive_eval_not_implemented(self):
-        """Test JAXPR containing a transform primitive cannot be evaluated due to a NotImplementedError."""
+    def test_transform_primitive_eval(self):
+        """Test that evaluating jaxpr containing a transform primitive does not apply
+        the transform."""
 
-        def func(x):
-            y = x * 5
-            return y**0.5
+        def func():
+            return qml.expval(qml.Z(0))
 
-        args = (1.5,)
-        targs = (0, 1)
-        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
+        targs = (2, 3)
+        tkwargs = {"dummy_kwarg1": "hello", "dummy_kwarg2": "world"}
 
-        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        transformed_func = expval_z_obs_to_x_obs(func, *targs, **tkwargs)
+        jaxpr = jax.make_jaxpr(transformed_func)()
 
-        with pytest.raises(NotImplementedError):
-            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)[0]
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        # If the inner jaxpr was transformed, the output would be <X>, but it should
+        # stay as <Z> if it wasn't transformed
+        assert res == [qml.expval(qml.Z(0))]
 
     def test_multiple_transforms_capture(self):
         """Test that JAXPR containing a transformed qnode primitive is evaluated correctly."""
@@ -232,7 +269,7 @@ class TestCaptureTransforms:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(f)()
-        assert jaxpr.eqns[0].primitive == qml.capture.qnode_prim
+        assert jaxpr.eqns[0].primitive == qnode_prim
 
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[0].primitive == z_to_hadamard._primitive

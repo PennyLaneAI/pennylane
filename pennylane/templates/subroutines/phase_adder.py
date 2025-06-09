@@ -81,7 +81,8 @@ class PhaseAdder(Operation):
         x_wires =[0,1,2,3]
         work_wire=[5]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -196,7 +197,7 @@ class PhaseAdder(Operation):
             new_dict["work_wire"],
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod

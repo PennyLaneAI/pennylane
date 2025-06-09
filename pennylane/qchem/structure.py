@@ -383,6 +383,8 @@ def hf_state(electrons, orbitals, basis="occupation_number"):
 
     state = np.where(np.arange(orbitals) < electrons, 1, 0)
 
+    basis = basis.strip().lower()
+
     if basis == "parity":
         pi_matrix = np.tril(np.ones((orbitals, orbitals)))
         return (np.matmul(pi_matrix, state) % 2).astype(int)
@@ -551,7 +553,7 @@ def mol_data(identifier, identifier_type="name"):
     """
 
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import pubchempy as pcp
     except ImportError as Error:
         raise ImportError(

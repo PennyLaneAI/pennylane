@@ -332,7 +332,7 @@ def molecular_dipole(
     wires=None,
     args=None,
     cutoff=1.0e-16,
-):  # pylint:disable=too-many-arguments, too-many-statements, protected-access
+):  # pylint: disable=too-many-arguments,protected-access
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
 
     The dipole operator in the second-quantized form is
@@ -429,9 +429,11 @@ def molecular_dipole(
     )
     """
 
+    method = method.strip().lower()
     if method not in ["dhf", "openfermion"]:
         raise ValueError("Only 'dhf', and 'openfermion' backends are supported.")
 
+    mapping = mapping.strip().lower()
     if mapping.strip().lower() not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"'{mapping}' is not supported."

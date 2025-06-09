@@ -132,12 +132,11 @@ class TestConditionals:
         assert res(2) == 4
         assert res(-3) == -3
 
-    @pytest.mark.xfail(raises=NotImplementedError)
     @pytest.mark.parametrize("autograph", [True, False])
     def test_qubit_manipulation_cond(self, autograph):
         """Test conditional with quantum operation."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def circuit(x):
             if x > 4:
                 qml.PauliX(wires=0)

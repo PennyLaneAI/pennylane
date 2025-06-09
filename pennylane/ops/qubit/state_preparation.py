@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+# pylint: disable=too-many-branches,arguments-differ
 from typing import Optional, Union
 from warnings import warn
 
@@ -26,7 +26,7 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
+from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
@@ -337,7 +337,6 @@ class StatePrep(StatePrepBase):
 
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -352,15 +351,19 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
-        validate_norm: bool = True,
+        validate_norm: bool = False,
     ):
         self.is_sparse = False
         if sp.sparse.issparse(state):
             state = state.tocsr()
-            state = self._preprocess_csr(state, wires, None, normalize, validate_norm)
+            state = self._preprocess_csr(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
             self.is_sparse = True
         else:
-            state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+            state = self._preprocess(
+                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+            )
 
         self._hyperparameters = {
             "pad_with": pad_with,
@@ -369,6 +372,12 @@ class StatePrep(StatePrepBase):
         }
 
         super().__init__(state, wires=wires, id=id)
+
+    def _check_batching(self):
+        if self.is_sparse:
+            self._batch_size = None
+        else:
+            super()._check_batching()
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -525,8 +534,10 @@ class StatePrep(StatePrepBase):
         shape = state.shape
 
         # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
-        if shape[0] != 1:
-            raise ValueError(f"State must be a one-dimensional tensor; got shape {shape}.")
+        if len(shape) == 2 and shape[0] != 1:
+            raise NotImplementedError(
+                "StatePrep does not yet support parameter broadcasting with sparse state vectors."
+            )
 
         n_states = shape[-1]
         dim = 2 ** len(Wires(wires))
@@ -614,7 +625,6 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 

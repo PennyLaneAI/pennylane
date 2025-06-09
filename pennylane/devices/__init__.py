@@ -54,7 +54,7 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     Device
     DefaultMixed
     DefaultQubit
-    DefaultTensor
+    default_tensor.DefaultTensor
     NullQubit
     ReferenceQubit
     DefaultQutritMixed
@@ -71,6 +71,8 @@ method for devices.
     :toctree: api
 
     decompose
+    measurements_from_counts
+    measurements_from_samples
     validate_observables
     validate_measurements
     validate_device_wires
@@ -151,6 +153,7 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
+from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
@@ -159,12 +162,12 @@ from .device_api import Device
 from .default_qubit import DefaultQubit
 from .legacy_facade import LegacyDeviceFacade
 
-# DefaultTensor is not imported here to avoid warnings
-# from quimb in case it is installed on the system.
+# DefaultTensor is not imported here to avoid possible warnings
+# from quimb. Such warnings are due to a known issue with the cotengra package
+# when the latter is installed along with certain other packages.
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
-from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit
 from .default_qutrit import DefaultQutrit

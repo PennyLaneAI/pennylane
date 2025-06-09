@@ -19,7 +19,7 @@ quantum channels supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, Channel
+from pennylane.operation import Channel
 
 QUDIT_DIM = 3
 
@@ -478,7 +478,6 @@ class QutritChannel(Channel):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, K_list, wires=None, id=None):

@@ -21,10 +21,10 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
+from pennylane._deprecated_observable import Observable
 from pennylane.operation import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
-    Observable,
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
@@ -131,6 +131,8 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params", "z"}
+
     def _flatten(self):
         return (self.base, self.z), tuple()
 
@@ -138,6 +140,7 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return pow(data[0], z=data[1])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
@@ -196,6 +199,14 @@ class Pow(ScalarSymbolicOp):
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
 
     @property
     def z(self):
@@ -396,7 +407,6 @@ class Pow(ScalarSymbolicOp):
             return Pow(base=base, z=self.z)
 
 
-# pylint: disable=no-member
 class PowOperation(Pow, Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 

@@ -20,11 +20,15 @@ import pennylane as qml
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
+    adjoint_resource_rep,
     controlled_resource_rep,
+    custom_ctrl_op_to_base,
+    pow_resource_rep,
     resource_rep,
 )
 
 
+@pytest.mark.unit
 class TestResources:
     """Unit tests for the Resources data structure."""
 
@@ -33,6 +37,7 @@ class TestResources:
         resources = Resources()
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
+        assert resources.weighted_cost == 0.0
 
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
@@ -44,14 +49,26 @@ class TestResources:
                 }
             )
 
+    def test_negative_weighted_cost(self):
+        """Tests that an error is raised if the cost is negative."""
+        with pytest.raises(AssertionError):
+            Resources(
+                gate_counts={
+                    CompressedResourceOp(qml.RX, {}): 2,
+                },
+                weighted_cost=-2.0,
+            )
+
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
+            weighted_cost=6.0,
         )
         resources2 = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1},
+            weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
@@ -61,12 +78,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 1,
             CompressedResourceOp(qml.RY, {}): 1,
         }
+        assert resources.weighted_cost == 8.0
 
     def test_mul_resource_with_scalar(self):
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
+            weighted_cost=2.0,
         )
 
         resources = resources * 2
@@ -75,20 +94,22 @@ class TestResources:
             CompressedResourceOp(qml.RX, {}): 4,
             CompressedResourceOp(qml.RZ, {}): 2,
         }
+        assert resources.weighted_cost == 4
 
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
         resources = Resources(
-            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}, 5.0
         )
-        assert repr(resources) == "num_gates=3, gate_counts={RX: 2, RZ: 1}"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
     resource_keys = {"foo", "bar"}
 
 
+@pytest.mark.unit
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
@@ -106,10 +127,10 @@ class TestCompressedResourceOp:
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op must be an Operator type"):
+        with pytest.raises(TypeError, match="op_type must be an Operator type"):
             CompressedResourceOp("RX", {})
 
-        with pytest.raises(TypeError, match="op must be a subclass of Operator"):
+        with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
             CompressedResourceOp(int, {})
 
     def test_hash(self):
@@ -132,6 +153,31 @@ class TestCompressedResourceOp:
             },
         )
         assert isinstance(hash(op), int)
+
+    def test_hash_unhashable_keys(self):
+        """Tests that a CompressedResourceOp is hashable when the params contain unhashable keys."""
+
+        op = CompressedResourceOp(
+            qml.ops.Exp,
+            {
+                "base_class": qml.ops.LinearCombination,
+                "base_params": {},
+                "base_pauli_rep": qml.Hamiltonian(
+                    [1.11, 0.12, -3.4, 5],
+                    [qml.X(0) @ qml.X(1), qml.Z(2), qml.Y(0) @ qml.Y(1), qml.I((0, 1, 2))],
+                ).pauli_rep,
+                "coeff": 1.2j,
+                "num_steps": 3,
+            },
+        )
+        assert isinstance(hash(op), int)
+
+    def test_same_params_same_hash(self):
+        """Tests that two ops with the same params have the same hash."""
+
+        op1 = CompressedResourceOp(qml.RX, {"a": 1, "b": 2})
+        op2 = CompressedResourceOp(qml.RX, {"b": 2, "a": 1})
+        assert hash(op1) == hash(op2)
 
     def test_empty_params_same_hash(self):
         """Tests that CompressedResourceOp objects initialized with or without empty
@@ -178,15 +224,40 @@ class TestCompressedResourceOp:
         op = CompressedResourceOp(DummyOp, {"foo": 2, "bar": 1})
         assert repr(op) == "DummyOp(foo=2, bar=1)"
 
+    @pytest.mark.parametrize(
+        "op, expected_name",
+        [
+            (resource_rep(qml.RX), "RX"),
+            (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
+            (controlled_resource_rep(qml.T, {}, 1, 0, 0), "C(T)"),
+            (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
+        ],
+    )
+    def test_name(self, op, expected_name):
+        """Tests the name property of a CompressedResourceOp object."""
+        assert op.name == expected_name
 
+
+@pytest.mark.unit
 class TestResourceRep:
     """Tests the resource_rep utility function."""
 
     def test_resource_rep_fail(self):
         """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op must be a type of Operator"):
+        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
+
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+
+            resource_keys = {}
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        with pytest.raises(TypeError, match="CustomOp.resource_keys must be a set"):
+            resource_rep(CustomOp)
 
     def test_params_mismatch(self):
         """Tests that an error is raised when parameters are missing."""
@@ -205,6 +276,7 @@ class TestResourceRep:
         )
 
 
+@pytest.mark.unit
 class TestControlledResourceRep:
     """Tests the controlled_resource_rep function."""
 
@@ -220,6 +292,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
         )
 
@@ -234,6 +307,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
             1,
             1,
@@ -247,29 +321,8 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
+                "work_wire_type": "dirty",
             },
-        )
-
-    def test_resource_rep_dispatch_to_controlled_resource_rep(self, mocker):
-        """Tests that resource_rep dispatches to controlled_resource_rep for Controlled."""
-
-        expected_fn = mocker.patch("pennylane.decomposition.resources.controlled_resource_rep")
-        _ = resource_rep(
-            qml.ops.Controlled,
-            **{
-                "base_class": qml.CRX,
-                "base_params": {},
-                "num_control_wires": 2,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-            },
-        )
-        expected_fn.assert_called_once_with(
-            base_class=qml.CRX,
-            base_params={},
-            num_control_wires=2,
-            num_zero_control_values=1,
-            num_work_wires=1,
         )
 
     def test_controlled_resource_op_base_param_mismatch(self):
@@ -289,68 +342,108 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
+                    "work_wire_type": "clean",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "clean",
             },
             1,
             1,
             1,
+            "clean",
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.MultiControlledX,
             {
-                "base_class": qml.X,
-                "base_params": {},
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+                "work_wire_type": "clean",
+            },
+        )
+
+    def test_controlled_qubit_unitary(self):
+        """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.QubitUnitary,
+                "base_params": {"num_wires": 2},
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+                "work_wire_type": "clean",
+            },
+            1,
+            1,
+            1,
+            "clean",
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.ControlledQubitUnitary,
+            {
+                "num_target_wires": 2,
+                "num_control_wires": 2,
+                "num_zero_control_values": 2,
+                "num_work_wires": 2,
+                "work_wire_type": "clean",
             },
         )
 
     def test_nested_controlled_qubit_unitary(self):
         """Tests that a nested controlled qubit unitary is flattened."""
 
-        U = qml.math.eye(2)
-
         rep = controlled_resource_rep(
             qml.ops.Controlled,
             {
                 "base_class": qml.ControlledQubitUnitary,
                 "base_params": {
+                    "num_target_wires": 1,
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "base": qml.QubitUnitary(U, wires=[0]),
+                    "work_wire_type": "dirty",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
             1,
             1,
             1,
+            "clean",
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.ControlledQubitUnitary,
             {
-                "base_class": qml.QubitUnitary,
-                "base_params": {"num_wires": 1},
+                "num_target_wires": 1,
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+                "work_wire_type": "dirty",
             },
         )
 
+    def test_custom_controlled_ops(self):
+        """Tests that the resource rep of custom controlled ops remain as the custom version."""
 
+        for op_type in custom_ctrl_op_to_base():
+            rep = resource_rep(op_type)
+            assert rep == CompressedResourceOp(op_type, {})
+
+
+@pytest.mark.unit
 class TestSymbolicResourceRep:
     """Tests resource reps of symbolic operators"""
 
     def test_adjoint_resource_rep(self):
         """Tests creating the resource rep of the adjoint of an operator."""
 
-        rep = qml.adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
+        rep = qml.decomposition.adjoint_resource_rep(DummyOp, {"foo": 2, "bar": 1})
         assert rep == CompressedResourceOp(
             qml.ops.Adjoint, {"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
         )
@@ -368,37 +461,28 @@ class TestSymbolicResourceRep:
         """Tests that an error is raised when base op and base params mismatch."""
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
-            qml.adjoint_resource_rep(DummyOp, {})
+            qml.decomposition.adjoint_resource_rep(DummyOp, {})
 
-    def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
-        """Tests that the adjoint of a nested controlled op is flattened."""
+    def test_adjoint_custom_controlled_ops(self):
+        """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
-        rep = qml.adjoint_resource_rep(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Controlled,
-                "base_params": {
-                    "base_class": qml.CRX,
+        for op_type in custom_ctrl_op_to_base():
+            rep = qml.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
+            assert rep == CompressedResourceOp(
+                qml.ops.Adjoint,
+                {
+                    "base_class": op_type,
                     "base_params": {},
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
                 },
-            },
-        )
+            )
+
+    def test_pow_resource_rep(self):
+        """Tests the pow_resource_rep utility function."""
+
+        rep = qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3)
         assert rep == CompressedResourceOp(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Adjoint,
-                "base_params": {
-                    "base_class": qml.ops.Controlled,
-                    "base_params": {
-                        "base_class": qml.RX,
-                        "base_params": {},
-                        "num_control_wires": 3,
-                        "num_zero_control_values": 1,
-                        "num_work_wires": 1,
-                    },
-                },
-            },
+            qml.ops.Pow, {"base_class": qml.MultiRZ, "base_params": {"num_wires": 3}, "z": 3}
         )
+
+        op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
+        assert op.resource_params == rep.params

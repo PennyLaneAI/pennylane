@@ -34,6 +34,7 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -41,7 +42,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation
+from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
@@ -199,7 +200,9 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite-shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
+    This device does not currently support finite-shots or differentiation with ``diff_method`` set to ``"backprop"``, ``"adjoint"``, or ``"device"``. `Other differentiation methods <https://docs.pennylane.ai/en/stable/code/qml_gradients.html>`_ such as
+    ``parameter-shift`` and ``hadamard_grad`` are compatible with all devices, including ``default.tensor``.
+    At present, the supported measurement types are expectation values, variances, and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
@@ -431,9 +434,7 @@ class DefaultTensor(Device):
 
         shots = kwargs.pop("shots", None)
         if shots is not None:
-            raise qml.DeviceError(
-                "default.tensor only supports analytic simulations with shots=None."
-            )
+            raise DeviceError("default.tensor only supports analytic simulations with shots=None.")
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -600,7 +601,7 @@ class DefaultTensor(Device):
                 new_device_options[option] = getattr(self, f"_{option}", None)
 
         if config.mcm_config.mcm_method not in {None, "deferred"}:
-            raise qml.DeviceError(
+            raise DeviceError(
                 f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
             )
 
@@ -841,7 +842,6 @@ class DefaultTensor(Device):
 
         return float(np.real(exp_val))
 
-    # pylint: disable=unused-argument
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -895,7 +895,6 @@ class DefaultTensor(Device):
             "The computation of derivatives has yet to be implemented for the default.tensor device."
         )
 
-    # pylint: disable=unused-argument
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -1042,7 +1041,7 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 
 
 @singledispatch
-def expval_core(obs: Observable, device) -> float:
+def expval_core(obs: Operator, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
 

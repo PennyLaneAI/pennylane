@@ -89,10 +89,12 @@ Resource Functions
 Tracking Resources for Custom Operations
 ----------------------------------------
 
-We can use the :code:`null.qubit` device with the :code:`qml.Tracker` to track the resources
+We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
 used in a quantum circuit with custom operations without execution.
 
 .. code-block:: python3
+
+    from functools import partial
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
@@ -106,8 +108,9 @@ used in a quantum circuit with custom operations without execution.
                 depth=3,
             )
 
-    dev = qml.device("null.qubit", wires=[0, 1, 2], shots=100)
+    dev = qml.device("null.qubit", wires=[0, 1, 2])
 
+    @partial(qml.set_shots, shots=100)
     @qml.qnode(dev)
     def circuit(theta):
         qml.RZ(theta, wires=0)

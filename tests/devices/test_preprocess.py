@@ -13,21 +13,28 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 import warnings
+from functools import partial
 
+import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    measurements_from_counts,
+    measurements_from_samples,
     mid_circuit_measurements,
     no_sampling,
+    null_postprocessing,
     validate_adjoint_trainable_params,
     validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
     validate_observables,
 )
+from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
@@ -122,7 +129,7 @@ class TestPrivateHelpers:
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
         op = NoMatNoDecompOp("a")
-        with pytest.raises(qml.DeviceError, match=r"not supported with abc and does"):
+        with pytest.raises(DeviceError, match=r"not supported with abc and does"):
             tuple(
                 _operator_decomposition_gen(
                     op, lambda op: op.has_matrix, self.decomposer, name="abc"
@@ -138,7 +145,7 @@ def test_no_sampling():
     assert batch[0] is tape1
 
     tape2 = qml.tape.QuantumScript(shots=2)
-    with pytest.raises(qml.DeviceError, match="Finite shots are not supported with abc"):
+    with pytest.raises(DeviceError, match="Finite shots are not supported with abc"):
         no_sampling(tape2, name="abc")
 
 
@@ -160,7 +167,7 @@ def test_validate_adjoint_trainable_params_obs_warning():
 def test_validate_adjoint_trainable_params_state_prep_error():
     """Tests error raised for validate_adjoint_trainable_params with trainable state-preps."""
     tape = qml.tape.QuantumScript([qml.StatePrep(qml.numpy.array([1.0, 0.0]), wires=[0])])
-    with pytest.raises(qml.QuantumFunctionError, match="Differentiating with respect to"):
+    with pytest.raises(QuantumFunctionError, match="Differentiating with respect to"):
         validate_adjoint_trainable_params(tape)
 
 
@@ -239,7 +246,7 @@ class TestDecomposeValidation:
         """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(qml.DeviceError, match="not supported with abc"):
+        with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):
@@ -253,7 +260,7 @@ class TestDecomposeValidation:
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
-        with pytest.raises(qml.DeviceError, match=r"Reached recursion limit trying to decompose"):
+        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
@@ -283,7 +290,7 @@ class TestValidateObservables:
         tape = QuantumScript(
             ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
         )
-        with pytest.raises(qml.DeviceError, match=r"not supported on abc"):
+        with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
     def test_invalid_tensor_observable(self):
@@ -292,7 +299,7 @@ class TestValidateObservables:
             ops=[qml.PauliX(0), qml.PauliY(1)],
             measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
-        with pytest.raises(qml.DeviceError, match="not supported on device"):
+        with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
 
@@ -343,7 +350,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=None)
 
         msg = "not accepted for analytic simulation on device"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             validate_measurements(tape)
 
     @pytest.mark.parametrize(
@@ -359,7 +366,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=100)
 
         msg = "not accepted with finite shots on device"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             validate_measurements(tape, lambda obj: True)
 
 
@@ -483,6 +490,20 @@ class TestMidCircuitMeasurements:
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
         spy.assert_called_once()
 
+    @pytest.mark.parametrize("mcm_method", ["device", "tree-traversal"])
+    @pytest.mark.parametrize("shots", [10, None])
+    def test_device_mcm_method(self, mcm_method, shots):
+        """Test that no transform is applied by mid_circuit_measurements when the
+        mcm method is handled by the device"""
+        dev = qml.device("default.qubit")
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        (new_tape,), post_processing_fn = mid_circuit_measurements(tape, dev, mcm_config)
+
+        assert qml.equal(tape, new_tape)
+        assert post_processing_fn == null_postprocessing
+
     def test_error_incompatible_mcm_method(self):
         """Test that an error is raised if requesting the one-shot transform without shots"""
         dev = qml.device("default.qubit")
@@ -491,9 +512,275 @@ class TestMidCircuitMeasurements:
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+            QuantumFunctionError,
+            match="dynamic_one_shot is only supported with finite shots.",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+
+
+class TestMeasurementsFromCountsOrSamples:
+    """Tests for transforms modifying measurements to be derived from either counts or samples"""
+
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    def test_error_without_valid_wires(self, meas_transform):
+        """Test that a clear error is raised if the transform fails because a measurement
+        without wires is passed to it"""
+
+        tape = qml.tape.QuantumScript([], measurements=[qml.probs()], shots=10)
+
+        with pytest.raises(
+            RuntimeError,
+            match="Please apply validate_device_wires transform before measurements_from_",
+        ):
+            meas_transform(tape)
+
+    # pylint: disable=unnecessary-lambda
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    @pytest.mark.parametrize(
+        "input_measurement, expected_res",
+        [
+            (
+                qml.expval(qml.PauliY(wires=0) @ qml.PauliY(wires=1)),
+                lambda theta: np.sin(theta) * np.sin(theta / 2),
+            ),
+            (qml.var(qml.Y(wires=1)), lambda theta: 1 - np.sin(theta / 2) ** 2),
+            (
+                qml.probs(),
+                lambda theta: np.outer(
+                    np.outer(
+                        [np.cos(theta / 2) ** 2, np.sin(theta / 2) ** 2],
+                        [np.cos(theta / 4) ** 2, np.sin(theta / 4) ** 2],
+                    ),
+                    [1, 0, 0, 0],
+                ).flatten(),
+            ),
+            (
+                qml.probs(wires=[1]),
+                lambda theta: [np.cos(theta / 4) ** 2, np.sin(theta / 4) ** 2],
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("shots", [3000, (3000, 3000), (3000, 3500, 4000)])
+    def test_measurements_from_samples_or_counts(
+        self,
+        meas_transform,
+        input_measurement,
+        expected_res,
+        shots,
+    ):
+        """Test the test_measurements_from_samples and measurements_from_counts transforms with a
+        single measurement, and compare outcome to the analytic result.
+        """
+
+        theta = 2.5
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(theta, 0), qml.RX(theta / 2, 1)],
+            measurements=[input_measurement],
+            shots=shots,
+        )
+        (validated_tape,), _ = validate_device_wires(tape, dev.wires)
+        tapes, fn = meas_transform(validated_tape)
+
+        assert len(tapes) == 1
+        assert len(tapes[0].measurements) == 1
+        expected_type = SampleMP if meas_transform == measurements_from_samples else CountsMP
+        assert isinstance(tapes[0].measurements[0], expected_type)
+
+        output = qml.execute(tapes, device=dev)
+        res = fn(output)
+
+        if dev.shots.has_partitioned_shots:
+            assert len(res) == dev.shots.num_copies
+
+        assert np.allclose(res, expected_res(theta), atol=0.05)
+
+    @pytest.mark.parametrize(
+        "counts_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_with_counts_output(self, counts_kwargs, meas_transform):
+        """Test that returning counts works as expected for all-wires, specific wires, or an observable,
+        when using both the measurements_from_counts and measurements_from_samples transforms."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.counts(**counts_kwargs)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        # +/- 200 shots is pretty reasonable with 5000 shots total
+        assert len(res) == len(expected)
+        assert res.keys() == expected.keys()
+        for key in res.keys():
+            assert np.isclose(res[key], expected[key], atol=200)
+
+    @pytest.mark.parametrize(
+        "sample_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_with_sample_output(self, sample_kwargs, meas_transform):
+        """Test that returning sample works as expected for all-wires, specific wires, or an observable,
+        when using both the measurements_from_counts and measurements_from_samples transforms."""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return qml.sample(**sample_kwargs)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        theta = 1.9
+
+        res = transformed_circuit(theta)
+        expected = basic_circuit(theta)
+
+        assert np.isclose(np.mean(res), np.mean(expected), atol=0.05)
+        assert res.shape == expected.shape
+        assert set(res.flatten()) == set(expected.flatten())
+
+    @pytest.mark.parametrize(
+        "counts_kwargs",
+        [
+            {},
+            {"wires": [2, 3]},
+            {"op": qml.Z(wires=0) @ qml.Z(wires=1) @ qml.Z(wires=2)},
+        ],
+    )
+    @pytest.mark.parametrize("all_outcomes", [True, False])
+    @pytest.mark.parametrize(
+        "meas_transform", [measurements_from_counts, measurements_from_samples]
+    )
+    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform):
+        """Test that the measurements with counts when only some states have non-zero counts,
+        and confirm that all_counts returns the expected entries"""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000)
+
+        @partial(validate_device_wires, wires=dev.wires)
+        @qml.qnode(dev)
+        def basic_circuit():
+            return qml.counts(**counts_kwargs, all_outcomes=all_outcomes)
+
+        transformed_circuit = meas_transform(basic_circuit)
+
+        res = transformed_circuit()
+        expected = basic_circuit()
+
+        # +/- 200 shots is pretty reasonable with 5000 shots total
+        assert res.keys() == expected.keys()
+        for key in res.keys():
+            assert np.isclose(res[key], expected[key], atol=200)
+
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    def test_multiple_measurements(self, meas_transform, seed):
+        """Test the results of applying measurements_from_counts/measurements_from_samples with
+        multiple measurements"""
+
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
+
+        @qml.qnode(dev)
+        def basic_circuit(theta: float):
+            qml.RY(theta, 0)
+            qml.RY(theta / 2, 1)
+            qml.RY(2 * theta, 2)
+            qml.RY(theta, 3)
+            return (
+                qml.expval(qml.PauliX(wires=0) @ qml.PauliX(wires=1)),
+                qml.var(qml.PauliX(wires=2)),
+                qml.counts(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)),
+                qml.sample(qml.PauliX(wires=0) @ qml.PauliX(wires=1) @ qml.PauliX(wires=2)),
+                qml.probs(wires=[3]),
+            )
+
+        theta = 1.9
+        tape = qml.workflow.construct_tape(basic_circuit)(theta)
+        (validated_tape,), _ = validate_device_wires(tape, dev.wires)
+        tapes, fn = meas_transform(validated_tape)
+
+        sample_output = qml.execute(tapes, device=dev)
+        expval_res, var_res, counts_res, sample_res, probs_res = fn(sample_output)
+
+        expval_expected = np.sin(theta) * np.sin(theta / 2)
+        var_expected = 1 - np.sin(2 * theta) ** 2
+        counts_expected = basic_circuit(theta)[2]
+        sample_expected = basic_circuit(theta)[3]
+        probs_expected = [np.cos(theta / 2) ** 2, np.sin(theta / 2) ** 2]
+
+        assert np.isclose(expval_res, expval_expected, atol=0.05)
+        assert np.isclose(var_res, var_expected, atol=0.05)
+        assert np.allclose(probs_res, probs_expected, atol=0.05)
+
+        # +/- 200 shots is pretty reasonable with 5000 shots total
+        assert len(counts_res) == len(counts_expected)
+        assert counts_res.keys() == counts_expected.keys()
+        for key in counts_res.keys():
+            assert np.isclose(counts_res[key], counts_expected[key], atol=200)
+
+        # # sample comparison
+        assert np.isclose(np.mean(sample_res), np.mean(sample_expected), atol=0.05)
+        assert len(sample_res) == len(sample_expected)
+        assert set(np.array(sample_res)) == set(sample_expected)
+
+    @pytest.mark.parametrize("shots", [None, 10])
+    @pytest.mark.parametrize(
+        "meas_transform", (measurements_from_counts, measurements_from_samples)
+    )
+    def test_only_applied_if_no_shots(self, meas_transform, shots):
+        """Test that the transform is only applied if shots are being used"""
+
+        tape = qml.tape.QuantumScript(
+            [], measurements=[qml.expval(qml.Z(0)), qml.var(qml.X(1))], shots=shots
+        )
+
+        (new_tape,), fn = meas_transform(tape)
+
+        if shots is None:
+            assert qml.equal(new_tape, tape)
+            assert fn == null_postprocessing
+        else:
+            assert len(new_tape.measurements) == 1
+            assert isinstance(new_tape.measurements[0], (SampleMP, CountsMP))
+            assert fn != null_postprocessing
 
 
 def test_validate_multiprocessing_workers_None():

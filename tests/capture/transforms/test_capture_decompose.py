@@ -22,12 +22,14 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,
+    ctrl_transform_prim,
     for_loop_prim,
     grad_prim,
     jacobian_prim,
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
@@ -46,8 +48,23 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter.gate_set(valid_op)
-        assert not interpreter.gate_set(invalid_op)
+        assert interpreter._stopping_condition(valid_op)
+        assert not interpreter._stopping_condition(invalid_op)
+
+    @pytest.mark.unit
+    def test_fixed_alt_decomps_not_available_capture(self):
+        """Test that a TypeError is raised when graph is disabled and
+        fixed_decomps or alt_decomps is used."""
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+            DecomposeInterpreter(fixed_decomps={qml.CNOT: my_cnot})
+
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+            DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op, recwarn):
@@ -277,23 +294,6 @@ class TestDecomposeInterpreter:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
 
-    def test_ctrl_higher_order_primitive_not_implemented(self):
-        """Test that evaluating a ctrl higher order primitive raises a NotImplementedError"""
-
-        def inner_f(x):
-            qml.X(0)
-            qml.RX(x, 0)
-
-        def f(x):
-            qml.ctrl(inner_f, control=[1])(x)
-
-        args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        interpreter = DecomposeInterpreter()
-
-        with pytest.raises(NotImplementedError):
-            interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_higher_order_primitive(self, lazy):
         """Test that adjoint higher order primitives are correctly interpreted."""
@@ -477,6 +477,122 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
+class TestControlledDecompositions:
+    """Unit tests for decomposing ctrl_transform primitives."""
+
+    def test_ctrl_simple(self):
+        """Test that ctrl higher order primitives are correctly interpreted."""
+
+        @DecomposeInterpreter(gate_set=[qml.CRX, qml.CRY, qml.CRZ])
+        def inner_f(x):
+            qml.Rot(x, 1.0, 2.0, 0)
+
+        def f(x):
+            qml.ctrl(inner_f, control=[1])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert collector.state["ops"] == [
+            qml.CRZ(1.5, [1, 0]),
+            qml.CRY(1.0, [1, 0]),
+            qml.CRZ(2.0, [1, 0]),
+        ]
+
+    def test_ctrl_no_decomposition(self):
+        """Test that ctrl_transform that does not need to be decomposed gets changed into
+        individually controlled ops"""
+
+        def inner_f(x):
+            qml.RX(x, 0)
+            qml.IsingXX(x, [0, 1])
+
+        # C(IsingXX) is not in the default gate set
+        @DecomposeInterpreter(gate_set="C(IsingXX)")
+        def f(x):
+            qml.ctrl(inner_f, control=[2, 3])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert not any(eqn.primitive == ctrl_transform_prim for eqn in jaxpr.eqns)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert collector.state["ops"] == [
+            qml.ctrl(qml.RX(1.5, 0), [2, 3]),
+            qml.ctrl(qml.IsingXX(1.5, [0, 1]), [2, 3]),
+        ]
+
+    def test_ctrl_for_loop(self):
+        """Test that a for_loop inside a ctrl_transform is not unrolled."""
+
+        def inner_f(x, n):
+            @qml.for_loop(n)
+            def g(i):
+                qml.RX(x, i)
+
+            g()
+
+        @DecomposeInterpreter()
+        def f(x, n):
+            qml.ctrl(inner_f, control=[4, 5])(x, n)
+
+        args = (1.5, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-2].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
+
+    def test_ctrl_while_loop(self):
+        """Test that a while_loop inside a ctrl_transform is not unrolled."""
+
+        def inner_f(x, n):
+            @qml.while_loop(lambda i: i < 2 * n)
+            def g(i):
+                qml.RX(x, i)
+                return i + 1
+
+            g(0)
+
+        @DecomposeInterpreter()
+        def f(x, n):
+            qml.ctrl(inner_f, control=[4, 5])(x, n)
+
+        args = (1.5, 3)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-3].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[-2].primitive == qml.ops.Controlled._primitive
+        # final primitive is the increment
+        assert inner_jaxpr.eqns[-1].primitive.name == "add"
+
+    def test_ctrl_cond(self):
+        """Test that a cond inside a ctrl_transform is not unrolled."""
+
+        def inner_f(x):
+            @qml.cond(x > 1)
+            def cond_f():
+                qml.RX(x, 0)
+
+            cond_f()
+
+        @DecomposeInterpreter()
+        def f(x):
+            qml.ctrl(inner_f, control=[4, 5])(x)
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        # condition is the first primitive
+        assert jaxpr.eqns[1].primitive == cond_prim
+
+        # True branch
+        branch_jaxpr = jaxpr.eqns[1].params["jaxpr_branches"][0]
+        assert branch_jaxpr.eqns[-2].primitive == qml.RX._primitive
+        assert branch_jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
+
+
 def test_decompose_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
     gate_set = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
@@ -490,7 +606,7 @@ def test_decompose_plxpr_to_plxpr():
     transformed_jaxpr = decompose_plxpr_to_plxpr(
         jaxpr.jaxpr, jaxpr.consts, [], {"gate_set": gate_set}, *args
     )
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
     assert transformed_jaxpr.eqns[0].primitive == qml.RZ._primitive
     assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive

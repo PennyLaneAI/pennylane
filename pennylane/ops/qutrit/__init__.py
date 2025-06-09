@@ -20,13 +20,18 @@ The operations are in one file:
   either unitary or hermitian depending.
 """
 
-from ..identity import Identity
-from .matrix_ops import *
-from .non_parametric_ops import *
-from .observables import *
-from .parametric_ops import *
-from .state_preparation import *
-from .channel import *
+from ..identity import Identity, I
+from .channel import (
+    QutritDepolarizingChannel,
+    QutritAmplitudeDamping,
+    TritFlip,
+    QutritChannel,
+)
+from .matrix_ops import QutritUnitary, ControlledQutritUnitary
+from .non_parametric_ops import TShift, TClock, TAdd, TSWAP, THadamard
+from .parametric_ops import TRX, TRY, TRZ, validate_subspace
+from .observables import THermitian, GellMann
+from .state_preparation import QutritBasisState
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 __ops__ = {

@@ -467,13 +467,13 @@ class CustomOpNoPlxprDecomposition(Operation):
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
 
-    def test_error_no_plxpr_decomposition(self):
+    def test_error_no_qfunc_decomposition(self):
         """Test that an error is raised if an operator does not have a plxpr decomposition."""
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.RX(0.1, 0).compute_qfunc_decomposition()
 
-    def test_no_plxpr_decomposition(self):
+    def test_no_qfunc_decomposition(self):
         """Test that a function with a custom operation that does not have a plxpr decomposition is not decomposed."""
 
         @DecomposeInterpreter()
@@ -1164,7 +1164,7 @@ class TestDynamicDecomposeInterpreter:
             ([qml.RX, qml.RY, qml.RZ, qml.CNOT], [qml.RZ]),
         ],
     )
-    def test_nested_decomp_no_plxpr_decomposition_gate_set(self, gate_set, expected_ops):
+    def test_nested_decomp_no_qfunc_decomposition_gate_set(self, gate_set, expected_ops):
         """Test that a nested decomposition custom operation that contains an operator with no plxpr decomposition is correctly decomposed using a custom gate set."""
 
         @DecomposeInterpreter(gate_set=gate_set)
@@ -1193,7 +1193,7 @@ class TestDynamicDecomposeInterpreter:
             (None, [qml.RX, qml.RY, qml.RZ], [qml.RZ]),
         ],
     )
-    def test_nested_decomp_no_plxpr_decomposition_max_exp_gate_set(
+    def test_nested_decomp_no_qfunc_decomposition_max_exp_gate_set(
         self, max_expansion, gate_set, expected_ops
     ):
         """Test that a custom operation that contains an operator with no plxpr decomposition is correctly decomposed using a custom gate set and max_expansion."""

@@ -55,7 +55,7 @@ class TestDyanmicShapes:
     def test_single_abstract_shape(self):
         """Test we get the correct answer for a single abstract shape."""
 
-        initial_abstracted_axes = ({0: "a"},)
+        initial_abstracted_axes = ({0: 0},)
 
         def f(*args):
             abstracted_axes, abstract_shapes = determine_abstracted_axes(args)
@@ -72,9 +72,9 @@ class TestDyanmicShapes:
     @pytest.mark.parametrize(
         "initial_abstracted_axes, num_shapes",
         [
-            (({0: "a", 1: "b"},), 2),
-            (({0: "a", 1: "a"},), 1),
-            (({1: "a"},), 1),
+            (({0: 0, 1: 1},), 2),
+            (({0: 0, 1: 0},), 1),
+            (({1: 0},), 1),
         ],
     )
     def test_single_abstract_shape_multiple_abstract_axes(
@@ -98,7 +98,7 @@ class TestDyanmicShapes:
         """Test a pytree input with dynamic shapes."""
 
         initial_abstracted_axes = (
-            {"input0": {}, "input1": {0: "a"}, "input2": {0: "a"}, "input3": {1: "b"}},
+            {"input0": {}, "input1": {0: 0}, "input2": {0: 0}, "input3": {1: 1}},
         )
         arg = {
             "input0": jnp.arange(5),
@@ -128,7 +128,7 @@ class TestDyanmicShapes:
             zeros = jax.numpy.zeros((4, n))
 
             abstracted_axes, abstract_shapes = determine_abstracted_axes((ones, zeros))
-            assert abstracted_axes == ({0: "a"}, {1: "b"})
+            assert abstracted_axes == ({0: 0}, {1: 1})
             assert len(abstract_shapes) == 2
             assert abstract_shapes[0] is m
             assert abstract_shapes[1] is n
@@ -151,7 +151,7 @@ class TestDyanmicShapes:
 
 def test_custom_staging_rule(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
-    my_prim = jax.core.Primitive("my_prim")
+    my_prim = jax.extend.core.Primitive("my_prim")
     register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
 
     def f(i):

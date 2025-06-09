@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
-# pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
+# pylint: disable=too-many-return-statements,too-many-arguments
 
 from collections import OrderedDict
+from fractions import Fraction
 from functools import partial
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError, transform
@@ -51,7 +53,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
+def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
@@ -374,14 +376,13 @@ def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):
         # Check that the gate is compatible with PyZX
         name = op.name
         if name not in gate_types:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "The expansion of the quantum tape failed, PyZX does not support", name
             )
 
         # Apply wires and parameters
         map_gate = gate_types[name]
-
-        args = [*op.wires, *(p / np.pi for p in op.parameters)]
+        args = [*op.wires, *(Fraction(p / np.pi).limit_denominator() for p in op.parameters)]
 
         gate = map_gate(*args)
         gate.to_graph(graph, q_mapper, c_mapper)
@@ -489,14 +490,14 @@ def from_zx(graph, decompose_phases=True):
 
             # The graph is not diagram like.
             if len(neighbors) != 1:
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Graph doesn't seem circuit like: multiple parents. Try to use the PyZX function `extract_circuit`."
                 )
 
             neighbor_0 = neighbors[0]
 
             if qubits[neighbor_0] != qubit_1:
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Cross qubit connections, the graph is not circuit-like."
                 )
 
@@ -571,7 +572,7 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
     """Return the list of two qubit gates giveeen the vertex and its neighbor."""
     if type_1 == type_2:
         if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Two green or respectively two red nodes connected by a simple edge does not have a "
                 "circuit representation."
             )
@@ -586,7 +587,7 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
         return [op_1, op_2, op_3]
 
     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "A green and red node connected by a Hadamard edge does not have a circuit representation."
         )
     # Type1 is always of type Z therefore the qubits are already ordered.

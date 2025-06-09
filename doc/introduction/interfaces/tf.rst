@@ -193,11 +193,3 @@ The final weights and circuit value are:
 <tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
 >>> circuit4(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
-
-Keras integration
------------------
-
-Once you have a TensorFlow-compaible QNode, it is easy to convert this into a Keras layer. To
-help automate this process, PennyLane also provides a :class:`~.qnn.KerasLayer` class to easily
-convert a QNode to a Keras layer. Please see the corresponding :class:`~.qnn.KerasLayer`
-documentation for more details and examples.
