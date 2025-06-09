@@ -53,6 +53,52 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestSubroutine:
+
+    def test_stand_alone_call_of_subroutine(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "standalone-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+        assert context.vars["c"].val == 0
+
+    def test_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
+
+        assert q.queue == [Hadamard("q0")]
+
+@pytest.mark.external
 class TestExpressions:
 
     def test_different_unary_exprs(self):
@@ -156,49 +202,63 @@ class TestExpressions:
             PauliX("q0") ** 24,
         ]
 
-    def test_stand_alone_call_of_subroutine(self):
+    def test_bare_expression(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            """
+            bit[8] a = "1001";
+            a << 1;
+            let b = a;
+            """,
             permissive=True,
         )
 
-        # run the program
-        with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "standalone-subroutines", "wire_map": None}
-            )
-
-        assert q.queue == [Hadamard("q0"), PauliY("q0")]
-
-    def test_complex_subroutines(self):
-        # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
-            permissive=True,
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "expression-visit"}
         )
 
-        # run the program
-        with queuing.AnnotatedQueue() as q:
-            context = QasmInterpreter().interpret(
-                ast, context={"name": "complex-subroutines", "wire_map": None}
-            )
+        # exprs are not in-place modifiers without an assignment
+        assert context.aliases["b"](context).val == 9
 
-        assert q.queue == [Hadamard("q0"), PauliY("q0")]
-        assert context.vars["c"].val == 0
+    operands = [
+        0.0,
+        0.1,
+        -0.1,
+        5.0,
+        99999.99,
+        -9999.99,
+        0,
+        1,
+        -1,
+        10,
+        -10,
+        -99999,
+        99999,
+        "0.0",
+        "0.1",
+        "-0.1",
+        "5.0",
+        "99999.99",
+        "-9999.99",
+        "0",
+        "1",
+        "-1",
+        "10",
+        "-10",
+        "-99999",
+        "99999",
+    ]
 
-    def test_subroutines(self):
-        # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
-        )
-
-        # run the program
-        with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
-
-        assert q.queue == [Hadamard("q0")]
-
+    @pytest.mark.parametrize("operand", operands)
+    def test_preprocess_operands(self, operand):
+        if isinstance(operand, float):
+            assert isinstance(preprocess_operands(operand), float)
+        elif isinstance(operand, int):
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.isdigit():
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.replace(".", "").isnumeric():
+            assert isinstance(preprocess_operands(operand), float)
 
 @pytest.mark.external
 class TestVariables:
@@ -229,24 +289,6 @@ class TestVariables:
                 ast, context={"wire_map": None, "name": "bad-alias"}
             )
             context.aliases["k"](context)
-
-    def test_bare_expression(self):
-        # parse the QASM
-        ast = parse(
-            """
-            bit[8] a = "1001";
-            a << 1;
-            let b = a;
-            """,
-            permissive=True,
-        )
-
-        context = QasmInterpreter().interpret(
-            ast, context={"wire_map": None, "name": "expression-visit"}
-        )
-
-        # exprs are not in-place modifiers without an assignment
-        assert context.aliases["b"](context).val == 9
 
     def test_ref_undeclared_var_in_expr(self):
         # parse the QASM program
@@ -472,46 +514,6 @@ class TestVariables:
         assert isinstance(context.vars["l"].val, complex)
         assert isinstance(context.vars["n"].val, float)
         assert isinstance(context.vars["o"].val, bool)
-
-    operands = [
-        0.0,
-        0.1,
-        -0.1,
-        5.0,
-        99999.99,
-        -9999.99,
-        0,
-        1,
-        -1,
-        10,
-        -10,
-        -99999,
-        99999,
-        "0.0",
-        "0.1",
-        "-0.1",
-        "5.0",
-        "99999.99",
-        "-9999.99",
-        "0",
-        "1",
-        "-1",
-        "10",
-        "-10",
-        "-99999",
-        "99999",
-    ]
-
-    @pytest.mark.parametrize("operand", operands)
-    def test_preprocess_operands(self, operand):
-        if isinstance(operand, float):
-            assert isinstance(preprocess_operands(operand), float)
-        elif isinstance(operand, int):
-            assert isinstance(preprocess_operands(operand), int)
-        elif operand.isdigit():
-            assert isinstance(preprocess_operands(operand), int)
-        elif operand.isnumeric():
-            assert isinstance(preprocess_operands(operand), float)
 
     def test_update_non_existent_var(self):
         # parse the QASM program
