@@ -576,7 +576,7 @@ class Controlled(SymbolicOp):
         id=None,
     ):
         control_wires = Wires(control_wires)
-        work_wires = Wires(work_wires or Wires([]))
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if control_values is None:
             control_values = [True] * len(control_wires)
