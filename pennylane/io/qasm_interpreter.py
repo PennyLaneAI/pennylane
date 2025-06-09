@@ -136,26 +136,24 @@ class Context:
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
-        self,
-        value: any,
-        name: str,
-        node: QASMNode,
+        self, value: any, name: str, operator: str, line: int
     ):  # pylint: disable=too-many-branches
         """
         Updates a variable, or raises if it is constant.
         Args:
             value (any): the value to set.
             name (str): the name of the variable.
-            node (QASMNode): the QASMNode that corresponds to the update.
+            operator (str): the assignment operator.
+            line (int): the line number at which we encountered the assignment node.
         """
         if name not in self.vars:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
         if self.vars[name].constant:
             raise ValueError(
-                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"Attempt to mutate a constant {name} on line {line} that was "
                 f"defined on line {self.vars[name].line}"
             )
-        match node.op.name:
+        match operator:
             case "=":
                 self.vars[name].val = value
             case "+=":
@@ -183,10 +181,10 @@ class Context:
             case _:  # pragma: no cover
                 # we shouldn't ever get this error if the parser did its job right
                 raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {node.op.name} encountered in assignment expression "
-                    f"on line {node.span.start_line}."
+                    f"Invalid operator {operator} encountered in assignment expression "
+                    f"on line {line}."
                 )  # pragma: no cover
-        self.vars[name].line = node.span.start_line
+        self.vars[name].line = line
 
     def require_wires(self, wires: list):
         """
@@ -392,7 +390,7 @@ class QasmInterpreter:
         # references to an unresolved value see a func for now
         name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
-        context.update_var(res, name, node)
+        context.update_var(res, name, node.op.name, node.span.start_line)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: Context):
