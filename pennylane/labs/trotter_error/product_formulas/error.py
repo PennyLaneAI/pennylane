@@ -40,7 +40,13 @@ def effective_hamiltonian(
     order: int,
     timestep: float = 1.0,
 ):
-    """Compute the effective Hamiltonian according to the product formula
+    """Compute the effective Hamiltonian with the given product formula.
+
+    Args
+        product_formula (:class:`~.pennylane.trotter_error.labs.ProductFormula`): A product formula used to approximate the Hamiltonian simulation.
+        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`) The fragments that sum to the Hamiltonian. The keys in the dictionary must match the labels used to build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
+        order (int): The order of the approximatation.
+        timestep (float): The timestep for simulation.
 
     **Example**
 
@@ -60,11 +66,11 @@ def effective_hamiltonian(
     >>>
     >>> delta = 0.001
     >>> frag_labels = [0, 1, 1, 0]
-    >>> frag_coeffs = [delta/2, delta/2, delta/2, delta/2]
+    >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
 
     >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
     >>> frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    >>> type(effective_hamiltonian(pf, frags, order=5))
+    >>> type(effective_hamiltonian(pf, frags, order=5, timestep=delta))
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
@@ -99,17 +105,15 @@ def perturbation_error(
     order: int,
     timestep: float = 1.0,
 ) -> List[float]:
-    r"""Computes the perturbation theory error using the second-order Trotter error operator.
+    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`H_{eff} = H + \epsilon` from the given product formula.
 
-    The second-order Trotter error operator, :math:`\hat{\epsilon}`, is given by the expression
-
-    .. math:: \hat{\epsilon} = \frac{- \Delta t^2}{24} \sum_{i=1}^{L-1} \sum_{j = i + 1}^L \left[ H_i + 2 \sum_{k = j + 1}^L H_k, \left[ H_i, H_j \right] \right].
 
     For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
 
     Args:
+        product_formula (ProductFormula): The :class:`~.pennylane.labs.trotter_error.ProductFormula` used to obtain the effective Hamiltonian.
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
-            objects to compute Trotter error from
+            objects to compute the perturbation error from
         states: (Sequence[AbstractState]): the states to compute expectation values from
         delta (float): time step for the trotter error operator.
 
@@ -140,8 +144,8 @@ def perturbation_error(
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
 
-    >>> errors = perturbation_error(pf, frags, [state1, state2])
-    [(-0.9189251160920879+0j), (-4.797716682426851+0j)]
+    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
+    [0.9189251160920877j, 4.797716682426847j]
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
@@ -166,6 +170,7 @@ def perturbation_error(
 def _apply_commutator(
     commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
 ) -> AbstractState:
+    """Returns the state obtained from applying ``commutator`` to ``state``."""
 
     new_state = _AdditiveIdentity()
 
@@ -179,8 +184,8 @@ def _apply_commutator(
     return new_state
 
 
-def _op_list(commutator):
-    """assume right nested"""
+def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
+    """Returns the operations needed to apply the commutator to a state."""
 
     commutator = tuple(commutator)
 
