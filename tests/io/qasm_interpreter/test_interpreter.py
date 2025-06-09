@@ -260,6 +260,7 @@ class TestExpressions:
         elif operand.replace(".", "").isnumeric():
             assert isinstance(preprocess_operands(operand), float)
 
+
 @pytest.mark.external
 class TestVariables:
 
