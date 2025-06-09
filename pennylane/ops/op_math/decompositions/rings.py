@@ -468,7 +468,11 @@ class DyadicMatrix:
 
 
 class SO3Matrix:
-    r"""Represents the :math:`SO(3)` matrices over the ring :math:`\mathbb{Z}[\sqrt{2}]` (`~pennylane.ZSqrtTwo`).
+    r"""Represents the :math:`SO(3)` matrices over the ring :math:`\mathbb{D}[\sqrt{2}]`,
+    the ring of dyadic integers adjoined with :math:`\sqrt{2}`.
+
+    The `~pennylane.ZSqrtTwo` (or :math:`\mathbb{Z}[\sqrt{2}]) represents a subset of this ring,
+    and can be used to construct its elements. The matrix form is usually represented as:
 
     .. math::
 
@@ -477,9 +481,9 @@ class SO3Matrix:
         a_{00} & a_{01} & a_{11} \\
         a_{10} & a_{11} & a_{12} \\
         a_{20} & a_{21} & a_{22}
-        \end{pmatrix}
+        \end{pmatrix},
 
-    where :math:`a_{ij} \in \mathbb{Z}[\sqrt{2}]`, :math:`k \in \mathbb{Z}`, and the determinant is `1`.
+    where :math:`a_{ij} \in \mathbb{Z}[\sqrt{2}]` and :math:`k \in \mathbb{Z}`.
 
     Args:
         matrix (DyadicMatrix): The :class:`~pennylane.DyadicMatrix` matrix from which the :math:`SO(3)` matrix is derived.

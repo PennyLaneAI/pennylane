@@ -84,11 +84,11 @@ class TestNormalForms:
             ), "SO(3) matrix does not match expected form"
             assert qml.math.allclose(parity_vecs[ix], parity_vec)
 
-    @pytest.mark.parametrize("klen", [1, 2, 4, 6])
+    @pytest.mark.parametrize("klen", [1, 2, 5, 6])
     def test_ma_normal_form(self, klen):
         """Test the Matsumoto-Amano normal form decomposition."""
         clifford_elements = _clifford_group_to_SO3()
-        a = qml.math.random.randint(2)
+        a = int(klen % 2)
         b = qml.math.random.randint(2, size=klen)
         c = qml.math.random.randint(len(clifford_elements))
 
