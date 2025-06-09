@@ -116,7 +116,7 @@ import jax
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
-from pennylane.capture import CaptureError, FlatFn
+from pennylane.capture import CaptureError, FlatFn, promote_consts
 from pennylane.capture.custom_primitives import QmlPrimitive
 from pennylane.logging import debug_logger
 from pennylane.typing import TensorLike
@@ -212,31 +212,25 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, batch_dims=Non
         temp_all_args = args
 
     # Expand user transforms applied to the qfunc
-    accumulated_consts = []
+    accumulated_consts = ()
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
         transformed_func = qml.capture.expand_plxpr_transforms(
             partial(qml.capture.eval_jaxpr, qfunc_jaxpr, [])
         )
 
         qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_all_args)
-        accumulated_consts += qfunc_jaxpr.consts
-        qj = qfunc_jaxpr.jaxpr
-        qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
+        qfunc_jaxpr, accumulated_consts = promote_consts(qfunc_jaxpr, accumulated_consts)
 
     # Expand user transforms applied to the qnode
     qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, [], *accumulated_consts, *temp_all_args)
-    accumulated_consts = qfunc_jaxpr.consts + accumulated_consts
-    qj = qfunc_jaxpr.jaxpr
-    qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
+    qfunc_jaxpr, accumulated_consts = promote_consts(qfunc_jaxpr, accumulated_consts)
 
     # Apply device preprocessing transforms
     graph_enabled = qml.decomposition.enabled_graph()
     try:
         qml.decomposition.disable_graph()
         qfunc_jaxpr = device_program(qfunc_jaxpr, [], *temp_all_args)
-        accumulated_consts = qfunc_jaxpr.consts + accumulated_consts
-        qj = qfunc_jaxpr.jaxpr
-        qfunc_jaxpr = qj.replace(constvars=(), invars=qj.constvars + qj.invars)
+        qfunc_jaxpr, accumulated_consts = promote_consts(qfunc_jaxpr, accumulated_consts)
     finally:
         if graph_enabled:
             qml.decomposition.enable_graph()
@@ -454,9 +448,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
             "flow functions like for_loop, while_loop, etc."
         ) from exc
 
-    consts = qfunc_jaxpr.consts
-    j = qfunc_jaxpr.jaxpr
-    qfunc_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    qfunc_jaxpr, consts = promote_consts(qfunc_jaxpr, ())
 
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree, consts

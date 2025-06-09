@@ -35,6 +35,7 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from .promote_consts import promote_consts
 
 FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
@@ -461,10 +462,8 @@ def _(self, *dyn_shape, dimension, dtype, shape, sharding):
 def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
-    consts = jaxpr.consts
-    j = jaxpr.jaxpr
-    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
-    return adjoint_transform_prim.bind(*consts, *invals, jaxpr=jaxpr, lazy=lazy)
+    jaxpr, new_invals = promote_consts(jaxpr, invals)
+    return adjoint_transform_prim.bind(*new_invals, jaxpr=jaxpr, lazy=lazy)
 
 
 # pylint: disable=too-many-arguments
@@ -473,13 +472,10 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     """Interpret a ctrl transform primitive."""
     args = invals[:-n_control]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
-    consts = jaxpr.consts
-    j = jaxpr.jaxpr
-    jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    jaxpr, new_invals = promote_consts(jaxpr, invals)
 
     return ctrl_transform_prim.bind(
-        *consts,
-        *invals,
+        *new_invals,
         n_control=n_control,
         jaxpr=jaxpr,
         control_values=control_values,
@@ -589,17 +585,14 @@ def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_ja
     """Handle a qnode primitive."""
 
     qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
-    consts = qfunc_jaxpr.consts
-    j = qfunc_jaxpr.jaxpr
-    new_qfunc_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    jaxpr, new_invals = promote_consts(qfunc_jaxpr, invals)
     return qnode_prim.bind(
-        *consts,
-        *invals,
+        *new_invals,
         shots=shots,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
-        qfunc_jaxpr=new_qfunc_jaxpr,
+        qfunc_jaxpr=jaxpr,
     )
 
 

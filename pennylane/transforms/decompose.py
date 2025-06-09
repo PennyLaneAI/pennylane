@@ -59,7 +59,7 @@ def _resolve_gate_set(gate_set: set[type | str] | dict[type | str, float] = None
         for v in gate_set.values():
             if v < 0.0:
                 raise ValueError(
-                    "Negative gate weights provided to gate_set in decompose" "are not supported."
+                    "Negative gate weights provided to gate_set in decompose are not supported."
                 )
 
         if not qml.decomposition.enabled_graph():
