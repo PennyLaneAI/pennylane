@@ -181,6 +181,6 @@ class SparseState(AbstractState):
         
         # Handle SparseState objects
         if isinstance(other, SparseState):
-            return self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())
+            return self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())[0,0]
 
         raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")
