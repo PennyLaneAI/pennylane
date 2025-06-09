@@ -31,6 +31,8 @@ from pennylane.compiler.python_compiler.transforms.decompose import Decompositio
 class TestDecompositionPass:
     """Unit tests for the DecompositionPass."""
 
+    gate_set_cnot_rotations = {"CNOT", "RX", "RY", "RZ"}
+
     def test_single_rot_decomposition(self, run_filecheck):
         """Test that the Rot gate is decomposed into RZ and RY gates."""
 
@@ -68,7 +70,9 @@ class TestDecompositionPass:
         ctx.load_dialect(Quantum)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+        pipeline = xdsl.passes.PipelinePass(
+            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+        )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
@@ -144,7 +148,9 @@ class TestDecompositionPass:
         ctx.load_dialect(Quantum)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+        pipeline = xdsl.passes.PipelinePass(
+            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+        )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
@@ -227,7 +233,9 @@ class TestDecompositionPass:
         ctx.load_dialect(Quantum)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+        pipeline = xdsl.passes.PipelinePass(
+            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+        )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
@@ -294,7 +302,9 @@ class TestDecompositionPass:
         ctx.load_dialect(Quantum)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((DecompositionTransformPass(),))
+        pipeline = xdsl.passes.PipelinePass(
+            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+        )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
