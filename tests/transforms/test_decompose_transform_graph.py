@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.decompose import _resolve_gate_set
 
 
 @pytest.mark.unit
@@ -29,7 +28,10 @@ def test_weighted_graph_handles_negative_weight():
     tape = qml.tape.QuantumScript([])
 
     # edge case: negative gate weight
-    with pytest.raises(ValueError, match="Negative gate weights"):
+    with pytest.raises(
+        ValueError,
+        match="Negative gate weights provided to gate_set in decompose" "are not supported.",
+    ):
         qml.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
 
 
@@ -325,51 +327,3 @@ def test_decompose_qnode():
 
     res = circuit()
     assert qml.math.allclose(res, 1.0)
-
-
-@pytest.mark.unit
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_stopping_condition_graph_enabled():
-    """Tests that the stopping condition is resolved correctly when the graph is disabled."""
-
-    def _stopping_condition(op):
-        return op.num_params > 0 and all(qml.math.allclose(p, 0) for p in op.parameters)
-
-    gate_set, stopping_condition = _resolve_gate_set({"RX", "RY"}, _stopping_condition)
-    assert stopping_condition(qml.RX(0.1, wires=0))
-    assert stopping_condition(qml.RY(0.1, wires=0))
-    assert not stopping_condition(qml.RZ(0.1, wires=0))
-    assert stopping_condition(qml.RZ(0, wires=1))
-    assert gate_set == {"RX", "RY"}
-
-
-@pytest.mark.integration
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_stopping_condition():
-    """Tests that the stopping condition is respected."""
-
-    # Prepare a unitary matrix that we want to decompose
-    U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
-
-    def stopping_condition(op):
-
-        if isinstance(op, qml.QubitUnitary):
-            identity = qml.math.eye(2 ** len(op.wires))
-            return qml.math.allclose(op.matrix(), identity)
-
-        return False
-
-    tape = qml.tape.QuantumScript([qml.QubitUnitary(U, wires=[0, 1])])
-
-    [decomp], _ = qml.transforms.decompose(
-        tape,
-        gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
-        stopping_condition=stopping_condition,
-    )
-
-    assert decomp.operations == [
-        qml.RZ(0.1, wires=[0]),
-        qml.RY(0.2, wires=[0]),
-        qml.RZ(0.3, wires=[0]),
-        qml.QubitUnitary(qml.math.eye(2), wires=[1]),
-    ]

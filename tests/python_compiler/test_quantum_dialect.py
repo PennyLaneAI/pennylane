@@ -40,7 +40,7 @@ expected_ops_names = {
     "CountsOp": "quantum.counts",
     "CustomOp": "quantum.custom",
     "DeallocOp": "quantum.dealloc",
-    "DeviceInitOp": "quantum.device",
+    "DeviceInitOp": "quantum.device_init",
     "DeviceReleaseOp": "quantum.device_release",
     "ExpvalOp": "quantum.expval",
     "ExtractOp": "quantum.extract",
@@ -124,18 +124,8 @@ def test_assembly_format():
     // CHECK: [[QUBIT:%.+]] = "quantum.extract"([[QREG]])
     %qubit = "quantum.extract"(%qreg) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
 
-    // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
+    // CHEKC: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
-
-    // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
-    quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
-
-    // CHECK: quantum.adjoint([[QREG]])
-    quantum.adjoint(%qreg) : !quantum.reg {
-      ^bb0(%arg0: !quantum.reg):
-      // CHECK: quantum.yield %arg0
-      quantum.yield %arg0: !quantum.reg
-    }
     """
 
     ctx = xdsl.context.Context()

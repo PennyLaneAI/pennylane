@@ -189,7 +189,7 @@ add_decomps("Adjoint(RX)", adjoint_rotation)
 add_decomps("Pow(RX)", pow_rotation)
 
 
-def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_rx_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.CRX: 1}
     return {
@@ -200,22 +200,22 @@ def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_typ
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            work_wire_type="clean",
         ): 2,
     }
 
 
 @register_resources(_controlled_rx_resource)
-def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_rx_decomp(*params, wires, control_wires, work_wires, **__):
     if len(control_wires) == 1:
         qml.CRX(*params, wires=wires)
         return
 
     qml.H(wires=wires[-1])
     qml.RZ(params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RZ(-params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.H(wires=wires[-1])
 
 
@@ -356,7 +356,7 @@ add_decomps("Adjoint(RY)", adjoint_rotation)
 add_decomps("Pow(RY)", pow_rotation)
 
 
-def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_ry_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.CRY: 1}
     return {
@@ -366,21 +366,21 @@ def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_typ
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            work_wire_type="clean",
         ): 2,
     }
 
 
 @register_resources(_controlled_ry_resource)
-def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_ry_decomp(*params, wires, control_wires, work_wires, **__):
     if len(control_wires) == 1:
         qml.CRY(*params, wires=wires)
         return
 
     qml.RY(params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RY(-params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
 
 
 add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
@@ -559,7 +559,7 @@ add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 
 
-def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_rz_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.CRZ: 1}
     return {
@@ -569,21 +569,21 @@ def _controlled_rz_resource(*_, num_control_wires, num_work_wires, work_wire_typ
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            work_wire_type="clean",
         ): 2,
     }
 
 
 @register_resources(_controlled_rz_resource)
-def _controlled_rz_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_rz_decomp(*params, wires, control_wires, work_wires, **__):
     if len(control_wires) == 1:
         qml.CRZ(*params, wires=wires)
         return
 
     qml.RZ(params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RZ(-params[0] / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
 
 
 add_decomps("C(RZ)", flip_zero_control(_controlled_rz_decomp))
@@ -780,11 +780,11 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
-def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "clean")
+def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, **__):
+    return num_control_wires == 1 or num_work_wires > 0
 
 
-def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.ControlledPhaseShift: 1}
     return {
@@ -793,7 +793,7 @@ def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires - 1,
-            work_wire_type=work_wire_type,
+            work_wire_type="clean",
         ): 2,
         qml.ControlledPhaseShift: 1,
     }
@@ -801,19 +801,15 @@ def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_
 
 @register_condition(_controlled_phaseshift_condition)
 @register_resources(_controlled_phaseshift_resource)
-def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, **__):
 
     if len(control_wires) == 1:
         qml.ControlledPhaseShift(*params, wires=wires)
         return
 
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
+    qml.MultiControlledX(wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:])
     qml.ControlledPhaseShift(*params, wires=[work_wires[0], wires[-1]])
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
+    qml.MultiControlledX(wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:])
 
 
 add_decomps("C(PhaseShift)", flip_zero_control(_controlled_phase_shift_decomp))
@@ -1032,7 +1028,7 @@ def _adjoint_rot(phi, theta, omega, wires, **__):
 add_decomps("Adjoint(Rot)", _adjoint_rot)
 
 
-def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
+def _controlled_rot_resource(*_, num_control_wires, num_work_wires, **__):
     if num_control_wires == 1:
         return {qml.CRot: 1}
     return {
@@ -1043,25 +1039,23 @@ def _controlled_rot_resource(*_, num_control_wires, num_work_wires, work_wire_ty
             num_control_wires=num_control_wires,
             num_zero_control_values=0,
             num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+            work_wire_type="clean",
         ): 2,
     }
 
 
 @register_resources(_controlled_rot_resource)
-def _controlled_rot_decomp(
-    phi, theta, omega, wires, control_wires, work_wires, work_wire_type, **_
-):
+def _controlled_rot_decomp(phi, theta, omega, wires, control_wires, work_wires, **_):
 
     if len(control_wires) == 1:
         qml.CRot(phi, theta, omega, wires=wires)
         return
 
     qml.RZ((phi - omega) / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RZ(-(phi + omega) / 2, wires=wires[-1])
     qml.RY(-theta / 2, wires=wires[-1])
-    qml.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qml.MultiControlledX(wires=wires, work_wires=work_wires)
     qml.RY(theta / 2, wires=wires[-1])
     qml.RZ(omega, wires=wires[-1])
 

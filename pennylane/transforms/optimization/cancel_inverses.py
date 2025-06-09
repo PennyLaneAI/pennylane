@@ -14,10 +14,8 @@
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
 from functools import lru_cache, partial
-from typing import Union
 
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -26,36 +24,23 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TensorLike
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
 
 
-def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, Wires]) -> bool:
-    """Checks if two data objects are equal, considering abstractness."""
-
-    for d1, d2 in zip(items1, items2, strict=True):
-        if is_abstract(d1) or is_abstract(d2):
-            if d1 is not d2:
-                return False
-        elif d1 != d2:
-            return False
-
-    return True
-
-
-def _ops_equal(op1: Operator, op2: Operator) -> bool:
+def _ops_equal(op1, op2):
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
-        and _check_equality(op1.data, op2.data)
-        and _check_equality(op1.wires, op2.wires)
+        and (op1.data == op2.data)
         and (op1.hyperparameters == op2.hyperparameters)
+        and (op1.wires == op2.wires)
     )
 
 
-def _are_inverses(op1: Operator, op2: Operator) -> bool:
+def _are_inverses(op1, op2):
     """Checks if two operators are inverses of each other
 
     Args:
@@ -88,6 +73,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
+        from pennylane.operation import Operator
 
     except ImportError:  # pragma: no cover
         return None, None

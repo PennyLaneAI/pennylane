@@ -40,7 +40,7 @@ def _is_single_qubit_special_unitary(op):
 
 
 def decompose_mcx(
-    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "dirty"
+    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "clean"
 ):
     """Decomposes the multi-controlled PauliX"""
 
@@ -52,9 +52,7 @@ def decompose_mcx(
 
     if n_work_wires >= n_ctrl_wires - 2:
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
-        return _decompose_mcx_with_many_workers_old(
-            control_wires, target_wire, work_wires, work_wire_type
-        )
+        return _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires)
     if n_work_wires >= 2:
         return _decompose_mcx_with_two_workers_old(
             control_wires, target_wire, work_wires[0:2], work_wire_type
@@ -136,16 +134,14 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
     return decomposition
 
 
-def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires, work_wire_type):
+def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_many_workers(
-            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
-        )
+        _decompose_mcx_with_many_workers(wires=wires, work_wires=work_wires)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
@@ -180,7 +176,7 @@ def _decompose_mcx_with_one_worker_kg24(
     control_wires: WiresLike,
     target_wire: int,
     work_wire: int,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["clean", "dirty"] = "clean",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
@@ -192,7 +188,7 @@ def _decompose_mcx_with_one_worker_kg24(
         control_wires (Wires): the control wires
         target_wire (int): the target wire
         work_wires (Wires): the work wires used to decompose the gate
-        work_wire_type (string): If "dirty", perform un-computation. Default is "dirty".
+        work_wire_type (string): If "dirty", perform un-computation. Default is "clean".
 
     Returns:
         list[Operator]: the synthesized quantum circuit
@@ -219,7 +215,7 @@ def _decompose_mcx_with_two_workers_old(
     control_wires: WiresLike,
     target_wire: int,
     work_wires: WiresLike,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["clean", "dirty"] = "clean",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
@@ -231,7 +227,7 @@ def _decompose_mcx_with_two_workers_old(
         control_wires (Wires): The control wires.
         target_wire (int): The target wire.
         work_wires (Wires): The work wires.
-        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "dirty".
+        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "clean".
 
     Returns:
         list[Operator]: The synthesized quantum circuit.

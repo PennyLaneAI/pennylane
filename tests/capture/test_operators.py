@@ -383,11 +383,7 @@ class TestOpmath:
         assert eqn.invars[2].val == 4
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {
-            "control_values": [0, 1],
-            "work_wires": None,
-            "work_wire_type": "dirty",
-        }
+        assert eqn.params == {"control_values": [0, 1], "work_wires": None}
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)

@@ -497,12 +497,7 @@ class TestControlledDecompositions:
     def test_decompose_with_single_work_wire(self, _):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
 
-        op = qml.ctrl(
-            qml.Rot(0.123, 0.234, 0.345, wires=0),
-            control=[1, 2, 3],
-            work_wires=[4, 5],
-            work_wire_type="clean",
-        )
+        op = qml.ctrl(qml.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3], work_wires=[4, 5])
 
         graph = DecompositionGraph(
             operations=[op],
@@ -512,9 +507,9 @@ class TestControlledDecompositions:
         with qml.queuing.AnnotatedQueue() as q:
             graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
         assert q.queue == [
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5]),
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5]),
         ]
         assert graph.resource_estimate(op) == to_resources(
             {

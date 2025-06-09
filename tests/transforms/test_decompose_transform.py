@@ -154,7 +154,7 @@ class TestDecompose:
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, gate_set=lambda obj: obj.has_matrix)
+            decompose(tape, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
@@ -256,27 +256,3 @@ class TestPrivateHelpers:
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
-
-    @pytest.mark.unit
-    def test_no_both_gate_set_and_stopping_condition_graph_disabled(self):
-        """Tests that with graph disabled, gate_set and stopping_condition cannot both exist."""
-
-        tape = qml.tape.QuantumScript([])
-
-        def stopping_condition(op):  # pylint: disable=unused-argument
-            return True
-
-        with pytest.raises(TypeError, match="Specifying both gate_set and stopping_condition"):
-            qml.transforms.decompose(
-                tape,
-                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
-                stopping_condition=stopping_condition,
-            )
-
-    @pytest.mark.unit
-    def test_invalid_gate_set(self):
-        """Tests that an invalid gate set raises a TypeError."""
-
-        tape = qml.tape.QuantumScript([])
-        with pytest.raises(TypeError, match="Invalid gate_set type."):
-            qml.transforms.decompose(tape, gate_set=123)
