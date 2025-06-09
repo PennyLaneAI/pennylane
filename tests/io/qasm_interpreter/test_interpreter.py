@@ -467,7 +467,7 @@ class TestVariables:
             assert isinstance(preprocess_operands(operand), int)
         elif operand.isdigit():
             assert isinstance(preprocess_operands(operand), int)
-        elif operand.isnumeric():
+        elif operand.replace(".", "").isnumeric():
             assert isinstance(preprocess_operands(operand), float)
 
     def test_update_non_existent_var(self):
