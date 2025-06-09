@@ -65,6 +65,7 @@ def bch_expansion(
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
 ) -> Dict[Tuple[Hashable], complex]:
+    # pylint: disable=protected-access
     """Recursively applies BCH to the product formula."""
 
     bch = _bch(
