@@ -39,12 +39,12 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
 
     This code example demonstrates building fragments from numpy matrices.
 
-    >>> from pennylane.labs.trotter_error import mpo_fragments
-    >>> import numpy as np
-    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
-    >>> fragments = mpo_fragments(matrices, norm_fn=np.linalg.norm)
+    >>> from pennylane.labs.trotter_error import sparse_fragments
+    >>> from scipy.sparse import csr_matrix
+    >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
+    >>> fragments = sparse_fragments(matrices)
     >>> fragments
-    [SparseFragment(type=<class 'numpy.ndarray'>), SparseFragment(type=<class 'numpy.ndarray'>)]
+    [SparseFragment(type=<class 'scipy.sparse.csr_matrix'>), SparseFragment(type=<class 'scipy.sparse.csr_matrix'>)]
     >>> fragments[0].norm()
     1.4142135623730951
     """
@@ -59,7 +59,7 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
 
 
 class SparseFragment(Fragment):
-    """Abstract class used to define a generic fragment object for product formula error estimation.
+    """Abstract class used to define a scipy spares fragment object for product formula error estimation.
 
     This class allows using any object implementing arithmetic dunder methods to be used
     for product formula error estimation.
@@ -67,17 +67,16 @@ class SparseFragment(Fragment):
     Args:
         fragment (Any): An object that implements the following arithmetic methods:
             ``__add__``, ``__mul__``, and ``__matmul__``.
-        norm_fn (optional, Callable): A function used to compute the norm of ``fragment``.
 
-    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``generic_fragments`` function.
+    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``sparse_fragments`` function.
 
     **Example**
 
-    >>> from pennylane.labs.trotter_error import generic_fragments
-    >>> import numpy as np
-    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
-    >>> generic_fragments(matrices)
-    [SparseFragment(type=<class 'numpy.ndarray'>), SparseFragment(type=<class 'numpy.ndarray'>)]
+    >>> from pennylane.labs.trotter_error import sparse_fragments
+    >>> from scipy.sparse import csr_matrix
+    >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
+    >>> sparse_fragments(matrices)
+    [SparseFragment(type=<class 'scipy.sparse.csr_matrix'>), SparseFragment(type=<class 'scipy.sparse.csr_matrix'>)]
     """
 
     def __init__(self, fragment: csr_matrix, bond_dim: int = 10):
