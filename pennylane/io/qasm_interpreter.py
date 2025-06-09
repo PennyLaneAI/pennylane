@@ -684,14 +684,11 @@ class QasmInterpreter:
         context.require_wires(wires)
 
         resolved_wires = []
-        if context.wire_map is not None:
-            for wire in wires:
-                resolving = wire
-                while resolving in context.wire_map:
-                    resolving = context.wire_map[resolving]
-                resolved_wires.append(resolving)
-        else:
-            resolved_wires = wires
+        for wire in wires:
+            resolving = wire
+            while resolving in context.wire_map:
+                resolving = context.wire_map[resolving]
+            resolved_wires.append(resolving)
 
         return gate, args, resolved_wires
 
