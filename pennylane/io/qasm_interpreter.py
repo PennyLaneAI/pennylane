@@ -148,46 +148,45 @@ class Context:
             name (str): the name of the variable.
             node (QASMNode): the QASMNode that corresponds to the update.
         """
-        if name in self.vars:
-            if self.vars[name].constant:
-                raise ValueError(
-                    f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                    f"defined on line {self.vars[name].line}"
-                )
-            match node.op.name:
-                case "=":
-                    self.vars[name].val = value
-                case "+=":
-                    self.vars[name].val += value
-                case "-=":
-                    self.vars[name].val -= value
-                case "*=":
-                    self.vars[name].val = self.vars[name].val * value
-                case "/=":
-                    self.vars[name].val = self.vars[name].val / value
-                case "&=":
-                    self.vars[name].val = self.vars[name].val & value
-                case "|=":
-                    self.vars[name].val = self.vars[name].val | value
-                case "^=":
-                    self.vars[name].val = self.vars[name].val ^ value
-                case "<<=":
-                    self.vars[name].val = self.vars[name].val << value
-                case ">>=":
-                    self.vars[name].val = self.vars[name].val >> value
-                case "%=":
-                    self.vars[name].val = self.vars[name].val % value
-                case "**=":
-                    self.vars[name].val = self.vars[name].val ** value
-                case _:  # pragma: no cover
-                    # we shouldn't ever get this error if the parser did its job right
-                    raise SyntaxError(  # pragma: no cover
-                        f"Invalid operator {node.op.name} encountered in assignment expression "
-                        f"on line {node.span.start_line}."
-                    )  # pragma: no cover
-            self.vars[name].line = node.span.start_line
-        else:
+        if name not in self.vars:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+        if self.vars[name].constant:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
+                f"defined on line {self.vars[name].line}"
+            )
+        match node.op.name:
+            case "=":
+                self.vars[name].val = value
+            case "+=":
+                self.vars[name].val += value
+            case "-=":
+                self.vars[name].val -= value
+            case "*=":
+                self.vars[name].val = self.vars[name].val * value
+            case "/=":
+                self.vars[name].val = self.vars[name].val / value
+            case "&=":
+                self.vars[name].val = self.vars[name].val & value
+            case "|=":
+                self.vars[name].val = self.vars[name].val | value
+            case "^=":
+                self.vars[name].val = self.vars[name].val ^ value
+            case "<<=":
+                self.vars[name].val = self.vars[name].val << value
+            case ">>=":
+                self.vars[name].val = self.vars[name].val >> value
+            case "%=":
+                self.vars[name].val = self.vars[name].val % value
+            case "**=":
+                self.vars[name].val = self.vars[name].val ** value
+            case _:  # pragma: no cover
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in assignment expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
+        self.vars[name].line = node.span.start_line
 
     def require_wires(self, wires: list):
         """
