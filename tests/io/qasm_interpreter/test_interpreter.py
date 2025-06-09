@@ -4,7 +4,6 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 from re import escape
 
-import numpy as np
 import pytest
 
 from pennylane import (
@@ -46,8 +45,9 @@ try:
 
     from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
-        QasmInterpreter, preprocess_operands,
-)
+        QasmInterpreter,
+        preprocess_operands,
+    )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
@@ -101,7 +101,7 @@ class TestExpressions:
         assert context.vars["m"].val == 3 + 2
         assert context.vars["o"].val == 3 - 2
         assert context.vars["p"].val == 3 * 2
-        assert context.vars["q"].val == 3 ** 2
+        assert context.vars["q"].val == 3**2
         assert context.vars["n"].val == 3 / 2
         assert context.vars["s"].val == 3 % 2
 
@@ -130,7 +130,7 @@ class TestExpressions:
         assert context.vars["j"].val == 2 << 10
         assert context.vars["k"].val == 3 >> 1
         assert context.vars["l"].val == 5 % 2
-        assert context.vars["m"].val == 6 ** 13
+        assert context.vars["m"].val == 6**13
 
     def test_nested_expr(self):
         # parse the QASM
@@ -435,7 +435,7 @@ class TestVariables:
         0.1,
         -0.1,
         5.0,
-        99999.99
+        99999.99,
         -9999.99,
         0,
         1,
@@ -448,7 +448,7 @@ class TestVariables:
         "0.1",
         "-0.1",
         "5.0",
-        "99999.99"
+        "99999.99",
         "-9999.99",
         "0",
         "1",
@@ -456,7 +456,7 @@ class TestVariables:
         "10",
         "-10",
         "-99999",
-        "99999"
+        "99999",
     ]
 
     @pytest.mark.parametrize("operand", operands)

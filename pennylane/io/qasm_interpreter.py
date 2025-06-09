@@ -7,12 +7,10 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable
 
-import numpy as np
 from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
-    ArrayType,
     BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
