@@ -634,8 +634,8 @@ class TestSnapshotUnsupportedQNode:
             _ = qml.snapshots(circuit)
 
     @flaky(max_runs=3)
-    def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=500)
+    def test_lightning_qubit_finite_shots(self, seed):
+        dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
 
         @qml.qnode(dev, diff_method=None)
         def circuit():
