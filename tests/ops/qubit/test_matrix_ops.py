@@ -892,10 +892,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "op",
         [
-            pytest.param(
-                qml.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), 
-                id="Identity-2Q"
-            ),
+            pytest.param(qml.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), id="Identity-2Q"),
             pytest.param(
                 qml.DiagonalQubitUnitary(np.array([1j, 1j, 1j, 1j]), wires=[0, 1]),
                 id="GlobalPhase-2Q",
@@ -905,36 +902,27 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 id="CZ-Gate",
             ),
             pytest.param(
-                qml.DiagonalQubitUnitary(
-                    np.array([1, 1, 1, 1, 1, 1, 1, -1]), wires=[0, 1, 2]
-                ),
+                qml.DiagonalQubitUnitary(np.array([1, 1, 1, 1, 1, 1, 1, -1]), wires=[0, 1, 2]),
                 id="CCZ-Gate",
             ),
             pytest.param(
                 # angles are [pi, -pi]. diff is -2pi (equiv to 0), mean is 0.
                 # Should decompose to a GlobalPhase and an Identity RZ.
-                qml.DiagonalQubitUnitary(
-                    np.exp(1j * np.array([np.pi, -np.pi])), wires=[0]
-                ),
+                qml.DiagonalQubitUnitary(np.exp(1j * np.array([np.pi, -np.pi])), wires=[0]),
                 id="Phase-Wrap-Around",
             ),
             pytest.param(
-                qml.DiagonalQubitUnitary(
-                    np.exp(1j * np.array([1e-12, 2e-12])), wires=[0]
-                ),
+                qml.DiagonalQubitUnitary(np.exp(1j * np.array([1e-12, 2e-12])), wires=[0]),
                 id="Small-Angle-Difference",
             ),
             pytest.param(
                 qml.DiagonalQubitUnitary(
                     # d0 is just below the negative real axis, d1 is on it.
                     # Normalizing to ensure they remain unitary.
-                    np.array([
-                        (-1 - 1e-9j) / np.abs(-1 - 1e-9j), 
-                        -1 + 0j
-                    ]),
-                    wires=[0]
+                    np.array([(-1 - 1e-9j) / np.abs(-1 - 1e-9j), -1 + 0j]),
+                    wires=[0],
                 ),
-                id="Angle-Branch-Cut-Boundary"
+                id="Angle-Branch-Cut-Boundary",
             ),
         ],
     )
