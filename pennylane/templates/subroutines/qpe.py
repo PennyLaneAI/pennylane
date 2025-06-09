@@ -309,11 +309,11 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
     for i in range(num_estimation_wires):
         gate_count[
             controlled_resource_rep(
-                qml.Pow,
+                qml.ops.Pow,
                 {
                     "base_class": base_resource_rep.op_type,
                     "base_params": base_resource_rep.params,
-                    "z": i,
+                    "z": 2**i,
                 },
                 num_control_wires=1,
             )
