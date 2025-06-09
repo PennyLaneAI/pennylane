@@ -16,7 +16,7 @@ written using xDSL."""
 
 import warnings
 from dataclasses import dataclass
-from typing import Dict, Optional, Type, Union
+from typing import Dict, Optional, Union, Callable, Iterable
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
@@ -72,28 +72,32 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
     # Several TODO for this pass/transform:
     #
-    # - Add support for dynamic wires and parameters
+    # - Add support for qml.ctrl (WIP)
+    # - Add support for qml.adjoint (WIP)
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
     #   both in the decomposition and in the gate set.
-    # - Make the gate_set and max_expansion configurable (e.g., via pass parameters).
-    # - Add support for qml.ctrl
-    # - Add support for qml.adjoint
     # - Add support for the decomp_graph
+    # - Move the logic for qubit mapping and operator conversion to a separate class
+    #   if this turns out to be useful in other transforms.
     # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
+    # - Add support for dynamic wires and parameters
 
-    def __init__(self, module: builtin.ModuleOp):
+    def __init__(
+        self,
+        module: builtin.ModuleOp,
+        gate_set=None,
+        max_expansion=None,
+    ):
         super().__init__()
-        self.module: builtin.ModuleOp = module
+        self.module = module
+        self.gate_set = gate_set
+        self.max_expansion = max_expansion
 
-        # TODO: Move the mapping logic to a separate helper class
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
         self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
         self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
 
         self.quantum_register: Union[SSAValue, None] = None
-
-        self.max_expansion: Optional[int] = 1
-        self.gate_set: set[Type[Operator] | str] = {"CNOT", "RX", "RY", "RZ"}
 
     def gate_set_contains(self, op: Operator) -> bool:
         """Check if the operator is in the gate set."""
@@ -264,9 +268,19 @@ class DecompositionTransformPass(passes.ModulePass):
 
     name = "decomposition-transform"
 
+    # We use type annotations since these are (configurable) dataclass fields
+    gate_set: Optional[
+        Union[Iterable[Union[str, type]], Dict[Union[str, type], float], Callable]
+    ] = None
+    max_expansion: Optional[int] = None
+
     # pylint: disable=arguments-renamed,no-self-use, arguments-differ
     def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        pattern = DecompositionTransform(module)
+        pattern = DecompositionTransform(
+            module,
+            gate_set=self.gate_set,
+            max_expansion=self.max_expansion,
+        )
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([pattern]), apply_recursively=False
         ).rewrite_module(module)
