@@ -11,33 +11,47 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
 This submodule contains controlled operators based on the ControlledOp class.
 """
+
 # pylint: disable=arguments-differ,arguments-renamed
-from collections.abc import Iterable
-from functools import lru_cache
-from typing import List, Literal, Union
+
+from functools import lru_cache, partial
+from typing import Iterable, List, Literal, Optional, Union
 
 import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
+    flip_zero_control,
     pow_involutory,
     pow_rotation,
     self_adjoint,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
+from .decompositions.controlled_decompositions import (
+    controlled_two_qubit_unitary_rule,
+    ctrl_decomp_bisect_rule,
+    decompose_mcx_with_many_workers,
+    decompose_mcx_with_no_worker,
+    decompose_mcx_with_one_worker,
+    decompose_mcx_with_two_workers,
+    multi_control_decomp_zyz_rule,
+    single_ctrl_decomp_zyz_rule,
+)
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
+
+stack_last = partial(qml.math.stack, axis=-1)
 
 
 class ControlledQubitUnitary(ControlledOp):
@@ -64,7 +78,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
             by the target wire.
-        control_values (List[int, bool]): a list providing the state of the control qubits to
+        control_values (List[int or bool]): a list providing the state of the control qubits to
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
@@ -109,17 +123,29 @@ class ControlledQubitUnitary(ControlledOp):
         "num_control_wires",
         "num_zero_control_values",
         "num_work_wires",
+        "work_wire_type",
     }
 
     grad_method = None
     """Gradient computation method."""
 
     def _flatten(self):
-        return (self.base.data[0],), (self.wires, tuple(self.control_values), self.work_wires)
+        return (self.base.data[0],), (
+            self.wires,
+            tuple(self.control_values),
+            self.work_wires,
+            self.work_wire_type,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], wires=metadata[0], control_values=metadata[1], work_wires=metadata[2])
+        return cls(
+            data[0],
+            wires=metadata[0],
+            control_values=metadata[1],
+            work_wires=metadata[2],
+            work_wire_type=metadata[3],
+        )
 
     # pylint: disable=too-many-arguments,unused-argument,too-many-positional-arguments
     @classmethod
@@ -130,11 +156,16 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
+        work_wire_type="dirty",
     ):
 
         work_wires = Wires(() if work_wires is None else work_wires)
         return cls._primitive.bind(
-            base, wires=wires, control_values=control_values, work_wires=work_wires
+            base,
+            wires=wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -145,6 +176,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
+        work_wire_type: Optional[str] = "dirty",
     ):
 
         if wires is None:
@@ -170,6 +202,7 @@ class ControlledQubitUnitary(ControlledOp):
             control_wires,
             control_values=control_values,
             work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
 
         self._name = "ControlledQubitUnitary"
@@ -181,6 +214,7 @@ class ControlledQubitUnitary(ControlledOp):
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
+            "work_wire_type": self.work_wire_type,
         }
 
     def _controlled(self, wire):
@@ -195,7 +229,17 @@ class ControlledQubitUnitary(ControlledOp):
             wires=ctrl_wires + self.wires,
             control_values=values,
             work_wires=self.work_wires,
+            work_wire_type=self.work_wire_type,
         )
+
+
+add_decomps(
+    ControlledQubitUnitary,
+    flip_zero_control(ctrl_decomp_bisect_rule),
+    flip_zero_control(single_ctrl_decomp_zyz_rule),
+    flip_zero_control(multi_control_decomp_zyz_rule),
+    controlled_two_qubit_unitary_rule,
+)
 
 
 class CH(ControlledOp):
@@ -1306,7 +1350,7 @@ class MultiControlledX(ControlledOp):
             the operation into a series of :class:`~.Toffoli` gates
         work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"`` indicates that
             the work wires are in the state :math:`|0\rangle`, while ``"dirty"`` indicates that the
-            work wires are in an arbitrary state. Defaults to ``"clean"``.
+            work wires are in an arbitrary state. Defaults to ``"dirty"``.
 
     .. note::
 
@@ -1345,7 +1389,12 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_control_wires", "num_zero_control_values", "num_work_wires"}
+    resource_keys = {
+        "num_control_wires",
+        "num_zero_control_values",
+        "num_work_wires",
+        "work_wire_type",
+    }
 
     name = "MultiControlledX"
 
@@ -1367,7 +1416,7 @@ class MultiControlledX(ControlledOp):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="clean", id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="dirty", id=None
     ):
         return cls._primitive.bind(
             *wires,
@@ -1396,17 +1445,10 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike = (),
         control_values: Union[bool, List[bool], int, List[int]] = None,
         work_wires: WiresLike = (),
-        work_wire_type: Literal["clean", "dirty"] = "clean",
+        work_wire_type: Literal["clean", "dirty"] = "dirty",
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        if work_wire_type not in {"clean", "dirty"}:
-            raise ValueError(
-                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
-            )
-        self.work_wire_type = work_wire_type
-
         self._validate_control_values(control_values)
 
         if len(wires) == 0:
@@ -1430,8 +1472,8 @@ class MultiControlledX(ControlledOp):
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
-        self._hyperparameters["work_wire_type"] = work_wire_type
 
     def __repr__(self):
         return (
@@ -1448,11 +1490,15 @@ class MultiControlledX(ControlledOp):
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
+            "work_wire_type": self.work_wire_type,
         }
 
     def adjoint(self):
         return MultiControlledX(
-            wires=self.wires, control_values=self.control_values, work_wires=self.work_wires
+            wires=self.wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
+            work_wire_type=self.work_wire_type,
         )
 
     # pylint: disable=unused-argument, arguments-differ
@@ -1504,7 +1550,7 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike = None,
         work_wires: WiresLike = None,
         control_values=None,
-        work_wire_type: Literal["clean", "dirty"] = "clean",
+        work_wire_type: Literal["clean", "dirty"] = "dirty",
         **kwargs,
     ):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1519,7 +1565,7 @@ class MultiControlledX(ControlledOp):
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            work_wire_type (str): whether to use clean or dirty work wires
+            work_wire_type (str): whether the work wires are clean or dirty.
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1566,6 +1612,37 @@ class MultiControlledX(ControlledOp):
         )
 
 
+def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
+    if num_control_wires == 1:
+        return {qml.CNOT: 1, qml.X: num_zero_control_values}
+    return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
+
+
+@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
+@register_resources(_mcx_to_cnot_or_toffoli_resource)
+def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
+    if len(wires) == 2 and not control_values[0]:
+        qml.CNOT(wires=wires)
+        qml.X(wires[1])
+    elif len(wires) == 2:
+        qml.CNOT(wires=wires)
+    elif len(wires) == 3:
+        zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+        for w in zero_control_wires:
+            qml.PauliX(w)
+        qml.Toffoli(wires=wires)
+        for w in zero_control_wires:
+            qml.PauliX(w)
+
+
+add_decomps(
+    MultiControlledX,
+    _mcx_to_cnot_or_toffoli,
+    decompose_mcx_with_many_workers,
+    decompose_mcx_with_two_workers,
+    decompose_mcx_with_one_worker,
+    decompose_mcx_with_no_worker,
+)
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 

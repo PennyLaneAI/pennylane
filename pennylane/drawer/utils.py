@@ -121,8 +121,8 @@ def unwrap_controls(op):
     if isinstance(control_values, list):
         control_values = control_values.copy()
 
+    next_ctrl = op
     if isinstance(op, Controlled):
-        next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
 
@@ -140,7 +140,7 @@ def unwrap_controls(op):
             next_ctrl = next_ctrl.base
 
     control_values = [bool(int(i)) for i in control_values] if control_values else control_values
-    return control_wires, control_values
+    return control_wires, control_values, next_ctrl
 
 
 def cwire_connections(layers, bit_map):

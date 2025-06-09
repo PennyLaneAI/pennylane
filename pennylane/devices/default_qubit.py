@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
@@ -191,7 +192,7 @@ def adjoint_state_measurements(
         return (tape,), null_postprocessing
 
     if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
-        raise qml.DeviceError(
+        raise DeviceError(
             "adjoint diff supports either all expectation values or only measurements without observables."
         )
 
@@ -243,7 +244,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
         prog((circuit,))
     except (
         qml.operation.DecompositionUndefinedError,
-        qml.DeviceError,
+        DeviceError,
         AttributeError,
     ):
         return False
@@ -530,25 +531,20 @@ class DefaultQubit(Device):
         return False
 
     @debug_logger
-    def preprocess(
-        self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    def preprocess_transforms(
+        self, execution_config: Optional[ExecutionConfig] = None
+    ) -> TransformProgram:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+            execution_config (Optional[ExecutionConfig]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
-            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
-            unset specifications filled in.
-
-        This device supports any qubit operations that provide a matrix
+            TransformProgram:
 
         """
-        config = self._setup_execution_config(execution_config)
+        config = execution_config or ExecutionConfig()
         transform_program = TransformProgram()
 
         if qml.capture.enabled():
@@ -557,7 +553,7 @@ class DefaultQubit(Device):
                 transform_program.add_transform(qml.defer_measurements, num_wires=len(self.wires))
             transform_program.add_transform(qml.transforms.decompose, gate_set=stopping_condition)
 
-            return transform_program, config
+            return transform_program
 
         if config.interface == qml.math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
@@ -594,29 +590,24 @@ class DefaultQubit(Device):
                 transform_program, device_vjp=config.use_device_jacobian_product
             )
 
-        return transform_program, config
+        return transform_program
 
     # pylint: disable = too-many-branches
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        """This is a private helper for ``preprocess`` that sets up the execution config.
-
-        Args:
-            execution_config (ExecutionConfig)
-
-        Returns:
-            ExecutionConfig: a preprocessed execution config
-
-        """
+    @debug_logger
+    def setup_execution_config(
+        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+    ) -> ExecutionConfig:
+        config = config or ExecutionConfig()
         updated_values = {}
 
         # uncomment once compilation overhead with jitting improved
         # TODO: [sc-82874]
         # jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
         # updated_values["convert_to_numpy"] = (
-        #    execution_config.interface not in jax_interfaces
-        #    or execution_config.gradient_method == "adjoint"
+        #    config.interface not in jax_interfaces
+        #    or config.gradient_method == "adjoint"
         #    # need numpy to use caching, and need caching higher order derivatives
-        #    or execution_config.derivative_order > 1
+        #    or config.derivative_order > 1
         # )
 
         # If PRNGKey is present, we can't use a pure_callback, because that would cause leaked tracers
@@ -626,56 +617,48 @@ class DefaultQubit(Device):
             updated_values["convert_to_numpy"] = not (
                 (
                     self._prng_key is not None
-                    and execution_config.interface in jax_interfaces
-                    and execution_config.gradient_method != "adjoint"
+                    and config.interface in jax_interfaces
+                    and config.gradient_method != "adjoint"
                     # need numpy to use caching, and need caching higher order derivatives
-                    and execution_config.derivative_order == 1
+                    and config.derivative_order == 1
                 )
             )
 
-        for option, value in execution_config.device_options.items():
+        for option, value in config.device_options.items():
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
             if qml.capture.enabled():
                 if option == "max_workers" and value is not None:
-                    raise qml.DeviceError("Cannot set 'max_workers' if program capture is enabled.")
+                    raise DeviceError("Cannot set 'max_workers' if program capture is enabled.")
 
-        gradient_method = execution_config.gradient_method
-        if execution_config.gradient_method == "best":
+        gradient_method = config.gradient_method
+        if config.gradient_method == "best":
             no_max_workers = (
-                execution_config.device_options.get("max_workers", self._max_workers) is None
+                config.device_options.get("max_workers", self._max_workers) is None
             ) or qml.capture.enabled()
             gradient_method = "backprop" if no_max_workers else "adjoint"
             updated_values["gradient_method"] = gradient_method
 
-        if execution_config.use_device_gradient is None:
+        if config.use_device_gradient is None:
             updated_values["use_device_gradient"] = gradient_method in {
                 "adjoint",
                 "backprop",
             }
-        if execution_config.use_device_jacobian_product is None:
+        if config.use_device_jacobian_product is None:
             updated_values["use_device_jacobian_product"] = gradient_method == "adjoint"
-        if execution_config.grad_on_execution is None:
+        if config.grad_on_execution is None:
             updated_values["grad_on_execution"] = gradient_method == "adjoint"
 
-        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        updated_values["device_options"] = dict(config.device_options)  # copy
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
 
         if qml.capture.enabled():
-            mcm_config = execution_config.mcm_config
+            mcm_config = config.mcm_config
             mcm_updated_values = {}
-            if (mcm_method := mcm_config.mcm_method) not in (
-                "deferred",
-                "single-branch-statistics",
-                None,
-            ):
-                raise qml.DeviceError(
-                    f"mcm_method='{mcm_method}' is not supported with default.qubit "
-                    "when program capture is enabled."
-                )
+            mcm_method = mcm_config.mcm_method
 
             if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
                 warnings.warn(
@@ -688,7 +671,7 @@ class DefaultQubit(Device):
                 mcm_updated_values["mcm_method"] = "deferred"
             updated_values["mcm_config"] = replace(mcm_config, **mcm_updated_values)
 
-        return replace(execution_config, **updated_values)
+        return replace(config, **updated_values)
 
     @debug_logger
     def execute(
@@ -993,10 +976,21 @@ class DefaultQubit(Device):
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
+        execution_config = execution_config or ExecutionConfig()
+        if (mcm_method := execution_config.mcm_config.mcm_method) not in (
+            "deferred",
+            "single-branch-statistics",
+            None,
+        ):
+            raise qml.DeviceError(
+                f"mcm_method='{mcm_method}' is not supported with default.qubit "
+                "when program capture is enabled."
+            )
+
         if self.wires is None:
-            raise qml.DeviceError("Device wires are required for jaxpr execution.")
+            raise DeviceError("Device wires are required for jaxpr execution.")
         if self.shots.has_partitioned_shots:
-            raise qml.DeviceError("Shot vectors are unsupported with jaxpr execution.")
+            raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
         else:

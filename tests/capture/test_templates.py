@@ -258,7 +258,7 @@ tested_modified_templates = [
     qml.GQSP,
     qml.QROMStatePreparation,
     qml.SelectPauliRot,
-    qml.Elbow,
+    qml.TemporaryAND,
 ]
 
 
@@ -1187,15 +1187,13 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Superposition(**kwargs))
 
-    def test_elbow(self):
-        """Test the primitive bind call of Elbow."""
+    def test_temporary_and(self):
+        """Test the primitive bind call of TemporaryAND."""
 
-        kwargs = {
-            "wires": [0, 1, 2],
-        }
+        kwargs = {"wires": [0, 1, 2]}
 
         def qfunc():
-            qml.Elbow(**kwargs)
+            qml.TemporaryAND(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -1206,7 +1204,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.Elbow._primitive
+        assert eqn.primitive == qml.TemporaryAND._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -1216,7 +1214,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], qml.Elbow(**kwargs))
+        qml.assert_equal(q.queue[0], qml.TemporaryAND(**kwargs))
 
 
 def filter_fn(member: Any) -> bool:

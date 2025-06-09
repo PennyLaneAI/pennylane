@@ -33,26 +33,23 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.operation import Operator
 
-from .controlled_decomposition import (
-    ControlledBaseDecomposition,
-    CustomControlledDecomposition,
-    base_to_custom_ctrl_op,
-    controlled_global_phase_decomp,
-    controlled_x_decomp,
-)
 from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    controlled_decomp_with_work_wire,
     decompose_to_base,
+    flip_control_adjoint,
     flip_pow_adjoint,
     make_adjoint_decomp,
+    make_controlled_decomp,
     merge_powers,
     pow_involutory,
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    to_controlled_qubit_unitary,
 )
 from .utils import DecompositionError, translate_op_alias
 
@@ -140,12 +137,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
-        if isinstance(gate_set, set):
-            # The names of the gates in the target gate set.
-            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
-        else:
+        if isinstance(gate_set, dict):
             # the gate_set is a dict
             self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
+        else:
+            # The names of the gates in the target gate set.
+            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
@@ -296,25 +293,24 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
     ) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
-        base_class = op_node.params["base_class"]
-        num_control_wires = op_node.params["num_control_wires"]
+        base_class, base_params = op_node.params["base_class"], op_node.params["base_params"]
 
-        # Handle controlled global phase
-        if base_class is qml.GlobalPhase:
-            return [controlled_global_phase_decomp]
+        # Special case: control of an adjoint
+        if issubclass(base_class, qml.ops.Adjoint):
+            return [flip_control_adjoint]
 
-        # Handle controlled-X gates
-        if base_class is qml.X:
-            return [controlled_x_decomp]
+        # General case: apply control to the base op's decomposition rules.
+        base = resource_rep(base_class, **base_params)
+        rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
 
-        # Handle custom controlled ops
-        if (base_class, num_control_wires) in base_to_custom_ctrl_op():
-            custom_op_type = base_to_custom_ctrl_op()[(base_class, num_control_wires)]
-            return [CustomControlledDecomposition(custom_op_type)]
+        # There's always the option of turning the controlled operator into a controlled
+        # qubit unitary if the base operator has a matrix form.
+        rules.append(to_controlled_qubit_unitary)
 
-        # General case
-        base_rep = resource_rep(base_class, **op_node.params["base_params"])
-        return [ControlledBaseDecomposition(rule) for rule in self._get_decompositions(base_rep)]
+        # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
+        rules.append(controlled_decomp_with_work_wire)
+
+        return rules
 
     def solve(self, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.

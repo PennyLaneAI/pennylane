@@ -162,6 +162,9 @@ class TestIntegration:
         assert res.shape == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
+    # NOTE: the finite shot test of the results has a 3% chance to fail
+    # due to the random nature of the sampling. Hence we just pin the salt
+    @pytest.mark.local_salt(1)
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_autograd(self, shots, seed):
@@ -174,12 +177,15 @@ class TestIntegration:
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
+
         assert np.allclose(res, self.exp_result, atol=0.005)
 
         res = qml.jacobian(qnode)(x)
         assert np.shape(res) == (8,)
+
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
+    @pytest.mark.local_salt(1)
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -200,6 +206,7 @@ class TestIntegration:
         x = jax.numpy.array(self.x)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
+
         assert np.allclose(res, self.exp_result, atol=0.005)
 
         jac_fn = jax.jacobian(qnode)
@@ -208,8 +215,10 @@ class TestIntegration:
 
         jac = jac_fn(x)
         assert jac.shape == (8,)
+
         assert np.allclose(jac, self.exp_jac, atol=0.005)
 
+    @pytest.mark.local_salt(1)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
@@ -226,10 +235,12 @@ class TestIntegration:
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
+
         assert qml.math.allclose(res, self.exp_result, atol=0.005)
 
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (8,)
+
         assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.tf

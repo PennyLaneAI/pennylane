@@ -32,6 +32,8 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.decomposition_graph import _to_name
 
+# pylint: disable=protected-access,no-name-in-module
+
 
 @pytest.mark.unit
 @patch(
@@ -397,11 +399,8 @@ class TestControlledDecompositions:
             operations=[op1, op2],
             gate_set={"CNOT", "CH"},
         )
-        # 4 op nodes and 2 decomposition nodes, and the dummy starting node
-        assert len(graph._graph.nodes()) == 7
-        # 2 edges from decompositions to ops and 2 edges from ops to decompositions
-        # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 6
+        assert len(graph._graph.nodes()) == 32
+        assert len(graph._graph.edges()) == 49
 
         # Verify the decompositions
         graph.solve()
@@ -484,6 +483,51 @@ class TestControlledDecompositions:
         assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1]))
         assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
         assert graph.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))
+
+    def test_flip_controlled_adjoint(self, _):
+        """Tests that the controlled form of an adjoint operator is decomposed properly."""
+
+        op = qml.ctrl(qml.adjoint(qml.U1(0.5, wires=0)), control=[1])
+        graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+        assert q.queue == [qml.adjoint(qml.ops.Controlled(qml.U1(0.5, wires=0), control_wires=[1]))]
+
+    def test_decompose_with_single_work_wire(self, _):
+        """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
+
+        op = qml.ctrl(
+            qml.Rot(0.123, 0.234, 0.345, wires=0),
+            control=[1, 2, 3],
+            work_wires=[4, 5],
+            work_wire_type="clean",
+        )
+
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"MultiControlledX", "CRot"},
+        )
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+        assert q.queue == [
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+            qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+        ]
+        assert graph.resource_estimate(op) == to_resources(
+            {
+                resource_rep(
+                    qml.MultiControlledX,
+                    num_control_wires=3,
+                    num_zero_control_values=0,
+                    num_work_wires=1,
+                    work_wire_type="clean",
+                ): 2,
+                qml.CRot: 1,
+            }
+        )
 
 
 @patch(
