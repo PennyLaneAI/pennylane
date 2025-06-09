@@ -95,7 +95,7 @@ def _interpret_level_initial(
     if level in ("user", "device", "gradient"):
         return slice(0, num_user_transforms)
 
-    if isinstance(level, str):
+    if isinstance(level, str):  # pragma: no cover
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
@@ -114,9 +114,10 @@ def _interpret_level_initial(
             stop = min(stop, num_user_transforms)
         return slice(start, stop, level.step)
 
-    return level
+    return level  # pragma: no cover
 
 
+# pylint: disable=too-many-return-statements
 def _interpret_level_inner(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
     num_user_transforms: int,
@@ -146,7 +147,7 @@ def _interpret_level_inner(
     if level == "device":
         return slice(start, None)  # Include all remaining transforms
 
-    if isinstance(level, str):
+    if isinstance(level, str):  # pragma: no cover
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
@@ -165,7 +166,7 @@ def _interpret_level_inner(
 
         return slice(start, stop, level.step)
 
-    return level
+    return level  # pragma: no cover
 
 
 def get_transform_program(
