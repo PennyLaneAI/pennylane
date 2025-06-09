@@ -48,7 +48,6 @@ from openqasm3.ast import (
     UintType,
     UnaryExpression,
     WhileLoop,
-    Expression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -396,7 +395,7 @@ def preprocess_operands(operand):
     if isinstance(operand, str):
         if operand.isdigit():
             operand = int(operand)
-        elif operand.isnumeric():
+        elif operand.replace(".", "").isnumeric():
             operand = float(operand)
     return operand
 
