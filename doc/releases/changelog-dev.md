@@ -144,6 +144,26 @@
   :class:`~.TemporaryAND` is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
 
+  ```python
+  dev = qml.device("default.qubit", shots=1)
+  @qml.qnode(dev)
+  def circuit():
+      qml.X(0)
+      qml.X(1)
+      qml.TemporaryAND([0,1,2])
+      qml.CNOT([2,3])
+      # We can now apply the adjoint TemporaryAND,
+      # because after applying a Toffoli, the target wire would be |0>.
+      qml.adjoint(qml.TemporaryAND([0,1,2]))
+
+      return qml.sample(wires=[0,1,2,3])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [1 1 0 1]
+  ```
+
 * The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
   expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
   relevant gate-set with the `convert_to_mbqc_gateset` transform.
