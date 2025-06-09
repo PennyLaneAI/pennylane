@@ -34,9 +34,9 @@ class TemporaryAND(Operation):
     .. note::
 
         For correct usage of this operation, the user must ensure
-        that the input before computation is :math:`|0\rangle`,
-        and that the output after uncomputation is :math:`|0\rangle`
-        on the target wire when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
+        that before computation the input state of the target wire is :math:`|0\rangle`,
+        and that after uncomputation the output state of the target wire is :math:`|0\rangle`,
+        when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
         Otherwise, behaviour may differ from the expected ``AND``.
 
     **Details:**
@@ -63,8 +63,9 @@ class TemporaryAND(Operation):
             qml.X(1)
             qml.TemporaryAND([0,1,2])
             qml.CNOT([2,3])
-            qml.adjoint(qml.TemporaryAND([0,1,2])) # We can apply the adjoint TemporaryAND because after applying a Toffoli,
-                                                   # the target wire would be |0>.
+            # We can now apply the adjoint TemporaryAND,
+            # because after applying a Toffoli, the target wire would be |0>.
+            qml.adjoint(qml.TemporaryAND([0,1,2])) 
 
             return qml.sample(wires=[0,1,2,3])
 
