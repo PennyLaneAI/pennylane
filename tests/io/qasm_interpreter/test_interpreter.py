@@ -60,11 +60,14 @@ class TestSubroutine:
             """
             undefined_subroutine();
             """,
-            permissive=True
+            permissive=True,
         )
 
-        with pytest.raises(NameError, match="Reference to subroutine undefined_subroutine not "
-                                            "available in calling namespace on line 2."):
+        with pytest.raises(
+            NameError,
+            match="Reference to subroutine undefined_subroutine not "
+            "available in calling namespace on line 2.",
+        ):
             QasmInterpreter().interpret(
                 ast, context={"name": "undefined-subroutine", "wire_map": None}
             )

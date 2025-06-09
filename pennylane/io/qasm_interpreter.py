@@ -33,11 +33,11 @@ from openqasm3.ast import (
     IntegerLiteral,
     IntType,
     QuantumArgument,
-    ReturnStatement,
-    SubroutineDefinition,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    ReturnStatement,
+    SubroutineDefinition,
     UintType,
     UnaryExpression,
 )
@@ -112,13 +112,13 @@ class Context:
         if "wires" not in context:
             context["wires"] = []
         if "scopes" not in context:
-            context["scopes"] = {"subroutines": dict()}
+            context["scopes"] = {"subroutines": {}}
         if "outer_scopes" not in context:
-            context["outer_scopes"] = {"subroutines": dict()}
+            context["outer_scopes"] = {"subroutines": {}}
         if "outer_wires" not in context:
             context["outer_wires"] = []
         if "wire_map" not in context or context["wire_map"] is None:
-            context["wire_map"] = dict()
+            context["wire_map"] = {}
         self.context = context
 
     def update(self, update: dict):
