@@ -33,11 +33,11 @@ from openqasm3.ast import (
     IntegerLiteral,
     IntType,
     QuantumArgument,
+    ReturnStatement,
+    SubroutineDefinition,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
-    ReturnStatement,
-    SubroutineDefinition,
     UintType,
     UnaryExpression,
 )
@@ -738,7 +738,6 @@ class QasmInterpreter:
     def visit_expression_statement(self, node: ExpressionStatement, context: Context):
         """
         Registers an expression statement.
-
         Args:
             node (ExpressionStatement): The expression statement.
             context (Context): The current context.

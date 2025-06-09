@@ -568,6 +568,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Move program capture code closer to where it is used.
+  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
@@ -663,6 +666,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.equal` now works with `qml.PauliError`s.
+  [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
 
 * The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
   [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
