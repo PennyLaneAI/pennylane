@@ -8,6 +8,7 @@
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
+  [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
 
   ```python
   import pennylane as qml
@@ -331,6 +332,10 @@
   * Decomposition to a :class:`~pennylane.PauliRot` when the base is a single-term Pauli word.
   [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
 
+* A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and :class:`~pennylane.ControlledQubitUnitary`
+  for more fine-grained control over the type of work wire used in their decompositions.
+  [(#7612)](https://github.com/PennyLaneAI/pennylane/pull/7612)
+
 * The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with 
   graph-based decomposition enabled, which must be a function that returns `True` if an operator 
   does not need to be decomposed (it meets the requirements as described in `stopping_condition`).
@@ -488,6 +493,7 @@
   for CNOT routing algorithms and other quantum compilation routines.
   [(#7229)](https://github.com/PennyLaneAI/pennylane/pull/7229)
   [(#7333)](https://github.com/PennyLaneAI/pennylane/pull/7333)
+  [(#7629)](https://github.com/PennyLaneAI/pennylane/pull/7629)
   
 * The `pennylane.labs.vibrational` module is upgraded to use features from the `concurrency` module
   to perform multiprocess and multithreaded execution of workloads. 
@@ -570,6 +576,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
+  [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
 * Move `givens_decomposition` and private helpers from `qchem` to `math` module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
@@ -666,6 +675,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
   [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
+
+* `qml.StatePrep` does not validate the norm of statevectors any more, default to `False` during initialization.
+  [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
+
+* `qml.PhaseShift` operation is now working correctly with a batch size of 1.
+  [(#7622)](https://github.com/PennyLaneAI/pennylane/pull/7622)
 
 * `qml.metric_tensor` can now be calculated with catalyst.
   [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
