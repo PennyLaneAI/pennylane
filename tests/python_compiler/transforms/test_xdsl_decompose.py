@@ -308,3 +308,49 @@ class TestDecompositionPass:
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
+
+    def test_adjoint_decomposition(self, run_filecheck):
+        """Test that the adjoint of a gate is decomposed correctly."""
+
+        # max_expansion = 1
+        #
+        # qml.adjoint(qml.S)(wires=0)
+        # ---->
+        # Adjoint(PhaseShift(0.5 * pi, wires=0))
+
+        program = """    
+    func.func @test_func() {
+
+        %0 = arith.constant 0 : i64
+      
+        %1 = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+        %2 = "quantum.extract"(%1) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+
+        // CHECK: [[QUBITREGISTER:%.*]] = "quantum.alloc"() <{nqubits_attr = 3 : i64}> : () -> !quantum.reg
+        // CHECK-NEXT: [[QUBIT1:%.*]] = "quantum.extract"([[QUBITREGISTER]]) <{idx_attr = 0 : i64}>
+        // CHECK-NEXT: [[HALFPI:%.*]] = arith.constant 1.5707963267948966 : f64
+        // CHECK-NEXT: [[QUBIT2:%.*]] = quantum.custom "PhaseShift"([[HALFPI]]) [[QUBIT1]] adj
+        // CHECK-NEXT: [[QUBIT3:%.*]] = "quantum.insert"([[QUBITREGISTER]], [[QUBIT2]]) <{idx_attr = 0 : i64}>
+
+        %3 = quantum.custom "S"() %2 adj : !quantum.bit
+        %4 = "quantum.insert"(%1, %3) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+
+        }
+    """
+
+        ctx = xdsl.context.Context()
+        ctx.allow_unregistered_dialects = True
+        ctx.load_dialect(xdsl.dialects.builtin.Builtin)
+        ctx.load_dialect(xdsl.dialects.func.Func)
+        ctx.load_dialect(xdsl.dialects.transform.Transform)
+        ctx.load_dialect(xdsl.dialects.arith.Arith)
+        ctx.load_dialect(Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass(
+            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations, max_expansion=1),)
+        )
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
