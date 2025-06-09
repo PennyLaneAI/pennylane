@@ -14,6 +14,8 @@
 
 """Unit test module for pennylane/compiler/python_compiler/impl.py"""
 
+from dataclasses import dataclass
+
 # pylint: disable=wrong-import-position
 import pytest
 
@@ -150,6 +152,71 @@ def test_raises_error_when_pass_does_not_exists():
     interpreter.register_implementations(TransformFunctionsExt(ctx, {}))
     with pytest.raises(CompileError):
         interpreter.call_op(schedule, (empty_module(),))
+
+
+def test_decorator():
+    """Test that the decorator has modified the available_passes dictionary"""
+
+    from xdsl import passes
+    from xdsl.context import Context
+    from xdsl.dialects import builtin
+
+    from pennylane.compiler.python_compiler.transforms import xdsl_transform
+    from pennylane.compiler.python_compiler.transforms.apply_transform_sequence import (
+        available_passes,
+    )
+
+    @dataclass(frozen=True)
+    class PrintModule(passes.ModulePass):
+        name = "print-module"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+            print("hello")
+
+    xdsl_transform(PrintModule)
+    assert "print-module" in available_passes
+    assert available_passes["print-module"]() == PrintModule
+
+
+def test_integration_for_transform_interpreter(capsys):
+    """Test that a pass is run via the transform interpreter"""
+    from xdsl import passes
+    from xdsl.context import Context
+    from xdsl.dialects import builtin, transform
+
+    from pennylane.compiler.python_compiler.transforms import xdsl_transform
+
+    @xdsl_transform
+    @dataclass(frozen=True)
+    class _HelloWorld(passes.ModulePass):
+        name = "hello-world"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+            print("hello world")
+
+    @xdsl_from_docstring
+    def program():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "hello-world" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
+            }
+          }
+        }
+        """
+
+    from pennylane.compiler.python_compiler.transforms import ApplyTransformSequence
+
+    ctx = xdsl.context.Context()
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(transform.Transform)
+
+    pipeline = xdsl.passes.PipelinePass((ApplyTransformSequence(),))
+    pipeline.apply(ctx, program())
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
 
 
 if __name__ == "__main__":

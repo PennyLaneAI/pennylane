@@ -48,8 +48,23 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter.gate_set_contains(valid_op)
-        assert not interpreter.gate_set_contains(invalid_op)
+        assert interpreter._stopping_condition(valid_op)
+        assert not interpreter._stopping_condition(invalid_op)
+
+    @pytest.mark.unit
+    def test_fixed_alt_decomps_not_available_capture(self):
+        """Test that a TypeError is raised when graph is disabled and
+        fixed_decomps or alt_decomps is used."""
+
+        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        def my_cnot(*_, **__):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+            DecomposeInterpreter(fixed_decomps={qml.CNOT: my_cnot})
+
+        with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+            DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op, recwarn):
