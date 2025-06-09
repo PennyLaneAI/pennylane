@@ -331,6 +331,12 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
+@lru_cache(maxsize=2000)
+def _map_wires(op, wire):
+    """Maps the operator to the provided wire."""
+    return op.map_wires({0: wire})
+
+
 class _CachedCallable:
     """A class to cache the decomposition of the operators.
 
@@ -357,7 +363,6 @@ class _CachedCallable:
         self.cache_size = cache_size
         self.method_kwargs = method_kwargs
         self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
-        self.map_wires = lru_cache(maxsize=cache_size)(self.wire_mapper)
 
     def compatible(self, method, epsilon, cache_size, **method_kwargs):
         """Check equality based on `method`, `epsilon` and `method_kwargs`."""
@@ -379,11 +384,6 @@ class _CachedCallable:
 
         adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
         return adj[1:] + adj[:1]
-
-    @staticmethod
-    def wire_mapper(op, wire):
-        """Maps the operator to the provided wire."""
-        return op.map_wires({0: wire})
 
 
 _CLIFFORD_T_CACHE = None
@@ -536,9 +536,7 @@ def clifford_t_decomposition(
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
                 op_wire = op.wires[0]
-                decomp_ops.extend(
-                    [_CLIFFORD_T_CACHE.map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]]
-                )
+                decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
 

@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
     _CachedCallable,
+    _map_wires,
     _merge_param_gates,
     _one_qubit_decompose,
     _rot_decompose,
@@ -567,3 +568,15 @@ class TestCliffordCached:
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
         assert cache_info.maxsize == 100
+
+    def test_wire_mapping(self):
+        """Test that wire mapping is being cached correctly."""
+        for wire in range(5):
+            assert _map_wires(qml.X(0), wire) == qml.X(wire)
+        assert _map_wires.cache_info().hits == 0
+        assert _map_wires.cache_info().misses == 5
+
+        for wire in range(10):
+            assert _map_wires(qml.X(0), wire) == qml.X(wire)
+        assert _map_wires.cache_info().hits == 5
+        assert _map_wires.cache_info().misses == 10
