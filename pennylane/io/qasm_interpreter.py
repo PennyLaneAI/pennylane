@@ -144,6 +144,7 @@ class Context:
         )
         self.scopes["subroutines"][node.name.name].update(
             {
+                "vars": {k: v for k, v in self.vars.items() if v.constant},
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
