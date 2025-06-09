@@ -666,6 +666,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.equal` now works with `qml.PauliError`s.
+  [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
+
 * The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
   [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
 
