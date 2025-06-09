@@ -201,9 +201,7 @@ def create_measurement_wires_primitive(
     if not has_jax:
         return None
 
-    from ..capture.custom_primitives import QmlPrimitive  # pylint: disable=import-outside-toplevel
-
-    primitive = QmlPrimitive(name + "_wires")
+    primitive = capture.QmlPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
     @primitive.def_impl
