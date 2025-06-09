@@ -100,7 +100,7 @@ class TestSubroutine:
                 ast, context={"name": "complex-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+        assert q.queue == [Hadamard("q0"), PauliY("q0"), Hadamard("q0"), RX(0.1, "q0")]
         assert context.vars["c"].val == 0
 
     def test_subroutines(self):

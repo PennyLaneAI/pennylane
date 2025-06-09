@@ -14,3 +14,10 @@ def first(qubit q0) -> bit {
 }
 
 bit c = first(q0);
+
+def third(qubit q, float a) {
+    h q;
+    rx(a) q;
+}
+
+third(q0, 0.1);
