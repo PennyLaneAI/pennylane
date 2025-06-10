@@ -784,7 +784,7 @@ else:
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
-    Converts the given circuit or :class:`~.Operation` and returns the appropriate `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+    Converts a PennyLane circuit or :class:`~.Operation` and returns the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the main
