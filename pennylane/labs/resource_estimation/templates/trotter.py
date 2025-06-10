@@ -845,18 +845,18 @@ class ResourceTrotterTHC(CompactHamiltonian, ResourceOperator):  # pylint: disab
 
         op_onebody = resource_rep(re.ResourceProd, {'cmpr_factors': (re.ResourceRZ.resource_rep() for i in range(2*num_orb))})
 
-        op_twobody = resource_rep(re.ResourceProd, {'cmpr_factors': (re.ResourceMultiRZ.resource_rep(num_wires=2) for i in range((2*num_orb-1)*num_orb))})
+        op_twobody = resource_rep(re.ResourceProd, {'cmpr_factors': (re.ResourceMultiRZ.resource_rep(num_wires=2) for i in range((2*tensor_rank-1)*tensor_rank))})
 
         basis_rot = resource_rep(re.ResourceBasisRotation, {'dim_N': tensor_rank})
 
         if order == 1:
-            gate_list.append(re.GateCount(basis_rot, 4*num_steps))
+            gate_list.append(re.GateCount(basis_rot, 2*num_steps))
 
             gate_list.append(re.GateCount(op_onebody, num_steps))
             gate_list.append(re.GateCount(op_twobody, num_steps))
             return gate_list
 
-        gate_list.append(re.GateCount(basis_rot, 4 * num_steps * (5**(k-1))+2))
+        gate_list.append(re.GateCount(basis_rot, 2 * num_steps * (5**(k-1))+2))
         gate_list.append(re.GateCount(op_onebody, num_steps * (5**(k-1))+1))
         gate_list.append(re.GateCount(op_twobody, num_steps * (5**(k-1))))
 
