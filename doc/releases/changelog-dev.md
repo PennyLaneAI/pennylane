@@ -224,6 +224,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.PhaseAdder`
+    [(#7070)](https://github.com/PennyLaneAI/pennylane/pull/7070)
+
 * A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
