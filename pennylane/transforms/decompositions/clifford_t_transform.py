@@ -65,6 +65,10 @@ _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.
 # Gates to be skipped during decomposition
 _SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
 
+# Stores the cache of a specified size for the decomposition function
+# that is used to decompose the RZ gates in the Clifford+T basis.
+_CLIFFORD_T_CACHE = None
+
 
 def _check_clifford_op(op, use_decomposition=False):
     r"""Checks if an operator is Clifford or not.
@@ -384,9 +388,6 @@ class _CachedCallable:
 
         adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
         return adj[1:] + adj[:1]
-
-
-_CLIFFORD_T_CACHE = None
 
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
