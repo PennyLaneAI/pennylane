@@ -89,7 +89,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     ):
         super().__init__()
         self.module = module
-        self.gate_set = gate_set if gate_set is not None else set(qml.ops.__all__)
+        self.gate_set = gate_set if gate_set is not None else set(ops_all)
         self.max_expansion = max_expansion
 
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
