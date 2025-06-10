@@ -92,7 +92,7 @@ def _setup_transform_program(
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
     if cache == "auto":
         if resolved_execution_config.derivative_order == 1:
-            cache = False
+            cache = None
         else:
             cache = True
     if cache is True:
