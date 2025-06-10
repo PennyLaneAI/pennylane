@@ -30,6 +30,7 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
@@ -231,6 +232,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "vn_entanglement_entropy",
-    "givens_decomposition",
     "where",
 ]
