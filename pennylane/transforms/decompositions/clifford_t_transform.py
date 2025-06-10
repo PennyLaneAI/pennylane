@@ -19,6 +19,7 @@ from itertools import product
 
 import pennylane as qml
 from pennylane.ops import Adjoint
+from pennylane.ops.op_math.decompositions.ross_decomposition import ross_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -457,7 +458,8 @@ def clifford_t_decomposition(
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
             decompose_fn = sk_decomposition
-
+        elif method == "ross":
+            decompose_fn = ross_decomposition
         else:
             raise NotImplementedError(
                 f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"

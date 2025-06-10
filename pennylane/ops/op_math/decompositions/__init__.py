@@ -21,4 +21,5 @@ from .unitary_decompositions import (
     multi_qubit_decomposition,
 )
 from .solovay_kitaev import sk_decomposition
+from .ross_decomposition import ross_decomposition
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
