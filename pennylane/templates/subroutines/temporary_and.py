@@ -67,7 +67,8 @@ class TemporaryAND(Operation):
             # The target wire is in state |0>, so we can apply TemporaryAND
             qml.TemporaryAND([0,1,2]) # |1110⟩
             qml.CNOT([2,3]) # |1111⟩
-            # Target wire will be in state |0> after AND gate, so we can apply adjoint(TemporaryAND)
+            # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied,
+            # so we can apply adjoint(TemporaryAND)
             qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
             return qml.sample(wires=[0,1,2,3])
 
