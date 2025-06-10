@@ -332,6 +332,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Caching with finite shots now always warns about the lack of expected noise.
+
+* `cache` now defaults to `"auto"` with `qml.execute`, matching the behavior of `QNode` and reducing the 
+  performance cost of using `qml.execute` for standard executions.
+
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
   [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
@@ -507,6 +512,9 @@
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
 <h3>Breaking changes 💔</h3>
+
+* The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
+  when `max_diff > 1`.
 
 * A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
   It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates
