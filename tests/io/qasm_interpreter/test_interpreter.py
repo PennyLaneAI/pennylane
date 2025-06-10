@@ -48,8 +48,9 @@ try:
     from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
         QasmInterpreter,
-        preprocess_operands, Variable,
-)
+        Variable,
+        preprocess_operands,
+    )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
@@ -61,7 +62,9 @@ class TestMeasurement:
         import pennylane
 
         # parse the QASM
-        ast = parse(open("post_processing.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
+        )
 
         # setup mocks
         eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
@@ -72,29 +75,17 @@ class TestMeasurement:
 
         vars = {
             "c": Variable(
-                'MeasurementValue',
-                MeasurementValue([PauliX(0)], mock_one),
-                -1,
-                0,
-                False
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_one), -1, 0, False
             ),
             "d": Variable(
-                'MeasurementValue',
-                MeasurementValue([PauliX(0)], mock_zero),
-                -1,
-                0,
-                False
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_zero), -1, 0, False
             ),
         }
 
         # run the program
         with queuing.AnnotatedQueue() as q:
             context = QasmInterpreter().interpret(
-                ast, context={
-                    "name": "post_processing",
-                    "wire_map": None,
-                    "vars": vars
-                }
+                ast, context={"name": "post_processing", "wire_map": None, "vars": vars}
             )
 
         # ops on MeasurementValues should yield MeasurementValues
@@ -102,12 +93,6 @@ class TestMeasurement:
         assert isinstance(context["vars"]["d"].val, MeasurementValue)
 
         # the right ops should have been called
-        # assert eval_binary.call_args_list == [
-        #     call(MeasurementValue([PauliX(0)], processing_fn=mock_one), '+', 1, 4),
-        #     call(MeasurementValue([PauliX(0)], mock_zero), '/', MeasurementValue([PauliX(0)], lambda: mock_one + 1), 5),
-        #     call(2, '+', MeasurementValue([PauliX(0)], mock_zero), 6),
-        #     call(MeasurementValue([PauliX(0)], mock_zero), '*', MeasurementValue([PauliX(0)], mock_zero), 7)
-        # ]
 
         # Note: we can't compare MeasurementValues using __eq__ as they don't have a truthiness,
         # __eq__ returns a MeasurementValue
@@ -122,31 +107,28 @@ class TestMeasurement:
         call = 0
         # c = c + 1;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_one),
-            eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1:] == ('+', 1, 4)
+        assert eval_binary.call_args_list[call].args[1:] == ("+", 1, 4)
 
         # second call
         call += 1
         # c = d / c;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_zero),
-            eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1] == '/'
+        assert eval_binary.call_args_list[call].args[1] == "/"
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], (lambda: mock_one + 1)),
-            eval_binary.call_args_list[call].args[2]
+            MeasurementValue([PauliX(0)], (lambda: mock_one() + 1)),
+            eval_binary.call_args_list[call].args[2],
         )
         assert eval_binary.call_args_list[call].args[3] == 5
 
-        # d = 2 + c;
-        # c = c * c;
-
     def test_measurement(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:

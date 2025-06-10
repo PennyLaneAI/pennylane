@@ -1,6 +1,7 @@
 """
 This submodule contains the interpreter for OpenQASM 3.0.
 """
+
 import copy
 import functools
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from openqasm3.ast import (
     ArrayLiteral,
     BinaryExpression,
     BitstringLiteral,
+    BitType,
     BooleanLiteral,
     BoolType,
     BranchingStatement,
@@ -108,9 +110,55 @@ def _eval_unary_op(operand: any, operator: str, line: int):
         return ~operand  # pylint: disable=invalid-unary-operand-type
     # we shouldn't ever get thi error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
-        f"Invalid operator {operator} encountered in unary expression "
-        f"on line {line}."
+        f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
+
+
+def _eval_assignment(lhs: any, operator: str, value: any, line: int):
+    """
+    Evaluates an assignment.
+
+    Args:
+        lhs (any): The variable to update.
+        operator (str): The assignment operator.
+        value (any): The value to assign.
+        line (int): The line number.
+
+    Returns:
+        any: The updated left hand side.
+    """
+    match operator:
+        case "=":
+            lhs = value
+        case "+=":
+            lhs += value
+        case "-=":
+            lhs -= value
+        case "*=":
+            lhs = lhs * value
+        case "/=":
+            lhs = lhs / value
+        case "&=":
+            lhs = lhs & value
+        case "|=":
+            lhs = lhs | value
+        case "^=":
+            lhs = lhs ^ value
+        case "<<=":
+            lhs = lhs << value
+        case ">>=":
+            lhs = lhs >> value
+        case "%=":
+            lhs = lhs % value
+        case "**=":
+            lhs = lhs**value
+        case _:  # pragma: no cover
+            # we shouldn't ever get this error if the parser did its job right
+            raise SyntaxError(  # pragma: no cover
+                f"Invalid operator {operator} encountered in assignment expression "
+                f"on line {line}."
+            )  # pragma: no cover
+    return lhs
 
 
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
@@ -165,8 +213,7 @@ def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
         case _:  # pragma: no cover
             # we shouldn't ever get this error if the parser did its job right
             raise SyntaxError(  # pragma: no cover
-                f"Invalid operator {operator} encountered in binary expression "
-                f"on line {line}."
+                f"Invalid operator {operator} encountered in binary expression " f"on line {line}."
             )  # pragma: no cover
 
 
@@ -350,6 +397,7 @@ class Context:
         """
         lhs_call = copy.deepcopy(lhs.val.processing_fn)
         rhs_call = copy.deepcopy(rhs.val.processing_fn)
+
         def new_processing_fn(*args):
             left = lhs_call(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
             if rhs is not None:
@@ -381,7 +429,7 @@ class Context:
         prev_call = copy.deepcopy(prev.val.processing_fn)
 
         def new_processing_fn(*args):
-            return _eval_binary_op(prev_call(*args), operator, value, line)
+            return _eval_assignment(prev_call(*args), operator, value, line).processing_fn()
 
         prev.val = MeasurementValue(prev.val.measurements, new_processing_fn)
 
@@ -403,37 +451,7 @@ class Context:
                 f"Attempt to mutate a constant {name} on line {line} that was "
                 f"defined on line {self.vars[name].line}"
             )
-        match operator:
-            case "=":
-                self.vars[name].val = value
-            case "+=":
-                self.vars[name].val += value
-            case "-=":
-                self.vars[name].val -= value
-            case "*=":
-                self.vars[name].val = self.vars[name].val * value
-            case "/=":
-                self.vars[name].val = self.vars[name].val / value
-            case "&=":
-                self.vars[name].val = self.vars[name].val & value
-            case "|=":
-                self.vars[name].val = self.vars[name].val | value
-            case "^=":
-                self.vars[name].val = self.vars[name].val ^ value
-            case "<<=":
-                self.vars[name].val = self.vars[name].val << value
-            case ">>=":
-                self.vars[name].val = self.vars[name].val >> value
-            case "%=":
-                self.vars[name].val = self.vars[name].val % value
-            case "**=":
-                self.vars[name].val = self.vars[name].val ** value
-            case _:  # pragma: no cover
-                # we shouldn't ever get this error if the parser did its job right
-                raise SyntaxError(  # pragma: no cover
-                    f"Invalid operator {operator} encountered in assignment expression "
-                    f"on line {line}."
-                )  # pragma: no cover
+        self.vars[name].val = _eval_assignment(self.vars[name].val, operator, value, line)
         self.vars[name].line = line
 
     def require_wires(self, wires: list):
@@ -1026,7 +1044,18 @@ class QasmInterpreter:
         # references to an unresolved value see a func for now
         name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
-        prev = context.retrieve_variable(name)
+        try:
+            prev = context.retrieve_variable(name)
+        except ValueError:
+            # the var is not initialized
+            context.vars[name] = Variable(
+                res.__class__.__name__,
+                res,
+                len(_get_bit_type_val(res)) if isinstance(res, BitType) else -1,
+                node.span.start_line,
+                False,
+            )
+            prev = context.vars[name]
         if isinstance(prev.val, MeasurementValue):
             context.update_measurement(res, prev, node.op.name, node.span.start_line)
         else:
@@ -1312,8 +1341,9 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        if (isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue)) or (isinstance(rhs, Variable)
-            and isinstance(rhs.val, MeasurementValue)):
+        if (isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue)) or (
+            isinstance(rhs, Variable) and isinstance(rhs.val, MeasurementValue)
+        ):
             return context.process_measurement(node.op.name, node.span.start_line, lhs, rhs)
         else:
             return _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
