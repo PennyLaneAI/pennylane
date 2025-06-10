@@ -792,13 +792,10 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
-        updated_qn._shots = shots
-        # update the conflict flag between shots and device.shots
-        # this is used to inform the user in later workflow that something unexpected is happening
-        updated_qn._shots_override_device = bool(updated_qn._shots != updated_qn.device.shots)
+        updated_qn._set_shots(shots)
 
         return updated_qn
-    
+
     def _set_shots(self, shots: Union[int, qml.measurements.Shots]) -> None:
         """Set the number of shots used by the QNode.
 
