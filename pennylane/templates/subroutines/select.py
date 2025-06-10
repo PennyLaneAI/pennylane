@@ -46,14 +46,15 @@ class Select(Operation):
 
     This operator is also known as **multiplexer**, or multiplexed operation.
     If the applied operations :math:`\{U_i\}` are all single-qubit Pauli rotations about the
-    same axis, with the angle determined by the control qubits, this is also called a
+    same axis, with the angle determined by the control wires, this is also called a
     **uniformly controlled rotation** gate.
 
     .. seealso:: :class:`~.SelectPauliRot`
 
     Args:
         ops (list[Operator]): operations to apply
-        control (Sequence[int]): the wires controlling which operation is applied
+        control (Sequence[int]): the wires controlling which operation is applied.
+            At least :math:`\lceil \log_2 K\rceil` wires are required for :math:`K` operations.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -78,6 +79,176 @@ class Select(Operation):
     1: ─├○─├●─├○─├●────┤  State
     2: ─╰X─│──╰Y─├SWAP─┤  State
     3: ────╰X────╰SWAP─┤  State
+
+    .. details::
+        :title: Unary iterator decomposition
+
+        Generically, ``Select`` is decomposed into one multi-controlled operator for each input
+        operator. If auxiliary wires are available, though, a decomposition using a so-called
+        unary iterator can be applied. It is introduced by
+        `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__.
+
+        **Principle**
+
+        Unary iteration leverages auxiliary wires to store intermediate values for reuse between
+        the different multi-controlled operators, avoiding to recompute these values.
+        In addition to this caching functionality, unary iteration reduces the cost of the
+        computation itself, because the involved reversible AND, or Toffoli, gates can be
+        implemented at lower cost if the target is known to be in the :math:`|0\rangle` state,
+        see :class:`~TemporaryAND`.
+
+        For :math:`K` operators to be Select-applied, :math:`c=\lceil\log_2 K\rceil` control
+        wires are needed. Unary iteration requires :math:`c-1` additional auxiliary wires.
+        Below we first show an example for :math:`K` being a power of two, i.e., :math:`K=2^c`.
+        Then we elaborate on implementation details for the case :math:`K<2^c`, which we call
+        a partial Select operator.
+
+        **Example**
+
+        Assume we want to Select-apply :math:`K=8=2^3` operators to two target wires,
+        which requires :math:`c=\lceil \log_2 K\rceil=3` control wires. The generic
+        decomposition for this takes the form
+
+        ```
+        0: ─╭○─────╭○─────╭○─────╭○─────╭●─────╭●─────╭●─────╭●─────┤
+        1: ─├○─────├○─────├●─────├●─────├○─────├○─────├●─────├●─────┤
+        2: ─├○─────├●─────├○─────├●─────├○─────├●─────├○─────├●─────┤
+        3: ─├U(M0)─├U(M1)─├U(M2)─├U(M3)─├U(M4)─├U(M5)─├U(M6)─├U(M7)─┤
+        4: ─╰U(M0)─╰U(M1)─╰U(M2)─╰U(M3)─╰U(M4)─╰U(M5)─╰U(M6)─╰U(M7)─┤.
+        ```
+
+        Unary iteration then uses :math:`c-1=2` auxiliary wires, denoted ``aux0`` and ``aux1``
+        below, to first rewrite the control structure:
+
+        ```
+        0:    ─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─┤
+        1:    ─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─┤
+        aux0:  ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ │
+        2:    ───├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤───┤
+        aux1:    ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯   │
+        3:    ─────├U(M0)──────├U(M1)──────├U(M2)──────├U(M3)──────├U(M4)──────├U(M5)──────├U(M6)──────├U(M7)──┤
+        4:    ─────╰U(M0)──────╰U(M1)──────╰U(M2)──────╰U(M3)──────╰U(M4)──────╰U(M5)──────╰U(M6)──────╰U(M7)──┤
+        ```
+
+        Here, we used the symbols
+
+        ```
+        ─╭●──   and  ─●─╮─
+        ─├●──        ─●─┤─
+         ╰───        ───╯
+        ```
+
+        for :class:`~.TemporaryAND` and its adjoint, respectively, and skipped drawing the
+        auxiliary wires in areas where they are guaranteed to be in the state :math:`|0\rangle`.
+        We will need three simplification rules for pairs of ``TemporaryAND`` gates:
+
+        ```
+        ─○─╮─╭○── = ──,    ─○─╮─╭○── = ─╭○─, and  ─○─╮─╭●── = ─╭●────
+        ─○─┤─├○──   ──     ─○─┤─├●──   ─│──       ─●─┤─├○──   ─│──╭●─
+        ───╯ ╰───   ──     ───╯ ╰───   ─╰X─       ───╯ ╰───   ─╰X─╰X─
+        ```
+
+        Applying these simplifications reduces the computational cost of the ``Select``
+        template:
+
+        ```
+        0:    ─╭○────────────────╭○──────────────────╭●─────────────────────╭●─────────────────●╮─┤
+        1:    ─├○────────────────│───────────────────│──╭●──────────────────│──────────────────●┤─┤
+        aux0:  ╰─╭●─────╭●────●╮─╰X─╭●─────╭●─────●╮─╰X─╰X─╭●─────╭●─────●╮─╰X─╭●─────╭●─────●╮─╯ │
+        2:    ───├○─────│─────●┤────├○─────│──────●┤───────├○─────│──────●┤────├○─────│──────●┤───┤
+        aux1:    ╰─╭●───╰X─╭●──╯    ╰─╭●───╰X──╭●──╯       ╰─╭●───╰X──╭●──╯    ╰─╭●───╰X──╭●──╯   │
+        3:    ─────├U(M0)──├U(M1)─────├U(M2)───├U(M3)────────├U(M4)───├U(M5)─────├U(M6)───├U(M7)──┤
+        4:    ─────╰U(M0)──╰U(M1)─────╰U(M2)───╰U(M3)────────╰U(M4)───╰U(M5)─────╰U(M6)───╰U(M7)──┤
+        ```
+
+        An additional cost reduction then results from the fact that ``TemporaryAND`` gates
+        (``adjoint(TemporaryAND)`` gates) take four (zero) :class:`~T` gates, instead of the seven
+        ``T`` gates required by a decomposition of :class:`~Toffoli`.
+
+        For general :math:`c` and :math:`K=2^c`, the decomposition takes a similar form, with
+        alternating control and auxiliary wires.
+
+        An implementation of this decomposition is easily achieved in the following steps:
+
+        #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
+        #. Split the target operators into four quarters and apply the first quarter via the
+           second routine ``R`` described below.
+        #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
+        #. Apply the second quarter.
+        #. Apply ``[CNOT([0, "aux0"]), CNOT([1, "aux0"])]``.
+        #. Apply the third quarter.
+        #. Apply ``[CNOT([0, "aux0"])]``.
+        #. Apply the last quarter.
+        #. Apply the right-most ``adjoint(TemporaryAND)`` controlled on qubits ``0`` and ``1``.
+
+        The second routine, ``R``, is used to apply each quarter and consists of applying a
+        ``TemporaryAND``, calling itself on the first half of its operators, applying a CNOT,
+        calling itself on the second half, and finally applying an ``adjoint(TemporaryAND)``.
+
+        **Partial Select decomposition**
+
+        The unary iterator decomposition of the ``Select`` template can be reduced if
+        both of the following criteria are met:
+
+        #. There are fewer target operators than would maximally be possible for the given
+           number of control wires, i.e. :math:`K<2^c`.
+
+        #. The state :math:`|\psi\rangle` of the control wires satisfies
+           :math:`\langle j | \psi\rangle=0` for all computational basis states with :math:`j\geq K`.
+
+        We do not derive this reduction here but discuss the modifications to the implementation
+        above that result from it.
+
+        Given :math:`K=2^c-b` operators, where :math:`c` is defined as above and we
+        have :math:`0\leq b<2^{c-1}`, the steps above are modified into one of three variants.
+        In each variant, the first :math:`2^{c-1}`` operators are applied in two equal portions,
+        containing :math:`2^{c-2}` operators each.
+        After this, :math:`\ell=2^{c-1} -b` operators remain and the three circuit variants are
+        distinguished, based on :math:`\ell`:
+
+        - if :math:`\ell=1`, the following circuit is applied:
+
+          ```
+          0:    ─╭○─────╭○─────○─╮╭●──
+          1:    ─├○─────│──────●─┤│───
+          aux0:  ╰──╭■──╰X─╭■────╯│───
+          2:    ────├■─────├■─────│───
+                    ╰■     ╰■     ╰■  .
+          ```
+          Here, each triple box symbolizes a call to ``R`` and applies :math:`2^{c-2}` operators in
+          a recursive manner, and the controlled gate on the right is a single controlled operator.
+
+        - if :math:`\ell < 2^{c-2}``, the following circuit is applied:
+
+          ```
+          0:    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
+          1:    ─├○─────│──────●─┤│──────│────────│─
+          aux0:  ╰──╭■──╰X─╭■────╯│      │        │
+          2:    ────├■─────├■─────├○─────│──────●─┤─
+                    ╰■     ╰■     ╰───■──╰X──■────╯
+          ```
+          where the second half may skip more than one control and auxiliary wire each.
+          In this diagram, both the triple and the single boxes represent calls to the
+          routine ``R``, with single boxes applying fewer operators.
+          The first call to ``R`` in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}`
+          operators.
+
+        - if :math:`\ell \geq 2^{c-2}`, the following, more generic, circuit is applied:
+
+          ```
+          0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
+          1:    ─├○─────│──────│──╭●─────│──────●─┤─
+          aux0:  ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
+          2:    ────├■─────├■────────├■─────├■──────
+                    ╰■     ╰■        ╰■     ╰■      .
+          ```
+
+          Here, each triple box again symbolizes a call to ``R``. The first call in the
+          second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
+          Note that this case is triggered if :math:`K` is larger than or equal to
+          :math:`\tfrac{3}{4}` of the maximal capacity for :math:`c` control wires.
+          Also note how the two middle ``TemporaryAND`` gates were merged into two CNOTs,
+          which was not possible above because they acted on distinct wire triples.
 
     """
 
@@ -263,60 +434,8 @@ def _add_first_k_units(ops, controls, work_wires, k):
 
     This function is used for the outer-most recursion level, and then calls _add_k_units
     for the inner recursion levels.
-
-    We will be drawing circuits here, using the symbol
-    ```
-    ─╭●──   and  ─●─╮─
-    ─├●──        ─●─┤─
-     ╰───        ───╯
-    ```
-    for :class:`~.TemporaryAND` and its adjoint, respectively.
-
-    Given ``k=len(ops)=2**a-b`` operators, where ``a`` is chosen as small as possible to obtain
-    ``0<=b<2**(a-1)`` (note that this implies ``a=⌈log_2(k)⌉``), ``a`` control wires, and ``a - 1`` work wires,
-    this function applies one of three circuits. In each variant, the first ``2**(a-1)`` operators
-    are applied in two equal portions, containing ``2**(a-2)`` operators each.
-    After this, ``l=2**(a-1) -b`` operators remain and the three circuit variants are
-    distinguished, based on ``l``:
-
-    - if ``l=1``, the following circuit is applied:
-      ```
-      ─╭○─────╭○─────○─╮╭●──
-      ─├○─────│──────●─┤│───
-       ╰──╭■──╰X─╭■────╯│───
-      ────├■─────├■─────│───
-          ╰■     ╰■     ╰■  .
-      ```
-      Here, each triple box symbolizes a call to ``_add_k_units`` to add 2**(a-2) operators in a
-      recursive manner, and the right hand side controlled gate is a single controlled operator.
-
-    - if ``l < 2**(a-2)``, the following circuit is applied:
-      ```
-      ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
-      ─├○─────│──────●─┤│──────│────────│─
-       ╰──╭■──╰X─╭■────╯│      │        │
-      ────├■─────├■─────├○─────│──────●─┤─
-          ╰■     ╰■     ╰───■──╰X──■────╯
-      ```
-      where the second half may skip more than two control wires (the number of skipped control
-      wires is ``c_bar`` in code). The single boxes in the second half are calls to
-      ``_add_k_units``, not single operators. The first call in the second half applies
-      ``2**(⌈log_2(l)⌉-1)`` operators.
-
-    - if ``l >= 2**(a-2)``, the following, more generic, circuit is applied:
-      ```
-      ─╭○─────╭○─────╭●────────╭●─────●─╮─
-      ─├○─────│──────│──╭●─────│──────●─┤─
-       ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
-      ────├■─────├■────────├■─────├■──────
-          ╰■     ╰■        ╰■     ╰■      .
-      ```
-      Here, each triple box again symbolizes a call to _add_k_units. The first call in the
-      second half applies ``2**(⌈log_2(l)⌉-1)`` operators.
-      This case is triggered if ``k`` is larger than or equal to 3/4 of the maximal capacity
-      for ``a`` control wires.
-      Note how the two middle TemporaryAND gates were merged into two CNOTs, which was not
-      possible above because they acted on distinct wire triples.
+    In the documentation, this is the outer level that is being described in detail, and
+    ``_add_k_units`` corresponds to the subroutine ``R``.
 
     """
     assert k == len(ops) > 2
@@ -388,11 +507,12 @@ def _add_k_units(ops, controls, work_wires, k):
     """Add k controlled-applied operators within the unary iterator scheme, in a recursive
     manner.
 
+    In the documentation, this subroutine is called ``R``.
     This is _not_ used for the outer-most recursion level, see _add_first_k_units instead.
 
-    We are given ``k=len(ops)`` operators and ``2 * ⌈log_2(k)⌉ + 1`` control wires.
-    If ``k=0``, nothing is applied.
-    If ``k=1``, the single operator is applied, controlled on the first control wire.
+    We are given ``K=len(ops)`` operators and ``2 * ⌈log_2(K)⌉ + 1`` control and auxiliary wires.
+    If ``K=0``, nothing is applied.
+    If ``K=1``, the single operator is applied, controlled on the first control wire.
 
     In all other cases, this function applies the circuit
     ```
@@ -400,14 +520,14 @@ def _add_k_units(ops, controls, work_wires, k):
     ─├○────│─────●─┤─
      ╰──■──╰X─■────╯
     ```
-    where each box symbolizes calls to ``_add_k_units`` on the next recursion level.
+    where each box symbolizes calls to itself on the next recursion level.
     The next-level calls to ``_add_k_units` use
 
     ``k_first = 2 ** (⌈log_2(k)⌉-1)`` (i.e. half of ``k``, rounded up to the next power of two)
     and
     ``k_second = k-k_first`` (i.e. the rest)
 
-    operators, respectively. Accordingly, two control wires less are used.
+    operators, respectively. Accordingly, two fewer control wires are used.
 
     """
     assert k == len(ops)
@@ -466,14 +586,16 @@ def _unary_select(ops, control, work_wires, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`L` operators this decomposition requires at least :math:`c=\lceil\log_2 L\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
-
-    Note that there might be a slightly improved implementation if a modified embedding is allowed.
+    See the documentation of ``Select`` for details.
 
     .. note::
 
         This decomposition assumes that the state on the control wires does not have any overlap
         with :math:`|i\rangle` for :math:`i\geq L`.
     """
+    # Note that there might be a slightly improved implementation if a modified embedding is used
+    # during state preparation in a PrepSelPrep pattern.
+
     if len(ops) == 0:
         return []
 
