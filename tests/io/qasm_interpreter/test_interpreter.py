@@ -60,14 +60,10 @@ class TestMeasurementReset:
 
     def test_resets(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(
-                ast, context={"name": "post_processing", "wire_map": None}
-            )
+            QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
 
         assert isinstance(q.queue[0], MidMeasureMP)
         assert q.queue[0].wires == Wires(["qubits"])
