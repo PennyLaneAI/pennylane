@@ -24,10 +24,11 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestTemporaryAND:
     """Tests specific to the TemporaryAND operation"""
 
-    def test_alis(self):
-        "Test that Elbow is an alias of TemporaryAND"
-        op = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
-        qml.ops.functions.assert_valid(op)
+    def test_alias(self):
+        """Test that Elbow is an alias of TemporaryAND"""
+        op1 = qml.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        op2 = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
+        qml.assert_equal(op1, op2)
 
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""

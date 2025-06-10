@@ -52,6 +52,8 @@ class TemporaryAND(Operation):
             Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 
 
+    .. seealso:: The alias :class:`~Elbow`.
+
     **Example**
 
     .. code-block::
