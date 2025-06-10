@@ -639,7 +639,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots = getattr(device, "shots", None)
+        self._shots = device.shots
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
