@@ -56,7 +56,22 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestMeasurement:
+class TestMeasurementReset:
+
+    def test_resets(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "post_processing", "wire_map": None}
+            )
+
+        assert isinstance(q.queue[0], MidMeasureMP)
+        assert q.queue[0].wires == Wires(["qubits"])
+        assert q.queue[0].reset == True
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
@@ -82,10 +97,9 @@ class TestMeasurement:
         }
 
         # run the program
-        with queuing.AnnotatedQueue() as q:
-            context = QasmInterpreter().interpret(
-                ast, context={"name": "post_processing", "wire_map": None, "vars": vars}
-            )
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "post_processing", "wire_map": None, "vars": vars}
+        )
 
         # ops on MeasurementValues should yield MeasurementValues
         assert isinstance(context["vars"]["c"].val, MeasurementValue)
