@@ -76,8 +76,7 @@ class FlipSign(Operation):
             raise ValueError("expected at least one wire representing the qubit ")
 
         if isinstance(wires, int):
-            wires = 1 if wires == 0 else wires
-            wires = list(range(wires))
+            wires = [wires]
 
         if isinstance(n, int):
             if n >= 0:
