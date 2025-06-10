@@ -16,7 +16,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 """
 
 # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument, no-member
+# pylint: disable=unused-argument
 
 from collections import defaultdict
 from functools import cached_property, singledispatch
@@ -578,12 +578,12 @@ class _QReg:
 
     def __init__(self, qubits: Tuple["cirq.Qid", ...], dtype: "qt.QDType"):
         if isinstance(qubits, cirq.Qid):
-            object.__setattr__(self, "qubits", (qubits,))
+            self.qubits = (qubits,)
         else:
-            object.__setattr__(self, "qubits", tuple(qubits))
+            self.qubits = tuple(qubits)
 
-        object.__setattr__(self, "dtype", dtype)
-        object.__setattr__(self, "_initialized", True)
+        self.dtype = dtype
+        self._initialized = True
 
     def __setattr__(self, name, value):
         """Makes the instance immutable after initialization."""
@@ -734,7 +734,10 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
             bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
-            # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
+            # `signature.lefts()` can be thought of as input qubits. For our purposes LEFT and
+            # RIGHT signatures will (almost) always match since there are no allocated & freed
+            # qubits. Here, qreg_to_qvar is a map between a register and a Soquet. This serves
+            # as the foundation to wire up the rest of the bloqs.
             qreg_to_qvar = {}
             for reg in signature.lefts():
                 assert reg.name in in_quregs
@@ -745,7 +748,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             # 2. Add each operation to the composite Bloq.
             for op in ops:
                 bloq = _map_to_bloq()(op, map_ops=self.map_ops)
-                if not bloq:
+                if bloq is None:
                     continue
 
                 if bloq.signature == qt.Signature([]):
