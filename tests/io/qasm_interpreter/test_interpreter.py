@@ -68,7 +68,6 @@ class TestMeasurement:
 
         # setup mocks
         eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
-        eval_unary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_unary_op")
 
         mock_one = MagicMock(return_value=1)
         mock_zero = MagicMock(return_value=0)
