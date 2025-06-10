@@ -109,6 +109,13 @@ copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False
+autodoc_type_aliases = {
+    'H': 'pennylane.ops.qubit.non_parametric_ops.H',
+    'I': 'pennylane.ops.qubit.non_parametric_ops.I',
+    'X': 'pennylane.ops.qubit.non_parametric_ops.X',
+    'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
+    'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
+}
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
