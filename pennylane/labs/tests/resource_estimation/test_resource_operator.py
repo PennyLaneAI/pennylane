@@ -40,7 +40,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ
+# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself
 
 
 class ResourceDummyX(ResourceOperator):

@@ -30,7 +30,7 @@ from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=dangerous-default-value,protected-access
+# pylint: disable=dangerous-default-value,protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
 StandardGateSet = {
@@ -211,7 +211,7 @@ def resources_from_resource(
     config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
-) -> Callable:
+) -> Resources:
     """Further process resources from a resources object."""
 
     existing_qm = obj.qubit_manager
@@ -246,16 +246,35 @@ def resources_from_resource(
 
 @_estimate_resources.register
 def resources_from_resource_ops(
-    obj: Union[Operation, ResourceOperator],
+    obj: ResourceOperator,
     gate_set: Set = DefaultGateSet,
     config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
-) -> Callable:
-    """Extract resources from an operator."""
+) -> Resources:
+    """Extract resources from a resource operator."""
     if isinstance(obj, Operation):
         obj = map_to_resource_op(obj)
 
+    return resources_from_resource(
+        1 * obj,
+        gate_set,
+        config,
+        work_wires,
+        tight_budget,
+    )
+
+
+@_estimate_resources.register
+def resources_from_pl_ops(
+    obj: Operation,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires=None,
+    tight_budget=None,
+) -> Resources:
+    """Extract resources from a pl operator."""
+    obj = map_to_resource_op(obj)
     return resources_from_resource(
         1 * obj,
         gate_set,

@@ -14,14 +14,16 @@
 """
 Test the core resource tracking functionality.
 """
-import pytest
+# import pytest
 
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
-from pennylane.labs.resource_estimation.resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-)
+# from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
+# from pennylane.labs.resource_estimation.resource_operator import (
+#     CompressedResourceOp,
+#     GateCount,
+#     ResourceOperator,
+# )
+
+# pylint: disable= no-self-use
 
 
 class TestEstimateResources:
