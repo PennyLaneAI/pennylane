@@ -1,7 +1,7 @@
 """
 This submodule contains the interpreter for OpenQASM 3.0.
 """
-
+import copy
 import functools
 from dataclasses import dataclass
 from functools import partial
@@ -337,11 +337,6 @@ class Context:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def process_two_measurements(self, lhs: Variable, rhs: Variable, operator: str, line: int):
-        """
-
-        """
-
     def process_measurement(self, operator: str, line: int, lhs: Variable, rhs: Variable = None):
         """
         Updates a MeasurementValue's processing function to reflect classical logic applied to
@@ -353,10 +348,12 @@ class Context:
             lhs (Variable): The first operand of the operation involving the MeasurementValue(s).
             rhs (Optional[Variable]): The second operand of the operation involving the MeasurementValue(s).
         """
+        lhs_call = copy.deepcopy(lhs.val.processing_fn)
+        rhs_call = copy.deepcopy(rhs.val.processing_fn)
         def new_processing_fn(*args):
-            left = lhs.val.processing_fn(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
+            left = lhs_call(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
             if rhs is not None:
-                right = rhs.val.processing_fn(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
+                right = rhs_call(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
                 return _eval_binary_op(left, operator, right, line)
             else:
                 return _eval_unary_op(left, operator, line)
@@ -381,8 +378,10 @@ class Context:
             operator (str): The operator to apply to the MeasurementValue.
             line (int): The line number at which the operator occurs.
         """
+        prev_call = copy.deepcopy(prev.val.processing_fn)
+
         def new_processing_fn(*args):
-            return _eval_binary_op(prev.val.processing_fn(*args), operator, value, line)
+            return _eval_binary_op(prev_call(*args), operator, value, line)
 
         prev.val = MeasurementValue(prev.val.measurements, new_processing_fn)
 

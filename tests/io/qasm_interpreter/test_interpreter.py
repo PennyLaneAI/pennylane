@@ -146,7 +146,7 @@ class TestMeasurement:
 
     def test_measurement(self):
         # parse the QASM
-        ast = parse(open("measurements.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
