@@ -747,6 +747,7 @@ class QNode:
             )
 
         # For shots, we allow `shots=...` to be passed as a keyword argument
+        # and this should happen before any other updates
         shots = self._shots
         shots_to_update = "shots" in kwargs
         if shots_to_update:
@@ -764,7 +765,8 @@ class QNode:
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
 
-        # If device was updated, get shots from the new device
+        # If device was updated, shots would have been updated
+        # but the the `shots` arg should override if exists
         if shots_to_update:
             updated_qn._shots = shots
 
