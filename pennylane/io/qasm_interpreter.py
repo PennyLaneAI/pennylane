@@ -117,18 +117,10 @@ class Context:
             context["wire_map"] = {}
         self.context = context
 
-    def update(self, update: dict):
-        """
-        Updated the context dict.
-
-        Args:
-            update (dict): The dict containing the updates.
-        """
-        self.context.update(update)
-
     def init_subroutine_scope(self, node: SubroutineDefinition):
         """
-        Inits the outer wires list on a sub context.
+        Initializes a sub context with all the params, constants, subroutines and qubits it has access to.
+
         Args:
             node (SubroutineDefinition): the subroutine definition.
         """
