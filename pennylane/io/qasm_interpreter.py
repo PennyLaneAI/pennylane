@@ -7,25 +7,35 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable
 
+from numpy import uint
 from openqasm3.ast import (
     AliasStatement,
     ArrayLiteral,
+    BinaryExpression,
     BitstringLiteral,
     BooleanLiteral,
+    BoolType,
+    Cast,
     ClassicalAssignment,
     ClassicalDeclaration,
+    ComplexType,
     ConstantDeclaration,
     DurationLiteral,
     EndStatement,
     Expression,
+    ExpressionStatement,
     FloatLiteral,
+    FloatType,
     Identifier,
     ImaginaryLiteral,
     IndexExpression,
     IntegerLiteral,
+    IntType,
     QuantumGate,
     QubitDeclaration,
     RangeDefinition,
+    UintType,
+    UnaryExpression,
 )
 from openqasm3.visitor import QASMNode
 
@@ -126,28 +136,55 @@ class Context:
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
-        self,
-        value: any,
-        name: str,
-        node: QASMNode,
-    ):
+        self, value: any, name: str, operator: str, line: int
+    ):  # pylint: disable=too-many-branches
         """
         Updates a variable, or raises if it is constant.
         Args:
             value (any): the value to set.
             name (str): the name of the variable.
-            node (QASMNode): the QASMNode that corresponds to the update.
+            operator (str): the assignment operator.
+            line (int): the line number at which we encountered the assignment node.
         """
-        if name in self.vars:
-            if self.vars[name].constant:
-                raise ValueError(
-                    f"Attempt to mutate a constant {name} on line {node.span.start_line} that was "
-                    f"defined on line {self.vars[name].line}"
-                )
-            self.vars[name].val = value
-            self.vars[name].line = node.span.start_line
-        else:
+        if name not in self.vars:
             raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
+        if self.vars[name].constant:
+            raise ValueError(
+                f"Attempt to mutate a constant {name} on line {line} that was "
+                f"defined on line {self.vars[name].line}"
+            )
+        match operator:
+            case "=":
+                self.vars[name].val = value
+            case "+=":
+                self.vars[name].val += value
+            case "-=":
+                self.vars[name].val -= value
+            case "*=":
+                self.vars[name].val = self.vars[name].val * value
+            case "/=":
+                self.vars[name].val = self.vars[name].val / value
+            case "&=":
+                self.vars[name].val = self.vars[name].val & value
+            case "|=":
+                self.vars[name].val = self.vars[name].val | value
+            case "^=":
+                self.vars[name].val = self.vars[name].val ^ value
+            case "<<=":
+                self.vars[name].val = self.vars[name].val << value
+            case ">>=":
+                self.vars[name].val = self.vars[name].val >> value
+            case "%=":
+                self.vars[name].val = self.vars[name].val % value
+            case "**=":
+                self.vars[name].val = self.vars[name].val ** value
+            case _:  # pragma: no cover
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {operator} encountered in assignment expression "
+                    f"on line {line}."
+                )  # pragma: no cover
+        self.vars[name].line = line
 
     def require_wires(self, wires: list):
         """
@@ -203,6 +240,24 @@ def _resolve_name(node: QASMNode):
     """
     # parser will sometimes represent a name as a str and sometimes as an Identifier
     return node.name if isinstance(node.name, str) else node.name.name
+
+
+def preprocess_operands(operand):
+    """
+    Interprets a string operand as an appropriate type.
+
+    Args:
+        operand (str): the string operand to interpret.
+
+    Returns:
+        The interpreted operand as an appropriate type.
+    """
+    if isinstance(operand, str):
+        if operand.isdigit():
+            operand = int(operand)
+        elif operand.replace(".", "").isnumeric():
+            operand = float(operand)
+    return operand
 
 
 class EndProgram(Exception):
@@ -335,8 +390,7 @@ class QasmInterpreter:
         # references to an unresolved value see a func for now
         name = _resolve_name(node.lvalue)
         res = self.visit(node.rvalue, context)
-        # TODO: different types of assignments
-        context.update_var(res, name, node)
+        context.update_var(res, name, node.op.name, node.span.start_line)
 
     @visit.register(AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: Context):
@@ -512,6 +566,138 @@ class QasmInterpreter:
             raise ValueError(f"Unknown modifier {mod}")  # pragma: no cover
 
         return next, wires
+
+    @visit.register(ExpressionStatement)
+    def visit_expression_statement(self, node: ExpressionStatement, context: Context):
+        """
+        Registers an expression statement.
+        Args:
+            node (ExpressionStatement): The expression statement.
+            context (Context): The current context.
+        """
+        return self.visit(node.expression, context)
+
+    @visit.register(Cast)
+    def visit_cast(self, node: Cast, context: Context):
+        """
+        Registers a Cast expression.
+
+        Args:
+            node (Cast): The Cast expression.
+            context (Context): The current context.
+
+        Returns:
+            Any: The argument cast to the appropriate type.
+
+        Raises:
+            TypeError: If the cast cannot be made.
+        """
+        arg = self.visit(node.argument, context)
+        ret = arg
+        try:
+            if isinstance(node.type, IntType):
+                ret = int(arg)
+            if isinstance(node.type, UintType):
+                ret = uint(arg)
+            if isinstance(node.type, FloatType):
+                ret = float(arg)
+            if isinstance(node.type, ComplexType):
+                ret = complex(arg)
+            if isinstance(node.type, BoolType):
+                ret = bool(arg)
+            # TODO: durations, angles, etc.
+        except TypeError as e:
+            raise TypeError(
+                f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}"
+            ) from e
+        return ret
+
+    @visit.register(BinaryExpression)
+    def visit_binary_expression(
+        self, node: BinaryExpression, context: Context
+    ):  # pylint: disable=too-many-branches, too-many-return-statements
+        """
+        Registers a binary expression.
+
+        Args:
+            node (BinaryExpression): The binary expression.
+            context (Context): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        lhs = preprocess_operands(self.visit(node.lhs, context))
+        rhs = preprocess_operands(self.visit(node.rhs, context))
+        match node.op.name:
+            case "==":
+                return lhs == rhs
+            case "!=":
+                return lhs != rhs
+            case ">":
+                return lhs > rhs
+            case "<":
+                return lhs < rhs
+            case ">=":
+                return lhs >= rhs
+            case "<=":
+                return lhs <= rhs
+            case ">>":
+                return lhs >> rhs
+            case "<<":
+                return lhs << rhs
+            case "+":
+                return lhs + rhs
+            case "-":
+                return lhs - rhs
+            case "*":
+                return lhs * rhs
+            case "**":
+                return lhs**rhs
+            case "/":
+                return lhs / rhs
+            case "%":
+                return lhs % rhs
+            case "|":
+                return lhs | rhs
+            case "||":
+                return lhs or rhs
+            case "&":
+                return lhs & rhs
+            case "&&":
+                return lhs and rhs
+            case "^":
+                return lhs ^ rhs
+            case _:  # pragma: no cover
+                # we shouldn't ever get this error if the parser did its job right
+                raise SyntaxError(  # pragma: no cover
+                    f"Invalid operator {node.op.name} encountered in binary expression "
+                    f"on line {node.span.start_line}."
+                )  # pragma: no cover
+
+    @visit.register(UnaryExpression)
+    def visit_unary_expression(self, node: UnaryExpression, context: Context):
+        """
+        Registers a unary expression.
+
+        Args:
+            node (UnaryExpression): The unary expression.
+            context (Context): The current context.
+
+        Returns:
+            The result of the evaluated expression.
+        """
+        operand = preprocess_operands(self.visit(node.expression, context))
+        if node.op.name == "!":
+            return not operand
+        if node.op.name == "-":
+            return -operand
+        if node.op.name == "~":
+            return ~operand  # pylint: disable=invalid-unary-operand-type
+        # we shouldn't ever get this error if the parser did its job right
+        raise SyntaxError(  # pragma: no cover
+            f"Invalid operator {node.op.name} encountered in unary expression "
+            f"on line {node.span.start_line}."
+        )  # pragma: no cover
 
     @visit.register(IndexExpression)
     def visit_index_expression(
