@@ -633,9 +633,9 @@ class TestSnapshotUnsupportedQNode:
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
             _ = qml.snapshots(circuit)
 
-    def test_lightning_qubit_finite_shots(self, seed):
-        """Test lightning.qubit with finite shots using direct statistical bounds."""
-        dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
+    @flaky(max_runs=3)
+    def test_lightning_qubit_finite_shots(self):
+        dev = qml.device("lightning.qubit", wires=2, shots=500)
 
         @qml.qnode(dev, diff_method=None)
         def circuit():
@@ -643,40 +643,14 @@ class TestSnapshotUnsupportedQNode:
             qml.Snapshot(measurement=qml.counts(wires=0))
             return qml.expval(qml.PauliX(1))
 
-        # Test basic functionality with multiple runs
-        results = []
-        for _ in range(20):  # Reasonable number of samples
-            result = qml.snapshots(circuit)()
-            results.append(result)
+        # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
+        counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
+        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
+        assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
-        # Extract data
-        count_data = [list(result.values())[0]["0"] for result in results]  # counts for "0"
-        expval_data = [list(result.values())[1] for result in results]  # expectation values
-
-        # Statistical bounds based on theoretical expectations
-        # For Hadamard on wire 0 with 500 shots: expect ~250 ± reasonable variance
-        mean_count_zeros = np.mean(count_data)
-        std_count_zeros = np.std(count_data)
-
-        # Using 3-sigma rule: should be within 3 standard deviations
-        # For binomial distribution with n=500, p=0.5: std ≈ sqrt(500*0.5*0.5) ≈ 11.2
-        # Across multiple runs, we expect the mean to be closer to 250
-        assert (
-            200 <= mean_count_zeros <= 300
-        ), f"Mean count of zeros {mean_count_zeros} outside expected range"
-
-        # For expval(PauliX(1)) with no operations on wire 1: expect 0 ± small variance
-        mean_expval = np.mean(expval_data)
-        assert abs(mean_expval) <= 0.3, f"Mean expectation value {mean_expval} too far from 0"
-
-        # Test shots override
-        result_1000 = qml.snapshots(circuit)(shots=1000)
-        count_1000 = list(result_1000.values())[0]["0"]
-
-        # With 1000 shots, expect ~500 ± larger variance
-        assert (
-            400 <= count_1000 <= 600
-        ), f"Count with 1000 shots {count_1000} outside expected range"
+        # Make sure shots are overridden correctly
+        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
