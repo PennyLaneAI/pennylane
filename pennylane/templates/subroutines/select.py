@@ -85,8 +85,16 @@ class Select(Operation):
 
         Generically, ``Select`` is decomposed into one multi-controlled operator for each input
         operator. If auxiliary wires are available, though, a decomposition using a so-called
-        unary iterator can be applied. It is introduced by
+        unary iterator can be applied. It was introduced by
         `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__.
+
+        .. note::
+
+            The decomposition of ``Select`` using unary iteration will only be correct if
+            the state :math:`|\psi\rangle` on the control wires satisfies
+            :math:`\langle j | \psi\rangle=0` for all :math:`K\leq j< 2^c`, where :math:`K` is the
+            number of target operators and :math:`c=\lceil\log_2 (K)\rceil` is the number of
+            required control wires. For :math:`K=2^c`, no constraint applies.
 
         **Principle**
 
@@ -105,61 +113,61 @@ class Select(Operation):
 
         **Example**
 
-        Assume we want to Select-apply :math:`K=8=2^3` operators to two target wires,
+        Assume that we want to Select-apply :math:`K=8=2^3` operators to two target wires,
         which requires :math:`c=\lceil \log_2 K\rceil=3` control wires. The generic
         decomposition for this takes the form
 
-        ```
-        0: ─╭○─────╭○─────╭○─────╭○─────╭●─────╭●─────╭●─────╭●─────┤
-        1: ─├○─────├○─────├●─────├●─────├○─────├○─────├●─────├●─────┤
-        2: ─├○─────├●─────├○─────├●─────├○─────├●─────├○─────├●─────┤
-        3: ─├U(M0)─├U(M1)─├U(M2)─├U(M3)─├U(M4)─├U(M5)─├U(M6)─├U(M7)─┤
-        4: ─╰U(M0)─╰U(M1)─╰U(M2)─╰U(M3)─╰U(M4)─╰U(M5)─╰U(M6)─╰U(M7)─┤.
-        ```
+        .. code-block::
+
+            0: ─╭○─────╭○─────╭○─────╭○─────╭●─────╭●─────╭●─────╭●─────┤
+            1: ─├○─────├○─────├●─────├●─────├○─────├○─────├●─────├●─────┤
+            2: ─├○─────├●─────├○─────├●─────├○─────├●─────├○─────├●─────┤
+            3: ─├U(M0)─├U(M1)─├U(M2)─├U(M3)─├U(M4)─├U(M5)─├U(M6)─├U(M7)─┤
+            4: ─╰U(M0)─╰U(M1)─╰U(M2)─╰U(M3)─╰U(M4)─╰U(M5)─╰U(M6)─╰U(M7)─┤.
 
         Unary iteration then uses :math:`c-1=2` auxiliary wires, denoted ``aux0`` and ``aux1``
         below, to first rewrite the control structure:
 
-        ```
-        0:    ─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─┤
-        1:    ─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─┤
-        aux0:  ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ │
-        2:    ───├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤───┤
-        aux1:    ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯   │
-        3:    ─────├U(M0)──────├U(M1)──────├U(M2)──────├U(M3)──────├U(M4)──────├U(M5)──────├U(M6)──────├U(M7)──┤
-        4:    ─────╰U(M0)──────╰U(M1)──────╰U(M2)──────╰U(M3)──────╰U(M4)──────╰U(M5)──────╰U(M6)──────╰U(M7)──┤
-        ```
+        .. code-block::
+
+            0:    ─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─┤
+            1:    ─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─┤
+            aux0:  ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ │
+            2:    ───├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤───┤
+            aux1:    ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯   │
+            3:    ─────├U(M0)──────├U(M1)──────├U(M2)──────├U(M3)──────├U(M4)──────├U(M5)──────├U(M6)──────├U(M7)──┤
+            4:    ─────╰U(M0)──────╰U(M1)──────╰U(M2)──────╰U(M3)──────╰U(M4)──────╰U(M5)──────╰U(M6)──────╰U(M7)──┤
 
         Here, we used the symbols
 
-        ```
-        0: ─╭●──   and  ─●─╮─
-        1: ─├●──        ─●─┤─
-        2:  ╰───        ───╯
-        ```
+        .. code-block::
+
+            0: ─╭●──   and  ─●─╮─
+            1: ─├●──        ─●─┤─
+            2:  ╰───        ───╯
 
         for :class:`~.TemporaryAND` and its adjoint, respectively, and skipped drawing the
         auxiliary wires in areas where they are guaranteed to be in the state :math:`|0\rangle`.
         We will need three simplification rules for pairs of ``TemporaryAND`` gates:
 
-        ```
-        ─○─╮─╭○── = ──,    ─○─╮─╭○── = ─╭○─, and  ─○─╮─╭●── = ─╭●────
-        ─○─┤─├○──   ──     ─○─┤─├●──   ─│──       ─●─┤─├○──   ─│──╭●─
-        ───╯ ╰───   ──     ───╯ ╰───   ─╰X─       ───╯ ╰───   ─╰X─╰X─
-        ```
+        .. code-block::
+
+            ─○─╮─╭○── = ──,    ─○─╮─╭○── = ─╭○─, and  ─○─╮─╭●── = ─╭●────
+            ─○─┤─├○──   ──     ─○─┤─├●──   ─│──       ─●─┤─├○──   ─│──╭●─
+            ───╯ ╰───   ──     ───╯ ╰───   ─╰X─       ───╯ ╰───   ─╰X─╰X─
 
         Applying these simplifications reduces the computational cost of the ``Select``
         template:
 
-        ```
-        0:    ─╭○────────────────╭○──────────────────╭●─────────────────────╭●─────────────────●╮─┤
-        1:    ─├○────────────────│───────────────────│──╭●──────────────────│──────────────────●┤─┤
-        aux0:  ╰─╭●─────╭●────●╮─╰X─╭●─────╭●─────●╮─╰X─╰X─╭●─────╭●─────●╮─╰X─╭●─────╭●─────●╮─╯ │
-        2:    ───├○─────│─────●┤────├○─────│──────●┤───────├○─────│──────●┤────├○─────│──────●┤───┤
-        aux1:    ╰─╭●───╰X─╭●──╯    ╰─╭●───╰X──╭●──╯       ╰─╭●───╰X──╭●──╯    ╰─╭●───╰X──╭●──╯   │
-        3:    ─────├U(M0)──├U(M1)─────├U(M2)───├U(M3)────────├U(M4)───├U(M5)─────├U(M6)───├U(M7)──┤
-        4:    ─────╰U(M0)──╰U(M1)─────╰U(M2)───╰U(M3)────────╰U(M4)───╰U(M5)─────╰U(M6)───╰U(M7)──┤
-        ```
+        .. code-block::
+
+            0:    ─╭○────────────────╭○──────────────────╭●─────────────────────╭●─────────────────●╮─┤
+            1:    ─├○────────────────│───────────────────│──╭●──────────────────│──────────────────●┤─┤
+            aux0:  ╰─╭●─────╭●────●╮─╰X─╭●─────╭●─────●╮─╰X─╰X─╭●─────╭●─────●╮─╰X─╭●─────╭●─────●╮─╯ │
+            2:    ───├○─────│─────●┤────├○─────│──────●┤───────├○─────│──────●┤────├○─────│──────●┤───┤
+            aux1:    ╰─╭●───╰X─╭●──╯    ╰─╭●───╰X──╭●──╯       ╰─╭●───╰X──╭●──╯    ╰─╭●───╰X──╭●──╯   │
+            3:    ─────├U(M0)──├U(M1)─────├U(M2)───├U(M3)────────├U(M4)───├U(M5)─────├U(M6)───├U(M7)──┤
+            4:    ─────╰U(M0)──╰U(M1)─────╰U(M2)───╰U(M3)────────╰U(M4)───╰U(M5)─────╰U(M6)───╰U(M7)──┤
 
         An additional cost reduction then results from the fact that ``TemporaryAND`` gates
         (``adjoint(TemporaryAND)`` gates) take four (zero) :class:`~T` gates, instead of the seven
@@ -181,9 +189,23 @@ class Select(Operation):
         #. Apply the last quarter.
         #. Apply the right-most ``adjoint(TemporaryAND)`` controlled on qubits ``0`` and ``1``.
 
-        The second routine, ``R``, is used to apply each quarter and consists of applying a
-        ``TemporaryAND``, calling itself on the first half of its operators, applying a CNOT,
-        calling itself on the second half, and finally applying an ``adjoint(TemporaryAND)``.
+        The second routine, ``R``, has the following logic:
+        we are given :math:`L` operators and ``2 * ⌈log_2(L)⌉ + 1`` control and auxiliary wires.
+        If ``L=0``, ``R`` does not apply any operators.
+        If ``L=1``, the single operator is applied, controlled on the first control wire.
+
+        In all other cases, ``R`` applies the circuit
+
+        .. code-block::
+
+            aux_j:   ─╭●────╭●────●─╮─
+            j+1:     ─├○────│─────●─┤─
+            aux_j+1:  ╰──■──╰X─■────╯
+
+        where each box symbolizes a call to itself on the next recursion level.
+        These next-level calls use
+        :math:`L' = 2^{\lceil\log_2(L)\rceil-1}` (i.e. half of :math:`L`, rounded up to the next
+        power of two) and :math:`L-L'` (i.e. the rest) operators, respectively.
 
         **Partial Select decomposition**
 
@@ -208,25 +230,27 @@ class Select(Operation):
 
         - if :math:`\ell=1`, the following circuit is applied:
 
-          ```
-          0:    ─╭○─────╭○─────○─╮╭●──
-          1:    ─├○─────│──────●─┤│───
-          aux0:  ╰──╭■──╰X─╭■────╯│───
-          2:    ────├■─────├■─────│───
-          aux1:     ╰■     ╰■     ╰■  .
-          ```
+          .. code-block::
+
+              0:    ─╭○─────╭○─────○─╮╭●──
+              1:    ─├○─────│──────●─┤│───
+              aux0:  ╰──╭■──╰X─╭■────╯│───
+              2:    ────├■─────├■─────│───
+              aux1:     ╰■     ╰■     ╰■  .
+
           Here, each triple box symbolizes a call to ``R`` and applies :math:`2^{c-2}` operators in
           a recursive manner, and the controlled gate on the right is a single controlled operator.
 
-        - if :math:`\ell < 2^{c-2}``, the following circuit is applied:
+        - if :math:`1<\ell < 2^{c-2}`, the following circuit is applied:
 
-          ```
-          0:    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
-          1:    ─├○─────│──────●─┤│──────│────────│─
-          aux0:  ╰──╭■──╰X─╭■────╯│      │        │
-          2:    ────├■─────├■─────├○─────│──────●─┤─
-          aux1:     ╰■     ╰■     ╰───■──╰X──■────╯
-          ```
+          .. code-block::
+
+              0:    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
+              1:    ─├○─────│──────●─┤│──────│────────│─
+              aux0:  ╰──╭■──╰X─╭■────╯│      │        │
+              2:    ────├■─────├■─────├○─────│──────●─┤─
+              aux1:     ╰■     ╰■     ╰───■──╰X──■────╯
+
           where the second half may skip more than one control and auxiliary wire each.
           In this diagram, both the triple and the single boxes represent calls to the
           routine ``R``, with single boxes applying fewer operators.
@@ -235,13 +259,13 @@ class Select(Operation):
 
         - if :math:`\ell \geq 2^{c-2}`, the following, more generic, circuit is applied:
 
-          ```
-          0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
-          1:    ─├○─────│──────│──╭●─────│──────●─┤─
-          aux0:  ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
-          2:    ────├■─────├■────────├■─────├■──────
-          aux1:     ╰■     ╰■        ╰■     ╰■      .
-          ```
+          .. code-block::
+
+              0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
+              1:    ─├○─────│──────│──╭●─────│──────●─┤─
+              aux0:  ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
+              2:    ────├■─────├■────────├■─────├■──────
+              aux1:     ╰■     ╰■        ╰■     ╰■      .
 
           Here, each triple box again symbolizes a call to ``R``. The first call in the
           second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
@@ -515,11 +539,13 @@ def _add_k_units(ops, controls, work_wires, k):
     If ``K=1``, the single operator is applied, controlled on the first control wire.
 
     In all other cases, this function applies the circuit
-    ```
-    ─╭●────╭●────●─╮─
-    ─├○────│─────●─┤─
-     ╰──■──╰X─■────╯
-    ```
+
+    .. code-block::
+
+        ─╭●────╭●────●─╮─
+        ─├○────│─────●─┤─
+         ╰──■──╰X─■────╯
+
     where each box symbolizes calls to itself on the next recursion level.
     The next-level calls to ``_add_k_units` use
 
