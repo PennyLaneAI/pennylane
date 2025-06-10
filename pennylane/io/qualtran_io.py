@@ -83,6 +83,9 @@ def _map_to_bloq():
 
     @singledispatch
     def _to_qt_bloq(op, **kwargs):
+        if (custom_map := kwargs.get("custom_mapping")) is not None:
+            return custom_map[op]
+
         return ToBloq(op, **kwargs)
 
     @_to_qt_bloq.register
@@ -583,6 +586,8 @@ def _ensure_in_reg_exists(
 
     # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
     assert in_reg in qreg_to_qvar
+
+    # Note: To capture control flow, we may have use for the Split and Join operations.
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
