@@ -32,7 +32,11 @@ from pennylane.labs.resource_estimation import (
     set_decomp,
     set_pow_decomp,
 )
-from pennylane.labs.resource_estimation.resource_operator import _make_hashable
+from pennylane.labs.resource_estimation.resource_operator import (
+    GateCount,
+    _make_hashable,
+    resource_rep,
+)
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -547,19 +551,122 @@ def test_set_pow_decomp():
 class TestGateCount:
     """Tests for the GateCount class."""
 
-    def test_init(self):
+    @pytest.mark.parametrize("n", (1, 2, 3, 5))
+    def test_init(self, n):
         """Test that we can correctly instantiate a GateCount object"""
-        assert True
+        op = DummyOp(x=5)
+        gate_counts = GateCount(op) if n == 1 else GateCount(op, n)
+
+        assert gate_counts.gate == op
+        assert gate_counts.count == n
 
     def test_equality(self):
         """Test that the equality method works as expected"""
-        assert True
+        op = DummyOp(x=5)
+        op1 = DummyOp(x=6)
 
-    def test_arithmetic(self):
+        gc1 = GateCount(op, count=5)
+        gc2 = GateCount(op, count=5)
+        gc3 = GateCount(op, count=3)
+        gc4 = GateCount(op1, count=5)
+
+        assert gc1 == gc1
+        assert gc1 == gc2
+        assert gc1 != gc3
+        assert gc1 != gc4
+
+    def test_add_method(self):
         """Test that the arimethic methods work as expected"""
-        assert True
+        op = DummyOp(x=5)
+        op1 = DummyOp(x=6)
+
+        gc = GateCount(op, count=3)
+        gc1 = GateCount(op, count=2)
+        assert gc + gc1 == GateCount(op, count=5)
+
+        with pytest.raises(NotImplementedError):
+            gc2 = GateCount(op1, count=2)
+            _ = gc + gc2
+
+    def test_mul_method(self):
+        """Test that the arimethic methods work as expected"""
+        op = DummyOp(x=5)
+        gc = GateCount(op, count=3)
+
+        assert gc * 5 == GateCount(op, count=15)
+
+        with pytest.raises(NotImplementedError):
+            _ = gc * 0.5
 
 
 def test_resource_rep():
     """Test that the resource_rep method works as expected"""
-    assert True
+
+    class ResourceOpA(ResourceOperator):
+        """Test resource op class"""
+
+        resource_keys = {"num_wires", "continuous_param", "bool_param"}
+
+        @property
+        def resource_params(self):
+            """resource params method"""
+            return {
+                "num_wires": self.num_wires,
+                "continuous_param": self.continuous_param,
+                "bool_param": self.bool_param,
+            }
+
+        @classmethod
+        def resource_rep(cls, num_wires, continuous_param, bool_param):
+            """resource rep method"""
+            params = {
+                "num_wires": num_wires,
+                "continuous_param": continuous_param,
+                "bool_param": bool_param,
+            }
+            return CompressedResourceOp(cls, params)
+
+        @classmethod
+        def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
+            raise NotImplementedError
+
+    class ResourceOpB(ResourceOperator):
+        """Test resource op class"""
+
+        resource_keys = {}
+
+        @property
+        def resource_params(self):
+            """resource params method"""
+            return {}
+
+        @classmethod
+        def resource_rep(cls):
+            """resource rep method"""
+            return CompressedResourceOp(cls, {})
+
+        @classmethod
+        def default_resource_decomp(cls, **kwargs):
+            raise NotImplementedError
+
+    expected_resource_rep_A = CompressedResourceOp(
+        ResourceOpA,
+        {
+            "num_wires": 1,
+            "continuous_param": 2.34,
+            "bool_param": False,
+        },
+    )
+    actual_resource_rep_A = resource_rep(
+        ResourceOpA,
+        {
+            "num_wires": 1,
+            "continuous_param": 2.34,
+            "bool_param": False,
+        },
+    )
+    assert expected_resource_rep_A == actual_resource_rep_A
+
+    expected_resource_rep_B = CompressedResourceOp(ResourceOpB, {})
+    actual_resource_rep_B = resource_rep(ResourceOpB)
+    assert expected_resource_rep_B == actual_resource_rep_B

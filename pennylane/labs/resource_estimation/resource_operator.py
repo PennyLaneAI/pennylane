@@ -17,7 +17,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from inspect import signature
-from typing import Callable, Dict, Hashable, List, Optional, Type
+from typing import Callable, Dict, Hashable, List, Optional, Type, Union
 
 import numpy as np
 
@@ -676,7 +676,7 @@ class GateCount:
 
 def resource_rep(
     resource_op: Type[ResourceOperator],
-    resource_params: Dict,
+    resource_params: Union[Dict, None] = None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
