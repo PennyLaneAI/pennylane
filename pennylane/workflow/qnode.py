@@ -31,6 +31,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionErr
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 from pennylane.typing import Result, TensorLike
@@ -853,7 +854,7 @@ class QNode:
         from pennylane.debugging import pldb_device_manager
 
         with pldb_device_manager(self.device):
-            with qml.queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
         tape = QuantumScript.from_queue(q, shots)
