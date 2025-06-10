@@ -25,16 +25,6 @@ from pennylane.queuing import QueuingManager, apply
 import pennylane.compiler
 from pennylane.compiler import qjit
 import pennylane.capture
-import pennylane.decomposition
-from pennylane.decomposition import (
-    register_resources,
-    add_decomps,
-    list_decomps,
-    has_decomp,
-    resource_rep,
-    controlled_resource_rep,
-    adjoint_resource_rep,
-)
 import pennylane.control_flow
 from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels

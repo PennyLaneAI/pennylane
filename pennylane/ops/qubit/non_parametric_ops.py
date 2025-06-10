@@ -221,31 +221,6 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-def _hadamard_rz_rx_resources():
-    return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_rz_rx_resources)
-def _hadamard_to_rz_rx(wires: WiresLike, **__):
-    qml.RZ(np.pi / 2, wires=wires)
-    qml.RX(np.pi / 2, wires=wires)
-    qml.RZ(np.pi / 2, wires=wires)
-    qml.GlobalPhase(-np.pi / 2, wires=wires)
-
-
-def _hadamard_rz_ry_resources():
-    return {qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_rz_ry_resources)
-def _hadamard_to_rz_ry(wires: WiresLike, **__):
-    qml.RZ(np.pi, wires=wires)
-    qml.RY(np.pi / 2, wires=wires)
-    qml.GlobalPhase(-np.pi / 2)
-
-
-add_decomps(Hadamard, [_hadamard_to_rz_rx, _hadamard_to_rz_ry])
-
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -361,8 +336,6 @@ class PauliX(Observable, Operation):
     resource_keys = set()
 
     batch_size = None
-
-    resource_param_keys = ()
 
     _queue_category = "_ops"
 
