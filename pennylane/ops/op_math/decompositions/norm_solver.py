@@ -26,10 +26,8 @@ def _gcd(a, b):
     return math.gcd(a, b)
 
 
-_gcd.register(ZSqrtTwo)
-_gcd.register(ZOmega)
-
-
+@_gcd.register(ZSqrtTwo)
+@_gcd.register(ZOmega)
 def _(a, b):
     while b != 0:
         a, b = b, b % a
