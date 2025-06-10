@@ -20,7 +20,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 
 from collections import defaultdict
 from functools import cached_property, singledispatch
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -646,7 +646,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-class ToBloq(Bloq):
+class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
     r"""
     An adapter for using a PennyLane :class:`~.Operation` as a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
@@ -718,15 +718,20 @@ class ToBloq(Bloq):
             signature = self.signature
             in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
 
+            in_key = list(in_quregs.keys())[0]
+            out_key = list(out_quregs.keys())[0]
+
             in_quregs = {
-                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
-                for k, v in in_quregs.items()
+                in_key: np.apply_along_axis(
+                    _QReg, -1, in_quregs[in_key], signature.get_left(in_key).dtype
+                )
+            }
+            out_quregs = {
+                out_key: np.apply_along_axis(
+                    _QReg, -1, out_quregs[out_key], signature.get_right(out_key).dtype
+                )
             }
 
-            out_quregs = {
-                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
-                for k, v in out_quregs.items()
-            }
             bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
             # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
