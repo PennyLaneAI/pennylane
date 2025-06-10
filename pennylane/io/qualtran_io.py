@@ -617,8 +617,19 @@ def _ensure_in_reg_exists(
     in_reg: "_QReg",
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
 ) -> None:
-    """Modified function from the Qualtran-Cirq interop module that takes care of qubit allocations,
-    split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    """Modified function from the Qualtran-Cirq interop module to ensure `qreg_to_qvar[in_reg]`
+    exists. If in_reg is not found in qreg_to_qvar, raises an AssertionError. In the future, when
+    PennyLane supports allocations and freeing, we will no longer raise an AssertionError, instead
+    we will handle the allocations and freeing accordingly.
+
+    Args:
+        bb (qt.BloqBuilder): an instance of a Qualtran BloqBuilder
+        in_reg (_QReg): a container for qubits that form a Register of a given bitsize
+        qreg_to_qvar (Dict[_QReg, qt.Soquet]): a dictionary of _QRegs that corresponds to Soquets
+
+    Raises:
+        AssertionError: in_reg was not found in qreg_to_qvar
+    """
 
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
@@ -635,7 +646,16 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
-    """Modified function from Qualtran-Cirq interop module that collects input Soquets."""
+    """Modified function from Qualtran-Cirq interop module that collects input Soquets.
+
+    Args:
+        bb (qt.BloqBuilder): an instance of a Qualtran BloqBuilder
+        op_quregs (Dict[str, _QRegs]): a dict of register names that corresponds to _QRegs
+        qreg_to_qvar (Dict[str, qt.Soquet]): a dict of register names that corresponds to input Soquets
+
+    Returns:
+        dict: in_reg was not found in qreg_to_qvar
+    """
     qvars_in = {}
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[qt.Soquet] = []
@@ -763,7 +783,6 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                 }
 
                 in_op_quregs = {reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()}
-
                 # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
                 # input `in_quregs` and updating the `qreg_to_qvar` mapping.
                 qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
