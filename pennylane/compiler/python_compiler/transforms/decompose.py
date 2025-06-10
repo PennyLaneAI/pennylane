@@ -22,7 +22,7 @@ from typing import Callable, Dict, Iterable, Optional, Union
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
-from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType
+from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType, BoolAttr
 from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
@@ -54,13 +54,15 @@ def resolve_gate(name: str) -> Operator:
         raise ValueError(f"Unsupported gate: {name}") from exc
 
 
-def qml_to_xdsl_param(param: Union[int, float]) -> Union[IntegerAttr, FloatAttr]:
+def qml_to_xdsl_param(param: Union[int, float, bool]) -> Union[IntegerAttr, FloatAttr, BoolAttr]:
     """Convert a PennyLane parameter (int or float) into an xDSL constant-attr."""
     val = param.item() if hasattr(param, "item") else param
     if isinstance(val, int):
         return IntegerAttr(val, IntegerType(64))
     if isinstance(val, float):
         return FloatAttr(val, Float64Type())
+    if isinstance(val, bool):
+        return BoolAttr(val, IntegerType(1))
     raise TypeError(f"Unsupported parameter type: {type(val)}")
 
 
@@ -142,17 +144,21 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             self.params_to_ssa_params[val] = param
         return val.value.data
 
-    def ssa_to_qml_params(self, op: CustomOp) -> list[float | int]:
+    def ssa_to_qml_params(self, op: CustomOp, control: bool = False) -> list[float | int]:
         """Get the parameters from the operation."""
-        if not hasattr(op, "params"):
+        attr = "in_ctrl_values" if control else "params"
+        values = getattr(op, attr, None)
+        if not values:
             return []
-        return [self.resolve_constant_params(p) for p in op.params if p is not None]
+        return [self.resolve_constant_params(p) for p in values if p is not None]
 
-    def ssa_to_qml_wires(self, op: CustomOp) -> list[int]:
+    def ssa_to_qml_wires(self, op: CustomOp, control: bool = False) -> list[int]:
         """Get the wires from the operation."""
-        if not hasattr(op, "in_qubits"):
+        attr = "in_ctrl_qubits" if control else "in_qubits"
+        qubits = getattr(op, attr, None)
+        if not qubits:
             return []
-        return [self.resolve_constant_wire(q) for q in op.in_qubits if q is not None]
+        return [self.resolve_constant_wire(q) for q in qubits if q is not None]
 
     def resolve_constant_wire(self, in_qubit: SSAValue) -> int:
         """Resolve the wire for the given SSA qubit."""
@@ -178,6 +184,10 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         gate = resolve_gate(gate_name)(*parameters, wires=wires)
         if op.properties.get("adjoint") is not None:
             gate = qml.adjoint(gate)
+        if len(op.in_ctrl_qubits) != 0:
+            in_ctrl_qubits = self.ssa_to_qml_wires(op, control=True)
+            in_ctrl_values = self.ssa_to_qml_params(op, control=True)
+            gate = qml.ctrl(gate, control=in_ctrl_qubits, control_values=in_ctrl_values)
         return gate
 
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
@@ -216,6 +226,10 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             qml_op = self.xdsl_to_qml_op(xdsl_op)
             qml_decomp_ops = self.decompose_operation(qml_op)
 
+            print(f"xdsl_op: {xdsl_op}")
+            print(f"qml_op: {qml_op}")
+            print(f"qml_decomp_ops: {qml_decomp_ops}")
+
             for qml_decomp_op in qml_decomp_ops:
                 if is_adjoint := isinstance(qml_decomp_op, qml.ops.op_math.Adjoint):
                     qml_decomp_op = qml_decomp_op.base
@@ -240,11 +254,36 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     qubit_ssa = self.wire_to_ssa_qubits[wire]
                     wires_xdsl.append(qubit_ssa)
 
+                control_wires_xdsl: list[SSAValue] = []
+                control_values_xdsl: list[SSAValue] = []
+                # TODO: The IR does not seem to be consistent with the
+                # representation of controlled gates.
+                if isinstance(qml_decomp_op, qml.ops.op_math.Controlled) and not isinstance(
+                    qml_decomp_op, qml.CNOT
+                ):
+                    for wire in qml_decomp_op.control_wires:
+                        qubit_ssa = self.wire_to_ssa_qubits[wire]
+                        control_wires_xdsl.append(qubit_ssa)
+
+                    # TODO: this repetition could be avoided
+                    for value in qml_decomp_op.control_values:
+                        xdsl_param = qml_to_xdsl_param(value)
+                        if xdsl_param in self.params_to_ssa_params:
+                            const_ssa = self.params_to_ssa_params[xdsl_param]
+                        else:
+                            const_op = ConstantOp(value=xdsl_param)
+                            rewriter.insert_op(const_op, InsertPoint.before(xdsl_op))
+                            const_ssa = const_op.result
+                            self.params_to_ssa_params[xdsl_param] = const_ssa
+                        control_values_xdsl.append(const_ssa)
+
                 custom_op = CustomOp(
                     params=params_xdsl,
                     in_qubits=wires_xdsl,
                     gate_name=qml_decomp_op.name,
                     adjoint=is_adjoint,
+                    in_ctrl_qubits=control_wires_xdsl,
+                    in_ctrl_values=control_values_xdsl,
                 )
 
                 for idx, wire in enumerate(qml_decomp_op.wires):
