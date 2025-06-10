@@ -38,17 +38,6 @@ def dummyfunc():
     return None
 
 
-def test_additional_kwargs_is_deprecated():
-    """Test that passing gradient_kwargs as additional kwargs raises a deprecation warning."""
-    dev = qml.device("default.qubit", wires=1)
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
-    ):
-        QNode(dummyfunc, dev, atol=1)
-
-
 # pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
@@ -1325,12 +1314,16 @@ class TestShots:
         def ansatz0():
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-            qml.QNode(ansatz0, dev, gradient_kwargs={"shots": 100})
+        with pytest.raises(
+            ValueError, match="'shots' is no longer a valid keyword argument to QNode"
+        ):
+            qml.QNode(ansatz0, dev, shots=100)
 
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+        with pytest.raises(
+            ValueError, match="'shots' is no longer a valid keyword argument to QNode"
+        ):
 
-            @qml.qnode(dev, gradient_kwargs={"shots": 100})
+            @qml.qnode(dev, shots=100)
             def _():
                 return qml.expval(qml.X(0))
 
