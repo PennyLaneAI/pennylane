@@ -647,7 +647,35 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
 
 
 class ToBloq(Bloq):
-    r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
+    r"""
+    An adapter for using a PennyLane :class:`~.Operation` as a
+    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the main
+        branch via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+
+    Raises:
+        TypeError: operator must be an instance of :class:`~.Operation`.
+
+    **Example**
+
+    This example shows how to use ``qml.ToBloq``:
+
+    >>> wrapped_op = qml.ToBloq(qml.CNOT([0, 1]))
+    >>> wrapped_op.tensor_contract()
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+    [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+    [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+    [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+    """
 
     _error_message = (
         "Optional dependency 'qualtran' is required "
