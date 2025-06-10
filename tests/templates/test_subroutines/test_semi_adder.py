@@ -73,7 +73,7 @@ class TestSemiAdder:
             (
                 [0, 1, 2],
                 [3, 4, 5],
-                [1, 6, 7],
+                [1],
                 "At least 2 work_wires should be provided.",
             ),
             (
