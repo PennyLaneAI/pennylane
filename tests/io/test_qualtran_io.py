@@ -577,7 +577,7 @@ class TestToBloq:
             else:
                 bloq_call_graph[qml.ToBloq(k[0])] = v
 
-        call_graph = _get_op_call_graph()(op)
+        call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
 
     @pytest.mark.parametrize(

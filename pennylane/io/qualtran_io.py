@@ -54,26 +54,21 @@ if qualtran:
     from qualtran import Bloq
 
 
-def _get_op_call_graph():
+@singledispatch
+def _get_op_call_graph(op):
     # TODO: Integrate with resource operators and the new decomposition pipelines
     """Return call graphs for given PennyLane Operator"""
+    return None
 
-    @singledispatch
-    def _op_call_graph(op):
-        return None
 
-    @_op_call_graph.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
-        return {
-            qt_gates.Hadamard(): len(op.estimation_wires),
-            _map_to_bloq(op.hyperparameters["unitary"]).controlled(): (
-                2 ** len(op.estimation_wires)
-            )
-            - 1,
-            _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
-        }
-
-    return _op_call_graph
+@_get_op_call_graph.register
+def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
+    return {
+        qt_gates.Hadamard(): len(op.estimation_wires),
+        _map_to_bloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires))
+        - 1,
+        _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
+    }
 
 
 @singledispatch
@@ -844,7 +839,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     def build_call_graph(self, ssa):
         """Build Qualtran call graph with defined call graph if available, otherwise build
         said call graph with the decomposition"""
-        call_graph = _get_op_call_graph()(self.op)
+        call_graph = _get_op_call_graph(self.op)
         if call_graph:
             return call_graph
 
