@@ -16,11 +16,16 @@ Test the core resource tracking functionality.
 """
 import pytest
 
-# from pennylane.labs.resource_estimation
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
 
 
 class TestEstimateResources:
-    """Test that core resource estimation functionality """
+    """Test that core resource estimation functionality"""
 
     def test_estimate_resources_from_qfunc(self):
         """Test that we can accurately obtain resources from qfunc"""
@@ -45,7 +50,7 @@ class TestEstimateResources:
     def test_varying_gate_sets(self):
         """Test that changing the gate_set correctly updates the resources"""
         assert True
-    
+
     def test_varying_config(self):
         """Test that changing the resource_config correctly updates the resources"""
         assert True

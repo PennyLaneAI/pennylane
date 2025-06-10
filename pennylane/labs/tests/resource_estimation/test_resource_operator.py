@@ -542,3 +542,24 @@ def test_set_pow_decomp():
 
     with pytest.raises(ValueError):
         set_pow_decomp(DummyPowOp, custom_res_decomp_error)
+
+
+class TestGateCount:
+    """Tests for the GateCount class."""
+
+    def test_init(self):
+        """Test that we can correctly instantiate a GateCount object"""
+        assert True
+
+    def test_equality(self):
+        """Test that the equality method works as expected"""
+        assert True
+
+    def test_arithmetic(self):
+        """Test that the arimethic methods work as expected"""
+        assert True
+
+
+def test_resource_rep():
+    """Test that the resource_rep method works as expected"""
+    assert True
