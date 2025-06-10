@@ -122,6 +122,44 @@ def factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
     return None
 
 
+# pylint: disable=too-many-return-statements
+def factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
+    r"""Find a prime factor of an element :math:`x` in the ring :math:`\mathbb{Z}[\omega]`,
+    where :math:`x` divides a prime integer :math:`p`.
+
+    Args:
+        x (ZSqrtTwo): The element in the ring :math:`\mathbb{Z}[\sqrt{2}]`, such that x | p.
+        p (int): The prime number for which to find the factorization.
+
+    Returns:
+        list[ZOmega]: A list of factors in the ring :math:`\mathbb{Z}[\omega]`,
+            or `None` if no factorization exists.
+    """
+    # Basic cases
+    if x % p != 0:
+        return None
+    if p == 2:
+        return ZOmega(0, 0, 1, 1)
+
+    # p = 2k or p ≡ 7 mod 8, no factorization in Z[ω]
+    if ((a := p % 8) % 2 == 0) or a == 7:
+        return None
+
+    # p = (a + bω)(a - bω) with b = sqrt(-1) mod p
+    if a in (1, 5):
+        if h := _sqrt_modulo_p(-1, p) is None:
+            return None
+        return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
+
+    # p = (a + bω)(a - bω) with b = sqrt(-2) mod p
+    if a == 3:
+        if h := _sqrt_modulo_p(-2, p) is None:
+            return None
+        return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
+
+    return None
+
+
 def _primality_test(n: int) -> bool:
     r"""Determines whether an integer is prime or not.
 
