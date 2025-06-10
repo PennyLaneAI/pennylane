@@ -289,7 +289,7 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-def _single_excit_resources():
+def _single_excitation_resource():
     return {
         qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
         qml.decomposition.adjoint_resource_rep(qml.S, {}): 2,
@@ -302,8 +302,8 @@ def _single_excit_resources():
     }
 
 
-@register_resources(_single_excit_resources)
-def _single_excit(phi, wires, **__):
+@register_resources(_single_excitation_resource)
+def _single_excitation_decomp(phi, wires, **__):
     qml.adjoint(qml.T)(wires=wires[0])
     qml.Hadamard(wires=wires[0])
     qml.S(wires=wires[0])
@@ -322,7 +322,7 @@ def _single_excit(phi, wires, **__):
     qml.T(wires=wires[1])
 
 
-add_decomps(SingleExcitation, _single_excit)
+add_decomps(SingleExcitation, _single_excitation_decomp)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 

@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity():
@@ -89,10 +90,14 @@ class TestDecomposition:
 
         assert len(queue) == len(gate_ops)  # number of gates
 
-        for idx, op in enumerate(queue):
-            assert isinstance(op, gate_ops[idx])  # gate operation
-            assert np.allclose(op.parameters[0], gate_angles[idx])  # gate parameter
-            assert list(op.wires) == gate_wires[idx]  # gate wires
+        for idx, _op in enumerate(queue):
+            assert isinstance(_op, gate_ops[idx])  # gate operation
+            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
+            assert list(_op.wires) == gate_wires[idx]  # gate wires
+
+        # Tests the decomposition rule defined with the new system
+        for rule in qml.list_decomps(qml.BasisRotation):
+            _test_decomposition_rule(op, rule, heuristic_resources=True)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""

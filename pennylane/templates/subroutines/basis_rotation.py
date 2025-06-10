@@ -99,11 +99,7 @@ class BasisRotation(Operation):
 
     grad_method = None
 
-    resource_param_keys = ("shape",)
-
-    @property
-    def resource_params(self) -> dict:
-        return {"shape": qml.math.shape(self.data[0])}
+    resource_keys = {"dim"}
 
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
@@ -136,6 +132,10 @@ class BasisRotation(Operation):
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         super().__init__(unitary_matrix, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"dim": qml.math.shape(self.data[0])[0]}
 
     @property
     def num_params(self):
@@ -198,46 +198,28 @@ class BasisRotation(Operation):
         return op_list
 
 
-def _basis_rotation_decomp_resources(shape):
-    dim_N = shape[0]
-
-    se_count = dim_N * (dim_N - 1) / 2
-    ps_count = dim_N + se_count
-
+def _basis_rotation_decomp_resources(dim):
+    se_count = dim * (dim - 1) / 2
+    ps_count = dim + se_count
     return {qml.PhaseShift: ps_count, qml.SingleExcitation: se_count}
 
 
 @register_resources(_basis_rotation_decomp_resources)
-def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, check: bool = False, **__):
+def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
-    M, N = qml.math.shape(unitary_matrix)
-    if M != N:
-        raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}")
-
-    if check:
-        if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
-            unitary_matrix @ qml.math.conj(unitary_matrix).T,
-            qml.math.eye(M, dtype=complex),
-            atol=1e-4,
-        ):
-            raise ValueError("The provided transformation matrix should be unitary.")
-
-    if len(wires) < 2:
-        raise ValueError(f"This template requires at least two wires, got {len(wires)}")
+    def _phase_shift(_phi, _wires):
+        qml.PhaseShift(_phi, wires=_wires)
 
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
     for idx, phase in enumerate(phase_list):
-        qml.PhaseShift(qml.math.angle(phase), wires=wires[idx])
+        qml.PhaseShift(math.angle(phase), wires=wires[idx])
 
     for grot_mat, indices in givens_list:
-        theta = qml.math.arccos(qml.math.real(grot_mat[1, 1]))
-        phi = qml.math.angle(grot_mat[0, 0])
-
+        theta = math.arccos(math.real(grot_mat[1, 1]))
+        phi = math.angle(grot_mat[0, 0])
         qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
-
-        if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
-            qml.PhaseShift(phi, wires=wires[indices[0]])
+        qml.cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[indices[0]])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
