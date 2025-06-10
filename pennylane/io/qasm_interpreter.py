@@ -156,12 +156,7 @@ class Context:
             "wires": outer_context.wires,
             "name": name,
             # we want subroutines declared in the global scope to be available
-            "scopes": {
-                # no recursion here please! hence the filter
-                "subroutines": {
-                    k: v for k, v in outer_context.scopes["subroutines"].items() if k != name
-                }
-            },
+            "scopes": {"subroutines": outer_context.scopes["subroutines"]},
         }
 
         return Context(context)
