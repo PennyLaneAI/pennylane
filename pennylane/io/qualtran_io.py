@@ -45,13 +45,13 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
 
+    Bloq = object
+
 if qualtran:
     import cirq
-    from attrs import field, frozen
     from qualtran._infra.gate_with_registers import split_qubits
     from qualtran.bloqs import basic_gates as qt_gates
-
-    # from qualtran.cirq_interop._cirq_to_bloq import _QReg
+    from qualtran import Bloq
 
 
 def _get_op_call_graph():
@@ -576,7 +576,7 @@ class _QReg:
     of qubits that together form a quantum register.
     """
 
-    def __init__(self, qubits: Tuple[cirq.Qid, ...], dtype: qt.QDType):
+    def __init__(self, qubits: Tuple["cirq.Qid", ...], dtype: "qt.QDType"):
         if isinstance(qubits, cirq.Qid):
             object.__setattr__(self, "qubits", (qubits,))
         else:
@@ -646,53 +646,18 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-if not qualtran:
-
-    class ToBloq:  # pylint:disable=too-few-public-methods
-        r"""
-        An adapter for using a PennyLane :class:`~.Operation` as a
-        `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
-
-        .. note::
-            This class requires the latest version of Qualtran. We recommend installing the main
-            branch via ``pip``:
-
-            .. code-block:: console
-
-                pip install qualtran
-
-        Args:
-            op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
-
-        Raises:
-            TypeError: operator must be an instance of :class:`~.Operation`.
-
-        **Example**
-
-        This example shows how to use ``qml.ToBloq``:
-
-        >>> wrapped_op = qml.ToBloq(qml.CNOT([0, 1]))
-        >>> wrapped_op.tensor_contract()
-        array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
-        """
-
-        _dependency_missing = True
-        _error_message = (
-            "Optional dependency 'qualtran' is required "
-            "for ToBloq functionality but is not installed. Try `pip install qualtran`."
-        )
-
-        def __init__(self, *args, **kwargs):
-            raise ImportError(self._error_message)
-
-
-class ToBloq(qt.Bloq):
+class ToBloq(Bloq):
     r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
 
+    _error_message = (
+        "Optional dependency 'qualtran' is required "
+        "for ToBloq functionality but is not installed. Try `pip install qualtran`."
+    )
+
     def __init__(self, op, map_ops=False, **kwargs):
+        if not qualtran:
+            raise ImportError(self._error_message)
+
         if not isinstance(op, Operator) and not isinstance(op, QNode):
             raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 

@@ -34,7 +34,7 @@ def test_to_bloq_error():
         import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
-            qml.ToBloq()
+            qml.ToBloq(qml.H(0))
 
 
 @pytest.mark.external
