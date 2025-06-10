@@ -45,6 +45,11 @@ def _(elem1, elem2):
 def _prime_factorize(n: int, max_trials=1000) -> list[int]:
     r"""Computes the prime factorization of a number :math:`n`.
 
+    This function uses a combination of the Brent's variant of Pollard's rho algorithm for integer factorization
+    and Miller-Rabin primality test to find the prime factors of :math:`n`. It handles trivial cases and uses a
+    stack-based approach to iteratively find factors until all prime factors are identified.
+
+
     Args:
         n (int): The number to factor.
         max_tries (int): The maximum number of attempts to find a factor.
