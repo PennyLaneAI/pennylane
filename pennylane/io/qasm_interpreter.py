@@ -136,7 +136,7 @@ class Context:
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
         self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
-            self, node.name.name"
+            self, node.name.name
         )
         self.scopes["subroutines"][node.name.name].update(
             {
