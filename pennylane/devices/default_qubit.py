@@ -660,15 +660,7 @@ class DefaultQubit(Device):
         if qml.capture.enabled():
             mcm_config = config.mcm_config
             mcm_updated_values = {}
-            if (mcm_method := mcm_config.mcm_method) not in (
-                "deferred",
-                "single-branch-statistics",
-                None,
-            ):
-                raise DeviceError(
-                    f"mcm_method='{mcm_method}' is not supported with default.qubit "
-                    "when program capture is enabled."
-                )
+            mcm_method = mcm_config.mcm_method
 
             if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
                 warnings.warn(
@@ -985,6 +977,17 @@ class DefaultQubit(Device):
         self, jaxpr: "jax.extend.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
+
+        execution_config = execution_config or ExecutionConfig()
+        if (mcm_method := execution_config.mcm_config.mcm_method) not in (
+            "deferred",
+            "single-branch-statistics",
+            None,
+        ):
+            raise qml.DeviceError(
+                f"mcm_method='{mcm_method}' is not supported with default.qubit "
+                "when program capture is enabled."
+            )
 
         if self.wires is None:
             raise DeviceError("Device wires are required for jaxpr execution.")

@@ -38,7 +38,9 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement, measure
 from pennylane.operation import StatePrepBase
+from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
 

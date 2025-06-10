@@ -39,7 +39,6 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from .allocation import allocate, allocate_ctx, deallocate
-import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
@@ -88,6 +87,7 @@ from pennylane.io import (
     from_quil_file,
     FromBloq,
     bloq_registers,
+    from_qasm3,
 )
 from pennylane.measurements import (
     counts,
@@ -184,6 +184,7 @@ import pennylane.spin
 
 import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -199,7 +200,7 @@ def __getattr__(name):
         warnings.warn(
             f"pennylane.{name} is no longer accessible at top-level \
                 and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.42.",
+                    Support for top-level access will be removed in v0.43.",
             pennylane.exceptions.PennyLaneDeprecationWarning,
         )
         return getattr(pennylane.exceptions, name)

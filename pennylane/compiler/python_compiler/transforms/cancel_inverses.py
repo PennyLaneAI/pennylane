@@ -21,6 +21,7 @@ from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
 from ..quantum_dialect import CustomOp
+from .utils import xdsl_transform
 
 self_inverses = [
     "Identity",
@@ -41,10 +42,11 @@ self_inverses = [
 def _can_cancel(op: CustomOp, next_op: Operation) -> bool:
     if isinstance(next_op, CustomOp):
         if op.gate_name.data == next_op.gate_name.data:
-            if op.out_qubits == next_op.in_qubits and op.out_ctrl_qubits == next_op.in_ctrl_qubits:
-                for v1, v2 in zip(op.in_ctrl_values, next_op.in_ctrl_values, strict=True):
-                    if v1.data != v2.data:
-                        return False
+            if (
+                op.out_qubits == next_op.in_qubits
+                and op.out_ctrl_qubits == next_op.in_ctrl_qubits
+                and op.in_ctrl_values == next_op.in_ctrl_values
+            ):
                 return True
 
     return False
@@ -55,11 +57,9 @@ class IterativeCancelInversesPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for iteratively cancelling consecutive self-inverse gates."""
 
-    # pylint: disable=no-self-use
+    # pylint: disable=arguments-differ,no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(
-        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ
+    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         self-inverse gates."""
         for op in funcOp.body.walk():
@@ -92,8 +92,11 @@ class IterativeCancelInversesPass(passes.ModulePass):
     name = "iterative-cancel-inverses"
 
     # pylint: disable=arguments-renamed,no-self-use
-    def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the iterative cancel inverses pass."""
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([IterativeCancelInversesPattern()])
         ).rewrite_module(module)
+
+
+iterative_cancel_inverses_pass = xdsl_transform(IterativeCancelInversesPass)
