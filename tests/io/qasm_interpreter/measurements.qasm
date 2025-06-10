@@ -10,4 +10,3 @@ def random(qubit q0) -> bit {
 
 bit c = random(q0);
 c = c + 1;
-c = !c;

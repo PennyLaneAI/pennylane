@@ -357,9 +357,9 @@ class Context:
             left = lhs.val.processing_fn(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
             if rhs is not None:
                 right = rhs.val.processing_fn(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
-                _eval_binary_op(left, operator, right, line)
+                return _eval_binary_op(left, operator, right, line)
             else:
-                _eval_unary_op(left, operator, line)
+                return _eval_unary_op(left, operator, line)
 
         if isinstance(lhs.val, MeasurementValue) and isinstance(rhs.val, MeasurementValue):
             new_measurements = lhs.val.measurements + rhs.val.measurements
@@ -382,7 +382,7 @@ class Context:
             line (int): The line number at which the operator occurs.
         """
         def new_processing_fn(*args):
-            _eval_binary_op(prev.val.processing_fn(*args), operator, value, line)
+            return _eval_binary_op(prev.val.processing_fn(*args), operator, value, line)
 
         prev.val = MeasurementValue(prev.val.measurements, new_processing_fn)
 
@@ -578,13 +578,13 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: Context):
+    def interpret(self, node: QASMNode, context: dict):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (Context): The initial context populated with the name of the program (the outermost scope).
+            context (dict): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
