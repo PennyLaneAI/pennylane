@@ -116,6 +116,11 @@ class ZSqrtTwo:
     def __neg__(self) -> ZSqrtTwo:
         return ZSqrtTwo(-self.a, -self.b)
 
+    def __mod__(self, other: ZSqrtTwo) -> ZSqrtTwo:
+        d = abs(other)
+        n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
+        return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+
     def conj(self) -> ZSqrtTwo:
         """Return the standard conjugate."""
         return ZSqrtTwo(self.a, self.b)

@@ -14,8 +14,26 @@
 """This module contains mathematical operations for solving diophantine equations."""
 
 import math
-from functools import lru_cache
+from functools import lru_cache, singledispatch
 from random import randrange
+
+from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
+
+
+@singledispatch
+def _gcd(a, b):
+    """Compute the greatest common divisor of two integers."""
+    return math.gcd(a, b)
+
+
+_gcd.register(ZSqrtTwo)
+_gcd.register(ZOmega)
+
+
+def _(a, b):
+    while b != 0:
+        a, b = b, b % a
+    return a, b
 
 
 def integer_factor(n: int, max_tries=1000) -> int | None:
@@ -52,7 +70,7 @@ def integer_factor(n: int, max_tries=1000) -> int | None:
                 for _ in range(rs):
                     x = (x * x % n + c) % n
                     q = (q * abs(y - x)) % n
-                g = math.gcd(q, n)
+                g = _gcd(q, n)
                 k += m
             r <<= 1
 
@@ -61,7 +79,7 @@ def integer_factor(n: int, max_tries=1000) -> int | None:
             g, y = 1, xs
             while g == 1:
                 y = (y * y % n + c) % n
-                g = math.gcd(abs(x - y), n)
+                g = _gcd(abs(x - y), n)
 
         # If we found a valid integer factor, such that it is neither 1 nor n.
         if g not in (1, n):
@@ -72,7 +90,39 @@ def integer_factor(n: int, max_tries=1000) -> int | None:
     return None
 
 
-def primality_test(n: int) -> bool:
+def factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
+    r"""Find the factorization of a prime number :math:`p` in ring :math:`\mathbb{Z}[\sqrt{2}]`.
+
+    This uses congruence of :math:`p \text{mod} 8` and properties of the ring
+    :math:`\mathbb{Z}[\sqrt{2}]` to determine how a prime integer can be expressed
+    as a product of elements in this ring.
+
+    Args:
+        n (int): The prime number for which to find the factorization.
+    Returns:
+        list[ZSqrtTwo]: A list of factors in the ring :math:`\mathbb{Z}[\sqrt{2}]`,
+            or `None` if no factorization exists.
+    """
+    if p == 2:
+        # 2 = (0 + 1√2)(0 - 1√2)
+        return [ZSqrtTwo(0, 1), ZSqrtTwo(0, 1)]
+
+    if (r := p % 8) in (3, 5):
+        # p = (p + 0√2) is prime in Z[√2]
+        return [ZSqrtTwo(p, 0)]
+
+    if r in (1, 7):  # p ≡ ±1 mod 8
+        # Solve t^2 ≡ 2 (mod p) to split p
+        if (t := _sqrt_modulo_p(2, p)) is None:
+            return None
+        # Perform ring GCD to get (a + b√2)(a - b√2)
+        res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
+        return [res, res.adj2()]
+
+    return None
+
+
+def _primality_test(n: int) -> bool:
     r"""Determines whether an integer is prime or not.
 
     This function implements the `Miller-Rabin primality test
@@ -150,7 +200,7 @@ def _legendre_symbol(a: int, p: int, k: int = 2) -> int:
     return pow(a, (p - 1) // k, p)
 
 
-def sqrt_modulo_p(n: int, p: int) -> int | None:
+def _sqrt_modulo_p(n: int, p: int) -> int | None:
     r"""Computes square root of :math:`n` under modulo :math:`p` if it exists.
 
     This uses `Tonelli-Shanks algorithm <https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm>`_
