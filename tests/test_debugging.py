@@ -19,7 +19,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from flaky import flaky
 from scipy.stats import ttest_ind
 
 import pennylane as qml
