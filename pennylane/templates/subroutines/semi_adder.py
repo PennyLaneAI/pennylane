@@ -43,7 +43,7 @@ class SemiAdder(Operation):
     r"""Performs the semi-out-place addition operation.
     More specifically, the operation is an in-place quantum-quantum addition.
 
-    This operator performs the addition of two integers :math:`x` and :math:`y` in the computational basis:
+    This operator performs the plain addition of two integers :math:`x` and :math:`y` in the computational basis:
 
     .. math::
 
@@ -87,7 +87,7 @@ class SemiAdder(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input three different sets of wires.
+        This template takes three different sets of wires as input:
 
         The first one is ``x_wires`` which is used
         to encode the integer :math:`x` in the computational basis. Therefore, ``x_wires`` must contain
@@ -98,7 +98,7 @@ class SemiAdder(Operation):
         at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. ``y_wires`` is also used
         to encode the integer :math:`x+y` in the computational basis.
 
-        The fourth set of wires is ``work_wires`` which consist of :math:`m-1` auxiliary qubits used to perform the addition operation,
+        The fourth set of wires is ``work_wires`` which consists of :math:`m-1` auxiliary qubits used to perform the addition operation,
         where :math:`m` is the number of ``y_wires``.
     """
 
@@ -118,7 +118,7 @@ class SemiAdder(Operation):
         y_wires = qml.wires.Wires(y_wires)
         work_wires = qml.wires.Wires(work_wires)
 
-        if len(work_wires) != len(y_wires) - 1:
+        if len(work_wires) < len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
         if not set(work_wires).isdisjoint(x_wires):
             raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -183,7 +183,7 @@ class SemiAdder(Operation):
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) . 1`` work
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
                 wires should be provided.
 
         Returns:
