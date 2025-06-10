@@ -548,7 +548,7 @@ def clifford_t_decomposition(
     # DEBUG
     print("----------------------------")
     print("Memory size in MB: ")
-    print(f"new_tape : {sys.getsizeof(new_tape) / 1048576} MB")
+    print(f"new_tape : {sys.getsizeof(new_tape.operations) / 1048576} MB")
     print(f"decomp_ops: {sys.getsizeof(decomp_ops) / 1048576} MB")
     print("----------------------------")
 
