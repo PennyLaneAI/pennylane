@@ -337,7 +337,30 @@ class Context:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def process_measurement(self, value: any, prev: Variable, operator: str, line: int):
+    def process_two_measurements(self, lhs: Variable, rhs: Variable, operator: str, line: int):
+        """
+
+        """
+
+    def process_measurement(self, lhs: Variable, rhs: Variable, operator: str, line: int):
+        """
+        Updates a MeasurementValue's processing function to reflect classical logic applied to
+        the MeasurementValue.
+
+        Args:
+            lhs (Variable): The first operand of the operation involving the MeasurementValue(s).
+            rhs (Variable): The second operand of the operation involving the MeasurementValue(s).
+            operator (str): The operator to apply to the MeasurementValue.
+            line (int): The line number at which the operator occurs.
+        """
+        def new_processing_fn(*args):
+            left = lhs.val.processing_fn(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
+            right = rhs.val.processing_fn(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
+            _eval_binary_op(left, operator, right, line)
+
+        return MeasurementValue(lhs.val.measurements + rhs.val.measurements, new_processing_fn)
+
+    def update_measurement(self, value: any, prev: Variable, operator: str, line: int):
         """
         Updates a MeasurementValue's processing function to reflect classical logic applied to
         the MeasurementValue.
@@ -996,7 +1019,7 @@ class QasmInterpreter:
         res = self.visit(node.rvalue, context)
         prev = context.retrieve_variable(name)
         if isinstance(prev.val, MeasurementValue):
-            context.process_measurement(res, prev, node.op.name, node.span.start_line)
+            context.update_measurement(res, prev, node.op.name, node.span.start_line)
         else:
             context.update_var(res, name, node.op.name, node.span.start_line)
 
@@ -1280,15 +1303,11 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        if isinstance(lhs, Variable) and isinstance(rhs, Variable) and isinstance(lhs.val, MeasurementValue) \
-            and isinstance(rhs.val, MeasurementValue):
-            context.process_two_measurements(lhs, rhs, node.op.name, node.span.start_line)
-        elif isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue):
-            context.process_measurement(rhs, lhs, node.op.name, node.span.start_line)
-        elif isinstance(rhs, Variable) and isinstance(rhs.val, MeasurementValue):
-            context.process_measurement_on_right(lhs, rhs, node.op.name, node.span.start_line)
+        if (isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue)) or (isinstance(rhs, Variable) \
+            and isinstance(rhs.val, MeasurementValue)):
+            return context.process_measurement(lhs, rhs, node.op.name, node.span.start_line)
         else:
-            _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
+            return _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
@@ -1303,7 +1322,7 @@ class QasmInterpreter:
             The result of the evaluated expression.
         """
         operand = preprocess_operands(self.visit(node.expression, context))
-        _eval_unary_op(operand, node.op.name, node.span.start_line)
+        return _eval_unary_op(operand, node.op.name, node.span.start_line)
 
     @visit.register(IndexExpression)
     def visit_index_expression(
