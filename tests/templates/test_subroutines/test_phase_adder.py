@@ -258,12 +258,12 @@ class TestPhaseAdder:
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
-    def test_decomposition_new(self):
+    @pytest.mark.parametrize("mod", [7, 8])
+    def test_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""
 
         k = 4
         x_wires = [1, 2, 3]
-        mod = 7
         work_wire = [0]
         op = qml.PhaseAdder(k, x_wires, mod, work_wire)
         for rule in qml.list_decomps(qml.PhaseAdder):
