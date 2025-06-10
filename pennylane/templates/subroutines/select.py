@@ -133,9 +133,9 @@ class Select(Operation):
         Here, we used the symbols
 
         ```
-        ─╭●──   and  ─●─╮─
-        ─├●──        ─●─┤─
-         ╰───        ───╯
+        0: ─╭●──   and  ─●─╮─
+        1: ─├●──        ─●─┤─
+        2:  ╰───        ───╯
         ```
 
         for :class:`~.TemporaryAND` and its adjoint, respectively, and skipped drawing the
@@ -213,7 +213,7 @@ class Select(Operation):
           1:    ─├○─────│──────●─┤│───
           aux0:  ╰──╭■──╰X─╭■────╯│───
           2:    ────├■─────├■─────│───
-                    ╰■     ╰■     ╰■  .
+          aux1:     ╰■     ╰■     ╰■  .
           ```
           Here, each triple box symbolizes a call to ``R`` and applies :math:`2^{c-2}` operators in
           a recursive manner, and the controlled gate on the right is a single controlled operator.
@@ -225,7 +225,7 @@ class Select(Operation):
           1:    ─├○─────│──────●─┤│──────│────────│─
           aux0:  ╰──╭■──╰X─╭■────╯│      │        │
           2:    ────├■─────├■─────├○─────│──────●─┤─
-                    ╰■     ╰■     ╰───■──╰X──■────╯
+          aux1:     ╰■     ╰■     ╰───■──╰X──■────╯
           ```
           where the second half may skip more than one control and auxiliary wire each.
           In this diagram, both the triple and the single boxes represent calls to the
@@ -240,7 +240,7 @@ class Select(Operation):
           1:    ─├○─────│──────│──╭●─────│──────●─┤─
           aux0:  ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
           2:    ────├■─────├■────────├■─────├■──────
-                    ╰■     ╰■        ╰■     ╰■      .
+          aux1:     ╰■     ╰■        ╰■     ╰■      .
           ```
 
           Here, each triple box again symbolizes a call to ``R``. The first call in the
