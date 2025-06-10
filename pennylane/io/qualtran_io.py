@@ -80,11 +80,11 @@ def _map_to_bloq():
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
 
     @singledispatch
-    def _to_qt_bloq(op, **kwargs):
-        if (custom_map := kwargs.get("custom_mapping")) is not None:
-            return custom_map[op]
+    def _to_qt_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
+        if custom_mapping is not None:
+            return custom_mapping[op]
 
-        return ToBloq(op, **kwargs)
+        return ToBloq(op, map_ops=map_ops, **kwargs)
 
     @_to_qt_bloq.register
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
