@@ -222,6 +222,7 @@ class Hadamard(Observable, Operation):
 
 
 H = Hadamard
+H.__doc__ = Hadamard.__doc__
 r"""H(wires)
 The Hadamard operator
 
@@ -492,6 +493,7 @@ class PauliX(Observable, Operation):
 
 
 X = PauliX
+X.__doc__ = PauliX.__doc__
 r"""The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
@@ -774,6 +776,7 @@ class PauliY(Observable, Operation):
 
 
 Y = PauliY
+Y.__doc__ = PauliY.__doc__
 r"""The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
@@ -1039,6 +1042,7 @@ class PauliZ(Observable, Operation):
 
 
 Z = PauliZ
+Z.__doc__ = PauliZ.__doc__
 r"""The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.

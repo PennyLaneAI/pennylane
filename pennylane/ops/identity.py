@@ -221,6 +221,7 @@ class Identity(CVObservable, Operation):
 
 
 I = Identity
+I.__doc__ = Identity.__doc__
 r"""The Identity operator
 
 The expectation of this observable
