@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 
 if qualtran:
     from qualtran.bloqs import basic_gates as qt_gates
+    from qualtran._infra.gate_with_registers import split_qubits
 
 
 @lru_cache
@@ -79,7 +80,7 @@ def _get_op_call_graph():
 @lru_cache
 def _map_to_bloq():
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
-    mapped to their Qualtran equivalent even if ``map_ops`` is set to True. Other operators are
+    mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
 
     @singledispatch
@@ -565,21 +566,6 @@ class FromBloq(Operation):
 
         return matrix
 
-
-def _split_qubits(registers, qubits):  # pylint: disable=redefined-outer-name
-    """Function from the Qualtran-Cirq interop module that splits the flat list of qubits into
-    a dictionary of appropriately shaped qubit arrays."""
-
-    qubit_regs = {}
-    base = 0
-    for reg in registers:
-        qubit_regs[reg.name] = np.array(qubits[base : base + reg.total_bits()]).reshape(
-            reg.shape + (reg.bitsize,)
-        )
-        base += reg.total_bits()
-    return qubit_regs
-
-
 def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
@@ -693,7 +679,7 @@ def _inherit_from_bloq(cls):  # pylint: disable=too-many-statements
                         all_op_quregs = {
                             k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
                             for i, (k, v) in enumerate(
-                                _split_qubits(bloq.signature, op.wires).items()
+                                split_qubits(bloq.signature, op.wires).items()
                             )
                         }
 
