@@ -23,18 +23,6 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 
-
-Resource Estimation Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~set_decomp
-    ~set_adj_decomp
-    ~set_ctrl_decomp
-    ~set_pow_decomp
-
 Resource Estimation Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -44,6 +32,7 @@ Resource Estimation Base Classes:
     ~Resources
     ~ResourceOperator
     ~CompressedResourceOp
+    ~GateCount
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,10 +40,22 @@ Resource Estimation Functions:
 .. autosummary::
     :toctree: api
 
+    ~estimate_resources
+    ~resource_rep
     ~set_decomp
     ~set_adj_decomp
     ~set_ctrl_decomp
     ~set_pow_decomp
+
+Resource Estimation Constants:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~resource_config
+    ~DefaultGateSet
+    ~StandardGateSet
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
