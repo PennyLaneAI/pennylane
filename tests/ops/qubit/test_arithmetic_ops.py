@@ -441,6 +441,21 @@ class TestIntegerComparator:
         for rule in qml.list_decomps(qml.IntegerComparator):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_graph_integration(self):
+        """Tests that the decomposition is correct under the new system."""
+
+        tape = qml.tape.QuantumScript([qml.IntegerComparator(42, wires=[0, 1, 2, 3, 4, 5, 6])])
+        [decomp], _ = qml.transforms.decompose(
+            tape,
+            gate_set={qml.X, qml.CNOT, qml.Hadamard, qml.T, "Adjoint(T)", qml.RX, qml.RY, qml.RZ},
+        )
+
+        mat = qml.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6])
+        expected_mat = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6])
+        assert qml.math.allclose(mat, expected_mat)
+
     def test_decomposition_extraneous_value(self):
         """Test operator's ``compute_decomposition()`` method when ``value`` is such that
         decomposition is the identity matrix."""
