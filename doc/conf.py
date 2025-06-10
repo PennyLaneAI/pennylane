@@ -111,7 +111,7 @@ author = "Xanadu Inc."
 add_module_names = False
 autodoc_type_aliases = {
     'H': 'pennylane.ops.qubit.non_parametric_ops.H',
-    'I': 'pennylane.ops.qubit.non_parametric_ops.I',
+    'I': 'pennylane.ops.identity.I',
     'X': 'pennylane.ops.qubit.non_parametric_ops.X',
     'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
     'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
