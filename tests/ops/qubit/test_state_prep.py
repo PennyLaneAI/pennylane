@@ -50,7 +50,7 @@ def test_assert_valid():
             gate_counts = resources.gate_counts
 
             with qml.queuing.AnnotatedQueue() as q:
-                rule.impl(*op.data, wires=op.wires, **op.hyperparameters)
+                rule(*op.data, wires=op.wires, **op.hyperparameters)
             tape = qml.tape.QuantumScript.from_queue(q)
             actual_gate_counts = defaultdict(int)
             for _op in tape.operations:
@@ -63,6 +63,7 @@ def test_assert_valid():
             decomp_matrix = qml.matrix(tape, wire_order=op.wires)
             op_matrices.append(op_matrix)
             decomp_matrices.append(decomp_matrix)
+
         return op_matrices, decomp_matrices
 
     # pylint: disable=import-outside-toplevel
@@ -168,7 +169,7 @@ class TestDecomposition:
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, normalize=True, wires=wires)
+            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=True)
             return qml.state()
 
         assert np.allclose(circuit(), state / 2)
@@ -275,7 +276,7 @@ class TestStateVector:
         """Tests that the state-vector provided must have norm equal to 1."""
 
         with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
-            _ = qml.StatePrep(vec, wires=[0, 1])
+            _ = qml.StatePrep(vec, wires=[0, 1], validate_norm=True)
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
@@ -458,6 +459,7 @@ class TestSparseStateVector:
         """Test that the sparse_state_vector() method returns a csr_matrix."""
         sp_vec = sp.sparse.coo_matrix([0, 0, 1, 0])
         qsv_op = qml.StatePrep(sp_vec, wires=[0, 1])
+        assert qsv_op.batch_size is None
         ket = qsv_op.state_vector()
         assert sp.sparse.issparse(ket), "Output is not sparse type"
 
@@ -478,6 +480,7 @@ class TestSparseStateVector:
         """Tests that StatePrep sparse_state_vector returns kets as expected."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         qsv_op = qml.StatePrep(init_state, wires=[1, 2])
+        assert qsv_op.batch_size is None
         ket = qsv_op.state_vector(wire_order=wire_order)
         # Convert one position from binary to integer
         one_position = int("".join([str(i) for i in one_position]), 2)
@@ -486,19 +489,30 @@ class TestSparseStateVector:
         ket[0, one_position] = 0
         assert ket.count_nonzero() == 0
 
+    def test_sparse_vector(self):
+        """Test that state prep operations can be created with a 1D sparse array."""
+
+        state = sp.sparse.csr_array([1, 0, 0, 0])
+        op = qml.StatePrep(state, wires=(0, 1))
+        assert op.batch_size is None
+        expected = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+        assert qml.math.allclose(op.state_vector([0, 1, 2]).todense(), expected)
+
     def test_preprocess_nonzero_padding_unsupported(self):
         """Test that sparse_state_vector does not support padding with nonzero values."""
         init_state = sp.sparse.csr_matrix([0, 0, 1, 0])
         with pytest.raises(ValueError, match="Non-zero Padding is not supported"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=1, normalize=False, validate_norm=False
             )
 
     def test_preprocess_one_dimensional_tensor(self):
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([[0, 0], [1, 0]])
-        with pytest.raises(ValueError, match="State must be a one-dimensional tensor"):
-            qml.StatePrep._preprocess_csr(
+        with pytest.raises(
+            NotImplementedError, match="does not yet support parameter broadcasting"
+        ):
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -506,7 +520,7 @@ class TestSparseStateVector:
         """Test that the state tensor is one-dimensional."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0, 1])
         with pytest.raises(ValueError, match="State must be of length"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=False
             )
 
@@ -523,7 +537,7 @@ class TestSparseStateVector:
         """Test that the state tensor is normalized to one if normalize is False."""
         init_state = sp.sparse.csr_matrix([0, 0, 2, 0])
         with pytest.raises(ValueError, match="The state must be a vector of norm 1.0; got norm"):
-            qml.StatePrep._preprocess_csr(
+            qml.StatePrep(
                 init_state, wires=[1, 2], pad_with=None, normalize=False, validate_norm=True
             )
 

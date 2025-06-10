@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the mid_measure module"""
+"""Unit tests for parametric mid-circuit measurements"""
 
 from functools import partial
 
@@ -20,10 +20,12 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ftqc import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
     YMidMeasureMP,
+    cond_measure,
     diagonalize_mcms,
     measure_arbitrary_basis,
     measure_x,
@@ -31,8 +33,6 @@ from pennylane.ftqc import (
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods, too-many-public-methods
 
 
 class TestParametricMidMeasure:
@@ -459,7 +459,21 @@ class TestMeasureFunctions:
         """Test that a QuanutmFunctionError is raised if too many wires are passed"""
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
+            func([0, 1])
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
+    )
+    def test_error_is_raised_if_too_many_wires_capture(self, func):
+        """Test that a QuanutmFunctionError is raised if too many wires are passed when using capture"""
+
+        with pytest.raises(
+            QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             func([0, 1])
@@ -480,6 +494,100 @@ class TestMeasureFunctions:
         assert mp.reset == reset
         assert mp.postselect == postselect
         assert isinstance(mp, MidMeasureMP)
+
+    # pylint: disable=too-many-positional-arguments, too-many-arguments
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, 1.5707, "XY")]
+    )
+    @pytest.mark.parametrize(
+        "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
+    )
+    def test_x_and_y_with_program_capture(self, meas_func, angle, plane, wire, reset, postselect):
+        """Test that the measure_ functions are captured as expected"""
+        import jax
+
+        def circ():
+            m = meas_func(wire, reset=reset, postselect=postselect)
+            qml.cond(m, qml.X, qml.Y)(0)
+            return qml.expval(qml.Z(2))
+
+        plxpr = jax.make_jaxpr(circ)()
+        captured_measurement = str(plxpr.eqns[0])
+
+        # measurement is captured as epxected
+        assert "measure_in_basis" in captured_measurement
+        assert f"plane={plane}" in captured_measurement
+        assert f"postselect={postselect}" in captured_measurement
+        assert f"reset={reset}" in captured_measurement
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
+
+        # measurement value is assigned and passed forward
+        conditional = str(plxpr.eqns[1])
+        assert "cond" in conditional
+        assert captured_measurement[:8] == "a:bool[]"
+        assert "lambda ; a:i64[]" in conditional
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
+    @pytest.mark.parametrize(
+        "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
+    )
+    def test_arbitrary_basis_with_program_capture(self, angle, plane, wire, reset, postselect):
+        """Test that the measure_ functions are captured as expected"""
+        import jax
+        import networkx as nx
+
+        def circ():
+            m = measure_arbitrary_basis(
+                wire, angle=angle, plane=plane, reset=reset, postselect=postselect
+            )
+            qml.cond(m, qml.X, qml.Y)(0)
+            qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
+            return qml.expval(qml.Z(2))
+
+        plxpr = jax.make_jaxpr(circ)()
+        captured_measurement = str(plxpr.eqns[0])
+
+        # measurement is captured as epxected
+        assert "measure_in_basis" in captured_measurement
+        assert f"plane={plane}" in captured_measurement
+        assert f"postselect={postselect}" in captured_measurement
+        assert f"reset={reset}" in captured_measurement
+
+        # last section is parameters
+        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
+        assert str(angle) in dynamic_params
+        assert str(wire) in dynamic_params
+
+        # measurement value is assigned and passed forward
+        conditional = str(plxpr.eqns[1])
+        assert "cond" in conditional
+        assert captured_measurement[:8] == "a:bool[]"
+        assert "lambda ; a:i64[]" in conditional
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "func, kwargs",
+        [
+            (measure_x, {"wires": 2}),
+            (measure_y, {"wires": 2}),
+            (measure_arbitrary_basis, {"wires": 2, "angle": 1.2, "plane": "XY"}),
+        ],
+    )
+    def test_calling_functions_with_capture_enabled(self, func, kwargs):
+        """Test that the functions can still be called and return a measurement value
+        with capture enabled."""
+
+        m = func(**kwargs)
+        assert isinstance(m, MeasurementValue)
 
 
 class TestDrawParametricMidMeasure:
@@ -624,154 +732,126 @@ class TestDiagonalizeMCMs:
         assert isinstance(new_tape.operations[-1], MidMeasureMP)
         assert new_tape.operations[-1].reset == reset
 
-    def test_diagonalize_mcm_in_cond(self):
+    def test_diagonalize_conditional_mcms(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
-        containing a conditional with a ParametricMidMeasureMP"""
+        conditionally applying two ParametricMidMeasureMPs as the true and false
+        condition respectively"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
             m = qml.measure(0)
-            qml.cond(m == 1, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
+            cond_measure(
+                m == 1,
+                partial(measure_arbitrary_basis, angle=1.2),
+                partial(measure_arbitrary_basis, angle=-1.2),
+            )(wires=2, plane="XY")
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
-        base_diagonalizing_gates = ParametricMidMeasureMP(
+        diag_gates_true = ParametricMidMeasureMP(
             Wires([2]), angle=1.2, plane="XY"
+        ).diagonalizing_gates()
+        diag_gates_false = ParametricMidMeasureMP(
+            Wires([2]), angle=-1.2, plane="XY"
         ).diagonalizing_gates()
 
         (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert len(new_tape.operations) == 5
-        diagonalizing_gates = new_tape.operations[2:4]
-        measurement = new_tape.operations[4]
+        assert len(new_tape.operations) == 7
+        measurement = new_tape.operations[6]
 
-        # conditional diagonalizing gate
-        for gate, expected_base in zip(diagonalizing_gates, base_diagonalizing_gates):
+        # conditional diagonalizing gates for the true_cond measurement
+        original_meas = original_tape.operations[2]
+        for gate, expected_base in zip(new_tape.operations[2:4], diag_gates_true):
             assert isinstance(gate, qml.ops.Conditional)
             assert gate.base == expected_base
-            assert gate.wires == original_tape.operations[2].wires
+            assert gate.wires == original_meas.wires
+            assert gate.meas_val.measurements == original_meas.meas_val.measurements
+            assert gate.meas_val.processing_fn == original_meas.meas_val.processing_fn
 
-        # conditional diagonalized ParametricMidMeasureMP
-        assert isinstance(measurement, qml.ops.Conditional)
-        assert measurement.wires == original_tape.operations[2].wires
-        assert isinstance(measurement.base, MidMeasureMP)
-        assert not isinstance(measurement.base, ParametricMidMeasureMP)
+        # conditional diagonalizing gates for the false_cond measurement
+        original_meas = original_tape.operations[3]
+        for gate, expected_base in zip(new_tape.operations[4:6], diag_gates_false):
+            assert isinstance(gate, qml.ops.Conditional)
+            assert gate.base == expected_base
+            assert gate.wires == original_meas.wires
+            assert gate.meas_val.measurements == original_meas.meas_val.measurements
+            assert gate.meas_val.processing_fn == original_meas.meas_val.processing_fn
 
-        # cond(diagonalizing gate) and cond(mcm) rely on same measurement in the same way
-        assert (
-            diagonalizing_gates[0].meas_val.measurements[0] == measurement.meas_val.measurements[0]
-        )
-        assert diagonalizing_gates[0].meas_val.processing_fn == measurement.meas_val.processing_fn
+        # diagonalized ParametricMidMeasureMP
+        assert isinstance(measurement, MidMeasureMP)
+        assert not isinstance(measurement, ParametricMidMeasureMP)
 
-    def test_diagonalize_mcm_cond_two_outcomes(self):
-        """Test that the diagonalize_mcm transform works as expected on a tape
-        containing a conditional with two ParametricMidMeasureMPs as the true
-        and false condition respectively"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
-            m = qml.measure(0)
-            qml.cond(
-                m == 1,
-                partial(ParametricMidMeasureMP, angle=1.2),
-                partial(ParametricMidMeasureMP, angle=2.4),
-            )(wires=2, plane="ZX")
-        original_tape = qml.tape.QuantumScript.from_queue(q)
-        true_diag_gate = ParametricMidMeasureMP(2, angle=1.2, plane="ZX").diagonalizing_gates()[0]
-        false_diag_gate = ParametricMidMeasureMP(2, angle=2.4, plane="ZX").diagonalizing_gates()[0]
-
-        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert len(new_tape.operations) == 6
-
-        for idx1, idx2, base_diagonalizing_gate in [
-            (2, 3, true_diag_gate),
-            (4, 5, false_diag_gate),
-        ]:
-            diagonalizing_gate = new_tape.operations[idx1]
-            measurement = new_tape.operations[idx2]
-
-            # conditional diagonalizing gate
-            assert isinstance(diagonalizing_gate, qml.ops.Conditional)
-            assert diagonalizing_gate.base == base_diagonalizing_gate
-            assert diagonalizing_gate.wires == original_tape.operations[2].wires
-
-            # conditional diagonalized ParametricMidMeasureMP
-            assert isinstance(measurement, qml.ops.Conditional)
-            assert measurement.wires == original_tape.operations[2].wires
-            assert isinstance(measurement.base, MidMeasureMP)
-            assert not isinstance(measurement.base, ParametricMidMeasureMP)
-
-        # all 4 conditionals rely on the same measurement value
-        for gate in new_tape.operations[3:]:
-            assert gate.meas_val.measurements[0] == new_tape.operations[2].meas_val.measurements[0]
-
-        # diagonalized gates each have processing functions matching their respective cond(mcm)
-        assert (
-            new_tape.operations[2].meas_val.processing_fn
-            == new_tape.operations[3].meas_val.processing_fn
-        )
-        assert (
-            new_tape.operations[4].meas_val.processing_fn
-            == new_tape.operations[5].meas_val.processing_fn
-        )
-        assert (
-            new_tape.operations[2].meas_val.processing_fn
-            != new_tape.operations[4].meas_val.processing_fn
-        )
-
-    def test_diagonalizing_measurements_cond_and_op(self):
-        """Test that when calling diagonalize_mcms, references to previously
-        diagonalized measurements that are stored in conditions on Conditional
-        operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object (for conditional
-        with MCM condition and MCM applied op)"""
+    def test_diagonalizing_mcm_used_as_cond(self):
+        """Test that the measurements in a ``MeasurementValue`` passed to
+        qml.cond are updated when those measurements are replaced by the
+        diagonalize_mcms transform."""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
             mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
-            qml.cond(mv == 0, partial(ParametricMidMeasureMP, angle=1.2))(wires=2, plane="XY")
+            # using qml.cond and conditionally applying a gate
+            qml.cond(mv == 0, partial(qml.RX, 1.2), partial(qml.RX, 2.4))(wires=2)
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]
         assert isinstance(old_mp, ParametricMidMeasureMP)
 
+        # expected ops: RX, diagonalizing gate, new_mp, conditional RX, conditional RX
         (new_tape,), _ = diagonalize_mcms(original_tape)
-        assert len(new_tape.operations) == 6
-        for op in new_tape.operations[3:]:
-            assert isinstance(op, qml.ops.Conditional)
+        assert len(new_tape.operations) == 5
 
         new_mp = new_tape.operations[2]
         assert not isinstance(new_mp, ParametricMidMeasureMP)
         assert isinstance(new_mp, MidMeasureMP)
 
-        assert new_tape.operations[3].meas_val.measurements == [new_mp]
+        # the conditionals' MeasurementValues are mapped to the new, diagonalized mp
+        processing_fns = []
+        for op in new_tape.operations[3:]:
+            assert isinstance(op, qml.ops.Conditional)
+            assert op.meas_val.measurements == [new_mp]
+            processing_fns.append(op.meas_val.processing_fn)
 
-    def test_diagonalizing_measurements_cond(self):
-        """Test that when calling diagonalize_mcms, references to previously
-        diagonalized measurements that are stored in conditions on Conditional
-        operators are updated to track the measurement on the tape following
-        diagonalization, rather than the original object (for conditional
-        with MCM condition and non-MCM op)"""
+        # true and false processing fns are preserved on the conditionals
+        assert [fn(0) for fn in processing_fns] == [True, False]
+        assert [fn(1) for fn in processing_fns] == [False, True]
+
+    def test_diagonalizing_mcm_used_as_cond_and_op(self):
+        """Test diagonalization behaviour when all arguments of cond_measure
+        require diagonalization. This test confirms that
+            1. the measurements in a ``MeasurementValue`` passed to cond_measure
+            are updated when those measurements are replaced by the diagonalize_mcms transform.
+            2. the applied MCMs in cond_measure are diagonalized as expected
+        """
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.2, 0)
             mp = ParametricMidMeasureMP(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
-            qml.cond(mv == 0, partial(qml.RX, 1.2))(wires=2)
+            # using cond_measure and conditionally applying measurements
+            cond_measure(mv == 0, measure_x, measure_y)(2)
 
         original_tape = qml.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]
         assert isinstance(old_mp, ParametricMidMeasureMP)
 
+        # ops are: RX, diag_gate, mp, conditional(H), conditional(H), conditional(adjoint(S)), mp
         (new_tape,), _ = diagonalize_mcms(original_tape)
-        assert len(new_tape.operations) == 4
-        for op in new_tape.operations[3:]:
-            assert isinstance(op, qml.ops.Conditional)
+        assert len(new_tape.operations) == 7
 
         new_mp = new_tape.operations[2]
         assert not isinstance(new_mp, ParametricMidMeasureMP)
         assert isinstance(new_mp, MidMeasureMP)
 
-        assert new_tape.operations[3].meas_val.measurements == [new_mp]
+        # the conditionals' MeasurementValues are mapped to the new, diagonalized mp
+        processing_fns = []
+        for op in new_tape.operations[3:6]:
+            assert isinstance(op, qml.ops.Conditional)
+            assert op.meas_val.measurements == [new_mp]
+            processing_fns.append(op.meas_val.processing_fn)
+
+        # true and false processing fns are preserved on the conditionals
+        assert [fn(0) for fn in processing_fns] == [True, False, False]
+        assert [fn(1) for fn in processing_fns] == [False, True, True]
 
 
 class TestWorkflows:
@@ -803,26 +883,6 @@ class TestWorkflows:
             assert np.isclose(circ(), -np.sin(2.345), atol=0.03)
         else:
             assert np.isclose(circ(), -np.sin(2.345))
-
-    @pytest.mark.xfail(reason="bug with all MidMeasureMPs in cond for both mcm_methods, ")
-    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    def test_execution_in_cond(self, mcm_method, shots):
-        """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
-        and produce an accurate result"""
-
-        dev = qml.device("default.qubit", shots=shots)
-
-        @diagonalize_mcms
-        @qml.qnode(dev, mcm_method=mcm_method)
-        def circ():
-            qml.RX(np.pi, 0)
-            m = qml.measure(0)  # always 1
-
-            qml.RX(2.345, 1)
-            qml.cond(m == 1, ParametricMidMeasureMP)(1, angle=np.pi / 2, plane="XY")
-            return qml.expval(qml.Z(0))
-
-        assert np.isclose(circ(), -np.sin(2.345))
 
     @pytest.mark.parametrize(
         "rot_gate, measurement_fn",
@@ -857,3 +917,41 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1], atol=0.03)
         else:
             assert np.allclose(circ(), [np.cos(2.345), -1])
+
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_diagonalize_mcms_returns_parametrized_mcms(self, mcm_method, shots):
+        """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
+        by the QNode"""
+
+        dev = qml.device("default.qubit", shots=shots)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            m0 = measure_x(0)
+            m1 = measure_y(1)
+            m2 = measure_arbitrary_basis(2, angle=1.23, plane="XY")
+
+            return qml.expval(m0), qml.expval(m1), qml.expval(m2)
+
+        circ()
+
+    @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
+    def test_diagonalize_mcms_returns_cond_measure_result(self, mcm_method, shots):
+        """Test that when diagonalizing, the MeasurementValue output by cond_measure can be returned
+        by the QNode"""
+
+        if mcm_method == "one-shot":
+            pytest.xfail(reason="not implemented yet")  # sc-90607
+
+        dev = qml.device("default.qubit", shots=shots)
+
+        @diagonalize_mcms
+        @qml.qnode(dev, mcm_method=mcm_method)
+        def circ():
+            qml.H(0)
+            m0 = measure_x(0)
+            m1 = cond_measure(m0, measure_x, measure_y)(1)
+            return qml.expval(m1)
+
+        circ()

@@ -50,14 +50,6 @@ def build_qfunc(wires):
     return qfunc
 
 
-def test_deprecation_pipeline_None():
-    """Test that specifying `pipeline=None` is deprecated."""
-
-    tape = qml.tape.QuantumScript()
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="pipeline=None is now deprecated"):
-        qml.compile(tape, pipeline=None)
-
-
 class TestCompile:
     """Unit tests for compile function."""
 
@@ -328,18 +320,18 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert np.allclose(
+            original_result, transformed_result
+        ), f"{original_result} != {transformed_result}"
 
         names_expected = [
             "RZ",
             "RX",
             "RZ",
-            "RZ",
             "CNOT",
             "RX",
             "RZ",
             "RY",
-            "RZ",
             "RY",
             "CNOT",
             "RY",
@@ -351,11 +343,9 @@ class TestCompileIntegration:
             Wires(wires[0]),
             Wires(wires[0]),
             Wires(wires[0]),
-            Wires(wires[2]),
             Wires([wires[2], wires[1]]),
             Wires(wires[0]),
             Wires(wires[1]),
-            Wires(wires[2]),
             Wires(wires[2]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),

@@ -331,14 +331,14 @@ def load(  # pylint: disable=too-many-arguments
     """
     params = format_params(**params)
 
+    if data_name == "other":
+        data_name = params[0]["values"][0]
+        params = []
+
     if attributes:
         _validate_attributes(data_name, attributes)
 
     folder_path = Path(folder_path)
-
-    if data_name == "other":
-        data_name = params[0]["values"][0]
-        params = []
 
     params = provide_defaults(data_name, params)
     params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]

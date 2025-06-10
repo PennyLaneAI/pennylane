@@ -114,6 +114,16 @@ state preparation is typically used as the first operation.
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
+.. gallery-item::
+    :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
+    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+
+.. gallery-item::
+    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
+
+
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -332,7 +342,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
-    :figure: _static/templates/subroutines/select.png
+    :figure: _static/templates/subroutines/select_cropped.png
 
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
@@ -353,6 +363,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
+
+.. gallery-item::
+    :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
+    :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
 
 .. raw:: html
 

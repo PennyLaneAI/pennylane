@@ -19,7 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 import numpy as np
 import scipy as sp
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class FirstQuantization(Operation):
@@ -48,7 +48,7 @@ class FirstQuantization(Operation):
     >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
     ...                     [ 0.00000000, 10.46219511,  0.00000000],
     ...                     [ 0.00000000,  0.00000000, 10.46219511]])
-    >>> algo = FirstQuantization(n, eta, vectors=vectors)
+    >>> algo = qml.resource.FirstQuantization(n, eta, vectors=vectors)
     >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits
@@ -79,7 +79,6 @@ class FirstQuantization(Operation):
         error distribution takes place inside the functions.
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(
@@ -121,19 +120,19 @@ class FirstQuantization(Operation):
             bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
             self.cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
 
-        self.lamb = self.norm(
+        self._lamb = self.norm(
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
-        self.gates = self.gate_cost(
+        self._gates = self.gate_cost(
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
-        self.qubits = self.qubit_cost(
+        self._qubits = self.qubit_cost(
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
-        super().__init__(wires=range(self.qubits))
+        super().__init__(wires=range(self._qubits))
 
     def _flatten(self):
         return (self.n, self.eta), (
@@ -152,6 +151,36 @@ class FirstQuantization(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
+
+    @property
+    def lamb(self):
+        r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
+
+        The expressions needed for computing the norm are taken from
+        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+        The norm is computed assuming that amplitude ampliﬁcation is performed.
+        """
+        return self._lamb
+
+    @property
+    def gates(self):
+        r"""Return the total number of Toffoli gates needed to implement the first quantization
+        algorithm.
+
+        The expression for computing the cost is taken from Eq. (125) of
+        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+        """
+        return self._gates
+
+    @property
+    def qubits(self):
+        r"""Return the number of logical qubits needed to implement the first quantization
+        algorithm.
+
+        The expression for computing the cost is taken from Eq. (101) of
+        [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
+        """
+        return self._qubits
 
     @staticmethod
     def success_prob(n, br):

@@ -16,9 +16,9 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.measurements import MeasurementProcess, MidMeasureMP
-from pennylane.ops import Conditional
+from pennylane.ops import Conditional, GlobalPhase, Identity
 
-from .utils import default_wire_map
+from .utils import default_wire_map, unwrap_controls
 
 
 def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_layer):
@@ -51,19 +51,15 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def _recursive_find_mcm_stats_layer(
-    layer_to_check, op_occupied_cwires, used_cwires_per_layer, bit_map
-):
-    """Determine correct layer for a terminal measurement that is collectings statistics
+def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwires_per_layer):
+    """Determine correct layer for a terminal measurement that is collecting statistics
     for mid-circuit measurement values.
 
     Args:
         layer_to_check (int): the function determines if the operation fits on this layer
         op_occupied_cwires (set(int)): classical wires occupied by measurement
-        occupied_cwires_per_layer (list[set[int]]): which classical wires are already
+        used_cwires_per_layer (list[set[int]]): which classical wires are already
             in use for collecting statistics. Each set is a different layer.
-        bit_map (dict): A map containing mid-circuit measurements used for classical conditions
-            or collecting statistics as keys
 
     Returns:
         int: layer to place measurement process in
@@ -78,7 +74,7 @@ def _recursive_find_mcm_stats_layer(
         return 0
     # keep pushing the operation to lower layers
     return _recursive_find_mcm_stats_layer(
-        layer_to_check - 1, op_occupied_cwires, used_cwires_per_layer, bit_map
+        layer_to_check - 1, op_occupied_cwires, used_cwires_per_layer
     )
 
 
@@ -100,9 +96,11 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
         max_wire = max(wire_map.values())
         return set(range(min_wire, max_wire + 1))
 
-    if len(op.wires) == 0:
-        # if no wires, then it acts on all wires
-        # for example, qml.state and qml.sample
+    *_, base = unwrap_controls(op)
+
+    if len(op.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
+        # if no wires, then it acts on all wires. For example qml.state and qml.sample or
+        # (controlled) GlobalPhase or (controlled) Identity
         mapped_wires = set(wire_map.values())
         return mapped_wires
 
@@ -179,7 +177,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             )
             op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
             op_layer = _recursive_find_mcm_stats_layer(
-                max_layer, op_occupied_cwires, used_cwires_per_layer, bit_map
+                max_layer, op_occupied_cwires, used_cwires_per_layer
             )
 
         else:

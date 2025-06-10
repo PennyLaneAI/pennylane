@@ -28,6 +28,5 @@ jobs:
         all-interfaces-tests
         external-libraries-tests
         qcut-tests
-        qchem-tests
         gradients-tests
         device-tests

@@ -23,7 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -88,32 +89,6 @@ ops_hermitian_status = (  # computed manually
     False,  # False
     False,  # False
 )
-
-
-def test_legacy_ops():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.ops is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.ops is deprecated and"):
-        _ = H.ops
-
-
-def test_legacy_coeffs():
-    """Test that PennyLaneDepcreationWarning is raised when Prod.coeffs is called"""
-    H = qml.prod(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Prod.coeffs is deprecated and"):
-        _ = H.coeffs
-
-
-def test_obs_attribute():
-    """Test that operands can be accessed via Prod.obs and a deprecation warning is raised"""
-    op = qml.prod(X(0), X(1), X(2))
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Accessing the terms of a tensor product operator via op.obs is deprecated",
-    ):
-        obs = op.obs
-
-    assert obs == (X(0), X(1), X(2))
 
 
 def test_basic_validity():
@@ -542,6 +517,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
+
+
 # pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
@@ -560,8 +540,8 @@ class TestMatrix:
         true_mat = mat1 @ mat2
 
         prod_op = Prod(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         prod_mat = prod_op.matrix()
 
@@ -1106,11 +1086,11 @@ class TestProperties:
     op_pauli_reps_nested = (
         (
             qml.prod(
-                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
-                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+                qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)),
+                qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)),
             ),
             qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
-        ),  # prod + pow
+        ),
         (
             qml.prod(
                 qml.s_prod(
@@ -1248,8 +1228,8 @@ class TestSimplify:
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
-            qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.RX(1.23, wires=0),
+            qml.RX(-1.23, wires=0),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
@@ -1485,7 +1465,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             my_circ()
 
     def test_operation_integration(self):

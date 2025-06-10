@@ -16,102 +16,177 @@
 
 from __future__ import annotations
 
+import inspect
 from collections import defaultdict
-from typing import Callable
+from textwrap import dedent
+from typing import Callable, Optional, Type, overload
 
 from pennylane.operation import Operator
 
 from .resources import CompressedResourceOp, Resources, resource_rep
+from .utils import translate_op_alias
 
 
-def register_resources(
-    resources: Callable | dict, qfunc: Callable = None
-) -> DecompositionRule | Callable[[Callable], DecompositionRule]:
-    """Registers a resource function with a decomposition rule.
+@overload
+def register_condition(condition: Callable) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def register_condition(condition: Callable, qfunc: Callable) -> DecompositionRule: ...
+def register_condition(
+    condition: Callable[..., bool], qfunc: Optional[Callable] = None
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
+    """Binds a condition to a decomposition rule for when it is applicable.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        performing decompositions is generally more resource-efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~.register_resources`.
 
     Args:
-        resources (Callable): the resource estimate of a decomposition rule, in the form of a
-            dictionary of gate counts or a function that returns this dictionary.
-        qfunc (Callable): the quantum function that implements the decomposition.
+        condition (Callable): a function which takes the resource parameters of an operator as
+            arguments and returns ``True`` or ``False`` based on whether the decomposition rule
+            is applicable to an operator with the given resource parameters.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
 
     Returns:
-        DecompositionRule: a data structure that represents a decomposition rule.
+        DecompositionRule:
+            a data structure that represents a decomposition rule, which contains a PennyLane
+            quantum function representing the decomposition, and its resource function.
 
     **Example**
 
-    A decomposition rule should be defined as a qfunc:
+    This function can be used as a decorator to bind a condition function to a quantum function
+    that implements a decomposition rule.
 
     .. code-block:: python
 
         import pennylane as qml
+        from pennylane.math.decomposition import zyz_rotation_angles
 
-        def cnot_decomp(wires):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
+        # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
+        def _zyz_condition(num_wires):
+            return num_wires == 1
 
-    This qfunc is expected to take ``(*op.params, op.wires, **op.hyperparameters)`` as arguments,
-    where ``op`` is an instance of the operator type that this decomposition is for.
+        @qml.register_condition(_zyz_condition)
+        @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
+        def zyz_decomposition(U, wires, **__):
+            # Assumes that U is a 2x2 unitary matrix
+            phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+            qml.RZ(phi, wires=wires[0])
+            qml.RY(theta, wires=wires[0])
+            qml.RZ(omega, wires=wires[0])
+            qml.GlobalPhase(-phase)
 
-    Along with the qfunc implementation of a decomposition, a dictionary mapping operator types to
-    their number of occurrences must be registered:
+        # This decomposition will be ignored for `QubitUnitary` on more than one wire.
+        qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
+
+    """
+
+    def _decorator(_qfunc) -> DecompositionRule:
+        if isinstance(_qfunc, DecompositionRule):
+            _qfunc.set_condition(condition)
+            return _qfunc
+        return DecompositionRule(_qfunc, condition=condition)
+
+    return _decorator(qfunc) if qfunc else _decorator
+
+
+@overload
+def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
+def register_resources(
+    resources: Callable | dict, qfunc: Optional[Callable] = None
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
+    """Binds a quantum function to its required resources.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using ``qml.register_resources``.
+
+    Args:
+        resources (dict or Callable): a dictionary mapping unique operators within the given
+            ``qfunc`` to their number of occurrences therein. If a function is provided instead
+            of a static dictionary, a dictionary must be returned from the function. For more
+            information, consult the "Quantum Functions as Decomposition Rules" section below.
+        qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
+            returns a decorator for acting on a function.
+
+    Returns:
+        DecompositionRule:
+            a data structure that represents a decomposition rule, which contains a PennyLane
+            quantum function representing the decomposition, and its resource function.
+
+
+    **Example**
+
+    This function can be used as a decorator to bind a quantum function to its required resources
+    so that it can be used as a decomposition rule within the new graph-based decomposition system.
 
     .. code-block:: python
 
-        cnot_decomp = qml.register_resources({qml.H: 2, qml.CZ: 1}, cnot_decomp)
+        from functools import partial
+        import pennylane as qml
 
-    This decomposition rule can then be registered with an operator type:
-
-    .. code-block:: python
-
-        qml.add_decomps(qml.CNOT, cnot_decomp)
-
-    or specified as a fixed decomposition rule to the decompose transform:
-
-    .. code-block:: python
-
-        @partial(qml.transforms.decompose, fixed_decomps={qml.CNOT: cnot_decomp})
-        def circuit():
-            ...
-
-    Alternatively, use the decorator syntax:
-
-    .. code-block:: python
+        qml.decomposition.enable_graph()
 
         @qml.register_resources({qml.H: 2, qml.CZ: 1})
-        def cnot_decomp(wires):
+        def my_cnot(wires, **_):
             qml.H(wires=wires[1])
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        qml.add_decomps(qml.CNOT, cnot_decomp)
+        @partial(qml.transforms.decompose, gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+
+    >>> print(qml.draw(circuit, level="device")())
+    0: ────╭●────┤  State
+    1: ──H─╰Z──H─┤  State
+
+    Alternatively, the decomposition rule can be created in-line:
+
+    >>> my_cnot = qml.register_resources({qml.H: 2, qml.CZ: 1}, my_cnot)
 
     .. details::
-        :title: Usage Details
+        :title: Quantum Functions as Decomposition Rules
 
-        In many cases, the resource function of an operator's decomposition is not static. For
-        example, consider ``MultiRZ``, whose decomposition function looks like:
+        Quantum functions representing decomposition rules within the new decomposition system
+        are expected to take ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments,
+        where ``op`` is an instance of the operator type that the decomposition is for.
 
-        .. code-block:: python
+    .. details::
+        :title: Operators with Dynamic Resource Requirements
 
-            import pennylane as qml
+        In many cases, the resource requirement of an operator's decomposition is not static; some
+        operators have properties that directly affect the resource estimate of its decompositions,
+        i.e., the types of gates that exist in the decomposition and their number of occurrences.
 
-            def multi_rz_decomposition(theta, wires, **__):
-                for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                    qml.CNOT(wires=(w0, w1))
-                qml.RZ(theta, wires=wires[0])
-                for w0, w1 in zip(wires[1:], wires[:-1]):
-                    qml.CNOT(wires=(w0, w1))
+        For each operator class, the set of parameters that affects the type of gates and their
+        number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
+        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
+        on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
 
-        We notice that the number of ``CNOT`` gates required to compose a ``MultiRZ`` depends on
-        the number of wires. For each operator class, we can find the set of parameters that
-        affect the gate count of its decompositions in the ``resource_param_keys`` attribute:
+        >>> qml.CNOT.resource_keys
+        set()
+        >>> qml.MultiRZ.resource_keys
+        {'num_wires'}
 
-        >>> qml.MultiRZ.resource_param_keys
-        ('num_wires',)
-
-        Any decomposition of ``MultiRZ`` is expected to depend on its number of wires, so we define
-        a function that takes ``num_wires`` as an argument:
+        The output of ``resource_keys`` indicates that custom decompositions for the operator
+        should be registered to a resource function (as opposed to a static dictionary) that
+        accepts those exact arguments and returns a dictionary.
 
         .. code-block:: python
 
@@ -121,46 +196,49 @@ def register_resources(
                     qml.RZ: 1
                 }
 
-        and register it with the decomposition rule:
+            @qml.register_resources(_multi_rz_resources)
+            def multi_rz_decomposition(theta, wires, **__):
+                for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+                    qml.CNOT(wires=(w0, w1))
+                qml.RZ(theta, wires=wires[0])
+                for w0, w1 in zip(wires[1:], wires[:-1]):
+                    qml.CNOT(wires=(w0, w1))
 
-        .. code-block:: python
-
-            multi_rz_decomposition = qml.register_resources(
-                _multi_rz_resources,
-                multi_rz_decomposition
-            )
-
-        We also notice that two ``MultiRZ`` gates acting on different numbers of wires will have
-        different decompositions. Consequently, when defining a decomposition rule that contains
-        ``MultiRZ`` gates, we require that more information is provided.
+        Additionally, if a custom decomposition for an operator contains gates that, in turn,
+        have properties that affect their own decompositions, this information must also be
+        included in the resource function. For example, if a decomposition rule produces a
+        ``MultiRZ`` gate, it is not sufficient to declare the existence of a ``MultiRZ`` in the
+        resource function; the number of wires it acts on must also be specified.
 
         Consider a fictitious operator with the following decomposition:
 
         .. code-block:: python
 
-            def my_decomposition(thata, wires):
+            def my_decomp(theta, wires):
                 qml.MultiRZ(theta, wires=wires[:-1])
                 qml.MultiRZ(theta, wires=wires)
                 qml.MultiRZ(theta, wires=wires[1:])
 
-        It contains two ``MultiRZ`` gates on ``num_wires - 1`` wires and one ``MultiRZ`` gate on
-        ``num_wires`` wires, which should be reflected in its corresponding resource function:
+        It contains two ``MultiRZ`` gates acting on ``len(wires) - 1`` wires (the first and last
+        ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``len(wires)`` wires. This
+        distinction must be reflected in the resource function:
 
         .. code-block:: python
 
-            def _my_decomposition_resources(num_wires):
+            def my_resources(num_wires):
                 return {
                     qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
                     qml.resource_rep(qml.MultiRZ, num_wires=num_wires): 1
                 }
 
-            my_decomposition = qml.register_resources(
-                _my_decomposition_resources,
-                my_decomposition
-            )
+            my_decomp = qml.register_resources(my_resources, my_decomp)
 
-        where ``qml.resource_rep`` is a utility function that wraps an operator type and
-        any additional information relavent to its resource estimate into a data structure.
+        where :func:`~pennylane.resource_rep` is a utility function that wraps an operator type and any
+        additional information relevant to its resource estimate into a compressed data structure.
+        To check what (if any) additional information is required to declare an operator type
+        in a resource function, refer to the ``resource_keys`` attribute of the :class:`~pennylane.operation.Operator`
+        class. Operators with non-empty ``resource_keys`` must be declared using ``qml.resource_rep``,
+        with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
 
@@ -168,43 +246,80 @@ def register_resources(
 
     """
 
-    if qfunc:  # enables the normal syntax
-        return DecompositionRule(qfunc, resources)
-
     def _decorator(_qfunc) -> DecompositionRule:
-        return DecompositionRule(_qfunc, resources)
+        if isinstance(_qfunc, DecompositionRule):
+            _qfunc.set_resources(resources)
+            return _qfunc
+        return DecompositionRule(_qfunc, resources=resources)
 
-    return _decorator  # enables the decorator syntax
+    return _decorator(qfunc) if qfunc else _decorator
 
 
-class DecompositionRule:  # pylint: disable=too-few-public-methods
-    """Represents a decomposition rule for an operator.
+class DecompositionRule:
+    """Represents a decomposition rule for an operator."""
 
-    Attributes:
-        impl (Callable): the quantum function implementing the decomposition rule
+    def __init__(
+        self,
+        func: Callable,
+        resources: Optional[Callable | dict] = None,
+        condition: Optional[Callable[..., bool]] = None,
+    ):
 
-    """
+        self._impl = func
 
-    def __init__(self, func: Callable, resources: Callable | dict = None):
-        self.impl = func
+        try:
+            self._source = inspect.getsource(func)
+        except OSError:  # pragma: no cover
+            # OSError is raised if the source code cannot be retrieved
+            self._source = ""  # pragma: no cover
+
         if isinstance(resources, dict):
-            resource_fn = lambda: resources
+
+            def resource_fn(*_, **__):
+                return resources
+
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
 
+        self._condition = condition
+
     def __call__(self, *args, **kwargs):
-        return self.impl(*args, **kwargs)
+        return self._impl(*args, **kwargs)
+
+    def __str__(self):
+        return dedent(self._source).strip()
 
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
-        gate_counts: dict = self._compute_resources(*args, **kwargs)
+        gate_counts = self._compute_resources(*args, **kwargs)
         assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
         gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
-        num_gates = sum(gate_counts.values())
-        return Resources(num_gates, gate_counts)
+        return Resources(gate_counts)
+
+    def is_applicable(self, *args, **kwargs) -> bool:
+        """Checks whether this decomposition rule is applicable."""
+        if self._condition is None:
+            return True
+        return self._condition(*args, **kwargs)
+
+    def set_condition(self, condition: Callable[..., bool]) -> None:
+        """Sets the condition for this decomposition rule."""
+        self._condition = condition
+
+    def set_resources(self, resources: Callable | dict) -> None:
+        """Sets the resources for this decomposition rule."""
+
+        if isinstance(resources, dict):
+
+            def resource_fn(*_, **__):
+                return resources
+
+            self._compute_resources = resource_fn
+        else:
+            self._compute_resources = resources
 
 
 def _auto_wrap(op_type):
@@ -220,32 +335,162 @@ def _auto_wrap(op_type):
         return resource_rep(op_type)
     except TypeError as e:
         raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_param_keys. A resource "
+            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
             f"representation must be explicitly constructed using qml.resource_rep"
         ) from e
 
 
 _decompositions = defaultdict(list)
+"""dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
 
 
-def add_decomps(op_type, decomps: DecompositionRule | list[DecompositionRule]) -> None:
-    """Register a list of decomposition rules with an operator class."""
-    if isinstance(decomps, list) and all(isinstance(d, DecompositionRule) for d in decomps):
-        _decompositions[op_type].extend(decomps)
-    elif isinstance(decomps, DecompositionRule):
-        _decompositions[op_type].append(decomps)
-    else:
+def add_decomps(op_type: Type[Operator] | str, *decomps: DecompositionRule) -> None:
+    """Globally registers new decomposition rules with an operator class.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~pennylane.register_resources`
+
+    In the new system of decompositions, multiple decomposition rules can be registered for the
+    same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
+    decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
+
+    Args:
+        op_type (type or str): the operator type for which new decomposition rules are specified.
+            For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
+            A decomposition is a quantum function registered with a resource estimate using
+            ``qml.register_resources``.
+
+    .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
+
+    **Example**
+
+    This example demonstrates adding two new decomposition rules to the ``qml.Hadamard`` operator.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+
+        @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
+        def my_hadamard1(wires):
+            qml.RZ(np.pi / 2, wires=wires)
+            qml.RX(np.pi / 2, wires=wires)
+            qml.RZ(np.pi / 2, wires=wires)
+            qml.GlobalPhase(-np.pi / 2, wires=wires)
+
+        @qml.register_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
+        def my_hadamard2(wires):
+            qml.RZ(np.pi, wires=wires)
+            qml.RY(np.pi / 2, wires=wires)
+            qml.GlobalPhase(-np.pi / 2)
+
+        qml.add_decomps(qml.Hadamard, my_hadamard1, my_hadamard2)
+
+    These two new decomposition rules for ``qml.Hadamard`` will be subsequently stored within the
+    scope of this program, and they will be taken into account for all circuit decompositions
+    for the duration of the session. To add alternative decompositions for a particular circuit
+    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
+
+    Custom decomposition rules can also be specified for symbolic operators. In this case, the
+    operator type can be specified as a string. For example,
+
+    .. code-block:: python
+
+        @register_resources({qml.RY: 1})
+        def adjoint_ry(phi, wires, **_):
+            qml.RY(-phi, wires=wires)
+
+        qml.add_decomps("Adjoint(RY)", adjoint_ry)
+
+    .. seealso:: :func:`~pennylane.transforms.decompose`
+
+    """
+    if not all(isinstance(d, DecompositionRule) for d in decomps):
         raise TypeError(
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
+    _decompositions[translate_op_alias(op_type)].extend(decomps)
 
 
-def list_decomps(op_type) -> list[DecompositionRule]:
-    """Lists all known decomposition rules for an operator class."""
-    return _decompositions[op_type][:]
+def list_decomps(op_type: Type[Operator] | str) -> list[DecompositionRule]:
+    """Lists all stored decomposition rules for an operator class.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        decomposition rules for an operator.
+
+    Args:
+        op_type (type or str): the operator class to retrieve decomposition rules for. For symbolic
+            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+
+    Returns:
+        list[DecompositionRule]: a list of decomposition rules registered for the given operator.
+
+    **Example**
+
+    >>> import pennylane as qml
+    >>> qml.list_decomps(qml.CRX)
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+
+    Each decomposition rule can be inspected:
+
+    >>> print(qml.list_decomps(qml.CRX)[0])
+    @register_resources(_crx_to_rx_cz_resources)
+    def _crx_to_rx_cz(phi, wires, **__):
+        qml.RX(phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+        qml.RX(-phi / 2, wires=wires[1]),
+        qml.CZ(wires=wires),
+    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+
+    """
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
+    return _decompositions[translate_op_alias(op_type)][:]
 
 
-def has_decomp(op_type) -> bool:
-    """Check whether an operator has decomposition rules defined."""
+def has_decomp(op_type: Type[Operator] | str) -> bool:
+    """Checks whether an operator has decomposition rules defined.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        decomposition rules for an operator.
+
+    Args:
+        op_type (type or str): the operator class to check for decomposition rules. For symbolic
+            operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+
+    Returns:
+        bool: whether decomposition rules are defined for the given operator.
+
+    """
+    if isinstance(op_type, type):
+        op_type = op_type.__name__
+    op_type = translate_op_alias(op_type)
     return op_type in _decompositions and len(_decompositions[op_type]) > 0
+
+
+@register_resources({})
+def null_decomp(*_, **__):
+    """A decomposition rule that does nothing."""
+    return

@@ -121,7 +121,9 @@ class TestPauliRotation:
     def test_pow_decomposition(self, resource_class, epsilon, z):
         """Test that the pow decompositions are correct."""
 
-        expected = {resource_class.resource_rep(): 1} if z else {}
+        expected = (
+            {resource_class.resource_rep(): 1} if z else {re.ResourceIdentity.resource_rep(): 1}
+        )
         assert resource_class.pow_resource_decomp(z) == expected
 
         op = resource_class(1.24, wires=0) if z else re.ResourceIdentity(wires=0)
@@ -326,7 +328,7 @@ class TestRot:
         assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (0, {}),
+        (0, {re.ResourceIdentity.resource_rep(): 1}),
         (1, {re.ResourceRot.resource_rep(): 1}),
         (2, {re.ResourceRot.resource_rep(): 1}),
         (5, {re.ResourceRot.resource_rep(): 1}),
@@ -442,7 +444,7 @@ class TestPhaseShift:
         assert op2.resources(**op2.resource_params) == expected_res
 
     pow_data = (
-        (0, {}),
+        (0, {re.ResourceIdentity.resource_rep(): 1}),
         (1, {re.ResourcePhaseShift.resource_rep(): 1}),
         (2, {re.ResourcePhaseShift.resource_rep(): 1}),
         (5, {re.ResourcePhaseShift.resource_rep(): 1}),

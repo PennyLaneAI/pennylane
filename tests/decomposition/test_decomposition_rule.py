@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+from textwrap import dedent
+
 import pytest
 
 import pennylane as qml
@@ -25,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import CompressedResourceOp, Resources
 
 
+@pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
 
@@ -60,11 +63,7 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            num_gates=5,
-            gate_counts={
-                CompressedResourceOp(qml.RZ): 1,
-                CompressedResourceOp(qml.CNOT): 4,
-            },
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
         )
 
     def test_decomposition_decorator(self):
@@ -98,11 +97,80 @@ class TestDecompositionRule:
         ]
 
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
-            num_gates=5,
-            gate_counts={
-                CompressedResourceOp(qml.RZ): 1,
-                CompressedResourceOp(qml.CNOT): 4,
-            },
+            gate_counts={CompressedResourceOp(qml.RZ): 1, CompressedResourceOp(qml.CNOT): 4},
+        )
+
+    def test_decomposition_condition(self):
+        """Tests that the register_condition works."""
+
+        @qml.register_resources({qml.H: 2, qml.Toffoli: 1})
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        def rule_1(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_1, DecompositionRule)
+        assert rule_1.is_applicable(num_wires=3)
+        assert not rule_1.is_applicable(num_wires=2)
+        assert rule_1.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        @qml.register_resources({qml.H: 2, qml.Toffoli: 1})
+        def rule_2(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_2, DecompositionRule)
+        assert rule_2.is_applicable(num_wires=3)
+        assert not rule_2.is_applicable(num_wires=2)
+        assert rule_2.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
+        def _resource_fn(**_):
+            return {qml.H: 2, qml.Toffoli: 1}
+
+        @qml.register_resources(_resource_fn)
+        @qml.register_condition(lambda num_wires: num_wires == 3)
+        def rule_3(wires, **__):
+            raise NotImplementedError
+
+        assert isinstance(rule_3, DecompositionRule)
+        assert rule_3.is_applicable(num_wires=3)
+        assert not rule_3.is_applicable(num_wires=2)
+        assert rule_3.compute_resources(num_wires=3) == Resources(
+            {
+                CompressedResourceOp(qml.H): 2,
+                CompressedResourceOp(qml.Toffoli): 1,
+            }
+        )
+
+    def test_inspect_decomposition_rule(self):
+        """Tests that the source code for a decomposition rule can be inspected."""
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def my_cz(wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires)
+            qml.H(wires[0])
+
+        assert (
+            str(my_cz)
+            == dedent(
+                """
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def my_cz(wires):
+            qml.H(wires[0])
+            qml.CNOT(wires=wires)
+            qml.H(wires[0])
+        """
+            ).strip()
         )
 
     def test_error_raised_with_no_resource_fn(self):
@@ -126,7 +194,7 @@ class TestDecompositionRule:
         class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not qml.has_decomp(CustomOp)
+        assert not qml.decomposition.has_decomp(CustomOp)
 
         @qml.register_resources({qml.RZ: 2, qml.CNOT: 1})
         def custom_decomp(theta, wires, **__):
@@ -147,9 +215,9 @@ class TestDecompositionRule:
             qml.RY(theta, wires=wires[0])
 
         qml.add_decomps(CustomOp, custom_decomp)
-        qml.add_decomps(CustomOp, [custom_decomp2, custom_decomp3])
+        qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
-        assert qml.has_decomp(CustomOp)
+        assert qml.decomposition.has_decomp(CustomOp)
         assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
 
         def custom_decomp4(theta, wires, **__):
@@ -160,49 +228,63 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
-        _decompositions.pop(CustomOp)  # cleanup
+        _decompositions.pop("CustomOp")  # cleanup
+
+    def test_custom_symbolic_decomposition(self):
+        """Tests that custom decomposition rules for symbolic operators can be registered."""
+
+        @qml.register_resources({qml.RX: 1, qml.RZ: 1})
+        def my_adjoint_custom_op(theta, wires, **__):
+            qml.RX(theta, wires=wires[0])
+            qml.RZ(theta, wires=wires[1])
+
+        qml.add_decomps("Adjoint(CustomOp)", my_adjoint_custom_op)
+        assert qml.decomposition.has_decomp("Adjoint(CustomOp)")
+        assert qml.list_decomps("Adjoint(CustomOp)") == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = ()
+            resource_keys = set()
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
         assert custom_decomp.compute_resources() == Resources(
-            num_gates=1,
-            gate_counts={
-                CompressedResourceOp(DummyOp): 1,
-            },
+            gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
-        custom_decomp = qml.register_resources({CompressedResourceOp(DummyOp): 1}, custom_decomp)
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
 
-        assert custom_decomp.compute_resources() == Resources(
-            num_gates=1,
-            gate_counts={
-                CompressedResourceOp(DummyOp): 1,
-            },
+        custom_decomp_2 = qml.register_resources(
+            {CompressedResourceOp(DummyOp): 1}, custom_decomp_2
+        )
+
+        assert custom_decomp_2.compute_resources() == Resources(
+            gate_counts={CompressedResourceOp(DummyOp): 1}
         )
 
     def test_auto_wrap_fails(self):
-        """Tests that an op with non-empty resource_param_keys cannot be auto-wrapped."""
+        """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
-            resource_param_keys = {"foo"}
+            resource_keys = {"foo"}
 
         @qml.register_resources({DummyOp: 1})
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_param_keys"):
+        with pytest.raises(TypeError, match="Operator DummyOp has non-empty resource_keys"):
             custom_decomp.compute_resources()
 
+        def custom_decomp_2(*_, **__):
+            raise NotImplementedError
+
         with pytest.raises(TypeError, match="must be a subclass of Operator"):
-            custom_decomp = qml.register_resources({int: 1}, custom_decomp)
-            custom_decomp.compute_resources()
+            custom_decomp_2 = qml.register_resources({int: 1}, custom_decomp_2)
+            custom_decomp_2.compute_resources()

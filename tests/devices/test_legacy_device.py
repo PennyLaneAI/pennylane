@@ -24,6 +24,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.devices import LegacyDevice as Device
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -266,17 +267,9 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given observable must either be a pennylane.Observable class or a string.",
+            match="The given observable must either be a pennylane.operation.Operator class or a string.",
         ):
             dev.supports_observable(3)
-
-        operation = qml.CNOT
-
-        with pytest.raises(
-            ValueError,
-            match="The given observable must either be a pennylane.Observable class or a string.",
-        ):
-            dev.supports_observable(operation)
 
     @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
     @pytest.mark.parametrize("obs_type", [qml.ops.LinearCombination, qml.Hamiltonian])
@@ -359,7 +352,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliY(2)))
         ]
 
-        with pytest.raises(qml.DeviceError, match="Observable PauliY not supported"):
+        with pytest.raises(DeviceError, match="Observable PauliY not supported"):
             dev.check_validity(queue, unsupported_nested_observables)
 
     def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
@@ -375,7 +368,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         # mock device does not support Tensor product
-        with pytest.raises(qml.DeviceError, match="Observable Prod not supported"):
+        with pytest.raises(DeviceError, match="Observable Prod not supported"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_invalid_queue(self, mock_device_supporting_paulis):
@@ -390,7 +383,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         observables = [qml.expval(qml.PauliZ(0))]
 
-        with pytest.raises(qml.DeviceError, match="Gate RX not supported on device"):
+        with pytest.raises(DeviceError, match="Gate RX not supported on device"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_invalid_observable(self, mock_device_supporting_paulis):
@@ -405,7 +398,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         observables = [qml.expval(qml.Hadamard(0))]
 
-        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_projector_as_operation(self, mock_device_supporting_paulis):
@@ -429,9 +422,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
-        with pytest.raises(
-            qml.DeviceError, match="specified number of shots needs to be at least 1"
-        ):
+        with pytest.raises(DeviceError, match="specified number of shots needs to be at least 1"):
             Device(mock_device, shots=0)
 
     @pytest.mark.parametrize(
@@ -544,7 +535,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
-        with pytest.raises(qml.DeviceError, match="Mid-circuit measurements are not natively"):
+        with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
     @pytest.mark.parametrize(
@@ -574,52 +565,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device(wires=wires)
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
-
-    @pytest.mark.parametrize(
-        "op, decomp",
-        zip(
-            [
-                qml.BasisState([0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
-            ],
-            [
-                [],
-                [
-                    qml.RY(1.57079633, wires=[1]),
-                    qml.CNOT(wires=[0, 1]),
-                    qml.RY(1.57079633, wires=[1]),
-                    qml.CNOT(wires=[0, 1]),
-                ],
-            ],
-        ),
-    )
-    def test_default_expand_with_initial_state(self, op, decomp):
-        """Test the default expand function with StatePrepBase operations
-        integrates well."""
-        prep = [op]
-        ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
-
-        dev = qml.device("default.mixed", wires=3)
-        tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
-        new_tape = dev.default_expand_fn(tape)
-
-        true_decomposition = []
-        # prep op is not decomposed at start of circuit:
-        true_decomposition.append(op)
-        # AngleEmbedding decomp:
-        true_decomposition.append(qml.RZ(0.1, wires=[0]))
-        # prep op decomposed if its mid-circuit:
-        true_decomposition.extend(decomp)
-        # Z:
-        true_decomposition.append(qml.PauliZ(wires=2))
-
-        assert len(new_tape.operations) == len(true_decomposition)
-        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
-            qml.assert_equal(tape_op, true_op)
-
-        assert new_tape.shots is tape.shots
-        assert new_tape.wires == tape.wires
-        assert new_tape.batch_size == tape.batch_size
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""
@@ -669,7 +614,8 @@ class TestOperations:
         dev = mock_device()
 
         with pytest.raises(
-            qml.DeviceError, match="The specified number of shots needs to be at least 1"
+            DeviceError,
+            match="The specified number of shots needs to be at least 1",
         ):
             dev.shots = shots
 
@@ -759,7 +705,7 @@ class TestOperations:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
 
     def test_execute_obs_probs(self, mock_device_supporting_paulis):
@@ -874,7 +820,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
 
     def test_unsupported_observable_return_type_raise_error(
@@ -889,7 +835,8 @@ class TestObservables:
         observables = [qml.counts(op=qml.PauliZ(0))]
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            QuantumFunctionError,
+            match="Unsupported return type specified for observable",
         ):
             dev.execute(queue, observables)
 
@@ -945,7 +892,7 @@ class TestDeviceInit:
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""
 
-        with pytest.raises(qml.DeviceError, match="Device None does not exist"):
+        with pytest.raises(DeviceError, match="Device None does not exist"):
             qml.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
@@ -953,8 +900,8 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
-            with pytest.raises(qml.DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.mixed", wires=0)
+            with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
+                qml.device("default.qutrit", wires=0)
 
     def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
         spied = mocker.spy(qml.devices, "__getattr__")
@@ -1006,7 +953,7 @@ class TestDeviceInit:
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
-            with pytest.raises(qml.DeviceError, match="Device default.qubit does not exist"):
+            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
                 qml.device("default.qubit", wires=0)
 
         # outside of the context, entrypoints will now be found automatically
@@ -1022,7 +969,7 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.mixed", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
@@ -1035,6 +982,20 @@ class TestDeviceInit:
         assert shot_vector[3].copies == 1
 
         assert dev.shots.total_shots == 22
+
+    def test_has_partitioned_shots(self):
+        """Tests _has_partitioned_shots returns correct values"""
+        dev = DefaultQubitLegacy(wires=1, shots=100)
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = [10, 20]
+        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = 10
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+
+        dev.shots = None
+        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
 
 
 class TestBatchExecution:

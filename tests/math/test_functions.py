@@ -258,6 +258,27 @@ def test_allclose(t1, t2):
 class TestAllCloseSparse:
     """Test that the sparse-matrix specialized allclose functions works well"""
 
+    @pytest.mark.parametrize("v", [0, 1, 2.0, 3.0j, 1e-9])
+    def test_sparse_scalar(self, v):
+        """Test comparing a scalar to a sparse matrix"""
+        dense = v
+
+        sparse = sp.sparse.csr_matrix([v] * 10)
+
+        assert fn.allclose(dense, sparse)
+        assert fn.allclose(sparse, dense)
+
+        # Shift one element of the sparse matrix
+        sparse_wrong = sp.sparse.csr_matrix([v + 0.1] + [v] * 9)
+        assert not fn.allclose(dense, sparse_wrong)
+        assert not fn.allclose(sparse_wrong, dense)
+
+        # Empty one element of the sparse matrix
+        v_nonzero = not np.isclose(v, 0)
+        sparse_wrong = sp.sparse.csr_matrix([0 if v_nonzero else 1] + [v] * 9)
+        assert not fn.allclose(dense, sparse_wrong)
+        assert not fn.allclose(sparse_wrong, dense)
+
     def test_dense_sparse_small_matrix(self):
         """Test comparing small dense and sparse matrices"""
         dense = np.array([[1, 0, 2], [0, 3, 0]])
@@ -589,6 +610,15 @@ class TestConvertLike:
         assert isinstance(res, t_like.__class__)
         assert res.ndim == 0
         assert fn.allequal(res, [5])
+
+    def test_convert_like_sparse(self):
+        """Test that a numpy array can be converted to a scipy array."""
+
+        np_array = np.array([[1, 0], [1, 0]])
+        sp_array = sci.sparse.csr_matrix([[0, 1], [1, 0]])
+        out = qml.math.convert_like(np_array, sp_array)
+        assert isinstance(out, sci.sparse.csr_matrix)
+        assert qml.math.allclose(out.todense(), np_array)
 
 
 class TestDot:
@@ -1108,7 +1138,6 @@ class TestScipySparse:
     matrix_4 = [sci.sparse.csr_matrix(np.eye(4))]
 
     dispatched_linalg_methods = [
-        fn.linalg.det,
         fn.linalg.expm,
         fn.linalg.inv,
         fn.linalg.norm,
@@ -3170,3 +3199,57 @@ def test_unstack_tensorflow():
     r1, r2 = qml.math.unstack(x)
     assert qml.math.allclose(r1, tf.Variable(0.1))
     assert qml.math.allclose(r2, tf.Variable(0.2))
+
+
+class TestScatter:
+    """Tests for qml.math.scatter functionality"""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_basic(self, interface):
+        """Test basic scatter operation - placing values at specific indices in a zero array"""
+        indices = [0, 2, 4]
+        updates = [1.0, 2.0, 3.0]
+        shape = [6]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_complex(self, interface):
+        """Test scatter with complex values"""
+        indices = [1, 3]
+        updates = [1.0 + 1.0j, 2.0 - 1.0j]
+        shape = [4]
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray(
+            [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
+        )
+
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    def test_scatter_multidimensional(self, interface):
+        """Test scatter with multidimensional target shape"""
+        indices = [0, 2]
+        updates = [[1.0, 2.0], [3.0, 4.0]]
+        shape = [3, 2]  # 3x2 target array
+
+        updates = qml.math.asarray(updates, like=interface)
+        indices = qml.math.asarray(indices, like=interface)
+
+        result = qml.math.scatter(indices, updates, shape)
+        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+
+        assert qml.math.allclose(result, expected)

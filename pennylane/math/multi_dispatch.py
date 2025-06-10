@@ -368,6 +368,14 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
+    if like == "scipy":
+        # See https://github.com/scipy/scipy/issues/18938 for the issue
+        # with scipy sparse and np dot product
+
+        # Avoid the case when one is a scalar - using a robust check for scalars
+        if onp.isscalar(x) or onp.isscalar(y):
+            return x * y
+        return x.dot(y)
     return np.dot(x, y, like=like)
 
 
@@ -701,8 +709,11 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
+# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(tensor, index, value, like=None):
+def scatter_element_add(
+    tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
+):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
 
@@ -711,6 +722,13 @@ def scatter_element_add(tensor, index, value, like=None):
         index (tuple or list[tuple]): Indices to which to add the value
         value (float or tensor_like[float]): Value to add to ``tensor``
         like (str): Manually chosen interface to dispatch to.
+
+    Keyword Args:
+        indices_are_sorted=False (bool): If ``True``, jax will assume that the indices are in
+            ascending order. Required to be ``True`` with catalyst.
+        unique_indices=False (bool): If ``True``, jax will assume each index is unique.
+            Required to be ``True`` with catalyst.
+
     Returns:
         tensor_like[float]: The tensor with the value added at the given indices.
 
@@ -735,7 +753,14 @@ def scatter_element_add(tensor, index, value, like=None):
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 
-    return np.scatter_element_add(tensor, index, value, like=like)
+    return np.scatter_element_add(
+        tensor,
+        index,
+        value,
+        like=like,
+        indices_are_sorted=indices_are_sorted,
+        unique_indices=unique_indices,
+    )
 
 
 def unwrap(values, max_depth=None):
@@ -1009,7 +1034,7 @@ def detach(tensor, like=None):
 @multi_dispatch(tensor_list=[1])
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
-    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX or Tensorflow.
 
     Args:
         array (tensor_like): array to be modified
@@ -1020,8 +1045,6 @@ def set_index(array, idx, val, like=None):
         a new copy of the array with the specified index updated to ``val``.
 
     Whether the original array is modified is interface-dependent.
-
-    .. note:: TensorFlow EagerTensor does not support item assignment
     """
     if like == "jax":
         from jax import numpy as jnp
@@ -1029,6 +1052,11 @@ def set_index(array, idx, val, like=None):
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.array(array)
         return jax_array.at[idx].set(val)
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.concat([array[:idx], val[None], array[idx + 1 :]], 0)
 
     array[idx] = val
     return array

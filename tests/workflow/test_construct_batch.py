@@ -19,6 +19,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
@@ -113,7 +114,7 @@ class TestTransformProgramGetter:
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
+        assert p_sliced[1].transform == qml.devices.preprocess.mid_circuit_measurements.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
 
     def test_diff_method_device_gradient(self):
@@ -157,7 +158,7 @@ class TestTransformProgramGetter:
     def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
-        dev = qml.device("default.mixed", wires=5)
+        dev = DefaultQubitLegacy(wires=5)
 
         @qml.transforms.merge_rotations
         @qml.qnode(dev, diff_method="backprop")
@@ -172,7 +173,7 @@ class TestTransformProgramGetter:
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].transform == m2.transform.transform
-        assert program[1].kwargs["device"] == dev.target_device
+        assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
@@ -336,7 +337,7 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
+        @qml.qnode(DefaultQubitLegacy(wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)

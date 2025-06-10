@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
@@ -454,7 +454,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     params = math.cast(op.parameters[0], dtype=complex)
     state0 = state[sl_0]
     state1 = state[sl_1]
-    if op.batch_size is not None and len(params) > 1:
+    if op.batch_size is not None:
         interface = math.get_interface(state)
         if interface == "torch":
             params = math.array(params, like=interface)
@@ -467,8 +467,6 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
             state1 = math.expand_dims(state1, 0)
     state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
     state = math.stack([state0, state1], axis=axis)
-    if not is_state_batched and op.batch_size == 1:
-        state = math.stack([state], axis=0)
     return state
 
 
@@ -630,27 +628,30 @@ def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
     """Take a snapshot of the state."""
-    if debugger is not None and debugger.active:
-        measurement = op.hyperparameters["measurement"]
-
+    if debugger is None or not debugger.active:
+        return state
+    measurement = op.hyperparameters["measurement"]
+    if op.hyperparameters["shots"] == "workflow":
         shots = execution_kwargs.get("tape_shots")
+    else:
+        shots = op.hyperparameters["shots"]
 
-        if isinstance(measurement, qml.measurements.StateMP) or not shots:
-            snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
-        else:
-            snapshot = qml.devices.qubit.measure_with_samples(
-                [measurement],
-                state,
-                shots,
-                is_state_batched,
-                execution_kwargs.get("rng"),
-                execution_kwargs.get("prng_key"),
-            )[0]
+    if shots:
+        snapshot = qml.devices.qubit.measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched,
+            execution_kwargs.get("rng"),
+            execution_kwargs.get("prng_key"),
+        )[0]
+    else:
+        snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
 
-        if op.tag:
-            debugger.snapshots[op.tag] = snapshot
-        else:
-            debugger.snapshots[len(debugger.snapshots)] = snapshot
+    if op.tag:
+        debugger.snapshots[op.tag] = snapshot
+    else:
+        debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state
 
 

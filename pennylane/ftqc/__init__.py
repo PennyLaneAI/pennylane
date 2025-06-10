@@ -25,7 +25,8 @@ Modules
     :toctree: api
 
 """
-from pennylane import ExperimentalWarning
+from .operations import RotXZX
+from .decomposition import convert_to_mbqc_formalism, convert_to_mbqc_gateset
 from .parametric_midmeasure import (
     ParametricMidMeasureMP,
     XMidMeasureMP,
@@ -36,19 +37,31 @@ from .parametric_midmeasure import (
     measure_z,
     diagonalize_mcms,
 )
+from .conditional_measure import cond_measure
 from .lattice import Lattice, generate_lattice
+from .graph_state_preparation import GraphStatePrep, make_graph_state
 from .qubit_graph import QubitGraph
+from .utils import QubitMgr
+from .pauli_tracker import get_byproduct_corrections
 
 __all__ = [
+    "GraphStatePrep",
+    "RotXZX",
     "Lattice",
     "QubitGraph",
+    "QubitMgr",
     "ParametricMidMeasureMP",
     "XMidMeasureMP",
     "YMidMeasureMP",
+    "cond_measure",
     "measure_arbitrary_basis",
     "measure_x",
     "measure_y",
     "measure_z",
     "diagonalize_mcms",
+    "convert_to_mbqc_formalism",
+    "convert_to_mbqc_gateset",
     "generate_lattice",
+    "make_graph_state",
+    "get_byproduct_corrections",
 ]

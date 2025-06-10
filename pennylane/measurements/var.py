@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+
 """
 This module contains the qml.var measurement.
 """
@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 from .sample import SampleMP
 
@@ -84,7 +84,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = Variance  #! Note: deprecated. Change the value to "var" in v0.42
+    _shortname = "var"
 
     @property
     def numeric_type(self):

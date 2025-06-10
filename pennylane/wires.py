@@ -22,7 +22,7 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.pytrees import register_pytree
 
 if util.find_spec("jax") is not None:
@@ -63,7 +63,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
+    if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
@@ -93,8 +93,7 @@ def _process(wires):
     if len(set_of_wires) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
-    # required to make `Wires` object idempotent
-    return tuple(itertools.chain(*(_flatten_wires_object(x) for x in tuple_of_wires)))
+    return tuple_of_wires
 
 
 class Wires(Sequence):
@@ -731,14 +730,6 @@ class Wires(Sequence):
 
 
 WiresLike = Union[Wires, Iterable[Hashable], Hashable]
-
-
-def _flatten_wires_object(wire_label):
-    """Converts the input to a tuple of wire labels."""
-    if isinstance(wire_label, Wires):
-        return wire_label.labels
-    return [wire_label]
-
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

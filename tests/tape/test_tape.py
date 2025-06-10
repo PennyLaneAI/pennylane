@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -890,14 +891,13 @@ class TestExpand:
 
         new_tape = tape.expand()
 
-        assert len(new_tape.operations) == 3
+        assert len(new_tape.operations) == 2
 
-        assert new_tape.operations[0].name == "PhaseShift"
-        assert new_tape.operations[1].name == "RX"
-        assert new_tape.operations[2].name == "PhaseShift"
+        assert new_tape.operations[0].name == "RX"
+        assert new_tape.operations[1].name == "GlobalPhase"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.num_params == 2
+        assert new_tape.get_parameters() == [np.pi, -np.pi / 2]
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -931,7 +931,7 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand(depth=2)
-        assert len(new_tape.operations) == 11
+        assert len(new_tape.operations) == 9
 
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(
@@ -1065,7 +1065,7 @@ class TestExpand:
             qml.expval(qml.PauliX(0))
             ret(op=qml.PauliZ(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+        with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
@@ -1079,7 +1079,7 @@ class TestExpand:
             ret(op=qml.PauliX(0))
             qml.sample(wires=wires)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+        with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
@@ -1093,7 +1093,7 @@ class TestExpand:
             ret(op=qml.PauliX(0))
             qml.counts(wires=wires)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+        with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [sample, counts, probs])
@@ -1114,7 +1114,7 @@ class TestExpand:
             "for each non-commuting observable."
         )
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
+        with pytest.raises(QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
 
     def test_multiple_expand_no_change_original_tape(self):

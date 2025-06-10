@@ -25,10 +25,28 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
+def crit_0(op: qml.operation.Operator):
+    return not any(qml.math.requires_grad(d) for d in op.data) or (
+        op.has_generator and any(qml.math.requires_grad(d) for d in op.data)
+    )
+
+
+class PreprocessDevice(qml.devices.Device):
+
+    def __init__(self, wires=None, shots=None):
+        self.target_dev = qml.devices.DefaultQubit(wires=wires, shots=shots)
+        super().__init__(wires=wires, shots=shots)
+
+    def preprocess(self, execution_config=None):
+        return self.target_dev.preprocess(execution_config)
+
+    def execute(self, circuits, execution_config=None):
+        return self.target_dev.execute(circuits, execution_config)
+
+
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
-    crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.2, wires=0)
@@ -41,14 +59,14 @@ class TestCreateExpandFn:
         """Test creation of expand_fn."""
         expand_fn = qml.transforms.create_expand_fn(
             depth=10,
-            stop_at=self.crit_0,
+            stop_at=crit_0,
             docstring=self.doc_0,
         )
         assert expand_fn.__doc__ == "Test docstring."
 
     def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""
-        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=crit_0)
         new_tape = expand_fn(self.tape)
         assert new_tape.operations[0] == self.tape.operations[0]
         assert new_tape.operations[1] == self.tape.operations[1]
@@ -58,7 +76,7 @@ class TestCreateExpandFn:
 
     def test_create_expand_fn_dont_expand(self):
         """Test expansion is skipped with depth=0."""
-        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=crit_0)
 
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
@@ -68,7 +86,7 @@ class TestCreateExpandFn:
         that all operations are expanded to match the devices default gate
         set"""
         dev = DefaultQubitLegacy(wires=1)
-        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
+        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)
@@ -249,6 +267,7 @@ class TestExpandNonunitaryGen:
             "SingleExcitationPlus",
             "DoubleExcitationMinus",
             "DoubleExcitationPlus",
+            "GlobalPhase",
         ]
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -417,6 +436,21 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
 
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
+
+    @pytest.mark.parametrize("device_name", ["default.qutrit"])
+    def test_legacy_custom_decomps(self, device_name):
+        """Test that the custom_decomps correctly dispatch the legacy device
+        Maintain the param list to one of the newest, existing legacy device.
+        If there is no existing legacy device, consider removing the
+        corresponding logic in device constructor.
+        """
+
+        custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
+        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+
+        # NOTE: don't try to construct; they might cause infinite recursion
+        assert isinstance(decomp_dev, qml.devices.LegacyDeviceFacade)
+        assert decomp_dev.target_device.short_name == device_name
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_string_and_operator_allowed(self, device_name):
@@ -732,7 +766,7 @@ class TestCreateCustomDecompExpandFn:
     def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         @qml.qnode(dev)
         def circuit():
@@ -764,12 +798,11 @@ class TestCreateCustomDecompExpandFn:
         assert ops[0].name == "CNOT"
         assert dev.custom_expand_fn is None
 
-    def test_custom_decomp_in_separate_context(self, mocker):
+    @pytest.mark.parametrize("device", (qml.devices.DefaultQubit, PreprocessDevice))
+    def test_custom_decomp_in_separate_context(self, mocker, device):
         """Test that the set_decomposition context manager works for the new device API."""
 
-        # pylint:disable=protected-access
-
-        dev = qml.device("default.qubit", wires=2)
+        dev = device(wires=2)
         spy = mocker.spy(dev, "execute")
 
         @qml.qnode(dev)

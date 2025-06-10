@@ -18,6 +18,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+import scipy as sp
 from gate_data import (
     CCZ,
     CH,
@@ -202,6 +203,24 @@ class TestControlledInit:
 
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
+
+    def test_resource_params(self):
+        """Tests that a controlled op has the correct resource params."""
+
+        op = Controlled(
+            qml.MultiRZ(0.5, wires=[0, 1, 2]),
+            control_wires=[3, 4],
+            control_values=[True, False],
+            work_wires=[5],
+        )
+        assert op.resource_params == {
+            "base_class": qml.MultiRZ,
+            "base_params": {"num_wires": 3},
+            "num_control_wires": 2,
+            "num_zero_control_values": 1,
+            "num_work_wires": 1,
+            "work_wire_type": "dirty",
+        }
 
     def test_data(self):
         """Test that the base data can be get and set through Controlled class."""
@@ -394,7 +413,7 @@ class TestControlledMiscMethods:
         assert data[0] is target
         assert len(data) == 1
 
-        assert metadata == (control_wires, control_values, work_wires)
+        assert metadata == (control_wires, control_values, work_wires, "dirty")
 
         # make sure metadata is hashable
         assert hash(metadata)
@@ -1438,7 +1457,7 @@ class TestControlledSupportsBroadcasting:
         cls = getattr(qml, name)
 
         # Provide up to 6 wires and take as many as the class requires
-        # This assumes that the class does *not* have `num_wires=qml.operation.AnyWires`
+        # This assumes that the class does *not* have `num_wires=None`
         wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
         base = cls(par, wires=wires)
         op = Controlled(base, "wire1")
@@ -1688,6 +1707,18 @@ custom_ctrl_ops = [
 class TestCtrl:
     """Tests for the ctrl transform."""
 
+    def test_sparse_qubit_unitary(self):
+        """Test that the controlled sparse QubitUnitary works correctly"""
+        data = sp.sparse.eye(2)
+        op = qml.QubitUnitary(data, wires=2)
+        c_op = qml.ctrl(op, 3)
+
+        data_dense = data.toarray()
+        op_dense = qml.QubitUnitary(data_dense, wires=2)
+        c_op_dense = qml.ctrl(op_dense, 3)
+
+        assert qml.math.allclose(c_op.sparse_matrix(), c_op_dense.matrix())
+
     def test_no_redundant_queue(self):
         """Test that the ctrl transform does not add redundant operations to the queue. https://github.com/PennyLaneAI/pennylane/pull/6926"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -1747,14 +1778,18 @@ class TestCtrl:
     def test_nested_controls(self):
         """Tests that nested controls are flattened correctly."""
 
-        op = qml.ctrl(
-            Controlled(
-                Controlled(qml.S(wires=[0]), control_wires=[1]),
-                control_wires=[2],
-                control_values=[0],
-            ),
-            control=[3],
-        )
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(
+                Controlled(
+                    Controlled(qml.S(wires=[0]), control_wires=[1]),
+                    control_wires=[2],
+                    control_values=[0],
+                ),
+                control=[3],
+            )
+
+        assert len(q) == 1
+        assert q.queue[0] is op
         expected = Controlled(
             qml.S(wires=[0]),
             control_wires=[3, 2, 1],

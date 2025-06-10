@@ -16,10 +16,8 @@ This module contains the template for performing basis transformation defined by
 """
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import AnyWires, Operation
-from pennylane.qchem.givens_decomposition import givens_decomposition
-from pennylane.wires import WiresLike
+from pennylane import math
+from pennylane.operation import Operation
 
 
 # pylint: disable-msg=too-many-arguments
@@ -97,7 +95,6 @@ class BasisRotation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     resource_param_keys = ("shape",)
@@ -120,15 +117,15 @@ class BasisRotation(Operation):
         return cls(wires=metadata[0], unitary_matrix=data[0])
 
     def __init__(self, wires, unitary_matrix, check=False, id=None):
-        M, N = qml.math.shape(unitary_matrix)
+        M, N = math.shape(unitary_matrix)
 
         if M != N:
             raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
         if check:
-            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
-                unitary_matrix @ qml.math.conj(unitary_matrix).T,
-                qml.math.eye(M, dtype=complex),
+            if not math.is_abstract(unitary_matrix) and not math.allclose(
+                unitary_matrix @ math.conj(unitary_matrix).T,
+                math.eye(M, dtype=complex),
                 atol=1e-4,
             ):
                 raise ValueError("The provided transformation matrix should be unitary.")
@@ -161,16 +158,16 @@ class BasisRotation(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        M, N = qml.math.shape(unitary_matrix)
+        M, N = math.shape(unitary_matrix)
         if M != N:
             raise ValueError(
                 f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
             )
 
         if check:
-            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
-                unitary_matrix @ qml.math.conj(unitary_matrix).T,
-                qml.math.eye(M, dtype=complex),
+            if not math.is_abstract(unitary_matrix) and not math.allclose(
+                unitary_matrix @ math.conj(unitary_matrix).T,
+                math.eye(M, dtype=complex),
                 atol=1e-4,
             ):
                 raise ValueError("The provided transformation matrix should be unitary.")
@@ -180,20 +177,20 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        phase_list, givens_list = givens_decomposition(unitary_matrix)
+        phase_list, givens_list = math.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
-            op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
+            op_list.append(qml.PhaseShift(math.angle(phase), wires=wires[idx]))
 
         for grot_mat, indices in givens_list:
-            theta = qml.math.arccos(qml.math.real(grot_mat[1, 1]))
-            phi = qml.math.angle(grot_mat[0, 0])
+            theta = math.arccos(math.real(grot_mat[1, 1]))
+            phi = math.angle(grot_mat[0, 0])
 
             op_list.append(
                 qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
             )
 
-            if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
+            if math.is_abstract(phi) or not math.isclose(phi, 0.0):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list

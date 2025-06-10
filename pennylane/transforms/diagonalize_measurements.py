@@ -17,6 +17,7 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -25,7 +26,7 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=protected-access,unused-argument
+# pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
 
@@ -46,7 +47,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -178,7 +179,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
                 tape, to_eigvals=to_eigvals
             )
-        except qml.QuantumFunctionError:
+        except QuantumFunctionError:
             # the pauli_rep based method sometimes fails unnecessarily -
             # if it fails, fall back on the less efficient method (which may also fail)
             diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
@@ -235,7 +236,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Args:
         tape: the observable to be diagonalized
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only

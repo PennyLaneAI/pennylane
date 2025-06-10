@@ -166,7 +166,7 @@ class TestTranspile:
         qml.gradients.param_shift(transpiled_qnode)(params)
 
     def test_more_than_2_qubits_raises_anywires(self):
-        """test that transpile raises an error for an operation with AnyWires that acts on more than 2 qubits"""
+        """test that transpile raises an error for an operation with num_wires=None that acts on more than 2 qubits"""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         def circuit(param):
@@ -245,7 +245,7 @@ class TestTranspile:
 
     def test_transpile_ops_anywires_1_qubit(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
-        1-qubit operations with AnyWires defined for the operation"""
+        1-qubit operations with num_wires=None defined for the operation"""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         def circuit(param):
@@ -301,7 +301,7 @@ class TestTranspile:
 
     def test_transpile_ops_anywires_1_qubit_qnode(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
-        1-qubit operations with AnyWires defined for the operation"""
+        1-qubit operations with num_wires=None defined for the operation"""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
         @qml.qnode(device=dev)
@@ -399,8 +399,9 @@ class TestTranspile:
 
         assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
 
-        original_results = dev.execute(tape)
-        transformed_results = fn(dev.batch_execute(batch))
+        pre, post = dev.preprocess_transforms()((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
         assert qml.math.allclose(original_results, transformed_results)
 
     def test_transpile_probs_sample_filled_in_wires(self):

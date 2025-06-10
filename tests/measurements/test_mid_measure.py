@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
@@ -38,7 +39,7 @@ class TestMeasure:
         """Test that an error is raised if multiple wires are passed to
         measure."""
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             qml.measure(wires=[0, 1])
@@ -421,7 +422,7 @@ class TestMeasurementValueManipulation:
         assert new_meas.id == mp1.id
 
     def test_mod(self):
-        """Test the __xor__ dunder method between two measurement values"""
+        """Test the __mod__ dunder method between two measurement values"""
         m1 = MeasurementValue([mp1], lambda v: v)
         mod_val = m1 % 2
         assert mod_val[0] == 0

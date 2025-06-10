@@ -16,7 +16,7 @@ This file contains functionalities that simplify working with kernels.
 """
 from itertools import product
 
-import pennylane as qml
+from pennylane import math
 
 
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
@@ -58,9 +58,9 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
             [0.96864001, 0.99727485, 1.        , 0.96605621],
             [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
     """
-    N = qml.math.shape(X)[0]
+    N = math.shape(X)[0]
     if assume_normalized_kernel and N == 1:
-        return qml.math.eye(1, like=qml.math.get_interface(X))
+        return math.eye(1, like=math.get_interface(X))
 
     matrix = [None] * N**2
 
@@ -73,7 +73,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     if assume_normalized_kernel:
         # Create a one-like entry that has the same interface and batching as the kernel output
         # As we excluded the case N=1 together with assume_normalized_kernel above, matrix[1] exists
-        one = qml.math.ones_like(matrix[1])
+        one = math.ones_like(matrix[1])
         for i in range(N):
             matrix[N * i + i] = one
     else:
@@ -81,9 +81,9 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
         for i in range(N):
             matrix[N * i + i] = kernel(X[i], X[i])
 
-    shape = (N, N) if qml.math.ndim(matrix[0]) == 0 else (N, N, qml.math.size(matrix[0]))
+    shape = (N, N) if math.ndim(matrix[0]) == 0 else (N, N, math.size(matrix[0]))
 
-    return qml.math.moveaxis(qml.math.reshape(qml.math.stack(matrix), shape), -1, 0)
+    return math.moveaxis(math.reshape(math.stack(matrix), shape), -1, 0)
 
 
 def kernel_matrix(X1, X2, kernel):
@@ -127,12 +127,12 @@ def kernel_matrix(X1, X2, kernel):
     As we can see, for :math:`n` and :math:`m` datapoints in the first and second
     dataset respectively, the output matrix has the shape :math:`n\times m`.
     """
-    N = qml.math.shape(X1)[0]
-    M = qml.math.shape(X2)[0]
+    N = math.shape(X1)[0]
+    M = math.shape(X2)[0]
 
-    matrix = qml.math.stack([kernel(x, y) for x, y in product(X1, X2)])
+    matrix = math.stack([kernel(x, y) for x, y in product(X1, X2)])
 
-    if qml.math.ndim(matrix[0]) == 0:
-        return qml.math.reshape(matrix, (N, M))
+    if math.ndim(matrix[0]) == 0:
+        return math.reshape(matrix, (N, M))
 
-    return qml.math.moveaxis(qml.math.reshape(matrix, (N, M, qml.math.size(matrix[0]))), -1, 0)
+    return math.moveaxis(math.reshape(matrix, (N, M, math.size(matrix[0]))), -1, 0)

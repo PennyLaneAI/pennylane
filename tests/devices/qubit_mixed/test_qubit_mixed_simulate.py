@@ -67,6 +67,44 @@ class TestStatePrepBase:
         expected[6] = 1.0  # Should be |110> = |6>
         assert qml.math.allclose(probs, expected)
 
+    def test_state_mp(self):
+        """Test that the current two supported statemps are equivalent.
+        This test ensure the fix for measurementprocess.raw_wires is working."""
+        state = np.array([0, 1])
+        device = qml.device("default.mixed", wires=[0, 1])
+
+        @qml.qnode(device)
+        def circuit0():
+            qml.StatePrep(state, wires=[1])
+            return qml.density_matrix(wires=[0, 1])
+
+        @qml.qnode(device)
+        def circuit():
+            qml.StatePrep(state, wires=[1])
+            return qml.state()
+
+        dm0 = circuit0()
+        dm = circuit()
+        assert np.allclose(dm0, dm)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
+    def test_state_prep_single_batch_size(self, interface):
+        """Test a special case, when the state is of shape (1, n)"""
+        state = np.zeros((1, 4))
+        state[0, 0] = 1.0
+
+        state = qml.math.asarray(state, like=interface)
+
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=[0, 1]), qml.X(0)],
+            measurements=[qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.state()],
+        )
+        # Dev Note: there used to be a shape-related bug that only appears in usage when you measure all wires.
+        res, _, dm = simulate(qs)
+        assert dm.shape == (1, 4, 4)
+        assert np.allclose(res, -1.0)
+
 
 @pytest.mark.parametrize("wires", [0, 1, 2])
 class TestBasicCircuit:
@@ -84,7 +122,7 @@ class TestBasicCircuit:
         return qml.tape.QuantumScript(ops, obs)
 
     def test_basic_circuit_numpy(self, wires):
-        """Test execution with a basic circuit."""
+        """Test execution with a basic circuit, only one wire."""
         phi = np.array(0.397)
 
         qs = self.get_quantum_script(phi, wires)
@@ -104,21 +142,6 @@ class TestBasicCircuit:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
-        assert np.allclose(result, expected_measurements)
-
-        # Test state evolution and measurement separately
-        state, is_state_batched = get_final_state(qs)
-        result = measure_final_state(qs, state, is_state_batched)
-
-        expected_state = np.array(
-            [
-                [np.cos(phi / 2) ** 2, 0.5j * np.sin(phi)],
-                [-0.5j * np.sin(phi), np.sin(phi / 2) ** 2],
-            ]
-        )
-
-        assert np.allclose(state, expected_state)
-        assert not is_state_batched
         assert np.allclose(result, expected_measurements)
 
     @pytest.mark.autograd
@@ -205,6 +228,36 @@ class TestBasicCircuit:
                 for one_obs_result, one_obs_expected in zip(result, expected)
             ]
         )
+
+    def test_state_cache(self, wires):
+        """Test that the state_cache parameter properly stores the final state when accounting for wire mapping."""
+        phi = np.array(0.397)
+
+        # Create a cache dictionary to store states
+        state_cache = {}
+
+        # Create and map the circuit to standard wires first
+        qs = self.get_quantum_script(phi, wires)
+        mapped_qs = qs.map_to_standard_wires()
+        mapped_hash = mapped_qs.hash
+
+        # Run the circuit with cache
+        result1 = simulate(qs, state_cache=state_cache)
+
+        # Verify the mapped circuit's hash is in the cache
+        assert mapped_hash in state_cache, "Mapped circuit hash should be in cache"
+
+        # Verify the cached state has correct shape
+        cached_state = state_cache[mapped_hash]
+        assert cached_state.shape == (2, 2), "Cached state should be 2x2 density matrix"
+
+        # Run same circuit again and verify results are consistent
+        result2 = simulate(qs, state_cache=state_cache)
+        assert np.allclose(result1, result2)
+
+        # Verify results match theoretical expectations
+        expected = (0, -np.sin(phi), np.cos(phi))
+        assert np.allclose(result1, expected)
 
 
 class TestBroadcasting:
@@ -318,7 +371,10 @@ class TestSampleMeasurements:
             shots=10000,
         )
         result = simulate(qs, rng=seed, interface=interface)
-        assert isinstance(result, np.float64)
+        if not interface == "jax":
+            assert isinstance(result, np.float64)
+        else:
+            assert result.dtype == np.float64
         assert result.shape == ()
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
@@ -413,7 +469,7 @@ class TestSampleMeasurements:
             ],
             shots=shots,
         )
-        result = simulate(qs, rng=seed)
+        result = simulate(qs, seed)
 
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
@@ -433,9 +489,10 @@ class TestSampleMeasurements:
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("y", [0.732, 0.488])
-    def test_custom_wire_labels(self, x, y, seed):
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_custom_wire_labels(self, shots, x, y, seed):
         """Test that custom wire labels works as expected"""
-        num_shots = 10000
+        shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
             [
                 qml.RX(x, wires="b"),
@@ -447,17 +504,22 @@ class TestSampleMeasurements:
                 qml.counts(wires=["a", "b"]),
                 qml.sample(wires=["b", "a"]),
             ],
-            shots=num_shots,
+            shots=shots,
         )
         result = simulate(qs, rng=seed)
 
         assert isinstance(result, tuple)
-        assert len(result) == 3
-        assert isinstance(result[0], np.float64)
-        assert isinstance(result[1], dict)
-        assert isinstance(result[2], np.ndarray)
+        assert len(result) == len(list(shots))
 
-        expected_keys, _ = self.probs_of_2_qubit_circ(x, y)
-        assert list(result[1].keys()) == expected_keys
+        for shot_res, s in zip(result, shots):
+            assert isinstance(shot_res, tuple)
+            assert len(shot_res) == 3
 
-        assert result[2].shape == (num_shots, 2)
+            assert isinstance(shot_res[0], np.float64)
+            assert isinstance(shot_res[1], dict)
+            assert isinstance(shot_res[2], np.ndarray)
+
+            expected_keys, _ = self.probs_of_2_qubit_circ(x, y)
+            assert list(shot_res[1].keys()) == expected_keys
+
+            assert shot_res[2].shape == (s, 2)

@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(".")), "doc"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "3.3"
+needs_sphinx = "8.1"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -48,6 +48,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinxext.opengraph",
     "m2r2",
+    "sphinx_automodapi.smart_resolver"
 ]
 
 # Open Graph metadata
@@ -58,7 +59,7 @@ ogp_social_cards = {
     "line_color": "#03b2ff",
 }
 ogp_image = "_static/opengraph.png"
-
+numpydoc_show_class_members = False
 
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
@@ -82,7 +83,7 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: 
 copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
-    "demo": ("https://pennylane.ai/qml/", None),
+    "demo": ("https://pennylane.ai/qml", None),
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
@@ -90,6 +91,7 @@ mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
+autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -128,7 +130,7 @@ version = re.match(r"^(\d+\.\d+)", release).expand(r"\1")
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # today_fmt is used as the format for a strftime call.
 today_fmt = "%Y-%m-%d"

@@ -17,14 +17,58 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import uuid
 from collections.abc import Hashable
+from copy import copy
+from functools import lru_cache
 from typing import Iterable, Optional, Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
+from pennylane.ops.op_math import Conditional, adjoint
+from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
+from pennylane.queuing import QueuingManager
+from pennylane.transforms import transform
 from pennylane.wires import Wires
+
+
+@lru_cache(maxsize=1)
+def _create_parametrized_mid_measure_primitive():
+    """Create a primitive corresponding to a parametrized mid-circuit measurement type.
+
+    Called when using a parametrized mid-circuit measurement, such as
+    :func:`~pennylane.measure_arbitrary_basis`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    # pylint: disable=import-outside-toplevel
+    import jax
+
+    from pennylane.capture.custom_primitives import QmlPrimitive
+
+    measure_in_basis_p = QmlPrimitive("measure_in_basis")
+
+    @measure_in_basis_p.def_impl
+    def _(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
+        return _measure_impl(
+            wires,
+            measurement_class=ParametricMidMeasureMP,
+            angle=angle,
+            plane=plane,
+            reset=reset,
+            postselect=postselect,
+        )
+
+    @measure_in_basis_p.def_abstract_eval
+    def _(*_, **__):
+        return jax.core.ShapedArray((), jax.numpy.bool)
+
+    return measure_in_basis_p
 
 
 def measure_arbitrary_basis(
@@ -126,8 +170,14 @@ def measure_arbitrary_basis(
         result will return a binary sequence of samples.
         See :ref:`here <mid_circuit_measurements_statistics>` for more details.
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if capture.enabled():
+        primitive = _create_parametrized_mid_measure_primitive()
+        return primitive.bind(angle, wires, plane=plane, reset=reset, postselect=postselect)
 
     return _measure_impl(
         wires, ParametricMidMeasureMP, angle=angle, plane=plane, reset=reset, postselect=postselect
@@ -171,8 +221,14 @@ def measure_x(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if capture.enabled():
+        primitive = _create_parametrized_mid_measure_primitive()
+        return primitive.bind(0.0, wires, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, XMidMeasureMP, reset=reset, postselect=postselect)
 
@@ -214,8 +270,14 @@ def measure_y(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    if len(Wires(wires)) > 1:
+        raise QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
-    # ToDo: if capture is enabled, create and bind primitive here and return primitive instead (subsequent PR)
+    if capture.enabled():
+        primitive = _create_parametrized_mid_measure_primitive()
+        return primitive.bind(np.pi / 2, wires, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, YMidMeasureMP, reset=reset, postselect=postselect)
 
@@ -249,6 +311,7 @@ def measure_z(
         QuantumFunctionError: if multiple wires were specified
 
     """
+    # capture is already handled inside qml.measure
     return measure(wires, reset=reset, postselect=postselect)
 
 
@@ -259,10 +322,6 @@ def _measure_impl(
 ):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
-    if len(wires) > 1:
-        raise qml.QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
@@ -327,7 +386,6 @@ class ParametricMidMeasureMP(MidMeasureMP):
         )
         return (None, None), metadata
 
-    # pylint: disable=arguments-renamed, arguments-differ
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
@@ -341,6 +399,16 @@ class ParametricMidMeasureMP(MidMeasureMP):
 
         return hash(fingerprint)
 
+    # pylint: disable=too-many-positional-arguments, arguments-differ, arguments-renamed
+    @classmethod
+    def _primitive_bind_call(
+        cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
+    ):
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(
+            *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
+        )
+
     def __repr__(self):
         """Representation of this class."""
         return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
@@ -353,19 +421,17 @@ class ParametricMidMeasureMP(MidMeasureMP):
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
         if self.plane == "XY":
-            return [qml.PhaseShift(-self.angle, self.wires), qml.H(self.wires)]
+            return [PhaseShift(-self.angle, self.wires), H(self.wires)]
         if self.plane == "ZX":
-            return [qml.RY(-self.angle, self.wires)]
+            return [RY(-self.angle, self.wires)]
         if self.plane == "YZ":
-            return [qml.RX(-self.angle, self.wires)]
+            return [RX(-self.angle, self.wires)]
 
         raise NotImplementedError(
             f"{self.plane} plane not implemented. Available plans are 'XY' 'ZX' and 'YZ'."
         )
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -402,7 +468,6 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_x"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -426,9 +491,7 @@ class XMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -453,7 +516,7 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
-        return [qml.H(self.wires)]
+        return [H(self.wires)]
 
 
 class YMidMeasureMP(ParametricMidMeasureMP):
@@ -463,7 +526,6 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     _shortname = "measure_y"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Wires],
@@ -492,9 +554,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
         """Representation of this class."""
         return f"{self._shortname}(wires={self.wires.tolist()})"
 
-    def label(
-        self, decimals: int = None, base_label: str = None, cache: dict = None
-    ):  # pylint: disable=unused-argument
+    def label(self, decimals: int = None, base_label: str = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -520,7 +580,7 @@ class YMidMeasureMP(ParametricMidMeasureMP):
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
         # alternatively we could apply (Z, S) instead of adjoint(S)
-        return [qml.adjoint(qml.S(self.wires)), qml.H(self.wires)]
+        return [adjoint(S(self.wires)), H(self.wires)]
 
 
 @_add_operation_to_drawer.register
@@ -551,7 +611,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@qml.transform
+@transform
 def diagonalize_mcms(tape):
     """Diagonalize any mid-circuit measurements in a parameterized basis into the computational basis.
 
@@ -569,32 +629,89 @@ def diagonalize_mcms(tape):
     .. code-block:: python3
 
         from pennylane.ftqc import diagonalize_mcms, ParametricMidMeasureMP
+        from functools import partial
 
         dev = qml.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.qnode(dev)
+        @partial(qml.set_shots, shots=1000)
+        @qml.qnode(dev, mcm_method="one-shot")
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            ParametricMidMeasureMP(0, angle=x[1], plane="XY")
-            return qml.expval(qml.Z(0))
+            qml.RX(x, wires=0)
+            m = measure_y(0)
+            qml.cond(m, qml.X)(1)
+            return qml.expval(qml.Z(1))
 
     Applying the transform inserts the relevant gates before the measurement to allow
     measurements to be in the Z basis, so the original circuit
 
-    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi]))
-    0: ──RY(0.79)──┤↗ˣʸ(3.14)├─┤  <Z>
+    >>> print(qml.draw(circuit, level=0)(np.pi/4))
+    0: ──RX(0.79)──┤↗ʸ├────┤
+    1: ─────────────║────X─┤  <Z>
+                    ╚════╝
 
     becomes
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi]))
-    ──RY(0.79)──Rϕ(-3.14)──H──┤↗├─┤  <Z>
+    >>> print(qml.draw(circuit)(np.pi/4))
+    0: ──RX(0.79)──S†──H──┤↗├────┤
+    1: ────────────────────║───X─┤  <Z>
+                           ╚═══╝
+
+
+    .. details::
+        :title: Conditional measurements
+
+        The transform can also handle diagonalization of conditional measurements created by
+        :func:`qml.ftqc.cond_measure <pennylane.ftqc.cond_measure>`. This is done by replacing the
+        measurements for the true and false condition with conditional diagonalizing gates,
+        and a single measurement in the computational basis:
+
+        .. code-block:: python3
+
+            from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x
+
+            dev = qml.device("default.qubit")
+
+            @diagonalize_mcms
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RY(x[0], wires=0)
+                qml.RX(x[1], wires=1)
+                m = qml.measure(0)
+                m2 = cond_measure(m, measure_x, measure_y)(1)
+                qml.cond(m2, qml.X)(1)
+                return qml.expval(qml.Z(1))
+
+        The :func:`cond_measure <pennylane.ftqc.cond_measure>` function adds a conditional X-basis
+        measurement and a conditional Y basis measurement to the circuit, with opposite conditions.
+        When the transform is applied, the diagonalizing gates of the measurements are conditional.
+        The two conditional measurements then become equivalent measurements in the computational basis
+        with opposite conditions, and can be simplified to a single, unconditional measurement in the
+        computational basis.
+
+        This circuit thus diagonalizes to:
+
+        >>> print(qml.draw(circuit)([np.pi, np.pi/4]))
+        0: ──RY(3.14)──┤↗├───────────────────┤
+        1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
+                        ╚═══╩══╩═══╝   ║   ║
+                                       ╚═══╝
+
+        where the initial Hadamard gate on wire 1 has the same condition as the original X-basis
+        measurement, and the adjoint S gate and second Hadamard share a condition with the Y-basis
+        measurement.
     """
 
     new_operations = []
     mps_mapping = {}
 
-    for op in tape.operations:
+    curr_idx = 0
+
+    for i, op in enumerate(tape.operations):
+
+        if i != curr_idx:
+            continue
+
         if isinstance(op, ParametricMidMeasureMP):
 
             # add diagonalizing gates to tape
@@ -602,44 +719,74 @@ def diagonalize_mcms(tape):
             new_operations.extend(diag_gates)
 
             # add computational basis MCM to tape
-            with qml.QueuingManager.stop_recording():
+            with QueuingManager.stop_recording():
                 new_mp = MidMeasureMP(op.wires, reset=op.reset, postselect=op.postselect, id=op.id)
             new_operations.append(new_mp)
 
             # track mapping from original to computational basis MCMs
             mps_mapping[op] = new_mp
 
-        elif isinstance(op, qml.ops.Conditional):
+        elif isinstance(op, Conditional):
 
             # from MCM mapping, map any MCMs in the condition if needed
-            processing_fn = op.meas_val.processing_fn
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
-            expr = MeasurementValue(mps, processing_fn=processing_fn)
 
-            if isinstance(op.base, ParametricMidMeasureMP):
-                # add conditional diagonalizing gates + conditional MCM to the tape
-                with qml.QueuingManager.stop_recording():
-                    diag_gates = [
-                        qml.ops.Conditional(expr=expr, then_op=gate)
-                        for gate in op.diagonalizing_gates()
+            if isinstance(op.base, MidMeasureMP):
+                # the only user-facing API for creating Conditionals with MCMs is meas_cond,
+                # which ensures both and true_fn and false_fn are included, so here we assume the
+                # expected format (i.e. conditional mcms are found pairwise with opposite conditions)
+                true_cond, false_cond = (op, tape.operations[i + 1])
+                # we process both the true_cond and the false_cond together, so we skip an index in the ops
+                curr_idx += 1
+
+                # add conditional diagonalizing gates + computational basis MCM to the tape
+                expr_true = MeasurementValue(mps, processing_fn=true_cond.meas_val.processing_fn)
+                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
+
+                with QueuingManager.stop_recording():
+                    diag_gates_true = [
+                        Conditional(expr=expr_true, then_op=gate)
+                        for gate in true_cond.diagonalizing_gates()
                     ]
+
+                    diag_gates_false = [
+                        Conditional(expr=expr_false, then_op=gate)
+                        for gate in false_cond.diagonalizing_gates()
+                    ]
+
                     new_mp = MidMeasureMP(
                         op.wires, reset=op.base.reset, postselect=op.base.postselect, id=op.base.id
                     )
-                    new_cond = qml.ops.Conditional(expr=expr, then_op=new_mp)
 
-                new_operations.extend(diag_gates)
-                new_operations.append(new_cond)
+                new_operations.extend(diag_gates_true)
+                new_operations.extend(diag_gates_false)
+                new_operations.append(new_mp)
 
                 # track mapping from original to computational basis MCMs
-                mps_mapping[op.base] = new_mp
+                mps_mapping[true_cond.base] = new_mp
+                mps_mapping[false_cond.base] = new_mp
             else:
-                with qml.QueuingManager.stop_recording():
-                    new_cond = qml.ops.Conditional(expr=expr, then_op=op.base)
+                processing_fn = op.meas_val.processing_fn
+                expr = MeasurementValue(mps, processing_fn=processing_fn)
+
+                with QueuingManager.stop_recording():
+                    new_cond = Conditional(expr=expr, then_op=op.base)
                 new_operations.append(new_cond)
 
         else:
             new_operations.append(op)
+
+        curr_idx += 1
+
+    new_measurements = []
+    for mp in tape.measurements:
+        if mp.mv is None:
+            new_measurements.append(mp)
+        else:
+            new_mp = copy(mp)
+            mps = [mps_mapping.get(m, m) for m in mp.mv.measurements]
+            new_mp.mv.measurements = mps
+            new_measurements.append(new_mp)
 
     new_tape = tape.copy(operations=new_operations)
 

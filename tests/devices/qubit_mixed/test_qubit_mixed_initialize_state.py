@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import StatePrep, math
+from pennylane import BasisState, StatePrep, math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
@@ -49,8 +49,6 @@ class TestInitializeState:
     # pylint:disable=unused-argument,too-few-public-methods
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
-
-        num_wires = qml.operation.AllWires
 
         def __init__(self, *args, **kwargs):
             self.dtype = kwargs.pop("dtype", None)
@@ -97,6 +95,18 @@ class TestInitializeState:
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
+
+    def test_create_initial_state_with_StatePrep_subset(self, interface):
+        """Tests that create_initial_state works with a subset state-prep operation."""
+        wires = [0, 1]
+        prep_op = BasisState([0, 1], wires=wires)
+        state = create_initial_state(wires, prep_operation=prep_op, like=interface)
+
+        prep_op_subset = BasisState([1], wires=[1])
+        state_subset = create_initial_state(wires, prep_operation=prep_op_subset, like=interface)
+        assert math.allequal(state, state_subset)
+        assert math.get_interface(state) == interface
+        assert math.get_interface(state_subset) == interface
 
     def test_create_initial_state_with_QubitDensityMatrix(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""

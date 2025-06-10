@@ -12,26 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from itertools import combinations, combinations_with_replacement
+import warnings
 from typing import Union
 
-import numpy as np
-
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
 from ..pauli_arithmetic import PauliSentence, PauliWord
-
-
-def _all_commutators(ops):
-    commutators = {}
-    for (j, op1), (k, op2) in combinations(enumerate(ops), r=2):
-        res = op1.commutator(op2)
-        if res != PauliSentence({}):
-            commutators[(j, k)] = res
-
-    return commutators
 
 
 def structure_constants(
@@ -42,6 +31,8 @@ def structure_constants(
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
+
+    .. warning:: :func:`~structure_constants` has moved to the :mod:`pennylane.liealg` module and can be called from there via ``qml.liealg.structure_constants`` or from the top level via ``qml.structure_constants``.
 
     Given a DLA :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`,
     the structure constants yield the decomposition of all commutators in terms of DLA elements,
@@ -69,7 +60,7 @@ def structure_constants(
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
 
-    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
+    .. seealso:: :func:`~lie_closure`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`__
 
     **Example**
 
@@ -187,178 +178,10 @@ def structure_constants(
         be skipped.
 
     """
-    if matrix:
-        return _structure_constants_matrix(g, is_orthogonal)
+    warnings.warn(
+        "Calling structure_constants via qml.pauli.structure_constants is deprecated. structure_constants has moved to pennylane.liealg. "
+        "Please call structure_constants from top level as qml.structure_constants or from the liealg module via qml.liealg.structure_constants.",
+        PennyLaneDeprecationWarning,
+    )
 
-    if any((getattr(op, "pauli_rep", None) is None) for op in g):
-        raise ValueError(
-            f"Cannot compute adjoint representation of non-pauli operators. Received {g}. If you want to use matrices, use structure_constants(.., matrix=True)"
-        )
-
-    if not pauli:
-        g = [op.pauli_rep for op in g]
-
-    commutators = _all_commutators(g)
-
-    rep = np.zeros((len(g), len(g), len(g)), dtype=float)
-    for i, op in enumerate(g):
-        # if is_orthogonal is activated we will use the norm_squared of the op, otherwise we won't
-        norm_squared = (op @ op).trace() if is_orthogonal else 1
-        for (j, k), res in commutators.items():
-            # if is_orthogonal is activated, use v = ∑ (v · e_j / ||e_j||^2) * e_j
-            value = (1j * (op @ res).trace()).real / norm_squared
-            rep[i, j, k] = value
-            rep[i, k, j] = -value
-
-    if not is_orthogonal:
-        gram = np.zeros((len(g), len(g)), dtype=float)
-        for (i, op1), (j, op2) in combinations_with_replacement(enumerate(g), r=2):
-            gram[i, j] = gram[j, i] = (op1 @ op2).trace()
-
-        # Contract the structure constants on the upper index with the Gram matrix, see derivation
-        rep = np.tensordot(np.linalg.pinv(gram), rep, axes=[[-1], [0]])
-
-    return rep
-
-
-def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> TensorLike:
-    r"""
-    Compute the structure constants that make up the adjoint representation of a Lie algebra.
-
-    This function computes the structure constants of a Lie algebra provided by their matrix representation,
-    obtained from, e.g., :func:`~lie_closure`.
-    This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
-    that are sums of many Paulis.
-
-    .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.
-
-    Args:
-        g (np.array): The (dynamical) Lie algebra provided as matrix matrices, as generated from :func:`~lie_closure`.
-            ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
-        is_orthogonal (bool): Whether or not the matrices in ``g`` are orthogonal with respect to the Hilbert-Schmidt inner product on
-            (skew-)Hermitian matrices. If the inputs are orthogonal, it is recommended to set ``is_orthogonal`` to ``True`` to reduce
-            computational cost. Defaults to ``True``.
-
-    Returns:
-        TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to
-        the indices ``(gamma, alpha, beta)``.
-
-    **Example**
-
-    Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
-
-    >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
-    >>> g.shape
-    (12, 16, 16)
-
-    The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
-    Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
-
-    >>> adj = qml.structure_constants(g, matrix=True)
-    >>> adj.shape
-    (12, 12, 12)
-
-    **Internal representation**
-
-    As mentioned above, the input is assumed to be a batch of Hermitian matrices, even though
-    algebra elements are usually skew-Hermitian. That is, the input should represent the operators
-    :math:`G_\alpha` for an algebra basis :math:`\{iG_\alpha\}_\alpha`.
-    In an orthonormal basis of this form, the structure constants can then be computed simply via
-
-    .. math::
-
-        f^\gamma_{\alpha, \beta} = \text{tr}[-i G_\gamma[iG_\alpha, iG_\beta]] = i\text{tr}[G_\gamma [G_\alpha, G_\beta]] \in \mathbb{R}.
-
-    Possible deviations of an orthogonal basis from normalization is taken into account in a
-    reduced version of the step for non-orthogonal bases below.
-
-    **Structure constants in non-orthogonal bases**
-
-    Structure constants are often discussed using an orthogonal basis of the algebra.
-    This function can deal with non-orthogonal bases as well. For this, the Gram
-    matrix :math:`g` between the basis elements is taken into account when computing the overlap
-    of a commutator :math:`[iG_\alpha, iG_\beta]` with all algebra elements :math:`iG_\gamma`.
-    The resulting formula reads
-
-    .. math::
-
-        f^\gamma_{\alpha, \beta} &= \sum_\eta g^{-1}_{\gamma\eta} i \text{tr}[G_\eta [G_\alpha, G_\beta]]\\
-        g_{\gamma \eta} &= \text{tr}[G_\gamma G_\eta] \quad(\in\mathbb{R})
-
-    Internally, the commutators are computed by evaluating all operator products and subtracting
-    suitable pairs of products from each other. These products can be reused to evaluate the
-    Gram matrix as well.
-    For orthogonal but not normalized bases, a reduced version of this step is used, only
-    computing (and inverting) the diagonal of the Gram matrix.
-    """
-
-    if getattr(g[0], "wires", False):
-        # operator input
-        all_wires = qml.wires.Wires.all_wires([_.wires for _ in g])
-        n = len(all_wires)
-        assert all_wires.toset() == set(range(n))
-
-        g = qml.math.array(
-            [qml.matrix(op, wire_order=range(n)) for op in g], dtype=complex, like=g[0]
-        )
-        chi = 2**n
-        assert np.shape(g) == (len(g), chi, chi)
-
-    interface = qml.math.get_interface(g[0])
-
-    if isinstance(g[0], TensorLike) and isinstance(g, (list, tuple)):
-        # list of matrices
-        g = qml.math.stack(g, like=interface)
-
-    chi = qml.math.shape(g[0])[0]
-    assert qml.math.shape(g) == (len(g), chi, chi)
-    assert qml.math.allclose(
-        qml.math.transpose(qml.math.conj(g), (0, 2, 1)), g
-    ), "Input matrices to structure_constants not Hermitian"
-
-    # compute all commutators by computing all products first.
-    # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
-    prod = qml.math.tensordot(g, g, axes=[[2], [1]])
-    # The commutators now are the difference of prod with itself, with dimg axes swapped
-    all_coms = prod - qml.math.transpose(prod, (2, 1, 0, 3))
-
-    # project commutators on the basis of g, see docstring for details.
-    # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
-    # Normalize trace inner product by dimension chi
-    adj = qml.math.real(1j * qml.math.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]]))
-
-    if is_orthogonal:
-        # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
-
-        if interface == "tensorflow":
-            import keras  # pylint: disable=import-outside-toplevel
-
-            pre_diag = keras.ops.diagonal(
-                keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
-            )
-        else:
-            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = qml.math.diagonal(qml.math.diagonal(prod, 0, 1, 3), 0, 0, 1)
-
-        gram_diag = qml.math.real(qml.math.sum(pre_diag, axis=0))
-
-        adj = (chi / gram_diag[:, None, None]) * adj
-    else:
-        # Non-orthogonal inputs. Need to correct by (full) Gram matrix
-        # Compute the Gram matrix and apply its (pseudo-)inverse to the obtained projections.
-        # See the docstring for details.
-        # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
-        # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
-        # This contraction is missing the normalization factor 1/chi of the trace inner product.
-        gram_inv = qml.math.linalg.pinv(
-            qml.math.real(qml.math.sum(qml.math.diagonal(prod, axis1=1, axis2=3), axis=-1))
-        )
-        # Axis ordering for contraction with gamma axis of raw structure constants:
-        # (dimg, _dimg_), (_dimg_, dimg, dimg) -> (dimg, dimg, dim)
-        # Here we add the missing normalization factor of the trace inner product (after inversion)
-        adj = qml.math.tensordot(gram_inv * chi, adj, axes=1)
-
-    return adj
+    return qml.structure_constants(g, pauli=pauli, matrix=matrix, is_orthogonal=is_orthogonal)

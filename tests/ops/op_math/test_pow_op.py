@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
 
 class TestConstructor:
@@ -60,13 +60,13 @@ class TestConstructor:
         assert op.z == 2
         qml.assert_equal(op.base, qml.PauliX(0))
 
-    def test_nonlazy_no_simplification(self):
-        """Test that if lazy=False, but no decomposition exists, then the operator is simply
-        wrapped in a Pow class."""
+    def test_nonlazy_product_expansion(self):
+        """Test that nonlazy pow returns an expanded product of operators"""
 
-        op = qml.pow(TempOperator(0), 2, lazy=False)
-        assert isinstance(op, Pow)
-        assert isinstance(op.base, TempOperator)
+        op = TempOperator(0)
+        op_pow = qml.pow(op, 2, lazy=False)
+        op_prod = qml.prod(op, op)
+        qml.assert_equal(op_pow, op_prod)
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
@@ -75,6 +75,12 @@ class TestConstructor:
 
         op_new = qml.pow(op, 2, lazy=False)
         qml.assert_equal(op_new, qml.Identity(op.wires))
+
+    def test_simplify_with_pow_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.pow method."""
+        op = Pow(qml.U2(1, 1, 0), z=1.23)
+        simplified_op = op.simplify()
+        qml.assert_equal(simplified_op, op)
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -116,7 +122,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -136,7 +143,8 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
@@ -146,9 +154,11 @@ class TestInheritanceMixins:
     def test_observable(self, power_method):
         """Test that when the base is an Observable, Pow will also inherit from Observable."""
 
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+
+            class CustomObs(qml.operation.Observable):
+                num_wires = 1
+                num_params = 0
 
         base = CustomObs(wires=0)
         ob: Pow = power_method(base=base, z=-1.2)
@@ -159,7 +169,8 @@ class TestInheritanceMixins:
         assert not isinstance(ob, PowOperation)
 
         # Check some basic observable functionality
-        assert ob.compare(ob)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            assert ob.compare(ob)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -501,12 +512,6 @@ class TestSimplify:
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
-
-    def test_simplify_with_pow_not_defined(self):
-        """Test the simplify method with an operator that has not defined the op.pow method."""
-        op = Pow(qml.U2(1, 1, 0), z=3)
-        simplified_op = op.simplify()
-        qml.assert_equal(simplified_op, op)
 
 
 class TestMiscMethods:
@@ -939,10 +944,6 @@ class TestDecompositionExpand:
         base = qml.prod(*base_ops)
         z = 2
         op = Pow(base, z)
-
-        # if this fails, someone must have implemented it! will need a new operator to use
-        with pytest.raises(qml.operation.PowUndefinedError):
-            base.pow(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()

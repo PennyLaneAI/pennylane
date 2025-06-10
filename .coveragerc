@@ -4,12 +4,16 @@ source = pennylane
 omit =
     pennylane/devices/tests*
     pennylane/labs/*
+    pennylane/compiler/python_compiler/*
 
 [report]
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
+    
+    # Ignore type checking 
+    if TYPE_CHECKING:
 
     # Don't complain about debug-only or logging code:
     if self\.debug

@@ -15,8 +15,9 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-
+import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
@@ -39,10 +40,17 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
-import pennylane.qnn
+import pennylane.decomposition
+from pennylane.decomposition import (
+    register_resources,
+    register_condition,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
@@ -76,9 +84,20 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -121,6 +140,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
+    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
@@ -166,31 +186,33 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
+
+import pennylane.liealg
+from pennylane.liealg import lie_closure, structure_constants, center
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
 
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-class ExperimentalWarning(UserWarning):
-    """Warning raised to indicate experimental/non-stable feature or support."""
-
-
 def __getattr__(name):
+    if name in {
+        "DeviceError",
+        "PennyLaneDeprecationWarning",
+        "QuantumFunctionError",
+        "ExperimentalWarning",
+    }:  # pragma: no cover
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible at top-level \
+                and must be imported as pennylane.exceptions.{name}. \
+                    Support for top-level access will be removed in v0.43.",
+            pennylane.exceptions.PennyLaneDeprecationWarning,
+        )
+        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices

@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
-from pennylane.capture.primitives import cond_prim, for_loop_prim, measure_prim
+from pennylane.capture.primitives import cond_prim, for_loop_prim, measure_prim, while_loop_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
     CommuteControlledInterpreter,
@@ -504,130 +504,215 @@ class TestCommuteControlledHigherOrderPrimitives:
         assert qml.math.allclose(result, expected_result)
 
     @pytest.mark.parametrize(
-        "selector, expected_ops",
+        "selector, expected_cond_ops",
         [
             (
                 0.2,
-                [
-                    qml.CNOT(wires=[0, 1]),
-                    qml.CNOT(wires=[0, 2]),
-                    qml.Toffoli(wires=[0, 1, 2]),
-                    qml.RX(np.pi, wires=2),
-                    qml.CNOT(wires=[0, 1]),
-                ],
+                {
+                    "right": [
+                        qml.CNOT(wires=[0, 2]),
+                        qml.Toffoli(wires=[0, 1, 2]),
+                        qml.RX(np.pi, wires=2),
+                    ],
+                    "left": [
+                        qml.RX(np.pi, wires=2),
+                        qml.CNOT(wires=[0, 2]),
+                        qml.Toffoli(wires=[0, 1, 2]),
+                    ],
+                },
             ),
             (
                 0.8,
-                [
-                    qml.CNOT(wires=[0, 1]),
-                    qml.RY(np.pi, wires=2),
-                    qml.CNOT(wires=[0, 2]),
-                    qml.Toffoli(wires=[0, 1, 2]),
-                    qml.CNOT(wires=[0, 1]),
-                ],
+                {
+                    "right": [
+                        qml.CNOT(wires=[0, 2]),
+                        qml.Toffoli(wires=[0, 1, 2]),
+                        qml.RZ(np.pi, wires=0),
+                    ],
+                    "left": [
+                        qml.RZ(np.pi, wires=0),
+                        qml.CNOT(wires=[0, 2]),
+                        qml.Toffoli(wires=[0, 1, 2]),
+                    ],
+                },
             ),
         ],
     )
-    def test_cond(self, selector, expected_ops):
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_cond(self, selector, expected_cond_ops, direction):
         """Test that operations inside a conditional block are correctly pushed."""
 
-        @CommuteControlledInterpreter()
+        @CommuteControlledInterpreter(direction=direction)
         def circuit(selector, x):
 
             def true_branch(x):
-                qml.RY(x, wires=2)
                 qml.CNOT(wires=[0, 2])
+                qml.RZ(x, wires=0)
                 qml.Toffoli(wires=[0, 1, 2])
 
             # pylint: disable=unused-argument
             def false_branch(x):
-                qml.RX(x, wires=2)
                 qml.CNOT(wires=[0, 2])
+                qml.RX(x, wires=2)
                 qml.Toffoli(wires=[0, 1, 2])
 
+            qml.Z(0)
             qml.CNOT(wires=[0, 1])
+            qml.T(0)
             qml.cond(selector > 0.5, true_branch, false_branch)(x)
+            qml.Z(0)
             qml.CNOT(wires=[0, 1])
+            qml.T(0)
 
         jaxpr = jax.make_jaxpr(circuit)(selector, np.pi)
+        initial_gates = (
+            [qml.CNOT([0, 1]), qml.Z(0), qml.T(0)]
+            if direction == "right"
+            else [qml.Z(0), qml.T(0), qml.CNOT([0, 1])]
+        )
 
-        assert len(jaxpr.eqns) == 4
+        assert len(jaxpr.eqns) == 8
         assert jaxpr.eqns[0].primitive == jax.lax.gt_p
-        assert jaxpr.eqns[1].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[2].primitive == cond_prim
-        assert jaxpr.eqns[3].primitive == qml.CNOT._primitive
+        for e, i in enumerate(range(1, 4)):
+            assert jaxpr.eqns[i].primitive == initial_gates[e]._primitive
+
+        assert jaxpr.eqns[4].primitive == cond_prim
+
+        for e, i in enumerate(range(5, 8)):
+            assert jaxpr.eqns[i].primitive == initial_gates[e]._primitive
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, selector, np.pi)
         jaxpr_ops = collector.state["ops"]
-
+        expected_ops = initial_gates + expected_cond_ops[direction] + initial_gates
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2)
 
-    def test_for_loop(self):
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_for_loop(self, direction):
         """Test that operators inside a for loop are correctly pushed."""
 
-        @CommuteControlledInterpreter()
+        @CommuteControlledInterpreter(direction=direction)
         def circuit(x):
+
+            qml.Z(0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(0)
 
             @qml.for_loop(0, 2)
             # pylint: disable=unused-argument
             def loop(i, x):
-                qml.RX(x, wires=2)
                 qml.CNOT(wires=[0, 2])
+                qml.RX(x, wires=2)
                 qml.Toffoli(wires=[0, 1, 2])
                 return x
 
             # pylint: disable=no-value-for-parameter
             loop(x)
+            qml.Z(0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(0)
 
         jaxpr = jax.make_jaxpr(circuit)(np.pi)
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == for_loop_prim
+        assert len(jaxpr.eqns) == 7
+        assert jaxpr.eqns[3].primitive == for_loop_prim
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
         jaxpr_ops = collector.state["ops"]
-        assert len(jaxpr_ops) == 6
+        assert len(jaxpr_ops) == 12
 
-        expected_ops = [
-            qml.CNOT(wires=[0, 2]),
-            qml.Toffoli(wires=[0, 1, 2]),
-            qml.RX(np.pi, wires=[2]),
-            qml.CNOT(wires=[0, 2]),
-            qml.Toffoli(wires=[0, 1, 2]),
-            qml.RX(np.pi, wires=[2]),
-        ]
+        initial_gates = (
+            [qml.CNOT([0, 1]), qml.Z(0), qml.T(0)]
+            if direction == "right"
+            else [qml.Z(0), qml.T(0), qml.CNOT([0, 1])]
+        )
+        loop_ctrls = [qml.CNOT(wires=[0, 2]), qml.Toffoli(wires=[0, 1, 2])]
+        loop_rx = [qml.RX(np.pi, 2)]
+        expected_loop_ops = loop_ctrls + loop_rx if direction == "right" else loop_rx + loop_ctrls
+        expected_ops = initial_gates + expected_loop_ops * 2 + initial_gates
 
         for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
             qml.assert_equal(op1, op2)
 
-    def test_mid_circuit_measurement(self):
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_while_loop(self, direction):
+        """Test that operators inside a while loop are correctly pushed."""
+
+        @CommuteControlledInterpreter(direction=direction)
+        def circuit(x):
+
+            qml.Z(0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(0)
+
+            # pylint: disable=unused-argument
+            @qml.while_loop(lambda i, x: i < 2)
+            def loop(i, x):
+                qml.CNOT(wires=[0, 2])
+                qml.RX(x, wires=2)
+                qml.Toffoli(wires=[0, 1, 2])
+                return i + 1, x
+
+            # pylint: disable=no-value-for-parameter
+            loop(0, x)
+            qml.Z(0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(0)
+
+        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        assert len(jaxpr.eqns) == 7
+        assert jaxpr.eqns[3].primitive == while_loop_prim
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, np.pi)
+        jaxpr_ops = collector.state["ops"]
+        assert len(jaxpr_ops) == 12
+
+        initial_gates = (
+            [qml.CNOT([0, 1]), qml.Z(0), qml.T(0)]
+            if direction == "right"
+            else [qml.Z(0), qml.T(0), qml.CNOT([0, 1])]
+        )
+        loop_ctrls = [qml.CNOT(wires=[0, 2]), qml.Toffoli(wires=[0, 1, 2])]
+        loop_rx = [qml.RX(np.pi, 2)]
+        expected_loop_ops = loop_ctrls + loop_rx if direction == "right" else loop_rx + loop_ctrls
+        expected_ops = initial_gates + expected_loop_ops * 2 + initial_gates
+
+        for op1, op2 in zip(jaxpr_ops, expected_ops, strict=True):
+            qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("direction", ["left", "right"])
+    def test_mid_circuit_measurement(self, direction):
         """Test that mid-circuit measurements are correctly handled."""
 
-        @CommuteControlledInterpreter()
+        @CommuteControlledInterpreter(direction=direction)
         def circuit(x):
-            qml.RX(x, wires=2)
             qml.CNOT(wires=[0, 2])
+            qml.RX(x, wires=2)
             qml.Toffoli(wires=[0, 1, 2])
             qml.measure(0)
-            qml.RX(x, wires=2)
             qml.CNOT(wires=[0, 2])
+            qml.RX(x, wires=2)
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(circuit)(np.pi)
         assert len(jaxpr.eqns) == 9
 
+        jaxpr_controlled_ops = [qml.CNOT([0, 2]), qml.Toffoli([0, 1, 2])]
+        rx_op = [qml.RX(np.pi, 2)]
+        initial_gates = (
+            jaxpr_controlled_ops + rx_op if direction == "right" else rx_op + jaxpr_controlled_ops
+        )
+
         # I test the jaxpr like this because `CollectOpsandMeas`
         # currently interprets a mid-circuit measurement as an operator, not a measurement
-        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[1].primitive == qml.Toffoli._primitive
-        assert jaxpr.eqns[2].primitive == qml.RX._primitive
+        for e, i in enumerate(range(3)):
+            assert jaxpr.eqns[i].primitive == initial_gates[e]._primitive
         assert jaxpr.eqns[3].primitive == measure_prim
-        assert jaxpr.eqns[4].primitive == qml.CNOT._primitive
-        assert jaxpr.eqns[5].primitive == qml.Toffoli._primitive
-        assert jaxpr.eqns[6].primitive == qml.RX._primitive
+        for e, i in enumerate(range(4, 7)):
+            assert jaxpr.eqns[i].primitive == initial_gates[e]._primitive
         assert jaxpr.eqns[7].primitive == qml.PauliZ._primitive
 
 
@@ -655,7 +740,7 @@ class TestCommuteControlledPLXPR:
 
         jaxpr = jax.make_jaxpr(circuit)()
         transformed_jaxpr = commute_controlled_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 14
 
         expected_ops = [

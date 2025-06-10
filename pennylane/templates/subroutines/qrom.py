@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,8 +56,9 @@ class QROM(Operation):
         # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
-        dev = qml.device("default.qubit", shots = 1)
+        dev = qml.device("default.qubit")
 
+        @partial(qml.set_shots, shots = 1)
         @qml.qnode(dev)
         def circuit():
 
@@ -184,7 +185,7 @@ class QROM(Operation):
 
         return copied_op
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
 
         return self.compute_decomposition(
             self.bitstrings,
@@ -198,6 +199,10 @@ class QROM(Operation):
     def compute_decomposition(
         bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=arguments-differ
+
+        if len(control_wires) == 0:
+            return [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+
         with qml.QueuingManager.stop_recording():
 
             swap_wires = target_wires + work_wires
@@ -205,6 +210,7 @@ class QROM(Operation):
             # number of operators we store per column (power of 2)
             depth = len(swap_wires) // len(target_wires)
             depth = int(2 ** np.floor(np.log2(depth)))
+            depth = min(depth, len(bitstrings))
 
             ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))

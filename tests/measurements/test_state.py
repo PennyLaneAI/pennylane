@@ -15,10 +15,11 @@
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
@@ -368,8 +369,8 @@ class TestState:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed", wires=1)
-        capabilities = dev.target_device.capabilities().copy()
+        dev = DefaultQubitLegacy(wires=1)
+        capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -377,8 +378,8 @@ class TestState:
             return state()
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
-            with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
+            with pytest.raises(QuantumFunctionError, match="The current device is not capable"):
                 func()
 
     def test_state_not_supported(self):
@@ -390,7 +391,7 @@ class TestState:
         def func():
             return state()
 
-        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
@@ -1000,21 +1001,21 @@ class TestDensityMatrix:
         """Test that no exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         @qml.qnode(dev)
         def func():
             qml.Hadamard(wires=0)
             return density_matrix(0), expval(qml.PauliZ(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="cannot be returned in combination"):
+        with pytest.raises(QuantumFunctionError, match="cannot be returned in combination"):
             func()
 
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.mixed", wires=2)
-        capabilities = dev.target_device.capabilities().copy()
+        dev = DefaultQubitLegacy(wires=2)
+        capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -1022,9 +1023,9 @@ class TestDensityMatrix:
             return density_matrix(0)
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
-                qml.QuantumFunctionError,
+                QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",
             ):
                 func()
@@ -1038,7 +1039,7 @@ class TestDensityMatrix:
         def func():
             return density_matrix(0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
     @pytest.mark.parametrize("wires", [[0, 2], ["a", -1]])

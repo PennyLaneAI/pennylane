@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
+
 """
 This module contains the qml.vn_entropy measurement.
 """
@@ -21,7 +21,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, VnEntropy
+from .measurements import StateMeasurement
 
 
 def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
@@ -92,13 +92,12 @@ class VnEntropyMP(StateMeasurement):
     def __str__(self):
         return "vnentropy"
 
-    _shortname = VnEntropy  #! Note: deprecated. Change the value to "vnentropy" in v0.42
+    _shortname = "vnentropy"
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
         return (None, None), metadata
 
-    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         wires: Optional[Wires] = None,

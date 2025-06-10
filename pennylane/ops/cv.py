@@ -35,14 +35,14 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
-# pylint: disable=abstract-method
+
 import math
 
 import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane import math as qml_math
-from pennylane.operation import AnyWires, CVObservable, CVOperation
+from pennylane.operation import CVObservable, CVOperation
 
 from .identity import I, Identity  # pylint: disable=unused-import
 from .meta import Snapshot  # pylint: disable=unused-import
@@ -73,7 +73,7 @@ def _rotation(phi, bare=False):
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
-    return block_diag(1, temp)  # pylint: disable=no-member
+    return block_diag(1, temp)
 
 
 class Rotation(CVOperation):
@@ -667,7 +667,6 @@ class InterferometerUnitary(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = None
     grad_recipe = None
 
@@ -833,7 +832,6 @@ class GaussianState(CVOperation):
     """
 
     num_params = 2
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, V, r, wires, id=None):
@@ -952,7 +950,6 @@ class FockStateVector(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -1001,7 +998,6 @@ class FockDensityMatrix(CVOperation):
     """
 
     num_params = 1
-    num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, id=None):
@@ -1133,7 +1129,6 @@ class TensorN(CVObservable):
     """
 
     num_params = 0
-    num_wires = AnyWires
     ev_order = None
 
     def __init__(self, wires):
@@ -1326,7 +1321,6 @@ class PolyXP(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
@@ -1385,7 +1379,6 @@ class FockStateProjector(CVObservable):
     """
 
     num_params = 1
-    num_wires = AnyWires
 
     grad_method = None
     ev_order = None

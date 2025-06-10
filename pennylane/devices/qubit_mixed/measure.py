@@ -14,19 +14,23 @@
 """
 Code relevant for performing measurements on a qubit mixed state.
 """
+# pylint:disable=too-many-branches, import-outside-toplevel, unused-argument
 
 from collections.abc import Callable
 
-from pennylane import math, queuing
+from scipy.sparse import csr_matrix
+
+from pennylane import math
 from pennylane.measurements import (
+    DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
-    ProbabilityMP,
+    MeasurementValue,
     StateMeasurement,
     StateMP,
-    VarianceMP,
 )
-from pennylane.ops import Sum
+from pennylane.ops import LinearCombination, Sum
+from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -49,163 +53,154 @@ def _reshape_state_as_matrix(state, num_wires):
     return math.reshape(state, shape)
 
 
-def calculate_expval(
+def state_diagonalizing_gates(
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
+) -> TensorLike:
+    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    for op in measurementprocess.diagonalizing_gates():
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
+
+    if readout_errors is not None and measurementprocess.wires is not None:
+        for err_channel_fn in readout_errors:
+            for w in measurementprocess.wires:
+                # Here, we assume err_channel_fn(w) returns a quantum operation/channel like qml.BitFlip(...)
+                error_op = err_channel_fn(w)
+                state = apply_operation(error_op, state, is_state_batched=is_state_batched)
+
+    num_wires = _get_num_wires(state, is_state_batched)
+    wires = Wires(range(num_wires))
+    flattened_state = _reshape_state_as_matrix(state, num_wires)
+    is_StateMP = isinstance(measurementprocess, StateMP)
+    is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
+    if is_StateMP and not is_DensityMatrixMP:  # a pure qml.state()
+        raw_wires = measurementprocess.raw_wires or wires  # incase the None raw_wires case
+        measurementprocess = DensityMatrixMP(wires=raw_wires)
+    res = measurementprocess.process_density_matrix(flattened_state, wires)
+
+    return res
+
+
+def csr_dot_products_density_matrix(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
     readout_errors: list[Callable] = None,
 ) -> TensorLike:
-    """Measure the expectation value of an observable.
+    """Measure the expectation value of an observable from a density matrix using dot products between
+    ``scipy.csr_matrix`` representations.
+
+    For a density matrix :math:`\rho` and observable :math:`O`, the expectation value is: .. math:: \text{Tr}(\rho O),
 
     Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state.
-        state (TensorLike): the state to measure.
-        is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of chanels to apply to each wire being measured
-        to simulate readout errors.
+        measurementprocess (ExpectationMP): measurement process to apply to the density matrix state
+        state (TensorLike): the density matrix, reshaped to (dim, dim) if not batched,
+            or (batch, dim, dim) if batched. Use _reshape_state_as_matrix for that.
+        num_wires (int): the number of wires the state represents
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
-        TensorLike: expectation value of observable wrt the state.
+        TensorLike: the result of the measurement
     """
-    probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
-    eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
-    # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
-    return math.dot(probs, eigvals)
+    # Reshape the state into a density matrix form
+    num_wires = _get_num_wires(state, is_state_batched)
+    rho = _reshape_state_as_matrix(state, num_wires)  # shape (dim, dim) or (batch, dim, dim)
+    rho_np = math.toarray(rho)  # convert to NumPy for stable sparse ops
+
+    # Obtain the operator O in CSR form. If it's a Pauli sentence, we use its built-in method.
+    if is_pauli_sentence(measurementprocess.obs):
+        ps = pauli_sentence(measurementprocess.obs)
+        # Create a CSR matrix representation of the operator
+        O = ps.to_mat(wire_order=range(num_wires), format="csr")
+    else:
+        # For non-Pauli observables, just get their sparse matrix representation directly.
+        O = measurementprocess.obs.sparse_matrix(wire_order=list(range(num_wires)))
+
+    # Compute Tr(rho O)
+    # !NOTE: please do NOT try use ps.dot here; in 0.40 somehow the ps.dot wrongly calculates the product with density matrix
+    if is_state_batched:
+        # handle batch case
+        results = []
+        for i in range(rho_np.shape[0]):
+            rho_i_csr = csr_matrix(rho_np[i])
+            rhoO = rho_i_csr.dot(O).toarray()
+            results.append(math.trace(rhoO))
+        res = math.stack(results)
+    else:
+        # single state case
+        rho_csr = csr_matrix(rho_np)
+        rhoO = rho_csr.dot(O).toarray()
+        res = math.trace(rhoO)
+
+    # Convert back to the same interface and return the real part
+    res = math.real(math.squeeze(res))
+    return math.convert_like(res, state)
 
 
-# pylint: disable=unused-argument
-def calculate_reduced_density_matrix(
-    measurementprocess: StateMeasurement,
+def full_dot_products_density_matrix(
+    measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
     readout_errors: list[Callable] = None,
 ) -> TensorLike:
-    """Get the state or reduced density matrix.
+    """Measure the expectation value of an observable from a density matrix using full matrix
+    multiplication.
+
+    For a density matrix ρ and observable O, the expectation value is:
+    .. math:: \text{Tr}(\rho O).
 
     Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state.
-        state (TensorLike): state to apply the measurement to.
-        is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-            to simulate readout errors. These are not applied on this type of measurement.
+        measurementprocess (ExpectationMP): measurement process to apply to the density matrix state
+        state (TensorLike): the density matrix, reshaped via _reshape_state_as_matrix to
+            (dim, dim) if not batched, or (batch, dim, dim) if batched.
+        num_wires (int): the number of wires the state represents
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
-        TensorLike: state or reduced density matrix.
+        TensorLike: the result of the measurement
     """
-    wires = measurementprocess.wires
-    state_reshaped_as_matrix = _reshape_state_as_matrix(
-        state, _get_num_wires(state, is_state_batched)
-    )
-    if not wires:
-        return state_reshaped_as_matrix
+    # Reshape the state into a density matrix form
+    num_wires = _get_num_wires(state, is_state_batched)
+    rho = _reshape_state_as_matrix(state, num_wires)
+    dim = 2**num_wires
 
-    return math.reduce_dm(state_reshaped_as_matrix, wires)
+    # Obtain the operator matrix O
+    O = measurementprocess.obs.matrix(wire_order=list(range(num_wires)))
+    O = math.convert_like(O, rho)
 
+    # Compute ρ O
+    rhoO = math.matmul(rho, O)  # shape: (batch, dim, dim) if batched, else (dim, dim)
 
-def calculate_probability(
-    measurementprocess: StateMeasurement,
-    state: TensorLike,
-    is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
-) -> TensorLike:
-    """Find the probability of measuring states.
+    # Take the diagonal and sum to get the trace
+    if math.get_interface(rhoO) == "tensorflow":
+        import tensorflow as tf
 
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state.
-        state (TensorLike): state to apply the measurement to.
-        is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
+        diag_elements = tf.linalg.diag_part(rhoO)
+    else:
+        # fallback to a math.diagonal approach or indexing for other interfaces
+        dim = math.shape(rhoO)[-1]
+        diag_indices = math.arange(dim, like=rhoO)
+        diag_elements = rhoO[..., diag_indices, diag_indices]
+    # If batched, diag_elements shape: (batch, dim); if single: (dim,)
 
-    Returns:
-        TensorLike: the probability of the state being in each measurable state.
-    """
-    for op in measurementprocess.diagonalizing_gates():
-        state = apply_operation(op, state, is_state_batched=is_state_batched)
-
-    wires = measurementprocess.wires
-    num_state_wires = _get_num_wires(state, is_state_batched)
-    wire_order = Wires(range(num_state_wires))
-
-    if readout_errors is not None:
-        with queuing.QueuingManager.stop_recording():
-            for wire in wires:
-                for m_error in readout_errors:
-                    state = apply_operation(m_error(wire), state, is_state_batched=is_state_batched)
-
-    # probs are diagonal elements
-    # stacking list since diagonal function axis selection parameter names
-    # are not consistent across interfaces
-    reshaped_state = _reshape_state_as_matrix(state, num_state_wires)
-    probs = ProbabilityMP().process_density_matrix(reshaped_state, wire_order)
-    # Convert the interface from numpy to whgatever from the state
-    probs = math.convert_like(probs, state)
-
-    # !NOTE: unclear if this whole post-processing here below is that much necessary
-    # if a probability is very small it may round to negative, undesirable.
-    # math.clip with None bounds breaks with tensorflow, using this instead:
-    probs = math.where(probs < 0, 0, probs)
-    if wires == Wires([]):
-        # no need to marginalize
-        return probs
-
-    # !NOTE: one thing we can check in the future is if the following code is replacable with first calc rdm and then do probs
-    # determine which subsystems are to be summed over
-    inactive_wires = Wires.unique_wires([wire_order, wires])
-
-    # translate to wire labels used by device
-    wire_map = dict(zip(wire_order, range(len(wire_order))))
-    mapped_wires = [wire_map[w] for w in wires]
-    inactive_wires = [wire_map[w] for w in inactive_wires]
-
-    # reshape the probability so that each axis corresponds to a wire
-    num_device_wires = len(wire_order)
-    shape = [2] * num_device_wires
-    desired_axes = math.argsort(math.argsort(mapped_wires))
-    flat_shape = (-1,)
-    expected_size = 2**num_device_wires
-    batch_size = math.get_batch_size(probs, (expected_size,), expected_size)
-    if batch_size is not None:
-        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
-        shape.insert(0, batch_size)
-        inactive_wires = [idx + 1 for idx in inactive_wires]
-        desired_axes = math.insert(desired_axes + 1, 0, 0)
-        flat_shape = (batch_size, -1)
-
-    prob = math.reshape(probs, shape)
-    # sum over all inactive wires
-    prob = math.sum(prob, axis=tuple(inactive_wires))
-    # rearrange wires if necessary
-    prob = math.transpose(prob, desired_axes)
-    # flatten and return probabilities
-    return math.reshape(prob, flat_shape)
+    res = math.sum(diag_elements, axis=-1 if is_state_batched else 0)
+    return math.real(res)
 
 
-def calculate_variance(
-    measurementprocess: VarianceMP,
-    state: TensorLike,
-    is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
-) -> TensorLike:
-    """Find variance of observable.
-
-    Args:
-        measurementprocess (VarianceMP): measurement to apply to the state.
-        state (TensorLike): state to apply the measurement to.
-        is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
-        to simulate readout errors.
-
-    Returns:
-        TensorLike: the variance of the observable with respect to the state.
-    """
-    probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
-    eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
-    # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
-    return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
-
-
-def calculate_expval_sum_of_terms(
+def sum_of_terms_method(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
@@ -215,18 +210,16 @@ def calculate_expval_sum_of_terms(
     and it must be backpropagation compatible.
 
     Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state.
-        state (TensorLike): the state to measure.
-        is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
+        measurementprocess (ExpectationMP): measurement process to apply to the state
+        state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the expectation value of the sum of Hamiltonian observable with respect to the state.
     """
     # Recursively call measure on each term, so that the best measurement method can
     # be used for each term
-    return sum(
+    return math.sum(
         measure(
             ExpectationMP(term),
             state,
@@ -239,7 +232,7 @@ def calculate_expval_sum_of_terms(
 
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
-    measurementprocess: MeasurementProcess,
+    measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -252,18 +245,45 @@ def get_measurement_function(
         Callable: function that returns the measurement result.
     """
     if isinstance(measurementprocess, StateMeasurement):
+        if isinstance(measurementprocess.mv, MeasurementValue):
+            return state_diagonalizing_gates
         if isinstance(measurementprocess, ExpectationMP):
+            if measurementprocess.obs.name == "SparseHamiltonian":
+                return csr_dot_products_density_matrix
+
+            if measurementprocess.obs.name == "Hermitian":
+                return full_dot_products_density_matrix
+
+            backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
+            if isinstance(measurementprocess.obs, LinearCombination):
+
+                # need to work out thresholds for when it's faster to use "backprop mode"
+                if backprop_mode:
+                    return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs.terms()[1]):
+                    return sum_of_terms_method
+
+                return csr_dot_products_density_matrix
+
             if isinstance(measurementprocess.obs, Sum):
-                return calculate_expval_sum_of_terms
-            if measurementprocess.obs.has_matrix:
-                return calculate_expval
+                if backprop_mode:
+                    # always use sum_of_terms_method for Sum observables in backprop mode
+                    return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs):
+                    return sum_of_terms_method
+
+                if (
+                    measurementprocess.obs.has_overlapping_wires
+                    and len(measurementprocess.obs.wires) > 7
+                ):
+                    # Use tensor contraction for `Sum` expectation values with non-commuting summands
+                    # and 8 or more wires as it's faster than using eigenvalues.
+
+                    return csr_dot_products_density_matrix
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
-            if isinstance(measurementprocess, StateMP):
-                return calculate_reduced_density_matrix
-            if isinstance(measurementprocess, ProbabilityMP):
-                return calculate_probability
-            if isinstance(measurementprocess, VarianceMP):
-                return calculate_variance
+            return state_diagonalizing_gates
 
     raise NotImplementedError
 
@@ -286,7 +306,8 @@ def measure(
     Returns:
         Tensorlike: the result of the measurement process being applied to the state.
     """
-    measurement_function = get_measurement_function(measurementprocess)
-    return measurement_function(
+    measurement_function = get_measurement_function(measurementprocess, state)
+    res = measurement_function(
         measurementprocess, state, is_state_batched=is_state_batched, readout_errors=readout_errors
     )
+    return res

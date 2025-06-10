@@ -14,9 +14,10 @@
 r"""
 Contains the ``AngleEmbedding`` template.
 """
+from pennylane import math
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import RX, RY, RZ
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
@@ -72,7 +73,6 @@ class AngleEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -86,7 +86,7 @@ class AngleEmbedding(Operation):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
-        shape = qml.math.shape(features)[-1:]
+        shape = math.shape(features)[-1:]
         n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
@@ -132,9 +132,9 @@ class AngleEmbedding(Operation):
         [RX(tensor(1.), wires=['a']),
          RX(tensor(2.), wires=['b'])]
         """
-        batched = qml.math.ndim(features) > 1
+        batched = math.ndim(features) > 1
         # We will iterate over the first axis of `features` together with iterating over the wires.
         # If the leading dimension is a batch dimension, exchange the wire and batching axes.
-        features = qml.math.T(features) if batched else features
+        features = math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]

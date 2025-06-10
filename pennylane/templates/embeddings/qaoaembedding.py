@@ -14,9 +14,12 @@
 r"""
 Contains the QAOAEmbedding template.
 """
+from pennylane import math
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access, consider-using-enumerate
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
+from pennylane.ops import RX, RY, RZ, H, MultiRZ
+from pennylane.wires import Wires
 
 
 class QAOAEmbedding(Operation):
@@ -157,22 +160,19 @@ class QAOAEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
-            local_field = qml.RZ
+            local_field = RZ
         elif local_field == "X":
-            local_field = qml.RX
+            local_field = RX
         elif local_field == "Y":
-            local_field = qml.RY
-        elif not (
-            isinstance(local_field, type) and issubclass(local_field, (qml.RX, qml.RY, qml.RZ))
-        ):
+            local_field = RY
+        elif not (isinstance(local_field, type) and issubclass(local_field, (RX, RY, RZ))):
             raise ValueError(f"did not recognize local field {local_field}")
 
-        shape = qml.math.shape(features)
+        shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
             raise ValueError(
@@ -186,7 +186,7 @@ class QAOAEmbedding(Operation):
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         if len(shape) not in {2, 3}:
             raise ValueError(
                 "Weights must be a two-dimensional tensor or three-dimensional with broadcasting;"
@@ -249,26 +249,26 @@ class QAOAEmbedding(Operation):
         MultiRZ(tensor(0.9000), wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
         RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
         """
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
         # second to last dimension of the weights tensor determines
         # the number of layers
-        repeat = qml.math.shape(weights)[-2]
+        repeat = math.shape(weights)[-2]
         op_list = []
-        n_features = qml.math.shape(features)[-1]
-        if qml.math.ndim(features) > 1:
+        n_features = math.shape(features)[-1]
+        if math.ndim(features) > 1:
             # If the features are broadcasted, move the broadcasting axis to the last place
             # in order to propagate broadcasted parameters to the gates in the decomposition.
-            features = qml.math.T(features)
-        if qml.math.ndim(weights) > 2:
+            features = math.T(features)
+        if math.ndim(weights) > 2:
             # If the weights are broadcasted, move the broadcasting axis to the last place
-            weights = qml.math.moveaxis(weights, 0, -1)
+            weights = math.moveaxis(weights, 0, -1)
 
         for l in range(repeat):
             # ---- apply encoding Hamiltonian
             for i in range(n_features):
-                op_list.append(qml.RX(features[i], wires=wires[i]))
+                op_list.append(RX(features[i], wires=wires[i]))
             for i in range(n_features, len(wires)):
-                op_list.append(qml.Hadamard(wires=wires[i]))
+                op_list.append(H(wires=wires[i]))
 
             # ---- apply weight Hamiltonian
             if len(wires) == 1:
@@ -277,13 +277,13 @@ class QAOAEmbedding(Operation):
             elif len(wires) == 2:
                 # deviation for 2 wires: we do not connect last to first qubit
                 # with the entangling gates
-                op_list.append(qml.MultiRZ(weights[l][0], wires=wires.subset([0, 1])))
+                op_list.append(MultiRZ(weights[l][0], wires=wires.subset([0, 1])))
                 op_list.append(local_field(weights[l][1], wires=wires[0:1]))
                 op_list.append(local_field(weights[l][2], wires=wires[1:2]))
 
             else:
                 multirz_gates = (
-                    qml.MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
+                    MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
                     for i in range(len(wires))
                 )
                 op_list.extend(multirz_gates)
@@ -295,9 +295,9 @@ class QAOAEmbedding(Operation):
 
         # repeat the feature encoding once more at the end
         for i in range(n_features):
-            op_list.append(qml.RX(features[i], wires=wires[i]))
+            op_list.append(RX(features[i], wires=wires[i]))
         for i in range(n_features, len(wires)):
-            op_list.append(qml.Hadamard(wires=wires[i]))
+            op_list.append(H(wires=wires[i]))
 
         return op_list
 

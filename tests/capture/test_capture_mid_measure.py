@@ -97,9 +97,9 @@ class TestMidMeasureCapture:
         jaxpr = jax.make_jaxpr(f)(1.0)
 
         assert jaxpr.eqns[1].primitive.name == "measure"
-        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.core.Var)
+        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.extend.core.Var)
         assert jaxpr.eqns[2].primitive.name == "measure"
-        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.core.Var)
+        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.extend.core.Var)
 
         assert jaxpr.eqns[3].primitive.name == p_name
         assert jaxpr.eqns[3].invars == [mcm1, mcm2] if multi_mcm else [mcm1]
@@ -181,7 +181,7 @@ class TestMidMeasureCapture:
 
         # 3.1 * m1
         assert jaxpr.eqns[4].primitive.name == "mul"
-        assert isinstance(jaxpr.eqns[4].invars[0], jax.core.Literal)
+        assert isinstance(jaxpr.eqns[4].invars[0], jax.extend.core.Literal)
         assert jaxpr.eqns[4].invars[1] == mcm1_f
         a = jaxpr.eqns[4].outvars[0]
 
@@ -222,7 +222,7 @@ class TestMidMeasureCapture:
         assert jaxpr.eqns[3].primitive.name == fn.__name__
         assert jaxpr.eqns[3].invars == [mcm_f]
 
-    def mid_measure_broadcast_capture(self):
+    def test_mid_measure_broadcast_capture(self):
         """Test that creating and using arrays of mid-circuit measurements can be captured."""
 
         def f(x):
@@ -288,7 +288,20 @@ def compare_with_capture_disabled(qnode, *args, **kwargs):
     res = qnode(*args, **kwargs)
     qml.capture.disable()
     expected = qnode(*args, **kwargs)
-    return jnp.allclose(res, expected)
+    return qml.math.allclose(res, expected)
+
+
+@pytest.mark.parametrize("mcm_method", ("deferred", "one-shot", "tree-traversal"))
+def test_capture_mcm_method(mcm_method):
+    """Test that the mcm_method is present in the plxpr."""
+
+    @qml.qnode(qml.device("default.qubit", wires=3), mcm_method=mcm_method)
+    def f():
+        return qml.state()
+
+    jaxpr = jax.make_jaxpr(f)()
+    config = jaxpr.eqns[0].params["execution_config"]
+    assert config.mcm_config.mcm_method == mcm_method
 
 
 @pytest.fixture(scope="function")
@@ -301,16 +314,18 @@ def get_device():
 
 # pylint: disable=too-many-arguments, redefined-outer-name
 @pytest.mark.system
-@pytest.mark.parametrize("shots", [None, 50])
+@pytest.mark.parametrize("shots", [None, 100])
 @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.probs])
 class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    @pytest.mark.xfail(strict=False)  # single branch statistics sometimes gives good results
+    # NOTE: this test has an estimated fail rate of around 20%~30%
+    # We have to fix the seed to ensure that the test is deterministic.
+    @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
-    @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
+    @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
         if shots is None and mp_fn is qml.sample:
@@ -324,10 +339,37 @@ class TestMidMeasureExecute:
             qml.measure(0, reset=reset, postselect=postselect)
             return mp_fn(op=qml.Z(0))
 
-        assert compare_with_capture_disabled(f, phi)
+        if shots and postselect is None:
+            # results are probabilistic and difficult to compare
+            res = f(phi)
+            qml.capture.disable()
+            expected = f(phi)
+            qml.capture.enable()
+            if mp_fn is qml.expval:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            elif mp_fn is qml.var:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            elif mp_fn is qml.probs:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            else:
+                # mp_fn is qml.sample
+                ones_count = jnp.sum(res == 1)
+                minus_ones_count = jnp.sum(res == -1)
+                theoretical_ones_count = shots * (qml.math.cos(phi / 2) ** 2)
+                theoretical_minus_ones_count = shots * (qml.math.sin(phi / 2) ** 2)
+                if reset:
+                    # either all ones or all minus ones
+                    assert ones_count == 0 or minus_ones_count == 0
+                else:
+                    assert qml.math.allclose(ones_count, theoretical_ones_count, atol=5)
+                    assert qml.math.allclose(minus_ones_count, theoretical_minus_ones_count, atol=5)
+        else:
+            assert compare_with_capture_disabled(f, phi)
 
-    @pytest.mark.xfail  # not yet supported
-    @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
+    # NOTE: this test has an estimated fail rate of around 20%~30%
+    # We have to fix the seed to ensure that the test is deterministic.
+    @pytest.mark.local_salt(8)
+    @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(
         self, phi, get_device, shots, mp_fn, multi_mcm, seed
@@ -340,7 +382,7 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -350,17 +392,35 @@ class TestMidMeasureExecute:
             m2 = qml.measure(0)
             return mp_fn(op=[m1, m2] if multi_mcm else m1)
 
+        if shots:
+            # results are probabilistic and difficult to compare
+            res = f(phi, phi + 1.5)
+            qml.capture.disable()
+            expected = f(phi, phi + 1.5)
+            qml.capture.enable()
+            if mp_fn is qml.expval:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            elif mp_fn is qml.var:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            elif mp_fn is qml.probs:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+            else:
+                # mp_fn is qml.sample
+                assert not (jnp.all(res == 1) or jnp.all(res == -1))
+                assert not (jnp.all(expected == 1) or jnp.all(expected == -1))
+
+            return
+
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
-    @pytest.mark.xfail  # single branch statistics gives bad results
-    @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
+    @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -372,6 +432,25 @@ class TestMidMeasureExecute:
             _ = a > m2
             return mp_fn(op=qml.Z(0))
 
+        if shots:
+            # results are probabilistic and difficult to compare
+            res = f(phi, phi + 1.5)
+            qml.capture.disable()
+            expected = f(phi, phi + 1.5)
+            qml.capture.enable()
+            if mp_fn is qml.expval:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+            elif mp_fn is qml.var:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+            elif mp_fn is qml.probs:
+                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+            else:
+                # mp_fn is qml.sample
+                assert not (jnp.all(res == 1) or jnp.all(res == -1))
+                assert not (jnp.all(expected == 1) or jnp.all(expected == -1))
+
+            return
+
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
@@ -381,7 +460,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -395,7 +474,6 @@ class TestMidMeasureExecute:
 
         _ = f(phi, phi + 1.5)
 
-    @pytest.mark.xfail  # single branch statistics gives bad results
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
     def mid_measure_processed_with_jax_numpy_execution(

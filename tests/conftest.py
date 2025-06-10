@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,6 +177,16 @@ def enable_disable_dynamic_shapes():
         yield
     finally:
         jax.config.update("jax_dynamic_shapes", False)
+
+
+@pytest.fixture(scope="function")
+def enable_graph_decomposition():
+    """enable and disable graph-decomposition around each test."""
+    qml.decomposition.enable_graph()
+    try:
+        yield
+    finally:
+        qml.decomposition.disable_graph()
 
 
 #######################################################################

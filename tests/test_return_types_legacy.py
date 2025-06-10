@@ -16,13 +16,13 @@ Unit tests for the new return types.
 """
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
-
-devices = ["default.mixed"]
 
 
 @pytest.mark.parametrize("interface, shots", [["autograd", None], ["auto", 100]])
@@ -32,7 +32,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires, interface, shots):
         """Return state with default.mixed."""
-        dev = qml.device("default.mixed", wires=wires, shots=shots)
+        dev = DefaultQubitLegacy(wires=wires, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -48,14 +48,13 @@ class TestSingleReturnExecute:
             interface=interface,
         )
 
-        assert res[0].shape == (2**wires, 2**wires)
+        assert res[0].shape == (2**wires,)
         assert isinstance(res[0], np.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
-    def test_density_matrix(self, d_wires, device, interface, shots):
+    def test_density_matrix(self, d_wires, interface, shots):
         """Return density matrix."""
-        dev = qml.device(device, wires=4, shots=shots)
+        dev = DefaultQubitLegacy(wires=4, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -74,10 +73,9 @@ class TestSingleReturnExecute:
         assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], np.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_expval(self, device, interface, shots):
+    def test_expval(self, interface, shots):
         """Return a single expval."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -96,10 +94,9 @@ class TestSingleReturnExecute:
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_var(self, device, interface, shots):
+    def test_var(self, interface, shots):
         """Return a single var."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -118,10 +115,9 @@ class TestSingleReturnExecute:
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_vn_entropy(self, device, interface, shots):
+    def test_vn_entropy(self, interface, shots):
         """Return a single vn entropy."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -140,10 +136,9 @@ class TestSingleReturnExecute:
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_mutual_info(self, device, interface, shots):
+    def test_mutual_info(self, interface, shots):
         """Return a single mutual information."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -171,11 +166,10 @@ class TestSingleReturnExecute:
     ]
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires, device, interface, shots):
+    def test_probs(self, op, wires, interface, shots):
         """Return a single prob."""
-        dev = qml.device(device, wires=3, shots=shots)
+        dev = DefaultQubitLegacy(wires=3, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -203,7 +197,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device("default.mixed", wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -228,7 +222,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device("default.mixed", wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -257,10 +251,9 @@ class TestMultipleReturns:
     measurements.
     """
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval(self, device, shots):
+    def test_multiple_expval(self, shots):
         """Return multiple expvals."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -282,10 +275,9 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_var(self, device, shots):
+    def test_multiple_var(self, shots):
         """Return multiple vars."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -320,11 +312,10 @@ class TestMultipleReturns:
     ]
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device, shots):
+    def test_multiple_prob(self, op1, op2, wires1, wires2, shots):
         """Return multiple probs."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -353,13 +344,12 @@ class TestMultipleReturns:
         assert res[0][1].shape == (2 ** len(wires2),)
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device, shots):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, shots):
         """Return multiple different measurements."""
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -400,11 +390,10 @@ class TestMultipleReturns:
 
     wires = [2, 3, 4, 5]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
-    def test_list_multiple_expval(self, wires, device, shots):
+    def test_list_multiple_expval(self, wires, shots):
         """Return a comprehension list of multiple expvals."""
-        dev = qml.device(device, wires=wires, shots=shots)
+        dev = DefaultQubitLegacy(wires=wires, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -424,14 +413,13 @@ class TestMultipleReturns:
             assert isinstance(res[0][i], np.ndarray)
             assert res[0][i].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_expval_sample(self, measurement, shots, device):
+    def test_expval_sample(self, measurement, shots):
         """Test the expval and sample measurements together."""
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -452,14 +440,13 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == (shots,)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
-    def test_expval_counts(self, measurement, shots, device):
+    def test_expval_counts(self, measurement, shots):
         """Test the expval and counts measurements together."""
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -508,15 +495,14 @@ shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-@pytest.mark.parametrize("device", devices)
 class TestShotVector:
     """Test the support for executing tapes with single measurements using a
     device with shot vectors."""
 
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
-    def test_scalar(self, shot_vector, measurement, device):
+    def test_scalar(self, shot_vector, measurement):
         """Test a single scalar-valued measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -536,9 +522,9 @@ class TestShotVector:
         assert all(r.shape == () for r in res[0])
 
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, shot_vector, op, wires, device):
+    def test_probs(self, shot_vector, op, wires):
         """Test a single probability measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -559,12 +545,12 @@ class TestShotVector:
         assert all(r.shape == (2 ** len(wires_to_use),) for r in res[0])
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
-    def test_density_matrix(self, shot_vector, wires, device):
+    def test_density_matrix(self, shot_vector, wires):
         """Test a density matrix measurement."""
         if 1 in shot_vector:
             pytest.xfail("cannot handle single-shot in shot vector")
 
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -585,9 +571,9 @@ class TestShotVector:
         assert all(r.shape == (dim, dim) for r in res[0])
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_samples(self, shot_vector, measurement, device):
+    def test_samples(self, shot_vector, measurement):
         """Test the sample measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -613,9 +599,9 @@ class TestShotVector:
                 assert r.shape == (shots,)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
-    def test_counts(self, shot_vector, measurement, device):
+    def test_counts(self, shot_vector, measurement):
         """Test the counts measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -636,14 +622,13 @@ class TestShotVector:
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-@pytest.mark.parametrize("device", devices)
 class TestSameMeasurementShotVector:
     """Test the support for executing tapes with the same type of measurement
     multiple times using a device with shot vectors"""
 
-    def test_scalar(self, shot_vector, device):
+    def test_scalar(self, shot_vector):
         """Test multiple scalar-valued measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -674,9 +659,9 @@ class TestSameMeasurementShotVector:
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
-    def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
+    def test_probs(self, shot_vector, op1, wires1, op2, wires2):
         """Test multiple probability measurements."""
-        dev = qml.device(device, wires=4, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=4, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -703,9 +688,9 @@ class TestSameMeasurementShotVector:
 
     @pytest.mark.parametrize("measurement1", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.sample(qml.PauliX(1)), qml.sample(wires=[1])])
-    def test_samples(self, shot_vector, measurement1, measurement2, device):
+    def test_samples(self, shot_vector, measurement1, measurement2):
         """Test multiple sample measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -729,9 +714,9 @@ class TestSameMeasurementShotVector:
 
     @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
-    def test_counts(self, shot_vector, measurement1, measurement2, device):
+    def test_counts(self, shot_vector, measurement1, measurement2):
         """Test multiple counts measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -815,15 +800,14 @@ scalar_counts_no_obs_multi = [
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-@pytest.mark.parametrize("device", devices)
 class TestMixMeasurementsShotVector:
     """Test the support for executing tapes with multiple different
     measurements using a device with shot vectors"""
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_probs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and probability measurements"""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -854,10 +838,10 @@ class TestMixMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_multi)
-    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -891,9 +875,9 @@ class TestMixMeasurementsShotVector:
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_no_obs_multi)
     @pytest.mark.xfail
-    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -924,10 +908,10 @@ class TestMixMeasurementsShotVector:
                         assert r.shape == (shot_tuple.shots,)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_multi)
-    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -967,9 +951,9 @@ class TestMixMeasurementsShotVector:
                     assert sum(r.values()) == shots
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
-    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
+    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -1002,9 +986,9 @@ class TestMixMeasurementsShotVector:
                     assert isinstance(r, dict)
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
-    def test_probs_sample(self, shot_vector, sample_obs, device):
+    def test_probs_sample(self, shot_vector, sample_obs):
         """Test probs and sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -1052,9 +1036,9 @@ class TestMixMeasurementsShotVector:
                         assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
-    def test_probs_counts(self, shot_vector, sample_obs, device):
+    def test_probs_counts(self, shot_vector, sample_obs):
         """Test probs and counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -1103,10 +1087,10 @@ class TestMixMeasurementsShotVector:
 
     @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
     @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
-    def test_sample_counts(self, shot_vector, sample_wires, counts_wires, device):
+    def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
-        dev = qml.device(device, wires=6, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=6, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -1158,10 +1142,10 @@ class TestMixMeasurementsShotVector:
                     assert isinstance(r, dict)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2, device):
+    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
-        dev = qml.device(device, wires=5, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=5, shots=shot_vector)
         raw_shot_vector = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
@@ -1229,10 +1213,11 @@ class TestQubitDeviceNewUnits:
             DummyMeasurement(obs=qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.mixed", wires=3)
+        dev = DefaultQubitLegacy(wires=3)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            QuantumFunctionError,
+            match="Unsupported return type specified for observable",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
 
@@ -1240,7 +1225,7 @@ class TestQubitDeviceNewUnits:
         """Test that an exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = DefaultQubitLegacy(wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
@@ -1249,7 +1234,7 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The state or density matrix cannot be returned in combination with other return types",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
@@ -1257,7 +1242,7 @@ class TestQubitDeviceNewUnits:
     def test_vn_entropy_no_custom_wires(self):
         """Test that vn_entropy cannot be returned with custom wires."""
 
-        dev = qml.device("default.mixed", wires=["a", 1])
+        dev = DefaultQubitLegacy(wires=["a", 1])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
@@ -1265,7 +1250,7 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Returning the Von Neumann entropy is not supported when using custom wire labels",
         ):
             qml.execute(tapes=[tape], device=dev, diff_method=None)
@@ -1273,7 +1258,7 @@ class TestQubitDeviceNewUnits:
     def test_custom_wire_labels_error(self):
         """Tests that an error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qml.device("default.mixed", wires=["a", "b"])
+        dev = DefaultQubitLegacy(wires=["a", "b"])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
@@ -1281,5 +1266,5 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Returning the mutual information is not supported when using custom wire labels"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             qml.execute(tapes=[tape], device=dev, diff_method=None)

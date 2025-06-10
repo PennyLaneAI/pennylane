@@ -18,7 +18,7 @@ Contains the FermionicSingleExcitation template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
@@ -113,7 +113,6 @@ class FermionicSingleExcitation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 

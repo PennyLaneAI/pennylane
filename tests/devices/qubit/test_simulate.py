@@ -98,6 +98,20 @@ class TestSparsePipeline:
 
         assert qml.math.allclose(result, -1)
 
+    def test_sparse_state_prep(self):
+        """Test a spares state prep can be acted upon by later operations."""
+        state = sp.sparse.csr_matrix([0, 0, 0, 1])
+        qml.StatePrep(state, wires=(0, 1))
+
+        tape = qml.tape.QuantumScript(
+            [qml.StatePrep(state, wires=(0, 1)), qml.X(0), qml.RX(0.0, 0)],
+            [qml.probs(wires=(0, 1))],
+        )
+
+        res = simulate(tape)
+        expected = np.array([0, 1, 0, 0])
+        assert qml.math.allclose(res, expected)
+
 
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
@@ -421,7 +435,8 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
-        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+        qml.assert_equal(spy.call_args_list[0].args[0], qs)
+        assert spy.call_args_list[0].args[1] == {2: 0, 1: 1, 0: 2}
 
 
 class TestPostselection:
@@ -1322,7 +1337,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize(
         "meas_obj", [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
     )
-    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj, seed):
+    def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
             * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
@@ -1577,7 +1592,7 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @pytest.mark.local_salt(2)
+    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]

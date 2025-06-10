@@ -353,10 +353,7 @@ def test_molecular_dipole_error():
 @pytest.mark.parametrize(
     ("method", "args"),
     [
-        (
-            "openfermion",
-            None,
-        ),
+        ("openfermion", None),
         (
             "dhf",
             None,

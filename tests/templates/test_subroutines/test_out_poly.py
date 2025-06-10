@@ -38,9 +38,9 @@ def test_get_polynomial():
         (1, 1, 1, 0): 8,  # x0.x1.y0: 8
     }
 
-    for key in dic.keys():
+    for key, val in dic.items():
         assert key in expected_dic
-        assert dic[key] == expected_dic[key]
+        assert val == expected_dic[key]
 
 
 def test_mobius_inversion_of_zeta_transform():

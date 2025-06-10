@@ -71,20 +71,20 @@ class ResourceOperator(ABC):
 
             >>> op = ResourceQFT(range(3))
             >>> op.resources(**op.resource_params)
-            {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
+            {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
 
     """
 
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns a dictionary to be used for internal tracking of resources. This method is only to be used inside
-        the methods of classes inheriting from ResourceOperator."""
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts."""
 
     @classmethod
     def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns a dictionary containing the counts of each operator type used to
-        compute the resources of the operator."""
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts."""
         return cls._resource_decomp(*args, **kwargs)
 
     @classmethod
@@ -95,52 +95,93 @@ class ResourceOperator(ABC):
     @property
     @abstractmethod
     def resource_params(self) -> dict:
-        """Returns a dictionary containing the minimal information needed to
+        r"""Returns a dictionary containing the minimal information needed to
         compute a compressed representation"""
 
     @classmethod
     @abstractmethod
     def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
-        """Returns a compressed representation containing only the parameters of
+        r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
-        """Returns a compressed representation directly from the operator"""
+        r"""Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params)
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns a compressed representation of the adjoint of the operator"""
+        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+
+        Raises:
+            ResourcesNotDefined: no resources implemented by default
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
+        """
         raise ResourcesNotDefined
 
     @classmethod
     def controlled_resource_decomp(
-        cls, num_ctrl_wires, num_ctrl_values, num_work_wires, *args, **kwargs
+        cls, num_ctrl_wires: int, num_ctrl_values: int, num_work_wires: int, *args, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
-        """Returns a compressed representation of the controlled version of the operator"""
+        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+
+        Args:
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_work_wires (int): the number of additional qubits that can be used for decomposition
+
+        Raises:
+            ResourcesNotDefined: no resources implemented by default
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
+        """
+
         raise ResourcesNotDefined
 
     @classmethod
-    def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns a compressed representation of the operator raised to a power"""
+    def pow_resource_decomp(cls, z: int, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+        r"""Returns a dictionary representing the resources for an operator raised to a power.
+
+        Args:
+            z (int): the power that the operator is being raised to
+
+        Raises:
+            ResourcesNotDefined: no resources implemented by default
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
+        """
         raise ResourcesNotDefined
 
     @classmethod
     def exp_resource_decomp(
-        cls, scalar, num_steps, *args, **kwargs
+        cls, scalar: complex, num_steps: int, *args, **kwargs
     ) -> Dict[CompressedResourceOp, int]:
-        """Returns a compressed representation for the resources of the exponentiated operator"""
+        r"""Returns a dictionary representing the resources for the exponentiated operator.
+
+        Args:
+            scalar (complex): complex coefficient of the operator in the exponent
+            num_steps (int): number of trotter steps to use when decomposing the expoentiated operator
+
+        Raises:
+            ResourcesNotDefined: no resources implemented by default
+
+        Returns:
+            Dict[CompressedResourceOp, int]: The keys are the operators and the associated values are the counts.
+        """
         raise ResourcesNotDefined
 
     @classmethod
     def tracking_name(cls, *args, **kwargs) -> str:
-        """Returns a name used to track the operator during resource estimation."""
+        r"""Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
 
     def tracking_name_from_op(self) -> str:
-        """Returns the tracking name built with the operator's parameters."""
+        r"""Returns the tracking name built with the operator's parameters."""
         return self.__class__.tracking_name(**self.resource_params)
 
 
 class ResourcesNotDefined(Exception):
-    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+    r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
