@@ -19,7 +19,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from flaky import flaky
 from scipy.stats import ttest_ind
 
 import pennylane as qml
@@ -633,9 +632,9 @@ class TestSnapshotUnsupportedQNode:
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
             _ = qml.snapshots(circuit)
 
-    @flaky(max_runs=3)
-    def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=500)
+    @pytest.mark.local_salt(1)
+    def test_lightning_qubit_finite_shots(self, seed):
+        dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
 
         @qml.qnode(dev, diff_method=None)
         def circuit():

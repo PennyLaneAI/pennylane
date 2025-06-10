@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the TemporaryAND template.
+Contains the TemporaryAND template, which also is known as Elbow.
 """
 
 from functools import lru_cache
@@ -29,14 +29,15 @@ class TemporaryAND(Operation):
     The ``TemporaryAND`` operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate that leverages extra information
     about the target wire to enable more efficient circuit decompositions. The ``TemporaryAND`` assumes the target qubit
     to be initialized in :math:`|0\rangle`, while the ``Adjoint(TemporaryAND)`` assumes the target output to be :math:`|0\rangle`.
-    For more details, see Fig. 4 in `Ryan Babbush et al.(2018) <https://arxiv.org/abs/1805.03662>`_.
+    For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     .. note::
 
         For correct usage of this operation, the user must ensure
-        that the input before computation is :math:`|0\rangle`,
-        and that the output after uncomputation is :math:`|0\rangle`
-        on the target wire when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
+
+        that before computation the input state of the target wire is :math:`|0\rangle`,
+        and that after uncomputation the output state of the target wire is :math:`|0\rangle`,
+        when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
         Otherwise, behaviour may differ from the expected ``AND``.
 
     **Details:**
@@ -52,6 +53,8 @@ class TemporaryAND(Operation):
             Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 
 
+    .. seealso:: The alias :class:`~Elbow`.
+
     **Example**
 
     .. code-block::
@@ -59,13 +62,15 @@ class TemporaryAND(Operation):
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():
-            qml.X(0)
-            qml.X(1)
-            qml.TemporaryAND([0,1,2])
-            qml.CNOT([2,3])
-            qml.adjoint(qml.TemporaryAND([0,1,2])) # We can apply the adjoint TemporaryAND because after applying a Toffoli,
-                                                   # the target wire would be |0>.
-
+            # |0000⟩
+            qml.X(0) # |1000⟩
+            qml.X(1) # |1100⟩
+            # The target wire is in state |0>, so we can apply TemporaryAND
+            qml.TemporaryAND([0,1,2]) # |1110⟩
+            qml.CNOT([2,3]) # |1111⟩
+            # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied,
+            # so we can apply adjoint(TemporaryAND)
+            qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
             return qml.sample(wires=[0,1,2,3])
 
     .. code-block:: pycon
@@ -118,7 +123,7 @@ class TemporaryAND(Operation):
 
         **Example**
 
-        >>> print(qml.TemporaryAND.compute_matrix())
+        >>> print(qml.TemporaryAND.compute_matrix(control_values = (1,1)))
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j -0.-1.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
@@ -159,7 +164,9 @@ class TemporaryAND(Operation):
         return result_matrix
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike, control_values):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires: WiresLike, control_values=(1, 1)
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -178,7 +185,7 @@ class TemporaryAND(Operation):
 
         **Example:**
 
-        >>> qml.TemporaryAND.compute_decomposition((0,1,2))
+        >>> print(qml.TemporaryAND.compute_decomposition((0,1,2)))
         [H(2),
         T(2),
         CNOT(wires=[1, 2]),
@@ -257,9 +264,9 @@ add_decomps(TemporaryAND, _temporary_and)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)
-The Elbow, or :class:`~TemporaryAND` operator
+The Elbow, or :class:`~TemporaryAND` operator.
 
-.. seealso:: The equivalent alias :class:`~TemporaryAND` for more details.
+.. seealso:: The alias :class:`~TemporaryAND` for more details.
 
 **Details:**
 

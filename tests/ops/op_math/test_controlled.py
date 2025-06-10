@@ -219,6 +219,7 @@ class TestControlledProperties:
             "num_control_wires": 2,
             "num_zero_control_values": 1,
             "num_work_wires": 1,
+            "work_wire_type": "dirty",
         }
 
     def test_data(self):
@@ -412,7 +413,7 @@ class TestControlledMiscMethods:
         assert data[0] is target
         assert len(data) == 1
 
-        assert metadata == (control_wires, control_values, work_wires)
+        assert metadata == (control_wires, control_values, work_wires, "dirty")
 
         # make sure metadata is hashable
         assert hash(metadata)
