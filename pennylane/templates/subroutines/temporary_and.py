@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the TemporaryAND template.
+Contains the TemporaryAND template, which also is known as Elbow.
 """
 
 from functools import lru_cache
@@ -65,6 +65,7 @@ class TemporaryAND(Operation):
             # The target wire is in state |0>, so we can apply TemporaryAND
             qml.TemporaryAND([0,1,2]) # |1110⟩
             qml.CNOT([2,3]) # |1111⟩
+            # Target wire will be in state |0> after AND gate, so we can apply adjoint(TemporaryAND)
             qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
             return qml.sample(wires=[0,1,2,3])
 
@@ -259,9 +260,9 @@ add_decomps(TemporaryAND, _temporary_and)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)
-The Elbow, or :class:`~TemporaryAND` operator
+The Elbow, or :class:`~TemporaryAND` operator.
 
-.. seealso:: The equivalent alias :class:`~TemporaryAND` for more details.
+.. seealso:: The alias :class:`~TemporaryAND` for more details.
 
 **Details:**
 
