@@ -640,6 +640,12 @@ class TestToBloq:
                 "qpe_custom_mapping",
                 "qpe_custom_bloq",
             ),
+            # Tests the behaviour of using custom mapping for ops without default mappings
+            (
+                qml.QSVT(qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]),
+                "qsvt_custom_mapping",
+                "qsvt_custom_bloq",
+            ),
         ],
     )
     def test_custom_mapping(self, op, custom_map, qt_bloq):
@@ -654,7 +660,11 @@ class TestToBloq:
                 "qpe_custom_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
-                )
+                ),
+                "qsvt_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
             }
 
             return qualtran_bloqs[qt_bloq]
@@ -672,7 +682,15 @@ class TestToBloq:
                         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
-                }
+                },
+                "qsvt_custom_mapping": {
+                    qml.QSVT(
+                        qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
             }
 
             return custom_mapping[custom_map]
