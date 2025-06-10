@@ -418,10 +418,7 @@ class QasmInterpreter:
         self.visit(func_context.body, func_context)
 
         # the return value
-        try:
-            return getattr(func_context, "return")
-        except KeyError:
-            return None
+        return getattr(func_context, "return", None)
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
