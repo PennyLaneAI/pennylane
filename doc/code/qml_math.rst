@@ -8,8 +8,6 @@ qml.math
     :no-inherited-members:
 
 Utility functions for decompositions
-------------------------------------
+====================================
 
-.. automodapi:: pennylane.math.decomposition
-    :no-heading:
-    :no-inherited-members:
+.. automodule:: pennylane.math.decomposition
