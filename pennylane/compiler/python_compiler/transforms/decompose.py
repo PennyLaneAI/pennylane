@@ -41,6 +41,8 @@ from_str_to_PL_gate = {
     "CNOT": qml.CNOT,
     "Hadamard": qml.Hadamard,
     "PhaseShift": qml.PhaseShift,
+    "S": qml.S,
+    "T": qml.T,
     "PauliX": qml.PauliX,
     "PauliY": qml.PauliY,
     "PauliZ": qml.PauliZ,
