@@ -229,7 +229,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is False
+        assert f.execute_kwargs["cache"] == "auto"
 
     def test_cache_initialization_maxdiff_2(self):
         """Test that when max_diff = 2, the cache initialization to True."""
@@ -238,7 +238,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is True
+        assert f.execute_kwargs["cache"] == "auto"
 
 
 # pylint: disable=too-many-public-methods
