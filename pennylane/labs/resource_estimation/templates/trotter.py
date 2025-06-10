@@ -29,7 +29,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-
+from pennylane.labs.resource_estimation.templates.compact_hamiltonian import CompactHamiltonian
 # pylint: disable=arguments-differ
 
 
@@ -231,18 +231,21 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
         if order == 1:
             for cp_rep in cmpr_fragments:
+                print("Frag: ", cp_rep)
                 gate_list.append(GateCount(cp_rep, num_steps))
             return gate_list
 
         cp_rep_first = cmpr_fragments[0]
         cp_rep_last = cmpr_fragments[-1]
         cp_rep_rest = cmpr_fragments[1:-1]
-
+        print("Gatelist: ", gate_list)
         for cp_rep in cp_rep_rest:
             gate_list.append(GateCount(cp_rep, 2 * num_steps * (5 ** (k - 1))))
+        print("Gatelist: ", gate_list)
 
         gate_list.append(GateCount(cp_rep_first, num_steps * (5 ** (k - 1)) + 1))
         gate_list.append(GateCount(cp_rep_last, num_steps * (5 ** (k - 1))))
+        print("Gatelist: ", gate_list)
 
         return gate_list
 
@@ -501,3 +504,185 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 #         )
 
 #     return wrapper
+
+
+class ResourceTrotterCDF(CompactHamiltonian, ResourceOperator):  # pylint: disable=too-many-ancestors
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of compressed double factorized Hamiltonian.
+
+    Args:
+        compact_ham(CompactHamiltonian): An object to store information about different Hamiltonian representations
+        n (int): An integer representing the number of Trotter steps to perform
+        order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+
+    Resource Parameters:
+        * compact_ham (CompactHamiltonian]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+        * n (int): an integer representing the number of Trotter steps to perform
+        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+
+    Resources:
+        The resources are defined according to the recursive formula presented above. Specifically, each
+        operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
+        of the recursive formula. Those counts are further simplified by grouping like terms as:
+
+        .. math::
+
+            \begin{align}
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+            \end{align}
+
+    .. seealso:: :class:`~.TrotterProduct`
+
+    """
+
+    resource_keys = {"compact_ham", "num_steps", "order"}
+
+    def __init__(self, compact_ham, num_steps, order, wires=None):
+
+        self.num_steps = num_steps
+        self.order = order
+        self.compact_ham = compact_ham
+
+        if wires is not None:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        # else:
+        #     ops_wires = [op.wires for op in fragments if op.wires is not None]
+        #     if len(ops_wires) == 0:
+        #         self.wires = None
+        #         self.num_wires = max((op.num_wires for op in fragments))
+        #     else:
+        #         self.wires = Wires.all_wires(ops_wires)
+        #         self.num_wires = len(self.wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * n (int): an integer representing the number of Trotter steps to perform
+                * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+                * first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+        """
+        return {
+            "compact_ham": self.compact_ham,
+            "num_steps": self.num_steps,
+            "order": self.order,
+        }
+
+    @classmethod
+    def resource_rep(cls, compact_ham, num_steps, order) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            first_order_expansion (list[CompressedResourceOp]): A list of compressed operations corresponding to the exponentiated terms of the hamiltonian (:math:`e^{i t O_{j}}`).
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {
+            "compact_ham": compact_ham,
+            "num_steps": num_steps,
+            "order": order,
+        }
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(
+            cls, compact_ham, num_steps, order, **kwargs
+    ) -> list[GateCount]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+        Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+        the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+        symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+        :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+        .. math::
+
+            \begin{align}
+                S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+                S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+                &\vdots \\
+                S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+            \end{align}
+
+        where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+        :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+        .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+        For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+        Args:
+            compact_ham (CompactHamiltonian):
+            n (int): an integer representing the number of Trotter steps to perform
+            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+
+        Resources:
+            The resources are defined according to the recurrsive formula presented above. Specifically, each
+            operator in the :code:`first_order_expansion` is called a number of times given by the formula:
+
+            .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+
+            Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
+            of the recurrsive formula. Those counts are further simplified by grouping like terms as:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+        **Example**
+
+        The arguments can be provided directly to the :code:`resources()` function to extract the cost:
+
+        >>> n, order = (1, 2)
+        >>> first_order_expansion = [re.ResourceRX.resource_rep(), re.ResourceRZ.resource_rep()]
+        >>> re.ResourceTrotterProduct.resources(n, order, first_order_expansion)
+        defaultdict(<class 'int'>, {RX: 2, RZ: 1})
+
+        """
+        k = order // 2
+        gate_list = []
+        num_orb = compact_ham.params["num_orbitals"]
+        num_frags = compact_ham.params["num_fragments"]
+
+        op_onebody = resource_rep(re.ResourceProd, {'cmpr_factors': (re.ResourceRZ.resource_rep() for i in range(2*num_orb))})
+
+        op_twobody = resource_rep(re.ResourceProd, {'cmpr_factors': (re.ResourceMultiRZ.resource_rep(num_wires=2) for i in range((2*num_orb-1)*num_orb))})
+
+        basis_rot = resource_rep(re.ResourceBasisRotation, {'dim_N': num_orb})
+
+        if order == 1:
+            print("Basis rot: ", num_frags*num_steps)
+            gate_list.append(re.GateCount(basis_rot, 2*num_frags*num_steps))
+
+            gate_list.append(re.GateCount(op_onebody, num_steps))
+            gate_list.append(re.GateCount(op_twobody, (num_frags-1)*num_steps))
+            return gate_list
+
+        # For first and last fragment
+        gate_list.append(re.GateCount(basis_rot, 4 * num_steps * (5**(k-1))+2))
+        gate_list.append(re.GateCount(op_onebody, num_steps * (5**(k-1))+1))
+        gate_list.append(re.GateCount(op_twobody, num_steps * (5**(k-1))))
+
+        # For center fragments
+        for _ in range(2):
+            gate_list.append(re.GateCount(basis_rot, 2 * num_steps * (5**(k-1))))
+            gate_list.append(re.GateCount(op_twobody, 2 * num_steps * (5**(k-1))))
+
+        return gate_list
