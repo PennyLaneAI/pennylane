@@ -79,7 +79,7 @@ def _get_op_call_graph():
 @lru_cache
 def _map_to_bloq():
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
-    mapped to its Qualtran equivalent even if ``map_ops`` is set to True. Other operators are
+    mapped to their Qualtran equivalent even if ``map_ops`` is set to True. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
 
     @singledispatch
