@@ -450,12 +450,8 @@ class TestUnaryIterator:
 
         # Create angle set so that feeding angles[i] into RX on the i-th control wire will
         # yield broadcasted BasisEmbedding (which does not support broadcasting atm)
-        angles = (
-            np.pi
-            * np.array(
-                [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
-            ).T
-        )
+        angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
+        angles = np.pi * np.array(angles).T
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
@@ -474,14 +470,7 @@ class TestUnaryIterator:
 
     @pytest.mark.parametrize(
         ("num_ops", "control", "work", "msg_match"),
-        [
-            (
-                9,
-                4,
-                1,
-                "Can't use this decomposition",
-            ),
-        ],
+        [(9, 4, 1, "Can't use this decomposition")],
     )
     def test_operation_and_test_wires_error(
         self, num_ops, control, work, msg_match
@@ -494,12 +483,10 @@ class TestUnaryIterator:
         with pytest.raises(ValueError, match=msg_match):
             _unary_select(ops, control=wires["control"], work_wires=wires["work"])
 
-    @pytest.mark.xfail(strict=False, reason="#7580", raises=ValueError)
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed):
         """Test that the unary iterator is correct by comparing it to the standard Select
         decomposition."""
-        # This test is being blocked by https://github.com/PennyLaneAI/pennylane/issues/7580
 
         angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
         angles = np.pi * np.array(angles).T
