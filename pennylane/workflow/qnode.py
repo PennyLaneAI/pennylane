@@ -798,6 +798,18 @@ class QNode:
         updated_qn._shots_override_device = bool(updated_qn._shots != updated_qn.device.shots)
 
         return updated_qn
+    
+    def _set_shots(self, shots: Union[int, qml.measurements.Shots]) -> None:
+        """Set the number of shots used by the QNode.
+
+        Args:
+            shots (int or qml.measurements.Shots): The new number of shots to use.
+        """
+        if isinstance(shots, int):
+            shots = qml.measurements.Shots(shots)
+
+        self._shots = shots
+        self._shots_override_device = bool(self._shots != self.device.shots)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
