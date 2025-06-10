@@ -20,7 +20,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 
 from collections import defaultdict
 from functools import cached_property, singledispatch
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import numpy as np
 
@@ -46,9 +46,12 @@ except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
 
 if qualtran:
-    from qualtran.bloqs import basic_gates as qt_gates
+    import cirq
+    from attrs import field, frozen
     from qualtran._infra.gate_with_registers import split_qubits
-    from qualtran.cirq_interop._cirq_to_bloq import _QReg
+    from qualtran.bloqs import basic_gates as qt_gates
+
+    # from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
 
 def _get_op_call_graph():
@@ -565,6 +568,50 @@ class FromBloq(Operation):
         return matrix
 
 
+class _QReg:
+    """Used as a container for qubits that form a `Register` of a given bitsize. This is a modified
+    version of _QReg found in Qualtran as well.
+
+    Each instance of `_QReg` would correspond to a `Soquet` in Bloqs and represents an opaque collection
+    of qubits that together form a quantum register.
+    """
+
+    def __init__(self, qubits: Tuple[cirq.Qid, ...], dtype: qt.QDType):
+        if isinstance(qubits, cirq.Qid):
+            object.__setattr__(self, "qubits", (qubits,))
+        else:
+            object.__setattr__(self, "qubits", tuple(qubits))
+
+        object.__setattr__(self, "dtype", dtype)
+        object.__setattr__(self, "_initialized", True)
+
+    def __setattr__(self, name, value):
+        """Makes the instance immutable after initialization."""
+        if getattr(self, "_initialized", False):
+            raise AttributeError(
+                f"Cannot set attribute '{name}'. Instances of _QReg are immutable."
+            )
+        super().__setattr__(name, value)
+
+    def __repr__(self) -> str:
+        """Provides a developer-friendly string representation."""
+        return f"_QReg(qubits={self.qubits!r}, dtype={self.dtype!r})"
+
+    # 3. The custom __eq__ and __hash__ methods are preserved exactly as before.
+    # Overwrite hash / equality to ensure single-qubit registers map to each other correctly.
+    # E.g., when updating qreg_to_qvars we may have output qregs with dtype =
+    # QBit, but the input registers (which are used to track the qubits) may
+    # have QUInt(1) or similar, leading to the mappings not updating correctly.
+    # Single qubit QFxp cases are handled separately in _ensure_in_reg_exists
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, _QReg):
+            return False
+        return self.qubits == other.qubits
+
+    def __hash__(self):
+        return hash(self.qubits)
+
+
 def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
@@ -641,147 +688,140 @@ if not qualtran:
         def __init__(self, *args, **kwargs):
             raise ImportError(self._error_message)
 
-else:
 
-    class ToBloq(qt.Bloq):
-        r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
+class ToBloq(qt.Bloq):
+    r"""Adapter class to convert PennyLane operators into Qualtran Bloqs."""
 
-        def __init__(self, op, map_ops=False, **kwargs):
-            if not isinstance(op, Operator) and not isinstance(op, QNode):
-                raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
+    def __init__(self, op, map_ops=False, **kwargs):
+        if not isinstance(op, Operator) and not isinstance(op, QNode):
+            raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
 
-            self.op = op
-            self.map_ops = map_ops
-            self._kwargs = kwargs
-            super().__init__()
+        self.op = op
+        self.map_ops = map_ops
+        self._kwargs = kwargs
+        super().__init__()
 
-        @cached_property
-        def signature(self) -> "qt.Signature":
-            """Compute and return Qualtran signature for given op or QNode."""
+    @cached_property
+    def signature(self) -> "qt.Signature":
+        """Compute and return Qualtran signature for given op or QNode."""
+        if isinstance(self.op, QNode):
+            self.op.name = "QNode"
+            num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
+        else:
+            num_wires = len(self.op.wires)
+        return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+
+    def decompose_bloq(self):  # pylint:disable=too-many-branches
+        """Decompose the bloq using the op's decomposition or the tape of the QNode"""
+        try:
             if isinstance(self.op, QNode):
-                self.op.name = "QNode"
-                num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
+                tape = construct_tape(self.op)(**self._kwargs)
+                ops = tape.circuit
+                all_wires = list(tape.wires)
             else:
-                num_wires = len(self.op.wires)
-            return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+                ops = self.op.decomposition()
+                all_wires = list(self.op.wires)
 
-        def decompose_bloq(self):  # pylint:disable=too-many-branches
-            """Decompose the bloq using the op's decomposition or the tape of the QNode"""
-            try:
-                if isinstance(self.op, QNode):
-                    tape = construct_tape(self.op)(**self._kwargs)
-                    ops = tape.circuit
-                    all_wires = list(tape.wires)
-                else:
-                    ops = self.op.decomposition()
-                    all_wires = list(self.op.wires)
+            signature = self.signature
+            in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
 
-                signature = self.signature
-                in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
+            in_quregs = {
+                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+                for k, v in in_quregs.items()
+            }
 
-                in_quregs = {
-                    k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
-                    for k, v in in_quregs.items()
+            out_quregs = {
+                k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
+                for k, v in out_quregs.items()
+            }
+            bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
+
+            # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
+            qreg_to_qvar = {}
+            for reg in signature.lefts():
+                assert reg.name in in_quregs
+                soqs = initial_soqs[reg.name]
+                assert in_quregs[reg.name].shape == soqs.shape
+                qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
+
+            # 2. Add each operation to the composite Bloq.
+            for op in ops:
+                bloq = _map_to_bloq()(op, map_ops=self.map_ops)
+                if not bloq:
+                    continue
+
+                if bloq.signature == qt.Signature([]):
+                    bb.add(bloq)
+                    continue
+
+                reg_dtypes = [r.dtype for r in bloq.signature]
+                # 3.1 Find input / output registers.
+                all_op_quregs = {
+                    k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+                    for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
                 }
 
-                out_quregs = {
-                    k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
-                    for k, v in out_quregs.items()
-                }
-                bb, initial_soqs = qt.BloqBuilder.from_signature(
-                    signature, add_registers_allowed=False
-                )
+                in_op_quregs = {reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()}
 
-                # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
-                qreg_to_qvar = {}
-                for reg in signature.lefts():
-                    assert reg.name in in_quregs
-                    soqs = initial_soqs[reg.name]
-                    assert in_quregs[reg.name].shape == soqs.shape
-                    qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
+                # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+                # input `in_quregs` and updating the `qreg_to_qvar` mapping.
+                qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
 
-                # 2. Add each operation to the composite Bloq.
-                for op in ops:
-                    bloq = _map_to_bloq()(op, map_ops=self.map_ops)
-                    if not bloq:
-                        continue
+                # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+                qvars_out = bb.add_d(bloq, **qvars_in)
 
-                    if bloq.signature == qt.Signature([]):
-                        bb.add(bloq)
-                        continue
+                # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+                for reg in bloq.signature:
+                    # all_op_quregs should exist for both LEFT & RIGHT registers.
+                    assert reg.name in all_op_quregs
+                    quregs = all_op_quregs[reg.name]
+                    if reg.side != qt.Side.LEFT:
+                        assert quregs.shape == np.array(qvars_out[reg.name]).shape
+                        qreg_to_qvar |= zip(
+                            quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+                        )
 
-                    reg_dtypes = [r.dtype for r in bloq.signature]
-                    # 3.1 Find input / output registers.
-                    all_op_quregs = {
-                        k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
-                        for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
-                    }
+            # 4. Combine Soquets to match the right signature.
+            final_soqs_dict = _gather_input_soqs(
+                bb,
+                {reg.name: out_quregs[reg.name] for reg in signature.rights()},
+                qreg_to_qvar,
+            )
+            final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
+            # 5. Free all dangling Soquets which are not part of the final soquets set.
+            for qvar in qreg_to_qvar.values():
+                if qvar not in final_soqs_set:
+                    bb.free(qvar)
 
-                    in_op_quregs = {
-                        reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
-                    }
+            cbloq = bb.finalize(**final_soqs_dict)
+            return cbloq
+        except DecompositionUndefinedError as undefined_decomposition:
+            raise qt.DecomposeNotImplementedError from undefined_decomposition
 
-                    # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
-                    # input `in_quregs` and updating the `qreg_to_qvar` mapping.
-                    qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+    def build_call_graph(self, ssa):
+        """Build Qualtran call graph with defined call graph if available, otherwise build
+        said call graph with the decomposition"""
+        call_graph = _get_op_call_graph()(self.op)
+        if call_graph:
+            return call_graph
 
-                    # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
-                    qvars_out = bb.add_d(bloq, **qvars_in)
+        return self.decompose_bloq().build_call_graph(ssa)
 
-                    # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
-                    for reg in bloq.signature:
-                        # all_op_quregs should exist for both LEFT & RIGHT registers.
-                        assert reg.name in all_op_quregs
-                        quregs = all_op_quregs[reg.name]
-                        if reg.side != qt.Side.LEFT:
-                            assert quregs.shape == np.array(qvars_out[reg.name]).shape
-                            qreg_to_qvar |= zip(
-                                quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
-                            )
+    def __repr__(self):
+        if isinstance(self.op, Operation):
+            return f"ToBloq({self.op.name})"
+        return "ToBloq(QNode)"
 
-                # 4. Combine Soquets to match the right signature.
-                final_soqs_dict = _gather_input_soqs(
-                    bb,
-                    {reg.name: out_quregs[reg.name] for reg in signature.rights()},
-                    qreg_to_qvar,
-                )
-                final_soqs_set = set(
-                    soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()
-                )
-                # 5. Free all dangling Soquets which are not part of the final soquets set.
-                for qvar in qreg_to_qvar.values():
-                    if qvar not in final_soqs_set:
-                        bb.free(qvar)
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.op == other.op
+        return False
 
-                cbloq = bb.finalize(**final_soqs_dict)
-                return cbloq
-            except DecompositionUndefinedError as undefined_decomposition:
-                raise qt.DecomposeNotImplementedError from undefined_decomposition
+    def __hash__(self):
+        return hash(self.op)
 
-        def build_call_graph(self, ssa):
-            """Build Qualtran call graph with defined call graph if available, otherwise build
-            said call graph with the decomposition"""
-            call_graph = _get_op_call_graph()(self.op)
-            if call_graph:
-                return call_graph
-
-            return self.decompose_bloq().build_call_graph(ssa)
-
-        def __repr__(self):
-            if isinstance(self.op, Operation):
-                return f"ToBloq({self.op.name})"
-            return "ToBloq(QNode)"
-
-        def __eq__(self, other):
-            if type(other) is type(self):
-                return self.op == other.op
-            return False
-
-        def __hash__(self):
-            return hash(self.op)
-
-        def __str__(self):
-            return "PL" + self.op.name
+    def __str__(self):
+        return "PL" + self.op.name
 
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
