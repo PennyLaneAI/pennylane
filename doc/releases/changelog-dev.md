@@ -347,7 +347,7 @@
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
 
-* The decomposition of :class:`~.IntegerComparator` is not significantly more efficient.
+* The decomposition of :class:`~.IntegerComparator` is now significantly more efficient.
   [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 

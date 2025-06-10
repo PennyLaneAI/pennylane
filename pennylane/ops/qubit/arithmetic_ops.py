@@ -661,7 +661,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
 @register_condition(lambda geq, **_: not geq)
 @register_resources(_integer_comparator_lt_resource)
 def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
-    """Decompose the IntegerComparator for when the flipping condition is ``n < value``.
+    """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
     This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
     we first convert it to binary, and iteratively look for the significant bits. For example,
@@ -820,7 +820,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
 @register_condition(lambda geq, **_: geq)
 @register_resources(_integer_comparator_ge_resource)
 def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
-    """Decompose the IntegerComparator for when the flipping condition is ``n >= value``.
+    """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
 
     This decomposition rule mirrors the implementation for the ``n < value`` case.
 
