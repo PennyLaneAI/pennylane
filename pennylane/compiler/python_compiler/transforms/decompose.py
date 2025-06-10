@@ -14,9 +14,10 @@
 """This file contains the implementation of the decompose transform,
 written using xDSL."""
 
+import inspect
 import warnings
 from dataclasses import dataclass
-from typing import Dict, Optional, Union, Callable, Iterable
+from typing import Callable, Dict, Iterable, Optional, Union
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
@@ -26,28 +27,22 @@ from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 import pennylane as qml
+from pennylane import ops
 from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, CustomOp, ExtractOp
 from pennylane.operation import Operator
+from pennylane.ops import __all__ as ops_all
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
 # pylint: disable=missing-function-docstring
 
+
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
+# Support for all PennyLane gates is not implemented yet.
 from_str_to_PL_gate = {
-    "RX": qml.RX,
-    "RY": qml.RY,
-    "RZ": qml.RZ,
-    "Rot": qml.Rot,
-    "CNOT": qml.CNOT,
-    "Hadamard": qml.Hadamard,
-    "PhaseShift": qml.PhaseShift,
-    "S": qml.S,
-    "T": qml.T,
-    "PauliX": qml.PauliX,
-    "PauliY": qml.PauliY,
-    "PauliZ": qml.PauliZ,
-    "GroverOperator": qml.GroverOperator,
-    "Toffoli": qml.Toffoli,
+    name: getattr(ops, name)
+    for name in ops_all
+    if inspect.isclass(getattr(ops, name, None))
+    and issubclass(getattr(ops, name), qml.operation.Operator)
 }
 
 
@@ -94,7 +89,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     ):
         super().__init__()
         self.module = module
-        self.gate_set = gate_set if gate_set is not None else set(qml.ops.__all__)
+        self.gate_set = gate_set if gate_set is not None else set(ops_all)
         self.max_expansion = max_expansion
 
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
