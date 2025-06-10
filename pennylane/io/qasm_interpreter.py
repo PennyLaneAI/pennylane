@@ -342,23 +342,33 @@ class Context:
 
         """
 
-    def process_measurement(self, lhs: Variable, rhs: Variable, operator: str, line: int):
+    def process_measurement(self, operator: str, line: int, lhs: Variable, rhs: Variable = None):
         """
         Updates a MeasurementValue's processing function to reflect classical logic applied to
         the MeasurementValue.
 
         Args:
-            lhs (Variable): The first operand of the operation involving the MeasurementValue(s).
-            rhs (Variable): The second operand of the operation involving the MeasurementValue(s).
             operator (str): The operator to apply to the MeasurementValue.
             line (int): The line number at which the operator occurs.
+            lhs (Variable): The first operand of the operation involving the MeasurementValue(s).
+            rhs (Optional[Variable]): The second operand of the operation involving the MeasurementValue(s).
         """
         def new_processing_fn(*args):
             left = lhs.val.processing_fn(*args) if isinstance(lhs.val, MeasurementValue) else lhs.val
-            right = rhs.val.processing_fn(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
-            _eval_binary_op(left, operator, right, line)
+            if rhs is not None:
+                right = rhs.val.processing_fn(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
+                _eval_binary_op(left, operator, right, line)
+            else:
+                _eval_unary_op(left, operator, line)
 
-        return MeasurementValue(lhs.val.measurements + rhs.val.measurements, new_processing_fn)
+        if isinstance(lhs.val, MeasurementValue) and isinstance(rhs.val, MeasurementValue):
+            new_measurements = lhs.val.measurements + rhs.val.measurements
+        elif isinstance(lhs.val, MeasurementValue):
+            new_measurements = lhs.val.measurements
+        else:  # isinstance(rhs.val, MeasurementValue) == True
+            new_measurements = rhs.val.measurements
+
+        return MeasurementValue(new_measurements, new_processing_fn)
 
     def update_measurement(self, value: any, prev: Variable, operator: str, line: int):
         """
@@ -1303,9 +1313,9 @@ class QasmInterpreter:
         """
         lhs = preprocess_operands(self.visit(node.lhs, context))
         rhs = preprocess_operands(self.visit(node.rhs, context))
-        if (isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue)) or (isinstance(rhs, Variable) \
+        if (isinstance(lhs, Variable) and isinstance(lhs.val, MeasurementValue)) or (isinstance(rhs, Variable)
             and isinstance(rhs.val, MeasurementValue)):
-            return context.process_measurement(lhs, rhs, node.op.name, node.span.start_line)
+            return context.process_measurement(node.op.name, node.span.start_line, lhs, rhs)
         else:
             return _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
 
@@ -1322,6 +1332,8 @@ class QasmInterpreter:
             The result of the evaluated expression.
         """
         operand = preprocess_operands(self.visit(node.expression, context))
+        if isinstance(operand, Variable) and isinstance(operand.val, MeasurementValue):
+            return context.process_measurement(node.op.name, node.span.start_line, operand, None)
         return _eval_unary_op(operand, node.op.name, node.span.start_line)
 
     @visit.register(IndexExpression)
