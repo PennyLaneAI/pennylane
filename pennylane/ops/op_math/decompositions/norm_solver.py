@@ -23,18 +23,57 @@ from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
 @singledispatch
 def _gcd(a, b):
     """Compute the greatest common divisor of two integers."""
-    return math.gcd(a, b)
+    raise NotImplementedError(
+        f"GCD is not implemented for types {type(a)} and {type(b)}. "
+        "Please implement a custom GCD function for these types."
+    )
+
+
+@_gcd.register(int)
+def _(elem1, elem2):
+    return math.gcd(elem1, elem2)
 
 
 @_gcd.register(ZSqrtTwo)
 @_gcd.register(ZOmega)
-def _(a, b):
-    while b != 0:
-        a, b = b, b % a
-    return a, b
+def _(elem1, elem2):
+    while elem2 != 0:
+        elem1, elem2 = elem2, elem2 % elem1
+    return elem1, elem2
 
 
-def integer_factor(n: int, max_tries=1000) -> int | None:
+def _prime_factorize(n: int, max_trials=1000) -> list[int]:
+    r"""Computes the prime factorization of a number :math:`n`.
+
+    Args:
+        n (int): The number to factor.
+        max_tries (int): The maximum number of attempts to find a factor.
+
+    Returns:
+        list[int]: A list of prime factors of :math:`n`.
+    """
+    factors, stack = [], [n]
+    while len(stack) > 0:
+        p = stack.pop()
+        # Trivial case
+        if p == 1:
+            continue
+        # Cannot split in Z[√2], if p ≡ 7 mod 8.
+        if _primality_test(p) and p % 8 != 7:
+            factors.append(p)
+            continue
+        if factor := _integer_factorize(p, max_trials) == 7:
+            continue
+        # If we have found an integer factor,
+        # push it and its complement onto the stack
+        if factor is not None:
+            stack.extend([factor, p // factor])
+
+    return sorted(factors)
+
+
+@lru_cache(maxsize=100)
+def _integer_factorize(n: int, max_tries=1000) -> int | None:
     r"""Computes an integer factor of a number :math:`n`.
 
     This function implements the `Brent's variant <https://doi.org/10.1007/BF01933190>`_
@@ -158,6 +197,7 @@ def factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
     return None
 
 
+@lru_cache(maxsize=100)
 def _primality_test(n: int) -> bool:
     r"""Determines whether an integer is prime or not.
 
@@ -176,35 +216,11 @@ def _primality_test(n: int) -> bool:
         return True
 
     # Small primes quick check
-    small_primes = {
-        5,
-        7,
-        11,
-        13,
-        17,
-        19,
-        23,
-        29,
-        31,
-        37,
-        41,
-        43,
-        47,
-        53,
-        59,
-        61,
-        67,
-        71,
-        73,
-        79,
-        83,
-        89,
-        97,
-    }
-    if n in small_primes:
+    ps = {5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97}
+    if n in ps:
         return True
 
-    if any(n % p == 0 for p in small_primes):
+    if any(n % p == 0 for p in ps):
         return False
 
     # Factor n−1 as d·2^s with d odd
@@ -294,3 +310,40 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
         m = ix
 
     return r
+
+
+def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
+    r"""Solve the Diophantine equation :math:`t^* t = \xi` for :math:`t \in \mathbb{Z}[\omega]` and :math:`\xi \in \mathbb{Z}[\sqrt{2}]`.
+
+    Args:
+        xi (ZSqrtTwo): An element of the ring :math:`\mathbb{Z}[\sqrt{2}]`.
+
+    Returns:
+        ZOmega | None: An element of the ring :math:`\mathbb{Z}[\omega]` that satisfies the equation, or ``None`` if no solution exists.
+    """
+    if p := abs(xi) < 2:
+        return None
+
+    if not (factors := _prime_factorize(p, max_trials)):
+        return None
+
+    scale, next_xi = ZOmega(d=1), xi
+    for factor in factors:
+        if primes_zsqrt_two := factorize_prime_zsqrt_two(factor) is None:
+            return None
+
+        for eta in primes_zsqrt_two:
+            # Scale the next_xi by the factor in Z[√2].
+            next_xi, next_ab = next_xi * eta.adj2(), abs(eta)
+            # Check if the next_xi is divisible by the element eta in Z[√2].
+            if next_xi.a % next_ab == 0 and next_xi.b % next_ab == 0:
+                next_xi = ZSqrtTwo(next_xi.a // next_ab, next_xi.b // next_ab)
+                if t := factorize_prime_zomega(eta, factor) is None:
+                    return None
+                scale *= t
+
+    t2 = xi / (scale.conj() * scale).to_zsqrt()
+    if abs(t2) ** 2 != 1:
+        return None
+
+    return scale * t2.sqrt().to_zomega()
