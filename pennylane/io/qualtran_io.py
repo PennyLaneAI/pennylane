@@ -66,130 +66,144 @@ def _get_op_call_graph():
     def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
         return {
             qt_gates.Hadamard(): len(op.estimation_wires),
-            _map_to_bloq()(op.hyperparameters["unitary"]).controlled(): (
+            _map_to_bloq(op.hyperparameters["unitary"]).controlled(): (
                 2 ** len(op.estimation_wires)
             )
             - 1,
-            _map_to_bloq()((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
+            _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
         }
 
     return _op_call_graph
 
 
-# pylint: disable=import-outside-toplevel
-def _map_to_bloq():
+@singledispatch
+def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
 
-    @singledispatch
-    def _to_qt_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
-        if custom_mapping is not None:
-            return custom_mapping[op]
+    if custom_mapping is not None:
+        return custom_mapping[op]
 
-        return ToBloq(op, map_ops=map_ops, **kwargs)
+    return ToBloq(op, map_ops=map_ops, **kwargs)
 
-    @_to_qt_bloq.register
-    def _(
-        op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
-        custom_mapping=None,
-        map_ops=True,
-        **kwargs,
-    ):
-        from qualtran.bloqs.phase_estimation import RectangularWindowState
-        from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if not map_ops:
-            return ToBloq(op, **kwargs)
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(
+    op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
+    custom_mapping=None,
+    map_ops=True,
+    **kwargs,
+):
+    from qualtran.bloqs.phase_estimation import RectangularWindowState
+    from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if custom_mapping is not None:
-            return custom_mapping[op]
+    if not map_ops:
+        return ToBloq(op, **kwargs)
 
-        return TextbookQPE(
-            unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
-            ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
-        )
+    if custom_mapping is not None:
+        return custom_mapping[op]
 
-    @_to_qt_bloq.register
-    def _(op: qops.GlobalPhase, **kwargs):
-        return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
+    return TextbookQPE(
+        unitary=_map_to_bloq(op.hyperparameters["unitary"]),
+        ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+    )
 
-    @_to_qt_bloq.register
-    def _(op: qops.Hadamard, **kwargs):
-        return qt_gates.Hadamard()
 
-    @_to_qt_bloq.register
-    def _(op: qops.Identity, **kwargs):
-        return qt_gates.Identity()
+@_map_to_bloq.register
+def _(op: qops.GlobalPhase, **kwargs):
+    return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
-    @_to_qt_bloq.register
-    def _(op: qops.RX, **kwargs):
-        return qt_gates.Rx(angle=float(op.data[0]))
 
-    @_to_qt_bloq.register
-    def _(op: qops.RY, **kwargs):
-        return qt_gates.Ry(angle=float(op.data[0]))
+@_map_to_bloq.register
+def _(op: qops.Hadamard, **kwargs):
+    return qt_gates.Hadamard()
 
-    @_to_qt_bloq.register
-    def _(op: qops.RZ, **kwargs):
-        return qt_gates.Rz(angle=float(op.data[0]))
 
-    @_to_qt_bloq.register
-    def _(op: qops.S, **kwargs):
-        return qt_gates.SGate()
+@_map_to_bloq.register
+def _(op: qops.Identity, **kwargs):
+    return qt_gates.Identity()
 
-    @_to_qt_bloq.register
-    def _(op: qops.SWAP, **kwargs):
-        return qt_gates.TwoBitSwap()
 
-    @_to_qt_bloq.register
-    def _(op: qops.CSWAP, **kwargs):
-        return qt_gates.TwoBitCSwap()
+@_map_to_bloq.register
+def _(op: qops.RX, **kwargs):
+    return qt_gates.Rx(angle=float(op.data[0]))
 
-    @_to_qt_bloq.register
-    def _(op: qops.T, **kwargs):
-        return qt_gates.TGate()
 
-    @_to_qt_bloq.register
-    def _(op: qops.X, **kwargs):
-        return qt_gates.XGate()
+@_map_to_bloq.register
+def _(op: qops.RY, **kwargs):
+    return qt_gates.Ry(angle=float(op.data[0]))
 
-    @_to_qt_bloq.register
-    def _(op: qops.Y, **kwargs):
-        return qt_gates.YGate()
 
-    @_to_qt_bloq.register
-    def _(op: qops.CY, **kwargs):
-        return qt_gates.CYGate()
+@_map_to_bloq.register
+def _(op: qops.RZ, **kwargs):
+    return qt_gates.Rz(angle=float(op.data[0]))
 
-    @_to_qt_bloq.register
-    def _(op: qops.Z, **kwargs):
-        return qt_gates.ZGate()
 
-    @_to_qt_bloq.register
-    def _(op: qops.CZ, **kwargs):
-        return qt_gates.CZ()
+@_map_to_bloq.register
+def _(op: qops.S, **kwargs):
+    return qt_gates.SGate()
 
-    @_to_qt_bloq.register
-    def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
-        return _map_to_bloq()(
-            op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
-        ).adjoint()
 
-    @_to_qt_bloq.register
-    def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
-        if isinstance(op, qops.Toffoli):
-            return qt_gates.Toffoli()
+@_map_to_bloq.register
+def _(op: qops.SWAP, **kwargs):
+    return qt_gates.TwoBitSwap()
 
-        return _map_to_bloq()(
-            op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
-        ).controlled()
 
-    @_to_qt_bloq.register
-    def _(op: qmeas.MeasurementProcess, **kwargs):
-        return None
+@_map_to_bloq.register
+def _(op: qops.CSWAP, **kwargs):
+    return qt_gates.TwoBitCSwap()
 
-    return _to_qt_bloq
+
+@_map_to_bloq.register
+def _(op: qops.T, **kwargs):
+    return qt_gates.TGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.X, **kwargs):
+    return qt_gates.XGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.Y, **kwargs):
+    return qt_gates.YGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.CY, **kwargs):
+    return qt_gates.CYGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.Z, **kwargs):
+    return qt_gates.ZGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.CZ, **kwargs):
+    return qt_gates.CZ()
+
+
+@_map_to_bloq.register
+def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
+    return _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).adjoint()
+
+
+@_map_to_bloq.register
+def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
+    if isinstance(op, qops.Toffoli):
+        return qt_gates.Toffoli()
+
+    return _map_to_bloq(
+        op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+    ).controlled()
+
+
+@_map_to_bloq.register
+def _(op: qmeas.MeasurementProcess, **kwargs):
+    return None
 
 
 def _get_to_pl_op():
@@ -776,7 +790,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
             # 2. Add each operation to the composite Bloq.
             for op in ops:
-                bloq = _map_to_bloq()(op, map_ops=self.map_ops)
+                bloq = _map_to_bloq(op, map_ops=self.map_ops)
                 if bloq is None:
                     continue
 
@@ -926,7 +940,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if map_ops:
         if custom_mapping:
-            return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
-        return _map_to_bloq()(circuit, map_ops=True, **kwargs)
+            return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
+        return _map_to_bloq(circuit, map_ops=True, **kwargs)
 
     return ToBloq(circuit, **kwargs)

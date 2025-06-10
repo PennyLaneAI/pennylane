@@ -455,11 +455,11 @@ class TestToBloq:
             qml.H(2),
             qml.H(3),
             qml.H(4),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[4]), wires=[1, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[5]), wires=[2, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[6]), wires=[3, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[7]), wires=[4, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8]), wires=range(1, 5)),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[4]), wires=[1, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[5]), wires=[2, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[6]), wires=[3, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[7]), wires=[4, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[8]), wires=range(1, 5)),
         ]
 
     def test_circuit_to_bloq_kwargs(self):
@@ -529,26 +529,24 @@ class TestToBloq:
             ZGate,
         )
 
-        to_bloq = _map_to_bloq
-
-        assert GlobalPhase(exponent=1) == to_bloq()(
+        assert GlobalPhase(exponent=1) == _map_to_bloq(
             qml.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
         )
-        assert Identity() == to_bloq()(qml.Identity(0))
-        assert Ry(angle=np.pi / 2) == to_bloq()(qml.RY(np.pi / 2, 0))
-        assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
-        assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
-        assert SGate() == to_bloq()(qml.S(0))
-        assert TwoBitSwap() == to_bloq()(qml.SWAP([0, 1]))
-        assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
-        assert TGate() == to_bloq()(qml.T(0))
-        assert XGate() == to_bloq()(qml.PauliX(0))
-        assert YGate() == to_bloq()(qml.PauliY(0))
-        assert CYGate() == to_bloq()(qml.CY([0, 1]))
-        assert ZGate() == to_bloq()(qml.PauliZ(0))
-        assert CZ() == to_bloq()(qml.CZ([0, 1]))
-        assert CNOT() == to_bloq()(qml.CNOT([0, 1]))
-        assert Toffoli() == to_bloq()(qml.Toffoli([0, 1, 2]))
+        assert Identity() == _map_to_bloq(qml.Identity(0))
+        assert Ry(angle=np.pi / 2) == _map_to_bloq(qml.RY(np.pi / 2, 0))
+        assert Rx(angle=np.pi / 4) == _map_to_bloq(qml.RX(np.pi / 4, 0))
+        assert Rz(angle=np.pi / 3) == _map_to_bloq(qml.RZ(np.pi / 3, 0))
+        assert SGate() == _map_to_bloq(qml.S(0))
+        assert TwoBitSwap() == _map_to_bloq(qml.SWAP([0, 1]))
+        assert TwoBitCSwap() == _map_to_bloq(qml.CSWAP([0, 1, 2]))
+        assert TGate() == _map_to_bloq(qml.T(0))
+        assert XGate() == _map_to_bloq(qml.PauliX(0))
+        assert YGate() == _map_to_bloq(qml.PauliY(0))
+        assert CYGate() == _map_to_bloq(qml.CY([0, 1]))
+        assert ZGate() == _map_to_bloq(qml.PauliZ(0))
+        assert CZ() == _map_to_bloq(qml.CZ([0, 1]))
+        assert CNOT() == _map_to_bloq(qml.CNOT([0, 1]))
+        assert Toffoli() == _map_to_bloq(qml.Toffoli([0, 1, 2]))
 
     @pytest.mark.parametrize(
         (
