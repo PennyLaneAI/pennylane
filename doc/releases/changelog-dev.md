@@ -9,6 +9,7 @@
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
+  [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
 
   ```python
   import pennylane as qml
@@ -139,11 +140,40 @@
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
+  operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
+  that leverages extra information about the target wire to enable more efficient circuit decompositions.
+  The ``TemporaryAND`` assumes the target qubit to be initialized in ``|0〉``, while the ``Adjoint(TemporaryAND)`` assumes the target output to be ``|0〉``.
+  For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
+  :class:`~.TemporaryAND` is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
+  [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
+
+  ```python
+  dev = qml.device("default.qubit", shots=1)
+  @qml.qnode(dev)
+  def circuit():
+      # |0000⟩
+      qml.X(0) # |1000⟩
+      qml.X(1) # |1100⟩
+      # The target wire is in state |0>, so we can apply TemporaryAND
+      qml.TemporaryAND([0,1,2]) # |1110⟩
+      qml.CNOT([2,3]) # |1111⟩
+      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied, so we can apply adjoint(TemporaryAND)
+      qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
+      return qml.sample(wires=[0,1,2,3])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [1 1 0 1]
+  ```
+
 * The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
   expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
   relevant gate-set with the `convert_to_mbqc_gateset` transform.
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
+
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
@@ -496,6 +526,15 @@
   possible implementation of the parity matrix that respects the connectivity.
   [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
+* A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
+  passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
+  
+    * :func:`basic_optimization <pennylane.labs.zxopt.basic_optimization>` performs peephole optimizations on the circuit and is a useful subroutine for other optimization passes.
+    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` optimizes [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+    * :func:`full_reduce <pennylane.labs.zxopt.full_reduce>` can optimize arbitrary PennyLane circuits and follows the pipeline described in the [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
+    * :func:`todd <pennylane.labs.zxopt.todd>` performs Third Order Duplicate and Destroy (`TODD <https://arxiv.org/abs/1712.01557>`__) via phase polynomials and reduces T gate counts.
+
+  [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
 <h3>Breaking changes 💔</h3>
 
@@ -568,6 +607,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Move program capture code closer to where it is used.
+  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
@@ -639,6 +681,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
+  [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
@@ -663,6 +707,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.equal` now works with `qml.PauliError`s.
+  [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
 
 * The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
   [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
@@ -770,6 +817,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   (`measure_arbitrary_basis`, `measure_x` and `measure_y`) no longer raises an error in circuits 
   using `diagonalize_mcms`.
   [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
+
+* Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
+  off from the original tape by a global phase.
+  [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
 <h3>Contributors ✍️</h3>
 

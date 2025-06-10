@@ -368,6 +368,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
     :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
 
+.. gallery-item::
+    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
+    :figure: _static/templates/subroutines/temporary_and.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
