@@ -42,8 +42,10 @@ from_str_to_PL_gate = {
     "Hadamard": qml.Hadamard,
     "PhaseShift": qml.PhaseShift,
     "PauliX": qml.PauliX,
-    "S": qml.S,
-    "T": qml.T,
+    "PauliY": qml.PauliY,
+    "PauliZ": qml.PauliZ,
+    "GroverOperator": qml.GroverOperator,
+    "Toffoli": qml.Toffoli,
 }
 
 
@@ -90,7 +92,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     ):
         super().__init__()
         self.module = module
-        self.gate_set = gate_set
+        self.gate_set = gate_set if gate_set is not None else set(qml.ops.__all__)
         self.max_expansion = max_expansion
 
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}

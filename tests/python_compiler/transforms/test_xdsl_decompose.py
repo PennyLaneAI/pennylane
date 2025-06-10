@@ -243,9 +243,9 @@ class TestDecompositionPass:
     def test_hadamard_decomposition(self, run_filecheck):
         """Test that the Hadamard gate is decomposed into RZ and RY gates."""
 
-        # qml.Hadamard(wires=0)
-        # qml.Hadamard(wires=0)
-        # qml.Hadamard(wires=1)
+        # Hadamard(wires=0)
+        # Hadamard(wires=0)
+        # Hadamard(wires=1)
         # ---->
         # RZ(0.5 * pi, wires=0)
         # RX(0.5 * pi, wires=0)
