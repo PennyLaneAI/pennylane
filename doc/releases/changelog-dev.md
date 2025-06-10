@@ -536,9 +536,9 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Specifying gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
+* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
   new `gradient_kwargs` keyword argument accordingly.
-  [(#)]()
+  [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
 
 * A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
   It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates
