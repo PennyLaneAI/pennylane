@@ -101,9 +101,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             res = []
             for prev_op in previous_ops_on_wires:
                 with qml.capture.pause():
-                    rot = qml.Rot(
-                        *math.stack(prev_op.single_qubit_rot_angles()), wires=prev_op.wires
-                    )
+                    rot = qml.Rot(*prev_op.single_qubit_rot_angles(), wires=prev_op.wires)
                 res.append(super().interpret_operation(rot))
 
             res.append(super().interpret_operation(op))
