@@ -49,9 +49,9 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 if qualtran:
     import cirq
+    from qualtran import Bloq
     from qualtran._infra.gate_with_registers import split_qubits
     from qualtran.bloqs import basic_gates as qt_gates
-    from qualtran import Bloq
 
 
 @singledispatch
