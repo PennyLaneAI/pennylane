@@ -109,10 +109,10 @@ def _interpret_level_initial(
     # Handle slice objects - clamp to user transform bounds
     if isinstance(level, slice):
         start = level.start if level.start is not None else 0
-        stop = level.stop if level.stop is not None else num_user_transforms
-        if stop >= 0:
-            stop = min(stop, num_user_transforms)
-        return slice(start, stop, level.step)
+        # stop = level.stop if level.stop is not None else num_user_transforms
+        # if stop >= 0:
+        #     stop = min(stop, num_user_transforms)
+        return slice(start, level.stop, level.step)
 
     return level  # pragma: no cover
 
