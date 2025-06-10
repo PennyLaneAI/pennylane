@@ -267,7 +267,7 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
 
     # (p - 1) = 2.q ==> 2 * k
     if s == 1:
-        return _legendre_symbol(a, p, k=4)
+        return pow(a, (p + 1) // 4, p)
 
     # Find a quadratic non‐residue z,
     # such that z^((p-1)/2) ≡ −1 mod p
