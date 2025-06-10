@@ -90,15 +90,20 @@ def _map_to_bloq():
         return ToBloq(op, map_ops=map_ops, **kwargs)
 
     @_to_qt_bloq.register
-    def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation, **kwargs):
+    def _(
+        op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
+        custom_mapping=None,
+        map_ops=True,
+        **kwargs,
+    ):
         from qualtran.bloqs.phase_estimation import RectangularWindowState
         from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-        if kwargs.get("map_ops") is False:
+        if not map_ops:
             return ToBloq(op, **kwargs)
 
-        if (custom_map := kwargs.get("custom_mapping")) is not None:
-            return custom_map[op]
+        if custom_mapping is not None:
+            return custom_mapping[op]
 
         return TextbookQPE(
             unitary=_map_to_bloq()(op.hyperparameters["unitary"]),
@@ -166,15 +171,19 @@ def _map_to_bloq():
         return qt_gates.CZ()
 
     @_to_qt_bloq.register
-    def _(op: qops.Adjoint, **kwargs):
-        return _map_to_bloq()(op.base, **kwargs).adjoint()
+    def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
+        return _map_to_bloq()(
+            op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+        ).adjoint()
 
     @_to_qt_bloq.register
-    def _(op: qops.Controlled, **kwargs):
+    def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
         if isinstance(op, qops.Toffoli):
             return qt_gates.Toffoli()
 
-        return _map_to_bloq()(op.base, **kwargs).controlled()
+        return _map_to_bloq()(
+            op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+        ).controlled()
 
     @_to_qt_bloq.register
     def _(op: qmeas.MeasurementProcess, **kwargs):
