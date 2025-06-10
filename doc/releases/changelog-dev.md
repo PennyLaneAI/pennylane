@@ -9,6 +9,7 @@
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
+  [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
 
   ```python
   import pennylane as qml
@@ -522,6 +523,15 @@
   possible implementation of the parity matrix that respects the connectivity.
   [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
+* A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
+  passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
+  
+    * :func:`basic_optimization <pennylane.labs.zxopt.basic_optimization>` performs peephole optimizations on the circuit and is a useful subroutine for other optimization passes.
+    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` optimizes [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+    * :func:`full_reduce <pennylane.labs.zxopt.full_reduce>` can optimize arbitrary PennyLane circuits and follows the pipeline described in the [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
+    * :func:`todd <pennylane.labs.zxopt.todd>` performs Third Order Duplicate and Destroy (`TODD <https://arxiv.org/abs/1712.01557>`__) via phase polynomials and reduces T gate counts.
+
+  [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
 <h3>Breaking changes 💔</h3>
 
@@ -594,6 +604,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Move program capture code closer to where it is used.
+  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
@@ -665,6 +678,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   module `qml.math.decomposition`
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
+  [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
