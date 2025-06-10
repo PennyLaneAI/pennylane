@@ -405,7 +405,7 @@ class QNode:
         (Operators that are used in the circuit but do not receive broadcasted inputs do not need
         to support it.) A list of supporting operators is available in
         :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
-        Whether or not broadcasting delivers an increased performance will depend on whether the
+        Whether or not broadcasting delivers an increased performance will depend on the
         used device is a classical simulator and natively supports this.
 
         If a device does not natively support broadcasting, it will execute broadcasted QNode calls
@@ -640,6 +640,8 @@ class QNode:
         self.gradient_kwargs = gradient_kwargs
 
         self._shots = device.shots
+        # This flag should be set to True, if the QNode is updated with another argument
+        self._shots_override_device = False
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
@@ -747,7 +749,7 @@ class QNode:
             )
 
         # For shots, we allow `shots=...` to be passed as a keyword argument
-        # and this should happen before any other updates
+        # and this should happen before any other updates (device also has shots, until they were deprecated)
         shots = self._shots
         shots_to_update = "shots" in kwargs
         if shots_to_update:
@@ -772,6 +774,29 @@ class QNode:
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        return updated_qn
+
+    def update_shots(self, shots: Union[int, qml.measurements.Shots]) -> "QNode":
+        """Update the number of shots used by the QNode.
+
+        Args:
+            shots (int or qml.measurements.Shots): The new number of shots to use.
+
+        Returns:
+            qnode (QNode): new QNode with updated shots
+        """
+        if isinstance(shots, int):
+            shots = qml.measurements.Shots(shots)
+
+        # Create a copy of the current QNode
+        updated_qn = copy.copy(self)
+
+        # Update the shots attribute directly
+        updated_qn._shots = shots
+        # update the conflict flag between shots and device.shots
+        # this is used to inform the user in later workflow that something unexpected is happening
+        updated_qn._shots_override_device = bool(updated_qn._shots != updated_qn.device.shots)
+
         return updated_qn
 
     # pylint: disable=too-many-return-statements, unused-argument
