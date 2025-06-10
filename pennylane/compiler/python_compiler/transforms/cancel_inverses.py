@@ -21,7 +21,7 @@ from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
 from ..quantum_dialect import CustomOp
-from .utils import xdsl_transform
+from .api import xdsl_transform
 
 self_inverses = [
     "Identity",

@@ -23,7 +23,7 @@ from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import CustomOp
-from .utils import xdsl_transform
+from .api import xdsl_transform
 
 # Can handle all composible rotations except Rot... for now
 composable_rotations = [

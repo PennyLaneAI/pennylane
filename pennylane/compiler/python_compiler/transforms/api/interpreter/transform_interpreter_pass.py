@@ -26,7 +26,7 @@ from xdsl.interpreters import Interpreter
 from xdsl.passes import ModulePass
 from xdsl.utils.exceptions import PassFailedException
 
-from .interpreter import TransformFunctionsExt
+from .transform_functions import TransformFunctionsExt
 
 
 class TransformInterpreterPass(ModulePass):
