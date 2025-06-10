@@ -530,9 +530,7 @@ def _add_k_units(ops, controls, work_wires, k):
     operators, respectively. Accordingly, two fewer control wires are used.
 
     """
-    assert k == len(ops)
-    if k == 0:
-        return []
+    assert k == len(ops) > 0
     num_bits = _ceil_log(k)
     needed_controls = 2 * num_bits + 1
     assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"

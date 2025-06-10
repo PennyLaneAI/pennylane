@@ -440,6 +440,17 @@ num_controls_and_num_ops = (
 class TestUnaryIterator:
     """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
 
+    @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
+    def test_no_ops(self, num_controls):
+        """Test that the unary iterator does not return any operators for an empty list
+        of target operators."""
+
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+
+        decomp = _unary_select([], control=control, work_wires=work)
+        assert decomp == []
+
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_identity_with_basis_states(self, num_controls, num_ops):
         """Test that the unary iterator is correct by asserting that the identity
