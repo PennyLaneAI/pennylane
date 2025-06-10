@@ -19,7 +19,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint: disable=unused-argument, no-member
 
 from collections import defaultdict
-from functools import cached_property, lru_cache, singledispatch
+from functools import cached_property, singledispatch
 from typing import Dict, List
 
 import numpy as np
@@ -51,7 +51,6 @@ if qualtran:
     from qualtran.cirq_interop._cirq_to_bloq import _QReg
 
 
-@lru_cache
 def _get_op_call_graph():
     # TODO: Integrate with resource operators and the new decomposition pipelines
     """Return call graphs for given PennyLane Operator"""
@@ -75,7 +74,6 @@ def _get_op_call_graph():
 
 
 # pylint: disable=import-outside-toplevel
-@lru_cache
 def _map_to_bloq():
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
@@ -182,7 +180,6 @@ def _map_to_bloq():
     return _to_qt_bloq
 
 
-@lru_cache
 def _get_to_pl_op():
     @singledispatch
     def _to_pl_op(bloq, wires):
