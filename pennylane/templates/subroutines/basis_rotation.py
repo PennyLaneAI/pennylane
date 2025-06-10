@@ -17,7 +17,9 @@ This module contains the template for performing basis transformation defined by
 
 import pennylane as qml
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 # pylint: disable-msg=too-many-arguments
@@ -177,7 +179,7 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        phase_list, givens_list = math.givens_decomposition(unitary_matrix)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(math.angle(phase), wires=wires[idx]))
@@ -223,7 +225,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, check: bool = False
     if len(wires) < 2:
         raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
-    phase_list, givens_list = givens_decomposition(unitary_matrix)
+    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
     for idx, phase in enumerate(phase_list):
         qml.PhaseShift(qml.math.angle(phase), wires=wires[idx])
