@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
+from pennylane.wires import Wires
 
 
 def to_integer_number(bitlist):
@@ -76,6 +77,22 @@ class TestFlipSign:
             math.sign(x) == -1 if i == n else math.sign(x) == 1 for i, x in enumerate(state)
         ]
         assert all(signs_are_correct)
+
+    @pytest.mark.parametrize(
+        ("n, wires"),
+        [
+            (0, 0),
+            (1, 3),
+            (2, range(2)),
+            (6, range(3)),
+            ([1, 0], [1, 2]),
+            ([1, 1, 0], [4, 1, 2]),
+        ],
+    )
+    def test_wires(self, n, wires):
+        """Test that the operation wires attribute is correct."""
+        op = qml.FlipSign(n, wires=wires)
+        assert op.wires == Wires(wires)
 
     @pytest.mark.parametrize(
         ("n, wires"),
