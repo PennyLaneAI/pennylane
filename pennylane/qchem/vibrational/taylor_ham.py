@@ -274,7 +274,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Compute the coefficients of Taylor vibrational Hamiltonian.
+    r"""Computes the coefficients of Taylor vibrational Hamiltonian.
 
     The coefficients are computed from a multi-dimensional polynomial fit over potential energy
     surface data, with a polynomial specified by ``min_deg`` and ``max_deg``.
@@ -297,7 +297,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
 		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
-		\nonumber \vdots \, .
+		\nonumber \vdots
 
     The one-mode Taylor coefficinets, :math:`\Phi`, computed here are related to the potential
     energy surface as:
