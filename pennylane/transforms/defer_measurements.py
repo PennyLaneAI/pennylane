@@ -19,7 +19,6 @@ from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
-from pennylane.allocation import Allocate, DynamicWire
 from pennylane.measurements import (
     CountsMP,
     MeasurementValue,
@@ -776,9 +775,17 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
+    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
+        raise ValueError(
+            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
+        )
+
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
+    cur_wire = (
+        max(tape.wires) + 1 if reused_measurement_wires or any_repeated_measurements else None
+    )
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
@@ -790,24 +797,23 @@ def defer_measurements(
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
-                new_wire = DynamicWire()
-                new_operations.append(Allocate(new_wire))
-                control_wires[op.id] = new_wire
+                control_wires[op.id] = cur_wire
 
                 with QueuingManager.stop_recording():
-                    new_operations.append(qml.CNOT([op.wires[0], new_wire]))
+                    new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
 
                 if op.reset:
                     with QueuingManager.stop_recording():
                         # No need to manually reset if postselecting on |0>
                         if op.postselect is None:
-                            new_operations.append(qml.CNOT([new_wire, op.wires[0]]))
+                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
                         elif op.postselect == 1:
                             # We know that the measured wire will be in the |1> state if
                             # postselected |1>. So we can just apply a PauliX instead of
                             # a CNOT to reset
                             new_operations.append(qml.X(op.wires[0]))
 
+                cur_wire += 1
             else:
                 control_wires[op.id] = op.wires[0]
 
