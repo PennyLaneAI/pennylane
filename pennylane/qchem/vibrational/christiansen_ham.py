@@ -22,8 +22,8 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 # pylint: disable = too-many-branches, too-many-positional-arguments, too-many-arguments, too-many-nested-blocks,
 
 
-def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ordered=True):
-    r"""Return Christiansen bosonic vibrational Hamiltonian.
+def christiansen_bosonic(one, two=None, three=None, ordered=True):
+    r"""Returns Christiansen bosonic vibrational Hamiltonian.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
@@ -35,7 +35,7 @@ def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ord
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
 
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    where :math:`b^{\dagger}` and :math:`b` are the bosonic creation and annihilation
     operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
     modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
 
@@ -52,20 +52,21 @@ def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ord
         V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
-    represents the kinetick energy operator and :math:`V` represents the potential energy operator.
+    represents the kinetic energy operator and :math:`V` represents the potential energy operator.
     Similarly, the three-mode integrals can be obtained following
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
     Args:
-        one (TensorLike[float]): one-body matrix elements
-        two (TensorLike[float]): two-body matrix elements
-        three (TensorLike[float]): three-body matrix elements
-        modes (int): number of vibrational modes. If ``None``, it is obtained from the length
-            of ``one``.
-        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is
-            obtained from the shape of ``one``.
+        one (TensorLike[float]): one-body integrals with shape ``(m, n, n)`` where ``m`` and ``n``
+            are the number of modes and the maximum number of bosonic states per mode, repectively
+        two (TensorLike[float]): two-body integrals with shape ``(m, m, n, n, n, n)`` where ``m``
+            and ``n`` are the number of modes and the maximum number of bosonic states per mode,
+            repectively
+        three (TensorLike[float]): three-body integrals with shape ``(m, m, m, n, n, n, n, n, n)``
+            where ``m`` and ``n`` are the number of modes and the maximum number of bosonic states
+            per mode, repectively
         cutoff (float): tolerance for discarding the negligible coefficients
-        ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
+        ordered (bool): indicates if integral matrix elements are already ordered. Default is ``True``.
 
     Returns:
         pennylane.bose.BoseSentence: the constructed bosonic operator
@@ -95,12 +96,11 @@ def christiansen_bosonic(one, two=None, three=None, modes=None, modals=None, ord
     + 0.010479092552439511 * b⁺(3) b(2)
     + 0.07565063279464881 * b⁺(3) b(3)
     """
-    if modes is None:
-        modes = np.shape(one)[0]
 
-    if modals is None:
-        imax = np.shape(one)[1]
-        modals = imax * np.ones(modes, dtype=int)
+    modes = np.shape(one)[0]
+
+    imax = np.shape(one)[1]
+    modals = imax * np.ones(modes, dtype=int)
 
     idx = {}  # dictionary mapping the tuple (l,n) to an index in the qubit register
     counter = 0
