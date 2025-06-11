@@ -686,20 +686,23 @@ class TestToBloq:
         qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
+
 @pytest.fixture
 def qubits():
     """Provides cirq.LineQubit instances for tests."""
     import cirq
+
     return cirq.LineQubit(0), cirq.LineQubit(1)
+
 
 @pytest.fixture
 def dtypes():
     """Provides qualtran QDType instances for tests."""
     from qualtran import QBit, QUInt
+
     # A single QBit and a single-bit QUInt are different types
     # but should be equivalent in a 1-qubit _QReg comparison.
     return QBit(), QUInt(bitsize=1)
-
 
 
 def test_initialization_with_tuple(qubits, dtypes):
@@ -715,6 +718,7 @@ def test_initialization_with_tuple(qubits, dtypes):
     assert qreg.dtype == dtype_uint
     assert qreg._initialized is True
 
+
 def test_initialization_with_single_qubit(qubits, dtypes):
     """Tests that a single qubit is correctly wrapped in a tuple."""
     q0, _ = qubits
@@ -725,6 +729,7 @@ def test_initialization_with_single_qubit(qubits, dtypes):
     assert isinstance(qreg.qubits, tuple)
     assert qreg.qubits == (q0,)
     assert qreg.dtype == dtype_bit
+
 
 def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
     """Tests that changing an attribute after initialization raises an AttributeError."""
@@ -741,6 +746,7 @@ def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
     with pytest.raises(AttributeError, match="Cannot set attribute 'new_attr'"):
         qreg.new_attr = "some_value"
 
+
 def test_equality_ignores_dtype(qubits, dtypes):
     """Tests the core feature: equality should only depend on qubits, not dtype."""
     q0, _ = qubits
@@ -751,6 +757,7 @@ def test_equality_ignores_dtype(qubits, dtypes):
 
     assert qreg1 == qreg2
 
+
 def test_hash_ignores_dtype(qubits, dtypes):
     """Tests that the hash also only depends on the qubits."""
     q0, _ = qubits
@@ -760,6 +767,7 @@ def test_hash_ignores_dtype(qubits, dtypes):
     qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
 
     assert hash(qreg1) == hash(qreg2)
+
 
 def test_inequality_for_different_qubits(qubits, dtypes):
     """Tests that instances with different qubits are not equal."""
@@ -772,6 +780,7 @@ def test_inequality_for_different_qubits(qubits, dtypes):
 
     assert qreg1 != qreg2
     assert qreg1 != qreg3
+
 
 def test_inequality_for_different_types(qubits, dtypes):
     """Tests that comparison with other types returns NotImplemented/False."""
