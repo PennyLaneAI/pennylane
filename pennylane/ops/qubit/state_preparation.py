@@ -357,7 +357,7 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
-        validate_norm: bool = True,
+        validate_norm: bool = False,
     ):
         self.is_sparse = False
         if sp.sparse.issparse(state):
