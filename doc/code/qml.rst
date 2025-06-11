@@ -3,12 +3,8 @@ qml
 
 .. currentmodule:: pennylane
 
-.. autosummary:: pennylane.qml
-    :toctree: api
+.. automodapi:: pennylane
     :no-heading:
+    :include-all-objects:
+    :inherited-docstrings:
     :classes-only:
-
-.. autosummary:: pennylane
-    :toctree: api
-    :no-heading:
-    :functions-only:
