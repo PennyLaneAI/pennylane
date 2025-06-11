@@ -324,7 +324,7 @@ def _get_op_call_graph():
         projectors = op.hyperparameters["projectors"]
         num_projectors = len(projectors)
 
-        for _, proj_op in enumerate(projectors[:-1]):
+        for proj_op in projectors[:-1]:
             gate_types[_map_to_bloq()(proj_op)] += 1
 
         gate_types[_map_to_bloq()(UA)] += num_projectors // 2
