@@ -21,22 +21,22 @@ from pennylane.wires import WiresLike
 
 def _left_operator(ck, ik, tk, aux):
     """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
-    op_list = []
-    op_list.append(qml.CNOT([ck, ik]))
-    op_list.append(qml.CNOT([ck, tk]))
-    op_list.append(qml.TemporaryAND([ik, tk, aux]))
-    op_list.append(qml.CNOT([ck, aux]))
-    return op_list
+    return [
+        qml.CNOT([ck, ik]),
+        qml.CNOT([ck, tk]),
+        qml.TemporaryAND([ik, tk, aux]),
+        qml.CNOT([ck, aux]),
+    ]
 
 
 def _right_operator(ck, ik, tk, aux):
     """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
-    op_list = []
-    op_list.append(qml.CNOT([ck, aux]))
-    op_list.append(qml.adjoint(qml.TemporaryAND([ik, tk, aux])))
-    op_list.append(qml.CNOT([ck, ik]))
-    op_list.append(qml.CNOT([ik, tk]))
-    return op_list
+    return [
+        qml.CNOT([ck, aux]),
+        qml.adjoint(qml.TemporaryAND([ik, tk, aux])),
+        qml.CNOT([ck, ik]),
+        qml.CNOT([ik, tk]),
+    ]
 
 
 class SemiAdder(Operation):
@@ -54,7 +54,7 @@ class SemiAdder(Operation):
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition. Exactly ``len(y_wires) - 1`` work
             wires should be provided.
 
     **Example**
@@ -120,20 +120,18 @@ class SemiAdder(Operation):
 
         if len(work_wires) < len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
-        if not set(work_wires).isdisjoint(x_wires):
+        if work_wires.intersection(x_wires):
             raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if not set(work_wires).isdisjoint(y_wires):
+        if work_wires.intersection(y_wires):
             raise ValueError("None of the wires in work_wires should be included in y_wires.")
-        if not set(x_wires).isdisjoint(y_wires):
+        if x_wires.intersection(y_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
 
-        for key in ["x_wires", "y_wires", "work_wires"]:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+        self.hyperparameters["x_wires"] = x_wires
+        self.hyperparameters["y_wires"] = y_wires
+        self.hyperparameters["work_wires"] = work_wires
 
-        # pylint: disable=consider-using-generator
-        all_wires = sum(
-            [self.hyperparameters[key] for key in ["x_wires", "y_wires", "work_wires"]], start=[]
-        )
+        all_wires = qml.wires.Wires.all_wires([x_wires, y_wires, work_wires])
 
         super().__init__(wires=all_wires, id=id)
 
@@ -169,7 +167,7 @@ class SemiAdder(Operation):
         )
 
     def decomposition(self):  # pylint: disable=arguments-differ
-
+        r"""Representation of the operator as a product of other operators."""
         return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
@@ -179,11 +177,12 @@ class SemiAdder(Operation):
     @staticmethod
     def compute_decomposition(x_wires, y_wires, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+        The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition. Exactly ``len(y_wires) - 1`` work
                 wires should be provided.
 
         Returns:
@@ -242,6 +241,7 @@ class SemiAdder(Operation):
 
 
 def _semiadder_resources(num_y_wires):
+    # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # In the case where len(x_wires) < len(y_wires), this is an upper bound.
     return {
         qml.TemporaryAND: num_y_wires - 1,
