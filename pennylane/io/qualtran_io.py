@@ -118,7 +118,7 @@ def _get_op_call_graph():
 
         sorted_coefficients = [
             value
-            for key, value in sorted(
+            for _, value in sorted(
                 new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
             )
         ]
