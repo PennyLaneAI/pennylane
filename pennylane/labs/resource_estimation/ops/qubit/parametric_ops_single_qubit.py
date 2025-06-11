@@ -44,7 +44,6 @@ def _rotation_resources(epsilon=10e-3):
             in the decomposition.
     """
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-
     t = resource_rep(plre.ResourceT)
     return [GateCount(t, num_gates)]
 
@@ -72,7 +71,6 @@ class ResourcePhaseShift(ResourceOperator):
 
     >>> plre.ResourcePhaseShift.resource_decomp()
     [(1 x RZ), (1 x GlobalPhase)]
-
     """
 
     num_wires = 1
@@ -115,7 +113,6 @@ class ResourcePhaseShift(ResourceOperator):
         """
         rz = resource_rep(ResourceRZ, {"eps": eps})
         global_phase = resource_rep(plre.ResourceGlobalPhase)
-
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
