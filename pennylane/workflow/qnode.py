@@ -912,29 +912,6 @@ class QNode:
         self._tape = tape
         return tape
 
-    @debug_logger
-    def apply_set_shots(self):
-        """Apply in advance the `set_shots` transform if it is present in the transform program."""
-        if qml.set_shots in self.transform_program:
-            # Get the transform container that contains the set_shots transform
-            for container in self.transform_program:
-                transform_function = container.transform  # referring to the transform function
-                set_shots_function = qml.set_shots.transform  # referring to the set_shots()
-                if transform_function == set_shots_function:
-                    # Extract the shots argument from the container
-                    # The transform signature is set_shots(tape, shots), so shots is the second argument
-                    if hasattr(container, "kwargs") and "shots" in container.kwargs:
-                        shots_arg = container.kwargs["shots"]
-                    elif len(container.args) > 1:
-                        shots_arg = container.args[1]  # Second positional arg is shots
-                    else:
-                        continue  # Malformed container, try next one
-
-                    # Update the QNode's shots setting
-                    self._set_shots(shots_arg)
-                    # We've found and processed the transform, no need to continue
-                    break
-
     def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         # construct the tape

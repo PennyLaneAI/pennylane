@@ -1,12 +1,16 @@
 import functools
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Sequence, Tuple, Union
 
 from pennylane.measurements import Shots
 
 from .qnode import QNode
 
 
-def set_shots(qnode_or_function: QNode = None, *, shots=None):
+def set_shots(
+    qnode_or_function: Union[None, QNode] = None,
+    *,
+    shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
+):
     """Transform used to set or update a circuit's shots.
 
     Args:
