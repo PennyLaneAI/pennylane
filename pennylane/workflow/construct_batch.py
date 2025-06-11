@@ -468,14 +468,21 @@ def construct_batch(
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
         level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
 
-        program = qml.transforms.core.TransformProgram(user_program)
-        if has_gradient_expand:
-            program.add_transform(
-                qml.transform(gradient_fn.expand_transform),
-                **qnode.gradient_kwargs,
-            )
+        # program = qml.transforms.core.TransformProgram(user_program)
+        # if has_gradient_expand:
+        #     program.add_transform(
+        #         qml.transform(gradient_fn.expand_transform),
+        #         **qnode.gradient_kwargs,
+        #     )
 
-        full_transform_program = program + qnode.device.preprocess_transforms(execution_config)
+        # full_transform_program0 = program + qnode.device.preprocess_transforms(execution_config)
+
+        # Use _setup_transform_program like execute() does
+        outer_transform_program, inner_transform_program = qml.workflow._setup_transform_program(
+            qnode.device,
+            execution_config,
+        )
+        full_transform_program = user_program + outer_transform_program + inner_transform_program
 
         resolved_program = full_transform_program[level_slice_inner]
 
