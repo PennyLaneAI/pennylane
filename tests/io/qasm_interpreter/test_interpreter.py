@@ -140,12 +140,12 @@ class TestMeasurementReset:
         )
 
         # run the program
-        with queuing.AnnotatedQueue() as q:
-            context = QasmInterpreter().interpret(
-                ast, context={"name": "measurements", "wire_map": None}
-            )
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "measurements", "wire_map": None}
+        )
 
         assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert isinstance(context["vars"]["d"].val, MeasurementValue)
 
 
 @pytest.mark.external
@@ -292,7 +292,9 @@ class TestSubroutine:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -300,7 +302,6 @@ class TestSubroutine:
 
         assert q.queue[0] == Hadamard("q0")
         assert isinstance(q.queue[1], MidMeasureMP)
-
 
 
 @pytest.mark.external
