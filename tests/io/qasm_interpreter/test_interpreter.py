@@ -55,6 +55,21 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_nested_renaming(self):
+        # parse the QASM
+        ast = parse(
+            open("nested_renaming.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [PauliY("q0"), PauliX("q0"), Hadamard("q0")]
+
     def test_repeated_calls(self):
         # parse the QASM
         ast = parse(

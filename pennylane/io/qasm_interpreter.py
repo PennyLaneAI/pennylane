@@ -403,6 +403,9 @@ class QasmInterpreter:
                 f"on line {node.span.start_line}."
             )
 
+        # init the wire map
+        func_context.wire_map = context.wire_map
+
         # bind subroutine arguments
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
