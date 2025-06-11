@@ -98,16 +98,17 @@ class FlipSign(Operation):
 
     @staticmethod
     def to_list(n, n_wires):
-        r"""Convert an integer into a binary integer list
+        r"""Convert the given basis state from integer number into list of bits.
+
         Args:
-            n (int): Basis state as integer
-            n_wires (int): Numer of wires to transform the basis state
+            n (int): basis state as integer number
+            n_wires (int): number of wires
 
         Raises:
-            ValueError: "cannot encode n with n wires "
+            ValueError: "Cannot encode basis state ``n`` on ``n_wires`` wires."
 
         Returns:
-            (array[int]): integer binary array
+            list: basis state as list of bits
         """
         if n >= 2**n_wires:
             raise ValueError(f"Cannot encode basis state {n} on {n_wires} wires.")
