@@ -28,14 +28,17 @@ from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect as
 from pennylane.compiler.python_compiler.transforms.decompose import DecompositionTransformPass
 
 
+gate_set_cnot_rotations = {"CNOT", "RX", "RY", "RZ"}
+
+
 class TestDecompositionPass:
     """Unit tests for the DecompositionPass."""
-
-    gate_set_cnot_rotations = {"CNOT", "RX", "RY", "RZ"}
 
     def test_single_rot_decomposition(self, run_filecheck):
         """Test that the Rot gate is decomposed into RZ and RY gates."""
 
+        # gate_set = {"CNOT", "RX", "RY", "RZ"}
+        #
         # Rot(0.5, 0.5, 0.5, wires=0)
         # ---->
         # RZ(0.5, wires=0)
@@ -71,7 +74,7 @@ class TestDecompositionPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations),)
         )
         pipeline.apply(ctx, module)
 
@@ -80,6 +83,8 @@ class TestDecompositionPass:
     def test_multiple_rot_decomposition(self, run_filecheck):
         """Test that multiple Rot gates are decomposed correctly into RZ and RY gates."""
 
+        # gate_set = {"CNOT", "RX", "RY", "RZ"}
+        #
         # Rot(0.1, 0.2, 0.3, wires=0)
         # Rot(0.4, 0.5, 0.6, wires=0)
         # Rot(0.1, 0.1, 0.1, wires=1)
@@ -149,7 +154,7 @@ class TestDecompositionPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations),)
         )
         pipeline.apply(ctx, module)
 
@@ -158,6 +163,8 @@ class TestDecompositionPass:
     def test_rot_cnot_decomposition(self, run_filecheck):
         """Test that a circuit with Rot and CNOT gates is decomposed correctly."""
 
+        # gate_set = {"CNOT", "RX", "RY", "RZ"}
+        #
         # CNOT(wires=[0, 1])
         # CNOT(wires=[0, 2])
         # Rot(0.1, 0.2, 0.3, wires=0)
@@ -234,7 +241,7 @@ class TestDecompositionPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations),)
         )
         pipeline.apply(ctx, module)
 
@@ -243,6 +250,8 @@ class TestDecompositionPass:
     def test_hadamard_decomposition(self, run_filecheck):
         """Test that the Hadamard gate is decomposed into RZ and RY gates."""
 
+        # gate_set = {"CNOT", "RX", "RY", "RZ"}
+        #
         # Hadamard(wires=0)
         # Hadamard(wires=0)
         # Hadamard(wires=1)
@@ -303,22 +312,26 @@ class TestDecompositionPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations),)
         )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
 
-    def test_adjoint_decomposition(self, run_filecheck):
-        """Test that the adjoint of a gate is decomposed correctly."""
 
-        # max_expansion = 1
+class TestDecompositionPassAdjoint:
+    """Test the decomposition of adjoint gates."""
+
+    def test_adjoint_S_decomposition(self, run_filecheck):
+        """Test that the adjoint of the S gate is decomposed correctly."""
+
+        # gate_set = {"CNOT", "RX", "RY", "RZ"}, max_expansion = 1
         #
         # qml.adjoint(qml.S)(wires=0)
         # ---->
         # Adjoint(PhaseShift(0.5 * pi, wires=0))
 
-        program = """    
+        program = """
     func.func @test_func() {
 
         %0 = arith.constant 0 : i64
@@ -349,16 +362,16 @@ class TestDecompositionPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations, max_expansion=1),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations, max_expansion=1),)
         )
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
 
     def test_toffoli_decomposition(self, run_filecheck):
-        """Test that the Toffoli gate is decomposed correctly."""
+        """Test that the Toffoli gate is decomposed correctly if decomposition contains adjoint gates."""
 
-        # # max_expansion = 1, gate_set = {"Hadamard", "CNOT", "T"}
+        # gate_set = {"Hadamard", "CNOT", "T"}, max_expansion = 1
         #
         # Toffoli(wires=[0, 1, 2])
         # ---->
@@ -378,7 +391,7 @@ class TestDecompositionPass:
         # Adjoint(T(1))
         # CNOT(wires=[0, 1])
 
-        program = """    
+        program = """
     func.func @test_func() {
 
         %0 = arith.constant 0 : i64
@@ -432,7 +445,7 @@ class TestDecompositionPass:
         module = xdsl.parser.Parser(ctx, program).parse_module()
 
         pipeline = xdsl.passes.PipelinePass(
-            (DecompositionTransformPass(gate_set=self.gate_set_cnot_rotations, max_expansion=1),)
+            (DecompositionTransformPass(gate_set=gate_set_cnot_rotations, max_expansion=1),)
         )
         pipeline.apply(ctx, module)
 
