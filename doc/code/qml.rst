@@ -3,5 +3,6 @@ qml
 
 .. currentmodule:: pennylane
 
-.. automodsumm:: mypackage.qml
-   :classes-only:
+.. automodapi:: pennylane
+    :no-heading:
+    :include-all-objects:    
