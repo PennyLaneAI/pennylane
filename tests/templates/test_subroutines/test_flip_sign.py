@@ -17,7 +17,12 @@ Tests for the FlipSign template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import math
+
+
+def to_integer_number(bitlist):
+    """Convert a basis state from list of bits to integer number."""
+    return sum(2**i for i, bit in enumerate(bitlist[::-1]) if bit)
 
 
 def test_standarad_checks():
@@ -37,91 +42,82 @@ class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
     @pytest.mark.parametrize(
-        ("n_status, n_wires"),
+        ("n, wires"),
         [
-            (2, 2),
-            (6, 3),
-            (8, 4),
-            ([1, 0], 2),
-            ([1, 1, 0], 3),
-            ([1, 0, 0, 0], 4),
-            ([1, 0, 0, 0], [0, 1, 2, 3]),
-            (1, 0),
+            (0, 0),
+            (1, 3),
+            (2, range(2)),
+            (6, range(3)),
+            (8, range(4)),
+            ([1, 0], [1, 2]),
+            ([1, 1, 0], [4, 1, 2]),
+            ([1, 0, 1, 0], [0, 1, 5, 4]),
         ],
     )
-    def test_eval(self, n_status, n_wires):
-        if isinstance(n_wires, int):
-            n_wires = 1 if n_wires == 0 else n_wires
-            n_wires = list(range(n_wires))
+    def test_eval(self, n, wires):
+        if isinstance(wires, int):
+            wires = [wires]
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit():
-            for wire in n_wires:
-                qml.Hadamard(wires=wire)
-
-            qml.FlipSign(n_status, wires=n_wires)
-
+            for wire in wires:
+                qml.Hadamard(wire)
+            qml.FlipSign(n, wires=wires)
             return qml.state()
 
-        def to_number(status):
-            return sum(status[i] * 2 ** (len(status) - i - 1) for i in range(len(status)))
+        if isinstance(n, list):
+            n = to_integer_number(n)
 
-        if isinstance(n_status, list):
-            n_status = to_number(n_status)
-
-        # we check that only the indicated value has been changed
-        statuses = []
-        for ind, x in enumerate(circuit()):
-            if ind == n_status:
-                statuses.append(bool(np.sign(x) == -1))
-            else:
-                statuses.append(bool(np.sign(x) == 1))
-
-        assert np.all(np.array(statuses))
+        # check that only the indicated value has been changed
+        state = circuit()
+        signs_are_correct = [
+            math.sign(x) == -1 if i == n else math.sign(x) == 1 for i, x in enumerate(state)
+        ]
+        assert all(signs_are_correct)
 
     @pytest.mark.parametrize(
-        ("n_status, n_wires"),
+        ("n, wires"),
         [
             (-1, 0),
         ],
     )
-    def test_empty_wire_error(self, n_status, n_wires):
-        """Assert error raised when given negative basic status"""
+    def test_invalid_state_error(self, n, wires):
+        """Assert error raised when given negative basic state"""
         with pytest.raises(
             ValueError,
             match="expected an integer equal or greater than zero for basic flipping state",
         ):
-            qml.FlipSign(n_status, wires=n_wires)
+            qml.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
-        ("n_status, n_wires"),
+        ("n, wires"),
         [
             (2, 1),
         ],
     )
-    def test_number_wires_error(self, n_status, n_wires):
+    def test_number_wires_error(self, n, wires):
         """Assert error raised when given basis state length is less than number of wires"""
-        with pytest.raises(ValueError, match=f"cannot encode {n_status} with {n_wires} wires "):
-            qml.FlipSign(n_status, wires=n_wires)
+        with pytest.raises(ValueError, match=f"cannot encode {n} with {wires} wires "):
+            qml.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
-        ("n_status, n_wires"),
+        ("n, wires"),
         [
             ([1, 0, 0], [0, 1]),
         ],
     )
-    def test_length_not_match_error(self, n_status, n_wires):
+    def test_length_not_match_error(self, n, wires):
         """Assert error raised when length of basis state and wires length does not match"""
         with pytest.raises(
             ValueError,
             match="Wires length and flipping state length does not match, they must be equal length ",
         ):
-            qml.FlipSign(n_status, wires=n_wires)
+            qml.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
-        ("n_status, n_wires"),
+        ("n, wires"),
         [
             ([1, 0], []),
             (2, []),
@@ -130,28 +126,27 @@ class TestFlipSign:
             (3, ""),
         ],
     )
-    def test_wire_empty_error(self, n_status, n_wires):
+    def test_wire_empty_error(self, n, wires):
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
-            qml.FlipSign(n_status, wires=n_wires)
+            qml.FlipSign(n, wires=wires)
 
     @pytest.mark.jax
     def test_jax_jit(self):
         import jax
 
-        basis_state = [1, 0]
-
-        dev = qml.device("default.qubit", wires=2)
+        num_wires = 2
+        dev = qml.device("default.qubit", wires=num_wires)
 
         @qml.qnode(dev)
         def circuit():
-            for wire in list(range(2)):
-                qml.Hadamard(wires=wire)
-            qml.FlipSign(basis_state, wires=list(range(2)))
+            for wire in range(num_wires):
+                qml.Hadamard(wire)
+            qml.FlipSign([1, 0], wires=range(num_wires))
             return qml.state()
 
         jit_circuit = jax.jit(circuit)
 
         res = circuit()
-        res2 = jit_circuit()
-        assert qml.math.allclose(res, res2)
+        jit_res = jit_circuit()
+        assert qml.math.allclose(res, jit_res)
