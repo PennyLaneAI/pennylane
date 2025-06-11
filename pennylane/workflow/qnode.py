@@ -113,33 +113,6 @@ def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
-def _validate_qnode_kwargs(kwargs: dict) -> None:
-    for kwarg in kwargs:
-        match kwarg:
-            case "expansion_strategy":
-                raise ValueError(
-                    "'expansion_strategy' is no longer a valid keyword argument to QNode."
-                    " To inspect the circuit at a given stage in the transform program, please"
-                    " use qml.workflow.construct_batch instead."
-                )
-            case "max_expansion":
-                raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
-            case "gradient_fn" | "grad_method":
-                warnings.warn(
-                    "It appears you may be trying to set the method of differentiation via the "
-                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                    "backpropogation. Use diff_method instead."
-                )
-            case "shots":
-                raise ValueError(
-                    "'shots' is no longer a valid keyword argument to QNode. If your quantum function takes the "
-                    "argument 'shots' or if you want to set the number of shots with which the "
-                    "QNode is executed, pass it to the QNode call, not its definition."
-                )
-            case _:
-                raise ValueError(f"Invalid keyword argument {kwarg} to QNode. ")
-
-
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
         if kwarg in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
@@ -558,11 +531,9 @@ class QNode:
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
         executor_backend: Optional[Union[RemoteExec, str]] = None,
-        **kwargs,
     ):
         self._init_args = locals()
         del self._init_args["self"]
-        del self._init_args["kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -587,9 +558,6 @@ class QNode:
 
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
-
-        kwargs = kwargs or {}
-        _validate_qnode_kwargs(kwargs)
 
         gradient_kwargs = gradient_kwargs or {}
         _validate_gradient_kwargs(gradient_kwargs)
