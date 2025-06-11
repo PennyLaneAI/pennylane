@@ -330,7 +330,7 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
-        if getattr(self.context, name, None):
+        if hasattr(self.context, name):
             return getattr(self.context, name)
         raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
@@ -439,13 +439,13 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: Context):
+    def interpret(self, node: QASMNode, context: dict):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (Context): The initial context populated with the name of the program (the outermost scope).
+            context (dict): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
