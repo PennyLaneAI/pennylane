@@ -708,9 +708,6 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     + 0.0006814299999999998 * b⁺(0) b(0) b(0) b(0)
     + 0.00017035749999999995 * b(0) b(0) b(0) b(0)
     """
-    # there should be one_mode, two_mode = None, three_mode = None
-    # also, freqs first
-
     if is_local:
         start_deg = 2
     else:
