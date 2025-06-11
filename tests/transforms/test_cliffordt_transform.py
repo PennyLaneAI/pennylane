@@ -571,6 +571,8 @@ class TestCliffordCached:
 
     def test_wire_mapping(self):
         """Test that wire mapping is being cached correctly."""
+        _map_wires.cache_clear()  # Clear the cache before testing
+
         for wire in range(5):
             assert _map_wires(qml.X(0), wire) == qml.X(wire)
         assert _map_wires.cache_info().hits == 0
