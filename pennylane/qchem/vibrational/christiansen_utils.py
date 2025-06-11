@@ -1063,7 +1063,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
-    represents  the kinetick energy operator and :math:`V` represents the potential energy operator
+    represents  the kinetic energy operator and :math:`V` represents the potential energy operator
     obtained from the expansion
 
     .. math::
