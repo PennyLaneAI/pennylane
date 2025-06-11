@@ -254,6 +254,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.IntegerComparator`
+    [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
+
 * A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
@@ -372,6 +375,9 @@
 
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
+* The decomposition of :class:`~.IntegerComparator` is now significantly more efficient.
+  [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
   This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
@@ -499,6 +505,10 @@
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -826,6 +836,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
