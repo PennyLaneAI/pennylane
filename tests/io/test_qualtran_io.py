@@ -687,6 +687,8 @@ class TestToBloq:
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
 
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 @pytest.fixture
 def qubits():
     """Provides cirq.LineQubit instances for tests."""
@@ -695,6 +697,8 @@ def qubits():
     return cirq.LineQubit(0), cirq.LineQubit(1)
 
 
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 @pytest.fixture
 def dtypes():
     """Provides qualtran QDType instances for tests."""
