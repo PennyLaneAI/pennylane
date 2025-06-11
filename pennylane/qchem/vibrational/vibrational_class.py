@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains functions and classes to generate necessary information to construct a
+"""This module contains functions and classes to generate data needed to construct a
 vibrational Hamiltonian for a given molecule."""
 
 from dataclasses import dataclass
@@ -50,8 +50,8 @@ class VibrationalPES:
     **Example**
 
     This example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES` object for a
-    linear diatomic molecule, e.g., H:math:`_2`, with only one vibrational normal mode. The one-mode
-    potential energy surface data are obtained by sampling ``9`` points along the normal mode, with
+    linear diatomic molecule, e.g., :math:`H_2`, with only one vibrational normal mode. The one-mode
+    potential energy surface data is obtained by sampling ``9`` points along the normal mode, with
     grid points and weights that correspond to a Gauss-Hermite quadrature.
 
     >>> freqs = np.array([0.01885397])
@@ -64,13 +64,13 @@ class VibrationalPES:
     array([0.01885397])
 
     The following example shows how to construct the :class:`~.qchem.vibrational.VibrationalPES`
-    object for a nonlinear triatomic molecule, e.g., H:math:`_3^+`, with three one vibrational
+    object for a nonlinear triatomic molecule, e.g., :math:`H_3^+`, with three vibrational
     normal modes. We assume that the potential energy surface and dipole data are obtained by
     sampling ``5`` points along the normal mode, with grid points and weights that correspond to a
     Gauss-Hermite quadrature.
 
     >>> freqs = np.array([0.00978463, 0.00978489, 0.01663723])
-    >>> grid, weights = np.polynomial.hermite.hermgauss(9)
+    >>> grid, weights = np.polynomial.hermite.hermgauss(5)
     >>>
     >>> uloc = np.array([[-0.99098585,  0.13396657,  0.],
     ...                  [-0.13396657, -0.99098585,  0.],
