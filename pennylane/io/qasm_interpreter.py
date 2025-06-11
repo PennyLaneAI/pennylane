@@ -397,13 +397,12 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if name in context.scopes["subroutines"]:
-            func_context = context.scopes["subroutines"][name]
-        else:
+        if name not in context.scopes["subroutines"]:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
                 f"on line {node.span.start_line}."
             )
+        func_context = context.scopes["subroutines"][name]
 
         # init the wire map
         func_context.wire_map = context.wire_map
