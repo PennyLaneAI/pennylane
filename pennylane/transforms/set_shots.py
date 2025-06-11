@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the set_shots transform, which sets the number of shots for a given tape or qnode.
+Contains the set_shots transform, which sets the number of shots for a given tape.
 """
 from typing import Sequence, Union
 
@@ -20,7 +20,6 @@ from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
 
 
 def null_postprocessing(results):
@@ -30,15 +29,12 @@ def null_postprocessing(results):
 
 @transform
 def set_shots(
-    circuit: Union[QuantumScript, QNode],
-    shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]],
+    tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Transform used to set or update a circuit's shots; or set the shots for a QNode.
-
-    This transform can be applied to either QNodes or QuantumScripts.
+    """Transform used to set or update a circuit's shots.
 
     Args:
-        circuit (Union[QuantumScript, QNode]): The quantum circuit or QNode to be modified.
+        tape (QuantumScript): The quantum circuit to be modified.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
             This specification will override any shots value previously associated
@@ -47,7 +43,7 @@ def set_shots(
     Returns:
         tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
         post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
-        circuit(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
+        tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
 
     There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
@@ -57,7 +53,7 @@ def set_shots(
 
     **Examples**
 
-    Set the number of shots as a decorator for a QNode:
+    Set the number of shots as a decorator:
 
     .. code-block:: python
 
@@ -74,17 +70,13 @@ def set_shots(
     >>> circuit()
     array([1., -1.])
 
-    Update the shots in-line for an existing QNode or QuantumScript:
+    Update the shots in-line for an existing circuit:
 
     >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
     >>> new_circ()
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    if isinstance(circuit, QNode):
-        # pylint:disable=protected-access
-        circuit._set_shots(shots)
-        return (circuit,), null_postprocessing
-    if circuit.shots != Shots(shots):
-        circuit = circuit.copy(shots=shots)
-    return (circuit,), null_postprocessing
+    if tape.shots != Shots(shots):
+        tape = tape.copy(shots=shots)
+    return (tape,), null_postprocessing
