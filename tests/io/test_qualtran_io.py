@@ -705,6 +705,7 @@ def dtypes():
     return QBit(), QUInt(bitsize=1)
 
 
+# pylint: disable=redefined-outer-name, protected-access
 def test_initialization_with_tuple(qubits, dtypes):
     """Tests standard initialization with a tuple of qubits."""
     q0, q1 = qubits
@@ -719,6 +720,7 @@ def test_initialization_with_tuple(qubits, dtypes):
     assert qreg._initialized is True
 
 
+# pylint: disable=redefined-outer-name
 def test_initialization_with_single_qubit(qubits, dtypes):
     """Tests that a single qubit is correctly wrapped in a tuple."""
     q0, _ = qubits
@@ -731,6 +733,7 @@ def test_initialization_with_single_qubit(qubits, dtypes):
     assert qreg.dtype == dtype_bit
 
 
+# pylint: disable=redefined-outer-name
 def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
     """Tests that changing an attribute after initialization raises an AttributeError."""
     q0, q1 = qubits
@@ -747,6 +750,7 @@ def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
         qreg.new_attr = "some_value"
 
 
+# pylint: disable=redefined-outer-name
 def test_equality_ignores_dtype(qubits, dtypes):
     """Tests the core feature: equality should only depend on qubits, not dtype."""
     q0, _ = qubits
@@ -758,6 +762,7 @@ def test_equality_ignores_dtype(qubits, dtypes):
     assert qreg1 == qreg2
 
 
+# pylint: disable=redefined-outer-name
 def test_hash_ignores_dtype(qubits, dtypes):
     """Tests that the hash also only depends on the qubits."""
     q0, _ = qubits
@@ -769,6 +774,7 @@ def test_hash_ignores_dtype(qubits, dtypes):
     assert hash(qreg1) == hash(qreg2)
 
 
+# pylint: disable=redefined-outer-name
 def test_inequality_for_different_qubits(qubits, dtypes):
     """Tests that instances with different qubits are not equal."""
     q0, q1 = qubits
@@ -782,6 +788,7 @@ def test_inequality_for_different_qubits(qubits, dtypes):
     assert qreg1 != qreg3
 
 
+# pylint: disable=redefined-outer-name
 def test_inequality_for_different_types(qubits, dtypes):
     """Tests that comparison with other types returns NotImplemented/False."""
     q0, _ = qubits
