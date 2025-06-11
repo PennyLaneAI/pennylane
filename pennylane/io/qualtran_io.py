@@ -615,12 +615,8 @@ class _QReg:
         """Provides a developer-friendly string representation."""
         return f"_QReg(qubits={self.qubits!r}, dtype={self.dtype!r})"
 
-    # 3. The custom __eq__ and __hash__ methods are preserved exactly as before.
-    # Overwrite hash / equality to ensure single-qubit registers map to each other correctly.
-    # E.g., when updating qreg_to_qvars we may have output qregs with dtype =
-    # QBit, but the input registers (which are used to track the qubits) may
-    # have QUInt(1) or similar, leading to the mappings not updating correctly.
-    # Single qubit QFxp cases are handled separately in _ensure_in_reg_exists
+    # Override the __eq__ and __hash__ functions to handle single qubit registers
+    # that are functionally the same but have different dtypes.
     def __eq__(self, other) -> bool:
         if not isinstance(other, _QReg):
             return False
