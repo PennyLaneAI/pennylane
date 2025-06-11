@@ -52,7 +52,8 @@ class ResourceCH(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceCH.resource_decomp()
-    {Hadamard: 2, RY: 2, CNOT: 1}
+    [(2 x Hadamard), (2 x RY), (1 x CNOT)]
+
     """
 
     num_wires = 2
@@ -69,7 +70,7 @@ class ResourceCH(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -139,8 +140,6 @@ class ResourceCY(ResourceOperator):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
 
     Resources:
         The resources are derived from the following identity:
@@ -157,8 +156,8 @@ class ResourceCY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCY.resources()
-    {CNOT: 1, S: 1, Adjoint(S): 1}
+    >>> re.ResourceCY.resource_decomp()
+    [(1 x CNOT), (1 x S), (1 x Adjoint(S))]
     """
 
     num_wires = 2
@@ -175,7 +174,7 @@ class ResourceCY(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -253,8 +252,8 @@ class ResourceCZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCZ.resources()
-    {CNOT: 1, Hadamard: 2}
+    >>> re.ResourceCZ.resource_decomp()
+    [(1 x CNOT), (2 x Hadamard)]
     """
 
     num_wires = 2
@@ -271,7 +270,7 @@ class ResourceCZ(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -348,6 +347,12 @@ class ResourceCSWAP(ResourceOperator):
 
     .. seealso:: :class:`~.CSWAP`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceCSWAP.resource_decomp()
+    [(1 x Toffoli), (2 x CNOT)]
     """
 
     num_wires = 3
@@ -364,7 +369,7 @@ class ResourceCSWAP(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -447,8 +452,8 @@ class ResourceCCZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCCZ.resources()
-    {Toffoli: 1, Hadamard: 2}
+    >>> re.ResourceCCZ.resource_decomp()
+    [(1 x Toffoli), (2 x Hadamard)]
     """
 
     num_wires = 3
@@ -465,7 +470,7 @@ class ResourceCCZ(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -552,7 +557,7 @@ class ResourceCNOT(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -595,7 +600,6 @@ class ResourceCNOT(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The resources are expressed as one general :class:`~.ResourceMultiControlledX` gate.
@@ -648,6 +652,12 @@ class ResourceTempAND(ResourceOperator):
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
     with it's adjoint (uncompute).
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceTempAND.resource_decomp()
+    [(1 x Toffoli)]
     """
 
     num_wires = 2
@@ -664,7 +674,7 @@ class ResourceTempAND(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -760,7 +770,7 @@ class ResourceToffoli(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceToffoli.resources()
+    >>> re.ResourceToffoli.resource_decomp()
     {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
     """
 
@@ -833,7 +843,7 @@ class ResourceToffoli(ResourceOperator):
     @classmethod
     def resource_rep(cls, elbow=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {"elbow": elbow})
 
     @classmethod
@@ -866,7 +876,6 @@ class ResourceToffoli(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The resources are expressed as one general :class:`~.ResourceMultiControlledX` gate.
@@ -916,13 +925,10 @@ class ResourceMultiControlledX(ResourceOperator):
             the operation acts on
         control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-        work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
-            the operation into a series of :class:`~.Toffoli` gates
 
     Resource Parameters:
         * num_ctrl_wires (int): the number of qubits the operation is controlled on
         * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-        * num_work_wires (int): the number of additional qubits that can be used for decomposition
 
     Resources:
         The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
@@ -944,7 +950,7 @@ class ResourceMultiControlledX(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2)
-    {X: 4, CNOT: 69}
+    [(4 x X), AllocWires(3), (3 x TempAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
     """
 
     resource_keys = {"num_ctrl_wires", "num_ctrl_values"}
@@ -964,7 +970,6 @@ class ResourceMultiControlledX(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_ctrl_wires (int): the number of qubits the operation is controlled on
                 * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-                * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
 
         return {
@@ -975,12 +980,11 @@ class ResourceMultiControlledX(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_ctrl_wires, num_ctrl_values) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1006,7 +1010,6 @@ class ResourceMultiControlledX(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
@@ -1072,7 +1075,6 @@ class ResourceMultiControlledX(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             This operation is self-adjoint, so the resources of the adjoint operation results
@@ -1100,13 +1102,9 @@ class ResourceMultiControlledX(ResourceOperator):
                 controlled operation upon.
             outer_num_ctrl_values (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            outer_num_work_wires (int): the number of additional qubits that can be used in the
-                decomposition for the further controlled, base control oepration.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
                 when in the :math:`|0\rangle` state.
-            num_work_wires (int): The number of additional qubits that can be used for the
-                decomposition of the operation.
 
         Resources:
             The resources are derived by combining the control qubits, control-values and
@@ -1135,7 +1133,6 @@ class ResourceMultiControlledX(ResourceOperator):
             z (int): the power that the operator is being raised to
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             This operation is self-inverse, thus when raised to even integer powers acts like
@@ -1157,7 +1154,6 @@ class ResourceCRX(ResourceOperator):
     r"""Resource class for the CRX gate.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         id (str or None): String representing the operation (optional)
 
@@ -1178,8 +1174,8 @@ class ResourceCRX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRX.resources()
-    {CNOT: 2, RZ: 2, Hadamard: 2}
+    >>> re.ResourceCRX.resource_decomp()
+    [(2 x CNOT), (2 x RZ), (2 x Hadamard)]
     """
 
     num_wires = 2
@@ -1200,7 +1196,7 @@ class ResourceCRX(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -1265,9 +1261,7 @@ class ResourceCRY(ResourceOperator):
     r"""Resource class for the CRY gate.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1287,7 +1281,7 @@ class ResourceCRY(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceCRY.resource_decomp()
-    {CNOT: 2, RY: 2}
+    [(2 x CNOT), (2 x RY)]
     """
 
     num_wires = 2
@@ -1308,7 +1302,7 @@ class ResourceCRY(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -1392,8 +1386,8 @@ class ResourceCRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRZ.resources()
-    {CNOT: 2, RZ: 2}
+    >>> re.ResourceCRZ.resource_decomp()
+    [(2 x CNOT), (2 x RZ)]
     """
 
     num_wires = 2
@@ -1414,7 +1408,7 @@ class ResourceCRZ(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -1504,8 +1498,8 @@ class ResourceCRot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceCRot.resources()
-    {CNOT: 2, RZ: 3, RY: 2}
+    >>> re.ResourceCRot.resource_decomp()
+    [(2 x CNOT), (3 x RZ), (2 x RY)]
     """
 
     num_wires = 2
@@ -1526,7 +1520,7 @@ class ResourceCRot(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -1621,8 +1615,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceControlledPhaseShift.resources()
-    {CNOT: 2, RZ: 3}
+    >>> re.ResourceControlledPhaseShift.resource_decomp()
+    [(2 x CNOT), (3 x RZ)]
     """
 
     num_wires = 2
@@ -1643,7 +1637,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
