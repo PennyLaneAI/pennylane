@@ -206,6 +206,21 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     # but this should not be used in practice for decompositions.
                     self.ssa_qubits_to_wires[op.qubit] = wire
 
+    def _retrieve_ssa_param(
+        self,
+        attr: Union[FloatAttr, IntegerAttr, BoolAttr],
+        before_op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ) -> SSAValue:
+        """Return the SSAValue for this attr, inserting a ConstantOp if needed."""
+        if attr in self.params_to_ssa_params:
+            return self.params_to_ssa_params[attr]
+        const_op = ConstantOp(value=attr)
+        rewriter.insert_op(const_op, InsertPoint.before(before_op))
+        ssa = const_op.result
+        self.params_to_ssa_params[attr] = ssa
+        return ssa
+
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
@@ -230,50 +245,30 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                 if is_adjoint := isinstance(qml_decomp_op, qml.ops.op_math.Adjoint):
                     qml_decomp_op = qml_decomp_op.base
 
+                is_ctrl = (
+                    isinstance(qml_decomp_op, qml.ops.op_math.Controlled)
+                    # TODO: This leads to inconsistencies
+                    and qml_decomp_op.name not in all_controlled_ops
+                )
+
                 params_xdsl: list[SSAValue] = []
                 for param in qml_decomp_op.parameters:
                     xdsl_param = qml_to_xdsl_param(param)
-                    if xdsl_param in self.params_to_ssa_params:
-                        const_ssa = self.params_to_ssa_params[xdsl_param]
-                    else:
-                        const_op = ConstantOp(value=xdsl_param)
-                        rewriter.insert_op(const_op, InsertPoint.before(xdsl_op))
-                        const_ssa = const_op.result
-                        self.params_to_ssa_params[xdsl_param] = const_ssa
+                    params_xdsl.append(self._retrieve_ssa_param(xdsl_param, xdsl_op, rewriter))
 
-                    params_xdsl.append(const_ssa)
+                raw_targets = qml_decomp_op.target_wires if is_ctrl else qml_decomp_op.wires
+                wires_xdsl = [self.wire_to_ssa_qubits[w] for w in raw_targets]
 
-                wires_xdsl: list[SSAValue] = []
-                for wire in qml_decomp_op.wires:
-                    # Each decomposed operator should act on a subset of wires
-                    # of the original operator, and these wires should have been registered before.
-                    qubit_ssa = self.wire_to_ssa_qubits[wire]
-                    wires_xdsl.append(qubit_ssa)
-
-                control_wires_xdsl: list[SSAValue] = []
-                control_values_xdsl: list[SSAValue] = []
-                # We mantain the original IR for controlled operations
-                # that have an existing class in PennyLane.
-                if (
-                    isinstance(qml_decomp_op, qml.ops.op_math.Controlled)
-                    and qml_decomp_op.name not in all_controlled_ops
-                ):
-                    for wire in qml_decomp_op.control_wires:
-                        qubit_ssa = self.wire_to_ssa_qubits[wire]
-                        control_wires_xdsl.append(qubit_ssa)
-
-                    # TODO: there is a repetition that could be avoided
-                    # (why is BoolAttr repeated?)
-                    for value in qml_decomp_op.control_values:
-                        xdsl_param = qml_to_xdsl_param(value)
-                        if xdsl_param in self.params_to_ssa_params:
-                            const_ssa = self.params_to_ssa_params[xdsl_param]
-                        else:
-                            const_op = ConstantOp(value=xdsl_param)
-                            rewriter.insert_op(const_op, InsertPoint.before(xdsl_op))
-                            const_ssa = const_op.result
-                            self.params_to_ssa_params[xdsl_param] = const_ssa
-                        control_values_xdsl.append(const_ssa)
+                if is_ctrl:
+                    control_wires_xdsl = [
+                        self.wire_to_ssa_qubits[w] for w in qml_decomp_op.control_wires
+                    ]
+                    control_values_xdsl = [
+                        self._retrieve_ssa_param(qml_to_xdsl_param(v), xdsl_op, rewriter)
+                        for v in qml_decomp_op.control_values
+                    ]
+                else:
+                    control_wires_xdsl = control_values_xdsl = []
 
                 custom_op = CustomOp(
                     params=params_xdsl,
@@ -284,9 +279,14 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     in_ctrl_values=control_values_xdsl,
                 )
 
-                for idx, wire in enumerate(qml_decomp_op.wires):
+                for idx, wire in enumerate(raw_targets):
                     self.wire_to_ssa_qubits[wire] = custom_op.out_qubits[idx]
                     self.ssa_qubits_to_wires[custom_op.out_qubits[idx]] = wire
+
+                if is_ctrl:
+                    for idx, wire in enumerate(qml_decomp_op.control_wires):
+                        self.wire_to_ssa_qubits[wire] = custom_op.out_ctrl_qubits[idx]
+                        self.ssa_qubits_to_wires[custom_op.out_ctrl_qubits[idx]] = wire
 
                 rewriter.insert_op(custom_op, InsertPoint.before(xdsl_op))
 
