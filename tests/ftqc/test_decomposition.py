@@ -329,7 +329,6 @@ class TestMBQCFormalismConversion:
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-
         assert np.allclose(res, res_ref, atol=0.07)
 
     def test_queue_cnot(self):

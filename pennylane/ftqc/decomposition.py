@@ -282,7 +282,6 @@ def cnot_measurements(wires):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
     Numbering convention follows the procedure in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
-
     ctrl_idx, target_idx, graph_wires = wires
 
     m1 = measure_x(ctrl_idx, reset=True)
