@@ -19,11 +19,12 @@ from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union, overload
 
-import pennylane as qml
 from pennylane import math
+from pennylane._grad import jacobian
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
+from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch, TensorLike
+from pennylane.workflow import construct_tape
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
@@ -42,18 +43,18 @@ def _get_interface(qnode, args, kwargs) -> str:
     return interface
 
 
-def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
+def _numpy_jac(*_, **__) -> TensorLike:
     raise QuantumFunctionError("No trainable parameters.")
 
 
-def _autograd_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
         raise QuantumFunctionError("No trainable parameters.")
-    return qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+    return jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -64,16 +65,16 @@ def _tf_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLi
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _torch_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
-    from torch.autograd.functional import jacobian
+    from torch.autograd.functional import jacobian as torch_jacobian
 
-    return jacobian(partial(classical_function, **kwargs), args)
+    return torch_jacobian(partial(classical_function, **kwargs), args)
 
 
 # pylint: disable=import-outside-toplevel
-def _jax_jac(classical_function, argnums, *args, **kwargs) -> qml.typing.TensorLike:
+def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     import jax
 
     if argnums is None:
@@ -99,7 +100,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
-    tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
+    tape = construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
     return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
@@ -131,7 +132,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
             for i, arg in enumerate(args)
         ]
         with jax.core.set_current_trace(trace):
-            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tape = construct_tape(qnode, level=0)(*args_jvp, **kwargs)
             tapes, _ = program((tape,))
 
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)

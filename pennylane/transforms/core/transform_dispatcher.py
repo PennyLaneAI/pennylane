@@ -22,6 +22,7 @@ from collections.abc import Sequence
 from copy import copy
 
 import pennylane as qml
+from pennylane import math
 from pennylane.typing import ResultBatch
 
 
@@ -257,7 +258,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 return processing_fn(transformed_tapes)
             return transformed_tapes, processing_fn
 
-        if isinstance(obj, qml.QNode):
+        if isinstance(obj, qml.workflow.QNode):
             if qml.capture.enabled():
                 new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
                 return self._capture_callable_transform(new_qnode, targs, tkwargs)
@@ -458,8 +459,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if isinstance(qfunc_output, (tuple, list)):
                 return type(qfunc_output)(mps)
 
-            interface = qml.math.get_interface(qfunc_output)
-            return qml.math.asarray(mps, like=interface)
+            interface = math.get_interface(qfunc_output)
+            return math.asarray(mps, like=interface)
 
         return qfunc_transformed
 
