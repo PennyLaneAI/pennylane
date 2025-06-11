@@ -335,6 +335,9 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
+# NOTE: The cache size is set to 2000, which is a reasonable size for the mapping
+# decomposition in circuit with up to 500 wires. This is based on the fact that the
+# decompositions being mapped would contain {H, S, T} (with or without {Sadj, Tadj}).
 @lru_cache(maxsize=2000)
 def _map_wires(op, wire):
     """Maps the operator to the provided wire."""
