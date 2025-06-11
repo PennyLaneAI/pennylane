@@ -100,7 +100,7 @@ def basic_optimization(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "The package pyzx is required by basic_optimization. "
+            "basic_optimization requires the package pyzx. "
             "You can install it with pip install pyzx"
         )  # pragma: no cover
 

@@ -110,7 +110,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "The package pyzx is required by full_reduce. "
+            "full_reduce requires the package pyzx. "
             "You can install it with pip install pyzx"
         )  # pragma: no cover
 

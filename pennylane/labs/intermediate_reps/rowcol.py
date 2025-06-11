@@ -645,7 +645,7 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     """
     if not has_galois:  # pragma: no cover
         raise ImportError(
-            "The package galois is required by rowcol. You can install it with pip install galois."
+            "rowcol requires the package galois. You can install it with pip install galois."
         )  # pragma: no cover
 
     P = P.copy()

@@ -107,7 +107,7 @@ def todd(
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "The package pyzx is required by todd. You can install it with pip install pyzx"
+            "todd requires the pyzx package. You can install it with pip install pyzx"
         )  # pragma: no cover
 
     pyzx_circ = _tape2pyzx(tape)

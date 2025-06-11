@@ -1062,7 +1062,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     """
     if not has_h5py:  # pragma: no cover
         raise ImportError(
-            "The h5py package is required by christiansen_integrals. "
+            "christiansen_integrals requires the h5py package. "
             "You can install it with pip install h5py"
         )  # pragma: no cover
     with TemporaryDirectory() as path:
@@ -1111,7 +1111,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     """
     if not has_h5py:  # pragma: no cover
         raise ImportError(
-            "The h5py package is required by christiansen_integrals_dipole. "
+            "christiansen_integrals_dipole requires the h5py package. "
             "You can install it with pip install h5py"
         )  # pragma: no cover
     with TemporaryDirectory() as path:

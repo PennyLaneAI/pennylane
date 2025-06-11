@@ -55,7 +55,7 @@ def _tape2pyzx(tape):
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "The package pyzx is required by _tape2pyzx. "
+            "_tape2pyzx requires the package pyzx. "
             "You can install it with pip install pyzx"
         )  # pragma: no cover
 
