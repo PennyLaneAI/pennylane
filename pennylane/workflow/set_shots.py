@@ -7,7 +7,7 @@ from .qnode import QNode
 
 
 def set_shots(
-    qnode_or_function: Union[None, QNode] = None,
+    qnode: QNode,
     *,
     shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
 ):
@@ -57,43 +57,8 @@ def set_shots(
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    # When called directly without arguments
-    if qnode_or_function is None:
-        # Return a decorator that will apply shots when called
-        def decorator(obj):
-            # If applied to a QNode
-            if hasattr(obj, "update_shots"):
-                return obj.update_shots(shots)
-            # If applied to a function that returns a QNode
-            elif callable(obj):
-
-                @functools.wraps(obj)
-                def wrapper(*args, **kwargs):
-                    result = obj(*args, **kwargs)
-                    if hasattr(result, "update_shots"):
-                        return result.update_shots(shots)
-                    return result
-
-                return wrapper
-            else:
-                raise ValueError(
-                    "set_shots can only be applied to QNodes or functions that return QNodes"
-                )
-
-        return decorator
-
     # When called directly with a function/QNode
-    if hasattr(qnode_or_function, "update_shots"):
-        return qnode_or_function.update_shots(shots)
-    elif callable(qnode_or_function):
-
-        @functools.wraps(qnode_or_function)
-        def wrapper(*args, **kwargs):
-            result = qnode_or_function(*args, **kwargs)
-            if hasattr(result, "update_shots"):
-                return result.update_shots(shots)
-            return result
-
-        return wrapper
+    if hasattr(qnode, "update_shots"):
+        return qnode.update_shots(shots)
     else:
-        raise ValueError("set_shots can only be applied to QNodes or functions that return QNodes")
+        raise ValueError("set_shots can only be applied to QNodes")

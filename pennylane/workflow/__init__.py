@@ -28,6 +28,7 @@ Execution functions and utilities
     ~workflow.construct_execution_config
     ~workflow.get_transform_program
     ~workflow.get_best_diff_method
+    ~workflow.set_shots
 
 Jacobian Product Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1620,19 +1620,19 @@ class TestSetShots:
         # Both should be different objects
         assert original_circuit is not new_circuit
 
-    def test_set_shots_error_on_invalid_input(self):
+    @pytest.mark.parametrize(
+        "invalid_input,expected_error",
+        [
+            ("not a function", "set_shots can only be applied to QNodes"),
+            (42, "set_shots can only be applied to QNodes"),
+            (lambda: 42, "set_shots can only be applied to QNodes"),
+            (None, "set_shots can only be applied to QNodes"),
+        ],
+    )
+    def test_set_shots_error_on_invalid_input(self, invalid_input, expected_error):
         """Test that set_shots raises appropriate errors for invalid inputs."""
-        # Test with non-callable input - should raise immediately
-        with pytest.raises(ValueError, match="set_shots can only be applied to QNodes"):
-            set_shots("not a function", shots=100)
-
-        # Test with function that doesn't return QNode - should pass through unchanged
-        def regular_function():
-            return 42
-
-        wrapped_function = set_shots(regular_function, shots=100)
-        result = wrapped_function()
-        assert result == 42  # Function behavior unchanged for non-QNode returns
+        with pytest.raises(ValueError, match=expected_error):
+            set_shots(invalid_input, shots=100)
 
     def test_set_shots_with_measurements_requiring_shots(self):
         """Test set_shots works correctly with measurements that require shots."""
