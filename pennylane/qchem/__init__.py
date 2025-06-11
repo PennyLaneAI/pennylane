@@ -87,6 +87,8 @@ from .vibrational import (
     christiansen_bosonic,
     christiansen_dipole,
     christiansen_hamiltonian,
+    christiansen_integrals,
+    christiansen_integrals_dipole,
     localize_normal_modes,
     optimize_geometry,
     taylor_bosonic,
