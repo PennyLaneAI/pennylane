@@ -33,16 +33,6 @@ PauliZ                 = { properties = [ "invertible", "controllable", "differe
 # Observables supported by the device
 [operators.observables]
 
-Identity               = { properties = [ "differentiable" ] }
-PauliX                 = { properties = [ "differentiable" ] }
-PauliY                 = { properties = [ "differentiable" ] }
-PauliZ                 = { properties = [ "differentiable" ] }
-Hadamard               = { properties = [ "differentiable" ] }
-Sum                    = { properties = [ "differentiable" ] }
-SProd                  = { properties = [ "differentiable" ] }
-Prod                   = { properties = [ "differentiable" ] }
-Exp                    = { properties = [ "differentiable" ] }
-LinearCombination      = { properties = [ "differentiable" ] }
 
 [measurement_processes]
 
