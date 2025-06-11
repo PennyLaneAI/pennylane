@@ -58,7 +58,7 @@ class TestSubroutine:
     def test_nested_renaming(self):
         # parse the QASM
         ast = parse(
-            open("nested_renaming.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/nested_renaming.qasm", mode="r").read(),
             permissive=True,
         )
 
