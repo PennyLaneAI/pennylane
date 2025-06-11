@@ -55,6 +55,7 @@ from .resolution import (
     _resolve_diff_method,
     _resolve_interface,
 )
+from .set_shots import set_shots
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
 from .run import run
