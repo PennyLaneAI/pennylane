@@ -240,6 +240,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         cp_rep_rest = cmpr_fragments[1:-1]
         print("Gatelist: ", gate_list)
         for cp_rep in cp_rep_rest:
+            print("rep: ", cp_rep)
             gate_list.append(GateCount(cp_rep, 2 * num_steps * (5 ** (k - 1))))
         print("Gatelist: ", gate_list)
 
@@ -551,14 +552,9 @@ class ResourceTrotterCDF(CompactHamiltonian, ResourceOperator):  # pylint: disab
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
-        # else:
-        #     ops_wires = [op.wires for op in fragments if op.wires is not None]
-        #     if len(ops_wires) == 0:
-        #         self.wires = None
-        #         self.num_wires = max((op.num_wires for op in fragments))
-        #     else:
-        #         self.wires = Wires.all_wires(ops_wires)
-        #         self.num_wires = len(self.wires)
+        else:
+            self.wires = Wires(range(compact_ham.params["num_orbitals"]))
+            self.num_wires = len(self.wires)
 
     @property
     def resource_params(self) -> dict:
@@ -676,14 +672,9 @@ class ResourceTrotterCDF(CompactHamiltonian, ResourceOperator):  # pylint: disab
             return gate_list
 
         # For first and last fragment
-        gate_list.append(re.GateCount(basis_rot, 4 * num_steps * (5**(k-1))+2))
+        gate_list.append(re.GateCount(basis_rot, 4 * num_steps * ((num_frags-2)+1) * (5**(k-1))+2))
         gate_list.append(re.GateCount(op_onebody, num_steps * (5**(k-1))+1))
-        gate_list.append(re.GateCount(op_twobody, num_steps * (5**(k-1))))
-
-        # For center fragments
-        for _ in range(2):
-            gate_list.append(re.GateCount(basis_rot, 2 * num_steps * (5**(k-1))))
-            gate_list.append(re.GateCount(op_twobody, 2 * num_steps * (5**(k-1))))
+        gate_list.append(re.GateCount(op_twobody, num_steps * (2*(num_frags-2)+1)) * (5**(k-1)))
 
         return gate_list
 
@@ -733,14 +724,9 @@ class ResourceTrotterTHC(CompactHamiltonian, ResourceOperator):  # pylint: disab
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
-        # else:
-        #     ops_wires = [op.wires for op in fragments if op.wires is not None]
-        #     if len(ops_wires) == 0:
-        #         self.wires = None
-        #         self.num_wires = max((op.num_wires for op in fragments))
-        #     else:
-        #         self.wires = Wires.all_wires(ops_wires)
-        #         self.num_wires = len(self.wires)
+        else:
+            self.wires = Wires(range(compact_ham.params["tensor_rank"]))
+            self.num_wires = len(self.wires)
 
     @property
     def resource_params(self) -> dict:
