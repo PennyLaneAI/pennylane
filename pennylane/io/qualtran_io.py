@@ -154,10 +154,8 @@ def _get_op_call_graph():
         state_vector = op.state_vector
         positive_and_real = True
 
-        for c in state_vector:
-            if c.imag != 0 or c.real < 0:
-                positive_and_real = False
-                break
+        if any(c.imag !=0 or c.real < 0 for c in state_vector):
+        	positive_and_real = False
 
         num_state_qubits = int(math.log2(len(op.state_vector)))
         precision_wires = op.hyperparameters["precision_wires"]
