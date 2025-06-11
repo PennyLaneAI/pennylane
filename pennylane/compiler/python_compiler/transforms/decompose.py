@@ -30,7 +30,8 @@ import pennylane as qml
 from pennylane import ops
 from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, CustomOp, ExtractOp
 from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
+from pennylane.ops import __all__ as all_ops
+from pennylane.ops import _controlled_qubit__ops__ as all_controlled_ops
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
 # pylint: disable=missing-function-docstring
@@ -40,7 +41,7 @@ from pennylane.transforms.decompose import _operator_decomposition_gen
 # Support for all PennyLane gates is not implemented yet.
 from_str_to_PL_gate = {
     name: getattr(ops, name)
-    for name in ops_all
+    for name in all_ops
     if inspect.isclass(getattr(ops, name, None))
     and issubclass(getattr(ops, name), qml.operation.Operator)
 }
@@ -89,7 +90,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     ):
         super().__init__()
         self.module = module
-        self.gate_set = gate_set if gate_set is not None else set(ops_all)
+        self.gate_set = gate_set if gate_set is not None else set(all_ops)
         self.max_expansion = max_expansion
 
         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
@@ -251,16 +252,18 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
                 control_wires_xdsl: list[SSAValue] = []
                 control_values_xdsl: list[SSAValue] = []
-                # TODO: The IR does not seem to be consistent with the
-                # representation of controlled gates.
-                if isinstance(qml_decomp_op, qml.ops.op_math.Controlled) and not isinstance(
-                    qml_decomp_op, qml.CNOT
+                # We mantain the original IR for controlled operations
+                # that have an existing class in PennyLane.
+                if (
+                    isinstance(qml_decomp_op, qml.ops.op_math.Controlled)
+                    and qml_decomp_op.name not in all_controlled_ops
                 ):
                     for wire in qml_decomp_op.control_wires:
                         qubit_ssa = self.wire_to_ssa_qubits[wire]
                         control_wires_xdsl.append(qubit_ssa)
 
                     # TODO: there is a repetition that could be avoided
+                    # (why is BoolAttr repeated?)
                     for value in qml_decomp_op.control_values:
                         xdsl_param = qml_to_xdsl_param(value)
                         if xdsl_param in self.params_to_ssa_params:
