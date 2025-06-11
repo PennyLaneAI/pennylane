@@ -113,11 +113,10 @@ class TestFlipSign:
     )
     def test_number_wires_error(self, n, wires):
         """Assert error raised when given basis state length is less than number of wires"""
-        if isinstance(wires, int):
-            wires = [wires]
+        num_wires = 1 if isinstance(wires, int) else len(wires)
 
         with pytest.raises(
-            ValueError, match=f"Cannot encode basis state {n} on {len(wires)} wires."
+            ValueError, match=f"Cannot encode basis state {n} on {num_wires} wires."
         ):
             qml.FlipSign(n, wires=wires)
 
