@@ -98,4 +98,3 @@ from .resource_tracking import (
     DefaultGateSet,
     resource_config,
     estimate_resources,
-)
