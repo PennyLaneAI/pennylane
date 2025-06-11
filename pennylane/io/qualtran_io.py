@@ -356,7 +356,6 @@ def _get_op_call_graph():
                 qtemps.PhaseAdder(k=3, x_wires=range(1, num_x_wires + 1)), control=[0]
             )
         )
-
         sequence_dag = sequence.adjoint()
 
         cnot = qt_gates.CNOT()
