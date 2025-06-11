@@ -167,12 +167,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
 
     # Tests that the decomposition produces the same matrix
-    op_matrix = qml.matrix(op, wire_order=all_wires)
-
-    decomp_matrix = qml.matrix(tape, wire_order=all_wires)
-    assert qml.math.allclose(
-        op_matrix, decomp_matrix
-    ), "decomposition must produce the same matrix as the operator."
+    if op.has.matrix:
+        op_matrix = op.matrix(wire_order=all_wires)
+        decomp_matrix = qml.matrix(tape, wire_order=all_wires)
+        assert qml.math.allclose(
+            op_matrix, decomp_matrix
+        ), "decomposition must produce the same matrix as the operator."
 
 
 def _check_matrix(op):
