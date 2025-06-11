@@ -44,59 +44,6 @@ class PassDispatcher(TransformDispatcher):
         tape_transform = _create_null_transform(self.name)
         super().__init__(tape_transform)
 
-    # def __call__(self, *args, **kwargs) -> Callable:
-    #     fn = None
-
-    #     if args:
-    #         fn = args[0]
-    #         args = args[1:]
-
-    #     if not enabled:
-    #         raise RuntimeError(
-    #             "Program capture must be enabled using 'qml.capture.enable()' to apply Python "
-    #             "compiler passes."
-    #         )
-    #     if not callable(fn):
-    #         raise RuntimeError(f"Cannot apply Python compiler passes to {type(fn)}.")
-
-    #     wrapper = self._create_workflow_wrapper(fn, pass_args, pass_kwargs)
-    #     return wrapper
-
-    # def _create_workflow_wrapper(
-    #     self, fn: Callable, pass_args: tuple[Any], pass_kwargs: dict[str, Any]
-    # ) -> Callable:
-    #     """Return a wrapper that applies the transform to the workflow."""
-
-    #     @wraps(fn)
-    #     def wrapper_fn(*args, **kwargs):
-    #         import jax  # pylint: disable=import-outside-toplevel
-
-    #         flat_fn = FlatFn(fn)
-    #         jaxpr = jax.make_jaxpr(partial(flat_fn, **kwargs))(*args)
-    #         flat_args = jax.tree_util.tree_leaves(args)
-
-    #         n_args = len(flat_args)
-    #         n_consts = len(jaxpr.consts)
-    #         args_slice = slice(0, n_args)
-    #         consts_slice = slice(n_args, n_args + n_consts)
-    #         targs_slice = slice(n_args + n_consts, None)
-
-    #         results = self._primitive.bind(
-    #             *flat_args,
-    #             *jaxpr.consts,
-    #             *pass_args,
-    #             inner_jaxpr=jaxpr.jaxpr,
-    #             args_slice=args_slice,
-    #             consts_slice=consts_slice,
-    #             targs_slice=targs_slice,
-    #             tkwargs=pass_kwargs,
-    #         )
-
-    #         assert flat_fn.out_tree is not None
-    #         return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
-
-    #     return wrapper_fn
-
 
 def xdsl_transform(module_pass: ModulePass) -> PassDispatcher:
     """Wrapper function to register xDSL passes to use with QJIT-ed workflows."""
