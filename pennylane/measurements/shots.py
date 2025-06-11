@@ -14,6 +14,8 @@
 from collections.abc import Sequence
 from typing import NamedTuple, Union
 
+from pennylane import math
+
 
 class ShotCopies(NamedTuple):
     """A namedtuple that represents a shot quantity being repeated some number of times.
@@ -175,6 +177,9 @@ class Shots:
             self.__all_tuple_init__([s if isinstance(s, Sequence) else (s, 1) for s in shots])
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
+        elif math.is_abstract(shots) and shots.shape == ():
+            self.total_shots = shots
+            self.shot_vector = (ShotCopies(shots, 1),)
         else:
             raise self._SHOT_ERROR
 

@@ -587,17 +587,20 @@ def handle_while_loop(
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
+def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
+    shots, invals = invals[:shots_len], invals[shots_len:]
+
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
     new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
 
     return qnode_prim.bind(
+        *shots,
         *new_qfunc_jaxpr.consts,
         *args,
-        shots=shots,
+        shots_len=shots_len,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
