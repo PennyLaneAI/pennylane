@@ -197,6 +197,30 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
+def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
+    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
+
+    Args:
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        control_wires (array[int]): wires that act as control
+        target_wire (int): wire that acts as target
+
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+
+    """
+
+    with qml.queuing.AnnotatedQueue() as q:
+        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
+
+    if qml.queuing.QueuingManager.recording():
+        for op in q.queue:
+            qml.apply(op)
+
+    return q.queue
+
+
 def _get_alpha_z(omega, n, k):
     r"""Computes the rotation angles required to implement the uniformly-controlled Z rotation
     applied to the :math:`k`th qubit.
