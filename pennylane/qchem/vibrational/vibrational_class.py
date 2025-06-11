@@ -30,7 +30,7 @@ class VibrationalPES:
     Args:
         freqs (array[float]): normal-mode frequencies in atomic units
         grid (array[float]): grid points to compute potential energy surface data. Currently,
-            expected to be the sample points os Gauss-Hermite quadrature.
+            expected to be the sample points of Gauss-Hermite quadrature.
         gauss_weights (array[float]): weights associate with each point in ``grid``. Currently,
             expected to be the weights of Gauss-Hermite quadrature.
         uloc (TensorLike[float]): normal mode localization matrix with shape ``(m, m)`` where
@@ -42,7 +42,7 @@ class VibrationalPES:
             moment data, with shapes ``(m, l, 3)``, ``(m, m, l, l, 3)`` ``(m, m, m, l, l, l, 3)``,
             respectively, where ``m = len(freqs)`` and ``l > 0``
         localized (bool): Flag that the potential energy surface data correspond to localized normal
-            mode. Default is ``True``.
+            modes. Default is ``True``.
         dipole_level (int): The level up to which dipole moment data are to be calculated. Input
             values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
             three-mode dipole, respectively. Default value is ``1``.
