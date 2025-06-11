@@ -419,6 +419,7 @@ def _get_plxpr_defer_measurements():
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
                     cur_consts = invals[consts_slices[i]]
+                    jaxpr = jaxpr.replace(constvars=(), invars=jaxpr.constvars + jaxpr.invars)
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
                         *args,
@@ -427,7 +428,6 @@ def _get_plxpr_defer_measurements():
                         n_control=len(control_wires),
                         control_values=branch,
                         work_wires=None,
-                        n_consts=len(cur_consts),
                     )
 
         return [None] * len(jaxpr_branches[0].outvars)
