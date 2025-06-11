@@ -248,7 +248,7 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
-    def test_supported_kwarg(self):
+    def test_unsupported_kwarg(self):
         """Test that an error is raised if an incorrect keyword argument is passed"""
         dev = qml.device("default.qubit")
 
