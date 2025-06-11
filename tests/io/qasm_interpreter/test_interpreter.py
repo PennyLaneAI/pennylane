@@ -141,6 +141,28 @@ class TestControlFlow:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_repeated_calls(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "repeated-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(11, "q0"),
+            RY(0.5, "q0"),
+        ]
+
     def test_subroutine_not_defined(self):
         ast = parse(
             """
@@ -191,7 +213,9 @@ class TestSubroutine:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -457,7 +481,9 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -526,7 +552,9 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})

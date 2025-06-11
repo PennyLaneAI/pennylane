@@ -774,6 +774,9 @@ class QasmInterpreter:
         # execute the subroutine
         self.visit(func_context.body, func_context)
 
+        # reset context
+        func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
+
         # the return value
         try:
             return getattr(func_context, "return")
