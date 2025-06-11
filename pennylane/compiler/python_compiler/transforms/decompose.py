@@ -123,7 +123,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             _operator_decomposition_gen(
                 op,
                 self.stopping_condition,
-                max_expansion=None,
+                max_expansion=self.max_expansion,
                 current_depth=0,
                 decomp_graph=None,
             )
@@ -175,7 +175,10 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         gate_name = op.properties["gate_name"].data
         parameters = self.ssa_to_qml_params(op)
         wires = self.ssa_to_qml_wires(op)
-        return resolve_gate(gate_name)(*parameters, wires=wires)
+        gate = resolve_gate(gate_name)(*parameters, wires=wires)
+        if op.properties.get("adjoint") is not None:
+            gate = qml.adjoint(gate)
+        return gate
 
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
         """Scan the function to populate the quantum register and wire mappings."""
@@ -214,6 +217,8 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             qml_decomp_ops = self.decompose_operation(qml_op)
 
             for qml_decomp_op in qml_decomp_ops:
+                if is_adjoint := isinstance(qml_decomp_op, qml.ops.op_math.Adjoint):
+                    qml_decomp_op = qml_decomp_op.base
 
                 params_xdsl: list[SSAValue] = []
                 for param in qml_decomp_op.parameters:
@@ -239,6 +244,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                     params=params_xdsl,
                     in_qubits=wires_xdsl,
                     gate_name=qml_decomp_op.name,
+                    adjoint=is_adjoint,
                 )
 
                 for idx, wire in enumerate(qml_decomp_op.wires):
