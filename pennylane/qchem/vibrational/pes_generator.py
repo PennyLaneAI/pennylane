@@ -732,6 +732,7 @@ def vibrational_pes(
     molecule,
     n_points=9,
     method="rhf",
+    optimize=True,
     localize=True,
     bins=None,
     cubic=False,
@@ -747,6 +748,7 @@ def vibrational_pes(
         method (str): Electronic structure method used to perform geometry optimization.
             Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
             Hartree-Fock, respectively. Default is ``"rhf"``.
+        localize (bool): if ``True`` perform geometry optimization. Default is ``True``.
         localize (bool): if ``True`` perform normal mode localization. Default is ``False``.
         bins (List[float]): grid of frequencies for grouping normal modes.
             Default is ``None`` which means all frequencies will be grouped in one bin.
@@ -785,17 +787,19 @@ def vibrational_pes(
         if n_points < 1:
             raise ValueError("Number of sample points cannot be less than 1.")
 
-        geom_eq = optimize_geometry(molecule, method)
-
-        mol_eq = qchem.Molecule(
-            molecule.symbols,
-            geom_eq,
-            unit=molecule.unit,
-            basis_name=molecule.basis_name,
-            charge=molecule.charge,
-            mult=molecule.mult,
-            load_data=molecule.load_data,
-        )
+        if optimize:
+            geom_eq = optimize_geometry(molecule, method)
+            mol_eq = qchem.Molecule(
+                molecule.symbols,
+                geom_eq,
+                unit=molecule.unit,
+                basis_name=molecule.basis_name,
+                charge=molecule.charge,
+                mult=molecule.mult,
+                load_data=molecule.load_data,
+            )
+        else:
+            mol_eq = molecule
 
         scf_result = _single_point(mol_eq, method)
 
