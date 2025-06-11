@@ -52,7 +52,8 @@ class ResourcePhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Keyword Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        eps (float): error threshold for clifford plus T decomposition of this operation
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation upto some global phase,
@@ -93,7 +94,7 @@ class ResourcePhaseShift(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -155,7 +156,7 @@ class ResourceRX(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -216,7 +217,7 @@ class ResourceRX(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -280,7 +281,7 @@ class ResourceRY(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -340,7 +341,7 @@ class ResourceRY(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -406,7 +407,7 @@ class ResourceRZ(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -467,7 +468,7 @@ class ResourceRZ(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -528,6 +529,7 @@ class ResourceRot(ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Args:
+        eps (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires): the wire the operation acts on
 
     Resources:
@@ -565,7 +567,7 @@ class ResourceRot(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
