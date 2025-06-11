@@ -299,14 +299,14 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots
 
-    The one-mode Taylor coefficinets, :math:`\Phi`, computed here are related to the potential
+    The one-mode Taylor coefficients, :math:`\Phi`, computed here are related to the potential
     energy surface as:
 
     .. math::
 
         V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
 
-    Similarly, the two-mode and three-mode Taylor coeffiicents are computed if the two-mode and
+    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
     three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
     :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
@@ -348,7 +348,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
-    r"""Compute the coefficients of Taylor dipole operator.
+    r"""Computes the coefficients of Taylor dipole operator.
 
     The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
     computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
