@@ -141,6 +141,23 @@ class TestControlFlow:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_subroutine_not_defined(self):
+        ast = parse(
+            """
+            undefined_subroutine();
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NameError,
+            match="Reference to subroutine undefined_subroutine not "
+            "available in calling namespace on line 2.",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "undefined-subroutine", "wire_map": None}
+            )
+
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(
@@ -169,20 +186,19 @@ class TestSubroutine:
                 ast, context={"name": "complex-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+        assert q.queue == [Hadamard("q0"), PauliY("q0"), Hadamard("q0"), RX(0.1, "q0")]
         assert context.vars["c"].val == 0
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
         assert q.queue == [Hadamard("q0")]
+
 
 @pytest.mark.external
 class TestExpressions:
