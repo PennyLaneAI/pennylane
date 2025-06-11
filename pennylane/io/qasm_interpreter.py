@@ -405,9 +405,6 @@ class QasmInterpreter:
                 f"on line {node.span.start_line}."
             )
 
-        # init the wire map
-        func_context.wire_map = context.wire_map
-
         # reset return
         func_context.context["return"] = None
 
@@ -418,7 +415,9 @@ class QasmInterpreter:
                 func_context.vars[param] = Variable(
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
                 )
-            elif param != evald_arg:
+            else:
+                if evald_arg in context.wire_map:
+                    evald_arg = context.wire_map[evald_arg]
                 func_context.wire_map[param] = evald_arg
 
         # execute the subroutine
