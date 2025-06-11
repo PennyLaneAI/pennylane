@@ -337,3 +337,10 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
+
+def setup(app):
+    import pennylane
+    # need to assign the names here, otherwise autodoc won't document these classes,
+    # and will instead just say 'alias of ...'
+    pennylane.H.__name__ = 'H'
+    # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'

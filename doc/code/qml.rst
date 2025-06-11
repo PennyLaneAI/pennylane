@@ -5,4 +5,5 @@ qml
 
 .. automodapi:: pennylane
     :no-heading:
-    :include-all-objects:    
+    :include-all-objects:
+    :inherited-docstrings:
