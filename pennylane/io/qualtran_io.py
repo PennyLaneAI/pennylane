@@ -105,7 +105,7 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.Superposition):
-        gate_types = {}
+        gate_types = defaultdict(int, {})
         wires = op.wires
         coeffs = op.coeffs
         bases = op.hyperparameters["bases"]
