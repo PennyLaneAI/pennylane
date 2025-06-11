@@ -204,55 +204,50 @@ def _s_measurements(op: S, wires):
     return [m1, m2, m3, m4]
 
 
-@singledispatch
 def queue_corrections(op, measurements):
     """Queue the byproduct corrections associated with the operation in the
     MBQC formalism, based on the operation and the measurement results"""
+    x_corr, z_corr = _single_xz_corrections(op, *measurements)
+
+    def corrections_func(wire):
+        cond(z_corr, Z)(wire)
+        cond(x_corr, X)(wire)
+
+    return corrections_func
+
+
+@singledispatch
+def _single_xz_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
-@queue_corrections.register(RotXZX)
-@queue_corrections.register(RZ)
-def _rotation_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the rotation
-    gate RotXZX in the MBQC formalism, based on the operation and the
-    measurement results. Note that these corrections also apply in the
+@_single_xz_corrections.register(RotXZX)
+@_single_xz_corrections.register(RZ)
+def _rotation_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively. Note that these corrections also apply in the
     more specific rotation case, RZ = RotXZX(0, Z, 0)"""
-
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond(m1 ^ m3, Z)(wire)
-        cond(m2 ^ m4, X)(wire)
-
-    return correction_func
+    return m2 ^ m4, m1 ^ m3
 
 
-@queue_corrections.register(H)
-def _hadamard_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the Hadamard gate in
-    the MBQC formalism, based on the operation and the measurement results"""
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond(m2 ^ m3, Z)(wire)
-        cond(parity(m1, m3, m4), X)(wire)
-
-    return correction_func
+@_single_xz_corrections.register(H)
+def _hadamard_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
+    return parity(m1, m3, m4), m2 ^ m3
 
 
-@queue_corrections.register(S)
-def _s_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the S gate in
-    the MBQC formalism, based on the operation and the measurement results"""
-
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond(parity(m1, m2, m3, 1), Z)(wire)
-        cond(m2 ^ m4, X)(wire)
-
-    return correction_func
+@_single_xz_corrections.register(S)
+def _s_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
+    return m2 ^ m4, parity(m1, m2, m3, 1)
 
 
 def queue_cnot(q_mgr, ctrl_idx, target_idx):
@@ -312,6 +307,24 @@ def cnot_corrections(measurements):
     """Queue the byproduct corrections associated with the CNOT gate in
     the MBQC formalism, based on measurement results"""
 
+    (x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt) = _cnot_xz_corrections(measurements)
+
+    def correction_func(ctrl_wire, target_wire):
+        cond(z_cor_ctrl, Z)(ctrl_wire)
+        cond(x_cor_ctrl, X)(ctrl_wire)
+        cond(z_cor_tgt, Z)(target_wire)
+        cond(x_cor_tgt, X)(target_wire)
+
+    return correction_func
+
+
+def _cnot_xz_corrections(measurements):
+    """Get the xz corrections for the control and target wire based on the measurements.
+    Returns a list of two tuples indicating corrections for the control and target wires
+    respectively. For each tuple, the first element is a boolean indicating whether an
+    PauliX correction is needed, and the second element indicates whether a PauliZ
+    correction is needed."""
+
     # Numbering convention follows the procedure in Raussendorf et al. 2003,
     # https://doi.org/10.1103/PhysRevA.68.022312, Fig 2
     m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
@@ -324,13 +337,7 @@ def cnot_corrections(measurements):
     x_cor_tgt = parity(m2, m3, m8, m10, m12, m14)
     z_cor_tgt = parity(m9, m11, m13)
 
-    def correction_func(ctrl_wire, target_wire):
-        cond(z_cor_ctrl, Z)(ctrl_wire)
-        cond(x_cor_ctrl, X)(ctrl_wire)
-        cond(z_cor_tgt, Z)(target_wire)
-        cond(x_cor_tgt, X)(target_wire)
-
-    return correction_func
+    return [(x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt)]
 
 
 def _generate_cnot_graph():

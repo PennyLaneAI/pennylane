@@ -64,7 +64,9 @@ class ClassicalShadow:
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=range(2), shots=1000)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=range(2))
+        @partial(qml.set_shots, shots=1000)
         @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
@@ -193,7 +195,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=range(2))
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def qnode():
                 qml.Hadamard(0)
@@ -296,7 +300,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=range(2))
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def qnode(x):
                 qml.Hadamard(0)
@@ -383,9 +389,11 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
+            from functools import partial
             wires = 4
-            dev = qml.device("default.qubit", wires=range(wires), shots=1000)
+            dev = qml.device("default.qubit", wires=range(wires))
 
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def max_entangled_circuit():
                 qml.Hadamard(wires=0)
