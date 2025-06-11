@@ -91,7 +91,7 @@ class ZSqrtTwo:
 
     def __truediv__(self, other: ZSqrtTwo) -> ZSqrtTwo:
         if isinstance(other, ZSqrtTwo):
-            return self * other.adj2() / abs(other)
+            return (self * other.adj2()) / abs(other)
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             other = int(other)
             if self.a % other == 0 and self.b % other == 0:

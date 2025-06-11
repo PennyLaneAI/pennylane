@@ -43,20 +43,23 @@ def _(elem1, elem2):
 
 
 @lru_cache(maxsize=100)
-def _prime_factorize(n: int, max_trials=1000) -> list[int]:
+def _prime_factorize(n: int, max_trials=1000) -> list[int] | None:
     r"""Computes the prime factorization of a number :math:`n`.
 
     This function uses a combination of the Brent's variant of Pollard's rho algorithm for integer factorization
     and Miller-Rabin primality test to find the prime factors of :math:`n`. It handles trivial cases and uses a
     stack-based approach to iteratively find factors until all prime factors are identified.
 
+    .. note::
+        The function returns ``None`` cases where prime factor might be 7,
+        as it cannot be expressed in the ring :math:`\mathbb{Z}[\sqrt{2}]`.
 
     Args:
         n (int): The number to factor.
         max_tries (int): The maximum number of attempts to find a factor.
 
     Returns:
-        list[int]: A list of prime factors of :math:`n`.
+        list[int] | None: A list of prime factors of :math:`n`, or ``None`` if no valid factors are found.
     """
     factors, stack = [], [n]
     while len(stack) > 0:
@@ -65,11 +68,13 @@ def _prime_factorize(n: int, max_trials=1000) -> list[int]:
         if p <= 1:
             continue
         # Cannot split in Z[√2], if p ≡ 7 mod 8.
-        if _primality_test(p) and p % 8 != 7:
+        if _primality_test(p):
+            if p % 8 == 7:
+                return None
             factors.append(p)
             continue
         if (factor := _integer_factorize(p, max_trials)) == 7:
-            continue
+            return None
         # If we have found an integer factor,
         # push it and its complement onto the stack
         if factor is not None:
@@ -178,12 +183,10 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
         p (int): The prime number for which to find the factorization.
 
     Returns:
-        list[ZOmega]: A list of factors in the ring :math:`\mathbb{Z}[\omega]`,
-            or `None` if no factorization exists.
+        ZOmega: Factor of :math:`p` in the ring :math:`\mathbb{Z}[\omega]`,
+            or ``None`` if no factorization exists.
     """
     # Basic cases
-    if x % p != 0:
-        return None
     if p == 2:
         return ZOmega(0, 0, 1, 1)
 
@@ -330,7 +333,7 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
     Returns:
         ZOmega | None: An element of the ring :math:`\mathbb{Z}[\omega]` that satisfies the equation, or ``None`` if no solution exists.
     """
-    if p := abs(xi) < 2:
+    if (p := abs(xi)) < 2:
         return None
 
     if not (factors := _prime_factorize(p, max_trials)):
@@ -351,8 +354,15 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
                     return None
                 scale *= t
 
-    t2 = xi / (scale.conj() * scale).to_zsqrt()
+    # the remaining quotient should be divisible
+    s_val = (scale.conj() * scale).to_sqrt_two()
+    s_new, s_abs = (xi * s_val.adj2()), abs(s_val)
+    if any(x_ % s_abs != 0 for x_ in s_new.flatten):
+        return None
+
+    # the remaining quotient should be a unit in Z[√2]
+    t2 = xi / s_val
     if abs(t2) ** 2 != 1:
         return None
 
-    return scale * t2.sqrt().to_zomega()
+    return scale * t2.sqrt().to_omega()
