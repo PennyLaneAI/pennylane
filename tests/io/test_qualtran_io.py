@@ -39,6 +39,28 @@ def test_to_bloq_error():
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+@pytest.fixture
+def qubits():
+    """Provides cirq.LineQubit instances for tests."""
+    import cirq
+
+    return cirq.LineQubit(0), cirq.LineQubit(1)
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+@pytest.fixture
+def dtypes():
+    """Provides qualtran QDType instances for tests."""
+    from qualtran import QBit, QUInt
+
+    # A single QBit and a single-bit QUInt are different types
+    # but should be equivalent in a 1-qubit _QReg comparison.
+    return QBit(), QUInt(bitsize=1)
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 class TestFromBloq:
     """Test that FromBloq accurately wraps around Bloqs."""
 
@@ -686,119 +708,90 @@ class TestToBloq:
         qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
+    # pylint: disable=redefined-outer-name, protected-access
+    def test_initialization_with_tuple(qubits, dtypes):
+        """Tests standard initialization with a tuple of qubits."""
+        q0, q1 = qubits
+        _, dtype_uint = dtypes
+        qubits_tuple = (q0, q1)
 
-@pytest.mark.external
-@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
-@pytest.fixture
-def qubits():
-    """Provides cirq.LineQubit instances for tests."""
-    import cirq
+        qreg = _QReg(qubits=qubits_tuple, dtype=dtype_uint)
 
-    return cirq.LineQubit(0), cirq.LineQubit(1)
+        assert isinstance(qreg.qubits, tuple)
+        assert qreg.qubits == qubits_tuple
+        assert qreg.dtype == dtype_uint
+        assert qreg._initialized is True
 
+    # pylint: disable=redefined-outer-name
+    def test_initialization_with_single_qubit(qubits, dtypes):
+        """Tests that a single qubit is correctly wrapped in a tuple."""
+        q0, _ = qubits
+        dtype_bit, _ = dtypes
 
-@pytest.mark.external
-@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
-@pytest.fixture
-def dtypes():
-    """Provides qualtran QDType instances for tests."""
-    from qualtran import QBit, QUInt
+        qreg = _QReg(qubits=q0, dtype=dtype_bit)
 
-    # A single QBit and a single-bit QUInt are different types
-    # but should be equivalent in a 1-qubit _QReg comparison.
-    return QBit(), QUInt(bitsize=1)
+        assert isinstance(qreg.qubits, tuple)
+        assert qreg.qubits == (q0,)
+        assert qreg.dtype == dtype_bit
 
+    # pylint: disable=redefined-outer-name
+    def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
+        """Tests that changing an attribute after initialization raises an AttributeError."""
+        q0, q1 = qubits
+        dtype_bit, dtype_uint = dtypes
+        qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
 
-# pylint: disable=redefined-outer-name, protected-access
-def test_initialization_with_tuple(qubits, dtypes):
-    """Tests standard initialization with a tuple of qubits."""
-    q0, q1 = qubits
-    _, dtype_uint = dtypes
-    qubits_tuple = (q0, q1)
+        with pytest.raises(AttributeError, match="Cannot set attribute 'qubits'"):
+            qreg.qubits = (q1,)
 
-    qreg = _QReg(qubits=qubits_tuple, dtype=dtype_uint)
+        with pytest.raises(AttributeError, match="Cannot set attribute 'dtype'"):
+            qreg.dtype = dtype_uint
 
-    assert isinstance(qreg.qubits, tuple)
-    assert qreg.qubits == qubits_tuple
-    assert qreg.dtype == dtype_uint
-    assert qreg._initialized is True
+        with pytest.raises(AttributeError, match="Cannot set attribute 'new_attr'"):
+            qreg.new_attr = "some_value"
 
+    # pylint: disable=redefined-outer-name
+    def test_equality_ignores_dtype(qubits, dtypes):
+        """Tests the core feature: equality should only depend on qubits, not dtype."""
+        q0, _ = qubits
+        dtype_bit, dtype_uint = dtypes
 
-# pylint: disable=redefined-outer-name
-def test_initialization_with_single_qubit(qubits, dtypes):
-    """Tests that a single qubit is correctly wrapped in a tuple."""
-    q0, _ = qubits
-    dtype_bit, _ = dtypes
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
 
-    qreg = _QReg(qubits=q0, dtype=dtype_bit)
+        assert qreg1 == qreg2
 
-    assert isinstance(qreg.qubits, tuple)
-    assert qreg.qubits == (q0,)
-    assert qreg.dtype == dtype_bit
+    # pylint: disable=redefined-outer-name
+    def test_hash_ignores_dtype(qubits, dtypes):
+        """Tests that the hash also only depends on the qubits."""
+        q0, _ = qubits
+        dtype_bit, dtype_uint = dtypes
 
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
 
-# pylint: disable=redefined-outer-name
-def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
-    """Tests that changing an attribute after initialization raises an AttributeError."""
-    q0, q1 = qubits
-    dtype_bit, dtype_uint = dtypes
-    qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
+        assert hash(qreg1) == hash(qreg2)
 
-    with pytest.raises(AttributeError, match="Cannot set attribute 'qubits'"):
-        qreg.qubits = (q1,)
+    # pylint: disable=redefined-outer-name
+    def test_inequality_for_different_qubits(qubits, dtypes):
+        """Tests that instances with different qubits are not equal."""
+        q0, q1 = qubits
+        dtype_bit, _ = dtypes
 
-    with pytest.raises(AttributeError, match="Cannot set attribute 'dtype'"):
-        qreg.dtype = dtype_uint
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q1,), dtype=dtype_bit)
+        qreg3 = _QReg(qubits=(q0, q1), dtype=dtype_bit)
 
-    with pytest.raises(AttributeError, match="Cannot set attribute 'new_attr'"):
-        qreg.new_attr = "some_value"
+        assert qreg1 != qreg2
+        assert qreg1 != qreg3
 
+    # pylint: disable=redefined-outer-name
+    def test_inequality_for_different_types(qubits, dtypes):
+        """Tests that comparison with other types returns NotImplemented/False."""
+        q0, _ = qubits
+        dtype_bit, _ = dtypes
+        qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
 
-# pylint: disable=redefined-outer-name
-def test_equality_ignores_dtype(qubits, dtypes):
-    """Tests the core feature: equality should only depend on qubits, not dtype."""
-    q0, _ = qubits
-    dtype_bit, dtype_uint = dtypes
-
-    qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
-    qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
-
-    assert qreg1 == qreg2
-
-
-# pylint: disable=redefined-outer-name
-def test_hash_ignores_dtype(qubits, dtypes):
-    """Tests that the hash also only depends on the qubits."""
-    q0, _ = qubits
-    dtype_bit, dtype_uint = dtypes
-
-    qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
-    qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
-
-    assert hash(qreg1) == hash(qreg2)
-
-
-# pylint: disable=redefined-outer-name
-def test_inequality_for_different_qubits(qubits, dtypes):
-    """Tests that instances with different qubits are not equal."""
-    q0, q1 = qubits
-    dtype_bit, _ = dtypes
-
-    qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
-    qreg2 = _QReg(qubits=(q1,), dtype=dtype_bit)
-    qreg3 = _QReg(qubits=(q0, q1), dtype=dtype_bit)
-
-    assert qreg1 != qreg2
-    assert qreg1 != qreg3
-
-
-# pylint: disable=redefined-outer-name
-def test_inequality_for_different_types(qubits, dtypes):
-    """Tests that comparison with other types returns NotImplemented/False."""
-    q0, _ = qubits
-    dtype_bit, _ = dtypes
-    qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
-
-    assert qreg != "not_a_qreg"
-    assert qreg != (q0,)
-    assert qreg is not None
+        assert qreg != "not_a_qreg"
+        assert qreg != (q0,)
+        assert qreg is not None
