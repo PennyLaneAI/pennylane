@@ -748,7 +748,7 @@ def vibrational_pes(
         method (str): Electronic structure method used to perform geometry optimization.
             Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
             Hartree-Fock, respectively. Default is ``"rhf"``.
-        localize (bool): if ``True`` perform geometry optimization. Default is ``True``.
+        optimize (bool): if ``True`` perform geometry optimization. Default is ``True``.
         localize (bool): if ``True`` perform normal mode localization. Default is ``False``.
         bins (List[float]): grid of frequencies for grouping normal modes.
             Default is ``None`` which means all frequencies will be grouped in one bin.
