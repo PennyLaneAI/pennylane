@@ -294,7 +294,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
 
 def christiansen_dipole(pes, n_states=16):
-    """Return Christiansen dipole operator.
+    r"""Returns Christiansen dipole operator.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
     defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
@@ -306,10 +306,26 @@ def christiansen_dipole(pes, n_states=16):
         \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
-
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    where :math:`b^{\dagger}` and :math:`b` are the bosonic creation and annihilation
     operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
-    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
+
+    .. math::
+
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+
+    and
+
+    .. math::
+
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
+    represents the kinetic energy operator and :math:`V` represents the potential energy operator.
+    Similarly, the three-mode integrals can be obtained following
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
     The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
@@ -325,7 +341,7 @@ def christiansen_dipole(pes, n_states=16):
         b_0 = \left(\frac{X_0 + iY_0}{2}\right), \:\: \text{...,} \:\:
         b_n = \left(\frac{X_n + iY_n}{2}\right),
 
-    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+    where :math:`X` and :math:`Y` are the Pauli operators.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
@@ -344,13 +360,25 @@ def christiansen_dipole(pes, n_states=16):
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> pes = qml.qchem.vibrational_pes(mol, dipole_level=3, cubic=True)
     >>> dipole = qml.qchem.vibrational.christiansen_dipole(pes,n_states=4)
-    >>> dipole[0]
+    >>> dipole[2]
     (
-        (5.761507851990097e-16+0j) * I(0)
-      + (-1.199304972379678e-16+0j) * Z(0)
-      + (-1.8781128884815498e-16+0j) * Z(1)
-      + (-1.2206813605366886e-16+0j) * Z(2)
-      + (-1.4634086305921812e-16+0j) * Z(3)
+        (-0.005512522132269153+0j) * I(0)
+      + (0.00037053485106913064+0j) * Z(0)
+      + -0.011436347025770977 * (X(0) @ X(1))
+      + (-0.011436347025770977+0j) * (Y(0) @ Y(1))
+      + -0.0005031491268437766 * (X(0) @ X(2))
+      + (-0.0005031491268437766+0j) * (Y(0) @ Y(2))
+      + 4.230790346195971e-05 * (X(0) @ X(3))
+      + (4.230790346195971e-05+0j) * (Y(0) @ Y(3))
+      + (0.001082095170147779+0j) * Z(1)
+      + -0.01610015762949269 * (X(1) @ X(2))
+      + (-0.01610015762949269+0j) * (Y(1) @ Y(2))
+      + -0.0008228492926524582 * (X(1) @ X(3))
+      + (-0.0008228492926524582+0j) * (Y(1) @ Y(3))
+      + (0.001734095461712748+0j) * Z(2)
+      + -0.01960990751144681 * (X(2) @ X(3))
+      + (-0.01960990751144681+0j) * (Y(2) @ Y(3))
+      + (0.002325796649339495+0j) * Z(3)
     )
     """
 
