@@ -13,15 +13,20 @@
 # limitations under the License.
 """Optimization pass ``full_reduce`` from pyzx using ZX calculus."""
 
-import pyzx as zx
-from pyzx.graph.base import BaseGraph
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
+
+has_zx = True
+try:
+    import pyzx as zx
+    from pyzx.graph.base import BaseGraph
+
+except ImportError:
+    has_zx = False
 
 
 def null_postprocessing(results):
@@ -103,6 +108,11 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
     The original circuit has five :class:`~T` gates which are reduced to just one.
     """
+    if not has_zx:  # pragma: no cover
+        raise ImportError(
+            "The package pyzx is required by full_reduce. "
+            "You can install it with pip install pyzx"
+        )  # pragma: no cover
 
     pyzx_circ = _tape2pyzx(tape)
 

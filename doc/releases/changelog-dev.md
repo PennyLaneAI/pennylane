@@ -502,6 +502,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The imports of dependencies introduced by ``labs`` functionalities have been modified such that
+  these dependencies only have to be installed for the functions that use them, not to use
+  ``labs`` functionalities in general. This decouples the various submodules, and even functions
+  within the same submodule, from each other.
+  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.

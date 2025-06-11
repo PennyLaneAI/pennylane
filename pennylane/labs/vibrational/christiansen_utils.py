@@ -16,13 +16,19 @@ import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import h5py
 import numpy as np
 from scipy.special import factorial
 
 from pennylane import concurrency
 
-# pylint: disable = redefined-outer-name,
+# pylint: disable = redefined-outer-name
+
+has_h5py = True
+try:
+    import h5py
+
+except ImportError:
+    has_h5py = False
 
 
 def _cform_onemode_kinetic(freqs, n_states, num_workers=1, backend="serial", path=None):
@@ -1045,10 +1051,20 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
-
     Returns:
         TensorLike[float]: the integrals for the Christiansen Hamiltonian
+
+    .. note::
+
+        This function requires the ``h5py`` package to be installed.
+        It can be installed with ``pip install h5py``.
+
     """
+    if not has_h5py:  # pragma: no cover
+        raise ImportError(
+            "The h5py package is required by christiansen_integrals. "
+            "You can install it with pip install h5py"
+        )  # pragma: no cover
     with TemporaryDirectory() as path:
         ham_cform_onebody = _cform_onemode(
             pes, n_states, num_workers=num_workers, backend=backend, path=path
@@ -1084,10 +1100,20 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
 
-
     Returns:
         TensorLike[float]: the integrals for the Christiansen dipole operator
+
+    .. note::
+
+        This function requires the ``h5py`` package to be installed.
+        It can be installed with ``pip install h5py``.
+
     """
+    if not has_h5py:  # pragma: no cover
+        raise ImportError(
+            "The h5py package is required by christiansen_integrals_dipole. "
+            "You can install it with pip install h5py"
+        )  # pragma: no cover
     with TemporaryDirectory() as path:
         dipole_cform_onebody = _cform_onemode_dipole(
             pes, n_states, num_workers=num_workers, backend=backend, path=path

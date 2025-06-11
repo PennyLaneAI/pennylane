@@ -13,14 +13,19 @@
 # limitations under the License.
 """Third order duplicate and destroy (TODD) optimization method from pyzx, using ZX calculus."""
 
-import pyzx as zx
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
+
+has_zx = True
+try:
+    import pyzx as zx
+
+except ImportError:
+    has_zx = False
 
 
 def null_postprocessing(results):
@@ -100,6 +105,10 @@ def todd(
     The original five T gates are reduced to just one.
 
     """
+    if not has_zx:  # pragma: no cover
+        raise ImportError(
+            "The package pyzx is required by todd. You can install it with pip install pyzx"
+        )  # pragma: no cover
 
     pyzx_circ = _tape2pyzx(tape)
 

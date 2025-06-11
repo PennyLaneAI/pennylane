@@ -14,14 +14,19 @@
 """Optimization pass ``full_optimize`` from pyzx using ZX calculus."""
 import warnings
 
-import pyzx as zx
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
+
+has_zx = True
+try:
+    import pyzx as zx
+
+except ImportError:
+    has_zx = False
 
 
 def null_postprocessing(results):
@@ -118,6 +123,12 @@ def full_optimize(
             new_circ = full_optimize(circ, clifford_t_args = {"epsilon": 0.1})
 
     """
+    if not has_zx:  # pragma: no cover
+        raise ImportError(
+            "The package pyzx is required by full_optimize. "
+            "You can install it with pip install pyzx"
+        )  # pragma: no cover
+
     try:
         pyzx_circ = _tape2pyzx(tape)
 

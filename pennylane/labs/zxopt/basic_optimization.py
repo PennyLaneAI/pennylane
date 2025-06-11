@@ -13,14 +13,19 @@
 # limitations under the License.
 """Optimization pass ``basic_optimization`` from pyzx using ZX calculus."""
 
-import pyzx as zx
-
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
+
+has_zx = True
+try:
+    import pyzx as zx
+
+except ImportError:
+    has_zx = False
 
 
 def null_postprocessing(results):
@@ -93,6 +98,12 @@ def basic_optimization(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
         3: ─╰X──H──T─╰●──H───────────┤
 
     """
+    if not has_zx:  # pragma: no cover
+        raise ImportError(
+            "The package pyzx is required by basic_optimization. "
+            "You can install it with pip install pyzx"
+        )  # pragma: no cover
+
     pyzx_circ = _tape2pyzx(tape)
 
     pyzx_circ = pyzx_circ.to_basic_gates()
