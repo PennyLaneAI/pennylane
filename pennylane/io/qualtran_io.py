@@ -114,7 +114,7 @@ def _get_op_call_graph():
 
         dic_state = dict(zip(bases, coeffs))
         perms = _assign_states(bases)
-        new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
+        new_dic_state = {perms[key]: val for key, val in dic_state.items() if key in perms}
 
         sorted_coefficients = [
             value
