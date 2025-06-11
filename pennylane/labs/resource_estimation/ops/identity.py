@@ -59,7 +59,7 @@ class ResourceIdentity(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -169,7 +169,7 @@ class ResourceGlobalPhase(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
