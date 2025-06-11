@@ -3,8 +3,5 @@ qml
 
 .. currentmodule:: pennylane
 
-.. automodapi:: pennylane
-    :no-heading:
-    :include-all-objects:
-    :inherited-docstrings:
-    :classes-only:
+.. automodsumm:: mypackage.qml
+   :classes-only:
