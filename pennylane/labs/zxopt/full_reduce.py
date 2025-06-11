@@ -20,11 +20,11 @@ from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
 
-has_zx = True
 try:
     import pyzx as zx
     from pyzx.graph.base import BaseGraph
 
+    has_zx = True
 except ImportError:
     has_zx = False
 
@@ -110,8 +110,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     """
     if not has_zx:  # pragma: no cover
         raise ImportError(
-            "full_reduce requires the package pyzx. "
-            "You can install it with pip install pyzx"
+            "full_reduce requires the package pyzx. " "You can install it with pip install pyzx"
         )  # pragma: no cover
 
     pyzx_circ = _tape2pyzx(tape)

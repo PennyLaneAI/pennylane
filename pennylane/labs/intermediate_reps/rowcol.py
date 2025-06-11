@@ -19,12 +19,12 @@ import networkx as nx
 import numpy as np
 from networkx.algorithms.approximation import steiner_tree
 
-has_galois = True
 try:
     import galois
 
     # Create the Galois number field F_2, in which we can create arrays in _get_S.
     F_2 = galois.GF(2)
+    has_galois = True
 
 except ImportError:
     has_galois = False

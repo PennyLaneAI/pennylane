@@ -20,10 +20,10 @@ from pennylane.typing import PostprocessingFn
 
 from .util import _tape2pyzx
 
-has_zx = True
 try:
     import pyzx as zx
 
+    has_zx = True
 except ImportError:
     has_zx = False
 

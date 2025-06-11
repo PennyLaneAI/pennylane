@@ -23,10 +23,10 @@ from pennylane import concurrency
 
 # pylint: disable = redefined-outer-name
 
-has_h5py = True
 try:
     import h5py
 
+    has_h5py = True
 except ImportError:
     has_h5py = False
 

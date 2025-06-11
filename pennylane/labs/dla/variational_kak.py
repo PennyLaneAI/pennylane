@@ -24,19 +24,20 @@ from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
+    has_jax = True
 except ImportError:
     has_jax = False
 
-has_plt = True
 try:
     import matplotlib.pyplot as plt
+
+    has_plt = True
 except ImportError:
     has_plt = False
 
