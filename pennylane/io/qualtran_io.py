@@ -239,9 +239,7 @@ def _get_op_call_graph():
         bitstrings = op.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
 
-        num_bit_flips = 0
-        for bit_string in bitstrings:
-            num_bit_flips += bit_string.count("1")
+		num_bit_flips = sum(bits.count("1") for bits in bitstrings)
 
         num_work_wires = len(op.hyperparameters["work_wires"])
         size_bitstring = len(op.hyperparameters["target_wires"])
