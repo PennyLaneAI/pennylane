@@ -833,6 +833,7 @@ class TestToBloq:
             else:
                 bloq_call_graph[qml.ToBloq(k[0])] = v
 
+        print(op)
         call_graph = _get_op_call_graph()(op)
         assert dict(call_graph) == bloq_call_graph
 

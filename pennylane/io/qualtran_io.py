@@ -83,11 +83,10 @@ def _get_op_call_graph():
         k = order // 2
         qfunc = op.hyperparameters["qfunc"]
         qfunc_args = op.parameters[1:]
+        base_hyper_params = ("n", "order", "qfunc", "reverse")
 
         with QueuingManager.stop_recording():
             with AnnotatedQueue() as q:
-                base_hyper_params = ("n", "order", "qfunc", "reverse")
-
                 qfunc_args = op.parameters
                 qfunc_kwargs = {
                     k: v for k, v in op.hyperparameters.items() if not k in base_hyper_params
@@ -97,6 +96,11 @@ def _get_op_call_graph():
                 qfunc(*qfunc_args, wires=op.wires, **qfunc_kwargs)
 
         call_graph = defaultdict(int, {})
+        if order == 1:
+            for q_op in q.queue:
+                call_graph[_map_to_bloq()(q_op)] += 1
+            return call_graph
+
         num_gates = 2 * n * (5 ** (k - 1))
         for q_op in q.queue:
             call_graph[_map_to_bloq()(q_op)] += num_gates
@@ -154,8 +158,8 @@ def _get_op_call_graph():
         state_vector = op.state_vector
         positive_and_real = True
 
-        if any(c.imag !=0 or c.real < 0 for c in state_vector):
-        	positive_and_real = False
+        if any(c.imag != 0 or c.real < 0 for c in state_vector):
+            positive_and_real = False
 
         num_state_qubits = int(math.log2(len(op.state_vector)))
         precision_wires = op.hyperparameters["precision_wires"]
@@ -174,10 +178,11 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qrom_op)] += 1
         gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
 
+        zero_string = "0" * num_precision_wires
+        one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
+        
         for i in range(1, num_state_qubits):
             num_bit_flips = 2 ** (i - 1)
-            zero_string = "0" * num_precision_wires
-            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
             bitstrings = [zero_string for _ in range(num_bit_flips)] + [
                 one_string for _ in range(num_bit_flips)
             ]
@@ -199,8 +204,6 @@ def _get_op_call_graph():
 
         if not positive_and_real:
             num_bit_flips = 2 ** (num_state_qubits - 1)
-            zero_string = "0" * num_precision_wires
-            one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
             bitstrings = [zero_string for _ in range(num_bit_flips)] + [
                 one_string for _ in range(num_bit_flips)
             ]
@@ -239,7 +242,7 @@ def _get_op_call_graph():
         bitstrings = op.hyperparameters["bitstrings"]
         num_bitstrings = len(bitstrings)
 
-		num_bit_flips = sum(bits.count("1") for bits in bitstrings)
+        num_bit_flips = sum(bits.count("1") for bits in bitstrings)
 
         num_work_wires = len(op.hyperparameters["work_wires"])
         size_bitstring = len(op.hyperparameters["target_wires"])
@@ -253,7 +256,6 @@ def _get_op_call_graph():
         cnot = qt_gates.CNOT()
         hadamard = qt_gates.Hadamard()
         num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
-        # num_parallel_computations = min(num_parallel_computations, num_bitstrings)
 
         square_fact = math.floor(
             math.sqrt(num_bitstrings)
