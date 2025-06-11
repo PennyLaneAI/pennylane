@@ -187,7 +187,7 @@ class Context:
 
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
-        self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+        self.scopes["subroutines"][node.name.name] = self.init_clause_in_same_namespace(
             self, node.name.name
         )
         self.scopes["subroutines"][node.name.name].update(
@@ -308,7 +308,7 @@ class Context:
         Raises:
             NameError: If the context is missing a wire.
         """
-        missing_wires = set(wires) - set(self.wires) - set(self.outer_wires)
+        missing_wires = set(wires) - set(self.wires)
         if len(missing_wires) > 0:
             raise NameError(
                 f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
