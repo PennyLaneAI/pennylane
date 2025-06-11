@@ -229,7 +229,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is False
+        assert f.execute_kwargs["cache"] == "auto"
 
     def test_cache_initialization_maxdiff_2(self):
         """Test that when max_diff = 2, the cache initialization to True."""
@@ -238,7 +238,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is True
+        assert f.execute_kwargs["cache"] == "auto"
 
 
 # pylint: disable=too-many-public-methods
@@ -1393,6 +1393,20 @@ class TestShots:
         qml.execute([tape], dev, None, cache=cache)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             qml.execute([tape], dev, None, cache=cache)
+
+        cache2 = {}
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qml.execute([tape, tape], dev, cache=cache2)
+
+    def test_no_caching_by_default(self):
+        """Test that caching is turned off by default."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        tape = qml.tape.QuantumScript([qml.H(0)], [qml.sample(wires=0)], shots=1000)
+
+        res1, res2 = qml.execute([tape, tape], dev)
+        assert not np.allclose(res1, res2)
 
     def test_no_warning_infinite_shots(self):
         """Tests that no warning is raised when caching is used with infinite shots."""
