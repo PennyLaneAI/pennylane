@@ -254,11 +254,9 @@ class Context:
         if "wires" not in context:
             context["wires"] = []
         if "scopes" not in context:
-            context["scopes"] = {"subroutines": dict()}
-        if "outer_wires" not in context:
-            context["outer_wires"] = []
+            context["scopes"] = {"subroutines": {}}
         if "wire_map" not in context or context["wire_map"] is None:
-            context["wire_map"] = dict()
+            context["wire_map"] = {}
         self.context = context
 
     def init_loops_scope(self, node: ForInLoop | WhileLoop):
@@ -310,19 +308,20 @@ class Context:
 
     def init_subroutine_scope(self, node: SubroutineDefinition):
         """
-        Inits the outer wires list on a sub context.
+        Initializes a sub context with all the params, constants, subroutines and qubits it has access to.
+
         Args:
             node (SubroutineDefinition): the subroutine definition.
         """
 
         # outer scope variables are available to inner scopes... but not vice versa!
         # names prefixed with outer scope names for specificity
-        self.scopes["subroutines"][node.name.name] = self.init_clause_in_same_namespace(
-            self, f"{self.name}_{node.name.name}"
+        self.scopes["subroutines"][node.name.name] = self._init_clause_in_same_namespace(
+            self, node.name.name
         )
         self.scopes["subroutines"][node.name.name].update(
             {
-                "sub": True,
+                "vars": {k: v for k, v in self.vars.items() if v.constant},
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
@@ -340,20 +339,13 @@ class Context:
             dict: the inner context.
         """
         # we want wires declared in outer scopes to be available
-        outer_wires = outer_context.wires + outer_context.outer_wires
         context = {
             "vars": outer_context.vars,  # same namespace
-            "outer_wires": outer_wires,
             "wire_map": outer_context.wire_map,
-            "wires": [],
+            "wires": outer_context.wires,
             "name": name,
-            # we want subroutines declared in outer scopes to be available
-            "outer_scopes": {
-                # no recursion here please! hence the filter
-                "subroutines": {
-                    k: v for k, v in outer_context.scopes["subroutines"].items() if k != name
-                }
-            },
+            # we want subroutines declared in the global scope to be available
+            "scopes": {"subroutines": outer_context.scopes["subroutines"]},
         }
 
         return Context(context)
@@ -936,18 +928,11 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if (
-            name not in context.scopes["subroutines"]
-            and name not in context.outer_scopes["subroutines"]
-        ):
-            raise NameError(f"Reference to an undeclared subroutine {name} in {context.name}.")
         if name in context.scopes["subroutines"]:
             func_context = context.scopes["subroutines"][name]
-        elif name in context.outer_scopes["subroutines"]:
-            func_context = context.outer_scopes["subroutines"][name]
         else:
             raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace"
+                f"Reference to subroutine {name} not available in calling namespace "
                 f"on line {node.span.start_line}."
             )
 
@@ -955,7 +940,9 @@ class QasmInterpreter:
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
             if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                func_context.vars[param] = evald_arg
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
+                )
             else:
                 if not param == evald_arg:
                     func_context.wire_map[param] = evald_arg
@@ -1235,14 +1222,11 @@ class QasmInterpreter:
         context.require_wires(wires)
 
         resolved_wires = []
-        if context.wire_map is not None:
-            for wire in wires:
-                resolving = wire
-                while resolving in context.wire_map:
-                    resolving = context.wire_map[resolving]
-                resolved_wires.append(resolving)
-        else:
-            resolved_wires = wires
+        for wire in wires:
+            resolving = wire
+            while resolving in context.wire_map:
+                resolving = context.wire_map[resolving]
+            resolved_wires.append(resolving)
 
         return gate, args, resolved_wires
 
@@ -1284,7 +1268,6 @@ class QasmInterpreter:
     def visit_expression_statement(self, node: ExpressionStatement, context: Context):
         """
         Registers an expression statement.
-
         Args:
             node (ExpressionStatement): The expression statement.
             context (Context): The current context.
