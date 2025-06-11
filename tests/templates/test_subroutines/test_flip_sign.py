@@ -21,11 +21,6 @@ from pennylane import math
 from pennylane.wires import Wires
 
 
-def to_integer_number(bitlist):
-    """Convert a basis state from list of bits to integer number."""
-    return sum(2**i for i, bit in enumerate(bitlist[::-1]) if bit)
-
-
 def test_standarad_checks():
     """Run standard checks with the assert_valid function."""
     op = qml.FlipSign([0, 1], wires=("a", "b"))
@@ -69,7 +64,8 @@ class TestFlipSign:
             return qml.state()
 
         if isinstance(n, list):
-            n = to_integer_number(n)
+            # convert the basis state from list of bits to integer number
+            n = sum(2**i for i, bit in enumerate(n[::-1]) if bit)
 
         # check that only the indicated value has been changed
         state = circuit()
