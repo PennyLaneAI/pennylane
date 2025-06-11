@@ -39,19 +39,17 @@ from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
 
 try:
+    import cirq
     import qualtran as qt
+    from qualtran import Bloq
+    from qualtran._infra.gate_with_registers import split_qubits
+    from qualtran.bloqs import basic_gates as qt_gates
 
     qualtran = True
 except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
 
     Bloq = object
-
-if qualtran:
-    import cirq
-    from qualtran import Bloq
-    from qualtran._infra.gate_with_registers import split_qubits
-    from qualtran.bloqs import basic_gates as qt_gates
 
 
 @singledispatch
