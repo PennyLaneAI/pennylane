@@ -273,13 +273,13 @@ class Context:
         if isinstance(node, WhileLoop):
             self.scopes["loops"][f"while_{node.span.start_line}"] = (
                 self.init_clause_in_same_namespace(
-                    self, f"{self.name}_while_{node.span.start_line}"
+                    self, f"while_{node.span.start_line}"
                 )
             )
 
         elif isinstance(node, ForInLoop):
             self.scopes["loops"][f"for_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(self, f"{self.name}_for_{node.span.start_line}")
+                self.init_clause_in_same_namespace(self, f"for_{node.span.start_line}")
             )
 
     def init_switches_scope(self, node: QASMNode):
@@ -566,7 +566,6 @@ class QasmInterpreter:
 
         Raises:
             NotImplementedError: when an unsupported QASMNode type is found.
-            aliasing (bool): whether we are aliasing a variable in the context.
         """
         if node is None:
             return None
@@ -792,7 +791,7 @@ class QasmInterpreter:
 
             inner_context = context.scopes["loops"][f"while_{node.span.start_line}"]
             context.vars = inner_context.vars
-            context.wires += inner_context.wires
+            context.wires = inner_context.wires
 
             return context
 
@@ -849,7 +848,7 @@ class QasmInterpreter:
                     pass  # evaluation of the current iteration stops and we continue
                 inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
                 context.vars = inner_context.vars
-                context.wires += inner_context.wires
+                context.wires = inner_context.wires
 
                 return execution_context
 
