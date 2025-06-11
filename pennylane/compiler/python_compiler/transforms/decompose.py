@@ -17,8 +17,10 @@ written using xDSL."""
 import inspect
 import warnings
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
+from jax.core import DebugInfo, ShapedArray
+from jax.interpreters.partial_eval import DynamicJaxprTrace, DynamicJaxprTracer
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
 from xdsl.dialects.arith import ConstantOp
@@ -28,10 +30,12 @@ from xdsl.rewriter import InsertPoint
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.quantum_dialect import AllocOp, CustomOp, ExtractOp
 from pennylane.operation import Operator
-from pennylane.ops import __all__ as ops_all
+from pennylane.ops import __all__ as all_ops
 from pennylane.transforms.decompose import _operator_decomposition_gen
+
+from ..quantum_dialect import AllocOp, CustomOp, ExtractOp
+from .utils import xdsl_transform
 
 # pylint: disable=missing-function-docstring
 
@@ -40,7 +44,7 @@ from pennylane.transforms.decompose import _operator_decomposition_gen
 # Support for all PennyLane gates is not implemented yet.
 from_str_to_PL_gate = {
     name: getattr(ops, name)
-    for name in ops_all
+    for name in all_ops
     if inspect.isclass(getattr(ops, name, None))
     and issubclass(getattr(ops, name), qml.operation.Operator)
 }
@@ -88,12 +92,12 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     ):
         super().__init__()
         self.module = module
-        self.gate_set = gate_set if gate_set is not None else set(ops_all)
+        self.gate_set = gate_set if gate_set is not None else set(all_ops)
         self.max_expansion = max_expansion
 
-        self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
-        self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
-        self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
+        self.wire_to_ssa_qubits: dict[Union[int, DynamicJaxprTracer], SSAValue] = {}
+        self.ssa_qubits_to_wires: dict[SSAValue, Union[int, DynamicJaxprTracer]] = {}
+        self.params_to_ssa_params: dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
 
         self.quantum_register: Union[SSAValue, None] = None
 
@@ -147,17 +151,21 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             return []
         return [self.resolve_constant_params(p) for p in op.params if p is not None]
 
-    def ssa_to_qml_wires(self, op: CustomOp) -> list[int]:
+    def ssa_to_qml_wires(self, op: CustomOp) -> list[Union[int, DynamicJaxprTracer]]:
         """Get the wires from the operation."""
         if not hasattr(op, "in_qubits"):
             return []
         return [self.resolve_constant_wire(q) for q in op.in_qubits if q is not None]
 
-    def resolve_constant_wire(self, in_qubit: SSAValue) -> int:
+    def resolve_constant_wire(self, in_qubit: SSAValue) -> Union[DynamicJaxprTracer, int]:
         """Resolve the wire for the given SSA qubit."""
         op = in_qubit.owner
         if isinstance(op, ExtractOp):
-            return op.idx_attr.parameters[0].data
+            if op.idx_attr is not None:
+                return op.idx_attr.parameters[0].data
+            # Handle dynamic qubit
+            ssa_qubit = op.qubit
+            return self.ssa_qubits_to_wires[ssa_qubit]
         if isinstance(op, ConstantOp):
             val = op.value
             return val.value.data
@@ -189,7 +197,14 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                 saw_alloc = True
                 self.quantum_register = op.qreg
             elif isinstance(op, ExtractOp):
-                wire = op.idx_attr.parameters[0].data
+                if op.idx_attr is not None:
+                    wire = op.idx_attr.parameters[0].data
+                else:
+                    # Handle dynamic qubit
+                    dummy_trace = DynamicJaxprTrace(DebugInfo("dummy", "decompose", (), ()))
+                    wire_tracer = dummy_trace.new_arg(ShapedArray((), int))
+                    wire = wire_tracer
+
                 if wire not in self.wire_to_ssa_qubits:
                     self.wire_to_ssa_qubits[wire] = op.qubit
                     # We update the reverse mapping as well for completeness,
@@ -212,8 +227,9 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             if len(self.wire_to_ssa_qubits) == 0:
                 raise NotImplementedError("No wires extracted from the register have been found.")
 
-            qml_op = self.xdsl_to_qml_op(xdsl_op)
-            qml_decomp_ops = self.decompose_operation(qml_op)
+            with qml.capture.pause():
+                qml_op = self.xdsl_to_qml_op(xdsl_op)
+                qml_decomp_ops = self.decompose_operation(qml_op)
 
             for qml_decomp_op in qml_decomp_ops:
 
@@ -269,7 +285,7 @@ class DecompositionTransformPass(passes.ModulePass):
 
     # We use type annotations since these are (configurable) dataclass fields
     gate_set: Optional[
-        Union[Iterable[Union[str, type]], Dict[Union[str, type], float], Callable]
+        Union[Iterable[Union[str, type]], dict[Union[str, type], float], Callable]
     ] = None
     max_expansion: Optional[int] = None
 
@@ -283,3 +299,6 @@ class DecompositionTransformPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([pattern]), apply_recursively=False
         ).rewrite_module(module)
+
+
+xdsl_decompose = xdsl_transform(DecompositionTransformPass)
