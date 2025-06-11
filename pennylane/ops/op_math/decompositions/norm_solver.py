@@ -39,9 +39,10 @@ def _(elem1, elem2):
 def _(elem1, elem2):
     while elem2 != 0:
         elem1, elem2 = elem2, elem2 % elem1
-    return elem1, elem2
+    return elem1
 
 
+@lru_cache(maxsize=100)
 def _prime_factorize(n: int, max_trials=1000) -> list[int]:
     r"""Computes the prime factorization of a number :math:`n`.
 
@@ -61,13 +62,13 @@ def _prime_factorize(n: int, max_trials=1000) -> list[int]:
     while len(stack) > 0:
         p = stack.pop()
         # Trivial case
-        if p == 1:
+        if p <= 1:
             continue
         # Cannot split in Z[√2], if p ≡ 7 mod 8.
         if _primality_test(p) and p % 8 != 7:
             factors.append(p)
             continue
-        if factor := _integer_factorize(p, max_trials) == 7:
+        if (factor := _integer_factorize(p, max_trials)) == 7:
             continue
         # If we have found an integer factor,
         # push it and its complement onto the stack
@@ -91,6 +92,9 @@ def _integer_factorize(n: int, max_tries=1000) -> int | None:
     Returns:
         int | None: An integer factor of :math:`n`, or ``None`` if no factors are found.
     """
+    if n <= 2:
+        return None
+
     if n % 2 == 0:
         return 2
 
@@ -132,7 +136,7 @@ def _integer_factorize(n: int, max_tries=1000) -> int | None:
     return None
 
 
-def factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
+def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
     r"""Find the factorization of a prime number :math:`p` in ring :math:`\mathbb{Z}[\sqrt{2}]`.
 
     This uses congruence of :math:`p \text{mod} 8` and properties of the ring
@@ -161,11 +165,11 @@ def factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
         return [res, res.adj2()]
 
-    return None
+    return None  # pragma: no cover
 
 
 # pylint: disable=too-many-return-statements
-def factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
+def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
     r"""Find a prime factor of an element :math:`x` in the ring :math:`\mathbb{Z}[\omega]`,
     where :math:`x` divides a prime integer :math:`p`.
 
@@ -189,13 +193,13 @@ def factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
 
     # p = (a + bω)(a - bω) with b = sqrt(-1) mod p
     if a in (1, 5):
-        if h := _sqrt_modulo_p(-1, p) is None:
+        if (h := _sqrt_modulo_p(-1, p)) is None:
             return None
         return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
 
     # p = (a + bω)(a - bω) with b = sqrt(-2) mod p
     if a == 3:
-        if h := _sqrt_modulo_p(-2, p) is None:
+        if (h := _sqrt_modulo_p(-2, p)) is None:
             return None
         return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
 
@@ -261,11 +265,11 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
     r"""Computes square root of :math:`n` under modulo :math:`p` if it exists.
 
     This uses `Tonelli-Shanks algorithm <https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm>`_
-    to compute :math:`x`, such that :math:`x^2 \equiv n (mod p)`.
+    to compute :math:`x`, such that :math:`x^2 \equiv n (mod p)`, where :math:`p` is an odd prime.
 
     Args:
         n (int): The number to compute the square root of.
-        p (int): The prime modulus.
+        p (int): The odd prime modulus.
 
     Returns:
         int or None: The square root of :math:`n` under modulo :math:`p`, or None if it does not exist.
@@ -275,7 +279,7 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
         return 0
     if p == 2:
         return a
-    if _legendre_symbol(a, p) != 1:
+    if _legendre_symbol(a, p) != 1 or p % 2 == 0:
         return None
 
     # Factor p−1 as q·2^s with q odd
@@ -334,7 +338,7 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
 
     scale, next_xi = ZOmega(d=1), xi
     for factor in factors:
-        if primes_zsqrt_two := factorize_prime_zsqrt_two(factor) is None:
+        if (primes_zsqrt_two := _factorize_prime_zsqrt_two(factor)) is None:
             return None
 
         for eta in primes_zsqrt_two:
@@ -343,7 +347,7 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
             # Check if the next_xi is divisible by the element eta in Z[√2].
             if next_xi.a % next_ab == 0 and next_xi.b % next_ab == 0:
                 next_xi = ZSqrtTwo(next_xi.a // next_ab, next_xi.b // next_ab)
-                if t := factorize_prime_zomega(eta, factor) is None:
+                if (t := _factorize_prime_zomega(eta, factor)) is None:
                     return None
                 scale *= t
 

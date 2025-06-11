@@ -117,9 +117,17 @@ class ZSqrtTwo:
         return ZSqrtTwo(-self.a, -self.b)
 
     def __mod__(self, other: ZSqrtTwo) -> ZSqrtTwo:
+        if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
+            return ZSqrtTwo(self.a % int(other), self.b % int(other))
+
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
         return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+
+    @property
+    def flatten(self: ZSqrtTwo) -> List[int]:
+        """Flatten to a list."""
+        return [self.a, self.b]
 
     def conj(self) -> ZSqrtTwo:
         """Return the standard conjugate."""
@@ -258,9 +266,14 @@ class ZOmega:
             return ZOmega(self.a // other, self.b // other, self.c // other, self.d // other)
         raise TypeError(f"Unsupported type {type(other)} for floor division with ZOmega")
 
+    def __mod__(self, other: ZOmega) -> ZOmega:
+        d = abs(other)
+        n = self * other.conj() * ((other * other.conj()).adj2())
+        return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
+
     @property
     def flatten(self: ZOmega) -> List[int]:
-        """Flatten the matrix to a 1D NumPy array."""
+        """Flatten to a list."""
         return [self.a, self.b, self.c, self.d]
 
     def conj(self: ZOmega) -> ZOmega:
