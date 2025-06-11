@@ -890,4 +890,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
         ast, context={"name": "global", "wire_map": wire_map}, **kwargs
     )
 
+    if len(context["return"].keys()) > 0:
+        return tuple(map(lambda v: v.val, context["return"].values()))
     return context
