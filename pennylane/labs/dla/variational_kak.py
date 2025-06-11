@@ -95,7 +95,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
             with the implicit ordering ``(k, mtilde, a)``.
-        verbose (bool): Plot the optimization. Requires matplotlib to be installed (pip install matplotlib)
+        verbose (bool): Plot the optimization. Requires matplotlib to be installed (``pip install matplotlib``)
         opt_kwargs (dict): Keyword arguments for the optimization like initial starting values
             for :math:`\theta` of dimension ``(dim_k,)``, given as ``theta0``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
