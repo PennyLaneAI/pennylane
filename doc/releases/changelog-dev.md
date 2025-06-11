@@ -254,6 +254,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.IntegerComparator`
+    [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
+
 * A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
@@ -372,6 +375,9 @@
 
 * The decomposition of `qml.PCPhase` is now significantly more efficient for more than 2 qubits.
   [(#7166)](https://github.com/PennyLaneAI/pennylane/pull/7166)
+
+* The decomposition of :class:`~.IntegerComparator` is now significantly more efficient.
+  [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
 * :class:`~.QubitUnitary` now supports a decomposition that is compatible with an arbitrary number of qubits. 
   This represents a fundamental improvement over the previous implementation, which was limited to two-qubit systems.
