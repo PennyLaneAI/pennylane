@@ -769,7 +769,7 @@ class QNode:
         # If device was updated, shots would have been updated
         # but the the `shots` arg should override if exists
         if shots_to_update:
-            updated_qn._shots = shots
+            updated_qn._set_shots(shots)
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
