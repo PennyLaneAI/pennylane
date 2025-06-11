@@ -176,12 +176,10 @@ def _get_op_call_graph():
         input_wires = op.hyperparameters["input_wires"]
         work_wires = op.hyperparameters["work_wires"]
         num_precision_wires = len(precision_wires)
-        
+
         # Use helper for the first QROM
         _add_qrom_and_adjoint(
-            gate_types,
-            bitstrings=["0" * (num_precision_wires - 1) + "1"],
-            control_wires=[]
+            gate_types, bitstrings=["0" * (num_precision_wires - 1) + "1"], control_wires=[]
         )
 
         zero_string = "0" * num_precision_wires
@@ -196,13 +194,13 @@ def _get_op_call_graph():
         gate_types[_map_to_bloq()(qops.CRY(0, wires=[0, 1]))] = (
             num_precision_wires * num_state_qubits
         )
-        
+
         # Use helper for the final conditional QROM
         if not positive_and_real:
             num_bit_flips = 2 ** (num_state_qubits - 1)
             bitstrings = [zero_string] * num_bit_flips + [one_string] * num_bit_flips
             _add_qrom_and_adjoint(gate_types, bitstrings, control_wires=input_wires)
-            
+
             gate_types[
                 _map_to_bloq()(
                     qops.ctrl(
