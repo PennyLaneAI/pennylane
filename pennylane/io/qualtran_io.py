@@ -308,7 +308,7 @@ def _get_op_call_graph():
     @_op_call_graph.register
     def _(op: qtemps.subroutines.QFT):
 
-        gate_types = {}
+        gate_types = defaultdict(int, {})
         num_wires = len(op.wires)
         gate_types[qt_gates.Hadamard()] = num_wires
         gate_types[_map_to_bloq()(qops.ControlledPhaseShift(1, [0, 1]))] = (
