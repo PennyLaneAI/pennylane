@@ -862,7 +862,6 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(jax.vmap(circuit))(input)
-        print(jaxpr)
         eqn0 = jaxpr.eqns[0]
 
         assert len(eqn0.outvars) == 1
