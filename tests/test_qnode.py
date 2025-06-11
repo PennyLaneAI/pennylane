@@ -143,6 +143,20 @@ class TestUpdate:
         new_circuit = dummy_qn.update(func=circuit).update(interface="torch")
         assert qml.math.get_interface(new_circuit(1)) == "torch"
 
+    def test_update_incorrect_kwargs(self):
+        """Test that an error is raised if an incorrect keyword argument is passed"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        with pytest.raises(ValueError, match="Invalid keyword argument blah to QNode. "):
+            circuit.update(blah=1)
+
     def test_update_gradient_kwargs(self):
         """Test that gradient kwargs are updated correctly"""
         dev = qml.device("default.qubit")
@@ -233,6 +247,13 @@ class TestInitialization:
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
+
+    def test_supported_kwarg(self):
+        """Test that an error is raised if an incorrect keyword argument is passed"""
+        dev = qml.device("default.qubit")
+
+        with pytest.raises(ValueError, match="Invalid keyword argument blah to QNode. "):
+            QNode(dummyfunc, dev, blah=1)
 
     @pytest.mark.parametrize("return_type", (tuple, list))
     def test_return_behaviour_consistency(self, return_type):
