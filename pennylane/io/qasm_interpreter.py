@@ -410,9 +410,8 @@ class QasmInterpreter:
                 func_context.vars[param] = Variable(
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
                 )
-            else:
-                if not param == evald_arg:
-                    func_context.wire_map[param] = evald_arg
+            elif param != evald_arg:
+                func_context.wire_map[param] = evald_arg
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
