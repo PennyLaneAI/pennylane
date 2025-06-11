@@ -1035,7 +1035,7 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order, path):
 
 
 def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend="serial"):
-    r"""Compute Christiansen vibrational Hamiltonian integrals.
+    r"""Computes Christiansen vibrational Hamiltonian integrals.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
@@ -1046,8 +1046,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         \sum_{i<j}^{M} \sum_{k_i,l_i}^{N_i} \sum_{k_j,l_j}^{N_j} C_{k_i k_j, l_i l_j}^{(i,j)}
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
-
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    where :math:`b^{\dagger}` and :math:`b` are the creation and annihilation
     operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
     modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
 
@@ -1069,7 +1068,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
     .. math::
 
-    V({Q}) = \sum_i V_1(Q_i) + \sum_{ij} V_2(Q_i,Q_j) + ....
+        V({Q}) = \sum_i V_1(Q_i) + \sum_{ij} V_2(Q_i,Q_j) + ....
 
     Similarly, the three-mode integrals can be obtained
     following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
@@ -1126,7 +1125,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
 
 def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="serial"):
-    r"""Compute Christiansen vibrational dipole integrals.
+    r"""Computes Christiansen vibrational dipole integrals.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
     defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
@@ -1139,7 +1138,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
 
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    where :math:`b^{\dagger}` and :math:`b` are the creation and annihilation
     operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
     modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
 
@@ -1159,9 +1158,9 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
 
     .. math::
 
-    D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
+        D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
 
-    Tthe three-mode integrals can be obtained in a similar way.
+    The three-mode integrals can be obtained in a similar way.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
