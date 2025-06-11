@@ -768,7 +768,7 @@ class QNode:
         # If device was updated, shots would have been updated
         # but the the `shots` arg should override if exists
         if shots_to_update:
-            updated_qn._set_shots(shots)
+            updated_qn = updated_qn.update_shots(shots)
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
@@ -788,7 +788,8 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
-        updated_qn._set_shots(shots)
+        updated_qn._shots = qml.measurements.Shots(shots)
+        updated_qn._shots_override_device = bool(updated_qn._shots != updated_qn.device.shots)
 
         return updated_qn
 

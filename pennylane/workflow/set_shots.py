@@ -1,4 +1,19 @@
-import functools
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains the set_shots decorator.
+"""
 from typing import Sequence, Tuple, Union
 
 from pennylane.measurements import Shots
@@ -60,5 +75,4 @@ def set_shots(
     # When called directly with a function/QNode
     if hasattr(qnode, "update_shots"):
         return qnode.update_shots(shots)
-    else:
-        raise ValueError("set_shots can only be applied to QNodes")
+    raise ValueError("set_shots can only be applied to QNodes")
