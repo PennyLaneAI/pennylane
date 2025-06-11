@@ -71,7 +71,7 @@ class TestIO:
             ValueError,
             match="Missing input theta. Please pass theta as " "a keyword argument to from_qasm3.",
         ):
-            QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
+            QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
 
     def test_input(self):
         ast = parse(
@@ -84,10 +84,10 @@ class TestIO:
 
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
-                ast, context={"name": "post_processing", "wire_map": None}, theta=0.1
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.1
             )
             QasmInterpreter().interpret(
-                ast, context={"name": "post_processing", "wire_map": None}, theta=0.2
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.2
             )
 
         assert q.queue == [
