@@ -115,6 +115,8 @@ class Context:
             context["scopes"] = {"subroutines": {}}
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
+        if "return" not in context:
+            context["return"] = None
         self.context = context
 
     def init_subroutine_scope(self, node: SubroutineDefinition):
@@ -405,6 +407,9 @@ class QasmInterpreter:
 
         # init the wire map
         func_context.wire_map = context.wire_map
+
+        # reset return
+        func_context.context["return"] = None
 
         # bind subroutine arguments
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
