@@ -910,7 +910,7 @@ class QNode:
         _validate_qfunc_output(self._qfunc_output, tape.measurements)
         self._tape = tape
         return tape
-    
+
     @debug_logger
     def apply_set_shots(self):
         """Apply in advance the `set_shots` transform if it is present in the transform program."""
@@ -928,7 +928,7 @@ class QNode:
                         shots_arg = container.args[1]  # Second positional arg is shots
                     else:
                         continue  # Malformed container, try next one
-                
+
                     # Update the QNode's shots setting
                     self._set_shots(shots_arg)
                     # We've found and processed the transform, no need to continue
