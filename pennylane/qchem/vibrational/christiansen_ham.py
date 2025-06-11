@@ -193,7 +193,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
 
 
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
-    r"""Return Christiansen vibrational Hamiltonian.
+    r"""Returns Christiansen vibrational Hamiltonian.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
@@ -205,9 +205,26 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         b_{k_i}^{\dagger} b_{k_j}^{\dagger} b_{l_i} b_{l_j},
 
 
-    where :math:`b^{\dagger}` and :math:`b^{\dagger}` are the creation and annihilation
+    where :math:`b^{\dagger}` and :math:`b` are the bosonic creation and annihilation
     operators, :math:`M` represents the number of normal modes and :math:`N` is the number of
-    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals.
+    modals. The coefficients :math:`C` represent the one-mode and two-mode integrals defined as
+
+    .. math::
+
+        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+
+    and
+
+    .. math::
+
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
+    represents the kinetic energy operator and :math:`V` represents the potential energy operator.
+    Similarly, the three-mode integrals can be obtained following
+    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
     The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
@@ -223,7 +240,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         b_0 = \left(\frac{X_0 + iY_0}{2}\right), \:\: \text{...,} \:\:
         b_n = \left(\frac{X_n + iY_n}{2}\right),
 
-    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+    where :math:`X` and :math:`Y` are the Pauli operators.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
