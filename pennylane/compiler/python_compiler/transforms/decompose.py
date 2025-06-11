@@ -73,7 +73,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
     # Several TODO for this pass/transform:
     #
-    # - Add support for qml.ctrl (WIP)
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
     #   both in the decomposition and in the gate set.
     # - Add support for the decomp_graph
@@ -225,10 +224,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             qml_op = self.xdsl_to_qml_op(xdsl_op)
             qml_decomp_ops = self.decompose_operation(qml_op)
 
-            print(f"xdsl_op: {xdsl_op}")
-            print(f"qml_op: {qml_op}")
-            print(f"qml_decomp_ops: {qml_decomp_ops}")
-
             for qml_decomp_op in qml_decomp_ops:
 
                 if is_adjoint := isinstance(qml_decomp_op, qml.ops.op_math.Adjoint):
@@ -265,7 +260,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                         qubit_ssa = self.wire_to_ssa_qubits[wire]
                         control_wires_xdsl.append(qubit_ssa)
 
-                    # TODO: this repetition could be avoided
+                    # TODO: there is a repetition that could be avoided
                     for value in qml_decomp_op.control_values:
                         xdsl_param = qml_to_xdsl_param(value)
                         if xdsl_param in self.params_to_ssa_params:
