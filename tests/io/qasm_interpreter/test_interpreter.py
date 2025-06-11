@@ -58,7 +58,7 @@ class TestSubroutine:
     def test_repeated_calls(self):
         # parse the QASM
         ast = parse(
-            open("repeated_calls.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -70,11 +70,11 @@ class TestSubroutine:
 
         assert q.queue == [
             RX(2 ,"q0"),
-            RY(1, "q0"),
+            RY(0.5, "q0"),
             RX(2, "q0"),
-            RY(1, "q0"),
+            RY(0.5, "q0"),
             RX(11, "q0"),
-            RY(11/2, "q0")
+            RY(0.5, "q0")
         ]
 
     def test_subroutine_not_defined(self):
