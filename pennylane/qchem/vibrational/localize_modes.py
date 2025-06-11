@@ -174,10 +174,10 @@ def _localize_modes(freqs, vecs):
 
 
 def localize_normal_modes(freqs, vecs, bins=[2600]):
-    r"""Compute spatially localized vibrational normal modes.
+    r"""Computes spatially localized vibrational normal modes.
 
-    The normal modes are localized using a localizing unitary following the procedure described in
-    `J. Chem. Phys. 141, 104105 (2014)
+    The vibrational normal modes are localized using a localizing unitary following the procedure
+    described in `J. Chem. Phys. 141, 104105 (2014)
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
     Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_. The localizing
     unitary is defined in terms of the normal and local coordinates, :math:`q` and
@@ -187,7 +187,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
 
         \tilde{q} = \sum_{j=1}^M U_{ij} q_j,
 
-    ehere :math:`M` is the number of modes. The normal modes
+    where :math:`M` is the number of modes. The normal modes
     can be separately localized, to prevent mixing between specific groups of normal modes, by
     defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
     localize modes that have frequencies above and below :math:`2600` reciprocal centimetre.
@@ -219,7 +219,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     ...                      [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
     >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
     >>> freqs_loc
-    array([1332.62008773, 2296.73455892, 2296.7346082 ])
+    array([1332.62013257, 2296.73453455, 2296.73460655])
 
     """
     if not bins:
