@@ -707,6 +707,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.FlipSign` wires attribute is now returning the correct `Wires` object.
+  [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
+
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
 
