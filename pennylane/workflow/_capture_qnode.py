@@ -110,10 +110,12 @@ features is non-exhaustive.
 import logging
 from functools import partial
 from numbers import Number
+from typing import Sequence, Union
 from warnings import warn
 
 import jax
 from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
@@ -179,8 +181,9 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
     for s in shots:
         for m in measurements:
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype)))
-
+            t = jax.core.ShapedArray if isinstance(s, int) or s is None else jax.core.DShapedArray
+            dtype = jax.numpy.dtype(dtype_map.get(dtype, dtype))
+            shapes.append(t(batch_shape + shape, dtype))
     return shapes
 
 
@@ -192,8 +195,13 @@ qnode_prim.prim_type = "higher_order"
 # pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
-    if shots != device.shots:
+def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
+
+    if shots_len == 0:
+        shots = None
+    else:
+        shots, args = args[:shots_len], args[shots_len:]
+    if qml.measurements.Shots(shots) != device.shots:
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
@@ -251,10 +259,48 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
     return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
 
 
+def custom_staging_rule(
+    jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+    """
+    Add new jaxpr equation to the jaxpr_trace and return new tracers.
+    """
+
+    if not jax.config.jax_dynamic_shapes:
+        # fallback to normal behavior
+        return jaxpr_trace.default_process_primitive(qnode_prim, tracers, params)
+
+    shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
+    device = params["device"]
+    invars = [jaxpr_trace.getvar(x) for x in tracers]
+    shots_vars = invars[:shots_len]
+
+    new_shapes = _get_shapes_for(
+        *jaxpr.outvars, shots=shots_vars, num_device_wires=len(device.wires)
+    )
+    out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
+
+    eqn = jax.core.new_jaxpr_eqn(
+        invars,
+        [jaxpr_trace.makevar(o) for o in out_tracers],
+        qnode_prim,
+        params,
+        jax.core.no_effects,
+    )
+
+    jaxpr_trace.frame.add_eqn(eqn)
+    return out_tracers
+
+
+pe.custom_staging_rules[qnode_prim] = custom_staging_rule
+
+
 # pylint: disable=unused-argument
 @debug_logger
 @qnode_prim.def_abstract_eval
-def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
+def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
+
+    shots, args = args[:shots_len], args[shots_len:]
 
     mps = qfunc_jaxpr.outvars
 
@@ -262,9 +308,12 @@ def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batc
         _get_batch_shape(args[n_consts:], batch_dims[n_consts:]) if batch_dims is not None else ()
     )
 
-    return _get_shapes_for(
+    shapes = _get_shapes_for(
         *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
     )
+    if shots_len == 0:
+        return shapes
+    return shapes * shots_len
 
 
 # pylint: disable=too-many-arguments
@@ -273,10 +322,10 @@ def _qnode_batching_rule(
     batch_dims,
     *,
     qnode,
-    shots,
     device,
     execution_config,
     qfunc_jaxpr,
+    shots_len,
     n_consts,
 ):
     """
@@ -314,7 +363,7 @@ def _qnode_batching_rule(
 
     result = qnode_prim.bind(
         *batched_args,
-        shots=shots,
+        shots_len=shots_len,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
@@ -545,15 +594,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     """
 
-    if "shots" in kwargs:
-        shots = qml.measurements.Shots(kwargs.pop("shots"))
-    else:
-        shots = qnode.device.shots
-
-    if shots.has_partitioned_shots:
-        # Questions over the pytrees and the nested result object shape
-        raise NotImplementedError("shot vectors are not yet supported in plxpr.")
-
     if not qnode.device.wires:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."
@@ -585,11 +625,14 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
         qnode.capture_cache[cache_key] = (qfunc_jaxpr, config, out_tree)
 
+    flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
+
     res = qnode_prim.bind(
+        *flat_shots,
         *qfunc_jaxpr.consts,
         *abstract_shapes,
         *flat_dynamic_args,
-        shots=shots,
+        shots_len=len(flat_shots),
         qnode=qnode,
         device=qnode.device,
         execution_config=config,
@@ -597,4 +640,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         n_consts=len(qfunc_jaxpr.consts),
     )
 
+    if len(flat_shots) > 1:
+        shots_struct = jax.tree_util.tree_structure(flat_shots)
+        out_tree = shots_struct.compose(out_tree)
     return jax.tree_util.tree_unflatten(out_tree, res)
