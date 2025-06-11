@@ -146,7 +146,6 @@ class TestAdjointQfunc:
         jaxpr = jax.make_jaxpr(workflow)(0.5)
 
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[0].params["n_consts"] == 1
         assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -170,9 +169,8 @@ class TestAdjointQfunc:
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
         assert grad_eqn.primitive == grad_prim
-        assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
+        assert set(grad_eqn.params.keys()) == {"argnum", "jaxpr", "n_consts", "method", "h"}
         assert grad_eqn.params["argnum"] == [0]
-        assert grad_eqn.params["n_consts"] == 0
         assert grad_eqn.params["method"] is None
         assert grad_eqn.params["h"] is None
         assert len(grad_eqn.params["jaxpr"].eqns) == 1
@@ -296,7 +294,6 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].params["control_values"] == [True]
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
-        assert plxpr.eqns[0].params["n_consts"] == 0
 
     def test_dynamic_control_wires(self):
         """Test that control wires can be dynamic."""
@@ -366,7 +363,6 @@ class TestCtrlQfunc:
         plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
 
         # First equation of plxpr is the multiplication of x by 2
-        assert plxpr.eqns[1].params["n_consts"] == 1  # w1 is a const for the outer `ctrl`
         assert (
             plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         )  # first input is first control wire, const
@@ -409,7 +405,6 @@ class TestCtrlQfunc:
 
         eqn = jaxpr.eqns[0]
         assert eqn.params["control_values"] == [True]
-        assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
         assert eqn.params["work_wires"] is None
 

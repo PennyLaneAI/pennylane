@@ -101,13 +101,13 @@ def test_batch_of_identical_tapes(cache):
     assert batch_fns((result,)) == (result, result, result)
 
 
-def test_finite_shots_with_persistent_cache_warning(cache):
+def test_finite_shots_with_persistent_cache_warning():
     """Tests that a UserWarning is emitted if a cache hit occurs for a tape with
-    finite shots that uses a persistent cache.
+    finite shots that uses a cache.
     """
     tape = QuantumScript([], [qml.expval(qml.Z(0))], shots=1)
 
-    batch_tapes, batch_fns = _cache_transform([tape, tape], cache=cache)
+    batch_tapes, batch_fns = _cache_transform([tape, tape], cache={})
     assert len(batch_tapes) == 1
 
     with pytest.warns(UserWarning, match=r"Cached execution with finite shots detected!"):
