@@ -605,25 +605,24 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
-    r"""Return Taylor bosonic vibrational Hamiltonian.
+    r"""Returns Taylor bosonic vibrational Hamiltonian.
 
 
     The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
-    components :math:`V` as:
+    :math:`V` components  as:
 
     .. math::
 
-        H = T + V,
+        H = T + V.
 
-    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. The
-    kinetic term is defined in terms of momentum :math:`p` operator as
+    The kinetic term is defined in terms of momentum :math:`p` operator as
 
     .. math::
 
         T = \sum_{i\geq j} K_{ij} p_i  p_j,
 
-    where :math:`K` is computed from the vibrational frequencies, :math:`\omega` and mode
-    localization unitary matrix, :math:`U` as:
+    where the :math:`K` matrix is defined in terms of vibrational frequencies, :math:`\omega`, and
+    mode localization unitary matrix, :math:`U`, as:
 
     .. math::
 
@@ -645,7 +644,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
 		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
-		\nonumber \vdots \, .
+		\nonumber \vdots
 
     These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
     ``min_deg`` and ``max_deg`` to get :math:`n`-mode Taylor coefficients. For instance, the
@@ -656,7 +655,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
         V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ...
 
-    Similarly, the two-mode and three-mode Taylor coeffiicents are computed if the two-mode and
+    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
     three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
     :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
@@ -677,14 +676,14 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
             ``(m, l)`` where ``m = len(freqs)`` and ``l > 0``
         two_mode (array(float)): two-mode coefficients of the Taylor Hamiltonian with shape
             ``(m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
-        three_mode (array(float)): three_mode coefficients of the Taylor Hamiltonian with shape
+        three_mode (array(float)): three-mode coefficients of the Taylor Hamiltonian with shape
             ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (array(array(float))): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
 
     Returns:
-        pennylane.bose.BoseSentence: Taylor bosonic hamiltonian
+        pennylane.bose.BoseSentence: Taylor bosonic Hamiltonian
 
     **Example**
 
