@@ -32,9 +32,8 @@ class FlipSign(Operation):
     where n is the basis state to flip and m is the input.
 
     Args:
-        n (array[int] or int): binary array or integer value representing the state on which to
-            flip the sign
-        wires (array[int]): wires that the template acts on
+        n (array[int] or int): binary array or integer value representing the state on which to flip the sign
+        wires (array[int] or int): wires that the template acts on
 
 
     **Example**
@@ -45,15 +44,14 @@ class FlipSign(Operation):
 
     .. code-block:: python
 
-        basis_state = [1, 0]
-
-        dev = qml.device("default.qubit", wires=2)
+        num_wires = 2
+        dev = qml.device("default.qubit", wires=num_wires)
 
         @qml.qnode(dev)
         def circuit():
-            for wire in list(range(2)):
-                qml.Hadamard(wires=wire)
-            qml.FlipSign(basis_state, wires=list(range(2)))
+            for wire in range(num_wires):
+                qml.Hadamard(wire)
+            qml.FlipSign([1, 0], wires=range(num_wires))
             return qml.state()
 
     The result for the above circuit is:
@@ -61,7 +59,7 @@ class FlipSign(Operation):
     .. code-block:: python
 
         >>> circuit()
-        tensor([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j], requires_grad=True)
+        array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
     """
 
