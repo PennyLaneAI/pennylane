@@ -242,6 +242,9 @@
   * :class:`~.ControlledQubitUnitary`
     [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
 
+  * :class:`~.DiagonalQubitUnitary`
+    [(#7625)](https://github.com/PennyLaneAI/pennylane/pull/7625)
+
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
 
