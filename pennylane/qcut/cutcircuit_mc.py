@@ -23,12 +23,13 @@ from typing import Optional, Union
 import numpy as np
 from networkx import MultiDiGraph
 
-import pennylane as qml
-from pennylane.measurements import SampleMP
+from pennylane import ops
+from pennylane.measurements import SampleMP, Shots, sample
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
@@ -49,6 +50,7 @@ from .utils import (
 )
 
 
+# pylint: disable=too-many-positional-arguments
 def _cut_circuit_mc_expand(
     tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
@@ -68,6 +70,7 @@ def _cut_circuit_mc_expand(
     return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
 
 
+# pylint: disable=too-many-positional-arguments
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
     tape: QuantumScript,
@@ -127,8 +130,10 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=1000)
         @qml.cut_circuit_mc
         @qml.qnode(dev)
         def circuit(x):
@@ -298,8 +303,9 @@ def cut_circuit_mc(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=1)
+        >>> dev = qml.device("default.qubit", wires=2)
         >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
+        >>> fragment_tapes = qml.set_shots(fragment_tapes, shots=1)
 
         Note that the number of shots on the device is set to :math:`1` here since we
         will only require one execution per fragment configuration. In the
@@ -394,11 +400,12 @@ def cut_circuit_mc(
         .. code-block::
 
             from functools import partial
-            dev = qml.device("default.qubit", wires=2, shots=10000)
+            dev = qml.device("default.qubit", wires=2)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
+            @partial(qml.set_shots, shots=10000)
             @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
@@ -460,7 +467,7 @@ def cut_circuit_mc(
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
     fragment_tapes = [
-        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+        ops.functions.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
     ]
 
     seed = kwargs.get("seed", None)
@@ -495,7 +502,7 @@ def cut_circuit_mc(
     return tapes, processing_fn
 
 
-class CustomQNode(qml.QNode):
+class CustomQNode(QNode):
     """
     A subclass with a custom __call__ method. The custom QNode transform returns an instance
     of this class.
@@ -510,7 +517,7 @@ class CustomQNode(qml.QNode):
                 "A shots value must be provided in the device "
                 "or when calling the QNode to be cut"
             )
-        if isinstance(shots, qml.measurements.Shots):
+        if isinstance(shots, Shots):
             shots = shots.total_shots
 
         # find the qcut transform inside the transform program and set the shots argument
@@ -566,19 +573,19 @@ MC_STATES = [
 
 
 def _identity(wire):
-    return qml.sample(qml.Identity(wires=wire))
+    return sample(ops.Identity(wires=wire))
 
 
 def _pauliX(wire):
-    return qml.sample(qml.X(wire))
+    return sample(ops.X(wire))
 
 
 def _pauliY(wire):
-    return qml.sample(qml.Y(wire))
+    return sample(ops.Y(wire))
 
 
 def _pauliZ(wire):
-    return qml.sample(qml.Z(wire))
+    return sample(ops.Z(wire))
 
 
 MC_MEASUREMENTS = [

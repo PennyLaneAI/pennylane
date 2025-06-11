@@ -28,10 +28,10 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
-from .graph_state_preparation import GraphStatePrep
+from .graph_state_preparation import make_graph_state
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
-from .utils import QubitMgr
+from .utils import QubitMgr, parity
 
 mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
 
@@ -59,7 +59,7 @@ def convert_to_mbqc_gateset(tape):
 @transform
 def convert_to_mbqc_formalism(tape):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
-    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
+    Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
     before applying the transform.
 
@@ -75,6 +75,7 @@ def convert_to_mbqc_formalism(tape):
     mp = tape.measurements[0]
     meas_wires = mp.wires if mp.wires else tape.wires
 
+    # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
@@ -91,7 +92,9 @@ def convert_to_mbqc_formalism(tape):
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
-                if isinstance(op, tuple([X, Y, Z, Identity])):
+                # pylint: disable=isinstance-second-argument-not-valid-type
+                if isinstance(op, (X, Y, Z, Identity)):
+                    # else branch because Identity may not have wires
                     wire = wire_map[op.wires[0]] if op.wires else ()
                     op.__class__(wire)
                 else:
@@ -113,13 +116,13 @@ def convert_to_mbqc_formalism(tape):
 def queue_single_qubit_gate(q_mgr, op, in_wire):
     """Queue the resource state preparation, measurements and byproducts
     to execute the operation in the MBQC formalism. This implementation
-    follows the procedures defined in Raussendorf et. al. 2003,
-    https://doi.org/10.1103/PhysRevA.68.022312"""
+    follows the procedures defined in Raussendorf et al. 2003,
+    https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
 
     graph_wires = q_mgr.acquire_qubits(4)
     wires = [in_wire] + graph_wires
 
-    GraphStatePrep(nx.grid_graph((4,)), wires=graph_wires)
+    make_graph_state(nx.grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
     measurements = queue_measurements(op, wires)
@@ -153,7 +156,7 @@ def _rot_measurements(op: RotXZX, wires):
         partial(measure_arbitrary_basis, angle=-theta),
     )(plane="XY", wires=wires[2], reset=True)
     m4 = cond_measure(
-        (m1 + m3) % 2,
+        m1 ^ m3,
         partial(measure_arbitrary_basis, angle=omega),
         partial(measure_arbitrary_basis, angle=-omega),
     )(plane="XY", wires=wires[3], reset=True)
@@ -201,61 +204,56 @@ def _s_measurements(op: S, wires):
     return [m1, m2, m3, m4]
 
 
-@singledispatch
 def queue_corrections(op, measurements):
     """Queue the byproduct corrections associated with the operation in the
     MBQC formalism, based on the operation and the measurement results"""
+    x_corr, z_corr = _single_xz_corrections(op, *measurements)
+
+    def corrections_func(wire):
+        cond(z_corr, Z)(wire)
+        cond(x_corr, X)(wire)
+
+    return corrections_func
+
+
+@singledispatch
+def _single_xz_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
-@queue_corrections.register(RotXZX)
-@queue_corrections.register(RZ)
-def _rotation_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the rotation
-    gate RotXZX in the MBQC formalism, based on the operation and the
-    measurement results. Note that these corrections also apply in the
+@_single_xz_corrections.register(RotXZX)
+@_single_xz_corrections.register(RZ)
+def _rotation_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively. Note that these corrections also apply in the
     more specific rotation case, RZ = RotXZX(0, Z, 0)"""
-
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond((m1 + m3) % 2, Z)(wire)
-        cond((m2 + m4) % 2, X)(wire)
-
-    return correction_func
+    return m2 ^ m4, m1 ^ m3
 
 
-@queue_corrections.register(H)
-def _hadamard_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the Hadamard gate in
-    the MBQC formalism, based on the operation and the measurement results"""
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond((m2 + m3) % 2, Z)(wire)
-        cond((m1 + m3 + m4) % 2, X)(wire)
-
-    return correction_func
+@_single_xz_corrections.register(H)
+def _hadamard_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
+    return parity(m1, m3, m4), m2 ^ m3
 
 
-@queue_corrections.register(S)
-def _s_corrections(op, measurements):
-    """Queue the byproduct corrections associated with the S gate in
-    the MBQC formalism, based on the operation and the measurement results"""
-
-    m1, m2, m3, m4 = measurements
-
-    def correction_func(wire):
-        cond((m1 + m2 + m3 + 1) % 2, Z)(wire)
-        cond((m2 + m4) % 2, X)(wire)
-
-    return correction_func
+@_single_xz_corrections.register(S)
+def _s_corrections(op, m1, m2, m3, m4):
+    """Get the xz corrections based on the measurements. Returns a tuple with
+    two boolean elements, indicating the need for PauliX and PauliZ
+    corrections respectively."""
+    return m2 ^ m4, parity(m1, m2, m3, 1)
 
 
 def queue_cnot(q_mgr, ctrl_idx, target_idx):
     """Queue the resource state preparation, measurements and byproducts to execute
     the operation in the MBQC formalism. This is the 15-qubit procedure from
-    Raussendorf et. al. 2003, https://doi.org/10.1103/PhysRevA.68.022312"""
+    Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312, Fig. 2"""
 
     graph_wires = q_mgr.acquire_qubits(13)
 
@@ -264,7 +262,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     output_target_idx = graph_wires[12]
 
     # Prepare the state
-    GraphStatePrep(_generate_cnot_graph(), wires=graph_wires)
+    make_graph_state(_generate_cnot_graph(), wires=graph_wires)
 
     # entangle input and graph using first qubit
     CZ([ctrl_idx, graph_wires[0]])
@@ -282,8 +280,9 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
 
 def cnot_measurements(wires):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
-    Numbering convention follows the procedure in Raussendorf et. al. 2003,
-    https://doi.org/10.1103/PhysRevA.68.022312"""
+    Numbering convention follows the procedure in Raussendorf et al. 2003,
+    https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
+
     ctrl_idx, target_idx, graph_wires = wires
 
     m1 = measure_x(ctrl_idx, reset=True)
@@ -309,30 +308,43 @@ def cnot_corrections(measurements):
     """Queue the byproduct corrections associated with the CNOT gate in
     the MBQC formalism, based on measurement results"""
 
-    # Numbering convention follows the procedure in Raussendorf et. al. 2003,
-    # https://doi.org/10.1103/PhysRevA.68.022312
-    m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
-
-    # corrections on control
-    x_cor_ctrl = m2 + m3 + m5 + m6
-    z_cor_ctrl = m1 + m3 + m4 + m5 + m8 + m9 + m11 + 1
-
-    # corrections on target
-    x_cor_tgt = m2 + m3 + m8 + m10 + m12 + m14
-    z_cor_tgt = m9 + m11 + m13
+    (x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt) = _cnot_xz_corrections(measurements)
 
     def correction_func(ctrl_wire, target_wire):
-        cond(z_cor_ctrl % 2, Z)(ctrl_wire)
-        cond(x_cor_ctrl % 2, X)(ctrl_wire)
-        cond(z_cor_tgt % 2, Z)(target_wire)
-        cond(x_cor_tgt % 2, X)(target_wire)
+        cond(z_cor_ctrl, Z)(ctrl_wire)
+        cond(x_cor_ctrl, X)(ctrl_wire)
+        cond(z_cor_tgt, Z)(target_wire)
+        cond(x_cor_tgt, X)(target_wire)
 
     return correction_func
 
 
+def _cnot_xz_corrections(measurements):
+    """Get the xz corrections for the control and target wire based on the measurements.
+    Returns a list of two tuples indicating corrections for the control and target wires
+    respectively. For each tuple, the first element is a boolean indicating whether an
+    PauliX correction is needed, and the second element indicates whether a PauliZ
+    correction is needed."""
+
+    # Numbering convention follows the procedure in Raussendorf et al. 2003,
+    # https://doi.org/10.1103/PhysRevA.68.022312, Fig 2
+    m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
+
+    # corrections on control
+    x_cor_ctrl = parity(m2, m3, m5, m6)
+    z_cor_ctrl = parity(m1, m3, m4, m5, m8, m9, m11, 1)
+
+    # corrections on target
+    x_cor_tgt = parity(m2, m3, m8, m10, m12, m14)
+    z_cor_tgt = parity(m9, m11, m13)
+
+    return [(x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt)]
+
+
 def _generate_cnot_graph():
     """Generate a graph for creating the resource state for a
-    CNOT gate"""
+    CNOT gate. Raussendorf et al. 2003, Fig. 2a.
+    https://doi.org/10.1103/PhysRevA.68.022312"""
     wires = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     g = nx.Graph()
     g.add_nodes_from(wires)

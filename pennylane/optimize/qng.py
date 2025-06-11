@@ -15,21 +15,21 @@
 import numbers
 from collections.abc import Iterable
 
-import pennylane as qml
-
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
+from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.gradients.metric_tensor import metric_tensor
+from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .gradient_descent import GradientDescentOptimizer
 
 
 def _reshape_and_regularize(tensor, lam):
-    shape = qml.math.shape(tensor)
-    size = 1 if shape == () else qml.math.prod(shape[: len(shape) // 2])
-    tensor = qml.math.reshape(tensor, (size, size))
+    shape = math.shape(tensor)
+    size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
+    tensor = math.reshape(tensor, (size, size))
     # Add regularization
-    tensor += lam * qml.math.eye(size, like=tensor)
+    tensor += lam * math.eye(size, like=tensor)
     return tensor
 
 
@@ -198,7 +198,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
+        if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
                 "to be automatically computed. Otherwise, metric_tensor_fn must be explicitly "
@@ -207,7 +207,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
+                metric_tensor_fn = metric_tensor(qnode, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
             if isinstance(mt, tuple):
@@ -304,7 +304,7 @@ def _flatten_np(x):
         yield from _flatten_np(
             x.flat
         )  # should we allow object arrays? or just "yield from x.flat"?
-    elif isinstance(x, qml.wires.Wires):
+    elif isinstance(x, Wires):
         # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
         # Since Wires are always flat, just yield.
         yield from x

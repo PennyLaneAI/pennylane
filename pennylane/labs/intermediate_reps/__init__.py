@@ -23,8 +23,13 @@ Intermediate representations (IRs) are alternative representations of quantum ci
     :toctree: api
 
     ~parity_matrix
-
+    ~phase_polynomial
+    ~postorder_traverse
+    ~preorder_traverse
+    ~rowcol
 
 """
 
 from .parity_matrix import parity_matrix
+from .phase_polynomial import phase_polynomial
+from .rowcol import postorder_traverse, preorder_traverse, rowcol

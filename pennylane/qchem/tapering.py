@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-# pylint: disable=unnecessary-lambda
+
 
 import functools
 import itertools
@@ -23,65 +23,13 @@ import numpy as np
 import scipy
 
 import pennylane as qml
+from pennylane.math.utils import binary_finite_reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
 # Global Variables
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
-
-
-def _reduced_row_echelon(binary_matrix):
-    r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
-
-    Args:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian
-    Returns:
-        array[int]: reduced row-echelon form of the given `binary_matrix`
-
-    **Example**
-
-    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-    ...                           [1, 0, 1, 0, 0, 0, 1, 0],
-    ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-    >>> _reduced_row_echelon(binary_matrix)
-    array([[1, 0, 0, 0, 0, 1, 0, 0],
-           [0, 0, 1, 0, 0, 1, 1, 0],
-           [0, 0, 0, 1, 1, 0, 0, 1]])
-    """
-    rref_mat = binary_matrix.copy()
-    shape = rref_mat.shape
-    icol = 0
-
-    for irow in range(shape[0]):
-        while icol < shape[1] and not rref_mat[irow][icol]:
-            # get the nonzero indices in the remainder of column icol
-            non_zero_idx = rref_mat[irow:, icol].nonzero()[0]
-
-            if len(non_zero_idx) == 0:  # if remainder of column icol is all zero
-                icol += 1
-            else:
-                # find value and index of largest element in remainder of column icol
-                krow = irow + non_zero_idx[0]
-
-                # swap rows krow and irow
-                rref_mat[irow, icol:], rref_mat[krow, icol:] = (
-                    rref_mat[krow, icol:].copy(),
-                    rref_mat[irow, icol:].copy(),
-                )
-        if icol < shape[1] and rref_mat[irow][icol]:
-            # store remainder right hand side columns of the pivot row irow
-            rpvt_cols = rref_mat[irow, icol:].copy()
-
-            # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
-            currcol = rref_mat[:, icol].copy()
-            currcol[irow] = 0
-
-            # XOR the right hand side of the pivot row irow with all of the other rows
-            rref_mat[:, icol:] ^= np.outer(currcol, rpvt_cols)
-            icol += 1
-
-    return rref_mat.astype(int)
 
 
 def _kernel(binary_matrix):
@@ -151,7 +99,7 @@ def symmetry_generators(h):
     binary_matrix = _binary_matrix_from_pws(list(ps), num_qubits)
 
     # Get reduced row echelon form of binary matrix
-    rref_binary_matrix = _reduced_row_echelon(binary_matrix)
+    rref_binary_matrix = binary_finite_reduced_row_echelon(binary_matrix)
     rref_binary_matrix_red = rref_binary_matrix[
         ~np.all(rref_binary_matrix == 0, axis=1)
     ]  # remove all-zero rows
@@ -175,7 +123,7 @@ def symmetry_generators(h):
     return generators
 
 
-def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
+def paulix_ops(generators, num_qubits):
     r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry :math:`\tau_j`,
     such that it anti-commutes with :math:`\tau_j` and commutes with all others symmetries :math:`\tau_{k\neq j}`.
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
@@ -607,8 +555,8 @@ def _build_generator(operation, wire_order, op_gen=None):
     return op_gen
 
 
-# pylint: disable=too-many-branches, too-many-arguments, too-many-positional-arguments
-# pylint: disable=inconsistent-return-statements, no-member
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=inconsistent-return-statements
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
 ):

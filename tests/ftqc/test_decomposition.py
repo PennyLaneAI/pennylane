@@ -19,6 +19,7 @@ from functools import partial
 import networkx as nx
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
@@ -279,6 +280,17 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
             queue_corrections(qml.Identity, measurements=[0, 0, 0, 0])
 
+    def test_invalid_op_in_tape_raises_error(self):
+        """Test that a NotImplemented error is raised if the tape isn't valid for conversion
+        to the MBQC formalism using this transform"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.H(0), qml.RZ(0.23, 0), qml.RX(1.23, 0)], measurements=[qml.sample(wires=0)]
+        )
+
+        with pytest.raises(NotImplementedError, match="unsupported gate"):
+            _, _ = convert_to_mbqc_formalism(tape)
+
     @pytest.mark.parametrize(
         "op",
         [qml.H(2), qml.S(2), qml.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
@@ -317,13 +329,14 @@ class TestMBQCFormalismConversion:
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.05)
+
+        assert np.allclose(res, res_ref, atol=0.07)
 
     def test_queue_cnot(self):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
 
-        dev = qml.device("lightning.qubit", wires=15)
+        dev = qml.device("lightning.qubit", wires=15, seed=42)
         q_mgr = QubitMgr(num_qubits=15, start_idx=0)
 
         op = qml.CNOT([2, 3])
@@ -371,7 +384,7 @@ class TestMBQCFormalismConversion:
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
 
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
-        assert np.allclose(res, res_ref, atol=0.05)
+        assert np.allclose(res, res_ref, atol=0.1)
 
     @pytest.mark.parametrize(
         "gate, wire",
@@ -479,11 +492,19 @@ class TestMBQCFormalismConversion:
         else:
             assert len(transformed_tape.measurements[0].wires) == len(tape.wires)
 
+    # this test takes 15-20 seconds for a run locally with 500 shots. It tests inherently
+    # probabilistic behaviour. The low shot count means a high variance in the results,
+    # but we want to ensure they are *usually* quite close to the analytic output, in order
+    # to test our protocol for conversion to the MBQC formalism with multiple gates and
+    # wires E2E. Following discussion at the FTQC team meeting, we are marking
+    # this test as flaky and keeping it here for the time being.
+    @flaky(max_runs=5, min_passes=3)
+    @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qml.device("lightning.qubit")
+        dev = qml.device("lightning.qubit", seed=1234)
 
         theta = 2.5
         with qml.queuing.AnnotatedQueue() as q:

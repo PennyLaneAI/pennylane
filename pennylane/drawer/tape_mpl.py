@@ -18,7 +18,7 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-# pylint: disable=no-member
+
 from __future__ import annotations
 
 from collections import namedtuple
@@ -39,7 +39,7 @@ from .utils import (
     unwrap_controls,
 )
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression)
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=ungrouped-imports
 if TYPE_CHECKING:
     from pennylane.operation import Operator
@@ -71,13 +71,15 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
-    op_control_wires, control_values = unwrap_controls(op)
-
-    target_wires = (
-        [w for w in op.wires if w not in op_control_wires]
-        if len(op.wires) != 0
-        else list(range(drawer.n_wires))
-    )
+    op_control_wires, control_values, base = unwrap_controls(op)
+    is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
+    if len(op.wires) == 0 or is_global_op:
+        op_wires = list(range(drawer.n_wires))
+    else:
+        op_wires = op.wires
+    target_wires = [w for w in op_wires if w not in op_control_wires]
+    if is_global_op and len(target_wires) == 0:
+        raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
 
     if control_values is None:
         control_values = [True for _ in op_control_wires]

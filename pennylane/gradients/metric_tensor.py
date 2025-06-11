@@ -21,16 +21,21 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops as qops
+from pennylane import math
 from pennylane.circuit_graph import LayerData
+from pennylane.measurements import expval, probs
+from pennylane.ops.functions import generator, matrix
 from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms import expand_multipar, expand_nonunitary_gen
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.wires import WireError, Wires
 
 
 def _mt_cjac_tdot(mt, c):
-    return qml.math.tensordot(c, qml.math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
+    return math.tensordot(c, math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
 
 
 def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
@@ -56,16 +61,17 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
         metric_tensors = tuple(_mt_cjac_tdot(mt, c) for c in cjac if c is not None)
         return metric_tensors[0] if len(metric_tensors) == 1 else metric_tensors
 
-    if not qml.math.is_abstract(cjac):
+    if not math.is_abstract(cjac):
         is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
-        if is_square and qml.math.allclose(cjac, qml.math.eye(cjac.shape[0])):
+        if is_square and math.allclose(cjac, math.eye(cjac.shape[0])):
             # Classical Jacobian is the identity. No classical processing in the QNode
             return mt
 
     return _mt_cjac_tdot(mt, cjac)
 
 
+# pylint: disable=too-many-positional-arguments
 def _expand_metric_tensor(
     tape: QuantumScript,
     argnum=None,
@@ -73,15 +79,13 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[
-    QuantumScriptBatch, PostprocessingFn
-]:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
-        return [qml.transforms.expand_nonunitary_gen(tape)], lambda x: x[0]
-    return [qml.transforms.expand_multipar(tape)], lambda x: x[0]
+        return [expand_nonunitary_gen(tape)], lambda x: x[0]
+    return [expand_multipar(tape)], lambda x: x[0]
 
 
 @partial(
@@ -185,6 +189,34 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
         If the given or inferred ``aux_wire`` does not exist on the device,
         a warning is raised and the block-diagonal approximation is computed instead.
         It is significantly cheaper in this case to explicitly set ``approx="block-diag"`` .
+
+    .. note::
+
+        When used with Catalyst, the classical component of the circuit is not included.
+        This matches the results of setting ``hybrid=False``.
+
+        For example,
+
+        >>> from jax import numpy as jnp
+        >>> @qml.qnode(qml.device('lightning.qubit', wires=4))
+        ... def c(x, y):
+        ...     qml.RX(2*x, 0)
+        ...     qml.RY(y, 0)
+        ...     return qml.expval(qml.Z(0))
+        ...
+        >>> qml.qjit(qml.metric_tensor(c))(jnp.array(0.5), jnp.array(0.6))
+        Array([[0.25      , 0.        ],
+                [0.        , 0.07298165]], dtype=float64)
+        >>> qml.metric_tensor(c, argnums=(0,1))(jnp.array(0.5), jnp.array(0.6))
+        (Array(1., dtype=float64), Array(0.07298165, dtype=float64))
+        >>> qml.metric_tensor(c, hybrid=False)(qml.numpy.array(0.5), qml.numpy.array(0.6))
+        array([[0.25      , 0.        ],
+                [0.        , 0.07298165]])
+
+        Here you can see that the ``qjit`` and ``hybrid=False`` options did not postprocess
+        the metric tensor to match the shape of the arguments, and they do not include the factor
+        of ``4`` from the derivative of ``2*x``.
+
 
     The flag ``allow_nonunitary`` should be set to ``True`` whenever the device with
     which the metric tensor is computed supports non-unitary operations.
@@ -457,7 +489,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
         for p, op in zip(param_idx, curr_ops):
             layers_ids.append(i)
             if p in argnum:
-                obs, s = qml.generator(op)
+                obs, s = generator(op)
                 layer_obs.append(obs)
                 layer_coeffs.append(s)
                 obs_ids.append(j)
@@ -479,10 +511,10 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
             if param_in_argnum:
                 queue.extend(o.diagonalizing_gates())
 
-        layer_tape = qml.tape.QuantumScript(queue, [qml.probs(wires=tape.wires)], shots=tape.shots)
+        layer_tape = QuantumScript(queue, [probs(wires=tape.wires)], shots=tape.shots)
         metric_tensor_tapes.append(layer_tape)
 
-    def processing_fn(probs):
+    def processing_fn(probabilities):
         gs = []
         probs_idx = 0
 
@@ -490,29 +522,27 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
             if not any(params_in_argnum):
                 # there is no tape and no probs associated to this layer
                 dim = len(params_in_argnum)
-                gs.append(qml.math.zeros((dim, dim)))
+                gs.append(math.zeros((dim, dim)))
                 continue
 
             coeffs = coeffs_list[probs_idx]
             obs = obs_list[probs_idx]
-            p = probs[probs_idx]
+            p = probabilities[probs_idx]
 
-            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), p)
-            scale = qml.math.cast_like(scale, p)
-            g = scale * qml.math.cov_matrix(p, obs, wires=tape.wires, diag_approx=diag_approx)
+            scale = math.convert_like(math.outer(coeffs, coeffs), p)
+            scale = math.cast_like(scale, p)
+            g = scale * math.cov_matrix(p, obs, wires=tape.wires, diag_approx=diag_approx)
             for i, in_argnum in enumerate(params_in_argnum):
                 # fill in rows and columns of zeros where a parameter was not in argnum
                 if not in_argnum:
                     dim = g.shape[0]
-                    g = qml.math.concatenate((g[:i], qml.math.zeros((1, dim)), g[i:]))
-                    g = qml.math.concatenate(
-                        (g[:, :i], qml.math.zeros((dim + 1, 1)), g[:, i:]), axis=1
-                    )
+                    g = math.concatenate((g[:i], math.zeros((1, dim)), g[i:]))
+                    g = math.concatenate((g[:, :i], math.zeros((dim + 1, 1)), g[:, i:]), axis=1)
             gs.append(g)
             probs_idx += 1
 
         # create the block diagonal metric tensor
-        return qml.math.block_diag(gs)
+        return math.block_diag(gs)
 
     return (
         metric_tensor_tapes,
@@ -549,10 +579,10 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     before, leading to a ``ValueError``.
     """
     op_to_cgen = {
-        qml.RX: qml.CNOT,
-        qml.RY: qml.CY,
-        qml.RZ: qml.CZ,
-        qml.PhaseShift: qml.CZ,  # PhaseShift is the same as RZ up to a global phase
+        qops.RX: qops.CNOT,
+        qops.RY: qops.CY,
+        qops.RZ: qops.CZ,
+        qops.PhaseShift: qops.CZ,  # PhaseShift is the same as RZ up to a global phase
     }
 
     op = op.obj
@@ -562,9 +592,9 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            mat = qml.matrix(qml.generator(op)[0])
+            mat = matrix(generator(op)[0])
             wires = [aux_wire, *op.wires]
-            return qml.ControlledQubitUnitary(mat, wires=wires)
+            return qops.ControlledQubitUnitary(mat, wires=wires)
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
@@ -610,13 +640,13 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
             gen_op_j = _get_gen_op(WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
 
             ops = [
-                qml.Hadamard(wires=aux_wire),
+                qops.Hadamard(wires=aux_wire),
                 *layer_i.pre_ops,
                 gen_op_i,
                 *ops_between_cgens,
                 gen_op_j,
             ]
-            new_tape = qml.tape.QuantumScript(ops, [qml.expval(qml.X(aux_wire))], shots=shots)
+            new_tape = QuantumScript(ops, [expval(qops.X(aux_wire))], shots=shots)
 
             tapes.append(new_tape)
             # Memorize to which metric entry this tape belongs
@@ -711,8 +741,8 @@ def _metric_tensor_hadamard(
     blocks = []
     for in_argnum in in_argnum_list:
         d = len(in_argnum)
-        blocks.append(qml.math.ones((d, d)))
-    mask = 1 - qml.math.block_diag(blocks)
+        blocks.append(math.ones((d, d)))
+    mask = 1 - math.block_diag(blocks)
 
     # Required for slicing in processing_fn
     num_diag_tapes = len(diag_tapes)
@@ -726,49 +756,52 @@ def _metric_tensor_hadamard(
         diag_mt = diag_proc_fn(diag_res)
 
         # the off diag tapes only have a single expval measurement
-        off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
+        off_diag_res = [math.expand_dims(res, 0) for res in off_diag_res]
 
         # Prepare the mask to match the used interface
-        mask = qml.math.convert_like(mask, diag_mt)
+        mask = math.convert_like(mask, diag_mt)
 
         # Initialize off block-diagonal tensor using the stored ids
-        first_term = qml.math.zeros_like(diag_mt)
+        first_term = math.zeros_like(diag_mt)
         if ids:
-            off_diag_res = qml.math.stack(off_diag_res, 1)[0]
-            inv_ids = [_id[::-1] for _id in ids]
-            first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
-            first_term = qml.math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
+            off_diag_res = math.stack(off_diag_res, 1)[0]
+
+            for loc, r in zip(ids, off_diag_res):
+                # not sure if we can promise ordering of locations
+                # so need to loop over indices for compatibility with catalyst
+                first_term = math.scatter_element_add(first_term, loc, r)
+                first_term = math.scatter_element_add(first_term, (loc[1], loc[0]), r)
 
         # Second terms of off block-diagonal metric tensor
-        expvals = qml.math.zeros_like(first_term[0])
+        expvals = math.zeros_like(first_term[0])
 
         for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
             if layer_i is not None and obs_i is not None:
                 prob = diag_res[layer_i]
                 o = obs_list[layer_i][obs_i]
-                l = qml.math.cast(o.eigvals(), dtype=np.float64)
+                l = math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
-                p = qml.math.marginal_prob(prob, w)
-                expvals = qml.math.scatter_element_add(expvals, (i,), qml.math.dot(l, p))
+                p = math.marginal_prob(prob, w)
+                expvals = math.scatter_element_add(expvals, (i,), math.dot(l, p))
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
-        second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
+        second_term = math.tensordot(expvals, expvals, axes=0) * mask
 
         # Subtract second term from first term
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
-        coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
+        coeffs_gen = (c for c in math.hstack(coeffs_list))
         # flattened coeffs_list but also with 0s where parameters are not in argnum
-        interface = qml.math.get_interface(*results)
-        extended_coeffs_list = qml.math.asarray(
+        interface = math.get_interface(*results)
+        extended_coeffs_list = math.asarray(
             [
                 next(coeffs_gen) if param_in_argnum else 0.0
-                for param_in_argnum in qml.math.hstack(in_argnum_list)
+                for param_in_argnum in math.hstack(in_argnum_list)
             ],
             like=interface,
         )
-        scale = qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0)
+        scale = math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0)
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal
@@ -801,18 +834,18 @@ def _get_aux_wire(aux_wire, tape, device_wires):
         and an often reasonable choice else.
     """
     if aux_wire is not None:
-        aux_wire = qml.wires.Wires(aux_wire)[0]
+        aux_wire = Wires(aux_wire)[0]
         if aux_wire in tape.wires:
             msg = "The requested auxiliary wire is already in use by the circuit."
-            raise qml.wires.WireError(msg)
+            raise WireError(msg)
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
-        raise qml.wires.WireError("The requested auxiliary wire does not exist on the used device.")
+        raise WireError("The requested auxiliary wire does not exist on the used device.")
 
     if device_wires is not None:
         if len(device_wires) == len(tape.wires):
-            raise qml.wires.WireError("The device has no free wire for the auxiliary wire.")
-        unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
+            raise WireError("The device has no free wire for the auxiliary wire.")
+        unused_wires = Wires(device_wires.toset().difference(tape.wires.toset()))
         return unused_wires[0]
 
     _wires = tape.wires

@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 
-# pylint: disable=arguments-differ, protected-access
+# pylint: disable=arguments-differ
 
 
 class ResourceStatePrep(qml.StatePrep, ResourceOperator):

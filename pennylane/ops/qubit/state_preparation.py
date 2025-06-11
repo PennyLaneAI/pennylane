@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+# pylint: disable=too-many-branches,arguments-differ
 from typing import Optional, Union
 from warnings import warn
 
@@ -351,7 +351,7 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
-        validate_norm: bool = True,
+        validate_norm: bool = False,
     ):
         self.is_sparse = False
         if sp.sparse.issparse(state):

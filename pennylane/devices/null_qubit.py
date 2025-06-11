@@ -15,11 +15,12 @@
 The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-# pylint:disable=unused-argument
+
 
 import inspect
 import json
 import logging
+import time
 from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
@@ -50,6 +51,8 @@ from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
 
 
 @singledispatch
@@ -132,7 +135,7 @@ def _interface(config: ExecutionConfig):
     return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
-def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.json"):
+def _simulate_resource_use(circuit, outfile):
     num_wires = len(circuit.wires)
     gate_types = defaultdict(int)
 
@@ -163,17 +166,16 @@ def _simulate_resource_use(circuit, resources_fname="__pennylane_resources_data.
             name = f"{controls if controls > 1 else ''}C({name})"
 
         gate_types[name] += 1
-    # NOTE: For now, this information is being printed to match the behavior of catalyst resource tracking.
+    # NOTE: For now, this information is being printed to match the behaviour of catalyst resource tracking.
     #  In the future it may be better to return this information in a more structured way.
-    with open(resources_fname, "w") as f:
-        json.dump(
-            {
-                "num_wires": num_wires,
-                "num_gates": sum(gate_types.values()),
-                "gate_types": gate_types,
-            },
-            f,
-        )
+    json.dump(
+        {
+            "num_wires": num_wires,
+            "num_gates": sum(gate_types.values()),
+            "gate_types": gate_types,
+        },
+        outfile,
+    )
 
 
 @simulator_tracking
@@ -188,7 +190,7 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        track_resources (bool): If ``True``, track the number of resources used by the device. This argument is experimental and subject to change.
+        track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file. This argument is experimental and subject to change.
     **Example:**
 
     .. code-block:: python
@@ -285,7 +287,10 @@ class NullQubit(Device):
         results = []
 
         if self._track_resources:
-            _simulate_resource_use(circuit)
+            timestamp = int(time.time() * 1e9)  # nanoseconds since epoch
+            resources_fname = f"{RESOURCES_FNAME_PREFIX}{timestamp}.json"
+            with open(resources_fname, "x", encoding="utf-8") as f:
+                _simulate_resource_use(circuit, f)
 
         for s in circuit.shots or [None]:
             r = tuple(
@@ -340,7 +345,7 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit.preprocess(self, execution_config)
+        program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
@@ -466,7 +471,8 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    # pylint: disable= unused-argument
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     def eval_jaxpr(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
     ) -> list:
