@@ -73,24 +73,20 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, id=None):
         if not isinstance(wires, int) and len(wires) == 0:
-            raise ValueError("expected at least one wire representing the qubit ")
+            raise ValueError("At least one valid wire is required.")
 
         if isinstance(wires, int):
             wires = [wires]
 
         if isinstance(n, int):
-            if n >= 0:
-                n = self.to_list(n, len(wires))
-            else:
-                raise ValueError(
-                    "expected an integer equal or greater than zero for basic flipping state"
-                )
+            if n < 0:
+                raise ValueError("The given basis state cannot be a negative integer number.")
+            n = self.to_list(n, len(wires))
+
         n = tuple(n)
 
         if len(wires) != len(n):
-            raise ValueError(
-                "Wires length and flipping state length does not match, they must be equal length "
-            )
+            raise ValueError("The given basis state and the number of wires don't match.")
 
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, id=id)
@@ -109,7 +105,7 @@ class FlipSign(Operation):
             (array[int]): integer binary array
         """
         if n >= 2**n_wires:
-            raise ValueError(f"cannot encode {n} with {n_wires} wires ")
+            raise ValueError(f"Cannot encode basis state {n} on {n_wires} wires.")
 
         b_str = f"{n:b}".zfill(n_wires)
         bin_list = [int(i) for i in b_str]
