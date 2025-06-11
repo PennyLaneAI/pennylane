@@ -368,7 +368,7 @@ def _get_op_call_graph():
         mult_resources[cnot] = min(num_x_wires, num_aux_swap)
 
         gate_types = {}
-        for comp_rep, _ in mult_resources.items():
+        for comp_rep in mult_resources.keys():
             new_rep = comp_rep.controlled()
             # cancel out QFTs from consecutive Multipliers
             if hasattr(comp_rep, "op"):
