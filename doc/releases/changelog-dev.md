@@ -703,6 +703,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
   [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
+
+* The decomposition test in `assert_valid` no longer checks the matrix of the decomposition if the operator
+  does not define a matrix representation.
+  [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
+
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
