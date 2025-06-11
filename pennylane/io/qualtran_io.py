@@ -154,70 +154,55 @@ def _get_op_call_graph():
 
     @_op_call_graph.register
     def _(op: qtemps.state_preparations.QROMStatePreparation):
-        gate_types = defaultdict(int, {})
-        state_vector = op.state_vector
-        positive_and_real = True
+        """Refactored call graph implementation for QROMStatePreparation."""
 
-        if any(c.imag != 0 or c.real < 0 for c in state_vector):
-            positive_and_real = False
+        def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
+            """Helper to create a QROM, count it and its adjoint."""
+            qrom_op = qtemps.QROM(
+                bitstrings=bitstrings,
+                target_wires=precision_wires,
+                control_wires=control_wires,
+                work_wires=work_wires,
+                clean=False,
+            )
+            gate_types[_map_to_bloq()(qrom_op)] += 1
+            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+
+        gate_types = defaultdict(int, {})
+        positive_and_real = not any(c.imag != 0 or c.real < 0 for c in op.state_vector)
 
         num_state_qubits = int(math.log2(len(op.state_vector)))
         precision_wires = op.hyperparameters["precision_wires"]
         input_wires = op.hyperparameters["input_wires"]
         work_wires = op.hyperparameters["work_wires"]
         num_precision_wires = len(precision_wires)
-
-        bitstrings = ["0" * (num_precision_wires - 1) + "1"]
-        qrom_op = qtemps.QROM(
-            bitstrings=bitstrings,
-            target_wires=precision_wires,
-            control_wires=[],
-            work_wires=work_wires,
-            clean=False,
+        
+        # Use helper for the first QROM
+        _add_qrom_and_adjoint(
+            gate_types,
+            bitstrings=["0" * (num_precision_wires - 1) + "1"],
+            control_wires=[]
         )
-        gate_types[_map_to_bloq()(qrom_op)] += 1
-        gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
 
         zero_string = "0" * num_precision_wires
         one_string = "0" * (num_precision_wires - 1) + "1" if num_precision_wires > 0 else ""
-        
+
+        # Use helper inside the main loop
         for i in range(1, num_state_qubits):
             num_bit_flips = 2 ** (i - 1)
-            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
-                one_string for _ in range(num_bit_flips)
-            ]
-
-            qrom_op = qtemps.QROM(
-                bitstrings=bitstrings,
-                target_wires=precision_wires,
-                control_wires=input_wires[:i],
-                work_wires=work_wires,
-                clean=False,
-            )
-
-            gate_types[_map_to_bloq()(qrom_op)] += 1
-            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+            bitstrings = [zero_string] * num_bit_flips + [one_string] * num_bit_flips
+            _add_qrom_and_adjoint(gate_types, bitstrings, control_wires=input_wires[:i])
 
         gate_types[_map_to_bloq()(qops.CRY(0, wires=[0, 1]))] = (
             num_precision_wires * num_state_qubits
         )
-
+        
+        # Use helper for the final conditional QROM
         if not positive_and_real:
             num_bit_flips = 2 ** (num_state_qubits - 1)
-            bitstrings = [zero_string for _ in range(num_bit_flips)] + [
-                one_string for _ in range(num_bit_flips)
-            ]
-
-            qrom_op = qtemps.QROM(
-                bitstrings=bitstrings,
-                target_wires=precision_wires,
-                control_wires=input_wires,
-                work_wires=work_wires,
-                clean=False,
-            )
-
-            gate_types[_map_to_bloq()(qrom_op)] += 1
-            gate_types[_map_to_bloq()(qops.adjoint(qrom_op))] += 1
+            bitstrings = [zero_string] * num_bit_flips + [one_string] * num_bit_flips
+            _add_qrom_and_adjoint(gate_types, bitstrings, control_wires=input_wires)
+            
             gate_types[
                 _map_to_bloq()(
                     qops.ctrl(
