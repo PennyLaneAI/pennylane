@@ -193,7 +193,7 @@ def _import_geometric():
 
 
 def optimize_geometry(molecule, method="rhf"):
-    r"""Compute the equilibrium geometry of a molecule.
+    r"""Computes the equilibrium geometry of a molecule.
 
     Args:
         molecule (~qchem.molecule.Molecule): the molecule object
