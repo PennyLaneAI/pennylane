@@ -14,6 +14,7 @@
 r"""
 Contains the FlipSign template.
 """
+import warnings
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -76,6 +77,10 @@ class FlipSign(Operation):
             raise ValueError("At least one valid wire is required.")
 
         if isinstance(wires, int):
+            warnings.warn(
+                "Passing an integer m as the wires argument is now interpreted"
+                "as wires=[m] and not anymore as wires=range(m). This may lead to an error."
+            )
             wires = [wires]
 
         if isinstance(n, int):
