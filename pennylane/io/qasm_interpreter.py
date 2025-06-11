@@ -482,7 +482,7 @@ class Context:
         """
         if name in self.context:
             return self.context[name]
-        if getattr(self.context, name, None):
+        if hasattr(self.context, name):
             return getattr(self.context, name)
         raise KeyError(
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
