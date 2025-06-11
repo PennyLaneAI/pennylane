@@ -55,6 +55,28 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_repeated_calls(self):
+        # parse the QASM
+        ast = parse(
+            open("repeated_calls.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "repeated-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [
+            RX(2 ,"q0"),
+            RY(1, "q0"),
+            RX(2, "q0"),
+            RY(1, "q0"),
+            RX(11, "q0"),
+            RY(11/2, "q0")
+        ]
+
     def test_subroutine_not_defined(self):
         ast = parse(
             """
