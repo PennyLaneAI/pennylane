@@ -843,7 +843,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
@@ -887,6 +887,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         raise ImportError(
             "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
         ) from e  # pragma: no cover
-    context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+    context = QasmInterpreter().interpret(
+        ast, context={"name": "global", "wire_map": wire_map}, **kwargs
+    )
 
     return context

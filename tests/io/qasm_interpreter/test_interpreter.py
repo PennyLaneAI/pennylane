@@ -56,6 +56,47 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestIO:
+
+    def test_missing_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing input theta. Please pass theta as " "a keyword argument to from_qasm3.",
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
+
+    def test_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "post_processing", "wire_map": None}, theta=0.1
+            )
+            QasmInterpreter().interpret(
+                ast, context={"name": "post_processing", "wire_map": None}, theta=0.2
+            )
+
+        assert q.queue == [
+            RX(0.1, "q"),
+            RX(0.2, "q"),
+        ]
+
+
+@pytest.mark.external
 class TestMeasurementReset:
 
     def test_resets(self):

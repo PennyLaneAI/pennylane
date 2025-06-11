@@ -38,6 +38,7 @@ from openqasm3.ast import (
     IndexExpression,
     IntegerLiteral,
     IntType,
+    IODeclaration,
     QuantumArgument,
     QuantumGate,
     QuantumMeasurementStatement,
@@ -553,6 +554,12 @@ class QasmInterpreter:
     visitor function on each node.
     """
 
+    def __init__(self):
+        """
+        Initializes the QASM interpreter.
+        """
+        self.inputs = {}
+
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
         """
@@ -587,18 +594,20 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict, **inputs):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
             context (dict): The initial context populated with the name of the program (the outermost scope).
+            inputs (dict): Additional inputs to the OpenQASM 3.0 program.
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
         context = Context(context)
+        self.inputs = inputs
 
         # begin recursive descent traversal
         try:
@@ -993,6 +1002,26 @@ class QasmInterpreter:
         raise NotImplementedError(
             f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
         )
+
+    @visit.register(IODeclaration)
+    def visit_io_declaration(self, node: IODeclaration, context: Context):
+        """
+        When we encounter an input / output declaration we want to return a callable that will execute the
+        OpenQASM 3.0 circuit at the end.
+
+        Args:
+            node (IODeclaration): The IODeclaration QASMNode.
+            context (Context): the current context.
+        """
+        name = _resolve_name(node.identifier)
+        if name in self.inputs:
+            context.vars[name] = Variable(
+                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+            )
+        else:
+            raise ValueError(
+                f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
+            )
 
     @visit.register(EndStatement)
     def visit_end_statement(self, node: QASMNode, context: Context):
