@@ -72,11 +72,11 @@ def test_finite_shots_adjoint():
 
 
 @flaky(max_runs=5)
-def test_finite_shots():
+def test_finite_shots(seed):
     """Test that shots in LQ and DQ give the same results."""
 
-    dev = qml.device("lightning.qubit", wires=2, shots=50000)
-    dq = qml.device("default.qubit", shots=50000)
+    dev = qml.device("lightning.qubit", wires=2, shots=50000, seed=seed)
+    dq = qml.device("default.qubit", shots=50000, seed=seed)
 
     def circuit():
         qml.RX(np.pi / 4, 0)

@@ -128,6 +128,8 @@ class Context:
             context["scopes"] = {"subroutines": {}}
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
+        if "return" not in context:
+            context["return"] = None
         self.context = context
 
     def init_loops_scope(self, node: ForInLoop | WhileLoop):
@@ -212,7 +214,7 @@ class Context:
         # we want wires declared in outer scopes to be available
         context = {
             "vars": outer_context.vars,  # same namespace
-            "wire_map": outer_context.wire_map,
+            "wire_map": {},
             "wires": outer_context.wires,
             "name": name,
             # we want subroutines declared in the global scope to be available
@@ -752,13 +754,15 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if name in context.scopes["subroutines"]:
-            func_context = context.scopes["subroutines"][name]
-        else:
+        if name not in context.scopes["subroutines"]:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
                 f"on line {node.span.start_line}."
             )
+        func_context = context.scopes["subroutines"][name]
+
+        # reset return
+        func_context.context["return"] = None
 
         # bind subroutine arguments
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
@@ -768,8 +772,9 @@ class QasmInterpreter:
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
                 )
             else:
-                if not param == evald_arg:
-                    func_context.wire_map[param] = evald_arg
+                if evald_arg in context.wire_map:
+                    evald_arg = context.wire_map[evald_arg]
+                func_context.wire_map[param] = evald_arg
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
