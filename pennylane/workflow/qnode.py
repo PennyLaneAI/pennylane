@@ -785,8 +785,6 @@ class QNode:
         Returns:
             qnode (QNode): new QNode with updated shots
         """
-        if isinstance(shots, int):
-            shots = qml.measurements.Shots(shots)
 
         # Create a copy of the current QNode
         updated_qn = copy.copy(self)
@@ -802,10 +800,8 @@ class QNode:
         Args:
             shots (int or qml.measurements.Shots): The new number of shots to use.
         """
-        if isinstance(shots, int):
-            shots = qml.measurements.Shots(shots)
 
-        self._shots = shots
+        self._shots = qml.measurements.Shots(shots)
         self._shots_override_device = bool(self._shots != self.device.shots)
 
     # pylint: disable=too-many-return-statements, unused-argument
