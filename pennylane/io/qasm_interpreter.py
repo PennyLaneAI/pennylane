@@ -39,6 +39,7 @@ from openqasm3.ast import (
     IntegerLiteral,
     IntType,
     IODeclaration,
+    IOKeyword,
     QuantumArgument,
     QuantumGate,
     QuantumMeasurementStatement,
@@ -258,6 +259,8 @@ class Context:
             context["scopes"] = {"subroutines": {}}
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
+        if "return" not in context:
+            context["return"] = {}
         self.context = context
 
     def init_loops_scope(self, node: ForInLoop | WhileLoop):
@@ -559,6 +562,7 @@ class QasmInterpreter:
         Initializes the QASM interpreter.
         """
         self.inputs = {}
+        self.outputs = []
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
@@ -619,6 +623,10 @@ class QasmInterpreter:
                         self.visit(item, context)
         except EndProgram:
             pass
+
+        for output in self.outputs:
+            context["return"][output] = context.retrieve_variable(output)
+
         return context
 
     @visit.register(BreakStatement)
@@ -1013,15 +1021,26 @@ class QasmInterpreter:
             node (IODeclaration): The IODeclaration QASMNode.
             context (Context): the current context.
         """
-        name = _resolve_name(node.identifier)
-        if name in self.inputs:
+        if node.io_identifier == IOKeyword.input:
+            name = _resolve_name(node.identifier)
+            if name in self.inputs:
+                context.vars[name] = Variable(
+                    node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+                )
+            else:
+                raise ValueError(
+                    f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
+                )
+        elif node.io_identifier == IOKeyword.output:
+            name = _resolve_name(node.identifier)
             context.vars[name] = Variable(
-                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+                node.type.__class__.__name__,
+                None,
+                -1,
+                node.span.start_line,
+                False,
             )
-        else:
-            raise ValueError(
-                f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
-            )
+            self.outputs.append(_resolve_name(node.identifier))
 
     @visit.register(EndStatement)
     def visit_end_statement(self, node: QASMNode, context: Context):
