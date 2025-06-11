@@ -50,6 +50,7 @@ StandardGateSet = {
     "RZ",
     "PhaseShift",
 }
+"""A useful set of gates to track counts with."""
 
 # realistic gateset for useful compilation of circuits
 DefaultGateSet = {
@@ -62,6 +63,7 @@ DefaultGateSet = {
     "T",
     "Toffoli",
 }
+"""The default set of gates to track counts with."""
 
 # parameters for further configuration of the decompositions
 resource_config = {
@@ -71,6 +73,8 @@ resource_config = {
     "precision_multiplexer": 1e-3,
     "precision_qrom_state_prep": 1e-3,
 }
+"""A dictionary of parameters that configure default gate parameters 
+when performing resource estimation."""
 
 
 def estimate_resources(
