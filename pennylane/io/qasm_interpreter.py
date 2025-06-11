@@ -154,7 +154,7 @@ class Context:
         # we want wires declared in outer scopes to be available
         context = {
             "vars": outer_context.vars,  # same namespace
-            "wire_map": outer_context.wire_map,
+            "wire_map": {},
             "wires": outer_context.wires,
             "name": name,
             # we want subroutines declared in the global scope to be available
