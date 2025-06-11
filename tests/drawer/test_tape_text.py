@@ -16,6 +16,8 @@ Unit tests for the `pennylane.draw_text` function.
 """
 # pylint: disable=import-outside-toplevel
 
+from copy import copy
+
 import pytest
 
 import pennylane as qml
@@ -100,7 +102,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         config = _Config(
             wire_map=default_wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=0
         )
-        assert out == _add_grouping_symbols(op, ["", "", "", ""], config)
+        assert out == _add_grouping_symbols(op.wires, ["", "", "", ""], config)
 
     @pytest.mark.parametrize(
         "op, bit_map, layer_str, out",
@@ -400,6 +402,50 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         op2 = qml.QubitUnitary(np.eye(2), wires=1)
         assert _add_obj(op2, ["", ""], config) == ["", "U(M0)"]
 
+    @pytest.mark.parametrize("wires", [tuple(), (0, 1), (0, 1, 2, 3)])
+    @pytest.mark.parametrize("wire_map", [default_wire_map, {0: 0, 1: 1}])
+    @pytest.mark.parametrize("cls, label", [(qml.GlobalPhase, "GlobalPhase"), (qml.Identity, "I")])
+    def test_add_global_op(self, wires, wire_map, cls, label):
+        """Test that adding a global op works as expected."""
+        data = [0.5124][: cls.num_params]
+        op = cls(*data, wires=wires)
+        # Expected output does not depend on the wires of GlobalPhase but just
+        # on the number of drawn wires as dictated by the config!
+        n_wires = len(wire_map)
+        expected = [f"╭{label}"] + [f"├{label}"] * (n_wires - 2) + [f"╰{label}"]
+        config = _Config(wire_map=wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1)
+        out = _add_obj(op, ["─"] * n_wires, config)
+        assert expected == out
+
+    @pytest.mark.parametrize(
+        "wires, control_wires, expected",
+        [
+            (tuple(), (0,), ["╭●", "├label", "├label", "╰label"]),
+            (tuple(), (2,), ["╭label", "├label", "├●", "╰label"]),
+            ((2,), (0, 1, 3), ["╭●", "├●", "├label", "╰●"]),
+            ((0, 1), (3,), ["╭label", "├label", "├label", "╰●"]),
+            ((0, 2), (1, 3), ["╭label", "├●", "├label", "╰●"]),
+            ((0, 1, 3), (2,), ["╭label", "├label", "├●", "╰label"]),
+        ],
+    )
+    @pytest.mark.parametrize("wire_map", [default_wire_map, {i: i for i in range(6)}])
+    @pytest.mark.parametrize("cls, label", [(qml.GlobalPhase, "GlobalPhase"), (qml.Identity, "I")])
+    def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
+        """Test that adding a controlled global op works as expected."""
+        expected = copy(expected)
+        data = [0.5124][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=wires), control=control_wires)
+        n_wires = len(wire_map)
+        if n_wires > 4:
+            expected[-1] = "├" + expected[-1][1:]
+            expected.extend(["├label"] * (n_wires - 5))
+            expected.append("╰label")
+
+        expected = [line.replace("label", label) for line in expected]
+        config = _Config(wire_map=wire_map, bit_map=default_bit_map, num_op_layers=4, cur_layer=1)
+        out = _add_obj(op, ["─"] * n_wires, config)
+        assert expected == out
+
 
 class TestEmptyTapes:
     """Test that the text for empty tapes is correct."""
@@ -533,14 +579,17 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml)
+
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
-    @pytest.mark.parametrize("ml", [10, 15, 20])
+    # We choose values of max_length that allow us to include continuation dots
+    # when the circuit is partitioned
+    @pytest.mark.parametrize("ml", [25, 50, 75])
     def test_setting_max_length(self, ml):
         """Test several custom max_length parameters change the wrapping length."""
 
         with qml.queuing.AnnotatedQueue() as q_tape_ml:
-            for _ in range(10):
+            for _ in range(50):
                 qml.PauliX(0)
                 qml.PauliY(1)
 
@@ -549,6 +598,7 @@ class TestMaxLength:
 
         tape_ml = qml.tape.QuantumScript.from_queue(q_tape_ml)
         out = tape_text(tape_ml, max_length=ml)
+
         assert max(len(s) for s in out.split("\n")) <= ml
 
 

@@ -23,7 +23,7 @@ class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-pu
     r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
     Args:
-        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
+        op_type (Type): the class object of an operation which inherits from :class:`~.ResourceOperator`
         params (dict): a dictionary containing the minimal pairs of parameter names and values
                     required to compute the resources for the given operator
 
@@ -42,7 +42,7 @@ class CompressedResourceOp(_CompressedResourceOp):  # pylint: disable=too-few-pu
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
-            op_type (Type): the class object for an operation which inherits from '~.ResourceOperator'
+            op_type (Type): the class object for an operation which inherits from :class:`~.ResourceOperator`
             params (dict): a dictionary containing the minimal pairs of parameter names and values
                         required to compute the resources for the given operator
 

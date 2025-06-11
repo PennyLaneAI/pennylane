@@ -94,6 +94,74 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
+def _preprocess_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program, config = self.original_device.preprocess(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program, config
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess_transforms(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program = self.original_device.preprocess_transforms(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -108,7 +176,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     .. seealso:: :func:`~.pennylane.transform`
     """
 
-    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+    def __new__(cls, *args, **__):
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
             # simply return the original function rather than
@@ -137,7 +205,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         final_transform=False,
         use_argnum_in_expand=False,
         plxpr_transform=None,
-    ):  # pylint:disable=redefined-outer-name
+    ):
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -329,15 +397,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
             flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+            flat_args = jax.tree_util.tree_leaves(args)
 
-            n_args = len(args)
+            n_args = len(flat_args)
             n_consts = len(jaxpr.consts)
             args_slice = slice(0, n_args)
             consts_slice = slice(n_args, n_args + n_consts)
             targs_slice = slice(n_args + n_consts, None)
 
             results = self._primitive.bind(
-                *args,
+                *flat_args,
                 *jaxpr.consts,
                 *targs,
                 inner_jaxpr=jaxpr.jaxpr,
@@ -403,33 +472,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self._final_transform:
             raise TransformError("Device transform does not support final transforms.")
 
-        class TransformedDevice(type(original_device)):
-            """A transformed device with updated preprocess method."""
+        if type(original_device).preprocess != qml.devices.Device.preprocess:
+            return _preprocess_device(original_device, self.transform, targs, tkwargs)
 
-            def __init__(self, original_device, transform):
-                for key, value in original_device.__dict__.items():
-                    self.__setattr__(key, value)
-                self.transform = transform
-                self._original_device = original_device
-
-            def __repr__(self):
-                return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
-
-            def preprocess(
-                self,
-                execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
-            ):
-                """This function updates the original device transform program to be applied."""
-                program, config = self.original_device.preprocess(execution_config)
-                program.push_back(TransformContainer(self.transform, args=targs, kwargs=tkwargs))
-                return program, config
-
-            @property
-            def original_device(self):
-                """Return the original device."""
-                return self._original_device
-
-        return TransformedDevice(original_device, self._transform)
+        return _preprocess_transforms_device(original_device, self.transform, targs, tkwargs)
 
     def _batch_transform(self, original_batch, targs, tkwargs):
         """Apply the transform on a batch of tapes."""
@@ -474,7 +520,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return tuple(execution_tapes), processing_fn
 
 
-class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
+class TransformContainer:  # pylint: disable=too-many-instance-attributes
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
 
@@ -497,7 +543,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         is_informative=False,
         final_transform=False,
         use_argnum=False,
-    ):  # pylint:disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
@@ -574,11 +620,11 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
-        from pennylane.capture.custom_primitives import NonInterpPrimitive
+        from pennylane.capture.custom_primitives import QmlPrimitive
     except ImportError:
         return None
 
-    transform_prim = NonInterpPrimitive(name + "_transform")
+    transform_prim = QmlPrimitive(name + "_transform")
     transform_prim.multiple_results = True
     transform_prim.prim_type = "transform"
 

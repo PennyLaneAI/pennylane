@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow import _resolve_diff_method
 
 
@@ -83,7 +84,8 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="adjoint")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support adjoint with requested circuit"
+            QuantumFunctionError,
+            match=r"does not support adjoint with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
 
@@ -91,7 +93,8 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="backprop")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support backprop with requested circuit"
+            QuantumFunctionError,
+            match=r"does not support backprop with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
 
@@ -181,7 +184,8 @@ class TestResolveDiffMethod:
         dev = qml.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method="invalid-method")
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method invalid-method not recognized"
+            QuantumFunctionError,
+            match="Differentiation method invalid-method not recognized",
         ):
             _resolve_diff_method(initial_config, dev)
 

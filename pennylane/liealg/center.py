@@ -93,6 +93,8 @@ def center(
 
     >>> generators = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
     >>> g = qml.lie_closure(generators)
+    >>> g
+    [X(0), X(0) @ X(1), Y(1), X(0) @ Z(1)]
 
     The ``center`` is then the collection of operators that commute with `all` other operators in the DLA.
     In this case, just ``X(0)``.

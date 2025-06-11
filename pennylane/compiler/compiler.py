@@ -23,7 +23,7 @@ from typing import List, Optional
 
 from packaging.version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.10.0")
+PL_CATALYST_MIN_VERSION = Version("0.11.0")
 
 
 class CompileError(Exception):
@@ -74,7 +74,6 @@ def _refresh_compilers():
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.compilers")
     )
 

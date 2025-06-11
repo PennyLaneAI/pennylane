@@ -14,13 +14,18 @@
 """
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
+
 from collections import defaultdict
 from functools import lru_cache, singledispatch
 
 import numpy as np
 
-import pennylane as qml
+import pennylane.ops as qops
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
+from pennylane.registers import registers
 from pennylane.wires import WiresLike
 
 try:
@@ -29,7 +34,6 @@ except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
-# pylint: disable=unused-argument
 @lru_cache
 def _get_to_pl_op():
     @singledispatch
@@ -38,71 +42,71 @@ def _get_to_pl_op():
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.CNOT, wires):
-        return qml.CNOT(wires=wires)
+        return qops.CNOT(wires=wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.GlobalPhase, wires):
-        return qml.GlobalPhase(bloq.exponent * np.pi, wires)
+        return qops.GlobalPhase(bloq.exponent * np.pi, wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Hadamard, wires):
-        return qml.Hadamard(wires)
+        return qops.Hadamard(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Identity, wires):
-        return qml.Identity(wires)
+        return qops.Identity(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Rx, wires):
-        return qml.RX(bloq.angle, wires)
+        return qops.RX(bloq.angle, wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Ry, wires):
-        return qml.RY(bloq.angle, wires)
+        return qops.RY(bloq.angle, wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Rz, wires):
-        return qml.RZ(bloq.angle, wires)
+        return qops.RZ(bloq.angle, wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.SGate, wires):
-        return qml.adjoint(qml.S(wires)) if bloq.is_adjoint else qml.S(wires)
+        return qops.adjoint(qops.S(wires)) if bloq.is_adjoint else qops.S(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.TwoBitSwap, wires):
-        return qml.SWAP(wires)
+        return qops.SWAP(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.TwoBitCSwap, wires):
-        return qml.CSWAP(wires)
+        return qops.CSWAP(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.TGate, wires):
-        return qml.adjoint(qml.T(wires)) if bloq.is_adjoint else qml.T(wires)
+        return qops.adjoint(qops.T(wires)) if bloq.is_adjoint else qops.T(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Toffoli, wires):
-        return qml.Toffoli(wires)
+        return qops.Toffoli(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.XGate, wires):
-        return qml.X(wires)
+        return qops.X(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.YGate, wires):
-        return qml.Y(wires)
+        return qops.Y(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.CYGate, wires):
-        return qml.CY(wires)
+        return qops.CY(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.ZGate, wires):
-        return qml.Z(wires)
+        return qops.Z(wires)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.CZ, wires):
-        return qml.CZ(wires)
+        return qops.CZ(wires)
 
     @_to_pl_op.register(qt.bloqs.bookkeeping.Allocate)
     @_to_pl_op.register(qt.bloqs.bookkeeping.Cast)
@@ -128,7 +132,7 @@ def bloq_registers(bloq):
 
             pip install qualtran
 
-    The keys of the ``qml.registers`` dictionary are the register names in the Qualtran Bloq. The
+    The keys of the returned dictionary are the register names in the Qualtran Bloq. The
     values are :class:`~.Wires` objects with a length equal to the bitsize of its respective
     register. The wires are indexed in ascending order, starting from 0.
 
@@ -139,9 +143,8 @@ def bloq_registers(bloq):
         bloq (Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
 
     Returns:
-        dict: A dictionary built with information from the Bloq's signature. The dictionary keys
-        are strings that come from the names of the Bloq's registers. The values are :class:`~.Wires`
-        objects that are determined by the bitsizes of those same registers.
+        dict: A dictionary mapping the names of the Bloq's registers to :class:`~.Wires`
+            objects with the same lengths as the bitsizes of their respective registers.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
@@ -168,15 +171,15 @@ def bloq_registers(bloq):
     for reg in bloq.signature.rights():
         wire_register_dict[reg.name] = reg.bitsize
 
-    return qml.registers(wire_register_dict)
+    return registers(wire_register_dict)
 
 
-def _get_named_registers(registers):
+def _get_named_registers(regs):
     """Returns a ``qml.registers`` object associated with the named registers in the bloq"""
 
-    temp_register_dict = {reg.name: reg.total_bits() for reg in registers}
+    temp_register_dict = {reg.name: reg.total_bits() for reg in regs}
 
-    return qml.registers(temp_register_dict)
+    return registers(temp_register_dict)
 
 
 def _preprocess_bloq(bloq):
@@ -208,8 +211,7 @@ def _preprocess_bloq(bloq):
 
 
 class FromBloq(Operation):
-    r"""
-    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    r"""An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     as a PennyLane :class:`~.Operation`.
 
     .. note::
@@ -406,9 +408,9 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    def compute_matrix(
-        *params, **hyperparams
-    ):  # pylint: disable=no-method-argument, no-self-argument
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=no-method-argument
+    def compute_matrix(*params, **hyperparams):  # pylint: disable=no-self-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
 

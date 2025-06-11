@@ -29,7 +29,6 @@ Resource Estimation Base Classes:
     :toctree: api
 
     ~Resources
-    ~CompressedResourceOp
     ~ResourceOperator
 
 Operators

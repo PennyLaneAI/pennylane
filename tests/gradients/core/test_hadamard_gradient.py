@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
@@ -870,7 +871,7 @@ class TestHadamardGrad:
         (cost4, [4, 3], np.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
-        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
+        (cost10, [8, 3], np.ndarray),  # Note that the shape here depends on the device
         (cost11, [2, 32, 3], tuple),
         (cost12, [8, 3], np.ndarray),
     ]
@@ -881,7 +882,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit", wires=6)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
@@ -944,7 +945,7 @@ class TestHadamardGrad:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -961,7 +962,7 @@ class TestHadamardGrad:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -978,7 +979,7 @@ class TestHadamardGrad:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -995,7 +996,7 @@ class TestHadamardGrad:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -1421,7 +1422,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.hadamard_grad(circuit, argnum=argnums, mode=mode)(x, y)
@@ -1482,7 +1483,8 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0[0])
             assert np.allclose(res[1], expected_0[1])
         if argnums == [1]:
-            assert np.allclose(res, expected_1)
+            assert np.allclose(res[0][0], expected_1[0])
+            assert np.allclose(res[1][0], expected_1[1])
         if argnums == [0, 1]:
             assert np.allclose(res[0][0], expected_0[0])
             assert np.allclose(res[0][1], expected_0[1])

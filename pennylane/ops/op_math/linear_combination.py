@@ -16,13 +16,14 @@ LinearCombination class
 """
 import itertools
 import numbers
+import warnings
 
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+# pylint: disable=too-many-arguments,protected-access
 from copy import copy
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Operator
 
 from .sum import Sum
 
@@ -39,7 +40,7 @@ class LinearCombination(Sum):
 
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
-        observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
+        observables (Iterable[Operator]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -103,7 +104,6 @@ class LinearCombination(Sum):
     using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
     """
 
-    num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
@@ -127,6 +127,7 @@ class LinearCombination(Sum):
         observables: list[Operator],
         grouping_type=None,
         method="lf",
+        *,
         _grouping_indices=None,
         _pauli_rep=None,
         id=None,
@@ -190,7 +191,7 @@ class LinearCombination(Sum):
         """Return the operators defining the LinearCombination.
 
         Returns:
-            Iterable[Observable]): observables in the LinearCombination expression
+            Iterable[Operator]): observables in the LinearCombination expression
         """
         return self._ops
 
@@ -346,7 +347,11 @@ class LinearCombination(Sum):
         >>> ob1.compare(ob2)
         False
         """
-
+        warnings.warn(
+            "The compare method is deprecated and will be removed in v0.43."
+            " op1 == op2 or qml.equal should be used instead.",
+            qml.exceptions.PennyLaneDeprecationWarning,
+        )
         if isinstance(other, (Operator)):
             if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
                 pr1.simplify()
@@ -357,9 +362,7 @@ class LinearCombination(Sum):
             op2 = other.simplify()
             return qml.equal(op1, op2)
 
-        raise ValueError(
-            "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
-        )
+        raise ValueError("Can only compare a LinearCombination and an Operator.")
 
     def __matmul__(self, other: Operator) -> Operator:
         """The product operation between Operator objects."""
@@ -396,7 +399,7 @@ class LinearCombination(Sum):
         return NotImplemented
 
     def __add__(self, H: Union[numbers.Number, Operator]) -> Operator:
-        r"""The addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
+        r"""The addition operation between a LinearCombination and an Operator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
 
@@ -419,7 +422,12 @@ class LinearCombination(Sum):
             ops.append(H)
 
             return qml.ops.LinearCombination(coeffs, ops)
+        return NotImplemented
 
+    def __sub__(self, H: Operator) -> Operator:
+        r"""The subtraction operation between a LinearCombination and an Operator."""
+        if isinstance(H, Operator):
+            return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     __radd__ = __add__
@@ -434,12 +442,6 @@ class LinearCombination(Sum):
         return NotImplemented
 
     __rmul__ = __mul__
-
-    def __sub__(self, H: Observable) -> Observable:
-        r"""The subtraction operation between a LinearCombination and a LinearCombination/Observable."""
-        if isinstance(H, (LinearCombination, Observable)):
-            return self + qml.s_prod(-1.0, H, lazy=False)
-        return NotImplemented
 
     def queue(
         self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
@@ -551,7 +553,7 @@ class Hamiltonian:
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same length as coeffs
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.

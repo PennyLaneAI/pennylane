@@ -19,7 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 import numpy as np
 import scipy as sp
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 class FirstQuantization(Operation):
@@ -79,7 +79,6 @@ class FirstQuantization(Operation):
         error distribution takes place inside the functions.
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(

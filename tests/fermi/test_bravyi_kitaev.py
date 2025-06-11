@@ -476,7 +476,7 @@ def test_bravyi_kitaev_for_identity_ps():
     ),
 )
 def test_bravyi_kitaev_for_null_operator_fermi_word_ps(operator):
-    """Test that the parity_tranform function works when the result is 0"""
+    """Test that the parity_transform function works when the result is 0"""
     # in PauliSentence return format, returns None
     assert bravyi_kitaev(operator, 4, ps=True).simplify() is None
 

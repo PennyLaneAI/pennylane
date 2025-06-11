@@ -16,14 +16,13 @@ Contains the batch dimension transform.
 """
 
 import itertools
-
-# pylint: disable=import-outside-toplevel
 from collections import Counter
 from collections.abc import Sequence
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -84,9 +83,10 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", shots=100)
+        dev = qml.device("default.qubit")
         params = np.pi / 4 * np.ones(2)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
         def func(x, y):
             qml.RX(x, wires=0)
@@ -107,7 +107,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     _ = kwargs.get("device", None)
 
     if not tape.shots:
-        raise qml.QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
+        raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
@@ -237,7 +237,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     )
 
 
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
     aux_tapes: qml.tape.QuantumScript,

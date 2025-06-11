@@ -14,7 +14,6 @@
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
 import inspect
 from collections.abc import Callable
-from contextlib import nullcontext
 from functools import wraps
 from typing import Literal, Union
 
@@ -228,9 +227,8 @@ def get_transform_program(
     return resolved_program
 
 
-# !TODO: remove KerasLayer in 0.42
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
+    qnode: Union[QNode, "qml.qnn.TorchLayer"],
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
@@ -331,7 +329,6 @@ def construct_batch(
 
     """
 
-    # pylint: disable=protected-access
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
@@ -339,36 +336,16 @@ def construct_batch(
         else:
             shots = kwargs.pop("shots", qnode.device.shots)
 
-        context_fn = nullcontext
-
-        # !TODO: remove KerasLayer in 0.42
-        if type(qnode).__name__ == "KerasLayer":
-            # note that calling qml.qnn.KerasLayer pulls in a tf import
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
-
-            context_fn = tf.GradientTape
-
-        elif type(qnode).__name__ == "TorchLayer":
+        if type(qnode).__name__ == "TorchLayer":
             # avoid triggering import of torch if its not needed.
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        with context_fn() as cntxt:
-            # If TF tape, use the watch function
-            if hasattr(cntxt, "watch"):
-                cntxt.watch(list(qnode.qnode_weights.values()))
-
-                kwargs = {
-                    **{k: 1.0 * w for k, w in qnode.qnode_weights.items()},
-                    **kwargs,
-                }
-
-            initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-            params = initial_tape.get_parameters(trainable_only=False)
-            initial_tape.trainable_params = qml.math.get_trainable_indices(params)
+        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        params = initial_tape.get_parameters(trainable_only=False)
+        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
         config = qml.workflow.construct_execution_config(qnode, resolve=False)(*args, **kwargs)
         # pylint: disable = protected-access

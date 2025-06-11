@@ -14,7 +14,7 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
-# pylint: disable=too-many-arguments
+
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -87,17 +87,20 @@ class _Config:
 
 
 def _initialize_wire_and_bit_totals(
-    config: _Config, show_wire_labels: bool
+    config: _Config, show_wire_labels: bool, continuation: bool = False
 ) -> tuple[list[str], list[str]]:
     """Initialize the wire totals and bit_totals with the required wire labels."""
+
+    prefix = "··· " if continuation else ""
+
     if show_wire_labels:
-        wire_totals = [f"{wire}: " for wire in config.wire_map]
+        wire_totals = [f"{wire}: " + prefix for wire in config.wire_map]
         line_length = max(len(s) for s in wire_totals)
         wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
         bit_totals = [" " * line_length] * config.n_bits
     else:
-        wire_totals = [""] * config.n_wires
-        bit_totals = [""] * config.n_bits
+        wire_totals = [prefix] * config.n_wires
+        bit_totals = [prefix] * config.n_bits
 
     return wire_totals, bit_totals
 
@@ -151,16 +154,22 @@ def _left_justify(layer_str: list[str], config: _Config) -> list[str]:
     return layer_str
 
 
-def _add_to_finished_lines(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
+def _add_to_finished_lines(
+    totals: _CurrentTotals, config: _Config, show_wire_labels: bool
+) -> _CurrentTotals:
     """Add current totals to the finished lines and initialize new totals."""
-    totals.finished_lines += totals.wire_totals + totals.bit_totals
+
+    suffix = " ···"
+
+    totals.finished_lines += [line + suffix for line in totals.wire_totals]
+    totals.finished_lines += totals.bit_totals
     totals.finished_lines[-1] += "\n"
 
-    totals.wire_totals = [config.wire_filler] * config.n_wires
-
-    # Bit totals for new lines for warped drawings need to be consistent with the
-    # current bit filler
-    totals.bit_totals = [config.bit_filler(b) for b in range(config.n_bits)]
+    # Reset wire and bit totals. Bit totals for new lines for warped drawings
+    # need to be consistent with the current bit filler
+    totals.wire_totals, totals.bit_totals = _initialize_wire_and_bit_totals(
+        config, show_wire_labels, continuation=True
+    )
 
     return totals
 
@@ -430,6 +439,7 @@ def tape_text(
     )
 
     totals = _CurrentTotals([], *(_initialize_wire_and_bit_totals(config, show_wire_labels)))
+    len_suffix = 4  # Suffix dots at then of a partitioned circuit (' ...') have length 4
 
     for cur_layer, layer in enumerate(layers):
         config.cur_layer = cur_layer
@@ -439,8 +449,9 @@ def tape_text(
             layer_str = _add_obj(op, layer_str, config, tape_cache)
         layer_str = _left_justify(layer_str, config)
 
-        if len(totals.wire_totals[0]) + len(layer_str[0]) > max_length - 1:
-            totals = _add_to_finished_lines(totals, config)
+        cur_max_length = max_length - len_suffix if cur_layer < len(layers) - 1 else max_length
+        if len(totals.wire_totals[0]) + len(layer_str[0]) > cur_max_length - 1:
+            totals = _add_to_finished_lines(totals, config, show_wire_labels)
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
 

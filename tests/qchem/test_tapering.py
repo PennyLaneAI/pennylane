@@ -22,10 +22,10 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.math.utils import binary_finite_reduced_row_echelon
 from pennylane.pauli import pauli_sentence
 from pennylane.qchem.tapering import (
     _kernel,
-    _reduced_row_echelon,
     _split_pauli_sentence,
     _taper_pauli_sentence,
     clifford,
@@ -120,7 +120,7 @@ def test_reduced_row_echelon(binary_matrix, result):
             ) % 2
 
     # get reduced row echelon form from the _reduced_row_echelon function
-    rref_bin_mat = _reduced_row_echelon(binary_matrix)
+    rref_bin_mat = binary_finite_reduced_row_echelon(binary_matrix)
 
     assert (rref_bin_mat == row_echelon_matrix).all()
     assert (rref_bin_mat == result).all()
@@ -200,7 +200,7 @@ def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qml.paulix_ops(generators, num_qubits)
     for p1, p2 in zip(pauli_ops, result):
-        assert p1.compare(p2)
+        qml.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]

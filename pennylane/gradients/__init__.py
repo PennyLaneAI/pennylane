@@ -101,8 +101,9 @@ and takes into account the circuit, device, autodiff framework, and metadata
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", shots=1000)
+    dev = qml.device("default.qubit")
 
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev, interface="tf")
     def circuit(weights):
         ...
@@ -357,7 +358,6 @@ from .general_shift_rules import (
 )
 from .gradient_transform import SUPPORTED_GRADIENT_KWARGS
 from .hadamard_gradient import hadamard_grad
-from .hamiltonian_grad import hamiltonian_grad
 from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor
 from .parameter_shift import param_shift

@@ -19,6 +19,7 @@ from typing import Iterable, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 
@@ -59,7 +60,7 @@ def lie_closure(
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: a basis of either :class:`~.PauliSentence`, :class:`~.Operator`, or ``np.ndarray`` instances that is closed under
         commutators (Lie closure).
 
-    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`
+    .. seealso:: :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`, `Introduction to Dynamical Lie Algebras for quantum practitioners <demos/tutorial_liealgebra>`__
 
     **Example**
 
@@ -137,7 +138,7 @@ def lie_closure(
     warnings.warn(
         "Calling lie_closure via qml.pauli.lie_closure is deprecated. lie_closure has moved to pennylane.liealg. "
         "Please call lie_closure from top level as qml.lie_closure or from the liealg module via qml.liealg.lie_closure.",
-        qml.PennyLaneDeprecationWarning,
+        PennyLaneDeprecationWarning,
     )
 
     return qml.lie_closure(
