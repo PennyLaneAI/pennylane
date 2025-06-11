@@ -346,13 +346,15 @@ class DeviceInitOp(IRDLOperation):
 
     name = "quantum.device"
 
-    # assembly_format = """
-    #    (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
-    # """
+    assembly_format = """
+        (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
+    """
 
     shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
 
     lib = prop_def(BaseAttr(StringAttr))
+
+    device_name = prop_def(BaseAttr(StringAttr))
 
     kwargs = prop_def(BaseAttr(StringAttr))
 

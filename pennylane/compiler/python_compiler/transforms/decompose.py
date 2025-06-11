@@ -74,7 +74,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
     # Several TODO for this pass/transform:
     #
     # - Add support for qml.ctrl (WIP)
-    # - Add support for qml.adjoint (WIP)
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
     #   both in the decomposition and in the gate set.
     # - Add support for the decomp_graph
@@ -221,7 +220,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             if self.quantum_register is None:
                 raise ValueError("Quantum register (AllocOp) not found in the function.")
             if len(self.wire_to_ssa_qubits) == 0:
-                raise NotImplementedError("No wires extracted from the register have been found. ")
+                raise NotImplementedError("No wires extracted from the register have been found.")
 
             qml_op = self.xdsl_to_qml_op(xdsl_op)
             qml_decomp_ops = self.decompose_operation(qml_op)
@@ -231,6 +230,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
             print(f"qml_decomp_ops: {qml_decomp_ops}")
 
             for qml_decomp_op in qml_decomp_ops:
+
                 if is_adjoint := isinstance(qml_decomp_op, qml.ops.op_math.Adjoint):
                     qml_decomp_op = qml_decomp_op.base
 
