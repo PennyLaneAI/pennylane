@@ -607,7 +607,6 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     r"""Returns Taylor bosonic vibrational Hamiltonian.
 
-
     The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
     :math:`V` components  as:
 
@@ -724,24 +723,23 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 def taylor_hamiltonian(
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
-    r"""Return Taylor vibrational Hamiltonian.
+    r"""Returns Taylor vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
-    components :math:`V` as:
+    :math:`V` components  as:
 
     .. math::
 
-        H = T + V,
+        H = T + V.
 
-    where :math:`T` and :math:`V` are the kinetic and potential components, respectively. The
-    kinetic term is defined in terms of momentum :math:`p` operator as
+    The kinetic term is defined in terms of momentum :math:`p` operator as
 
     .. math::
 
         T = \sum_{i\geq j} K_{ij} p_i  p_j,
 
-    where :math:`K` is computed from the vibrational frequencies, :math:`\omega` and mode
-    localization unitary matrix, :math:`U` as:
+    where the :math:`K` matrix is defined in terms of vibrational frequencies, :math:`\omega`, and
+    mode localization unitary matrix, :math:`U`, as:
 
     .. math::
 
@@ -763,7 +761,7 @@ def taylor_hamiltonian(
 		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
 		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
-		\nonumber \vdots \, .
+		\nonumber \vdots
 
     These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
     ``min_deg`` and ``max_deg`` to get :math:`n`-mode Taylor coefficients. For instance, the
@@ -774,7 +772,7 @@ def taylor_hamiltonian(
 
         V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ...
 
-    Similarly, the two-mode and three-mode Taylor coeffiicents are computed if the two-mode and
+    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
     three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
     :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
@@ -796,7 +794,7 @@ def taylor_hamiltonian(
 
         H = \sum_{i} c_i P_i,
 
-    where :math:`P` is a tensor product of Pauli operator and :math:`c` is a constant.
+    where :math:`P` is a tensor product of Pauli operators and :math:`c` is a constant.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
