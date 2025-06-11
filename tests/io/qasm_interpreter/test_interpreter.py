@@ -69,12 +69,12 @@ class TestSubroutine:
             )
 
         assert q.queue == [
-            RX(2 ,"q0"),
+            RX(2, "q0"),
             RY(0.5, "q0"),
             RX(2, "q0"),
             RY(0.5, "q0"),
             RX(11, "q0"),
-            RY(0.5, "q0")
+            RY(0.5, "q0"),
         ]
 
     def test_subroutine_not_defined(self):
