@@ -92,8 +92,8 @@ class Select(Operation):
 
             The decomposition of ``Select`` using unary iteration will only be correct if
             the state :math:`|\psi\rangle` on the control wires satisfies
-            :math:`\langle j | \psi\rangle=0` for all :math:`K\leq j< 2^c`, where :math:`K` is the
-            number of target operators and :math:`c=\lceil\log_2 (K)\rceil` is the number of
+            :math:`\langle j | \psi\rangle=0` for all :math:`j \in [K, 2^c)`, where :math:`K` is
+            the number of target operators and :math:`c=\lceil\log_2 (K)\rceil` is the number of
             required control wires. For :math:`K=2^c`, no constraint applies.
 
         **Principle**
@@ -142,9 +142,9 @@ class Select(Operation):
 
         .. code-block::
 
-            0: ─╭●──   and  ─●─╮─
-            1: ─├●──        ─●─┤─
-            2:  ╰───        ───╯
+            0: ─╭●──       ─●─╮─
+            1: ─├●──  and  ─●─┤─
+            2:  ╰───       ───╯
 
         for :class:`~.TemporaryAND` and its adjoint, respectively, and skipped drawing the
         auxiliary wires in areas where they are guaranteed to be in the state :math:`|0\rangle`.
@@ -152,8 +152,8 @@ class Select(Operation):
 
         .. code-block::
 
-            ─○─╮─╭○── = ──,    ─○─╮─╭○── = ─╭○─, and  ─○─╮─╭●── = ─╭●────
-            ─○─┤─├○──   ──     ─○─┤─├●──   ─│──       ─●─┤─├○──   ─│──╭●─
+            ─○─╮─╭○──   ──     ─○─╮─╭○──   ─╭○─       ─○─╮─╭●──   ─╭●────
+            ─○─┤─├○── = ──,    ─○─┤─├●── = ─│──, and  ─●─┤─├○── = ─│──╭●─.
             ───╯ ╰───   ──     ───╯ ╰───   ─╰X─       ───╯ ╰───   ─╰X─╰X─
 
         Applying these simplifications reduces the computational cost of the ``Select``
@@ -177,21 +177,9 @@ class Select(Operation):
         alternating control and auxiliary wires.
 
         An implementation of this decomposition is easily achieved in the following steps:
-
-        #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
-        #. Split the target operators into four quarters and apply the first quarter via the
-           second routine ``R`` described below.
-        #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
-        #. Apply the second quarter.
-        #. Apply ``[CNOT([0, "aux0"]), CNOT([1, "aux0"])]``.
-        #. Apply the third quarter.
-        #. Apply ``[CNOT([0, "aux0"])]``.
-        #. Apply the last quarter.
-        #. Apply the right-most ``adjoint(TemporaryAND)`` controlled on qubits ``0`` and ``1``.
-
-        The second routine, ``R``, has the following logic:
-        we are given :math:`L` operators and ``2 * ⌈log_2(L)⌉ + 1`` control and auxiliary wires.
-        If ``L=0``, ``R`` does not apply any operators.
+        We first define a recursive subroutine ``R`` that will be used in the main function:
+        we are given :math:`L` operators and :math:`2 \lceil\log_2(L)\rceil + 1` control and
+        auxiliary wires. If ``L=0``, ``R`` does not apply any operators.
         If ``L=1``, the single operator is applied, controlled on the first control wire.
 
         In all other cases, ``R`` applies the circuit
@@ -202,10 +190,22 @@ class Select(Operation):
             j+1:     ─├○────│─────●─┤─
             aux_j+1:  ╰──■──╰X─■────╯
 
-        where each box symbolizes a call to itself on the next recursion level.
+        where each box symbolizes a call to ``R`` itself, on the next recursion level.
         These next-level calls use
         :math:`L' = 2^{\lceil\log_2(L)\rceil-1}` (i.e. half of :math:`L`, rounded up to the next
         power of two) and :math:`L-L'` (i.e. the rest) operators, respectively.
+
+        With ``R`` defined, we are ready to outline the main function:
+
+        #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
+        #. Split the target operators into four quarters and apply the first quarter using ``R``.
+        #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
+        #. Apply the second quarter using ``R``.
+        #. Apply ``[CNOT([0, "aux0"]), CNOT([1, "aux0"])]``.
+        #. Apply the third quarter using ``R``.
+        #. Apply ``[CNOT([0, "aux0"])]``.
+        #. Apply the last quarter using ``R``.
+        #. Apply the right-most ``adjoint(TemporaryAND)`` controlled on qubits ``0`` and ``1``.
 
         **Partial Select decomposition**
 
@@ -223,7 +223,7 @@ class Select(Operation):
 
         Given :math:`K=2^c-b` operators, where :math:`c` is defined as above and we
         have :math:`0\leq b<2^{c-1}`, the steps above are modified into one of three variants.
-        In each variant, the first :math:`2^{c-1}`` operators are applied in two equal portions,
+        In each variant, the first :math:`2^{c-1}` operators are applied in two equal portions,
         containing :math:`2^{c-2}` operators each.
         After this, :math:`\ell=2^{c-1} -b` operators remain and the three circuit variants are
         distinguished, based on :math:`\ell`:
@@ -517,7 +517,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     second_half = _add_k_units(
         ops[k01 : k01 + k2], new_controls_sec_half, new_work_wires_sec_half, k2
     )
-    if and_wires_sec_half != []:
+    if and_wires_sec_half:
         second_half += (
             [CNOT(and_wires_sec_half[::2])]
             + _add_k_units(ops[k0 + k1 + k2 :], new_controls_sec_half, new_work_wires_sec_half, k3)
@@ -608,14 +608,14 @@ def _unary_select_resources(ops):
 @register_resources(_unary_select_resources)
 def _unary_select(ops, control, work_wires, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
-    For :math:`L` operators this decomposition requires at least :math:`c=\lceil\log_2 L\rceil`
+    For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
     See the documentation of ``Select`` for details.
 
     .. note::
 
         This decomposition assumes that the state on the control wires does not have any overlap
-        with :math:`|i\rangle` for :math:`i\geq L`.
+        with :math:`|i\rangle` for :math:`i\geq K`.
     """
     # Note that there might be a slightly improved implementation if a modified embedding is used
     # during state preparation in a PrepSelPrep pattern.
