@@ -459,11 +459,11 @@ def construct_batch(
         )
         # pylint: disable = protected-access
 
-        execution_config = qml.devices.ExecutionConfig(*args, **kwargs)
+        # execution_config = qml.devices.ExecutionConfig(*args, **kwargs)
 
-        execution_config = qnode.device.setup_execution_config(
-            config=execution_config, circuit=tapes
-        )
+        # execution_config = qnode.device.setup_execution_config(
+        #     config=execution_config, circuit=tapes
+        # )
 
         ###### Resolution of the execution config ######
         execution_config = qml.workflow.resolution._resolve_execution_config(
