@@ -316,10 +316,10 @@ def handle_for_loop(
     inner_loop_var_ascii = self._convert_var_to_ascii(inner_loop_var)
     ascii_context[inner_loop_var] = inner_loop_var_ascii
 
-    start, stop, step = map(self.read_ascii, eqn.invars[:3])
+    start_label, stop_label, step_label = map(self.read_ascii, eqn.invars[:3])
 
     # Create a cluster for the for loop
-    label = f"<for {self._bold_str(inner_loop_var_ascii)} in range({self._bold_str(start)}, {self._bold_str(stop)}, {self._bold_str(step)})>"
+    label = f"<for {self._bold_str(inner_loop_var_ascii)} in range({self._bold_str(start_label)}, {self._bold_str(stop_label)}, {self._bold_str(step_label)})>"
     for_loop_cluster = ControlFlowCluster(info_label=label)
     self.plxpr_graph.add_cluster_to_graph(for_loop_cluster)
 
