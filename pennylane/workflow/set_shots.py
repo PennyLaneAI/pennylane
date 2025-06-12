@@ -73,6 +73,6 @@ def set_shots(
 
     """
     # When called directly with a function/QNode
-    if hasattr(qnode, "update_shots"):
+    if isinstance(qnode, QNode):
         return qnode.update_shots(shots)
     raise ValueError("set_shots can only be applied to QNodes")
