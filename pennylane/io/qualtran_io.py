@@ -705,12 +705,24 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     This example shows how to use ``qml.ToBloq``:
 
-    >>> wrapped_op = qml.ToBloq(qml.CNOT([0, 1]))
-    >>> wrapped_op.tensor_contract()
-    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-    [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-    [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-    [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+    .. code-block::
+
+        from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+        control_wires = [2, 3]
+        estimation_wires = [4, 5, 6, 7, 8, 9]
+
+        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+        op = qml.QuantumPhaseEstimation(
+            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+        )
+
+        op_as_bloq = qml.ToBloq(op)
+        cbloq = op_as_bloq.decompose_bloq()
+        fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+        show_bloq(cbloq)
+
     """
 
     _error_message = (
@@ -901,9 +913,23 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     This example shows how to use ``qml.to_bloq``:
 
-    >>> qt_bloq = qml.to_bloq(qml.CNOT([0, 1]))
-    >>> qt_bloq
-    CNOT()
+    .. code-block::
+
+        from qualtran.drawing import show_call_graph, show_counts_sigma
+
+        control_wires = [2, 3]
+        estimation_wires = [4, 5, 6, 7, 8, 9]
+
+        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+        op = qml.QuantumPhaseEstimation(
+            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+        )
+
+        op_as_bloq = qml.to_bloq(op)
+        graph, sigma = wrapped_bloq.call_graph()
+        show_call_graph(graph)
+        show_counts_sigma(sigma)
 
     .. details::
         :title: Usage Details
