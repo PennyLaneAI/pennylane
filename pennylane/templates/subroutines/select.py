@@ -83,14 +83,14 @@ class Select(Operation):
     .. details::
         :title: Unary iterator decomposition
 
-        Generically, ``Select`` is decomposed into one multi-controlled operator for each input
+        Generically, ``Select`` is decomposed into one multi-controlled operator for each target
         operator. If auxiliary wires are available, though, a decomposition using a so-called
         unary iterator can be applied. It was introduced by
         `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__.
 
         .. note::
 
-            The decomposition of ``Select`` using unary iteration will only be correct if
+            This decomposition of ``Select`` using unary iteration will only be correct if
             the state :math:`|\psi\rangle` on the control wires satisfies
             :math:`\langle j | \psi\rangle=0` for all :math:`j \in [K, 2^c)`, where :math:`K` is
             the number of target operators and :math:`c=\lceil\log_2 (K)\rceil` is the number of
@@ -109,7 +109,7 @@ class Select(Operation):
         wires are needed. Unary iteration requires :math:`c-1` additional auxiliary wires.
         Below we first show an example for :math:`K` being a power of two, i.e., :math:`K=2^c`.
         Then we elaborate on implementation details for the case :math:`K<2^c`, which we call
-        a partial Select operator.
+        a *partial Select* operator.
 
         **Example**
 
@@ -176,29 +176,30 @@ class Select(Operation):
         For general :math:`c` and :math:`K=2^c`, the decomposition takes a similar form, with
         alternating control and auxiliary wires.
 
-        An implementation of this decomposition is easily achieved in the following steps:
-        We first define a recursive sub-circuit ``R`` that will be repeatedly applied:
-        we are given :math:`L` operators and :math:`2 \lceil\log_2(L)\rceil + 1` control and
-        auxiliary wires. If ``L>1``, ``R`` applies the circuit
+        An implementation of the unary iterator is achieved in the following steps:
+        We first define a recursive sub-circuit ``R``;
+        given :math:`L` operators and :math:`2 \lceil\log_2(L)\rceil + 1` control and
+        auxiliary wires, there are three cases that ``R`` distinguishes. First, if ``L>1``,
+        it applies the circuit
 
         .. code-block::
 
             aux_j:   ─╭●────╭●────●─╮─
             j+1:     ─├○────│─────●─┤─
-            aux_j+1:  ╰──R──╰X─R────╯
+            aux_j+1:  ╰──R──╰X─R────╯ ,
 
         where each label ``R`` symbolizes a call to ``R`` itself, on the next recursion level.
         These next-level calls use
         :math:`L' = 2^{\lceil\log_2(L)\rceil-1}` (i.e. half of :math:`L`, rounded up to the next
         power of two) and :math:`L-L'` (i.e. the rest) operators, respectively.
 
-        If ``L=1``, the single operator is applied, controlled on the first control wire.
+        Second, if ``L=1``, the single operator is applied, controlled on the first control wire.
         Finally, if ``L=0``, ``R`` does not apply any operators.
 
-        With ``R`` defined, we are ready to outline the main function:
+        With ``R`` defined, we are ready to outline the main circuit structure:
 
         #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
-        #. Split the target operators into four "quarters" (possibly with varying sizes)
+        #. Split the target operators into four "quarters" (often with varying sizes)
            and apply the first quarter using ``R``.
         #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
         #. Apply the second quarter using ``R``.
@@ -223,25 +224,28 @@ class Select(Operation):
         above that result from it.
 
         Given :math:`K=2^c-b` operators, where :math:`c` is defined as above and we
-        have :math:`0\leq b<2^{c-1}`, the steps above are modified into one of three variants.
+        have :math:`0\leq b<2^{c-1}`, the nine steps above are modified into one of three variants.
         In each variant, the first :math:`2^{c-1}` operators are applied in two equal portions,
         containing :math:`2^{c-2}` operators each.
         After this, :math:`\ell=2^{c-1} -b` operators remain and the three circuit variants are
         distinguished, based on :math:`\ell`:
 
-        - if :math:`\ell=1`, the following circuit is applied:
+        - if :math:`\ell \geq 2^{c-2}`, the following, rather generic, circuit is applied:
 
           .. code-block::
 
-              0:    ─╭○─────╭○─────○─╮╭●──
-              1:    ─├○─────│──────●─┤│───
-              aux0:  ╰──╭R──╰X─╭R────╯│───
-              2:    ────├R─────├R─────│───
-              aux1:     ╰R     ╰R     ╰U  .
+              0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
+              1:    ─├○─────│──────│──╭●─────│──────●─┤─
+              aux0:  ╰──╭R──╰X─╭R──╰X─╰X─╭R──╰X─╭R────╯
+              2:    ────├R─────├R────────├R─────├R──────
+              aux1:     ╰R     ╰R        ╰R     ╰R      .
 
-          Here, each operator with three connected ``R`` labels symbolizes a call to ``R`` and
-          applies :math:`2^{c-2}` operators in
-          a recursive manner, and the controlled gate on the right is a single controlled operator.
+          Here, each operator with three ``R`` labels symbolizes a call to ``R``. The first
+          call in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
+          Note that this case is triggered if :math:`K` is larger than or equal to
+          :math:`\tfrac{3}{4}` of the maximal capacity for :math:`c` control wires.
+          Also note how the two middle ``TemporaryAND`` gates were merged into two CNOTs,
+          like for the non-partial Select operator.
 
         - if :math:`1<\ell < 2^{c-2}`, the following circuit is applied:
 
@@ -254,27 +258,25 @@ class Select(Operation):
               aux1:     ╰R     ╰R     ╰───R──╰X──R────╯
 
           where the second half may skip more than one control and auxiliary wire each.
-          In this diagram, both the operators with three and one ``R`` labels represent calls to the
-          routine ``R``, with single-label instances applying fewer operators.
+          In this diagram, both the operators with three and one ``R`` labels represent calls to
+          ``R``, with single-label instances applying fewer operators.
           The first call to ``R`` in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}`
-          operators.
+          operators. The middle elbows act on distinct wire triples and can not be merged as
+          above.
 
-        - if :math:`\ell \geq 2^{c-2}`, the following, more generic, circuit is applied:
+        - if :math:`\ell=1`, the following circuit is applied:
 
           .. code-block::
 
-              0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
-              1:    ─├○─────│──────│──╭●─────│──────●─┤─
-              aux0:  ╰──╭R──╰X─╭R──╰X─╰X─╭R──╰X─╭R────╯
-              2:    ────├R─────├R────────├R─────├R──────
-              aux1:     ╰R     ╰R        ╰R     ╰R      .
+              0:    ─╭○─────╭○─────○─╮╭●──
+              1:    ─├○─────│──────●─┤│───
+              aux0:  ╰──╭R──╰X─╭R────╯│───
+              2:    ────├R─────├R─────│───
+              aux1:     ╰R     ╰R     ╰U  .
 
-          Here, each operator with three ``R`` labels again symbolizes a call to ``R``. The first
-          call in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
-          Note that this case is triggered if :math:`K` is larger than or equal to
-          :math:`\tfrac{3}{4}` of the maximal capacity for :math:`c` control wires.
-          Also note how the two middle ``TemporaryAND`` gates were merged into two CNOTs,
-          which was not possible above because they acted on distinct wire triples.
+          Here, the three connected ``R`` labels symbolize a call to ``R`` and
+          apply :math:`2^{c-2}` operators each.
+          The controlled gate on the right applies the single remaining operator.
 
     """
 
@@ -430,7 +432,7 @@ class Select(Operation):
 
     @property
     def target_wires(self):
-        """The wires of the input operators."""
+        """The wires of the target operators."""
         return self.hyperparameters["target_wires"]
 
     @property

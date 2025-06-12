@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition based on unary iteration was added to :class:`qml.Select`.
+  It requires :math:`c-1` auxiliary wires for a ``Select`` template with :math:`c` control wires,
+  but reduces the :class:`T` count significantly. The implementation makes use of a simplification
+  for partial Select templates, which only is valid if the state on the control wires has no
+  overlap with computational basis states that are not used by ``Select``. See the documentation
+  for more details.
+  [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
+
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
@@ -528,7 +536,7 @@
   these dependencies only have to be installed for the functions that use them, not to use
   ``labs`` functionalities in general. This decouples the various submodules, and even functions
   within the same submodule, from each other.
-  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
+  [(#7650)](https://github.com/PennyLaneAI/pennylane/pull/7650)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
