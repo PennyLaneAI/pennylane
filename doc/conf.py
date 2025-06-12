@@ -340,6 +340,8 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
 def setup(app):
     import pennylane
+    from typing import TypeAlias
+    # import shutil
     # need to assign the names here, otherwise autodoc won't document these classes,
     # and will instead just say 'alias of ...'
     # pennylane.H.__name__ = 'H'
@@ -347,6 +349,11 @@ def setup(app):
     pennylane.X.__name__ = 'X'
     pennylane.Y.__name__ = 'Y'
     pennylane.H.__module__ = __name__
-    pennylane.FromBloq.__module__ = __name__
+    pennylane.FromBloq.__name__ = 'FromBloq'
+    H: TypeAlias = pennylane.Hadamard
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
+    # app.connect('build-finished', build_finished)
+
+    # def build_finished(app, exception):
+    #     shutil.rmtree(NOTEBOOKS_DIR)
