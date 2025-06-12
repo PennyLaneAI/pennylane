@@ -745,6 +745,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
+  interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
+  Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
+  [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
+
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
 
