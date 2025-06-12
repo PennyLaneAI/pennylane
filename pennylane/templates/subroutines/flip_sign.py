@@ -106,7 +106,7 @@ class FlipSign(Operation):
             ValueError: "Cannot encode basis state ``n`` on ``n_wires`` wires."
 
         Returns:
-            list: basis state as list of bits
+            list[int]: basis state as list of bits
         """
         if n >= 2**n_wires:
             raise ValueError(f"Cannot encode basis state {n} on {n_wires} wires.")
