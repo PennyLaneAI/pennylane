@@ -12,21 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-An custom implementation of the interpreter functions used for the transform dialect.
+"""Custom Transform Dialect Interpreter Pass
+
+Differs from xDSL's upstream implementation by allowing passes
+to be passed in as options.
 """
 
 import io
+from typing import Callable
 
 from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
-from xdsl.dialects import transform
+from xdsl.context import Context
+from xdsl.dialects import builtin, transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
 from xdsl.interpreters.transform import TransformFunctions
 from xdsl.parser import Parser
-from xdsl.passes import PipelinePass
+from xdsl.passes import ModulePass, PipelinePass
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils import parse_pipeline
+from xdsl.utils.exceptions import PassFailedException
 
 
 # pylint: disable=too-few-public-methods
@@ -71,3 +76,35 @@ class TransformFunctionsExt(TransformFunctions):
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
         return (data,)
+
+
+class TransformInterpreterPass(ModulePass):
+    """Transform dialect interpreter"""
+
+    passes: dict[str, Callable[[], type[ModulePass]]]
+    name = "transform-interpreter"
+
+    entry_point: str = "__transform_main"
+
+    def __init__(self, passes):
+        self.passes = passes
+
+    @staticmethod
+    def find_transform_entry_point(
+        root: builtin.ModuleOp, entry_point: str
+    ) -> transform.NamedSequenceOp:
+        """Find the entry point of the program"""
+        for op in root.walk():
+            if isinstance(op, transform.NamedSequenceOp) and op.sym_name.data == entry_point:
+                return op
+        raise PassFailedException(  # pragma: no cover
+            f"{root} could not find a nested named sequence with name: {entry_point}"
+        )
+
+    def apply(self, ctx: Context, op: builtin.ModuleOp) -> None:
+        """Run the interpreter with op."""
+        schedule = TransformInterpreterPass.find_transform_entry_point(op, self.entry_point)
+        interpreter = Interpreter(op)
+        interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes))
+        schedule.parent_op().detach()
+        interpreter.call_op(schedule, (op,))

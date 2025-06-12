@@ -20,7 +20,7 @@ from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.passes import ModulePass, PipelinePass
 
-from .interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
+from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
 
 available_passes = {}
 

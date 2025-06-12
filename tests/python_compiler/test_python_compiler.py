@@ -40,12 +40,10 @@ from pennylane.compiler.python_compiler.jax_utils import (
 )
 from pennylane.compiler.python_compiler.transforms.api import (
     ApplyTransformSequence,
-    available_passes,
-    xdsl_transform,
-)
-from pennylane.compiler.python_compiler.transforms.api.interpreter import (
     TransformFunctionsExt,
     TransformInterpreterPass,
+    available_passes,
+    xdsl_transform,
 )
 
 

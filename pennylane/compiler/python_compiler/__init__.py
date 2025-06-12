@@ -16,7 +16,6 @@
 from .compiler import Compiler
 from .quantum_dialect import QuantumDialect as Quantum
 
-
 __all__ = [
     "Compiler",
     "Quantum",

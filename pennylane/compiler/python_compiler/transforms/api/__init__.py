@@ -14,6 +14,7 @@
 """xDSL transforms core API."""
 
 from .apply_transform_sequence import ApplyTransformSequence, available_passes, register_pass
+from .transform_interpreter import TransformFunctionsExt, TransformInterpreterPass
 from .xdsl_transform import PassDispatcher, xdsl_transform
 
 __all__ = [
@@ -21,5 +22,7 @@ __all__ = [
     "available_passes",
     "PassDispatcher",
     "register_pass",
+    "TransformFunctionsExt",
+    "TransformInterpreterPass",
     "xdsl_transform",
 ]

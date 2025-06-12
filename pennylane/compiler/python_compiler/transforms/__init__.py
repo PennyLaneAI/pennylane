@@ -14,10 +14,10 @@
 """PennyLane-xDSL transformations API."""
 
 from xdsl.transforms.transform_interpreter import TransformInterpreterPass
-from .api.apply_transform_sequence import ApplyTransformSequence, register_pass
-from .cancel_inverses import iterative_cancel_inverses_pass, IterativeCancelInversesPass
-from .merge_rotations import merge_rotations_pass, MergeRotationsPass
 
+from .api.apply_transform_sequence import ApplyTransformSequence, register_pass
+from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
+from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 
 __all__ = [
     "ApplyTransformSequence",
