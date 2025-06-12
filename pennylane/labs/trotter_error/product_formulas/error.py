@@ -40,7 +40,7 @@ def effective_hamiltonian(
     order: int,
     timestep: float = 1.0,
 ):
-    """Compute the effective Hamiltonian :math:`H_{eff} = H + \hat{\epsilon}` with a given product formula.
+    r"""Compute the effective Hamiltonian :math:`H_{eff} = H + \hat{\epsilon}` with a given product formula.
 
     Args:
         product_formula (:class:`~.pennylane.trotter_error.labs.ProductFormula`): A product formula used to approximate the Hamiltonian simulation.
