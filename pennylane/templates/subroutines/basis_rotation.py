@@ -22,7 +22,6 @@ from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 
-# pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
     r"""Implement a circuit that provides a unitary that can be used to do an exact single-body basis rotation.
 
