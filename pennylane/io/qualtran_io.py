@@ -586,7 +586,8 @@ class FromBloq(Operation):
 
 class _QReg:
     """Used as a container for qubits that form a `Register` of a given bitsize. This is a modified
-    version of _QReg found in Qualtran as well.
+    version of `_QReg <https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py>`_ 
+    found in Qualtran as well.
 
     Each instance of `_QReg` would correspond to a `Soquet` in Bloqs and represents an opaque collection
     of qubits that together form a quantum register.
@@ -642,6 +643,7 @@ def _ensure_in_reg_exists(
     Raises:
         AssertionError: in_reg was not found in qreg_to_qvar
     """
+    # Note: To capture control flow, we may have use for the Split and Join operations.
 
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
@@ -653,8 +655,6 @@ def _ensure_in_reg_exists(
 
     # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
     assert in_reg in qreg_to_qvar
-
-    # Note: To capture control flow, we may have use for the Split and Join operations.
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
@@ -855,7 +855,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         return hash(self.op)
 
     def __str__(self):
-        return "PL" + self.op.name
+        return "PL{self.op.name}"
 
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
