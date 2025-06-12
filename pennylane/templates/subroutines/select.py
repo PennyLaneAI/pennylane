@@ -179,26 +179,27 @@ class Select(Operation):
         An implementation of this decomposition is easily achieved in the following steps:
         We first define a recursive subroutine ``R`` that will be used in the main function:
         we are given :math:`L` operators and :math:`2 \lceil\log_2(L)\rceil + 1` control and
-        auxiliary wires. If ``L=0``, ``R`` does not apply any operators.
-        If ``L=1``, the single operator is applied, controlled on the first control wire.
-
-        In all other cases, ``R`` applies the circuit
+        auxiliary wires. If ``L>1``, ``R`` applies the circuit
 
         .. code-block::
 
             aux_j:   ─╭●────╭●────●─╮─
             j+1:     ─├○────│─────●─┤─
-            aux_j+1:  ╰──■──╰X─■────╯
+            aux_j+1:  ╰──R──╰X─R────╯
 
-        where each box symbolizes a call to ``R`` itself, on the next recursion level.
+        where each label ``R`` symbolizes a call to ``R`` itself, on the next recursion level.
         These next-level calls use
         :math:`L' = 2^{\lceil\log_2(L)\rceil-1}` (i.e. half of :math:`L`, rounded up to the next
         power of two) and :math:`L-L'` (i.e. the rest) operators, respectively.
 
+        If ``L=1``, the single operator is applied, controlled on the first control wire.
+        Finally, if ``L=0``, ``R`` does not apply any operators.
+
         With ``R`` defined, we are ready to outline the main function:
 
         #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
-        #. Split the target operators into four quarters and apply the first quarter using ``R``.
+        #. Split the target operators into four "quarters" (possibly with varying sizes)
+           and apply the first quarter using ``R``.
         #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
         #. Apply the second quarter using ``R``.
         #. Apply ``[CNOT([0, "aux0"]), CNOT([1, "aux0"])]``.
@@ -234,11 +235,12 @@ class Select(Operation):
 
               0:    ─╭○─────╭○─────○─╮╭●──
               1:    ─├○─────│──────●─┤│───
-              aux0:  ╰──╭■──╰X─╭■────╯│───
-              2:    ────├■─────├■─────│───
-              aux1:     ╰■     ╰■     ╰■  .
+              aux0:  ╰──╭R──╰X─╭R────╯│───
+              2:    ────├R─────├R─────│───
+              aux1:     ╰R     ╰R     ╰U  .
 
-          Here, each triple box symbolizes a call to ``R`` and applies :math:`2^{c-2}` operators in
+          Here, each operator with three connected ``R`` labels symbolizes a call to ``R`` and
+          applies :math:`2^{c-2}` operators in
           a recursive manner, and the controlled gate on the right is a single controlled operator.
 
         - if :math:`1<\ell < 2^{c-2}`, the following circuit is applied:
@@ -247,13 +249,13 @@ class Select(Operation):
 
               0:    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
               1:    ─├○─────│──────●─┤│──────│────────│─
-              aux0:  ╰──╭■──╰X─╭■────╯│      │        │
-              2:    ────├■─────├■─────├○─────│──────●─┤─
-              aux1:     ╰■     ╰■     ╰───■──╰X──■────╯
+              aux0:  ╰──╭R──╰X─╭R────╯│      │        │
+              2:    ────├R─────├R─────├○─────│──────●─┤─
+              aux1:     ╰R     ╰R     ╰───R──╰X──R────╯
 
           where the second half may skip more than one control and auxiliary wire each.
-          In this diagram, both the triple and the single boxes represent calls to the
-          routine ``R``, with single boxes applying fewer operators.
+          In this diagram, both the operators with three and one ``R`` labels represent calls to the
+          routine ``R``, with single-label instances applying fewer operators.
           The first call to ``R`` in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}`
           operators.
 
@@ -263,12 +265,12 @@ class Select(Operation):
 
               0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
               1:    ─├○─────│──────│──╭●─────│──────●─┤─
-              aux0:  ╰──╭■──╰X─╭■──╰X─╰X─╭■──╰X─╭■────╯
-              2:    ────├■─────├■────────├■─────├■──────
-              aux1:     ╰■     ╰■        ╰■     ╰■      .
+              aux0:  ╰──╭R──╰X─╭R──╰X─╰X─╭R──╰X─╭R────╯
+              2:    ────├R─────├R────────├R─────├R──────
+              aux1:     ╰R     ╰R        ╰R     ╰R      .
 
-          Here, each triple box again symbolizes a call to ``R``. The first call in the
-          second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
+          Here, each operator with three ``R`` labels again symbolizes a call to ``R``. The first
+          call in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
           Note that this case is triggered if :math:`K` is larger than or equal to
           :math:`\tfrac{3}{4}` of the maximal capacity for :math:`c` control wires.
           Also note how the two middle ``TemporaryAND`` gates were merged into two CNOTs,
