@@ -240,7 +240,7 @@ class PyDotGraphBuilder:
                                         prev_node.get_name(), node.get_name()
                                     ):  # Avoid self-loop
                                         self.graph.add_edge(
-                                            pydot.Edge(prev_node, node, color=color, style="dotted")
+                                            pydot.Edge(prev_node, node, color=color, style="dashed")
                                         )
 
                     if isinstance(node, (OperatorNode, DeviceNode)):
@@ -250,14 +250,14 @@ class PyDotGraphBuilder:
                 # Encoutered a wire that is not an int
                 # This will represent a dynamic wire that could be any value
                 # Therefore, we need to connect all previous nodes to this one
-                # with a dotted line to indicate uncertainty
+                # with a dashed line to indicate uncertainty
                 for _, prev_nodes in self.wires_to_nodes.items():
                     for prev_node in prev_nodes:
                         if prev_node != node and not self.graph.get_edge(
                             prev_node.get_name(), node.get_name()
                         ):
                             self.graph.add_edge(
-                                pydot.Edge(prev_node, node, color=color, style="dotted")
+                                pydot.Edge(prev_node, node, color=color, style="dashed")
                             )
                 self.wires_to_nodes.clear()
 
