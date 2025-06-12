@@ -76,8 +76,8 @@ class FlipSign(Operation):
 
         if isinstance(wires, int):
             warnings.warn(
-                "Passing an integer m as the wires argument is now interpreted"
-                "as wires=[m] and not anymore as wires=range(m). This may lead to an error."
+                "Passing an integer `m` as the wires argument is now interpreted as a single wire (i.e. wires=[`m`])."
+                "This is different from the previous interpretation of wires=range(`m`). This may lead to unexpected errors."
             )
             wires = [wires]
 
