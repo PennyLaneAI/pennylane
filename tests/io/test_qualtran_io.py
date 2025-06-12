@@ -603,7 +603,7 @@ class TestToBloq:
                         False,
                     ): 1,
                     (qml.CNOT([0, 1]), True): 2,
-                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), False): 4,
+                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), True): 4,
                 },
             ),
             (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),

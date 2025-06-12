@@ -45,7 +45,7 @@ from pennylane.workflow.qnode import QNode
 try:
     import cirq
     import qualtran as qt
-    from qualtran import Bloq
+    from qualtran import Bloq, CtrlSpec
     from qualtran._infra.gate_with_registers import split_qubits
     from qualtran.bloqs import basic_gates as qt_gates
 
@@ -67,7 +67,7 @@ def _get_op_call_graph(op):
 def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     return {
         qt_gates.Hadamard(): len(op.estimation_wires),
-        _map_to_bloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires))
+        _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1])): (2 ** len(op.estimation_wires))
         - 1,
         _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
     }
@@ -313,6 +313,28 @@ def _(op: qtemps.subroutines.QSVT):
 
 
 @_get_op_call_graph.register
+def _(op: qtemps.subroutines.Select):
+    gate_types = defaultdict(int, {})
+    ops = op.hyperparameters["ops"]
+    cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+
+    x = qt_gates.XGate()
+
+    num_ops = len(cmpr_ops)
+    num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
+    num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
+
+    num_zero_controls = num_total_ctrl_possibilities // 2
+    gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
+
+    for cmp_rep in cmpr_ops:
+        ctrl_op = cmp_rep.controlled()
+        gate_types[ctrl_op] += 1
+
+    return gate_types
+
+
+@_get_op_call_graph.register
 def _(op: qtemps.subroutines.ModExp):
 
     mod = op.hyperparameters["mod"]
@@ -347,8 +369,11 @@ def _(op: qtemps.subroutines.ModExp):
     mult_resources[cnot] = min(num_x_wires, num_aux_swap)
 
     gate_types = {}
+    ctrl_spec = CtrlSpec(cvs=[1])
     for comp_rep in mult_resources:
-        new_rep = comp_rep.controlled()
+        new_rep = comp_rep.controlled(ctrl_spec)
+        if comp_rep == qt_gates.CNOT():
+            new_rep = qt_gates.Toffoli()
         # cancel out QFTs from consecutive Multipliers
         if hasattr(comp_rep, "op"):
             if comp_rep.op.name == "QFT":
@@ -479,15 +504,15 @@ def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
 
 @_map_to_bloq.register
 def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
-    if isinstance(op, qops.MultiControlledX):
-        return ToBloq(op)
-
-    if isinstance(op, qops.Toffoli):
-        return qt_gates.Toffoli()
-
-    return _map_to_bloq(
-        op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
-    ).controlled()
+    if isinstance(op, qops.CNOT):
+        return qt_gates.CNOT()
+    
+    ctrl_spec = CtrlSpec(cvs=[int(v) for v in op.control_values])
+    return (
+        _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).controlled(
+            ctrl_spec
+        )
+    )
 
 
 @_map_to_bloq.register
