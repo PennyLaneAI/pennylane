@@ -788,8 +788,8 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
-        updated_qn._shots = qml.measurements.Shots(shots)
-        updated_qn._shots_override_device = bool(updated_qn._shots != updated_qn.device.shots)
+        # pylint: disable=protected-access
+        updated_qn._set_shots(shots)
 
         return updated_qn
 
