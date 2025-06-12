@@ -25,7 +25,7 @@ from functools import lru_cache, partial
 from typing import Callable, Optional, Sequence
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
+from pennylane.allocation import Allocate, Borrow, Deallocate, Return
 from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
@@ -900,13 +900,13 @@ def _resolve_gate_set(
             return (
                 (op.name in gate_names)
                 or isinstance(op, gate_types)
-                or isinstance(op, (Allocate, Deallocate))
+                or isinstance(op, (Allocate, Deallocate, Borrow, Return))
             )
 
     elif isinstance(gate_set, Callable):  # pylint:disable=isinstance-second-argument-not-valid-type
 
         def gate_set_contains(op: Operator) -> bool:
-            return gate_set(op) or isinstance(op, (Allocate, Deallocate))
+            return gate_set(op) or isinstance(op, (Allocate, Deallocate, Borrow, Return))
 
         if qml.decomposition.enabled_graph():
             raise TypeError(
@@ -937,7 +937,9 @@ def _resolve_gate_set(
 def _construct_and_solve_decomp_graph(operations, target_gates, fixed_decomps, alt_decomps):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
-    operations = [op for op in operations if not isinstance(op, (Allocate, Deallocate))]
+    operations = [
+        op for op in operations if not isinstance(op, (Allocate, Deallocate, Borrow, Return))
+    ]
 
     # Create the decomposition graph
     decomp_graph = DecompositionGraph(

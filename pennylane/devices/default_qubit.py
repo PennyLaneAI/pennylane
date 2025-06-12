@@ -64,7 +64,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    if op.name in {"Snapshot", "Allocate", "Deallocate", "DeallocateAll"}:
+    if op.name in {"Snapshot", "Allocate", "Deallocate", "DeallocateAll", "Borrow", "Return"}:
         return True
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
