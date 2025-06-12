@@ -342,6 +342,9 @@ def setup(app):
     import pennylane
     # need to assign the names here, otherwise autodoc won't document these classes,
     # and will instead just say 'alias of ...'
-    pennylane.H.__doc__ = 'H'
+    pennylane.H.__name__ = 'H'
+    pennylane.Hadamard.__name__ = 'Hadamard'
+    pennylane.X.__name__ = 'X'
+    pennylane.Y.__name__ = 'Y'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
