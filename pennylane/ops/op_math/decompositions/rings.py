@@ -83,6 +83,8 @@ class ZSqrtTwo:
             return ZSqrtTwo(1, 0)
         if power < 0:
             raise ValueError(f"Negative powers {power} are unsupported for ZSqrtTwo.")
+        if isinstance(power, float) and not power.is_integer():
+            raise ValueError(f"Non-integer powers {power} are unsupported for ZSqrtTwo.")
         result = self
         while power > 1:
             result *= self
@@ -106,8 +108,8 @@ class ZSqrtTwo:
     def __eq__(self, other) -> bool:
         if isinstance(other, ZSqrtTwo):
             return self.a == other.a and self.b == other.b
-        if isinstance(other, int):
-            return self.a == other and self.b == 0
+        if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
+            return self.a == int(other) and self.b == 0
         return np.isclose(float(self), float(other))
 
     def __abs__(self) -> float:
@@ -130,11 +132,19 @@ class ZSqrtTwo:
         return [self.a, self.b]
 
     def conj(self) -> ZSqrtTwo:
-        """Return the standard conjugate."""
+        r"""Return the complex conjugate.
+
+        .. math::
+            (a + b\sqrt{2})^{\dagger} = a + b\sqrt{2}
+        """
         return ZSqrtTwo(self.a, self.b)
 
     def adj2(self) -> ZSqrtTwo:
-        """Return the root-2 adjoint."""
+        r"""Return the root-2 conjugate.
+
+        .. math::
+            (a + b\sqrt{2})^{\bullet} = a - b\sqrt{2}
+        """
         return ZSqrtTwo(self.a, -self.b)
 
     def sqrt(self) -> ZSqrtTwo | None:
@@ -152,7 +162,7 @@ class ZSqrtTwo:
             art = zrt.adj2()
             if art * art == self:  # pragma: no cover
                 return art
-        return None
+        return None  # pragma: no cover
 
     def to_omega(self) -> ZOmega:
         """Convert to the an ring of integers adjoined with omega."""
@@ -245,6 +255,8 @@ class ZOmega:
     def __pow__(self, power: int) -> ZOmega:
         if power < 0:
             raise ValueError(f"Negative powers {power} are unsupported for ZOmega.")
+        if isinstance(power, float) and not power.is_integer():
+            raise ValueError(f"Non-integer powers {power} are unsupported for ZOmega.")
         if power == 0:
             return ZOmega(0, 0, 0, 1)
         result = self
@@ -277,11 +289,19 @@ class ZOmega:
         return [self.a, self.b, self.c, self.d]
 
     def conj(self: ZOmega) -> ZOmega:
-        """The complex conjugate."""
+        r"""Return the complex conjugate.
+
+        .. math::
+            (a\omega^3 + b\omega^2 + c\omega + d)^{\dagger} = -c\omega^3 + b\omega^2 - a\omega + d
+        """
         return ZOmega(-self.c, -self.b, -self.a, self.d)
 
     def adj2(self: ZOmega) -> ZOmega:
-        """Return the root-2 adjoint."""
+        r"""Return the root-2 conjugate.
+
+        .. math::
+            (a\omega^3 + b\omega^2 + c\omega + d)^{\bullet} = -a\omega^3 + b\omega^2 - c\omega + d
+        """
         return ZOmega(-self.a, self.b, -self.c, self.d)
 
     def norm(self: ZOmega) -> float:
@@ -289,7 +309,7 @@ class ZOmega:
         return self * self.conj()
 
     def parity(self: ZOmega) -> int:
-        """Return the parity."""
+        """Return the parity for conversion to ZSqrtTwo."""
         return (self.a + self.c) % 2
 
     def to_sqrt_two(self: ZOmega) -> ZSqrtTwo:
@@ -298,17 +318,23 @@ class ZOmega:
         Returns:
             ZSqrtTwo: The corresponding element in the ZSqrtTwo ring.
         """
-        if self.c + self.a == 0 and self.b == 0:
+        if (self.c + self.a) == 0 and self.b == 0:
             return ZSqrtTwo(self.d, (self.c - self.a) // 2)
         raise ValueError("Cannot convert ZOmega to ZSqrtTwo.")
 
 
 class DyadicMatrix:
     r"""Represents the matrices over the ring :math:`\mathbb{D}[\omega]`,
-    the ring of dyadic integers adjoined with :math:`\omega`.
+    the ring of dyadic fractions adjoined with :math:`\omega`.
 
-    The `~pennylane.ZOmega` (or :math:`\mathbb{Z}[\omega]) represents a subset of this ring,
-    and can be used to construct its elements. The matrix form is usually represented as:
+    The dyadic fractions :math:`\mathbb{D} = \mathbb{Z}[\frac{1}{2}]` are defined as
+    :math:`\mathbb{D} = \{ a / 2^k \mid a \in \mathbb{Z}, k \in  \{0\} \cup \mathbb{N}\}`. This gives:
+
+    .. math::
+        \mathbb{D}[omega] = \mathbb{Z}[\frac{1}{\sqrt{2}}, i] = \{ a\omega^3 + b\omega^2 + c\omega + d \mid a, b, c, d \in \mathbb{Z}[\frac{1}{\sqrt{2}}] \}
+
+    The `~pennylane.ZOmega` (or :math:`\mathbb{Z}[\omega]) represents a subset of :math:`\mathbb{D}[\omega]`,
+    and therefore can be used to construct the elements of a ``DyadicMatrix``, which is represented as:
 
     .. math::
         \frac{1}{\sqrt{2}^k}
@@ -355,7 +381,7 @@ class DyadicMatrix:
             and self.k == other.k
         )
 
-    def __mul__(self: DyadicMatrix, other: int) -> DyadicMatrix:
+    def __mul__(self: DyadicMatrix, other: int | ZOmega) -> DyadicMatrix:
         """Multiply the matrix by an integer."""
         if isinstance(other, float) and other.is_integer():
             other = int(other)
@@ -384,7 +410,6 @@ class DyadicMatrix:
         for b_elem in B.flatten:
             a, b, c, d = [s * k_scale for s in b_elem.flatten]
             if k_parity != 0:  # sqrt(2) factor
-                print(f"Applying sqrt(2) factor to {b_elem}")
                 a, b, c, d = [(b - d), (c + a), (b + d), (c - a)]
             b_elems.append(ZOmega(a, b, c, d))
 
