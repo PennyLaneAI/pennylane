@@ -339,6 +339,24 @@ def _(op: qtemps.subroutines.Select):
 
 
 @_get_op_call_graph.register
+def _(op: qops.StatePrep):
+    gate_types = defaultdict(int, {})
+    num_wires = len(op.wires)
+    rz = qt_gates.Rz(0)
+    cnot = qt_gates.CNOT()
+
+    r_count = 2 ** (num_wires + 2) - 5
+    cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+    if r_count:
+        gate_types[rz] = r_count
+
+    if cnot_count:
+        gate_types[cnot] = cnot_count
+    return gate_types
+
+
+@_get_op_call_graph.register
 def _(op: qtemps.subroutines.ModExp):
 
     mod = op.hyperparameters["mod"]

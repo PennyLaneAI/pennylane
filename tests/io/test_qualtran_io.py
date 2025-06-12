@@ -842,13 +842,16 @@ class TestToBloq:
                 },
             ),
             (
-                qml.Select(
-                    ops = [qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0,1]),
+                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qml.X(wires=[2]), True): 2,
                     (qml.ctrl(qml.X(2), control=[0]), True): 1,
                     (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
+            ),
+            (
+                qml.StatePrep(state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25], wires=range(3)),
+                {(qml.RZ(0, wires=[0]), True): 27, (qml.CNOT([0, 1]), True): 16},
             ),
         ],
     )
