@@ -35,11 +35,11 @@ class PlxprVisualizer(PlxprInterpreter):
         # holds ASCII representations of the environment
         self._env_ascii = {}
 
-        self._ascii_counter = 0
-
     def __copy__(self):
         """Create a copy of the visualizer with the same graph."""
         new_visualizer = PlxprVisualizer(copy(self.plxpr_graph))
+
+        new_visualizer._env_ascii = copy(self._env_ascii)
 
         return new_visualizer
 
@@ -48,8 +48,6 @@ class PlxprVisualizer(PlxprInterpreter):
         if isinstance(var, core.Literal):
             # If the variable is a literal, return its value directly
             return var.val
-        if isinstance(var, int):
-            return var
         return self._env_ascii[var]
 
     def _bold_str(self, text: str) -> str:
@@ -77,8 +75,9 @@ class PlxprVisualizer(PlxprInterpreter):
         if var_id in self._env_ascii:
             return self._env_ascii[var_id]
 
-        ascii = self._int_to_ascii(len(set(list(self._env_ascii.values()))))
-        self._ascii_counter += 1
+        num_of_unique_ascii = len(set(list(self._env_ascii.values())))
+        print(num_of_unique_ascii, self._env_ascii)
+        ascii = self._int_to_ascii(num_of_unique_ascii)
         return ascii
 
     def eval(self, jaxpr: core.Jaxpr, consts: Sequence, *args, ascii_context: dict = None) -> list:
@@ -304,18 +303,20 @@ def handle_for_loop(
     abstract_shapes = args[abstract_shapes_slice]
 
     ascii_context = {}
+
     # Labelled as invar but these are actually constants
     outer_consts = eqn.invars[3:]  # Skip start, stop, step
     inner_consts = jaxpr_body_fn.constvars
     for inner_const, outer_const in zip(inner_consts, outer_consts, strict=True):
-        ascii_context[inner_const] = self.read_ascii(outer_const)
+        recorded_ascii = self.read_ascii(outer_const)
+        ascii_context[inner_const] = recorded_ascii
 
     # Will encounter a new variable (the loop variable)
     inner_loop_var = jaxpr_body_fn.invars[0]
     inner_loop_var_ascii = self._convert_var_to_ascii(inner_loop_var)
     ascii_context[inner_loop_var] = inner_loop_var_ascii
 
-    start, stop, step = map(self.read_ascii, (start, stop, step))
+    start, stop, step = map(self.read_ascii, eqn.invars[:3])
 
     # Create a cluster for the for loop
     label = f"<for {self._bold_str(inner_loop_var_ascii)} in range({self._bold_str(start)}, {self._bold_str(stop)}, {self._bold_str(step)})>"

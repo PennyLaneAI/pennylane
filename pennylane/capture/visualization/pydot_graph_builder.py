@@ -108,7 +108,7 @@ class QNodeCluster(pydot.Cluster):
 
     _counter = 1
 
-    def __init__(self, info_label="", *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_penwidth(2)
         self.set_fontname("Helvetica")
