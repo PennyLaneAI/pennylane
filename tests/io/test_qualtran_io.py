@@ -841,6 +841,15 @@ class TestToBloq:
                     (qml.CNOT(wires=[0, 1]), True): 2,
                 },
             ),
+            (
+                qml.Select(
+                    ops = [qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0,1]),
+                {
+                    (qml.X(wires=[2]), True): 2,
+                    (qml.ctrl(qml.X(2), control=[0]), True): 1,
+                    (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
+                },
+            ),
         ],
     )
     def test_build_call_graph(self, op, qml_call_graph):

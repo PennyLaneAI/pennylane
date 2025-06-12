@@ -318,19 +318,21 @@ def _(op: qtemps.subroutines.QSVT):
 def _(op: qtemps.subroutines.Select):
     gate_types = defaultdict(int, {})
     ops = op.hyperparameters["ops"]
-    cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+    cmpr_ops = [_map_to_bloq(op) for op in ops]
 
     x = qt_gates.XGate()
 
     num_ops = len(cmpr_ops)
-    num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
+    num_ctrl_wires = int(np.ceil(np.log2(num_ops)))
     num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
     num_zero_controls = num_total_ctrl_possibilities // 2
     gate_types[x] = num_zero_controls * 2  # conjugate 0 controls
 
     for cmp_rep in cmpr_ops:
-        ctrl_op = cmp_rep.controlled()
+        ctrl_op = cmp_rep.controlled(CtrlSpec(cvs=[1] * num_ctrl_wires))
+        if cmp_rep == qt_gates.XGate() and num_ctrl_wires == 1:
+            ctrl_op = qt_gates.CNOT()
         gate_types[ctrl_op] += 1
 
     return gate_types
