@@ -41,22 +41,42 @@ def _position_operator(
     raise ValueError(f'"{basis}" is not a valid basis')
 
 
+_cached_realspace_position = {}
+_cached_harmonic_position = {}
+
+
 def _realspace_position(gridpoints: int) -> np.ndarray:
     """Return a matrix representation of the position operator in the realspace basis"""
+
+    # print("_realspace_position: ", gridpoints)
+    if gridpoints in _cached_realspace_position:
+        return _cached_realspace_position[gridpoints]
+
     values = (np.arange(gridpoints) - gridpoints / 2) * (np.sqrt(2 * np.pi / gridpoints))
-    return np.diag(values)
+    values = np.diag(values)
+
+    _cached_realspace_position[gridpoints] = values
+    return values
 
 
 def _harmonic_position(gridpoints: int) -> np.ndarray:
     """Return a matrix representation of the position operator in the harmonic basis"""
+
+    # print("_harmonic_position: ", gridpoints)
+    if gridpoints in _cached_harmonic_position:
+        return _cached_harmonic_position[gridpoints]
+
     rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
     cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
     vals = np.array([np.sqrt(i) for i in range(1, gridpoints)] * 2)
 
     matrix = np.zeros(shape=(gridpoints, gridpoints))
     matrix[rows, cols] = vals
+    matrix = 1 / np.sqrt(2) * matrix
 
-    return 1 / np.sqrt(2) * matrix
+    _cached_harmonic_position[gridpoints] = matrix
+
+    return matrix
 
 
 def _momentum_operator(
@@ -75,19 +95,32 @@ def _momentum_operator(
     raise ValueError(f'"{basis}" is not a valid basis')
 
 
+_cached_realspace_momentum = {}
+_cached_harmonic_momentum = {}
+
+
 def _realspace_momentum(gridpoints: int) -> np.ndarray:
     """Returns a matrix representation of the momenumt operator in the realspace basis"""
+    # print("_realspace_momentum: ", gridpoints)
+    if gridpoints in _cached_realspace_momentum:
+        return _cached_realspace_momentum[gridpoints]
+
     values = np.arange(gridpoints)
     values[gridpoints // 2 :] -= gridpoints
     values = values * (np.sqrt(2 * np.pi / gridpoints))
     dft = sp.linalg.dft(gridpoints, scale="sqrtn")
     matrix = dft @ np.diag(values) @ dft.conj().T
 
+    _cached_realspace_momentum[gridpoints] = matrix
     return matrix
 
 
 def _harmonic_momentum(gridpoints: int) -> np.ndarray:
     """Returns a matrix representation of the momenumt operator in the harmonic basis"""
+    # print("_harmonic_momentum: ", gridpoints)
+    if gridpoints in _cached_harmonic_momentum:
+        return _cached_harmonic_momentum[gridpoints]
+
     rows = np.array(list(range(1, gridpoints)) + list(range(0, gridpoints - 1)))
     cols = np.array(list(range(0, gridpoints - 1)) + list(range(1, gridpoints)))
     vals = np.array(
@@ -96,8 +129,10 @@ def _harmonic_momentum(gridpoints: int) -> np.ndarray:
 
     matrix = np.zeros(shape=(gridpoints, gridpoints))
     matrix[rows, cols] = vals
+    matrix = (1j / np.sqrt(2)) * matrix
+    _cached_harmonic_momentum[gridpoints] = matrix
 
-    return (1j / np.sqrt(2)) * matrix
+    return matrix
 
 
 def _string_to_matrix(

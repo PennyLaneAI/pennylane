@@ -317,10 +317,6 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         (alpha[idx0]) * (beta[idx1,idx2])
         """
 
-        # simplify: a @ 0 = 0 or 0 @ a = 0
-        if l_child.is_zero or r_child.is_zero:
-            return cls.tensor_node(zeros(l_child.shape + r_child.shape))
-
         return cls(
             node_type=_NodeType.OUTER,
             l_child=l_child,

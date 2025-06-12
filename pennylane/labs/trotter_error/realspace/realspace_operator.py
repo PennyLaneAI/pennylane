@@ -114,11 +114,18 @@ class RealspaceOperator:
         else:
             indices = product(range(self.modes), repeat=len(self.ops))
 
+        # for index in indices:
+        #     matrix = self.coeffs[index] * _tensor_with_identity(
+        #         self.modes, gridpoints, index, matrices, sparse=sparse
+        #     )
+        #     final_matrix = final_matrix + matrix
+
         for index in indices:
-            matrix = self.coeffs[index] * _tensor_with_identity(
-                self.modes, gridpoints, index, matrices, sparse=sparse
-            )
-            final_matrix = final_matrix + matrix
+            coeff = self.coeffs[index]
+            term = _tensor_with_identity(self.modes, gridpoints, index, matrices, sparse=True)
+
+            if coeff != 0:
+                final_matrix += coeff * term
 
         return final_matrix
 
