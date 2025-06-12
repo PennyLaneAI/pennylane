@@ -586,7 +586,7 @@ class FromBloq(Operation):
 
 class _QReg:
     """Used as a container for qubits that form a `Register` of a given bitsize. This is a modified
-    version of `_QReg <https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py>`_ 
+    version of `_QReg <https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py>`_
     found in Qualtran as well.
 
     Each instance of `_QReg` would correspond to a `Soquet` in Bloqs and represents an opaque collection
@@ -631,9 +631,10 @@ def _ensure_in_reg_exists(
     qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
 ) -> None:
     """Modified function from the Qualtran-Cirq interop module to ensure `qreg_to_qvar[in_reg]`
-    exists. If in_reg is not found in qreg_to_qvar, raises an AssertionError. In the future, when
-    PennyLane supports allocations and freeing, we will no longer raise an AssertionError, instead
-    we will handle the allocations and freeing accordingly.
+    exists. If `in_reg` is not found in `qreg_to_qvar`, that means that the input qubit register
+    is a multi-qubit register. All in_regs should be single qubit registers, so this would be a
+    bug, and an AssertionError is raised. To capture control flow, multi-qubit registers will be
+    allowed, and we will remove the AssertionError and use Split and Join operations as needed.
 
     Args:
         bb (qt.BloqBuilder): an instance of a Qualtran BloqBuilder
@@ -641,9 +642,9 @@ def _ensure_in_reg_exists(
         qreg_to_qvar (Dict[_QReg, qt.Soquet]): a dictionary of _QRegs that corresponds to Soquets
 
     Raises:
-        AssertionError: in_reg was not found in qreg_to_qvar
+        AssertionError: `in_reg` was not found in `qreg_to_qvar`, meaning there exists multi-qubit
+            registers that we do not support at the moment
     """
-    # Note: To capture control flow, we may have use for the Split and Join operations.
 
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
@@ -855,7 +856,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         return hash(self.op)
 
     def __str__(self):
-        return "PL{self.op.name}"
+        return f"PL{self.op.name}"
 
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):

@@ -718,6 +718,7 @@ class TestToBloq:
         qreg = _QReg(qubits=qubits_tuple, dtype=dtype_uint)
 
         assert isinstance(qreg.qubits, tuple)
+
         assert qreg.qubits == qubits_tuple
         assert qreg.dtype == dtype_uint
         assert qreg._initialized is True
@@ -730,6 +731,7 @@ class TestToBloq:
 
         qreg = _QReg(qubits=q0, dtype=dtype_bit)
 
+        assert qreg.__repr__() == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
         assert isinstance(qreg.qubits, tuple)
         assert qreg.qubits == (q0,)
         assert qreg.dtype == dtype_bit
