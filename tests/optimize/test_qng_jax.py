@@ -13,10 +13,10 @@
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
 
+import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as pnp
 
 dev_names = (
     "default.qubit",
@@ -71,13 +71,13 @@ class TestGradients:
         opt = qml.QNGOptimizerJax()
         params = [0.1, 0.2]
 
-        params_qml = pnp.array(params)
+        params_qml = qml.numpy.array(params)
         grad_qml = qml.grad(qml_qnode)(params_qml)
 
         params_jax = jnp.array(params)
         grad_jax = opt._get_grad(qml_qnode, params_jax)
 
-        assert qml.math.allclose(grad_qml, grad_jax)
+        assert np.allclose(grad_qml, grad_jax)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
@@ -92,12 +92,12 @@ class TestGradients:
         opt = qml.QNGOptimizerJax()
         params = [0.1, 0.2]
 
-        params_qml = pnp.array(params)
+        params_qml = qml.numpy.array(params)
         cost_qml = qml_qnode(params_qml)
         grad_qml = qml.grad(qml_qnode)(params_qml)
 
         params_jax = jnp.array(params)
         cost_jax, grad_jax = opt._get_value_and_grad(qml_qnode, params_jax)
 
-        assert qml.math.allclose(cost_qml, cost_jax)
-        assert qml.math.allclose(grad_qml, grad_jax)
+        assert np.allclose(cost_qml, cost_jax)
+        assert np.allclose(grad_qml, grad_jax)
