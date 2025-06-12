@@ -576,7 +576,7 @@ class TestGateCount:
         assert gc1 != gc4
 
     def test_add_method(self):
-        """Test that the arimethic methods work as expected"""
+        """Test that the arithmetic methods work as expected"""
         op = DummyOp(x=5)
         op1 = DummyOp(x=6)
 
@@ -589,7 +589,7 @@ class TestGateCount:
             _ = gc + gc2
 
     def test_mul_method(self):
-        """Test that the arimethic methods work as expected"""
+        """Test that the arithmetic methods work as expected"""
         op = DummyOp(x=5)
         gc = GateCount(op, count=3)
 

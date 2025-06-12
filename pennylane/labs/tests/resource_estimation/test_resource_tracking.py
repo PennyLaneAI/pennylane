@@ -30,10 +30,12 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.labs.resource_estimation.resource_tracking import estimate_resources, resource_config
 from pennylane.labs.resource_estimation.resources_base import Resources
 
-# pylint: disable= no-self-use
+# pylint: disable= no-self-use, arguments-differ
 
 
 class ResourceTestCNOT(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 2
     resource_keys = {}
 
@@ -51,6 +53,8 @@ class ResourceTestCNOT(ResourceOperator):
 
 
 class ResourceTestHadamard(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 1
     resource_keys = {}
 
@@ -68,6 +72,8 @@ class ResourceTestHadamard(ResourceOperator):
 
 
 class ResourceTestT(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 1
     resource_keys = {}
 
@@ -85,6 +91,8 @@ class ResourceTestT(ResourceOperator):
 
 
 class ResourceTestZ(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 1
     resource_keys = {}
 
@@ -103,6 +111,8 @@ class ResourceTestZ(ResourceOperator):
 
 
 class ResourceTestRZ(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 1
     resource_keys = {"epsilon"}
 
@@ -129,6 +139,8 @@ class ResourceTestRZ(ResourceOperator):
 
 
 class ResourceTestAlg1(ResourceOperator):
+    """Dummy class for testing"""
+
     num_wires = 2
     resource_keys = {"num_iter"}
 
@@ -158,6 +170,8 @@ class ResourceTestAlg1(ResourceOperator):
 
 
 class ResourceTestAlg2(ResourceOperator):
+    """Dummy class for testing"""
+
     resource_keys = {"num_wires"}
 
     def __init__(self, num_wires, wires=None) -> None:
@@ -199,7 +213,6 @@ class TestEstimateResources:
             ResourceTestRZ(epsilon=1e-2, wires=[2])
             ResourceTestCNOT(wires=[3, 4])
             ResourceTestAlg1(num_iter=5, wires=[5, 6])
-            return
 
         expected_gates = defaultdict(
             int,
@@ -307,7 +320,6 @@ class TestEstimateResources:
             ResourceTestAlg2(num_wires, wires=range(num_wires))
             for w in range(num_wires):
                 ResourceTestZ(wires=w)
-            return
 
         actual_resources = estimate_resources(my_circ, gate_set=gate_set)(num_wires=4)
         assert actual_resources == expected_resources
