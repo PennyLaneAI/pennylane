@@ -520,9 +520,9 @@
   operators for resource estimation.
   [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
 
-* Added the base `pennylane.labs.ResourceOperator` class which will be used to implement all quantum 
-  operators for resource estimation.
-  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
+* Added the `pennylane.labs.estimate_resources` function which will be used to perform resource
+  estimation on circuits, `pennylane.labs.ResourceOperator` and `pennylane.labs.Resources` objects.
+  [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
 
 <h3>Breaking changes 💔</h3>
 

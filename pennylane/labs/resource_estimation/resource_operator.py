@@ -200,7 +200,7 @@ class ResourceOperator(ABC):
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
 
@@ -627,7 +627,7 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
 
 class GateCount:
-    r"""A class to represent a gate and its number of occurances in a circuit or decomposition.
+    r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
 
     Args:
         gate (CompressedResourceOp): a compressed resource representation of the gate being counted

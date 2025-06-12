@@ -89,10 +89,11 @@ def estimate_resources(
             to obtain resources from.
         gate_set (Set, optional): A set of names (strings) of the fundamental operations to track
             counts for throughout the quantum workflow.
-        config (Dict, optional): A dictionary of additional parameters which set default values
+        config (Dict, optional): A dictionary of additional parameters which sets default values
             when they are not specified on the operator.
         single_qubit_rotation_error (Union[float, None]): The acceptable error when decomposing
-            single qubit rotations to `T`-gates using a Clifford + T approximation.
+            single qubit rotations to `T`-gates using a Clifford + T approximation. This value takes
+            preference over the values set in the :code:`config`.
 
     Returns:
         Resources: the quantum resources required to execute the circuit
