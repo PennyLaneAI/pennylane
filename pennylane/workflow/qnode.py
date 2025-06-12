@@ -638,6 +638,9 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
+        # This flag should be set to True, if the QNode is updated with another argument
+        self._set_shots(device.shots)
+
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -742,6 +745,7 @@ class QNode:
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
+
         original_init_args = self._init_args.copy()
         # gradient_kwargs defaults to None
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
@@ -753,9 +757,39 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
+
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
+
+    def update_shots(self, shots: Union[int, qml.measurements.Shots]) -> "QNode":
+        """Update the number of shots used by the QNode.
+
+        Args:
+            shots (int or qml.measurements.Shots): The new number of shots to use.
+
+        Returns:
+            qnode (QNode): new QNode with updated shots
+        """
+
+        # Create a copy of the current QNode
+        updated_qn = copy.copy(self)
+
+        # Update the shots attribute directly
+        # pylint: disable=protected-access
+        updated_qn._set_shots(shots)
+
+        return updated_qn
+
+    def _set_shots(self, shots: Union[int, qml.measurements.Shots]) -> None:
+        """Set the number of shots used by the QNode.
+
+        Args:
+            shots (int or qml.measurements.Shots): The new number of shots to use.
+        """
+
+        self._shots = qml.measurements.Shots(shots)
+        self._shots_override_device = bool(self._shots != self.device.shots)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
@@ -845,6 +879,8 @@ class QNode:
             shots = self.device.shots
         else:
             shots = kwargs.pop("shots", self.device.shots)
+
+        shots = self._shots if self._shots_override_device else shots
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
