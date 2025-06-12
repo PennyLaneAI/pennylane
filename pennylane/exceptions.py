@@ -16,6 +16,10 @@ This file contains all the custom exceptions and warnings used in PennyLane.
 """
 
 
+class CaptureError(Exception):
+    """Errors related to PennyLane's Program Capture execution pipeline."""
+
+
 class DeviceError(Exception):  # pragma: no cover
     """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
