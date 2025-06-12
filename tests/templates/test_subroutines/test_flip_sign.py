@@ -14,6 +14,8 @@
 """
 Tests for the FlipSign template.
 """
+import re
+
 import pytest
 
 import pennylane as qml
@@ -131,7 +133,10 @@ class TestFlipSign:
     def test_length_not_match_error(self, n, wires):
         """Assert error raised when length of basis state and wires length does not match"""
         with pytest.raises(
-            ValueError, match="The given basis state and the number of wires don't match."
+            ValueError,
+            match=re.escape(
+                f"The basis state {tuple(n)} and wires {wires} must be of equal length."
+            ),
         ):
             qml.FlipSign(n, wires=wires)
 
