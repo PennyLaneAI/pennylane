@@ -177,7 +177,7 @@ class Select(Operation):
         alternating control and auxiliary wires.
 
         An implementation of this decomposition is easily achieved in the following steps:
-        We first define a recursive subroutine ``R`` that will be used in the main function:
+        We first define a recursive sub-circuit ``R`` that will be repeatedly applied:
         we are given :math:`L` operators and :math:`2 \lceil\log_2(L)\rceil + 1` control and
         auxiliary wires. If ``L>1``, ``R`` applies the circuit
 
