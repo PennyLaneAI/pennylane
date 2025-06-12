@@ -89,7 +89,7 @@ class FlipSign(Operation):
         n = tuple(n)
 
         if len(wires) != len(n):
-            raise ValueError("The given basis state and the number of wires don't match.")
+            raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
 
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, id=id)
