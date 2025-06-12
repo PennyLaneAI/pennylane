@@ -434,7 +434,8 @@ class TestToBloq:
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(qml.Hadamard(0), map_ops=False) == Hadamard()
+        assert qml.ToBloq(qml.H(0)).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
 
     def test_to_bloq_circuits(self):
@@ -512,7 +513,7 @@ class TestToBloq:
         """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
         import qualtran as qt
 
-        with pytest.raises(qt.DecomposeNotImplementedError):
+        with pytest.raises(qt.DecomposeTypeError):
             qml.to_bloq(qml.RZ(phi=0.3, wires=[0]), map_ops=False).decompose_bloq()
 
     def test_call_graph(self):
@@ -527,7 +528,7 @@ class TestToBloq:
         assert cg == {
             qml.to_bloq(qml.Hadamard(0), True): 4,
             qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
         }
 
     def test_map_to_bloq(self):
@@ -584,7 +585,7 @@ class TestToBloq:
                 {
                     (qml.Hadamard(0), True): 4,
                     (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
                 },
             ),
         ],
@@ -594,10 +595,7 @@ class TestToBloq:
         bloq_call_graph = {}
 
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            if k[1]:  # bool decides whether or not to use map
-                bloq_call_graph[qml.to_bloq(k[0])] = v
-            else:
-                bloq_call_graph[qml.ToBloq(k[0])] = v
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
@@ -614,6 +612,17 @@ class TestToBloq:
                 ),
                 "qpe_bloq",
             ),
+            (qml.QFT(wires=range(4)), "qft_bloq"),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                "modexp_bloq",
+            ),
         ],
     )
     def test_default_mapping(self, op, qt_bloq):
@@ -621,14 +630,18 @@ class TestToBloq:
 
         def _build_expected_qualtran_bloq(qt_bloq):
             """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.cryptography.rsa import ModExp
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+            from qualtran.bloqs.qft import QFTTextBook
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=RectangularWindowState(4),
                 ),
+                "qft_bloq": QFTTextBook(4),
+                "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
             }
 
             return qualtran_bloqs[qt_bloq]
