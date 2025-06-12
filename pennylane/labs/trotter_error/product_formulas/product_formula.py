@@ -24,8 +24,8 @@ from scipy.linalg import expm, fractional_matrix_power
 
 
 class ProductFormula:
-    r"""Class for representing product formulas. 
-    
+    r"""Class for representing product formulas.
+
     For a set of Hermitian operators :math:`H_1,\dots,H_n`
     a product formula is any function in the form :math:`U(t) = \prod_{k=1}^n e^{it\alpha_k H_k}` with
     :math:`\alpha_k \in \mathbb{R}`.
