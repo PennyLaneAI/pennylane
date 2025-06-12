@@ -34,6 +34,7 @@ from pennylane.operation import (
     Operator,
 )
 from pennylane.registers import registers
+from pennylane.tape import make_qscript
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -721,8 +722,8 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         if not qualtran:
             raise ImportError(self._error_message)
 
-        if not isinstance(op, Operator) and not isinstance(op, QNode):
-            raise TypeError(f"Input must be either an instance of {Operator} or {QNode}.")
+        if not isinstance(op, Operator) and not isinstance(op, QNode) and not callable(op):
+            raise TypeError(f"Input must be either an instance of {Operator}, {QNode} or a quantum function.")
 
         self.op = op
         self.map_ops = map_ops
@@ -735,8 +736,10 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         if isinstance(self.op, QNode):
             self.op.name = "QNode"
             num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
-        else:
+        elif isinstance(self.op, Operator):
             num_wires = len(self.op.wires)
+        else:
+            num_wires = len(make_qscript(self.op)(**self._kwargs).wires)
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
     def decompose_bloq(self):  # pylint:disable=too-many-branches
@@ -746,9 +749,13 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                 tape = construct_tape(self.op)(**self._kwargs)
                 ops = tape.circuit
                 all_wires = list(tape.wires)
-            else:
+            elif isinstance(self.op, Operator):
                 ops = self.op.decomposition()
                 all_wires = list(self.op.wires)
+            else:
+                tape = make_qscript(self.op)(**self._kwargs)
+                ops = tape.operations
+                all_wires = list(tape.wires)
 
             signature = self.signature
             in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
@@ -843,9 +850,11 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         return self.decompose_bloq().build_call_graph(ssa)
 
     def __repr__(self):
+        if isinstance(self.op, QNode):
+            return "ToBloq(QNode)"
         if isinstance(self.op, Operation):
             return f"ToBloq({self.op.name})"
-        return "ToBloq(QNode)"
+        return "ToBloq(Qfunc)"
 
     def __eq__(self, other):
         if type(other) is type(self):
@@ -856,7 +865,9 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         return hash(self.op)
 
     def __str__(self):
-        return f"PL{self.op.name}"
+        if hasattr(self.op, "name"):
+            return f"PL{self.op.name}"
+        return f"PLQfunc"
 
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
