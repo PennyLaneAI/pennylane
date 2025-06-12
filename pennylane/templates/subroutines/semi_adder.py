@@ -19,24 +19,38 @@ from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
 
-def _left_operator(ck, ik, tk, aux):
+def _left_operator(wires, ik_is_zero=False):
     """Implement the left block in figure 2, https://arxiv.org/pdf/1709.06648"""
-    return [
-        qml.CNOT([ck, ik]),
-        qml.CNOT([ck, tk]),
-        qml.TemporaryAND([ik, tk, aux]),
-        qml.CNOT([ck, aux]),
-    ]
+
+    if not ik_is_zero:
+        ck, ik, tk, aux = wires
+        return [
+            qml.CNOT([ck, ik]),
+            qml.CNOT([ck, tk]),
+            qml.TemporaryAND([ik, tk, aux]),
+            qml.CNOT([ck, aux]),
+        ]
+
+    ck, tk, aux = wires
+
+    return [qml.CNOT([ck, tk]), qml.TemporaryAND([ck, tk, aux]), qml.CNOT([ck, aux])]
 
 
-def _right_operator(ck, ik, tk, aux):
+def _right_operator(wires, ik_is_zero=False):
     """Implement the right block in figure 2, https://arxiv.org/pdf/1709.06648"""
-    return [
-        qml.CNOT([ck, aux]),
-        qml.adjoint(qml.TemporaryAND([ik, tk, aux])),
-        qml.CNOT([ck, ik]),
-        qml.CNOT([ik, tk]),
-    ]
+
+    if not ik_is_zero:
+        ck, ik, tk, aux = wires
+        return [
+            qml.CNOT([ck, aux]),
+            qml.adjoint(qml.TemporaryAND([ik, tk, aux])),
+            qml.CNOT([ck, ik]),
+            qml.CNOT([ik, tk]),
+        ]
+
+    ck, tk, aux = wires
+
+    return [qml.CNOT([ck, aux]), qml.adjoint(qml.TemporaryAND([ck, tk, aux]))]
 
 
 class SemiAdder(Operation):
@@ -48,7 +62,7 @@ class SemiAdder(Operation):
 
     This can be called a semi-out-place addition operation,
     or more specifically, the operation is a quantum-quantum in-place addition.
-    
+
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
     Args:
@@ -83,6 +97,32 @@ class SemiAdder(Operation):
         [0 0 0 1 1 1]
 
     The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
+
+    Note that the result is subject to the size of the ``y_wires`` register, since due to overhead
+    it is taken modulo ``2^len(y_wires)``, as shown in this example:
+
+    .. code-block::
+
+        x = 3
+        y = 4
+
+        wires = qml.registers({"x":3, "y":2, "work":1})
+
+        dev = qml.device("default.qubit", shots=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasisEmbedding(x, wires=wires["x"])
+            qml.BasisEmbedding(y, wires=wires["y"])
+            qml.SemiAdder(wires["x"], wires["y"], wires["work"])
+            return qml.sample(wires=wires["y"])
+
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [1 1]
+
+    The result :math:`[1 1]`, is the binary representation of :math:`3 + 4 = 7 = 3 \mod 2^2 `.
 
     .. details::
         :title: Usage Details
@@ -188,56 +228,15 @@ class SemiAdder(Operation):
         Returns:
             list[.Operator]: Decomposition of the operator
         """
-        op_list = []
 
-        # revert wires to follow PennyLane convention
+        with qml.queuing.AnnotatedQueue() as q:
+            _semiadder(x_wires, y_wires, work_wires)
 
-        x_wires_pl = x_wires[::-1][: len(y_wires)]
-        y_wires_pl = y_wires[::-1]
-        work_wires_pl = work_wires[::-1]
-        op_list.append(qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+        if qml.queuing.QueuingManager.recording():
+            for op in q.queue:
+                qml.apply(op)
 
-        for i in range(1, len(y_wires_pl) - 1):
-            if i < len(x_wires_pl):
-                op_list += _left_operator(
-                    work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]
-                )
-            else:
-                # If the number of qubits in |x> is smaller than |y>, we can conceptually complete the |x> state
-                # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the left operator.
-                op_list.append(qml.CNOT([work_wires_pl[i - 1], y_wires_pl[i]]))
-                op_list.append(
-                    qml.TemporaryAND([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
-                )
-                op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
-
-        op_list.append(qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]]))
-
-        if len(x_wires_pl) >= len(y_wires_pl):
-            op_list.append(qml.CNOT([x_wires_pl[-1], y_wires_pl[-1]]))
-
-        for i in range(len(y_wires_pl) - 2, 0, -1):
-            if i < len(x_wires_pl):
-                op_list += _right_operator(
-                    work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]
-                )
-            else:
-                # If the number of qubits in |x> is smaller than |y>, we can conceptually complete the |x> state
-                # with |0> on the left making sure they are of the same size. Assuming this, we can simplify the right operator.
-                op_list.append(qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]]))
-                op_list.append(
-                    qml.adjoint(
-                        qml.TemporaryAND([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
-                    )
-                )
-
-        op_list.append(
-            qml.adjoint(qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-        )
-
-        op_list.append(qml.CNOT([x_wires_pl[0], y_wires_pl[0]]))
-
-        return op_list
+        return q.queue
 
 
 def _semiadder_resources(num_y_wires):
@@ -252,33 +251,35 @@ def _semiadder_resources(num_y_wires):
 
 @register_resources(_semiadder_resources)
 def _semiadder(x_wires, y_wires, work_wires, **_):
-    x_wires_pl = x_wires[::-1][: len(y_wires)]
+
+    num_y_wires = len(y_wires)
+    num_x_wires = len(x_wires)
+
+    x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
     qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
 
-    for i in range(1, len(y_wires_pl) - 1):
-        if i < len(x_wires_pl):
-            _left_operator(work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i])
+    for i in range(1, num_y_wires - 1):
+        if i < num_x_wires:
+            _left_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
         else:
-            qml.CNOT([work_wires_pl[i - 1], y_wires_pl[i]])
-            qml.TemporaryAND([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]])
-            qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]])
+            _left_operator([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True)
 
     qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]])
 
-    if len(x_wires_pl) >= len(y_wires_pl):
+    if num_x_wires >= num_y_wires:
         qml.CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
-        if i < len(x_wires_pl):
-            _right_operator(work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i])
+        if i < num_x_wires:
+            _right_operator([work_wires_pl[i - 1], x_wires_pl[i], y_wires_pl[i], work_wires_pl[i]])
         else:
-            qml.CNOT([work_wires_pl[i - 1], work_wires_pl[i]])
-            qml.adjoint(qml.TemporaryAND([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]]))
+            _right_operator(
+                [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True
+            )
 
     qml.adjoint(qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-
     qml.CNOT([x_wires_pl[0], y_wires_pl[0]])
 
 

@@ -59,13 +59,19 @@ class TestSemiAdder:
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
             qml.SemiAdder(x_wires, y_wires, work_wires)
-            return qml.sample(wires=y_wires)
+            return qml.sample(wires=y_wires), qml.probs(wires=work_wires)
 
+        output = circuit(x, y)
+
+        #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(output[0]))),
             (x + y) % 2 ** len(y_wires),
         )
+
+        # check work_wires are in state |0>
+        assert np.isclose(output[1][0], 1.0)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "msg_match"),
