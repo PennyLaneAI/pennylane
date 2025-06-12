@@ -746,13 +746,6 @@ class QNode:
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
 
-        # For shots, we allow `shots=...` to be passed as a keyword argument
-        # and this should happen before any other updates (device also has shots, until they were deprecated)
-        shots = self._shots
-        shots_to_update = "shots" in kwargs
-        if shots_to_update:
-            shots = qml.measurements.Shots(kwargs.pop("shots"))
-
         original_init_args = self._init_args.copy()
         # gradient_kwargs defaults to None
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
@@ -764,11 +757,6 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-
-        # If device was updated, shots would have been updated
-        # but the the `shots` arg should override if exists
-        if shots_to_update:
-            updated_qn = updated_qn.update_shots(shots)
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
