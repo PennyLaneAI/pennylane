@@ -22,8 +22,7 @@ sphinxcontrib-devhelp==2.0.0
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-htmlhelp==2.1.0
 sphinxcontrib-serializinghtml==2.0.0
-tensorflow-cpu==2.18.0; platform_machine == "x86_64"
-tensorflow_macos==2.9.0; sys_platform == "darwin" and platform_machine == "arm64"
+tensorflow==2.16.2
 tensornetwork==0.3
 tomlkit
 torch==2.5.1
