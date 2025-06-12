@@ -405,7 +405,7 @@ class QNode:
         (Operators that are used in the circuit but do not receive broadcasted inputs do not need
         to support it.) A list of supporting operators is available in
         :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
-        Whether or not broadcasting delivers an increased performance will depend on the
+        Whether or not broadcasting delivers an increased performance will depend on whether the
         used device is a classical simulator and natively supports this.
 
         If a device does not natively support broadcasting, it will execute broadcasted QNode calls
