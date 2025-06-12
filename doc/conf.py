@@ -12,11 +12,12 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+from __future__ import annotations
+
 import os
 import re
 import sys
 from datetime import datetime
-from __future__ import annotations
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
