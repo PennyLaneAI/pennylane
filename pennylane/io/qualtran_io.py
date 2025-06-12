@@ -67,7 +67,9 @@ def _get_op_call_graph(op):
 def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     return {
         qt_gates.Hadamard(): len(op.estimation_wires),
-        _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1])): (2 ** len(op.estimation_wires))
+        _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1])): (
+            2 ** len(op.estimation_wires)
+        )
         - 1,
         _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
     }
@@ -506,13 +508,11 @@ def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
 def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
     if isinstance(op, qops.CNOT):
         return qt_gates.CNOT()
-    
+
     ctrl_spec = CtrlSpec(cvs=[int(v) for v in op.control_values])
-    return (
-        _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).controlled(
-            ctrl_spec
-        )
-    )
+    return _map_to_bloq(
+        op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+    ).controlled(ctrl_spec)
 
 
 @_map_to_bloq.register
