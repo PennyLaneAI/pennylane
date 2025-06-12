@@ -13,18 +13,12 @@
 # limitations under the License.
 """PennyLane-xDSL transformations API."""
 
-from xdsl.transforms.transform_interpreter import TransformInterpreterPass
-
-from .api.apply_transform_sequence import ApplyTransformSequence, register_pass
 from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 
 __all__ = [
-    "ApplyTransformSequence",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
-    "TransformInterpreterPass",
-    "register_pass",
 ]
