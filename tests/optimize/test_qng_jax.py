@@ -62,7 +62,7 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_grad_jax(self, dev_name):
         """Test `_get_grad` method with Jax interface."""
-
+        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         device = qml.device(dev_name, wires=2)
@@ -83,7 +83,7 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_value_and_grad_jax(self, dev_name):
         """Test `_get_value_and_grad` method with Jax interface."""
-
+        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         device = qml.device(dev_name, wires=2)
@@ -110,11 +110,11 @@ class TestApproxMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_no_approx(self, dev_name):
         """Test that the full metric tensor is computed correctly for `approx=None`."""
-
+        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name))
-        def circuit(params):
+        def circ(params):
             qml.RY(eta, wires=0)
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=0)
@@ -124,7 +124,7 @@ class TestApproxMetricTensor:
         params = jnp.array([0.11, 0.412])
 
         opt = qml.QNGOptimizerJax(approx=None)
-        mt = opt._get_metric_tensor(circuit, params)
+        mt = opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
         x = params[0]
@@ -139,11 +139,11 @@ class TestApproxMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_with_approx(self, dev_name):
         """Test that the metric tensor is computed correctly for `approx=block-diag` and `approx=diag`."""
-
+        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name))
-        def circuit(params):
+        def circ(params):
             qml.RY(eta, wires=0)
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=0)
@@ -153,10 +153,10 @@ class TestApproxMetricTensor:
         params = jnp.array([0.11, 0.412])
 
         blockdiag_opt = qml.QNGOptimizerJax(approx="block-diag")
-        blockdiag_mt = blockdiag_opt._get_metric_tensor(circuit, params)
+        blockdiag_mt = blockdiag_opt._get_metric_tensor(circ, params)
 
         diag_opt = qml.QNGOptimizerJax(approx="diag")
-        diag_mt = diag_opt._get_metric_tensor(circuit, params)
+        diag_mt = diag_opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
         x = params[0]
