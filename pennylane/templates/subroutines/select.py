@@ -24,6 +24,19 @@ from pennylane import math
 from pennylane.operation import Operation
 
 
+def _partial_select(K, control):
+    c = len(control)
+    controls = [
+        [
+            (control[j], val)
+            for j in range(c)
+            if (val := (idx >> (c - 1 - j)) & 1) or idx + 2 ** (c - 1 - j) < K
+        ]
+        for idx in range(K)
+    ]
+    return [list(zip(*ctrl)) for ctrl in controls]
+
+
 class Select(Operation):
     r"""Applies different operations depending on the state of
     designated control qubits.
@@ -55,6 +68,12 @@ class Select(Operation):
         bitstring representing the control state we can use the following relationship:
         ``index = int(state_string, 2)``. For example, ``2 = int('10', 2)``.
 
+    .. note::
+        Using ``new_option=True`` assumes that the quantum state :math:`|\psi\rangle` on the
+        ``control`` wires satisfies :math:`\langle j|\psi\rangle=0` for all :math:`j\in [K, 2^c)`,
+        where :math:`K` is the number of operators (``len(ops)``) and :math:`c` is the number of
+        control wires (``len(control)``).
+
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=4)
@@ -69,6 +88,27 @@ class Select(Operation):
     1: ─├○─├●─├○─├●────┤  State
     2: ─╰X─│──╰Y─├SWAP─┤  State
     3: ────╰X────╰SWAP─┤  State
+
+    If there are fewer operators to be applied than possible for the given number of control
+    wires, we call the ``Select`` operator a *partial Select*.
+    In this case, the control structure can be simplified if the state on the control wires
+    does not have overlap with the unused computational basis states (:math:`|j\rangle` with
+    :math:`j>K-1`). Passing ``new_option=True`` tells ``Select`` that this criterion is
+    satisfied, and allows the decomposition to make use of the simplification:
+
+    >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2,3])]
+    >>> @qml.qnode(dev)
+    >>> def circuit():
+    >>>     qml.Select(ops, control=[0,1], new_option=True)
+    >>>     return qml.state()
+    ...
+    >>> print(qml.draw(circuit, level='device')())
+    0: ─╭○────╭●────┤  State
+    1: ─├○─╭●─│─────┤  State
+    2: ─╰X─│──├SWAP─┤  State
+    3: ────╰X─╰SWAP─┤  State
+
+    Note how the first (second) control node of the second (third) operator was skipped.
 
     """
 
@@ -86,10 +126,11 @@ class Select(Operation):
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control})"
 
-    def __init__(self, ops, control, id=None):
+    def __init__(self, ops, control, new_option=True, id=None):
         control = qml.wires.Wires(control)
         self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
+        self.hyperparameters["new_option"] = new_option
 
         if 2 ** len(control) < len(ops):
             raise ValueError(
@@ -169,12 +210,14 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        return self.compute_decomposition(self.ops, control=self.control)
+        new_option = self.hyperparameters["new_option"]
+        return self.compute_decomposition(self.ops, control=self.control, new_option=new_option)
 
     @staticmethod
     def compute_decomposition(
         ops,
         control,
+        new_option,
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -203,10 +246,16 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        states = list(itertools.product([0, 1], repeat=len(control)))
-        decomp_ops = [
-            qml.ctrl(op, control, control_values=states[index]) for index, op in enumerate(ops)
-        ]
+        if new_option:
+            controls_and_values = _partial_select(len(ops), control)
+            decomp_ops = [
+                qml.ctrl(op, ctrl, control_values=values)
+                for (ctrl, values), op in zip(controls_and_values, ops)
+            ]
+            return decomp_ops
+
+        states = itertools.product([0, 1], repeat=len(control))
+        decomp_ops = [qml.ctrl(op, control, control_values=state) for state, op in zip(states, ops)]
         return decomp_ops
 
     @property
