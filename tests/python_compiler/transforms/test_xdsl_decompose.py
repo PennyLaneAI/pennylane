@@ -27,7 +27,6 @@ from xdsl.dialects.test import Test
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect as Quantum
 from pennylane.compiler.python_compiler.transforms.decompose import DecompositionTransformPass
 
-
 gate_set_cnot_rotations = {"CNOT", "RX", "RY", "RZ"}
 
 
