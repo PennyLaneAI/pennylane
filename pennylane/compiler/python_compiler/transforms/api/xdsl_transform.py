@@ -15,7 +15,6 @@
 
 from typing import Callable
 
-from catalyst.from_plxpr import register_transform
 from xdsl.passes import ModulePass
 
 from pennylane.transforms.core.transform_dispatcher import TransformDispatcher
@@ -47,6 +46,8 @@ class PassDispatcher(TransformDispatcher):
 
 def xdsl_transform(module_pass: ModulePass) -> PassDispatcher:
     """Wrapper function to register xDSL passes to use with QJIT-ed workflows."""
+    from catalyst.from_plxpr import register_transform  # pylint: disable=import-outside-toplevel
+
     dispatcher = PassDispatcher(module_pass)
 
     # Registration to map from plxpr primitive to pass
