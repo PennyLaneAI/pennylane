@@ -127,14 +127,14 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
         def c():
             qml.H(0)
 
-            wires = qml.allocate(1, require_zeros=True)
+            wires = qml.allocation.(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.deallocate(wires, reset_to_original=True)
+            qml.allocation.deallocate(wires, reset_to_original=True)
 
-            new_wires = qml.allocate(1)
+            new_wires = qml.allocation.(1)
             qml.SWAP((0, new_wires[0]))
-            qml.deallocate(new_wires)
+            qml.allocation.deallocate(new_wires)
 
             return qml.probs(wires=0)
 
@@ -189,14 +189,14 @@ def deallocate(
         def c():
             qml.H(0)
 
-            wires = qml.allocate(1, require_zeros=True)
+            wires = qml.allocation.(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.deallocate(wires, reset_to_original=True)
+            qml.allocation.deallocate(wires, reset_to_original=True)
 
-            new_wires = qml.allocate(1)
+            new_wires = qml.allocation.(1)
             qml.SWAP((0, new_wires[0]))
-            qml.deallocate(new_wires)
+            qml.allocation.deallocate(new_wires)
 
             return qml.probs(wires=0)
 
@@ -242,9 +242,9 @@ class allocate_ctx:
 
         @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
-            with qml.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
                 qml.CNOT(wires)
-            with qml.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
                 qml.IsingXX(0.5, wires)
             return qml.probs()
 
