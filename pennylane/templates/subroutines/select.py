@@ -25,6 +25,7 @@ from pennylane.operation import Operation
 
 
 def _partial_select(K, control):
+    """Compute the simplified control structure for a partial Select operator."""
     c = len(control)
     controls = [
         [
@@ -113,7 +114,7 @@ class Select(Operation):
     """
 
     def _flatten(self):
-        return (self.ops), (self.control)
+        return (self.ops), (self.control, self.hyperparameters["new_option"])
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -121,12 +122,12 @@ class Select(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
-        return cls(data, metadata)
+        return cls(data, metadata[0], new_option=metadata[1])
 
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control})"
 
-    def __init__(self, ops, control, new_option=True, id=None):
+    def __init__(self, ops, control, new_option=False, id=None):
         control = qml.wires.Wires(control)
         self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
@@ -247,6 +248,9 @@ class Select(Operation):
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         if new_option:
+            if len(ops) == 1:
+                qml.apply(ops[0])
+                return ops
             controls_and_values = _partial_select(len(ops), control)
             decomp_ops = [
                 qml.ctrl(op, ctrl, control_values=values)
