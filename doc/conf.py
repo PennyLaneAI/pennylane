@@ -338,21 +338,29 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-def setup(app):
-    import pennylane
-    from typing import TypeAlias
+autodoc_type_aliases = {
+    'H': 'pennylane.ops.qubit.non_parametric_ops.H',
+    'I': 'pennylane.ops.identity.I',
+    'X': 'pennylane.ops.qubit.non_parametric_ops.X',
+    'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
+    'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
+}
+
+# def setup(app):
+#     import pennylane
+#     from typing import TypeAlias
     # import shutil
     # need to assign the names here, otherwise autodoc won't document these classes,
     # and will instead just say 'alias of ...'
     # pennylane.H.__name__ = 'H'
     # pennylane.Hadamard.__name__ = 'Hadamard'
-    pennylane.X.__name__ = 'X'
-    pennylane.Y.__name__ = 'Y'
-    pennylane.H.__module__ = __name__
-    pennylane.FromBloq.__name__ = 'FromBloq'
-    pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-    pennylane.Z.__doc__ = pennylane.ops.qubit.non_parametric_ops.Z.__doc__
-    pennylane.PauliY.__name__ = 'PauliY'
+    # pennylane.X.__name__ = 'X'
+    # pennylane.Y.__name__ = 'Y'
+    # pennylane.H.__module__ = __name__
+    # pennylane.FromBloq.__name__ = 'FromBloq'
+    # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
+    # pennylane.Z.__doc__ = pennylane.ops.qubit.non_parametric_ops.Z.__doc__
+    # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
     # app.connect('build-finished', build_finished)
