@@ -124,13 +124,46 @@ class TestApproxMetricTensor:
         params = jnp.array([0.11, 0.412])
 
         opt = qml.QNGOptimizerJax(approx=None)
-        metric_tensor = opt._get_metric_tensor(circuit, params)
+        mt = opt._get_metric_tensor(circuit, params)
 
-        # computing the expected result by manual calculation
+        # computing the expected metric tensor requires some manual calculation
         x = params[0]
         first_term = np.eye(2) / 4
         vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
         second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
-        expected_metric_tensor = first_term - second_term
+        expected_mt = first_term - second_term
 
-        assert np.allclose(metric_tensor, expected_metric_tensor)
+        assert np.allclose(mt, expected_mt)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_with_approx(self, dev_name):
+        """Test that the metric tensor is computed correctly for `approx=block-diag` and `approx=diag`."""
+
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        eta = 0.7
+        params = jnp.array([0.11, 0.412])
+
+        blockdiag_opt = qml.QNGOptimizerJax(approx="block-diag")
+        blockdiag_mt = blockdiag_opt._get_metric_tensor(circuit, params)
+
+        diag_opt = qml.QNGOptimizerJax(approx="diag")
+        diag_mt = diag_opt._get_metric_tensor(circuit, params)
+
+        # computing the expected metric tensor requires some manual calculation
+        x = params[0]
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        expected_mt = np.diag(np.diag(first_term - second_term))
+
+        assert np.allclose(blockdiag_mt, expected_mt)
+        assert np.allclose(diag_mt, expected_mt)
