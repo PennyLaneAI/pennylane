@@ -221,8 +221,8 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-# H = Hadamard
-H: TypeAlias = Hadamard
+H = Hadamard
+# H: TypeAlias = Hadamard
 r"""H(wires)
 The Hadamard operator
 
