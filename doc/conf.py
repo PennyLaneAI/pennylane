@@ -343,12 +343,12 @@ autodoc_type_aliases = {
     'I': 'pennylane.ops.identity.I',
     'X': 'pennylane.ops.qubit.non_parametric_ops.X',
     'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
-    'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
+    # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
 }
 
-# def setup(app):
-#     import pennylane
-#     from typing import TypeAlias
+def setup(app):
+    import pennylane
+    from typing import TypeAlias
     # import shutil
     # need to assign the names here, otherwise autodoc won't document these classes,
     # and will instead just say 'alias of ...'
@@ -359,10 +359,11 @@ autodoc_type_aliases = {
     # pennylane.H.__module__ = __name__
     # pennylane.FromBloq.__name__ = 'FromBloq'
     # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-    # pennylane.Z.__doc__ = pennylane.ops.qubit.non_parametric_ops.Z.__doc__
+    pennylane.Z.__doc__ = "The Pauli Z operator"
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
+    pennylane.FromBloq.__doc__ = "An adapter for using a Qualtran Bloq as a PennyLane Operation."
     # app.connect('build-finished', build_finished)
 
     # def build_finished(app, exception):
