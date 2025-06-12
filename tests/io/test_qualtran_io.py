@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq
+from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq, _QReg
 from pennylane.operation import DecompositionUndefinedError
 
 
@@ -34,7 +34,29 @@ def test_to_bloq_error():
         import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
-            qml.ToBloq()
+            qml.ToBloq(qml.H(0))
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+@pytest.fixture
+def qubits():
+    """Provides cirq.LineQubit instances for tests."""
+    import cirq
+
+    return cirq.LineQubit(0), cirq.LineQubit(1)
+
+
+@pytest.mark.external
+@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
+@pytest.fixture
+def dtypes():
+    """Provides qualtran QDType instances for tests."""
+    from qualtran import QBit, QUInt
+
+    # A single QBit and a single-bit QUInt are different types
+    # but should be equivalent in a 1-qubit _QReg comparison.
+    return QBit(), QUInt(bitsize=1)
 
 
 @pytest.mark.external
@@ -456,11 +478,11 @@ class TestToBloq:
             qml.H(2),
             qml.H(3),
             qml.H(4),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[4]), wires=[1, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[5]), wires=[2, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[6]), wires=[3, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[7]), wires=[4, 0]),
-            qml.FromBloq(_map_to_bloq()(expected_decomp_ops[8], map_ops=False), wires=range(1, 5)),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[4]), wires=[1, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[5]), wires=[2, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[6]), wires=[3, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[7]), wires=[4, 0]),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[8]), wires=range(1, 5)),
         ]
 
     def test_circuit_to_bloq_kwargs(self):
@@ -530,26 +552,24 @@ class TestToBloq:
             ZGate,
         )
 
-        to_bloq = _map_to_bloq
-
-        assert GlobalPhase(exponent=1) == to_bloq()(
+        assert GlobalPhase(exponent=1) == _map_to_bloq(
             qml.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
         )
-        assert Identity() == to_bloq()(qml.Identity(0))
-        assert Ry(angle=np.pi / 2) == to_bloq()(qml.RY(np.pi / 2, 0))
-        assert Rx(angle=np.pi / 4) == to_bloq()(qml.RX(np.pi / 4, 0))
-        assert Rz(angle=np.pi / 3) == to_bloq()(qml.RZ(np.pi / 3, 0))
-        assert SGate() == to_bloq()(qml.S(0))
-        assert TwoBitSwap() == to_bloq()(qml.SWAP([0, 1]))
-        assert TwoBitCSwap() == to_bloq()(qml.CSWAP([0, 1, 2]))
-        assert TGate() == to_bloq()(qml.T(0))
-        assert XGate() == to_bloq()(qml.PauliX(0))
-        assert YGate() == to_bloq()(qml.PauliY(0))
-        assert CYGate() == to_bloq()(qml.CY([0, 1]))
-        assert ZGate() == to_bloq()(qml.PauliZ(0))
-        assert CZ() == to_bloq()(qml.CZ([0, 1]))
-        assert CNOT() == to_bloq()(qml.CNOT([0, 1]))
-        assert Toffoli() == to_bloq()(qml.Toffoli([0, 1, 2]))
+        assert Identity() == _map_to_bloq(qml.Identity(0))
+        assert Ry(angle=np.pi / 2) == _map_to_bloq(qml.RY(np.pi / 2, 0))
+        assert Rx(angle=np.pi / 4) == _map_to_bloq(qml.RX(np.pi / 4, 0))
+        assert Rz(angle=np.pi / 3) == _map_to_bloq(qml.RZ(np.pi / 3, 0))
+        assert SGate() == _map_to_bloq(qml.S(0))
+        assert TwoBitSwap() == _map_to_bloq(qml.SWAP([0, 1]))
+        assert TwoBitCSwap() == _map_to_bloq(qml.CSWAP([0, 1, 2]))
+        assert TGate() == _map_to_bloq(qml.T(0))
+        assert XGate() == _map_to_bloq(qml.PauliX(0))
+        assert YGate() == _map_to_bloq(qml.PauliY(0))
+        assert CYGate() == _map_to_bloq(qml.CY([0, 1]))
+        assert ZGate() == _map_to_bloq(qml.PauliZ(0))
+        assert CZ() == _map_to_bloq(qml.CZ([0, 1]))
+        assert CNOT() == _map_to_bloq(qml.CNOT([0, 1]))
+        assert Toffoli() == _map_to_bloq(qml.Toffoli([0, 1, 2]))
 
     @pytest.mark.parametrize(
         (
@@ -577,7 +597,7 @@ class TestToBloq:
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
             bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
 
-        call_graph = _get_op_call_graph()(op)
+        call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
 
     @pytest.mark.parametrize(
@@ -592,14 +612,17 @@ class TestToBloq:
                 ),
                 "qpe_bloq",
             ),
+            (qml.QFT(wires=range(4)), "qft_bloq"),
             (
-                qml.QFT(wires=range(4)),
-                "qft_bloq"
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                "modexp_bloq",
             ),
-            (
-                qml.ModExp(x_wires=[0, 1], output_wires=[2, 3, 4], base=2, mod=7, work_wires=[5, 6, 7, 8, 9]),
-                "modexp_bloq"
-            )
         ],
     )
     def test_default_mapping(self, op, qt_bloq):
@@ -607,10 +630,10 @@ class TestToBloq:
 
         def _build_expected_qualtran_bloq(qt_bloq):
             """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.cryptography.rsa import ModExp
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
             from qualtran.bloqs.qft import QFTTextBook
-            from qualtran.bloqs.cryptography.rsa import ModExp
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
@@ -618,7 +641,7 @@ class TestToBloq:
                     ctrl_state_prep=RectangularWindowState(4),
                 ),
                 "qft_bloq": QFTTextBook(4),
-                "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3)
+                "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
             }
 
             return qualtran_bloqs[qt_bloq]
@@ -697,3 +720,93 @@ class TestToBloq:
 
         qt_qpe = qml.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
+
+    # pylint: disable=redefined-outer-name, protected-access
+    def test_initialization_with_tuple(self, qubits, dtypes):
+        """Tests standard initialization with a tuple of qubits."""
+        q0, q1 = qubits
+        _, dtype_uint = dtypes
+        qubits_tuple = (q0, q1)
+
+        qreg = _QReg(qubits=qubits_tuple, dtype=dtype_uint)
+
+        assert isinstance(qreg.qubits, tuple)
+
+        assert qreg.qubits == qubits_tuple
+        assert qreg.dtype == dtype_uint
+        assert qreg._initialized is True
+
+    # pylint: disable=redefined-outer-name
+    def test_initialization_with_single_qubit(self, qubits, dtypes):
+        """Tests that a single qubit is correctly wrapped in a tuple."""
+        q0, _ = qubits
+        dtype_bit, _ = dtypes
+
+        qreg = _QReg(qubits=q0, dtype=dtype_bit)
+
+        assert qreg.__repr__() == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
+        assert isinstance(qreg.qubits, tuple)
+        assert qreg.qubits == (q0,)
+        assert qreg.dtype == dtype_bit
+
+    # pylint: disable=redefined-outer-name
+    def test_immutability_raises_error_on_attribute_change(self, qubits, dtypes):
+        """Tests that changing an attribute after initialization raises an AttributeError."""
+        q0, q1 = qubits
+        dtype_bit, dtype_uint = dtypes
+        qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
+
+        with pytest.raises(AttributeError, match="Cannot set attribute 'qubits'"):
+            qreg.qubits = (q1,)
+
+        with pytest.raises(AttributeError, match="Cannot set attribute 'dtype'"):
+            qreg.dtype = dtype_uint
+
+        with pytest.raises(AttributeError, match="Cannot set attribute 'new_attr'"):
+            qreg.new_attr = "some_value"
+
+    # pylint: disable=redefined-outer-name
+    def test_equality_ignores_dtype(self, qubits, dtypes):
+        """Tests the core feature: equality should only depend on qubits, not dtype."""
+        q0, _ = qubits
+        dtype_bit, dtype_uint = dtypes
+
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
+
+        assert qreg1 == qreg2
+
+    # pylint: disable=redefined-outer-name
+    def test_hash_ignores_dtype(self, qubits, dtypes):
+        """Tests that the hash also only depends on the qubits."""
+        q0, _ = qubits
+        dtype_bit, dtype_uint = dtypes
+
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q0,), dtype=dtype_uint)
+
+        assert hash(qreg1) == hash(qreg2)
+
+    # pylint: disable=redefined-outer-name
+    def test_inequality_for_different_qubits(self, qubits, dtypes):
+        """Tests that instances with different qubits are not equal."""
+        q0, q1 = qubits
+        dtype_bit, _ = dtypes
+
+        qreg1 = _QReg(qubits=(q0,), dtype=dtype_bit)
+        qreg2 = _QReg(qubits=(q1,), dtype=dtype_bit)
+        qreg3 = _QReg(qubits=(q0, q1), dtype=dtype_bit)
+
+        assert qreg1 != qreg2
+        assert qreg1 != qreg3
+
+    # pylint: disable=redefined-outer-name
+    def test_inequality_for_different_types(self, qubits, dtypes):
+        """Tests that comparison with other types returns NotImplemented/False."""
+        q0, _ = qubits
+        dtype_bit, _ = dtypes
+        qreg = _QReg(qubits=(q0,), dtype=dtype_bit)
+
+        assert qreg != "not_a_qreg"
+        assert qreg != (q0,)
+        assert qreg is not None
