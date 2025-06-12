@@ -26,9 +26,10 @@ from pennylane import numpy as pnp
 from pennylane.templates.subroutines.select import _unary_select
 
 
-def test_standard_checks():
+@pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
+def test_standard_checks(num_ops):
     """Run standard validity tests."""
-    ops = [qml.PauliX(0) for _ in range(16)]
+    ops = [qml.PauliX(0) for _ in range(num_ops)]
     control = [1, 2, 3, 4]
     work_wires = [5, 6, 7]
 
