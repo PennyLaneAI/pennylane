@@ -709,7 +709,7 @@ class TestToBloq:
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
     # pylint: disable=redefined-outer-name, protected-access
-    def test_initialization_with_tuple(qubits, dtypes):
+    def test_initialization_with_tuple(self, qubits, dtypes):
         """Tests standard initialization with a tuple of qubits."""
         q0, q1 = qubits
         _, dtype_uint = dtypes
@@ -723,7 +723,7 @@ class TestToBloq:
         assert qreg._initialized is True
 
     # pylint: disable=redefined-outer-name
-    def test_initialization_with_single_qubit(qubits, dtypes):
+    def test_initialization_with_single_qubit(self, qubits, dtypes):
         """Tests that a single qubit is correctly wrapped in a tuple."""
         q0, _ = qubits
         dtype_bit, _ = dtypes
@@ -735,7 +735,7 @@ class TestToBloq:
         assert qreg.dtype == dtype_bit
 
     # pylint: disable=redefined-outer-name
-    def test_immutability_raises_error_on_attribute_change(qubits, dtypes):
+    def test_immutability_raises_error_on_attribute_change(self, qubits, dtypes):
         """Tests that changing an attribute after initialization raises an AttributeError."""
         q0, q1 = qubits
         dtype_bit, dtype_uint = dtypes
@@ -751,7 +751,7 @@ class TestToBloq:
             qreg.new_attr = "some_value"
 
     # pylint: disable=redefined-outer-name
-    def test_equality_ignores_dtype(qubits, dtypes):
+    def test_equality_ignores_dtype(self, qubits, dtypes):
         """Tests the core feature: equality should only depend on qubits, not dtype."""
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
@@ -762,7 +762,7 @@ class TestToBloq:
         assert qreg1 == qreg2
 
     # pylint: disable=redefined-outer-name
-    def test_hash_ignores_dtype(qubits, dtypes):
+    def test_hash_ignores_dtype(self, qubits, dtypes):
         """Tests that the hash also only depends on the qubits."""
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
@@ -773,7 +773,7 @@ class TestToBloq:
         assert hash(qreg1) == hash(qreg2)
 
     # pylint: disable=redefined-outer-name
-    def test_inequality_for_different_qubits(qubits, dtypes):
+    def test_inequality_for_different_qubits(self, qubits, dtypes):
         """Tests that instances with different qubits are not equal."""
         q0, q1 = qubits
         dtype_bit, _ = dtypes
@@ -786,7 +786,7 @@ class TestToBloq:
         assert qreg1 != qreg3
 
     # pylint: disable=redefined-outer-name
-    def test_inequality_for_different_types(qubits, dtypes):
+    def test_inequality_for_different_types(self, qubits, dtypes):
         """Tests that comparison with other types returns NotImplemented/False."""
         q0, _ = qubits
         dtype_bit, _ = dtypes
