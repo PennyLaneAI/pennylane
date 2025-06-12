@@ -64,6 +64,7 @@ class TestZSqrtTwo:
         assert z1.conj() == ZSqrtTwo(1, 2)
         assert z2.adj2() == ZSqrtTwo(3, -4) and z1.adj2() == ZSqrtTwo(1, -2)
         assert z2 // 2 == ZSqrtTwo(1, 2)
+        assert z2 % 2 == ZSqrtTwo(1, 0)
         assert z1.to_omega() == ZOmega(a=-2, b=0, c=2, d=1)
         assert z2.to_omega() == ZOmega(a=-4, b=0, c=4, d=3)
 

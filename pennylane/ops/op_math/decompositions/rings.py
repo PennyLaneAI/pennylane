@@ -116,7 +116,7 @@ class ZSqrtTwo:
     def __neg__(self) -> ZSqrtTwo:
         return ZSqrtTwo(-self.a, -self.b)
 
-    def __mod__(self, other: ZSqrtTwo) -> ZSqrtTwo:
+    def __mod__(self, other: ZSqrtTwo | int | float) -> ZSqrtTwo:
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             return ZSqrtTwo(self.a % int(other), self.b % int(other))
 

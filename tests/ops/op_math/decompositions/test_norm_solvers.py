@@ -24,8 +24,8 @@ from pennylane.ops.op_math.decompositions.norm_solver import (
     _integer_factorize,
     _primality_test,
     _prime_factorize,
+    _solve_diophantine,
     _sqrt_modulo_p,
-    solve_diophantine,
 )
 from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
 
@@ -105,7 +105,9 @@ class TestFactorization:
             (29, True),
             (561, False),  # 561 is not prime (3*11*17)
             (1729, False),  # 1729 is not prime (1*7*13*19)
+            (7901, True),  # 7901 is prime
             (41041, False),  # 41041 is not prime (7*11*13*41)
+            (101 * 431, False),  # 101 and 431 are prime, but product is not
         ],
     )
     def test_primality_test(self, num, expected):
@@ -134,16 +136,19 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "num, expected",
         [
+            (ZSqrtTwo(0, 0), None),
             (ZSqrtTwo(2, 1), ZOmega(a=0, b=0, c=1, d=1)),
             (ZSqrtTwo(2, -1), ZOmega(a=1, b=-1, c=0, d=0)),
             (ZSqrtTwo(7, 0), None),
             (ZSqrtTwo(23, 0), None),
+            (ZSqrtTwo(7, 2), ZOmega(a=1, b=1, c=1, d=2)),
+            (ZSqrtTwo(17, 0), None),
             (ZSqrtTwo(5, 2), ZOmega(a=-2, b=-1, c=0, d=0)),
             (ZSqrtTwo(13, 6), ZOmega(a=0, b=2, c=3, d=0)),
         ],
     )
     def test_solve_diophantine(self, num, expected):
         """Test `solve_diophantine` solves diophantine equation."""
-        assert solve_diophantine(num) == expected
+        assert _solve_diophantine(num) == expected
         if expected is not None:
             assert (expected.conj() * expected).to_sqrt_two() == num

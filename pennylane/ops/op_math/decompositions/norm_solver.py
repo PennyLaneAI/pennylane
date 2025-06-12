@@ -26,7 +26,7 @@ def _gcd(a, b):
     raise NotImplementedError(
         f"GCD is not implemented for types {type(a)} and {type(b)}. "
         "Please implement a custom GCD function for these types."
-    )
+    )  # pragma: no cover
 
 
 @_gcd.register(int)
@@ -154,9 +154,9 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         list[ZSqrtTwo]: A list of factors in the ring :math:`\mathbb{Z}[\sqrt{2}]`,
             or `None` if no factorization exists.
     """
-    if p == 2:
-        # 2 = (0 + 1√2)(0 - 1√2)
-        return [ZSqrtTwo(0, 1), ZSqrtTwo(0, 1)]
+    if abs(p) == 2:
+        # Lemma C.8: ±2 = (0 + 1√2)(0 ± 1√2)
+        return [ZSqrtTwo(0, 1), ZSqrtTwo(0, (-1) ** (p < 0))]
 
     if (r := p % 8) in (3, 5):
         # p = (p + 0√2) is prime in Z[√2]
@@ -206,7 +206,7 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
             return None
         return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
 
-    return None
+    return None  # pragma: no cover
 
 
 @lru_cache(maxsize=100)
@@ -222,9 +222,9 @@ def _primality_test(n: int) -> bool:
     Returns:
         bool: True if :math:`n` is likely prime, False otherwise.
     """
-    if n <= 1 or n == 4:
+    if n < 2 or n == 4:
         return False
-    if n <= 3:
+    if n < 4:
         return True
 
     # Small primes quick check
@@ -244,24 +244,28 @@ def _primality_test(n: int) -> bool:
     # Deterministic bases for testing 64-bit range [https://miller-rabin.appspot.com/]
     bases = [2, 325, 9375, 28178, 450775, 9780504, 1795265022]
     for base in bases:
-        if base % n == 0:
+        base = base if base < n else base % n
+        if base == 0 or base < 2:
             continue
         x = pow(base, d, n)
         if x in (1, n - 1):
             continue
         for _ in range(s - 1):
             x = pow(x, 2, n)
+            if x == 1:
+                return False
             if x == n - 1:
-                continue
-        return False
+                break
+        if x != n - 1:
+            return False
 
     return True
 
 
 @lru_cache(maxsize=100)
-def _legendre_symbol(a: int, p: int, k: int = 2) -> int:
+def _legendre_symbol(a: int, p: int) -> int:
     r"""Computes the Legendre symbol :math:`\left(\frac{a}{p}\right)`."""
-    return pow(a, (p - 1) // k, p)
+    return pow(a, (p - 1) // 2, p)
 
 
 def _sqrt_modulo_p(n: int, p: int) -> int | None:
@@ -324,7 +328,7 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
     return r
 
 
-def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
+def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
     r"""Solve the Diophantine equation :math:`t^* t = \xi` for :math:`t \in \mathbb{Z}[\omega]` and :math:`\xi \in \mathbb{Z}[\sqrt{2}]`.
 
     Args:
@@ -342,7 +346,7 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
     scale, next_xi = ZOmega(d=1), xi
     for factor in factors:
         if (primes_zsqrt_two := _factorize_prime_zsqrt_two(factor)) is None:
-            return None
+            return None  # pragma: no cover
 
         for eta in primes_zsqrt_two:
             # Scale the next_xi by the factor in Z[√2].
@@ -351,18 +355,19 @@ def solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
             if next_xi.a % next_ab == 0 and next_xi.b % next_ab == 0:
                 next_xi = ZSqrtTwo(next_xi.a // next_ab, next_xi.b // next_ab)
                 if (t := _factorize_prime_zomega(eta, factor)) is None:
-                    return None
+                    return None  # pragma: no cover
                 scale *= t
 
     # the remaining quotient should be divisible
     s_val = (scale.conj() * scale).to_sqrt_two()
     s_new, s_abs = (xi * s_val.adj2()), abs(s_val)
     if any(x_ % s_abs != 0 for x_ in s_new.flatten):
+        print("hi")
         return None
 
     # the remaining quotient should be a unit in Z[√2]
     t2 = xi / s_val
     if abs(t2) ** 2 != 1:
-        return None
+        return None  # pragma: no cover
 
     return scale * t2.sqrt().to_omega()
