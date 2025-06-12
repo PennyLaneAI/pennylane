@@ -454,9 +454,11 @@ def construct_batch(
         program = user_program[level_slice_initial]
         tapes, user_post_processing = program((initial_tape,))
 
-        execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(
-            *args, **kwargs
-        )
+        # execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(
+        #     *args, **kwargs
+        # )
+        
+        execution_config = qnode.device.setup_execution_config(circuit=tapes)
         # pylint: disable = protected-access
         execution_config = qml.workflow.resolution._resolve_execution_config(
             execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
