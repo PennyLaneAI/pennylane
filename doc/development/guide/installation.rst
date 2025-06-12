@@ -41,7 +41,7 @@ Interface dependencies
 For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax`` and ``jaxlib`` <= 0.4.28
+* **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
 
 * **PyTorch interface**: ``pytorch``
 
