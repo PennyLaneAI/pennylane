@@ -16,11 +16,12 @@ from __future__ import annotations
 
 from functools import singledispatch
 
+from pennylane.labs.resource_estimation import ResourceOperator
 from pennylane.operation import Operation
 
 
 @singledispatch
-def map_to_resource_op(op: Operation):
+def map_to_resource_op(op: Operation) -> ResourceOperator:
     r"""Maps an instance of :class:`~.Operation` to its associated :class:`~.pennylane.labs.resource_estimation.ResourceOperator`.
 
     Args:

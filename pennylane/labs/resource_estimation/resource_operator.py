@@ -17,7 +17,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from inspect import signature
-from typing import Callable, Hashable, List, Optional, Type
+from typing import Callable, Dict, Hashable, List, Optional, Type, Union
 
 import numpy as np
 
@@ -200,7 +200,7 @@ class ResourceOperator(ABC):
 
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
-        if wires:
+        if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
 
@@ -624,3 +624,92 @@ def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
 
     """
     cls.set_resources(decomp_func, override_type="pow")
+
+
+class GateCount:
+    r"""A class to represent a gate and its number of occurrences in a circuit or decomposition.
+
+    Args:
+        gate (CompressedResourceOp): a compressed resource representation of the gate being counted
+        counts (int, optional): The number of occurances of the quantum gate in the circuit or
+            decomposition. Defaults to 1.
+
+    Returns:
+        GateCount: the container object holding both pieces of information
+
+    **Example**
+
+    In this example we create an object to count 5 instances of :code:`plre.ResourceQFT` acting
+    on three wires:
+
+    >>> qft = plre.resource_rep(plre.ResourceQFT, {"num_wires": 3})
+    >>> counts = plre.GateCount(qft, 5)
+    >>> counts
+    (5 x QFT(3))
+
+    """
+
+    def __init__(self, gate: CompressedResourceOp, count: int = 1) -> None:
+        self.gate = gate
+        self.count = count
+
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return self.__class__(self.gate, self.count * other)
+        raise NotImplementedError
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__) and (self.gate == other.gate):
+            return self.__class__(self.gate, self.count + other.count)
+        raise NotImplementedError
+
+    __rmul__ = __mul__
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, GateCount):
+            return False
+        return self.gate == other.gate and self.count == other.count
+
+    def __repr__(self) -> str:
+        return f"({self.count} x {self.gate._name})"
+
+
+def resource_rep(
+    resource_op: Type[ResourceOperator],
+    resource_params: Union[Dict, None] = None,
+) -> CompressedResourceOp:
+    r"""Produce a compressed representation of the resource operator to be used when
+    tracking resources.
+
+    Note, the :code:`resource_params` dictionary should specify the required resource
+    parameters of the operator. The required resource parameters are listed in the
+    :code:`resource_keys` class property of every :class:`~.pennylane.labs.resource_estimation.ResourceOperator`.
+
+    Args:
+        resource_op (Type[ResourceOperator]]): The type of operator we wish to compactify
+        resource_params (Dict): The required set of parameters to specify the operator
+
+    Returns:
+        CompressedResourceOp: A compressed representation of a resource operator
+
+    **Example**
+
+    In this example we obtain the compressed resource representation for :code:`ResourceQFT`.
+    We begin by checking what parameters are required for resource estimation, and then providing
+    them accordingly:
+
+    >>> plre.ResourceQFT.resource_keys
+    {'num_wires'}
+    >>> cmpr_qft = plre.resource_rep(
+    ...     plre.ResourceQFT,
+    ...     {"num_wires": 3},
+    ... )
+    >>> cmpr_qft
+    QFT(3)
+
+    """
+
+    if resource_params:
+        return resource_op.resource_rep(**resource_params)
+
+    return resource_op.resource_rep()
