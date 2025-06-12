@@ -199,6 +199,158 @@ class ResourceTestAlg2(ResourceOperator):
         ]
 
 
+class ResourceTestCNOT(ResourceOperator):
+    num_wires = 2
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestHadamard(ResourceOperator):
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestT(ResourceOperator):
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs):
+        raise ResourcesNotDefined
+
+
+class ResourceTestZ(ResourceOperator):
+    num_wires = 1
+    resource_keys = {}
+
+    @classmethod
+    def resource_rep(cls):
+        return CompressedResourceOp(cls, {})
+
+    @property
+    def resource_params(self):
+        return {}
+
+    @classmethod
+    def default_resource_decomp(cls, **kwargs):
+        t = resource_rep(ResourceTestT)
+        return [GateCount(t, count=4)]
+
+
+class ResourceTestRZ(ResourceOperator):
+    num_wires = 1
+    resource_keys = {"epsilon"}
+
+    def __init__(self, epsilon=None, wires=None) -> None:
+        self.epsilon = epsilon
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, epsilon=None):
+        return CompressedResourceOp(cls, {"epsilon": epsilon})
+
+    @property
+    def resource_params(self):
+        return {"epsilon": self.epsilon}
+
+    @classmethod
+    def default_resource_decomp(cls, epsilon, **kwargs):
+        if epsilon is None:
+            epsilon = kwargs["config"]["error_rz"]
+
+        t = resource_rep(ResourceTestT)
+        t_counts = round(1 / epsilon)
+        return [GateCount(t, count=t_counts)]
+
+
+class ResourceTestAlg1(ResourceOperator):
+    num_wires = 2
+    resource_keys = {"num_iter"}
+
+    def __init__(self, num_iter, wires=None) -> None:
+        self.num_iter = num_iter
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_iter):
+        return CompressedResourceOp(cls, {"num_iter": num_iter})
+
+    @property
+    def resource_params(self):
+        return {"num_iter": self.num_iter}
+
+    @classmethod
+    def default_resource_decomp(cls, num_iter, **kwargs):
+        cnot = resource_rep(ResourceTestCNOT)
+        h = resource_rep(ResourceTestHadamard)
+
+        return [
+            AllocWires(num_wires=num_iter),
+            GateCount(h, num_iter),
+            GateCount(cnot, num_iter),
+            FreeWires(num_wires=num_iter - 1),
+        ]
+
+
+class ResourceTestAlg2(ResourceOperator):
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None) -> None:
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @classmethod
+    def resource_rep(cls, num_wires):
+        return CompressedResourceOp(cls, {"num_wires": num_wires})
+
+    @property
+    def resource_params(self):
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def default_resource_decomp(cls, num_wires, **kwargs):
+        rz = resource_rep(ResourceTestRZ, {"epsilon": 1e-2})
+        alg1 = resource_rep(ResourceTestAlg1, {"num_iter": 3})
+
+        return [
+            AllocWires(num_wires=num_wires),
+            GateCount(rz, num_wires),
+            GateCount(alg1, num_wires // 2),
+            FreeWires(num_wires=num_wires),
+        ]
+
+
 class TestEstimateResources:
     """Test that core resource estimation functionality"""
 
@@ -213,6 +365,10 @@ class TestEstimateResources:
             ResourceTestRZ(epsilon=1e-2, wires=[2])
             ResourceTestCNOT(wires=[3, 4])
             ResourceTestAlg1(num_iter=5, wires=[5, 6])
+<<<<<<< HEAD
+=======
+            return
+>>>>>>> 5a1c24570 (added tests and updated docs)
 
         expected_gates = defaultdict(
             int,
@@ -257,6 +413,8 @@ class TestEstimateResources:
         )
         qubits = QubitManager(work_wires=0, algo_wires=4)
         resources = Resources(qubit_manager=qubits, gate_types=gates)
+<<<<<<< HEAD
+=======
 
         gate_set = {"TestCNOT", "TestT", "TestHadamard"}
         actual_resources = estimate_resources(resources, gate_set=gate_set)
@@ -275,7 +433,29 @@ class TestEstimateResources:
         expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
 
         assert actual_resources == expected_resources
+>>>>>>> 5a1c24570 (added tests and updated docs)
 
+        gate_set = {"TestCNOT", "TestT", "TestHadamard"}
+        actual_resources = estimate_resources(resources, gate_set=gate_set)
+
+<<<<<<< HEAD
+        expected_gates = defaultdict(
+            int,
+            {
+                resource_rep(ResourceTestT): 4 * round(1 / 1e-2),
+                resource_rep(ResourceTestCNOT): 6,
+                resource_rep(ResourceTestHadamard): 6,
+            },
+        )
+        expected_qubits = QubitManager(
+            work_wires={"clean": 4, "dirty": 2}, algo_wires=4
+        )  # TODO: optimize allocation
+        expected_resources = Resources(qubit_manager=expected_qubits, gate_types=expected_gates)
+
+        assert actual_resources == expected_resources
+
+=======
+>>>>>>> 5a1c24570 (added tests and updated docs)
     @pytest.mark.parametrize(
         "gate_set, expected_resources",
         (
@@ -316,6 +496,10 @@ class TestEstimateResources:
             ResourceTestAlg2(num_wires, wires=range(num_wires))
             for w in range(num_wires):
                 ResourceTestZ(wires=w)
+<<<<<<< HEAD
+=======
+            return
+>>>>>>> 5a1c24570 (added tests and updated docs)
 
         actual_resources = estimate_resources(my_circ, gate_set=gate_set)(num_wires=4)
         assert actual_resources == expected_resources

@@ -47,16 +47,6 @@ Resource Estimation Functions:
     ~set_ctrl_decomp
     ~set_pow_decomp
 
-Resource Estimation Constants:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~resource_config
-    ~DefaultGateSet
-    ~StandardGateSet
-
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
