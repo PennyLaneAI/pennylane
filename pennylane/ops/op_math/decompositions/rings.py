@@ -311,7 +311,7 @@ class DyadicMatrix:
 
     The dyadic fractions :math:`\mathbb{D} = \mathbb{Z}[\frac{1}{2}]` are defined as
     :math:`\mathbb{D} = \{ a / 2^k \mid a \in \mathbb{Z}, k \in  \{0\} \cup \mathbb{N}\}`. This gives:
- 
+
     .. math::
         \mathbb{D}[omega] = \mathbb{Z}[\frac{1}{\sqrt{2}}, i] = \{ a\omega^3 + b\omega^2 + c\omega + d \mid a, b, c, d \in \mathbb{Z}[\frac{1}{\sqrt{2}}] \}
 
