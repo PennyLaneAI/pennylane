@@ -131,7 +131,6 @@ class PyDotGraphBuilder:
         self.graph = pydot.Dot(
             graph_type=attrs.pop("graph_type", "digraph"),
             rankdir=attrs.pop("rankdir", "TB"),
-            bgcolor=attrs.pop("bgcolor", "white"),
             **attrs,
         )
 
@@ -221,8 +220,9 @@ class PyDotGraphBuilder:
                         if prev_node != node and not self.graph.get_edge(
                             prev_node.get_name(), node.get_name()
                         ):
-                            self.graph.add_edge(pydot.Edge(prev_node, node, color=color))
-
+                            self.graph.add_edge(
+                                pydot.Edge(prev_node, node, style="solid", color=color)
+                            )
                         if isinstance(node, OperatorNode):
                             # If it's an operator node, we need to keep track of it
                             self.wires_to_nodes[wire] = [node]

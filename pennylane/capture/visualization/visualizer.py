@@ -233,7 +233,7 @@ def handle_qnode(
     args = invals[n_consts:]
 
     # Create QNode cluster
-    qnode_cluster = QNodeCluster(info_label="")
+    qnode_cluster = QNodeCluster(info_label="", color="white")
     self.plxpr_graph.add_cluster_to_graph(qnode_cluster)
 
     # Create a node for the QNode
