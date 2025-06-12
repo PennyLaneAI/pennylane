@@ -237,7 +237,7 @@ class Select(Operation):
 
 
 def _target(target_rep, num_control_wires, state):
-    return qml.decomposition.resources.controlled_resource_rep(
+    return qml.decomposition.controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
@@ -259,7 +259,8 @@ def _select_resources(op_reps, num_control_wires):
 @qml.register_resources(_select_resources)
 def _select_decomp(*_, wires=None, ops, control, target_wires=None):
     state_iterator = itertools.product([0, 1], repeat=len(control))
-    return [qml.ctrl(op, control, control_values=state) for state, op in zip(state_iterator, ops)]
+    for state, op in zip(state_iterator, ops):
+        qml.ctrl(op, control, control_values=state) 
 
 
 qml.add_decomps(Select, _select_decomp)
