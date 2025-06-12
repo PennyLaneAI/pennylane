@@ -276,20 +276,28 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Computes the coefficients of Taylor vibrational Hamiltonian.
 
-    The coefficients are computed from a multi-dimensional polynomial fit over potential energy
-    surface data, with a polynomial specified by ``min_deg`` and ``max_deg``.
+    The potential energy surface is defined as [Eq. 7 of
+    `J. Chem. Phys. 135, 134108 (2011) <https://pubs.aip.org/aip/jcp/article-abstract/135/13/134108/191108/Size-extensive-vibrational-self-consistent-field?redirectedFrom=PDF>`_]:
 
-    The potential energy surface is defined as [Eq. 28 of
-    `arXiv:1609.00430 <https://arxiv.org/abs/1609.00430>`_]:
+    .. math::
+
+        V = V_0 + \sum_{i} F_i Q_i + \sum_{i,j} F_{ij} Q_i Q_j +
+                   \sum_{i,j,k} F_{ijk} Q_i Q_j Q_k + \cdots,
+
+    where :math:`Q` is a normal coordinate and :math:`F` represents the derivatives of the potential
+    energy surface.
+
+    This functions computes these derivatives via Taylor expansion of the potential energy data by
+    performing a multi-dimensional polynomial fit over potential energy surface data. The potential
+    energy surface along the normal coordinate can be defined as
 
     .. math::
 
         V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
         V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
 
-    where :math:`q` is a normal coordinate and :math:`V_n` represents the :math:`n`-mode component
-    of the potential energy surface along the normal coordinate. The :math:`V_n` terms are defined
-    as:
+    where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+    computed along the normal coordinate. The :math:`V_n` terms are defined as:
 
     .. math::
 
@@ -298,6 +306,11 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots
+
+    Note that the terms :math:`V_n` are represented here by an arrays of energy points computed
+    along the nornal coordinates. These energy data are then used in a multi-dimensional polynomial
+    fit where each term :math:`V_n` is expanded in terms of products of :math:`Q` with exponents
+    specified by ``min_deg`` and ``max_deg``.
 
     The one-mode Taylor coefficients, :math:`\Phi`, computed here are related to the potential
     energy surface as:
