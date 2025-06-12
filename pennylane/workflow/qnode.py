@@ -638,9 +638,8 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        # This flag should be set to True, if the QNode is updated with another argument
-        self._set_shots(device.shots)
-
+        self._shots : Shots = device.shots
+        self._shots_override_device : bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
