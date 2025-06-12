@@ -636,6 +636,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Adjust workflow helper function `construct_batch` to be consistent with `set_shots` and other user transforms, following similar logic as `execute`.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
+
 * Move program capture code closer to where it is used.
   [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
 
