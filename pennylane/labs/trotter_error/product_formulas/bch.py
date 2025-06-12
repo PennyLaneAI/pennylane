@@ -1,3 +1,5 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,12 +33,15 @@ def bch_expansion(
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
     Args:
-        product_formula (:class:`~.pennylane.labs.trotter_error.ProductFormula`): A :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
-        order (int) The maximum order of the expansion to return.
+        product_formula (ProductFormula): The :class:`~.pennylane.labs.trotter_error.ProductFormula` object whose BCH expansion will be computed.
+        order (int): The maximum order of the expansion to return.
     Returns:
         List[Dict[Tuple[Hashable], complex]]: A list of dictionaries. The ``ith`` dictionary contains the ``ith`` order commutators and their coefficients.
 
     **Example**
+
+    In this example we compute the BCH expansion of the second order Trotter-Suzuki formula. The output is a list of dictionaries. Each dictionary is indexed by
+    a tuple representing a right-nested commutator. For example, ``('A', 'A', 'B')`` represents the commutator :math:`[A, [A, B]]`.
 
     >>> from pprint import pp
     >>> from pennylane.labs.trotter_error import ProductFormula, bch_expansion

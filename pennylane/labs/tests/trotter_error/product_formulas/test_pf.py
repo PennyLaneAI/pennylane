@@ -36,7 +36,7 @@ fragment_dicts = [
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
 def test_second_order_representations(fragment_dict):
-    """Test that two representations of second order Trotter are equal"""
+    """Test that two representations of second order Trotter produce the same effective Hamiltonian"""
 
     pf1 = ProductFormula([0, 1, 0], coeffs=[1 / 2, 1, 1 / 2])
     pf2 = ProductFormula([0, 1, 1, 0], coeffs=[1 / 2, 1 / 2, 1 / 2, 1 / 2])

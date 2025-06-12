@@ -38,7 +38,8 @@ fragment_list = [
 
 @pytest.mark.parametrize("fragments, r, delta", product(fragment_list, range(1, 4), deltas))
 def test_first_order(fragments, r, delta):
-    """Test against first order Trotter"""
+    """Test that the computed effective Hamiltonian for first order Trotter matches the known expression.
+    See Proposition 4 of https://arxiv.org/pdf/2408.03891 for the expression."""
 
     n_frags = len(fragments)
     expected = np.zeros(shape=(3, 3), dtype=np.complex128)
@@ -58,7 +59,8 @@ def test_first_order(fragments, r, delta):
 
 @pytest.mark.parametrize("fragments, r, delta", product(fragment_list, range(1, 4), deltas))
 def test_second_order(fragments, r, delta):
-    """Test against the second order Trotter error formula"""
+    """Test that the computed effective Hamiltonian for second order Trotter matches the known expression.
+    See Proposition 4 of https://arxiv.org/pdf/2408.03891 for the expression."""
 
     n_frags = len(fragments)
     frag_labels = list(range(n_frags)) + list(range(n_frags - 1, -1, -1))
@@ -92,7 +94,8 @@ fragment_list = [
 
 @pytest.mark.parametrize("fragments, t", product(fragment_list, [1, 0.1, 0.01]))
 def test_fourth_order_norm_two_fragments(fragments, t):
-    """Test against the fourth order Trotter error formula on two fragments"""
+    """Tests against an upper bound on the norm of the fourth order Trotter formula. This test comes from
+    Proposition J.1 of https://arxiv.org/pdf/1912.08854"""
 
     u = 1 / (4 - 4 ** (1 / 3))
     frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
@@ -160,29 +163,6 @@ Z = "Z"
                 },
             ],
         ),
-        # (
-        #    [X, Y, Z],
-        #    [1, 1, 1],
-        #    3,
-        #    [
-        #        {(X,): 1, (Y,): 1, (Z,): 1},
-        #        {
-        #            (X, Y): 1 / 2,
-        #            (X, Z): 1 / 2,
-        #            (Y, Z): 1 / 2,
-        #        },
-        #        {
-        #            (X, X, Y): 1 / 12,
-        #            (X, X, Z): 1 / 12,
-        #            (X, Y, Z): 1 / 3,
-        #            (Y, X, Y): -1 / 12,
-        #            (Y, X, Z): -1 / 6,
-        #            (Y, Y, Z): 1 / 12,
-        #            (Z, X, Z): -1 / 12,
-        #            (Z, Y, Z): -1 / 12,
-        #        },
-        #    ],
-        # ),
         (
             [X, Y, X],
             [1, 1, 1],
@@ -209,7 +189,9 @@ def test_bch_expansion(frag_labels, frag_coeffs, max_order, expected):
 
     for i, order in enumerate(actual):
         for comm in order:
-            assert np.isclose(order[comm], expected[i][comm])
+            assert np.isclose(
+                order[comm], expected[i][comm]
+            ), f"Coefficient for commutator {comm} did not match its expected value."
 
 
 fragment_list = [

@@ -42,7 +42,7 @@ def effective_hamiltonian(
 ):
     """Compute the effective Hamiltonian with the given product formula.
 
-    Args
+    Args:
         product_formula (:class:`~.pennylane.trotter_error.labs.ProductFormula`): A product formula used to approximate the Hamiltonian simulation.
         fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`) The fragments that sum to the Hamiltonian. The keys in the dictionary must match the labels used to build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
         order (int): The order of the approximatation.
@@ -87,7 +87,13 @@ def effective_hamiltonian(
     return eff
 
 
-def _insert_fragments(commutator, fragments):
+def _insert_fragments(
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
+) -> Tuple[Fragment]:
+    """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
+    The function recurses through the nested structure of the tuple replacing each hashable `label` with
+    the concrete value `fragments[label]`."""
+
     ret = tuple()
     for term in commutator:
         if isinstance(term, tuple):
