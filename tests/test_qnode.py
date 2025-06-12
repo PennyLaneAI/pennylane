@@ -1520,7 +1520,7 @@ class TestShots:
         assert qn._shots == qml.measurements.Shots(30)
 
         # Update shots directly
-        updated_qnode = qn.update(shots=75)
+        updated_qnode = qn.update_shots(shots=75)
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
     def test_private_shots_update_warning(self):
