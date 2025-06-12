@@ -347,5 +347,6 @@ def setup(app):
     pennylane.X.__name__ = 'X'
     pennylane.Y.__name__ = 'Y'
     pennylane.H.__module__ = __name__
+    pennylane.FromBloq.__module__ = __name__
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
