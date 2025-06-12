@@ -82,6 +82,8 @@ class TestZSqrtTwo:
             _ = z1 // z2
         with pytest.raises(ValueError, match="Negative powers"):
             _ = z1**-2
+        with pytest.raises(ValueError, match="Non-integer powers"):
+            _ = z1**-1.5
 
 
 class TestZOmega:
@@ -152,6 +154,8 @@ class TestZOmega:
             _ = z1**-2
         with pytest.raises(ValueError, match="Cannot convert ZOmega to ZSqrtTwo"):
             _ = z1.to_sqrt_two()
+        with pytest.raises(ValueError, match="Non-integer powers"):
+            _ = z1**-1.5
 
 
 class TestDyadicMatrix:
