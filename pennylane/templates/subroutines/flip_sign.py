@@ -35,6 +35,11 @@ class FlipSign(Operation):
         n (array[int] or int): binary array or integer value representing the state on which to flip the sign
         wires (array[int] or int): wires that the template acts on
 
+    .. warning::
+
+        Passing an integer `m` as the wires argument is now interpreted as a single wire (i.e. wires=[`m`]).
+        This is different from the previous interpretation of wires=range(`m`). This may lead to unexpected errors.
+
 
     **Example**
 
