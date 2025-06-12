@@ -101,3 +101,36 @@ class TestGradients:
 
         assert np.allclose(cost_qml, cost_jax)
         assert np.allclose(grad_qml, grad_jax)
+
+
+class TestApproxMetricTensor:
+    """Test that the metric tensor is computed correctly according to the given `approx` strategy."""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_no_approx(self, dev_name):
+        """Test that the full metric tensor is computed correctly for `approx=None`."""
+
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        eta = 0.7
+        params = jnp.array([0.11, 0.412])
+
+        opt = qml.QNGOptimizerJax(approx=None)
+        metric_tensor = opt._get_metric_tensor(circuit, params)
+
+        # computing the expected result by manual calculation
+        x = params[0]
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        expected_metric_tensor = first_term - second_term
+
+        assert np.allclose(metric_tensor, expected_metric_tensor)
