@@ -165,12 +165,6 @@ class TestUpdate:
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
-        with pytest.warns(
-            UserWarning,
-            match="not part of the standard qnode gradient kwargs.",
-        ):
-            circuit.update(gradient_kwargs={"blah": 1})
-
     def test_update_multiple_arguments(self):
         """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
@@ -428,21 +422,6 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
-
-    # pylint: disable=unused-variable
-    def test_unrecognized_kwargs_raise_warning(self):
-        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            assert len(w) == 1
-            assert "that are not part of the standard qnode gradient kwargs" in str(w[0].message)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""

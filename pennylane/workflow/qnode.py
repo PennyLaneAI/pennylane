@@ -549,15 +549,6 @@ class QNode:
             device = qml.devices.LegacyDeviceFacade(device)
 
         gradient_kwargs = gradient_kwargs or {}
-        unrecognized_gradient_kwargs = set(gradient_kwargs.keys()) - set(
-            qml.gradients.SUPPORTED_GRADIENT_KWARGS
-        )
-        if unrecognized_gradient_kwargs:
-            warnings.warn(
-                f"Received gradient_kwargs {unrecognized_gradient_kwargs} that are not part of the "
-                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
-                "the gradient_kwargs argument as a dictionary."
-            )
 
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(

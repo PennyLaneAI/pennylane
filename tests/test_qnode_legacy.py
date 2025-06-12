@@ -198,21 +198,6 @@ class TestValidation:
 
         assert np.allclose(grad, 0)
 
-    # pylint: disable=unused-variable
-    def test_unrecognized_kwargs_raise_warning(self):
-        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
-        dev = DefaultQubitLegacy(wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            assert len(w) == 1
-            assert "that are not part of the standard qnode gradient kwargs" in str(w[0].message)
-
     def test_auto_interface_tracker_device_switched(self):
         """Test that checks that the tracker is switched to the new device."""
         dev = DefaultQubitLegacy(wires=1)
