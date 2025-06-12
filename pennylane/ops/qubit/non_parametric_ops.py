@@ -19,7 +19,7 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
-from typing import Optional, Union
+from typing import Optional, TypeAlias, Union
 
 import numpy as np
 from scipy import sparse
@@ -221,7 +221,8 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-H = Hadamard
+# H = Hadamard
+H: TypeAlias = Hadamard
 H.__doc__ = Hadamard.__doc__
 r"""H(wires)
 The Hadamard operator

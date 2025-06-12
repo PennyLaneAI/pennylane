@@ -350,7 +350,7 @@ def setup(app):
     pennylane.Y.__name__ = 'Y'
     pennylane.H.__module__ = __name__
     pennylane.FromBloq.__name__ = 'FromBloq'
-    H: TypeAlias = pennylane.Hadamard
+    pennylane.H.__doc__ = pennylane.Hadamard.__doc__
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
     # app.connect('build-finished', build_finished)
