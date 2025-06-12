@@ -93,6 +93,7 @@
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+  [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
 
   ```python
   angles = np.array([1.0, 2.0, 3.0, 4.0])
@@ -259,6 +260,9 @@
 
   * :class:`~.ControlledQubitUnitary`
     [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
+
+  * :class:`~.DiagonalQubitUnitary`
+    [(#7625)](https://github.com/PennyLaneAI/pennylane/pull/7625)
 
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
@@ -538,6 +542,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The imports of dependencies introduced by ``labs`` functionalities have been modified such that
+  these dependencies only have to be installed for the functions that use them, not to use
+  ``labs`` functionalities in general. This decouples the various submodules, and even functions
+  within the same submodule, from each other.
+  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
@@ -722,6 +731,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
   [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
+
+* The decomposition test in `assert_valid` no longer checks the matrix of the decomposition if the operator
+  does not define a matrix representation.
+  [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
+
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
@@ -746,6 +760,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
+  interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
+  Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
+  [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
