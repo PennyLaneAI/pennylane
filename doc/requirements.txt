@@ -39,3 +39,4 @@ sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
 diastatic-malt
 galois
+xdsl==0.38
