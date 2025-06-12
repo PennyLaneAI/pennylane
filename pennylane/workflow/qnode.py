@@ -579,7 +579,6 @@ class QNode:
             _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
-        cache = (max_diff > 1) if cache == "auto" else cache
 
         self.capture_cache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
