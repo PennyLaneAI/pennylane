@@ -40,21 +40,21 @@ def _right_operator(ck, ik, tk, aux):
 
 
 class SemiAdder(Operation):
-    r"""Performs the semi-out-place addition operation.
-    More specifically, the operation is an in-place quantum-quantum addition.
-
-    This operator performs the plain addition of two integers :math:`x` and :math:`y` in the computational basis:
+    r"""This operator performs the plain addition of two integers :math:`x` and :math:`y` in the computational basis:
 
     .. math::
 
         \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle,
 
+    This can be called a semi-out-place addition operation,
+    or more specifically, the operation is a quantum-quantum in-place addition.
+    
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. Exactly ``len(y_wires) - 1`` work
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
             wires should be provided.
 
     **Example**
