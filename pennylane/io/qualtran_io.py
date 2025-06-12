@@ -187,6 +187,9 @@ def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
 
 @_map_to_bloq.register
 def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
+    if isinstance(op, qops.MultiControlledX):
+        return ToBloq(op)
+    
     if isinstance(op, qops.Toffoli):
         return qt_gates.Toffoli()
 
