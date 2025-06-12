@@ -352,6 +352,7 @@ def setup(app):
     pennylane.FromBloq.__name__ = 'FromBloq'
     pennylane.H.__doc__ = pennylane.Hadamard.__doc__
     pennylane.Z.__doc__ = pennylane.ops.qubit.non_parametric_ops.Z.__doc__
+    pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
     # app.connect('build-finished', build_finished)
