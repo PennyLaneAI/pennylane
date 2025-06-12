@@ -660,7 +660,7 @@ class TestResourceControlledPhaseShift:
 
         expected = [
             re.GateCount(re.CompressedResourceOp(re.ResourceCNOT, {}), 2),
-            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, {}), 3),
+            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, {"eps": None}), 3),
         ]
 
         assert op.resource_decomp(**op.resource_params) == expected
@@ -696,7 +696,7 @@ class TestResourceControlledPhaseShift:
 
         expected = [
             re.GateCount(re.CompressedResourceOp(re.ResourceCNOT, {}), 2),
-            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, {}), 3),
+            re.GateCount(re.CompressedResourceOp(re.ResourceRZ, {"eps": None}), 3),
         ]
 
         op_compressed_rep = op.resource_rep_from_op()

@@ -191,6 +191,7 @@ class ResourceCY(ResourceOperator):
             obtain the controlled decomposition. Specifically, the resources are defined as a
             :class:`~.ResourceCNOT` gate conjugated by a pair of :class:`~.ResourceS` gates.
         """
+        # TODO: To be added after the symbolic PR
         raise re.ResourcesNotDefined
 
     @classmethod
@@ -805,6 +806,7 @@ class ResourceToffoli(ResourceOperator):
             :class:`~.ResourceHadamard` gates, one :class:`~.ResourceCZ` gate, one :class:`~.ResourceS`
             gate, two :class:`~.ResourceT` gates and two adjoint :class:`~.ResourceT` gates.
         """
+        # TODO: To be added after the symbolic op PR
         raise re.ResourcesNotDefined
 
     @classmethod
@@ -828,7 +830,7 @@ class ResourceToffoli(ResourceOperator):
             :class:`~.ResourceHadamard` gates, four :class:`~.ResourceT` gates and three adjoint
             :class:`~.ResourceT` gates.
         """
-
+        # TODO: To be added after the symbolic op PR
         raise re.ResourcesNotDefined
 
     @property
