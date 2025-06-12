@@ -24,7 +24,9 @@ from scipy.linalg import expm, fractional_matrix_power
 
 
 class ProductFormula:
-    r"""Class for representing product formulas. For a set of Hermitian operators :math:`H_1,\dots,H_n`
+    r"""Class for representing product formulas. 
+    
+    For a set of Hermitian operators :math:`H_1,\dots,H_n`
     a product formula is any function in the form :math:`U(t) = \prod_{k=1}^n e^{it\alpha_k H_k}` with
     :math:`\alpha_k \in \mathbb{R}`.
 
@@ -163,18 +165,18 @@ class ProductFormula:
 
         >>> import numpy as np
         >>> from pennylane.labs.trotter_error import ProductFormula
-
+        >>>
         >>> frag_labels = ["A", "B", "C", "B", "A"]
         >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
         >>> second_order = ProductFormula(frag_labels, frag_coeffs)
-
+        >>>
         >>> np.random.seed(42)
         >>> fragments = {
         >>>     "A": np.random.random(size=(3, 3)),
         >>>     "B": np.random.random(size=(3, 3)),
         >>>     "C": np.random.random(size=(3, 3)),
         >>> }
-
+        >>>
         >>> second_order.to_matrix(fragments)
         [[20.53683969 24.33566914 25.4931284 ]
          [12.50207018 15.44505726 15.01069493]
@@ -196,12 +198,12 @@ class ProductFormula:
         **Example**
 
         >>> from pennylane.labs.trotter_error import ProductFormula
-
+        >>>
         >>> pf1 = ProductFormula(["A", "B", "C"], [1, 1, 1])
         >>> pf2 = ProductFormula(["X", "Y", "Z"], [1, 1, 1])
-
+        >>>
         >>> pf = pf1 @ pf2
-
+        >>>
         >>> pf.ordered_fragments()
         {'A': 0, 'B': 1, 'C': 2, 'X': 3, 'Y': 4, 'Z': 5}
         """

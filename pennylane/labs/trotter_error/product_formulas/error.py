@@ -40,7 +40,7 @@ def effective_hamiltonian(
     order: int,
     timestep: float = 1.0,
 ):
-    """Compute the effective Hamiltonian with the given product formula.
+    """Compute the effective Hamiltonian :math:`H_{eff} = H + \hat{\epsilon}` with a given product formula.
 
     Args
         product_formula (:class:`~.pennylane.trotter_error.labs.ProductFormula`): A product formula used to approximate the Hamiltonian simulation.
@@ -145,6 +145,7 @@ def perturbation_error(
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
 
     >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
+    >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     """
 
