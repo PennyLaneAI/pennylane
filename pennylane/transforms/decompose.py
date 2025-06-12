@@ -805,6 +805,8 @@ def decompose(
 
     tape = tape.copy(operations=new_ops)
 
+    print(f"tape.operations: {tape.operations}")
+
     return (tape,), null_postprocessing
 
 
