@@ -223,7 +223,6 @@ class Hadamard(Observable, Operation):
 
 # H = Hadamard
 H: TypeAlias = Hadamard
-H.__doc__ = Hadamard.__doc__
 r"""H(wires)
 The Hadamard operator
 
