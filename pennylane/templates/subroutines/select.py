@@ -584,13 +584,12 @@ def _add_k_units(ops, controls, work_wires, k):
 def _unary_select_resources(ops):
 
     num_ops = len(ops)
-
-    if math.log2(num_ops) - _ceil_log(num_ops) > 0.5:
+    if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
         return {
             resource_rep(TemporaryAND): (num_ops - 3),
             adjoint_resource_rep(TemporaryAND): (num_ops - 3),
             CNOT: num_ops,
-            X: num_ops,
+            X: 2,
             **{
                 controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops
             },
@@ -600,7 +599,7 @@ def _unary_select_resources(ops):
         resource_rep(TemporaryAND): (num_ops - 2),
         adjoint_resource_rep(TemporaryAND): (num_ops - 2),
         CNOT: num_ops - 2,
-        X: num_ops - 2,
+        X: 2,
         **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops},
     }
 
