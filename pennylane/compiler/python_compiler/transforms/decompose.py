@@ -34,6 +34,10 @@ from pennylane.ops import __all__ as all_ops
 from pennylane.ops import _controlled_qubit__ops__ as all_controlled_ops
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
+# TODO: clarify why this is needed
+all_controlled_ops.remove("MultiControlledX")
+all_controlled_ops.remove("ControlledQubitUnitary")
+
 # pylint: disable=missing-function-docstring
 
 
@@ -131,13 +135,13 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
         )
         return decomposition
 
-    def resolve_constant_params(self, param: SSAValue) -> Union[float, int]:
+    def resolve_constant_params(self, param: SSAValue) -> Union[float, int, bool]:
         """Resolve the constant parameter from the SSA value."""
         op = param.owner
         if not isinstance(op, ConstantOp):
             raise NotImplementedError(f"Expected ConstantOp but got {type(op)}")
         val = op.value
-        if not isinstance(val, (FloatAttr, IntegerAttr)):
+        if not isinstance(val, (FloatAttr, IntegerAttr, BoolAttr)):
             raise NotImplementedError(f"Constant has unexpected attr type: {type(val)}")
         if val not in self.params_to_ssa_params:
             self.params_to_ssa_params[val] = param
@@ -247,7 +251,6 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
 
                 is_ctrl = (
                     isinstance(qml_decomp_op, qml.ops.op_math.Controlled)
-                    # TODO: This leads to inconsistencies
                     and qml_decomp_op.name not in all_controlled_ops
                 )
 
@@ -273,7 +276,7 @@ class DecompositionTransform(pattern_rewriter.RewritePattern):
                 custom_op = CustomOp(
                     params=params_xdsl,
                     in_qubits=wires_xdsl,
-                    gate_name=qml_decomp_op.name,
+                    gate_name=qml_decomp_op.base.name if is_ctrl else qml_decomp_op.name,
                     adjoint=is_adjoint,
                     in_ctrl_qubits=control_wires_xdsl,
                     in_ctrl_values=control_values_xdsl,
