@@ -57,13 +57,23 @@ def _clifford_group_to_SO3() -> dict:
 
 @lru_cache
 def _parity_transforms() -> dict:
-    """Return a dictionary mapping parity transformations to their corresponding SO(3) matrices."""
+    """Returns information required to perform the parity transforms used in the MAnormal form.
+
+    Returns:
+        dict: A dictionary mapping parity vectors to tuples containing:
+            - The SO(3) matrix representation of its inverse.
+            - The PennyLane gate representation of the transformation.
+    """
+    # The following dictionary maps the keys in the Matsumoto-Amano normal form to their:
+    # 1. SO(3) matrix representation (useful for obtaining the parity vector)
+    # 2. SO(3) matrix representation of their inverse (useful of reversing the operation)
+    # 3. PennyLane gate representation (useful for capturing normal form output)
     transform_ops = {
         "C": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1))),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1))),
             qml.I(0),
-        ),
+        ),  # Identity is used as a placeholder to represent arbitrary Clifford group element.
         "T": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(c=1))),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(a=-1))),
@@ -80,13 +90,14 @@ def _parity_transforms() -> dict:
             qml.S(0) @ qml.H(0) @ qml.T(0),
         ),
     }
-
     return {
         tuple(so3_1.parity_vec): (so3_2, gate) for (so3_1, so3_2, gate) in transform_ops.values()
     }
 
 
-def ma_normal_form(op: SO3Matrix, compressed=False) -> tuple[qml.operation.Operator]:
+def ma_normal_form(
+    op: SO3Matrix, compressed=False
+) -> tuple[qml.operation.Operator] | tuple[int, tuple[int, ...], int]:
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
     A Matsumoto-Amano normal form - :math:`(T | \epsilon) (HT | SHT)^* \mathcal{C}`, consists of a rightmost
@@ -96,22 +107,21 @@ def ma_normal_form(op: SO3Matrix, compressed=False) -> tuple[qml.operation.Opera
     Args:
         op (SO3Matrix): The SO(3) matrix to decompose.
         compressed (bool): If True, the output will be a single operator that is the product of all gates in the decomposition.
-            If False, the output will be a tuple of operators representing each gate in the decomposition.
+            If False, the output will be a tuple containing information about the decomposition in terms of bits and indices.
 
     Returns:
-        Tuple[qml.operation.Operator]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms.
+        Tuple[qml.operation.Operator] | tuple[int, tuple[int, ...], int]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms.
     """
     parity_transforms = _parity_transforms()
     clifford_elements = _clifford_group_to_SO3()
 
     so3_op = deepcopy(op)
 
-    # The following uses Lemmas 4.10 and 6.4 of arXiv:1312.6584.
-    # TODO: Verify the operator ordering.
+    # The following use lemmas from arXiv:1312.6584.
     decomposition = []
-    while (parity_vec := tuple(so3_op.parity_vec)) != (1, 1, 1):
-        so3_val, op_gate = parity_transforms[parity_vec]
-        so3_op = so3_val @ so3_op
+    while (parity_vec := tuple(so3_op.parity_vec)) != (1, 1, 1):  # Fig. 1 and Lemma 6.3
+        so3_val, op_gate = parity_transforms[parity_vec]  # Lemma 4.10
+        so3_op = so3_val @ so3_op  # Lemma 6.4
         decomposition.append(op_gate)
 
     cl_index = -1
