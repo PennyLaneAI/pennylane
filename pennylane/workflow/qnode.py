@@ -113,17 +113,6 @@ def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
-def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
-    for kwarg in gradient_kwargs:
-        if kwarg in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-            continue
-        warnings.warn(
-            f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-            "standard qnode gradient kwargs. Please specify all gradient kwargs through "
-            "the gradient_kwargs argument as a dictionary."
-        )
-
-
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
     measurement_processes = pytrees.flatten(
         qfunc_output,
@@ -560,7 +549,15 @@ class QNode:
             device = qml.devices.LegacyDeviceFacade(device)
 
         gradient_kwargs = gradient_kwargs or {}
-        _validate_gradient_kwargs(gradient_kwargs)
+        unrecognized_gradient_kwargs = set(gradient_kwargs.keys()) - set(
+            qml.gradients.SUPPORTED_GRADIENT_KWARGS
+        )
+        if unrecognized_gradient_kwargs:
+            warnings.warn(
+                f"Received gradient_kwargs {unrecognized_gradient_kwargs} that are not part of the "
+                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
+                "the gradient_kwargs argument as a dictionary."
+            )
 
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(

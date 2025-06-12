@@ -211,7 +211,7 @@ class TestValidation:
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
             assert len(w) == 1
-            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
+            assert "that are not part of the standard qnode gradient kwargs" in str(w[0].message)
 
     def test_auto_interface_tracker_device_switched(self):
         """Test that checks that the tracker is switched to the new device."""

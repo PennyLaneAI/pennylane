@@ -167,7 +167,7 @@ class TestUpdate:
 
         with pytest.warns(
             UserWarning,
-            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
+            match="not part of the standard qnode gradient kwargs.",
         ):
             circuit.update(gradient_kwargs={"blah": 1})
 
@@ -442,7 +442,7 @@ class TestValidation:
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
             assert len(w) == 1
-            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
+            assert "that are not part of the standard qnode gradient kwargs" in str(w[0].message)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
