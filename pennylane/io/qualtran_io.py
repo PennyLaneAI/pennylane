@@ -187,9 +187,6 @@ def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
 
 @_map_to_bloq.register
 def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
-    if isinstance(op, qops.MultiControlledX):
-        return ToBloq(op)
-    
     if isinstance(op, qops.Toffoli):
         return qt_gates.Toffoli()
 
@@ -726,7 +723,9 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             raise ImportError(self._error_message)
 
         if not isinstance(op, Operator) and not isinstance(op, QNode) and not callable(op):
-            raise TypeError(f"Input must be either an instance of {Operator}, {QNode} or a quantum function.")
+            raise TypeError(
+                f"Input must be either an instance of {Operator}, {QNode} or a quantum function."
+            )
 
         self.op = op
         self.map_ops = map_ops
@@ -870,7 +869,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     def __str__(self):
         if hasattr(self.op, "name"):
             return f"PL{self.op.name}"
-        return f"PLQfunc"
+        return "PLQfunc"
 
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
