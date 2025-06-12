@@ -188,9 +188,54 @@
   The following example converts a PennyLane Operator into a Qualtran Bloq:
 
   ```python
+  import pennylane as qml
+  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+  control_wires = [2, 3]
+  estimation_wires = [4, 5, 6, 7, 8, 9]
   
-  >>> qml.to_bloq(qml.CNOT([0, 1]))
-  CNOT()
+  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+  
+  op = qml.QuantumPhaseEstimation(
+      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+  )
+  
+  cbloq = qml.to_bloq(op).decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # Let's define a custom mapping instead
+
+  from qualtran.bloqs.phase_estimation import LPResourceState
+  from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+  custom_map = {
+    op: TextbookQPE(
+        unitary=qml.to_bloq(qml.Qubitization(H, control_wires)), 
+        ctrl_state_prep=LPResourceState(len(estimation_wires))
+    )
+  }
+
+  cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
+  PennyLane decomposition by setting map_ops to False.
+
+  ```python
+  op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
+  cbloq = op_wrapped_as_bloq.decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # We can also leverage Qualtran to get resource counts and call graphs, among other things
+  from qualtran.drawing import show_call_graph, show_counts_sigma  
+
+  wrapped_graph, wrapped_sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(wrapped_graph)
+  show_counts_sigma(wrapped_sigma)
   ```
 
 
