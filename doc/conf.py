@@ -95,6 +95,7 @@ mathjax_path = (
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
+autodoc_inherit_docstrings = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
