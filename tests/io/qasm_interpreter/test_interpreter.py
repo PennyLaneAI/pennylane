@@ -5,6 +5,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 from re import escape
 from unittest.mock import MagicMock, call
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -53,6 +54,31 @@ try:
     )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+@pytest.mark.external
+class TestBuiltIns:
+
+    def test_constants(self):
+        ast = parse(
+            """
+            const float one = π;
+            const float two = τ;
+            const float three = ℇ;
+            const float four = pi;
+            const float five = tau;
+            const float six = e;
+            """
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "constants", "wire_map": None})
+
+        assert context.vars["one"].val == np.pi
+        assert context.vars["two"].val == np.pi * 2
+        assert context.vars["three"].val == np.e
+        assert context.vars["four"].val == np.pi
+        assert context.vars["five"].val == np.pi * 2
+        assert context.vars["six"].val == np.e
 
 
 @pytest.mark.external
