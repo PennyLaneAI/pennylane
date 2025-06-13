@@ -250,7 +250,7 @@ class ResourceT(ResourceOperator):
 
         Resources:
             The adjoint of the T-gate is equivalent to the T-gate raised to the 7th power.
-            The resources are defined as seven instances of the T-gate.
+            The resources are defined as one Z-gate (:math:`Z = T^{4}`), one S-gate (:math:`S = T^{2}`) and one T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
