@@ -101,9 +101,9 @@ Gradients
 
 Currently the devices ``default.qubit``, ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` 
 are the only devices that support gradients with program capture enabled. ``default.qubit`` currently 
-supports ``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit`` currently only supports 
-``adjoint``. The ``parameter_shift`` method is not yet supported with program capture enabled, 
-and will raise an error if used. 
+supports ``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit``, ``lightning.kokkos``, and 
+``lightning.gpu`` currently only support ``adjoint``. The ``parameter_shift`` method is not yet supported 
+with program capture enabled, and will raise an error if used. 
 
 .. code-block:: python
 
