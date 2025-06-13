@@ -79,7 +79,7 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation is also an empty list.
+            This operation is self-adjoint, so the resources of the adjoint operation is the base operation.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
