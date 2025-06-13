@@ -193,8 +193,6 @@ For instance, calculating the jacobian of this circuit with ``lightning.qubit``
 raises an error due to a discrepancy in the ordering of the positional arguments 
 when tape conversion happens.
 
-The same is true of the ``lightning.kokkos`` and ``lightning.gpu`` devices.
-
 .. code-block:: python 
 
     import pennylane as qml 
