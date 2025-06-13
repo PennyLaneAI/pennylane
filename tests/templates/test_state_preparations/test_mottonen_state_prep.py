@@ -32,7 +32,7 @@ def test_standard_validity():
 
     op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
 
 def compute_theta_reference(alpha):
@@ -280,6 +280,48 @@ class TestDecomposition:
         gphase = decomp[-1]
         assert isinstance(gphase, qml.GlobalPhase)
         assert qml.math.allclose(gphase.data[0], qml.math.mean(-1 * qml.math.angle(state)))
+
+    def test_mottonen_resources(self):
+        """Test the resources for MottonenStatePreparataion."""
+
+        assert qml.MottonenStatePreparation.resource_keys == frozenset({"num_wires"})
+
+        op = qml.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
+        assert op.resource_params == {"num_wires": 2}
+
+    def test_decomposition_rule(self):
+        """Test that MottonenSTatePreparation has a correct decomposition rule registered."""
+
+        decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
+
+        resource_obj = decomp.compute_resources(num_wires=3)
+
+        n = 1 + 2 + 4  # 7
+
+        assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
+        assert resource_obj.gate_counts == {
+            qml.resource_rep(qml.GlobalPhase): 1,
+            qml.resource_rep(qml.RY): n,
+            qml.resource_rep(qml.RZ): n,
+            qml.resource_rep(qml.CNOT): 2 * (n - 1),
+        }
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
+
+        q = q.queue
+
+        qml.assert_equal(q[0], qml.RY(np.pi, 0))
+        qml.assert_equal(q[1], qml.RY(np.pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-np.pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(np.pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(np.pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-np.pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-np.pi / 8, wires=(0, 1)))
 
 
 class TestInputs:
