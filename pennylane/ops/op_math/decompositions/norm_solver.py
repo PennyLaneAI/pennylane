@@ -156,9 +156,9 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         - Lemma C.8: Prime factorization of :math:`\pm 2 = (0 + 1\sqrt{2})(0 \pm 1\sqrt{2})`
           in :math:`\mathbb{Z}[\sqrt{2}]`.
         - Lemma C.9: Prime factorization of :math:`p \equiv 3 \mod 8` and :math:`p \equiv 5 \mod 8`
-          is inert in :math:`\mathbb{Z}[\sqrt{2}]`.
+          will have one factor in :math:`\mathbb{Z}[\sqrt{2}]`.
         - Lemma C.11: Prime factorization of :math:`p \equiv 1 \mod 8` and :math:`p \equiv 7 \mod 8`
-          is distinct split in :math:`\mathbb{Z}[\sqrt{2}]`.
+          will have two factors in :math:`\mathbb{Z}[\sqrt{2}]`.
 
     Args:
         n (int): The prime number for which to find the factorization.
@@ -171,19 +171,17 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         # Lemma C.8: ±2 = (0 + 1√2)(0 ± 1√2)
         return [ZSqrtTwo(0, 1), ZSqrtTwo(0, (-1) ** (p < 0))]
 
-    if (r := p % 8) in (3, 5):
+    if p % 8 in (3, 5):
         # p = (p + 0√2) is prime in Z[√2]
         return [ZSqrtTwo(p, 0)]
 
-    if r in (1, 7):  # p ≡ ±1 mod 8
-        # Solve t^2 ≡ 2 (mod p) to split p
-        if (t := _sqrt_modulo_p(2, p)) is None:
-            return None
-        # Perform ring GCD to get (a + b√2)(a - b√2)
-        res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
-        return [res, res.adj2()]
-
-    return None  # pragma: no cover
+    # Default case: p ≡ ±1 mod 8 |  p % 8 in (1, 7)
+    # Solve t^2 ≡ 2 (mod p) to split p
+    if (t := _sqrt_modulo_p(2, p)) is None:
+        return None
+    # Perform ring GCD to get (a + b√2)(a - b√2)
+    res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
+    return [res, res.adj2()]
 
 
 # pylint: disable=too-many-return-statements
@@ -225,13 +223,11 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
             return None
         return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
 
-    # p = 1, 5 mod 8, use h = = sqrt(-2) mod p
-    if a == 3:
-        if (h := _sqrt_modulo_p(-2, p)) is None:
-            return None
-        return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
-
-    return None  # pragma: no cover
+    # Default case: a == 3
+    # p = 3 mod 8, use h = = sqrt(-2) mod p
+    if (h := _sqrt_modulo_p(-2, p)) is None:
+        return None
+    return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
 
 
 @lru_cache(maxsize=100)
