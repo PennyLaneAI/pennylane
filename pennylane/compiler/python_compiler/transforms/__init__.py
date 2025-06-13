@@ -16,12 +16,15 @@
 from xdsl.transforms.transform_interpreter import TransformInterpreterPass
 from .apply_transform_sequence import ApplyTransformSequence, register_pass
 from .cancel_inverses import iterative_cancel_inverses_pass, IterativeCancelInversesPass
+from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
 from .merge_rotations import merge_rotations_pass, MergeRotationsPass
 from .utils import xdsl_transform
 
 
 __all__ = [
     "ApplyTransformSequence",
+    "combine_global_phases_pass",
+    "CombineGlobalPhasesPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "merge_rotations_pass",
