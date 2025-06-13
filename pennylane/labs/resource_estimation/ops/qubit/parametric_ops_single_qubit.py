@@ -52,7 +52,8 @@ class ResourcePhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Keyword Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        eps (float): error threshold for clifford plus T decomposition of this operation
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation upto some global phase,
@@ -93,7 +94,7 @@ class ResourcePhaseShift(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -155,7 +156,7 @@ class ResourceRX(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -172,28 +173,28 @@ class ResourceRX(ResourceOperator):
     The resources for this operation are computed as:
 
     >>> op = plre.estimate_resources(plre.ResourceRX)()
-    >>> str(op)
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 21
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_rx": 1e-3}
+    >>> config = {"error_rx": 1e-4}
     >>> op = plre.estimate_resources(plre.ResourceRX, config=config)()
-    >>> str(op)
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 21}
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -216,7 +217,7 @@ class ResourceRX(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -280,7 +281,7 @@ class ResourceRY(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -296,28 +297,28 @@ class ResourceRY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.estimate_resources(plre.ResourceRY)
+    >>> op = plre.estimate_resources(plre.ResourceRY)()
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 1
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_ry": 1e-3}
-    >>> plre.estimate_resources(plre.ResourceRY, config=config)
+    >>> config = {"error_ry": 1e-4}
+    >>> op = plre.estimate_resources(plre.ResourceRY, config=config)()
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
-
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -340,7 +341,7 @@ class ResourceRY(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -406,7 +407,7 @@ class ResourceRZ(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -422,28 +423,29 @@ class ResourceRZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> plre.estimate_resources(plre.ResourceRZ)
+    >>> op = plre.estimate_resources(plre.ResourceRZ)()
+    >>> op
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
+     Total qubits: 1
+     Total gates : 21
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 21}
 
     The operation does not require any parameters directly, however, it will depend on the single
     qubit error threshold, which can be set using a config dictionary.
 
-    >>> config = {"error_rz": 1e-3}
-    >>> plre.estimate_resources(plre.ResourceRZ, config=config)
+    >>> config = {"error_rz": 1e-4}
+    >>> op = plre.estimate_resources(plre.ResourceRZ, config=config)()
+    >>> print(op)
     --- Resources: ---
-    Total qubits: 1
-    Total gates : 1
-    Qubit breakdown:
-    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
-    Gate breakdown:
-    {'T': 17}
-
+     Total qubits: 1
+     Total gates : 24
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'T': 24}
     """
 
     num_wires = 1
@@ -466,7 +468,7 @@ class ResourceRZ(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
@@ -527,6 +529,7 @@ class ResourceRot(ResourceOperator):
     r"""Resource class for the Rot-gate.
 
     Args:
+        eps (float): error threshold for clifford plus T decomposition of this operation
         wires (Any, Wires): the wire the operation acts on
 
     Resources:
@@ -541,7 +544,7 @@ class ResourceRot(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> plre.ResourceRot.resource_decomp()
-    {RY: 1, RZ: 2}
+    [(1 x RY), (2 x RZ)]
     """
 
     num_wires = 1
@@ -564,7 +567,7 @@ class ResourceRot(ResourceOperator):
     @classmethod
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
 
         return CompressedResourceOp(cls, {"eps": eps})
 
