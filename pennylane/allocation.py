@@ -265,6 +265,8 @@ def deallocate(
 
     """
     if capture_enabled():
+        if not isinstance(wires, Sequence):
+            wires = (wires,)
         return _get_deallocate_prim().bind(*wires, reset_to_original=reset_to_original)
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
