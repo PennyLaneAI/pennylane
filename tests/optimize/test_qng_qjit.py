@@ -211,3 +211,31 @@ class TestMetricTensor:
         # with regularization y gets updated, without regularization it does not
         assert not np.isclose(new_params_with_lam[1], y)
         assert np.isclose(new_params[1], y)
+
+
+class TestExceptions:
+    """Test exceptions are raised for incorrect usage."""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_obj_func_not_a_qnode(self, dev_name):
+        """Test that if the objective function is not a QNode, an error is raised."""
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circ(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost(a):
+            return circ(a)
+
+        opt = qml.QNGOptimizerQJIT()
+        params = jnp.array(0.5)
+        state = opt.init(params)
+
+        with pytest.raises(
+            ValueError,
+            match="The objective function must be encoded as a single QNode to use the Quantum Natural Gradient optimizer.",
+        ):
+            opt.step(cost, params, state)
