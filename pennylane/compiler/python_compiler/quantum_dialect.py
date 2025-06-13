@@ -652,10 +652,7 @@ class ProbsOp(IRDLOperation):
         attr-dict ( `:` type($probabilities)^ )?
     """
 
-    irdl_options = [
-        AttrSizedOperandSegments(as_property=True),
-        AttrSizedResultSegments(as_property=True),
-    ]
+    irdl_options = [AttrSizedOperandSegments(as_property=True)]
 
     obs = operand_def(BaseAttr(ObservableType))
 
