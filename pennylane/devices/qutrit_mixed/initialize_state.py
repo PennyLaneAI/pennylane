@@ -17,6 +17,7 @@ from collections.abc import Iterable
 from typing import Union
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import StatePrepBase
 
 from .utils import QUDIT_DIM
@@ -40,35 +41,55 @@ def create_initial_state(
         array: The initial state of a circuit
     """
     num_wires = len(wires)
+    num_axes = 2 * num_wires
 
     if not prep_operation:
-        rho = _create_basis_state(num_wires, 0)
+        return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
 
+    if isinstance(prep_operation, qml.QubitDensityMatrix):
+        rho = prep_operation.data
     else:
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
-    # TODO: add instance for prep_operations as added
-
-    return qml.math.asarray(rho, like=like)
+    return _post_process(rho, num_axes, like)
 
 
-def _apply_state_vector(state, num_wires):  # function is easy to abstract for qudit
+def _post_process(rho, num_axes, like):
+    r"""
+    This post-processor is necessary to ensure that the density matrix is in
+    the correct format, i.e. the original tensor form, instead of the pure
+    matrix form, as requested by all the other more fundamental chore functions
+    in the module (again from some legacy code).
+    """
+    # Ensure correct shape and remove batch dimension if unused.
+    rho = math.reshape(rho, (-1,) + (3,) * num_axes)
+    rho = math.squeeze(rho)
+
+    dtype = str(rho.dtype)
+    floating_single = "float32" in dtype or "complex64" in dtype
+    dtype = "complex64" if floating_single else "complex128"
+    dtype = "complex128" if like == "tensorflow" else dtype
+    return math.cast(math.asarray(rho, like=like), dtype)
+
+
+def _apply_state_vector(pure_state, num_wires):  # function is easy to abstract for qudit
     """Initialize the internal state in a specified pure state.
 
     Args:
-        state (array[complex]): normalized input state of length
-            ``QUDIT_DIM**num_wires``, where ``QUDIT_DIM`` is the dimension of the system.
+        state (array[complex]): normalized input state of length ``3**num_wires``.
         num_wires (int): number of wires that get initialized in the state
 
     Returns:
-        array[complex]: complex array of shape ``[QUDIT_DIM] * (2 * num_wires)``
-        representing the density matrix of this state, where ``QUDIT_DIM`` is
-        the dimension of the system.
+        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        representing the density matrix of this state.
     """
-
-    # Initialize the entire set of wires with the state
-    rho = qml.math.outer(state, qml.math.conj(state))
-    return qml.math.reshape(rho, [QUDIT_DIM] * 2 * num_wires)
+    # Don't assume the expected shape to be fixed
+    batch_size = math.get_batch_size(
+        pure_state, expected_shape=(3,) * num_wires, expected_size=3**num_wires
+    )
+    if batch_size is None:
+        return _flatten_outer(pure_state)
+    return math.stack([_flatten_outer(s) for s in pure_state])
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
@@ -79,10 +100,15 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
         index (int): integer representing the computational basis state.
 
     Returns:
-        array[complex]: complex array of shape ``[QUDIT_DIM] * (2 * num_wires)``
-        representing the density matrix of the basis state, where ``QUDIT_DIM`` is
-        the dimension of the system.
+        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        representing the density matrix of the basis state.
     """
-    rho = qml.math.zeros((QUDIT_DIM**num_wires, QUDIT_DIM**num_wires))
+    rho = qml.math.zeros((3**num_wires, 3**num_wires))
     rho[index, index] = 1
-    return qml.math.reshape(rho, [QUDIT_DIM] * (2 * num_wires))
+    return qml.math.reshape(rho, [3] * (2 * num_wires))
+
+
+def _flatten_outer(s):
+    r"""Flattens the outer product of a vector."""
+    s_flatten = math.flatten(s)
+    return math.outer(s_flatten, math.conj(s_flatten))
