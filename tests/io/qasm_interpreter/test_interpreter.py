@@ -51,12 +51,15 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
+
 @pytest.mark.external
 class TestControlFlow:
 
     def test_nested_end(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -98,7 +101,9 @@ class TestControlFlow:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+        )
 
         # setup mocks
         cond = mocker.spy(ops, "cond")

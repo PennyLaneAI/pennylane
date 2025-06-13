@@ -145,9 +145,7 @@ class Context:
         # the namespace is shared with the outer scope, but we need to keep track of the gates separately
         if isinstance(node, WhileLoop):
             self.scopes["loops"][f"while_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(
-                    self, f"while_{node.span.start_line}"
-                )
+                self.init_clause_in_same_namespace(self, f"while_{node.span.start_line}")
             )
 
         elif isinstance(node, ForInLoop):
