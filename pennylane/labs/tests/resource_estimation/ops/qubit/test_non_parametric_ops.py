@@ -148,8 +148,6 @@ class TestSWAP:
 
         assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
 
-    #        assert op2.resources(**op2.resource_params) == expected_res
-
     pow_data = (
         (1, [plre.GateCount(plre.ResourceSWAP.resource_rep(), 1)]),
         (2, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
