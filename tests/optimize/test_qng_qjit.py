@@ -239,3 +239,37 @@ class TestExceptions:
             match="The objective function must be encoded as a single QNode to use the Quantum Natural Gradient optimizer.",
         ):
             opt.step(cost, params, state)
+
+
+class TestOptimize:
+    """Test basic optimization integration."""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_step_and_cost(self, dev_name):
+        """Test that the step and step_and_cost methods are returning the correct result."""
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circ(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        params = [0.31, 0.842]
+        params_qml = qml.numpy.array(params)
+        params_jax = jnp.array(params)
+
+        opt = qml.QNGOptimizerQJIT(stepsize=0.05)
+        state = opt.init(params_jax)
+
+        new_params1, _ = opt.step(circ, params_jax, state)
+        new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
+
+        expected_mt = np.array([0.25, (np.cos(params[0]) ** 2) / 4])
+        expected_params = params_qml - opt.stepsize * qml.grad(circ)(params_qml) / expected_mt
+        expected_cost = circ(params)
+
+        assert np.allclose(new_params1, expected_params)
+        assert np.allclose(new_params2, expected_params)
+        assert np.allclose(cost, expected_cost)
