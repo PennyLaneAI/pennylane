@@ -608,7 +608,7 @@ class QasmInterpreter:
         # register the params
         for param in node.arguments:
             if isinstance(param, QuantumArgument):
-               context.scopes["subroutines"][_resolve_name(node)].wires.append(
+                context.scopes["subroutines"][_resolve_name(node)].wires.append(
                     _resolve_name(param)
                 )
             else:
