@@ -210,3 +210,16 @@ def borrow(wires):
 def return_borrowed(wires):
     """Return wires borrowed into the pool of work wires."""
     return Return(wires)
+
+
+class borrow_ctx:
+    """Temporarily borrow wires while making sure to automatically return them at the end."""
+
+    def __init__(self, wires):
+        self.wires = borrow(wires).wires
+
+    def __enter__(self):
+        return self.wires
+
+    def __exit__(self, *_, **__):
+        return_borrowed(self.wires)
