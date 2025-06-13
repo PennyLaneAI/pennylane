@@ -27,7 +27,7 @@ class ResourceHadamard(ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -100,7 +100,7 @@ class ResourceHadamard(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(plre.ResourceIdentity.resource_rep())]
+            return [GateCount(plre.resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 
@@ -108,7 +108,7 @@ class ResourceS(ResourceOperator):
     r"""Resource class for the S-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The S-gate decomposes into two T-gates.
@@ -156,7 +156,7 @@ class ResourceS(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of the S-gate is equivalent to the Z.S.
+            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \dot \hat{S}`
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
@@ -386,7 +386,7 @@ class ResourceT(ResourceOperator):
     r"""Resource class for the T-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The T-gate is treated as a fundamental gate and thus it cannot be decomposed
@@ -433,7 +433,7 @@ class ResourceT(ResourceOperator):
 
         Resources:
             The adjoint of the T-gate is equivalent to the T-gate raised to the 7th power.
-            The resources are defined as seven instances of the T-gate.
+            The resources are defined as one Z-gate (:math:`Z = T^{4}`), one S-gate (:math:`S = T^{2}`) and one T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -463,8 +463,8 @@ class ResourceT(ResourceOperator):
             - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
             - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
             - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
-            - If `z' = 6`: The operation is equivalent to the S-adjoint gate (:math:`S^{\dagger}`).
-            - If `z' = 7`: The operation is equivalent to the T-adjoint gate (:math:`T^{\dagger}`).
+            - If `z' = 6`: The operation is equivalent to a composition of a Z-gate and an S-gate (:math:`Z \cdot S`).
+            - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -494,7 +494,7 @@ class ResourceX(ResourceOperator):
     r"""Resource class for the X-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The X-gate can be decomposed according to the following identities:
@@ -599,7 +599,7 @@ class ResourceY(ResourceOperator):
     r"""Resource class for the Y-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The Y-gate can be decomposed according to the following identities:
@@ -708,7 +708,7 @@ class ResourceZ(ResourceOperator):
     r"""Resource class for the Z-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The Z-gate can be decomposed according to the following identities:
