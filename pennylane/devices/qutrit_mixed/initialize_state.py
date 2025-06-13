@@ -18,8 +18,6 @@ from collections.abc import Iterable
 import pennylane as qp
 from pennylane.operation import StatePrepBase
 
-from .utils import QUDIT_DIM
-
 
 def create_initial_state(
     wires: qp.wires.Wires | Iterable,
