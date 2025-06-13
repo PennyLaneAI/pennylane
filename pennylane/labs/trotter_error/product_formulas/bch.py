@@ -437,7 +437,7 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
 
 def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
-    single right-nested commutator [Z_1, ..., Z_{n+m}].
+    linear combination of right-nested commutators [Z_1, ..., Z_{n+m}].
 
     Set A = [X_1, ..., X_n], B = Y_1, and C = [Y_2, ..., Y_m] and apply the Jacobi identity [A, B, C] = [B, A, C] - [C, A, B]
     to obtain [Y_1, [[X_1, ..., X_n], [Y_2, ..., Y_m]] - [[Y_1, X_1, ..., X_n], [Y_2, ..., Y_m]] and recurse on both commutators.
