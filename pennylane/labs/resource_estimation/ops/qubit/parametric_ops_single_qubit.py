@@ -165,7 +165,7 @@ class ResourceRX(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RX`
 
