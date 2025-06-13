@@ -27,7 +27,7 @@ class ResourceHadamard(ResourceOperator):
     r"""Resource class for the Hadamard gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The Hadamard gate is treated as a fundamental gate and thus it cannot be decomposed
