@@ -561,6 +561,14 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* New functionality for product formulas in the `trotter_error` module.
+
+    * :class:`ProductFormula <pennylane.labs.trotter_error.ProductFormula` allows users to create custom product formulas.
+    * :func:`bch_expansion <pennylane.labs.trotter_error.bch_expansion` computes the BCH expansion of a product formula.
+    * :func:`effective_hamiltonian <pennylane.labs.trotter_error.effective_hamiltonian` computes the effective Hamiltonian of a product formula.
+
+  [(#7224)](https://github.com/PennyLaneAI/pennylane/pull/7224)
+
 <h3>Breaking changes 💔</h3>
 
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
@@ -876,6 +884,7 @@ Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+William Maxwell
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
