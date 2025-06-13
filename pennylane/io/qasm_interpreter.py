@@ -45,7 +45,7 @@ from openqasm3.ast import (
     SwitchStatement,
     UintType,
     UnaryExpression,
-    WhileLoop,
+    WhileLoop, DiscreteSet,
 )
 from openqasm3.visitor import QASMNode
 
@@ -660,22 +660,29 @@ class QasmInterpreter:
         """
         context.init_loops_scope(node)
 
-        loop_params = node.set_declaration
-
-        # de-referencing
-        if isinstance(loop_params, Identifier):
-            loop_params = context.retrieve_variable(loop_params.name)
+        # We need custom logic here for handling Identifiers in case they are of BitType.
+        # If we introduce logic into retrieve_variable that returns BitType values as strings
+        # this messes with unary and binary expressions' ability to handle BitType vars.
+        # If we try to get a bit string directly from the integer representation natural to the parser here,
+        # we can only guess at the size of the register since there might be leading zeroes.
+        if isinstance(node.set_declaration, Identifier):
+            loop_params = context.retrieve_variable(node.set_declaration.name)
             if isinstance(loop_params, Variable):
                 if loop_params.ty == "BitType":
                     loop_params = _get_bit_type_val(loop_params)
                 else:
                     loop_params = loop_params.val
+        else:
+            loop_params = self.visit(node.set_declaration, context)
+
+        if isinstance(loop_params, int):
+            loop_params = _get_bit_type_val(loop_params)
 
         # TODO: support dynamic start, stop, step?
-        if isinstance(loop_params, RangeDefinition):
-            start = self.visit(loop_params.start, context)
-            stop = self.visit(loop_params.end, context)
-            step = self.visit(loop_params.step, context)
+        if isinstance(loop_params, slice):
+            start = loop_params.start
+            stop = loop_params.stop
+            step = loop_params.step
             if step is None:
                 step = 1
 
@@ -708,15 +715,11 @@ class QasmInterpreter:
 
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
         # accepts (start, stop, step) and not a list of values.
-        elif isinstance(loop_params, ArrayLiteral):
-            iter = [self.visit(literal, context) for literal in loop_params.values]
-        elif isinstance(
+        if isinstance(
             loop_params, Iterable
-        ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
-            iter = loop_params
-
+        ):
             def unrolled(execution_context):
-                for i in iter:
+                for i in loop_params:
                     execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
                         node.identifier.name
                     ] = Variable(
@@ -935,6 +938,20 @@ class QasmInterpreter:
             complex: a complex number corresponding to the imaginary literal.
         """
         return 1j * node.value
+
+    @visit.register(DiscreteSet)
+    def visit_discrete_set(self, node: DiscreteSet, context: Context):
+        """
+        Evaluates a discrete set literal.
+
+        Args:
+            node (DiscreteSet): The set literal QASMNode.
+            context (Context): The current context.
+
+        Returns:
+            list: The evaluated set.
+        """
+        return tuple([self.visit(literal, context) for literal in node.values])
 
     @visit.register(ArrayLiteral)
     def visit_array_literal(self, node: ArrayLiteral, context: Context):
