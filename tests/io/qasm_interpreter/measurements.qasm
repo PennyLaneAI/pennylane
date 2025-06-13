@@ -9,3 +9,5 @@ def random(qubit q0) -> bit {
 }
 
 bit c = random(q0);
+bit d = "0";
+measure q0 -> d;
