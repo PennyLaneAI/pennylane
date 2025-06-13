@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import inspect
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from textwrap import dedent
 from typing import Callable, Optional, Type, overload
 
