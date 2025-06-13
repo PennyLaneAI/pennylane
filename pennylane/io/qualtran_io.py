@@ -105,45 +105,45 @@ def _(
 
 
 @_map_to_bloq.register
-def _(op: qtemps.subroutines.QFT, **kwargs):
+def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.qft import QFTTextBook
 
-    if kwargs.get("map_ops") is False:
+    if not map_ops:
         return ToBloq(op, **kwargs)
 
-    if (custom_map := kwargs.get("custom_mapping")) is not None:
-        return custom_map[op]
+    if custom_mapping is not None:
+        return custom_mapping[op]
 
     return QFTTextBook(len(op.wires))
 
 
 @_map_to_bloq.register
-def _(op: qtemps.subroutines.ModExp, **kwargs):
-    from qualtran.bloqs.cryptography.rsa import ModExp
+def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
+    from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+    from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
-    if kwargs.get("map_ops") is False:
+    if not map_ops:
         return ToBloq(op, **kwargs)
 
-    if (custom_map := kwargs.get("custom_mapping")) is not None:
-        return custom_map[op]
+    if custom_mapping is not None:
+        return custom_mapping[op]
 
-    return ModExp(
-        base=op.hyperparameters["base"],
-        mod=op.hyperparameters["mod"],
-        exp_bitsize=len(op.hyperparameters["x_wires"]),
-        x_bitsize=len(op.hyperparameters["output_wires"]),
-    )
+    data = np.array([int(b, 2) for b in op.bitstrings])
+    if op.clean:
+        return QROAMClean.build_from_data(data)
+
+    return SelectSwapQROM.build_from_data(data)
 
 
 @_map_to_bloq.register
-def _(op: qtemps.subroutines.ModExp, **kwargs):
+def _(op: qtemps.subroutines.ModExp, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.cryptography.rsa import ModExp
 
-    if kwargs.get("map_ops") is False:
+    if not map_ops:
         return ToBloq(op, **kwargs)
 
-    if (custom_map := kwargs.get("custom_mapping")) is not None:
-        return custom_map[op]
+    if custom_mapping is not None:
+        return custom_mapping[op]
 
     return ModExp(
         base=op.hyperparameters["base"],
