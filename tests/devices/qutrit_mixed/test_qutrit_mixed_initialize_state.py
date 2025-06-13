@@ -16,10 +16,12 @@
 import pytest
 
 import pennylane as qml
-from pennylane import QutritBasisState
+from pennylane import math, QutritBasisState, QutritDensityMatrix
 from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
+
+ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
 
 
 class TestInitializeState:
@@ -33,30 +35,30 @@ class TestInitializeState:
             return self.parameters[0]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
         expected = np.zeros((3, 3, 3, 3))
         expected[0, 0, 0, 0] = 1
-        assert qml.math.allequal(state, expected)
-        assert qml.math.get_interface(state) == interface
+        assert math.allequal(state, expected)
+        assert math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         prep_op = self.DefaultPrep(
-            qml.math.array([1 / np.sqrt(9)] * 9, like=interface), wires=[0, 1]
+            math.array([1 / np.sqrt(9)] * 9, like=interface), wires=[0, 1]
         )
         state = create_initial_state([0, 1], prep_operation=prep_op)
         expected = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
 
-        assert qml.math.allequal(state, expected)
+        assert math.allequal(state, expected)
         if interface == "autograd":
-            assert qml.math.get_interface(state) == "numpy"
+            assert math.get_interface(state) == "numpy"
         else:
-            assert qml.math.get_interface(state) == interface
+            assert math.get_interface(state) == interface
 
     def test_create_initial_state_with_BasisState(self):
         """Tests that create_initial_state works with a real state-prep operator."""
@@ -64,7 +66,21 @@ class TestInitializeState:
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
         assert state[1, 2, 0, 1, 2, 0] == 1
         state[1, 2, 0, 1, 2, 0] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros(([3] * 6)))
+        assert math.allequal(state, np.zeros(([3] * 6)))
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
+    def test_create_initial_state_with_QutritDensityMatrix(self, interface):
+        """Tests that create_initial_state works with a state-prep operation."""
+        wires = [0, 1]
+        num_wires = len(wires)
+        state_correct = np.zeros((2, 2) * num_wires, dtype=complex)
+        state_correct[(0, 0) * num_wires] = 1
+        state_correct = math.asarray(state_correct, like=interface)
+        prep_op = QutritDensityMatrix(math.array(state_correct, like=interface), wires=wires)
+        state = create_initial_state(wires, prep_operation=prep_op, like=interface)
+        assert math.allequal(state, state_correct)
+        assert math.get_interface(state) == interface
 
     @pytest.mark.parametrize("wires", [(0, 1), qml.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):
@@ -72,18 +88,16 @@ class TestInitializeState:
         state = create_initial_state(wires)
         expected = np.zeros((3, 3, 3, 3))
         expected[0, 0, 0, 0] = 1
-        assert qml.math.allequal(state, expected)
-
-    # TODO: Add tests for qutrit state prep
+        assert math.allequal(state, expected)
 
     def test_create_initial_state_defaults_to_numpy(self):
         """Tests that the default interface is vanilla numpy."""
         state = qml.devices.qubit.create_initial_state((0, 1))
-        assert qml.math.get_interface(state) == "numpy"
+        assert math.get_interface(state) == "numpy"
 
     @pytest.mark.torch
     def test_create_initial_state_casts_to_like_with_prep_op(self):
         """Tests that the like argument is not ignored when a prep-op is provided."""
         prep_op = self.DefaultPrep([1 / np.sqrt(9)] * 9, wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
-        assert qml.math.get_interface(state) == "torch"
+        assert math.get_interface(state) == "torch"
