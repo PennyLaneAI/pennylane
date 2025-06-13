@@ -334,6 +334,9 @@ class ResourceCZ(ResourceOperator):
 class ResourceCSWAP(ResourceOperator):
     r"""Resource class for the CSWAP gate.
 
+    Args:
+        wires (Sequence[int], optional): the wires the operation acts on
+
     Resources:
         The resources are taken from Figure 1d of `arXiv:2305.18128 <https://arxiv.org/pdf/2305.18128>`_.
 
