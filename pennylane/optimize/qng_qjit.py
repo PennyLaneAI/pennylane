@@ -85,7 +85,7 @@ class QNGOptimizerQJIT:
         # reshape tensor into a matrix (acting on the flat grad vector)
         shape = math.shape(mt)
         size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
-        mt_matrix = math.reshape(mt, shape=(size, size))
+        mt_matrix = math.reshape(mt, (size, size))
         # apply regularization for matrix inversion
         if self.lam != 0:
             mt_matrix += self.lam * math.eye(size, like=mt_matrix)
@@ -95,6 +95,6 @@ class QNGOptimizerQJIT:
         shape = math.shape(grad)
         grad_flat = math.flatten(grad)
         update_flat = math.linalg.pinv(mt) @ grad_flat
-        update = math.reshape(update_flat, shape=shape)
+        update = math.reshape(update_flat, shape)
         new_params = params - self.stepsize * update
         return new_params, state
