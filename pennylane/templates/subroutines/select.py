@@ -35,8 +35,8 @@ from pennylane.wires import Wires
 
 
 class Select(Operation):
-    r"""Applies different operations depending on the state of
-    designated control qubits.
+    r"""The ``Select`` operator, also known as the **multiplexer**, or a multiplexed operation,
+    applies different operations depending on the state of designated control wires.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
 
@@ -44,8 +44,6 @@ class Select(Operation):
                     :align: center
                     :width: 70%
                     :target: javascript:void(0);
-
-    This operator is also known as **multiplexer**, or multiplexed operation.
 
     If the applied operations :math:`\{U_i\}` are all single-qubit Pauli rotations about the
     same axis, with the angle determined by the control wires, this is also called a
