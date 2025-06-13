@@ -720,7 +720,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
         op_as_bloq = qml.ToBloq(op)
         cbloq = op_as_bloq.decompose_bloq()
-        fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+        draw_musical_score(get_musical_score_data(cbloq))
         show_bloq(cbloq)
 
     """
@@ -970,6 +970,12 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=LPResourceState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
 
     """
+
+    if not qualtran:
+        raise ImportError(
+            "The `to_bloq`function requires Qualtran to be installed. You can install"
+            "qualtran via: pip install qualtran."
+        )
 
     if map_ops:
         if custom_mapping:
