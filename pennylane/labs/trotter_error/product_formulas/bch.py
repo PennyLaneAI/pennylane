@@ -162,7 +162,7 @@ def _apply_exponent(bch, exponent):
 
 def _kth_order_terms(
     fragments: Sequence[Hashable], coeffs: Sequence[complex], k: int
-) -> Dict[Tuple[int], complex]:
+) -> Dict[Tuple[Hashable], complex]:
     r"""Computes the kth order commutators of the BCH expansion of the product formula.
     See Proposition 1 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
 
@@ -249,7 +249,7 @@ def _partitions_nonnegative(m: int, n: int) -> Generator[Tuple[int]]:
                 yield (i,) + partition
 
 
-def _partitions_positive(m: int, n: int):
+def _partitions_positive(m: int, n: int) -> Generator[Tuple[int]]:
     """Yields tuples of m positive integers that sum to n"""
 
     if m == 1:
@@ -264,7 +264,7 @@ def _partitions_positive(m: int, n: int):
                 yield (i,) + partition
 
 
-def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
+def _phi(fragments: Sequence[Hashable]) -> Dict[Tuple[Hashable], float]:
     """Implements equation 13 from `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
     n = len(fragments)
     terms = defaultdict(complex)
@@ -277,7 +277,7 @@ def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
     return terms
 
 
-def _n_descents(permutation: Sequence[int]) -> int:
+def _n_descents(permutation: Sequence[Hashable]) -> int:
     """Returns the number of descents in a permutation. For a permutation sigma, a descent in sigma
     is a pair i,i+1 such that sigma(i) > sigma(i+1)."""
     n = 0
@@ -290,9 +290,9 @@ def _n_descents(permutation: Sequence[int]) -> int:
 
 
 def _remove_redundancies(
-    term_dicts: List[Dict[Tuple[int], float]],
+    term_dicts: List[Dict[Tuple[Hashable], float]],
     term_order: Dict[Hashable, int],
-) -> List[Dict[Tuple[int], float]]:
+) -> List[Dict[Tuple[Hashable], float]]:
     """Applies the following identities to the commutators
 
     1. Express the commutator as a linear combination of right-nested commutators
@@ -398,7 +398,7 @@ def _make_right_nested(terms):
 
 
 @cache
-def _right_nested(commutator) -> Dict[Tuple, float]:
+def _right_nested(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
     """Express the commutator as a linear combation of right-nested commutators.
 
     Find the i such that commutaor[i] is a tuple representing a commutator, and commutator[j] is a hashable
@@ -438,7 +438,7 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
 
 
 @cache
-def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
+def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
     """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
     linear combination of right-nested commutators [Z_1, ..., Z_{n+m}].
 
@@ -476,7 +476,9 @@ def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     return commutators
 
 
-def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
+def _drop_zeros(
+    term_dicts: List[Dict[Tuple[Hashable], float]],
+) -> List[Dict[Tuple[Hashable], float]]:
     """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:
         delete = []
