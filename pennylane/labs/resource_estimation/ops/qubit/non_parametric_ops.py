@@ -100,7 +100,7 @@ class ResourceHadamard(ResourceOperator):
                 in the decomposition.
         """
         if pow_z % 2 == 0:
-            return [GateCount(plre.resource_rep(plre.ResourceIdentity)]
+            return [GateCount(plre.resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
 

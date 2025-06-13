@@ -13,4 +13,11 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .non_parametric_ops import ResourceHadamard, ResourceS, ResourceT, ResourceX, ResourceY, ResourceZ
+from .non_parametric_ops import (
+    ResourceHadamard,
+    ResourceS,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
