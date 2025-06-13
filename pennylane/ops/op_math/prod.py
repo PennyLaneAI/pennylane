@@ -640,7 +640,7 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
