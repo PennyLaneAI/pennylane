@@ -774,7 +774,8 @@ class QasmInterpreter:
             else:
                 if evald_arg in context.wire_map:
                     evald_arg = context.wire_map[evald_arg]
-                func_context.wire_map[param] = evald_arg
+                if evald_arg != param:
+                    func_context.wire_map[param] = evald_arg
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
@@ -783,10 +784,7 @@ class QasmInterpreter:
         func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
 
         # the return value
-        try:
-            return getattr(func_context, "return")
-        except KeyError:
-            return None
+        return getattr(func_context, "return")
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
@@ -1038,12 +1036,9 @@ class QasmInterpreter:
 
         context.require_wires(wires)
 
-        resolved_wires = []
-        for wire in wires:
-            resolving = wire
-            while resolving in context.wire_map:
-                resolving = context.wire_map[resolving]
-            resolved_wires.append(resolving)
+        resolved_wires = list(
+            map(lambda wire: context.wire_map[wire] if wire in context.wire_map else wire, wires)
+        )
 
         return gate, args, resolved_wires
 
