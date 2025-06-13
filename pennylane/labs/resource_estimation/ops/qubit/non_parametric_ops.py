@@ -355,7 +355,7 @@ class ResourceSWAP(ResourceOperator):
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
-                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_wires": ctrl_num_ctrl_wires + 1,
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
