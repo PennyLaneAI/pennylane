@@ -420,8 +420,6 @@ class QasmInterpreter:
         Raises:
             NotImplementedError: when an unsupported QASMNode type is found.
         """
-        if node is None:
-            return None
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
             f"was encountered on line {node.span.start_line}, in {context.name}."
@@ -735,8 +733,6 @@ class QasmInterpreter:
                         pass  # eval of current iteration stops and we continue
 
             self._handle_break(unrolled, context)
-        elif loop_params is None:
-            print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     @visit.register(FunctionCall)
     def visit_function_call(self, node: FunctionCall, context: Context):
@@ -948,7 +944,7 @@ class QasmInterpreter:
         Returns:
             list: The evaluated set.
         """
-        return tuple([self.visit(literal, context) for literal in node.values])
+        return (self.visit(literal, context) for literal in node.values)
 
     @visit.register(ArrayLiteral)
     def visit_array_literal(self, node: ArrayLiteral, context: Context):
