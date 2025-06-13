@@ -221,7 +221,6 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-H = Hadamard
 
 r"""H(wires)
 The Hadamard operator
@@ -238,6 +237,7 @@ The Hadamard operator
 Args:
     wires (Sequence[int] or int): the wire the operation acts on
 """
+H = Hadamard
 
 
 def _hadamard_rz_rx_resources():
