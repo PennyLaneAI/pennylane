@@ -660,6 +660,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* The `qml.compiler.python_compiler` submodule has been restructured.
+  [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
+
 * Move program capture code closer to where it is used.
   [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
 
