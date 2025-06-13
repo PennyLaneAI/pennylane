@@ -722,6 +722,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* A new :doc:`/code/qml_compiler_python_compiler` page has been added to the Internals section with documentation
+  for the `qml.compiler.python_compiler` submodule.
+  [(#)]()
+
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
   Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
   [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)

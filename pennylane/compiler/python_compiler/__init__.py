@@ -11,7 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Python Compiler API for integration of Catalyst with xDSL."""
+r"""
+This submodule contains the API for the integration of PennyLane and Catalyst with xDSL.
+
+.. currentmodule:: pennylane.compiler.python_compiler
+
+.. warning::
+
+    This module is currently experimental and will not maintain API stability between releases.
+
+.. automodapi:: pennylane.compiler.python_compiler
+    :no-heading:
+    :include-all-objects:
+
+Available Transforms
+--------------------
+
+.. automodapi:: pennylane.compiler.python_compiler.transforms
+    :no-heading:
+    :include-all-objects:
+
+Transforms Core API
+-------------------
+
+.. automodapi:: pennylane.compiler.python_compiler.transforms.api
+    :no-heading:
+    :include-all-objects:
+
+JAX Utilities
+-------------
+
+.. automodapi:: pennylane.compiler.python_compiler.jax_utils
+    :no-heading:
+    :include-all-objects:
+
+"""
 
 from .compiler import Compiler
 from .quantum_dialect import QuantumDialect as Quantum

@@ -253,6 +253,18 @@ if no function is provided:
         return wrapper_fn
 
 """
+from importlib.util import find_spec
 
 from .compiler import active, active_compiler, available, available_compilers
 from .qjit_api import qjit
+
+has_catalyst = find_spec("catalyst")
+has_xdsl = find_spec("xdsl")
+
+if has_catalyst and has_xdsl:
+    # Only import python_compiler submodule if Catalyst and xDSL are installed
+    # tach-ignore(Need to import here to make the submodule visible to Sphinx)
+    from .python_compiler import (
+        Compiler,
+        Quantum,
+    )
