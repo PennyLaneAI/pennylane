@@ -26,9 +26,7 @@ class ResourceIdentity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        wires (Iterable[Any], optional): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
@@ -81,7 +79,7 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation is also an empty list.
+            This operation is self-adjoint, so the resources of the adjoint operation is the base operation.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -101,7 +99,6 @@ class ResourceIdentity(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The Identity gate acts trivially when controlled. The resources of this operation are

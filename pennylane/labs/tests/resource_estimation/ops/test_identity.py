@@ -57,10 +57,19 @@ class TestIdentity:
         ]
 
     identity_ctrl_data = (
-        ([1], [1], [], {plre.ResourceIdentity.resource_rep(): 1}),
-        ([1, 2], [1, 1], ["w1"], {plre.ResourceIdentity.resource_rep(): 1}),
-        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {plre.ResourceIdentity.resource_rep(): 1}),
+        ([1], [1], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        ([1, 2], [1, 1], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        ([1, 2, 3], [1, 0, 0], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
     )
+
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", identity_ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourceIdentity(0)
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
 
     identity_pow_data = (
         (1, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
