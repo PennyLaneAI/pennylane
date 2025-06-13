@@ -5,7 +5,7 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import copy
 import functools
 from dataclasses import dataclass
-from functools import partial
+from functools import partial, reduce
 from typing import Any, Callable, Iterable
 
 import numpy as np
@@ -248,6 +248,57 @@ class Variable:
     size: int
     line: int
     constant: bool
+
+
+def _rotate(var: Variable | int, n: int, dir="left"):
+    """
+    Rotates a BitType variable left by n bits. Not we need a Variable b/c we need to know
+    the size of the register.
+
+    Args:
+        var (Variable | int): the variable to be rotated.
+        n (int): number of bits to rotate.
+        dir (Optional[str]): The direction of the rotation.
+
+    Returns:
+        int: the rotated value.
+
+    Raises:
+        TypeError: if the variable is not of BitType.
+    """
+    bits = _get_bit_type_val(var)
+    new_bits = {}
+    for i in range(len(bits)):
+        if dir == "left":
+            new_bits[(i + len(bits) + 1 - n) % len(bits) - 1] = bits[i]
+        else:
+            new_bits[(i + n + 1) % len(bits) - 1] = bits[i]
+    new_bit_str = ["" for _ in range(len(bits))]
+    for j in new_bits.keys():
+        new_bit_str[j] = new_bits[j]
+    return int("".join(new_bit_str), 2)
+
+
+FUNCTIONS = {
+    "arccos": np.arccos,
+    "arcsin": np.arcsin,
+    "arctan": np.arctan,
+    "ceiling": np.ceil,
+    "cos": np.cos,
+    "exp": np.exp,
+    "floor": np.floor,
+    "log": np.log,
+    "mod": np.mod,
+    "popcount": lambda bit_val: reduce(
+        lambda acc, next: int(acc) + int(next == "1"), _get_bit_type_val(bit_val)
+    ),
+    "rotl": _rotate,
+    "rotr": partial(_rotate, dir="right"),
+    "sin": np.sin,
+    "sqrt": np.sqrt,
+    "tan": np.tan,
+    # the parser doesn't seem to support pow()
+}
 
 
 class Context:
@@ -535,7 +586,12 @@ class Context:
 
 
 def _get_bit_type_val(var):
-    return bin(var.val)[2:].zfill(var.size)
+    if isinstance(var, Variable) and var.ty == "BitType":
+        return bin(var.val)[2:].zfill(var.size)
+    elif isinstance(var, int):
+        return bin(var)[2:].zfill(int(np.floor(np.log2(var))) + 1)
+    else:
+        raise TypeError(f"Cannot convert {type(var)} to bitstring.")
 
 
 def _resolve_name(node: QASMNode):
@@ -1011,39 +1067,50 @@ class QasmInterpreter:
             NameError: When the subroutine is not defined.
         """
         name = _resolve_name(node)  # str or Identifier
-        if name not in context.scopes["subroutines"]:
+
+        if name in context.scopes["subroutines"]:
+            func_context = context.scopes["subroutines"][name]
+
+            # reset return
+            func_context.context["return"] = None
+
+            # bind subroutine arguments
+            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+            for evald_arg, param in list(zip(evald_args, func_context.params)):
+                if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                    func_context.vars[param] = Variable(
+                        evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
+                    )
+                else:
+                    if evald_arg in context.wire_map:
+                        evald_arg = context.wire_map[evald_arg]
+                    func_context.wire_map[param] = evald_arg
+
+            # execute the subroutine
+            self.visit(func_context.body, func_context)
+
+            # reset context
+            func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
+
+            # the return value
+            try:
+                return getattr(func_context, "return")
+            except KeyError:
+                return None
+        elif name in FUNCTIONS:
+            # special handling since there is a loss of information when the parser encodes a bit string as an int
+            if name == "rotr" or name == "rotl":
+                if isinstance(node.arguments[0], Identifier):
+                    var = context.retrieve_variable(_resolve_name(node.arguments[0]))
+                    if var.ty == "BitType":
+                        return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
+                    return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
+            return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
+        else:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
                 f"on line {node.span.start_line}."
             )
-        func_context = context.scopes["subroutines"][name]
-
-        # reset return
-        func_context.context["return"] = None
-
-        # bind subroutine arguments
-        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
-        for evald_arg, param in list(zip(evald_args, func_context.params)):
-            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                func_context.vars[param] = Variable(
-                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
-                )
-            else:
-                if evald_arg in context.wire_map:
-                    evald_arg = context.wire_map[evald_arg]
-                func_context.wire_map[param] = evald_arg
-
-        # execute the subroutine
-        self.visit(func_context.body, func_context)
-
-        # reset context
-        func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
-
-        # the return value
-        try:
-            return getattr(func_context, "return")
-        except KeyError:
-            return None
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
