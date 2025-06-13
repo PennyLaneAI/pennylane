@@ -258,6 +258,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.QuantumPhaseEstimation`
+    [(#7637)](https://github.com/PennyLaneAI/pennylane/pull/7637)
+
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
