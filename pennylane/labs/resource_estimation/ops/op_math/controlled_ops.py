@@ -653,6 +653,9 @@ class ResourceCNOT(ResourceOperator):
 class ResourceTempAND(ResourceOperator):
     r"""Resource class representing a temporary `AND`-gate.
 
+    Args:
+        wires (Sequence[int], optional): the wires the operation acts on
+
     This gate was introduced in Fig 4 of `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_ along
     with it's adjoint (uncompute).
 
