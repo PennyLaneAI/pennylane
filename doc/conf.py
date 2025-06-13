@@ -372,103 +372,103 @@ def setup(app):
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
-            as a PennyLane :class:`~.Operation`.
+    FromBloq: TypeAlias = "pennylane.io.qualtran_io.FromBloq"
+    # pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    #         as a PennyLane :class:`~.Operation`.
 
-            .. note::
-                This class requires the latest version of Qualtran. We recommend installing the main
-                branch via ``pip``:
+    #         .. note::
+    #             This class requires the latest version of Qualtran. We recommend installing the main
+    #             branch via ``pip``:
 
-                .. code-block:: console
+    #             .. code-block:: console
 
-                    pip install qualtran
+    #                 pip install qualtran
 
-            Args:
-                bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
-                wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
-                    signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
+    #         Args:
+    #             bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
+    #             wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
+    #                 signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
 
-            Raises:
-                TypeError: bloq must be an instance of ``Bloq``.
+    #         Raises:
+    #             TypeError: bloq must be an instance of ``Bloq``.
 
-            **Example**
+    #         **Example**
 
-            This example shows how to use ``qml.FromBloq``:
+    #         This example shows how to use ``qml.FromBloq``:
 
-            >>> from qualtran.bloqs.basic_gates import CNOT
-            >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
-            >>> qualtran_cnot.matrix()
-            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-            [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-            [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-            [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+    #         >>> from qualtran.bloqs.basic_gates import CNOT
+    #         >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
+    #         >>> qualtran_cnot.matrix()
+    #         array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+    #         [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+    #         [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+    #         [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
 
-            This example shows how to use ``qml.FromBloq`` inside a device:
+    #         This example shows how to use ``qml.FromBloq`` inside a device:
 
-            >>> from qualtran.bloqs.basic_gates import CNOT
-            >>> dev = qml.device("default.qubit") # Execute on device
-            >>> @qml.qnode(dev)
-            ... def circuit():
-            ...     qml.FromBloq(CNOT(), wires=[0, 1])
-            ...     return qml.state()
-            >>> circuit()
-            array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+    #         >>> from qualtran.bloqs.basic_gates import CNOT
+    #         >>> dev = qml.device("default.qubit") # Execute on device
+    #         >>> @qml.qnode(dev)
+    #         ... def circuit():
+    #         ...     qml.FromBloq(CNOT(), wires=[0, 1])
+    #         ...     return qml.state()
+    #         >>> circuit()
+    #         array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
-            .. details::
-                :title: Advanced Example
+    #         .. details::
+    #             :title: Advanced Example
 
-                This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
+    #             This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
 
-                .. code-block::
+    #             .. code-block::
 
-                    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
-                    from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
-                    from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+    #                 from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+    #                 from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
+    #                 from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
 
-                    # Parameters for the TrotterizedUnitary
-                    nsites = 5
-                    j_zz, gamma_x = 2, 0.1
-                    zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
-                    x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
-                    trott_unitary = TrotterizedUnitary(
-                        bloqs=(x_bloq, zz_bloq),  timestep=0.01,
-                        indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
-                    )
+    #                 # Parameters for the TrotterizedUnitary
+    #                 nsites = 5
+    #                 j_zz, gamma_x = 2, 0.1
+    #                 zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
+    #                 x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
+    #                 trott_unitary = TrotterizedUnitary(
+    #                     bloqs=(x_bloq, zz_bloq),  timestep=0.01,
+    #                     indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
+    #                 )
 
-                    # Instantiate the TextbookQPE and pass in the unitary
-                    textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
+    #                 # Instantiate the TextbookQPE and pass in the unitary
+    #                 textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
-                    # Execute on device
-                    dev = qml.device("default.qubit")
-                    @qml.qnode(dev)
-                    def circuit():
-                        qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
-                        return qml.probs(wires=[5, 6, 7])
+    #                 # Execute on device
+    #                 dev = qml.device("default.qubit")
+    #                 @qml.qnode(dev)
+    #                 def circuit():
+    #                     qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+    #                     return qml.probs(wires=[5, 6, 7])
 
-                    circuit()
+    #                 circuit()
 
-            .. details::
-                :title: Usage Details
+    #         .. details::
+    #             :title: Usage Details
 
-                The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
-                For example, when we wrap Qualtran's ``CZPowGate``, we get
+    #             The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
+    #             For example, when we wrap Qualtran's ``CZPowGate``, we get
 
-                >>> from qualtran.bloqs.basic_gates import CZPowGate
-                >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
-                [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
-                FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
-                FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
+    #             >>> from qualtran.bloqs.basic_gates import CZPowGate
+    #             >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
+    #             [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
+    #             FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
+    #             FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
 
-                This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
-                which allocates and frees a wire in the same ``bloq``. In this situation,
-                PennyLane automatically allocates this wire under the hood, and that additional wire is
-                named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
-                signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
-                limitations of PennyLane, these wires cannot be accessed manually or mapped.
-            """
+    #             This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
+    #             which allocates and frees a wire in the same ``bloq``. In this situation,
+    #             PennyLane automatically allocates this wire under the hood, and that additional wire is
+    #             named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
+    #             signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
+    #             limitations of PennyLane, these wires cannot be accessed manually or mapped.
+    #         """
     # app.connect('build-finished', build_finished)
 
     # def build_finished(app, exception):
     #     shutil.rmtree(NOTEBOOKS_DIR)
 
-Store original docstrings and names if they are likely to be aliased and modified
