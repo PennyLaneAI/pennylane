@@ -57,7 +57,42 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
+Operators:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
+
 """
+
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
 from .resource_operator import (
@@ -71,7 +106,13 @@ from .resource_operator import (
     set_pow_decomp,
     GateCount,
 )
-
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
 from .ops import (
     ResourceHadamard,
     ResourceS,
@@ -102,10 +143,3 @@ from .ops import (
     ResourceControlledPhaseShift,
     ResourceTempAND,
 )
-
-from .resource_mapping import map_to_resource_op
-from .resource_tracking import (
-    StandardGateSet,
-    DefaultGateSet,
-    resource_config,
-    estimate_resources,
