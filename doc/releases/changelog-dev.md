@@ -175,8 +175,7 @@
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
 * A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
-  This operator performs the plain addition of two integers in the computational basis
-  :math:`\text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle`.
+  This operator performs the plain addition of two integers in the computational basis.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
 
   ```python
