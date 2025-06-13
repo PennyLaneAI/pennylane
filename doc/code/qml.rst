@@ -4,5 +4,6 @@ qml
 .. currentmodule:: pennylane
 
 .. automodapi:: pennylane
-    :no-heading:
     :include-all-objects:
+    :no-main-docstr:
+    :skip: H
