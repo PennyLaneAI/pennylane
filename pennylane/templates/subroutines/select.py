@@ -17,6 +17,7 @@ Contains the Select template.
 
 import copy
 import itertools
+from collections import Counter
 
 import pennylane as qml
 from pennylane import math
@@ -586,26 +587,34 @@ def _add_k_units(ops, controls, work_wires, k):
 
 
 def _unary_select_resources(ops):
-
     num_ops = len(ops)
-    if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
-        return {
-            resource_rep(TemporaryAND): (num_ops - 3),
-            adjoint_resource_rep(TemporaryAND): (num_ops - 3),
-            CNOT: num_ops,
-            X: 2,
-            **{
-                controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops
-            },
-        }
+    cnt = Counter()
 
-    return {
-        resource_rep(TemporaryAND): (num_ops - 2),
-        adjoint_resource_rep(TemporaryAND): (num_ops - 2),
-        CNOT: num_ops - 2,
-        X: 2,
-        **{controlled_resource_rep(op.op_type, op.params, num_control_wires=1): 1 for op in ops},
-    }
+    if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
+        cnt.update(
+            {
+                resource_rep(TemporaryAND): num_ops - 3,
+                adjoint_resource_rep(TemporaryAND): num_ops - 3,
+                CNOT: num_ops,
+                X: 2,
+            }
+        )
+    else:
+        cnt.update(
+            {
+                resource_rep(TemporaryAND): num_ops - 2,
+                adjoint_resource_rep(TemporaryAND): num_ops - 2,
+                CNOT: num_ops - 2,
+                X: 2,
+            }
+        )
+
+    for op in ops:
+        key = controlled_resource_rep(op.op_type, op.params, num_control_wires=1)
+        print(key)
+        cnt[key] += 1
+
+    return dict(cnt)
 
 
 @register_resources(_unary_select_resources)

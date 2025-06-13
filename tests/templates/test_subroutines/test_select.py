@@ -35,7 +35,7 @@ def test_standard_checks(num_ops):
 
     op = qml.Select(ops, control, work_wires)
     assert op.target_wires == qml.wires.Wires(0)
-    qml.ops.functions.assert_valid(op, heuristic_resources=True)
+    qml.ops.functions.assert_valid(op)
 
 
 def test_repr():

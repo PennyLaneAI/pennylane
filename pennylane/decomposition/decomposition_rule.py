@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import inspect
-from collections import defaultdict
+from collections import defaultdict, Counter
 from textwrap import dedent
 from typing import Callable, Optional, Type, overload
 
@@ -294,10 +294,13 @@ class DecompositionRule:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
-        gate_counts = self._compute_resources(*args, **kwargs)
-        assert isinstance(gate_counts, dict), "Resource function must return a dictionary."
-        gate_counts = {_auto_wrap(op): count for op, count in gate_counts.items() if count > 0}
-        return Resources(gate_counts)
+        raw_gate_counts = self._compute_resources(*args, **kwargs)
+        assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
+        gate_counter = Counter()
+        for op, count in raw_gate_counts.items():
+            if count > 0:
+                gate_counter.update({_auto_wrap(op): count})
+        return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
