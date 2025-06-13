@@ -108,7 +108,7 @@ class ResourceS(ResourceOperator):
     r"""Resource class for the S-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The S-gate decomposes into two T-gates.
