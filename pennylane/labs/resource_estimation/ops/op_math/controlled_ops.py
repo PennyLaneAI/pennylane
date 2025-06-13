@@ -664,7 +664,7 @@ class ResourceTempAND(ResourceOperator):
     [(1 x Toffoli)]
     """
 
-    num_wires = 2
+    num_wires = 3
 
     @property
     def resource_params(self) -> dict:
