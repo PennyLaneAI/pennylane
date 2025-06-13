@@ -54,7 +54,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
