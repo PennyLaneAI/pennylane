@@ -458,6 +458,47 @@ class GlobalPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
 
+        # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+        adjoint: UnitAttr | bool = False,
+    ):
+        params = () if params is None else params
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(params, Sequence):
+            params = (params,)
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        gate_name = StringAttr(data=self.name)
+
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+        properties = {"gate_name": gate_name}
+        if adjoint:
+            properties["adjoint"] = UnitAttr()
+
+        super().__init__(
+            operands=(params, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_ctrl_qubits),
+            properties=properties,
+        )
+
 
 @irdl_op_definition
 class HamiltonianOp(IRDLOperation):
