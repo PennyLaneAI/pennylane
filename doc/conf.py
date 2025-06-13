@@ -376,7 +376,7 @@ def setup(app):
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    # H: TypeAlias = "pennylane.ops.qubit.non_parametric_ops.H"
+    H: TypeAlias = "pennylane.H"
     FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
             as a PennyLane :class:`~.Operation`.
 
@@ -471,80 +471,3 @@ def setup(app):
                 signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
                 limitations of PennyLane, these wires cannot be accessed manually or mapped.
             """
-
-
-_original_hadamard_doc = None
-_original_hadamard_name = None
-_original_hadamard_qualname = None
-
-def debug_autodoc_handler(app, what, name, obj, options, lines):
-    global _original_hadamard_doc, _original_hadamard_name, _original_hadamard_qualname
-
-    try:
-        import pennylane
-        from pennylane.ops.qubit import non_parametric_ops
-    except ImportError:
-        app.warn("DEBUG: Could not import pennylane. Check sys.path.")
-        return lines
-
-    # --- Debugging Output ---
-    print(f"\n--- Autodoc Event: {name} ({what}) ---")
-    print(f"  Object ID: {id(obj)}")
-    print(f"  Current __name__: {getattr(obj, '__name__', 'N/A')}")
-    print(f"  Current __doc__: {getattr(obj, '__doc__', 'N/A')[:50]}...") # First 50 chars
-    print(f"  Is 'H' and 'Hadamard' the same object? {id(pennylane.H) == id(pennylane.Hadamard)}")
-    if name == 'pennylane.H':
-        print(f"  Processing pennylane.H. Is it the same as Hadamard? {obj is pennylane.Hadamard}")
-    if name == 'pennylane.Hadamard':
-        print(f"  Processing pennylane.Hadamard. Is it the same as H? {obj is pennylane.H}")
-    print(f"  First docstring line received: {lines[0] if lines else 'No lines'}")
-    # --- End Debugging Output ---
-
-    # Your alias fixing logic (from the last working version) goes here.
-    # Ensure the global vars for originals are still captured safely.
-
-    # --- Example: For H ---
-    if name == 'pennylane.H' and what == 'class' and obj is pennylane.Hadamard:
-        # Your desired docstring for H
-        h_doc = (
-            r"H(wires)\n"
-            r"The Hadamard operator\n\n"
-            r".. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.\n\n"
-            r".. seealso:: The equivalent long-form alias :class:`~Hadamard`\n\n"
-            r"**Details:**\n\n"
-            r"* Number of wires: 1\n"
-            r"* Number of parameters: 0\n\n"
-            r"Args:\n"
-            r"    wires (Sequence[int] or int): the wire the operation acts on"
-        )
-        lines[:] = h_doc.splitlines()
-        # Try to force a display name if possible
-        if hasattr(obj, '__qualname__'):
-            # Store original Hadamard qualname if not already stored, before changing this obj's.
-            if not hasattr(obj, '_original_qualname_hadamard_for_debug'):
-                obj._original_qualname_hadamard_for_debug = obj.__qualname__
-            obj.__qualname__ = 'pennylane.H' # Temporarily change qualname for 'H' documentation
-
-    # --- Example: For Hadamard (to restore its state) ---
-    elif name == 'pennylane.Hadamard' and what == 'class':
-        # Ensure it's not the modified alias state
-        if hasattr(obj, '_original_qualname_hadamard_for_debug') and obj.__qualname__ != obj._original_qualname_hadamard_for_debug:
-            obj.__qualname__ = obj._original_qualname_hadamard_for_debug
-
-        # If Hadamard's docstring was corrupted by alias:
-        if _original_hadamard_doc: # Check if original was captured
-            current_doc = inspect.getdoc(obj)
-            if current_doc != _original_hadamard_doc:
-                obj.__doc__ = _original_hadamard_doc
-                lines[:] = _original_hadamard_doc.splitlines()
-
-        # Restore original name too if needed
-        if _original_hadamard_name and obj.__name__ != _original_hadamard_name:
-            obj.__name__ = _original_hadamard_name
-
-
-    return lines
-
-def setup(app):
-    app.connect('autodoc-process-docstring', debug_autodoc_handler)
-    # ... your autodoc_type_aliases if still needed
