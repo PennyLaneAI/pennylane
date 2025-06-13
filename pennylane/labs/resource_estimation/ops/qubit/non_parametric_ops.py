@@ -327,7 +327,6 @@ class ResourceSWAP(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCSWAP`.
