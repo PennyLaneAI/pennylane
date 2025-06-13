@@ -349,228 +349,126 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 #     # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
 # }
 
-# def setup(app):
-#     import pennylane
-#     from typing import TypeAlias
-#     # import shutil
-#     # need to assign the names here, otherwise autodoc won't document these classes,
-#     # and will instead just say 'alias of ...'
-#     # pennylane.H.__name__ = 'H'
-#     # pennylane.Hadamard.__name__ = 'Hadamard'
-#     pennylane.X.__name__ = 'X'
-#     # pennylane.Y.__name__ = 'Y'
-#     # pennylane.H.__module__ = __name__
-#     # pennylane.FromBloq.__name__ = 'FromBloq'
-#     # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-#     pennylane.Z.__doc__ = "The Pauli Z operator"
-#     # pennylane.PauliY.__name__ = 'PauliY'
-#     # pennylane.H.__doc__ = pennylane.H.__doc__
-#     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-#     pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
-#             as a PennyLane :class:`~.Operation`.
-
-#             .. note::
-#                 This class requires the latest version of Qualtran. We recommend installing the main
-#                 branch via ``pip``:
-
-#                 .. code-block:: console
-
-#                     pip install qualtran
-
-#             Args:
-#                 bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
-#                 wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
-#                     signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
-
-#             Raises:
-#                 TypeError: bloq must be an instance of ``Bloq``.
-
-#             **Example**
-
-#             This example shows how to use ``qml.FromBloq``:
-
-#             >>> from qualtran.bloqs.basic_gates import CNOT
-#             >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
-#             >>> qualtran_cnot.matrix()
-#             array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-#             [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-#             [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-#             [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
-
-#             This example shows how to use ``qml.FromBloq`` inside a device:
-
-#             >>> from qualtran.bloqs.basic_gates import CNOT
-#             >>> dev = qml.device("default.qubit") # Execute on device
-#             >>> @qml.qnode(dev)
-#             ... def circuit():
-#             ...     qml.FromBloq(CNOT(), wires=[0, 1])
-#             ...     return qml.state()
-#             >>> circuit()
-#             array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
-
-#             .. details::
-#                 :title: Advanced Example
-
-#                 This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
-
-#                 .. code-block::
-
-#                     from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
-#                     from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
-#                     from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
-
-#                     # Parameters for the TrotterizedUnitary
-#                     nsites = 5
-#                     j_zz, gamma_x = 2, 0.1
-#                     zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
-#                     x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
-#                     trott_unitary = TrotterizedUnitary(
-#                         bloqs=(x_bloq, zz_bloq),  timestep=0.01,
-#                         indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
-#                     )
-
-#                     # Instantiate the TextbookQPE and pass in the unitary
-#                     textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
-
-#                     # Execute on device
-#                     dev = qml.device("default.qubit")
-#                     @qml.qnode(dev)
-#                     def circuit():
-#                         qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
-#                         return qml.probs(wires=[5, 6, 7])
-
-#                     circuit()
-
-#             .. details::
-#                 :title: Usage Details
-
-#                 The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
-#                 For example, when we wrap Qualtran's ``CZPowGate``, we get
-
-#                 >>> from qualtran.bloqs.basic_gates import CZPowGate
-#                 >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
-#                 [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
-#                 FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
-#                 FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
-
-#                 This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
-#                 which allocates and frees a wire in the same ``bloq``. In this situation,
-#                 PennyLane automatically allocates this wire under the hood, and that additional wire is
-#                 named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
-#                 signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
-#                 limitations of PennyLane, these wires cannot be accessed manually or mapped.
-#             """
-#     # app.connect('build-finished', build_finished)
-
-#     # def build_finished(app, exception):
-#     #     shutil.rmtree(NOTEBOOKS_DIR)
-
-# Store original docstrings and names if they are likely to be aliased and modified
-_original_hadamard_doc = None
-_original_hadamard_name = None
-
-def autodoc_alias_fix_handler(app, what, name, obj, options, lines):
-    """
-    Autodoc event handler to fix docstrings and names for specific aliases.
-    """
-    global _original_hadamard_doc, _original_hadamard_name
-
-    try:
-        import pennylane # Import inside to ensure it's loaded by Sphinx
-    except ImportError:
-        app.warn("Could not import 'pennylane' in conf.py autodoc handler.")
-        return lines
-
-    # --- Handle Hadamard's original state and its docstring ---
-    if what == 'class' and name == 'pennylane.Hadamard':
-        # Store original values if not already stored
-        if _original_hadamard_doc is None:
-            _original_hadamard_doc = inspect.getdoc(obj)
-        if _original_hadamard_name is None:
-            _original_hadamard_name = obj.__name__
-
-        # Always ensure Hadamard's docstring is its own original, not an alias message
-        # And its name is correct
-        if inspect.getdoc(obj) != _original_hadamard_doc:
-             # This is a bit tricky, setting __doc__ might trigger a re-read
-             # of the current 'lines'. This part might need further tweaking
-             # if the 'lines' passed in are already corrupted by the alias.
-             obj.__doc__ = _original_hadamard_doc # Force it back
-             lines[:] = original_docstring.splitlines() # Replace lines too if needed
-
-        if obj.__name__ != _original_hadamard_name:
-            obj.__name__ = _original_hadamard_name # Force name back
-
-    # --- Handle 'H' alias ---
-    elif what == 'class' and name == 'pennylane.H':
-        # Check if 'H' is truly an alias of 'Hadamard'
-        if obj is pennylane.Hadamard:
-            # First, set the desired docstring for 'H'
-            # (using your preferred content)
-            new_h_docstring = (
-                r"H(wires)\n"
-                r"The Hadamard operator\n\n"
-                r".. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.\n\n"
-                r".. seealso:: The equivalent long-form alias :class:`~Hadamard`\n\n"
-                r"**Details:**\n\n"
-                r"* Number of wires: 1\n"
-                r"* Number of parameters: 0\n\n"
-                r"Args:\n"
-                r"    wires (Sequence[int] or int): the wire the operation acts on"
-            )
-            # Replace the lines provided by autodoc with our custom docstring
-            lines[:] = new_h_docstring.splitlines()
-
-            # Now, for the name. This is the trickiest part.
-            # We want 'H' to show up as 'H', but without affecting 'Hadamard'.
-            # Manipulating __name__ on the shared object is problematic.
-            # A common workaround is to use a special attribute that autodoc *might*
-            # pick up for the display name, but this isn't universally guaranteed.
-            # Alternatively, we could manipulate the `name` argument, but that's harder.
-            # Let's try to set __qualname__ for the alias to be 'H' to override the default.
-            # This is a very deep hack.
-            if hasattr(obj, '__qualname__'):
-                 # Store original qualname if not already stored
-                if not hasattr(obj, '_original_qualname_hadamard'):
-                    obj._original_qualname_hadamard = obj.__qualname__
-                obj.__qualname__ = 'pennylane.H' # Force qualname for display
-
-    # --- Handle other specific aliases if needed ---
-    # Example for 'X'
-    elif what == 'class' and name == 'pennylane.X' and obj is pennylane.ops.qubit.non_parametric_ops.X:
-        # If X is an alias and its __name__ was set on the original,
-        # you need to be careful. The best is to explicitly set its docstring
-        # if it's showing "alias of".
-        # For X, if you're doing pennylane.X.__name__ = 'X', this means
-        # pennylane.ops.qubit.non_parametric_ops.X also has its __name__ changed.
-        # This is the same problem as Hadamard.
-        # So, you'd need similar logic to above:
-        # store original for non_parametric_ops.X and restore it if needed.
-        # Then, provide a specific docstring for pennylane.X.
-        pass # Placeholder for similar logic if needed for X
-
-    # Ensure Z's specific docstring is applied without affecting original PauliZ
-    elif what == 'class' and name == 'pennylane.Z' and obj is pennylane.ops.qubit.non_parametric_ops.Z:
-        new_z_docstring = "The Pauli Z operator"
-        lines[:] = new_z_docstring.splitlines()
-        # Similar to H, if you have Z=PauliZ, setting its docstring will affect PauliZ
-        # So you need to be careful if PauliZ also needs its own full docstring.
-
-    return lines
-
 def setup(app):
-    app.connect('autodoc-process-docstring', autodoc_alias_fix_handler)
+    from pennylane import H, X, Z, FromBloq
+    from typing import TypeAlias
+    # import shutil
+    # need to assign the names here, otherwise autodoc won't document these classes,
+    # and will instead just say 'alias of ...'
+    # pennylane.H.__name__ = 'H'
+    # pennylane.Hadamard.__name__ = 'Hadamard'
+    # pennylane.X.__name__ = 'X'
+    H.__module__ = __name__
+    H.__name__ = 'H'
+    X.__module__ = __name__
+    X.__name__ = 'X'
+    Z.__module__ = __name__
+    Z.__name__ = 'Z'
+    # pennylane.Y.__name__ = 'Y'
+    # pennylane.H.__module__ = __name__
+    # pennylane.FromBloq.__name__ = 'FromBloq'
+    # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
+    pennylane.Z.__doc__ = "The Pauli Z operator"
+    # pennylane.PauliY.__name__ = 'PauliY'
+    # pennylane.H.__doc__ = pennylane.H.__doc__
+    # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
+    pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+            as a PennyLane :class:`~.Operation`.
 
-    # Note: autodoc_type_aliases is for type hints, not for the main docstring content.
-    # Keep it if you need it for type hint display, but don't rely on it for documentation content.
-    app.config.autodoc_type_aliases = {
-        'H': 'H', # This will make type hints like `arg: H` display as `H`
-        'I': 'pennylane.ops.identity.I',
-        'X': 'pennylane.ops.qubit.non_parametric_ops.X',
-        'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
-        # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
-    }
+            .. note::
+                This class requires the latest version of Qualtran. We recommend installing the main
+                branch via ``pip``:
 
-    # Remove the problematic lines from your previous conf.py additions:
-    # pennylane.X.__name__ = 'X' # This changes the original object's name
-    # pennylane.Z.__doc__ = "The Pauli Z operator" # This changes original object's docstring
+                .. code-block:: console
+
+                    pip install qualtran
+
+            Args:
+                bloq (qualtran.Bloq): an initialized Qualtran ``Bloq`` to be wrapped as a PennyLane operator
+                wires (WiresLike): The wires the operator acts on. The number of wires can be determined by using the
+                    signature of the ``Bloq`` using ``bloq.signature.n_qubits()``.
+
+            Raises:
+                TypeError: bloq must be an instance of ``Bloq``.
+
+            **Example**
+
+            This example shows how to use ``qml.FromBloq``:
+
+            >>> from qualtran.bloqs.basic_gates import CNOT
+            >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
+            >>> qualtran_cnot.matrix()
+            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+            [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+            [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+
+            This example shows how to use ``qml.FromBloq`` inside a device:
+
+            >>> from qualtran.bloqs.basic_gates import CNOT
+            >>> dev = qml.device("default.qubit") # Execute on device
+            >>> @qml.qnode(dev)
+            ... def circuit():
+            ...     qml.FromBloq(CNOT(), wires=[0, 1])
+            ...     return qml.state()
+            >>> circuit()
+            array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+
+            .. details::
+                :title: Advanced Example
+
+                This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
+
+                .. code-block::
+
+                    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
+                    from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
+                    from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
+
+                    # Parameters for the TrotterizedUnitary
+                    nsites = 5
+                    j_zz, gamma_x = 2, 0.1
+                    zz_bloq = IsingZZUnitary(nsites=nsites, angle=0.02 * j_zz)
+                    x_bloq = IsingXUnitary(nsites=nsites, angle=0.01 * gamma_x)
+                    trott_unitary = TrotterizedUnitary(
+                        bloqs=(x_bloq, zz_bloq),  timestep=0.01,
+                        indices=(0, 1, 0), coeffs=(0.5 * gamma_x, j_zz, 0.5 * gamma_x)
+                    )
+
+                    # Instantiate the TextbookQPE and pass in the unitary
+                    textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
+
+                    # Execute on device
+                    dev = qml.device("default.qubit")
+                    @qml.qnode(dev)
+                    def circuit():
+                        qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+                        return qml.probs(wires=[5, 6, 7])
+
+                    circuit()
+
+            .. details::
+                :title: Usage Details
+
+                The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
+                For example, when we wrap Qualtran's ``CZPowGate``, we get
+
+                >>> from qualtran.bloqs.basic_gates import CZPowGate
+                >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
+                [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
+                FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
+                FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
+
+                This behaviour results from the decomposition of ``CZPowGate`` as defined in Qualtran,
+                which allocates and frees a wire in the same ``bloq``. In this situation,
+                PennyLane automatically allocates this wire under the hood, and that additional wire is
+                named ``alloc_free_{idx}``. The indexing starts at the length of the wires defined in the
+                signature, which in the case of ``CZPowGate`` is :math:`2`. Due to the current
+                limitations of PennyLane, these wires cannot be accessed manually or mapped.
+            """
+    # app.connect('build-finished', build_finished)
+
+    # def build_finished(app, exception):
+    #     shutil.rmtree(NOTEBOOKS_DIR)
+
+Store original docstrings and names if they are likely to be aliased and modified
