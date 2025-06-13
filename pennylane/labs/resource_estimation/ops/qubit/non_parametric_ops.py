@@ -156,7 +156,7 @@ class ResourceS(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \dot \hat{S}`
+            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
