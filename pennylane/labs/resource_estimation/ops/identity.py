@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Resource operators for identity operations."""
+r"""Resource operators for identity and global phase operations."""
 
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -59,7 +59,7 @@ class ResourceIdentity(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -169,7 +169,7 @@ class ResourceGlobalPhase(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod

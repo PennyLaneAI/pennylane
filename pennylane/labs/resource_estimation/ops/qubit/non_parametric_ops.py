@@ -148,7 +148,7 @@ class ResourceS(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -241,7 +241,7 @@ class ResourceT(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -373,7 +373,7 @@ class ResourceX(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -482,7 +482,7 @@ class ResourceY(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
@@ -573,7 +573,7 @@ class ResourceZ(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod

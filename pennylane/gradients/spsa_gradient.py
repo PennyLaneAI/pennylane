@@ -265,8 +265,10 @@ def spsa_grad(
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
+        >>> from functools import partial
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", shots=shots)
+        >>> dev = qml.device("default.qubit")
+        >>> @partial(qml.set_shots, shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)

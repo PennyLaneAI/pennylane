@@ -327,6 +327,7 @@ def _custom_resource(num_wires):
             num_control_wires=3,
             num_zero_control_values=1,
             num_work_wires=1,
+            work_wire_type="clean",
         ): 1,
         qml.RX: 1,
         qml.Rot: 1,
@@ -416,12 +417,14 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(qml.CRX): 1,
                 qml.resource_rep(qml.CRot): 1,
@@ -516,18 +519,21 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=2, num_work_wires=1
@@ -629,24 +635,28 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=0,
                     num_work_wires=1,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=6,
                     num_zero_control_values=1,
                     num_work_wires=2,
+                    work_wire_type="dirty",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=3, num_work_wires=1
@@ -702,6 +712,7 @@ class TestControlledDecomposition:
                         "num_control_wires": 1,
                         "num_zero_control_values": 0,
                         "num_work_wires": 0,
+                        "work_wire_type": "dirty",
                     },
                 ): 1
             }
@@ -732,6 +743,11 @@ class TestControlledDecomposition:
         op = qml.ctrl(qml.RX(0.5, wires=0), control=[1, 2])
         assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
+        op = qml.ctrl(
+            qml.RX(0.5, wires=0), control=[1, 2, 3], work_wires=[4, 5], work_wire_type="dirty"
+        )
+        assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
+
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
@@ -752,6 +768,7 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=2,
+                    work_wire_type="dirty",
                 ): 1
             }
         )

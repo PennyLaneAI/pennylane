@@ -130,8 +130,10 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=1000)
         @qml.cut_circuit_mc
         @qml.qnode(dev)
         def circuit(x):
@@ -301,8 +303,9 @@ def cut_circuit_mc(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=1)
+        >>> dev = qml.device("default.qubit", wires=2)
         >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
+        >>> fragment_tapes = qml.set_shots(fragment_tapes, shots=1)
 
         Note that the number of shots on the device is set to :math:`1` here since we
         will only require one execution per fragment configuration. In the
@@ -397,11 +400,12 @@ def cut_circuit_mc(
         .. code-block::
 
             from functools import partial
-            dev = qml.device("default.qubit", wires=2, shots=10000)
+            dev = qml.device("default.qubit", wires=2)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
+            @partial(qml.set_shots, shots=10000)
             @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
