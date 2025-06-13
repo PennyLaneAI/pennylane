@@ -60,6 +60,7 @@ class TestZSqrtTwo:
         assert ZSqrtTwo(5, 0) == 5
         assert z1.sqrt() is None  # Not all ZSqrtTwo instances have a square root
         assert z2.sqrt() is None  # Not all ZSqrtTwo instances have a square root
+        assert ZSqrtTwo(30, 6).sqrt() is None
         assert (z1**2).sqrt() == z1
         assert z1.conj() == ZSqrtTwo(1, 2)
         assert z2.adj2() == ZSqrtTwo(3, -4) and z1.adj2() == ZSqrtTwo(1, -2)

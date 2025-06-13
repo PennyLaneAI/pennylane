@@ -142,14 +142,19 @@ class ZSqrtTwo:
 
         xs = (math.isqrt((self.a + r) // 2), math.isqrt((self.a - r) // 2))
         ys = (math.isqrt((self.a - r) // 4), math.isqrt((self.a + r) // 4))
+
+        res = None
         for x, y in zip(xs, ys):
             zrt = ZSqrtTwo(x, y)
             if zrt * zrt == self:
-                return zrt
+                res = zrt
+                break
             art = zrt.adj2()
             if art * art == self:  # pragma: no cover
-                return art
-        return None  # pragma: no cover
+                res = art
+                break
+
+        return res
 
     def to_omega(self) -> ZOmega:
         """Convert to the an ring of integers adjoined with omega."""
@@ -629,7 +634,7 @@ class SO3Matrix:
 
         Example:
             >>> A = DyadicMatrix(ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), k = 4) * 2
-            >>> B = SO3Matrix(B @ B)
+            >>> B = SO3Matrix(A @ A)
             >>> B.normalize()
             SO3Matrix(matrix=[[1, 1], [1, 1]], k=-6)
         """
