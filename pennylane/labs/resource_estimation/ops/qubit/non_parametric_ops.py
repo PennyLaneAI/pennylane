@@ -175,13 +175,13 @@ class ResourceS(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The S-gate, when raised to a power which is a multiple of four, produces identity. \\
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to one, means one instance of the S-gate. \\
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to two, means one instance of the Z-gate. \\
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to three, means one instance of the Z-gate and one instance of S-gate. \\
+            - The S-gate, when raised to a power which is a multiple of four, produces identity.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to one, means one instance of the S-gate.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to two, means one instance of the Z-gate.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+            is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
