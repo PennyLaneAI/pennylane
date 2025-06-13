@@ -29,7 +29,7 @@ from pennylane.compiler.python_compiler.transforms import CombineGlobalPhasesPas
 class TestCombineGlobalPhasesPass:
     """Unit tests for CombineGlobalPhasesPass."""
 
-    def test_no_composable_ops(self, run_filecheck):
+    def test_no_global_phases_ops(self, run_filecheck):
         """Test that nothing changes when there are no composable gates."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
