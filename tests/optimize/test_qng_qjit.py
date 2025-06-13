@@ -103,13 +103,13 @@ class TestGradients:
         assert np.allclose(grad_qml, grad_jax)
 
 
-class TestApproxMetricTensor:
-    """Test that the metric tensor is computed correctly according to the given `approx` strategy."""
+class TestMetricTensor:
+    """Test that the metric tensor computation works with `approx` and `lam`."""
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_no_approx(self, dev_name):
-        """Test that the full metric tensor is computed correctly for `approx=None`."""
+        """Test that the full metric tensor is computed for `approx=None`."""
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
@@ -138,7 +138,7 @@ class TestApproxMetricTensor:
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_with_approx(self, dev_name):
-        """Test that the metric tensor is computed correctly for `approx=block-diag` and `approx=diag`."""
+        """Test that the approximated metric tensor is computed for `approx=block-diag` and `approx=diag`."""
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
@@ -167,3 +167,47 @@ class TestApproxMetricTensor:
 
         assert np.allclose(blockdiag_mt, expected_mt)
         assert np.allclose(diag_mt, expected_mt)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_lam(self, dev_name):
+        """Test that the regularization `lam` is used correctly."""
+        # pylint:disable=protected-access
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circ(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        eta = np.pi
+        params = jnp.array([eta / 2, 0.412])
+
+        stepsize = 1.0
+        lam = 1e-11
+
+        opt_with_lam = qml.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
+        state_with_lam = opt_with_lam.init(params)
+        new_params_with_lam, _ = opt_with_lam.step(circ, params, state_with_lam)
+        mt_with_lam = opt_with_lam._get_metric_tensor(circ, params)
+
+        opt = qml.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
+        state = opt.init(params)
+        new_params, _ = opt.step(circ, params, state)
+        mt = opt._get_metric_tensor(circ, params)
+
+        # computing the expected metric tensor requires some manual calculation
+        x, y = params
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        expected_mt = first_term - second_term
+
+        assert np.allclose(mt_with_lam, expected_mt + np.eye(2) * lam)
+        assert np.allclose(mt, expected_mt)
+
+        # with regularization y gets updated, without regularization it does not
+        assert not np.isclose(new_params_with_lam[1], y)
+        assert np.isclose(new_params[1], y)
