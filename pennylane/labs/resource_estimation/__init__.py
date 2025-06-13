@@ -34,12 +34,6 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~GateCount
 
-Resource Estimation Functions:
-WARNING: Failed to import pennylane.labs.
-Possible hints:
-* ImportError: cannot import name 'ResourceOperator' from partially initialized module 'pennylane.labs.resource_estimation' (most likely due to a circular import) (/Users/diksha.dhawan/Documents/resource_estimation/pennylane_review/pennylane/labs/resource_estimation/__init__.py)
-* AttributeError: module 'pennylane' has no attribute 'labs'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. autosummary::
     :toctree: api
 

@@ -52,7 +52,8 @@ class ResourcePhaseShift(ResourceOperator):
     r"""Resource class for the PhaseShift gate.
 
     Keyword Args:
-        eps (float, optional): The error threshold for clifford plus T decomposition of this operation. The default value is `None` which corresponds to using the epsilon stated in the config. 
+        eps (float, optional): The error threshold for clifford plus T decomposition of this operation.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
         wires (Any or Wires, optional): the wire the operation acts on
 
     Resources:
@@ -156,7 +157,7 @@ class ResourceRX(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Any, Wires): the wire the operation acts on
+        wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -281,7 +282,7 @@ class ResourceRY(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Any, Wires): the wire the operation acts on
+        wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -407,7 +408,7 @@ class ResourceRZ(ResourceOperator):
 
     Keyword Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Any, Wires): the wire the operation acts on
+        wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -530,7 +531,7 @@ class ResourceRot(ResourceOperator):
 
     Args:
         eps (float): error threshold for clifford plus T decomposition of this operation
-        wires (Any, Wires): the wire the operation acts on
+        wires (Any, Wires, optional): the wire the operation acts on
 
     Resources:
         The resources are obtained according to the definition of the :class:`Rot` gate:
