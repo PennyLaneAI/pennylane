@@ -280,8 +280,8 @@ class ResourceT(ResourceOperator):
             - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
             - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
             - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
-            - If `z' = 6`: The operation is equivalent to the S-adjoint gate (:math:`S^{\dagger}`).
-            - If `z' = 7`: The operation is equivalent to the T-adjoint gate (:math:`T^{\dagger}`).
+            - If `z' = 6`: The operation is equivalent to a composition of a Z-gate and an S-gate (:math:`Z \cdot S`).
+            - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
