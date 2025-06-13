@@ -26,9 +26,7 @@ class ResourceIdentity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        wires (Iterable[Any], optional): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
