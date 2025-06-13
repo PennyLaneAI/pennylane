@@ -36,6 +36,9 @@ def test_to_bloq_error():
         with pytest.raises(ImportError, match="Optional dependency"):
             qml.ToBloq(qml.H(0))
 
+        with pytest.raises(ImportError, match="The `to_bloq`function requires Qualtran "):
+            qml.to_bloq(qml.H(0))
+
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
@@ -432,10 +435,16 @@ class TestToBloq:
                 qml.counts(qml.X(0)),
             )
 
+        def qfunc():
+            qml.H(0)
+
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.to_bloq(qfunc).__repr__() == "ToBloq(Qfunc)"
+        assert qml.to_bloq(qfunc).__str__() == "PLQfunc"
         assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
+        assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
     def test_to_bloq_circuits(self):
         """Tests that to_bloq functions as intended for complex circuits"""
