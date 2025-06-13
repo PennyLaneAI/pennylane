@@ -67,7 +67,7 @@ class TestControlFlow:
 
         assert q.queue == [PauliX("q0")]
 
-    def test_loops(self, mocker):
+    def test_loops(self):
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
@@ -92,7 +92,7 @@ class TestControlFlow:
             PauliZ("q0")
         ]
 
-    def test_switch(self, mocker):
+    def test_switch(self):
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
