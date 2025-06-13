@@ -122,7 +122,7 @@ class SemiAdder(Operation):
         >>> print(circuit())
         [1 1]
 
-    The result :math:`[1 1]`, is the binary representation of :math:`3 + 4 = 7 = 3 \mod 2^2 `.
+    The result :math:`[1\ 1]` is the binary representation of :math:`3 + 4 = 7 \equiv 3 \mod 2^2`.
 
     .. details::
         :title: Usage Details
@@ -138,7 +138,7 @@ class SemiAdder(Operation):
         at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. ``y_wires`` is also used
         to encode the integer :math:`x+y` in the computational basis.
 
-        The fourth set of wires is ``work_wires`` which consists of :math:`m-1` auxiliary qubits used to perform the addition operation,
+        The third set of wires is ``work_wires`` which consists of :math:`m-1` auxiliary qubits used to perform the addition operation,
         where :math:`m` is the number of ``y_wires``.
     """
 
