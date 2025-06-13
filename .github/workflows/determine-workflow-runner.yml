@@ -54,7 +54,7 @@ jobs:
         env:
           # We are not able to use \d to check numeric values as bash does not allow them (not POSIX compliant)
           RC_BRANCH_FORMAT_REGEX: v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]?
-          REPO_FULL_NAME: PennyLaneAI/pennylane
+          REPO_FULL_NAME: QSAR-UBC/pennylane_qutrit_mixed
           LARGE_RUNNER_GROUP_NAME: ${{ inputs.large_runner_group_name }}
         run: |
           if [[ '${{ contains(github.event.pull_request.labels.*.name, 'urgent') }}' == 'true' || ('${{ github.event.pull_request.head.repo.full_name }}' == "$REPO_FULL_NAME" && '${{ github.event.pull_request.base.ref }}' =~ $RC_BRANCH_FORMAT_REGEX) ]]; then
