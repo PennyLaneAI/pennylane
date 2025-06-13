@@ -98,7 +98,6 @@ class TestSWAP:
         """Test that the adjoint decomposition is correct."""
         swap = plre.ResourceSWAP([0, 1])
         expected = [plre.GateCount(swap.resource_rep(), 1)]
-        #        swap_dag = plre.ResourceAdjoint(plre.ResourceSWAP([0, 1]))
 
         assert swap.adjoint_resource_decomp() == expected
 
