@@ -15,10 +15,19 @@
 
 from typing import Iterable
 
-import galois
 import networkx as nx
 import numpy as np
 from networkx.algorithms.approximation import steiner_tree
+
+try:
+    import galois
+
+    # Create the Galois number field F_2, in which we can create arrays in _get_S.
+    F_2 = galois.GF(2)
+    has_galois = True
+
+except ImportError:
+    has_galois = False
 
 
 def postorder_traverse(tree: nx.Graph, source: int, source_parent: int = None):
@@ -201,10 +210,6 @@ def _update(P: np.ndarray, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
-# Create the Galois number field F_2, in which we can create arrays in _get_S.
-F_2 = galois.GF(2)
-
-
 def _get_S(P: np.ndarray, idx: int, node_set: Iterable[int], mode: str):
     # Find S (S') either by simply extracting a column or by solving a linear system for the row
     if mode == "column":
@@ -297,6 +302,12 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     Returns:
         list[tuple[int]]: Wire pairs for CNOTs that implement the parity matrix (control first,
         target second).
+
+    .. note::
+
+        This function requires the package ``galois`` to be installed. It can be installed via
+        ``pip install galois``, for details see
+        `its documentation <https://mhostetter.github.io/galois/latest/>`__.
 
     **Example**
 
@@ -632,6 +643,11 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
         4: ─╰●────╰●────╰X─╰●────╰●─────────────╰●──────────╰X────┤
 
     """
+    if not has_galois:  # pragma: no cover
+        raise ImportError(
+            "rowcol requires the package galois. You can install it with pip install galois."
+        )  # pragma: no cover
+
     P = P.copy()
     connectivity = connectivity.copy()
     n = len(P)

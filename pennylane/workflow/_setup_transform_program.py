@@ -90,9 +90,13 @@ def _setup_transform_program(
     _prune_dynamic_transform(outer_transform_program, inner_transform_program)
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
+    if cache == "auto":
+        if resolved_execution_config.derivative_order == 1:
+            cache = None
+        else:
+            cache = True
     if cache is True:
         cache = LRUCache(maxsize=cachesize)
-        setattr(cache, "_persistent_cache", False)
 
     # Ensure that ``cache`` is not a Boolean to simplify downstream code.
     elif cache is False:
