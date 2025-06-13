@@ -13,4 +13,19 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .controlled_ops import *
+from .controlled_ops import (
+    ResourceCCZ,
+    ResourceCH,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceMultiControlledX,
+    ResourceTempAND,
+    ResourceToffoli,
+)
