@@ -184,9 +184,9 @@ class Select(Operation):
 
         .. code-block::
 
-            aux_j:   ─╭●────╭●────●─╮─
-            j+1:     ─├○────│─────●─┤─
-            aux_j+1:  ╰──R──╰X─R────╯ ,
+            aux_j:   ╭R   ─╭●────╭●────●─╮─
+            j+1:     ├R = ─├○────│─────●─┤─
+            aux_j+1: ╰R    ╰──R──╰X─R────╯ ,
 
         where each label ``R`` symbolizes a call to ``R`` itself, on the next recursion level.
         These next-level calls use

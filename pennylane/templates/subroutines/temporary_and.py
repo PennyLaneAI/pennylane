@@ -34,7 +34,6 @@ class TemporaryAND(Operation):
     .. note::
 
         For correct usage of this operation, the user must ensure
-
         that before computation the input state of the target wire is :math:`|0\rangle`,
         and that after uncomputation the output state of the target wire is :math:`|0\rangle`,
         when using ``TemporaryAND`` or ``Adjoint(TemporaryAND)``, respectively.
