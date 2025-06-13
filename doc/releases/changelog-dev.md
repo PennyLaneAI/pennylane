@@ -742,6 +742,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* A bug in `qml.draw_mpl` for circuits containing work wires has been fixed. Inconsistent mapping
+  of wires led to invalid work wire assignments during drawing, which has been fixed by
+  considering them during the mapping process.
+  [(#7668)](https://github.com/PennyLaneAI/pennylane/pull/7668)
+
 * The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
   interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
   Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
