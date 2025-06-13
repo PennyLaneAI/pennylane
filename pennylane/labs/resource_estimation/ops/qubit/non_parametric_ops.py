@@ -203,7 +203,7 @@ class ResourceSWAP(ResourceOperator):
     r"""Resource class for the SWAP gate.
 
     Args:
-        wires (Sequence[int]): the wires the operation acts on
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources come from the following identity expressing SWAP as the product of
