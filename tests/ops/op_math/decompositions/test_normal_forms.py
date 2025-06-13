@@ -38,12 +38,12 @@ class TestNormalForms:
         assert isinstance(clifford_matrices, dict)
         assert len(clifford_matrices) == 24
 
-        for gate, so3mat in clifford_matrices.items():
+        for gates, so3mat in clifford_matrices.items():
             # Check that the SO(3) matrix is orthogonal and has determinant 1
             assert isinstance(so3mat, SO3Matrix), "All gates should be SO3Matrix instances"
-            assert so3mat.k == 0, f"Gate {gate} should have k=0"
+            assert so3mat.k == 0, f"Gate {gates} should have k=0"
 
-            su2mat = _SU2_transform(qml.matrix(gate))[0]
+            su2mat = _SU2_transform(qml.matrix(qml.prod(*gates)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
             assert qml.math.allclose(
                 so3mat.ndarray,
@@ -63,8 +63,8 @@ class TestNormalForms:
         assert len(parity_transforms) == 4
 
         parity_vecs = [(1, 1, 1), (2, 2, 0), (0, 2, 2), (2, 0, 2)]
-        for ix, (parity_vec, (so3mat, gate)) in enumerate(parity_transforms.items()):
-
+        for ix, (parity_vec, (so3mat, gates)) in enumerate(parity_transforms.items()):
+            gate = qml.prod(*gates)
             assert isinstance(so3mat, SO3Matrix), "All transform should have SO3Matrix instances"
             assert isinstance(
                 gate, (qml.ops.Operation, qml.ops.op_math.Prod)
@@ -104,23 +104,27 @@ class TestNormalForms:
                 so3mat @= SO3Matrix(
                     DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(b=1), ZOmega(a=-1), k=1)
                 )
-                so3rep @= qml.S(0) @ qml.H(0) @ qml.T(0)
+                for op_ in (qml.S(0), qml.H(0), qml.T(0)):
+                    so3rep @= op_
             else:
                 so3mat @= SO3Matrix(
                     DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(d=1), ZOmega(c=-1), k=1)
                 )
-                so3rep @= qml.H(0) @ qml.T(0)
+                for op_ in (qml.H(0), qml.T(0)):
+                    so3rep @= op_
 
         cl_list = list(clifford_elements.keys())
         so3mat @= clifford_elements[cl_list[c]]
-        so3rep @= cl_list[c]
+        for op_ in cl_list[c]:
+            so3rep @= op_
 
         (t_bit, rep_bits, c_bit) = _ma_normal_form(so3mat, compressed=True)
+        print(t_bit, rep_bits, c_bit)
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"
         assert c_bit == c, "Clifford bit does not match expected value"
 
         decomposition = _ma_normal_form(so3mat, compressed=False)
         assert qml.equal(
-            qml.simplify(decomposition), qml.simplify(so3rep)
+            decomposition, qml.prod(*so3rep[not a :])
         ), "Decomposition does not match expected operator"

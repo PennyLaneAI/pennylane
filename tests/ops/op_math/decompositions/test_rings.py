@@ -167,7 +167,7 @@ class TestDyadicMatrix:
         z2 = ZOmega(5, 6, 7, 8)
         dyadic_matrix = DyadicMatrix(z1, z2, z1, z2)
 
-        assert repr(dyadic_matrix) == f"DyadicMatrix({z1}, {z2}, {z1}, {z2})"
+        assert repr(dyadic_matrix) == f"DyadicMatrix(a={z1}, b={z2}, c={z1}, d={z2}, k=0)"
         assert str(dyadic_matrix) == f"[[{z1}, {z2}], [{z1}, {z2}]]"
         assert dyadic_matrix * 2 == DyadicMatrix(2 * z1, 2 * z2, 2 * z1, 2 * z2)
         assert np.allclose(
@@ -214,7 +214,7 @@ class TestSO3Matrix:
         str_repr = "["
         for i in range(3):
             str_repr += f"[{so3mat[i][0]}, {so3mat[i][1]}, {so3mat[i][2]}], \n"
-        str_repr = str_repr.rstrip(", \n") + "]" + (f" * √2^-{so3k}" if so3k else "")
+        str_repr = str_repr.rstrip(", \n") + "]" + (f" * 1 / √2^{so3k}" if so3k else "")
         assert str(so3_matrix) == str_repr
 
         assert np.allclose(
