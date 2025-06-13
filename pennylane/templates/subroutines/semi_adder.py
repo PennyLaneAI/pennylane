@@ -104,7 +104,7 @@ class SemiAdder(Operation):
     .. code-block::
 
         x = 3
-        y = 4
+        y = 1
 
         wires = qml.registers({"x":3, "y":2, "work":1})
 
@@ -120,9 +120,9 @@ class SemiAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 1]
+        [0 0]
 
-    The result :math:`[1\ 1]` is the binary representation of :math:`3 + 4 = 7 \equiv 3 \mod 2^2`.
+    The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4 \equiv 0 \mod 2^2`.
 
     .. details::
         :title: Usage Details
