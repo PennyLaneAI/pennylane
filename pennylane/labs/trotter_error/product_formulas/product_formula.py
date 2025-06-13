@@ -55,7 +55,7 @@ class ProductFormula:
 
     >>> u = 1 / (4 - 4**(1/3))
     >>> v = 1 - 4*u
-
+    >>>
     >>> fourth_order = second_order(u)**2 @ second_order(v) @ second_order(u)**2
 
     """
