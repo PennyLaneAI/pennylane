@@ -325,8 +325,8 @@ class ResourceSWAP(ResourceOperator):
         r"""Returns a dictionary representing the resources for a controlled version of the operator.
 
         Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCSWAP`.
