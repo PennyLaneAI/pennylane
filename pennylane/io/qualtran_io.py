@@ -60,7 +60,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 def _get_op_call_graph(op):
     """Return call graph for PennyLane Operator. If the call graph is not implemented,
     return `None`, which means we will build the call graph via decomposition"""
-    
+
     # TODO: Integrate with resource operators and the new decomposition pipelines
     return None
 
