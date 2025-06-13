@@ -46,7 +46,7 @@ class Select(Operation):
                     :target: javascript:void(0);
 
     This operator is also known as **multiplexer**, or multiplexed operation.
-    
+
     If the applied operations :math:`\{U_i\}` are all single-qubit Pauli rotations about the
     same axis, with the angle determined by the control wires, this is also called a
     **uniformly controlled rotation** gate.
