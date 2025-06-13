@@ -43,7 +43,7 @@ def _(elem1, elem2):
 
 
 @lru_cache(maxsize=100)
-def _prime_factorize(n: int, max_trials=1000) -> list[int] | None:
+def _prime_factorize(n: int, max_trials=1000, z_sqrt_two: bool = True) -> list[int] | None:
     r"""Computes the prime factorization of a number :math:`n`.
 
     This function uses a combination of the Brent's variant of Pollard's rho algorithm for integer factorization
@@ -57,6 +57,10 @@ def _prime_factorize(n: int, max_trials=1000) -> list[int] | None:
     Args:
         n (int): The number to factor.
         max_tries (int): The maximum number of attempts to find a factor.
+        z_sqrt_two (bool): When ``True``, the function will only return the factorization
+            iff it can be expressed in :math:`\mathbb{Z}[\sqrt{2}]`. Therefore, if a prime
+            factor :math:`p ≡ 7 mod 8` is encountered, the function will return ``None``.
+            When ``False``, the function will return all factors. Default is ``True``.
 
     Returns:
         list[int] | None: A list of prime factors of :math:`n`, or ``None`` if no valid factors are found.
@@ -69,11 +73,11 @@ def _prime_factorize(n: int, max_trials=1000) -> list[int] | None:
             continue
         # Cannot split in Z[√2], if p ≡ 7 mod 8.
         if _primality_test(p):
-            if p % 8 == 7:
+            if z_sqrt_two and p % 8 == 7:
                 return None
             factors.append(p)
             continue
-        if (factor := _integer_factorize(p, max_trials)) == 7:
+        if z_sqrt_two and (factor := _integer_factorize(p, max_trials)) % 8 == 7:
             return None
         # If we have found an integer factor,
         # push it and its complement onto the stack
