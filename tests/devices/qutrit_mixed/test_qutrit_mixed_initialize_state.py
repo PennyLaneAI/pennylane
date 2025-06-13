@@ -16,10 +16,12 @@
 import pytest
 
 import pennylane as qp
-from pennylane import QutritBasisState
+from pennylane import QutritBasisState, QutritDensityMatrix
 from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
+
+ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
 
 
 class TestInitializeState:
@@ -33,17 +35,17 @@ class TestInitializeState:
             return self.parameters[0]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
         expected = np.zeros((3, 3, 3, 3))
         expected[0, 0, 0, 0] = 1
-        assert qp.math.allequal(state, expected)
-        assert qp.math.get_interface(state) == interface
+        assert math.allequal(state, expected)
+        assert math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         prep_op = self.DefaultPrep(
@@ -52,6 +54,7 @@ class TestInitializeState:
         state = create_initial_state([0, 1], prep_operation=prep_op)
         expected = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
 
+        assert math.allequal(state, expected)
         assert qp.math.allequal(state, expected)
         if interface == "autograd":
             assert qp.math.get_interface(state) == "numpy"
