@@ -37,13 +37,13 @@ features that will help get your existing tape-based code working with program c
 Device compatibility
 --------------------
 
-Currently, ``default.qubit`` and ``lightning.qubit`` are the only devices compatible 
-with program capture.
+Currently, ``default.qubit``, ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` are the only 
+devices compatible with program capture.
 
 Device wires 
 ~~~~~~~~~~~~
 
-With program capture enabled, both ``lightning.qubit`` and ``default.qubit`` require 
+With program capture enabled, for all supported devices it is required 
 that ``wires`` be specified at device instantiation (this is in contrast to when 
 program capture is disabled, where automatic qubit management takes place internally
 with ``default.qubit``).
@@ -99,9 +99,9 @@ Array([0.99875027+0.j        , 0.        +0.j        ,
 Gradients
 ---------
 
-Currently the devices ``default.qubit`` and ``lightning.qubit`` are the only devices
-that support gradients with program capture enabled. ``default.qubit`` currently supports
-``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit`` currently only supports 
+Currently the devices ``default.qubit``, ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` 
+are the only devices that support gradients with program capture enabled. ``default.qubit`` currently 
+supports ``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit`` currently only supports 
 ``adjoint``. The ``parameter_shift`` method is not yet supported with program capture enabled, 
 and will raise an error if used. 
 
@@ -178,8 +178,8 @@ when using ``"adjoint"`` with ``default.qubit``. For example, the following code
 >>> jax.jacobian(f)(x)
 NotImplementedError: Primitive ctrl_transform does not have a jvp rule and is not supported.
 
-Gradients with lightning.qubit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Gradients with lightning devices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When executing a QNode on ``lightning.qubit`` with capture enabled, calculating 
 the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert 
@@ -192,6 +192,8 @@ of the QNode's arguments are trainable, which can lead to a host of unique error
 For instance, calculating the jacobian of this circuit with ``lightning.qubit`` 
 raises an error due to a discrepancy in the ordering of the positional arguments 
 when tape conversion happens.
+
+The same is true of the ``lightning.kokkos`` and ``lightning.gpu`` devices.
 
 .. code-block:: python 
 
