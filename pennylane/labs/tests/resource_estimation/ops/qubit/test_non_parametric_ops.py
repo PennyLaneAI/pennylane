@@ -145,9 +145,6 @@ class TestSWAP:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = plre.ResourceSWAP([0, 1])
-        #        op2 = plre.ResourceControlled(
-        #            op, control_wires=ctrl_wires, control_values=ctrl_values, work_wires=work_wires
-        #        )
 
         assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
 
