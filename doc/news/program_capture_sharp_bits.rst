@@ -43,7 +43,7 @@ devices compatible with program capture.
 Device wires 
 ~~~~~~~~~~~~
 
-With program capture enabled, for all supported devices it is required 
+With program capture enabled, all currently supported devices require 
 that ``wires`` be specified at device instantiation (this is in contrast to when 
 program capture is disabled, where automatic qubit management takes place internally
 with ``default.qubit``).
