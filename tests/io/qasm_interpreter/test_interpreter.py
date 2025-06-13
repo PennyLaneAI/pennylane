@@ -863,7 +863,7 @@ class TestGates:
             CNOT(wires=["q0", "q1"]),
             CNOT(wires=["q0", "q1"]),
             RX(0.7853975, wires=["q1"]),
-            PauliX("q0")
+            PauliX("q0"),
         ]
 
     def test_nested_modifiers(self):
