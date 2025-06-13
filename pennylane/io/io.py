@@ -848,8 +848,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
-        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Built-in mathematical functions and
-        constants, as well as pulses are not yet supported. The remaining standard library gates,
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Built-in mathematical functions
+        as well as pulses are not yet supported. The remaining standard library gates, constants,
         subroutines, variables, control flow, measurements, inputs, outputs, custom gates and ``end`` statements
         are all supported.
 
