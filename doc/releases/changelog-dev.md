@@ -217,7 +217,7 @@
   }
 
   cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
   ```
 
@@ -227,15 +227,15 @@
   ```python
   op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
   cbloq = op_wrapped_as_bloq.decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
 
   # We can also leverage Qualtran to get resource counts and call graphs, among other things
   from qualtran.drawing import show_call_graph, show_counts_sigma  
 
-  wrapped_graph, wrapped_sigma = qml.to_bloq(op, map_ops=True).call_graph()
-  show_call_graph(wrapped_graph)
-  show_counts_sigma(wrapped_sigma)
+  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(graph)
+  show_counts_sigma(sigma)
   ```
 
 
