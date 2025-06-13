@@ -15,54 +15,10 @@
 This module contains the commands for allocating and freeing wires dynamically.
 """
 import uuid
-from functools import lru_cache
 from typing import Optional, Sequence
 
-try:
-    import jax
-except ImportError:
-    jax = None
-
-from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import Wires
-
-
-@lru_cache()
-def _get_allocate_prim():
-    allocate_prim = jax.extend.core.Primitive("allocate")
-    allocate_prim.multiple_results = True
-
-    # pylint: disable=unused-argument
-    @allocate_prim.def_impl
-    def _(*, num_wires, require_zeros=True):
-        raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
-
-    # pylint: disable=unused-argument
-    @allocate_prim.def_abstract_eval
-    def _(*, num_wires, require_zeros=True):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
-
-    return allocate_prim
-
-
-@lru_cache
-def _get_deallocate_prim():
-
-    deallocate_prim = jax.extend.core.Primitive("deallocate")
-    deallocate_prim.multiple_results = True
-
-    # pylint: disable=unused-argument
-    @deallocate_prim.def_impl
-    def _(*wires, reset_to_original=False):
-        raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
-
-    # pylint: disable=unused-argument
-    @deallocate_prim.def_abstract_eval
-    def _(*wires, reset_to_original=False):
-        return []
-
-    return deallocate_prim
 
 
 class DynamicWire:
@@ -76,10 +32,7 @@ class DynamicWire:
     """
 
     def __init__(self, key: Optional[uuid.UUID] = None):
-        if key:
-            self.key = key
-        else:
-            self.key = uuid.uuid4()
+        self.key = key or uuid.uuid4()
 
     def __eq__(self, other):
         if not isinstance(other, DynamicWire):
@@ -108,9 +61,7 @@ class Allocate(Operator):
 
     def __init__(self, wires, require_zeros=True):
         super().__init__(wires=wires)
-        self._hyperparameters = {
-            "require_zeros": require_zeros,
-        }
+        self._hyperparameters = {"require_zeros": require_zeros}
 
     @property
     def require_zeros(self):
@@ -160,7 +111,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
     Returns:
         Wires: A wires object containing ``DynamicWire`` objects.
 
-    .. see-also:: :class:`~.safe_allocate`
+    .. seealso:: :class:`~.safe_allocate`
 
     :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
     Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
@@ -171,12 +122,12 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
         def c():
             qml.H(0)
 
-            wires = qml.allocation.(1, require_zeros=True)
+            wires = qml.allocation.allocate(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
             qml.allocation.deallocate(wires, reset_to_original=True)
 
-            new_wires = qml.allocation.(1)
+            new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
             qml.allocation.deallocate(new_wires)
 
@@ -186,7 +137,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
 
     >>> print(qml.draw(c, level="user")())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+    0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
     >>> print(qml.draw(c, level="device")())
@@ -201,8 +152,6 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
 
     """
-    if capture_enabled():
-        return _get_allocate_prim().bind(num_wires=num_wires, require_zeros=require_zeros)
     op = Allocate.from_num_wires(num_wires, require_zeros=require_zeros)
     return op.wires
 
@@ -214,7 +163,7 @@ def deallocate(
 
     .. warning::
 
-        This feature is experimental and may not be possible on all devices.
+        This feature is experimental and may not be available on all devices.
 
 
     Args:
@@ -224,7 +173,7 @@ def deallocate(
         reset_to_original (bool): Whether or not the qubits will be reset to their original state upon deallocation.
 
 
-    .. see-also:: :class:`~.safe_allocate`
+    .. seealso:: :class:`~.safe_allocate`
 
     :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
     Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
@@ -235,12 +184,12 @@ def deallocate(
         def c():
             qml.H(0)
 
-            wires = qml.allocation.(1, require_zeros=True)
+            wires = qml.allocation.allocate(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
             qml.allocation.deallocate(wires, reset_to_original=True)
 
-            new_wires = qml.allocation.(1)
+            new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
             qml.allocation.deallocate(new_wires)
 
@@ -250,7 +199,7 @@ def deallocate(
 
 
     >>> print(qml.draw(c, level="user")())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+    0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
     >>> print(qml.draw(c, level="device")())
@@ -264,13 +213,9 @@ def deallocate(
     gate as well.
 
     """
-    if capture_enabled():
-        if not isinstance(wires, Sequence):
-            wires = (wires,)
-        return _get_deallocate_prim().bind(*wires, reset_to_original=reset_to_original)
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
-        raise ValueError(f"deallocate can only accept DynamicWire wires. Got {not_dynamic_wires}")
+        raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
     return Deallocate(wires, reset_to_original=reset_to_original)
 
 
@@ -279,7 +224,7 @@ class safe_allocate:
 
     .. warning::
 
-        This feature is experimental and may not be possible on all devices.
+        This feature is experimental and may not be available on all devices.
 
     Args:
         num_wires (int): the number of dynamic wires to allocate.
