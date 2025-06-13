@@ -16,6 +16,7 @@ docutils==0.20
 sphinx==8.1
 sphinx-automodapi==0.19
 sphinx-copybutton
+sphinx-autodoc-typehints
 sphinxcontrib-bibtex==2.4.2
 sphinxcontrib-applehelp==2.0.0
 sphinxcontrib-devhelp==2.0.0
