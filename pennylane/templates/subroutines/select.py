@@ -15,13 +15,21 @@
 Contains the Select template.
 """
 
+from __future__ import annotations
 
 import copy
 import itertools
+from collections import defaultdict
+from typing import TYPE_CHECKING, Sequence
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops.op_math import adjoint, prod
+
+if TYPE_CHECKING:
+    from pennylane.decomposition import CompressedResourceOp
+    from pennylane.operation import Operator
 
 
 class Select(Operation):
@@ -228,3 +236,66 @@ class Select(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _is_sub_bitstring(a: int, b: int) -> bool:
+    """Check whether the bit string of ``a`` is a "sub-bit string" of the bit string of ``b``,
+    i.e. whether ``a`` can be turned into ``b`` exclusively by flipping OFF bits."""
+    a_bits = bin(a)
+    b_bits = bin(b)
+    if len(b_bits) < len(a_bits):
+        return False
+    for _a, _b in zip(a_bits[::-1], b_bits[::-1], strict=False):
+        if _a == "1" and _b == "0":
+            return False
+    return True
+
+
+def _ops_to_lazy_ops(ops: Sequence[Operator]) -> Sequence[Operator]:
+    """Transform operators ``ops`` applied by a standard Select template into
+    the operators applied by a lazy-Select template."""
+    new_ops = []
+    for i, op in enumerate(ops):
+        adjoin_ops = [_op for j, _op in enumerate(new_ops) if _is_sub_bitstring(j, i)]
+        new_ops.append(qml.simplify(op @ prod(*(adjoint(_op) for _op in adjoin_ops))))
+    return new_ops
+
+
+def _op_reps_to_lazy_op_reps(
+    op_reps: Sequence[CompressedResourceOp],
+) -> Sequence[CompressedResourceOp]:
+    """Transform operators ``ops`` applied by a standard Select template into
+    the operators applied by a lazy-Select template."""
+    # to do: Translate the function _ops_to_lazy_ops to the level of operator resource reps
+    return op_reps  # This is wrong
+
+
+def _lazy_target(target_rep, num_control_wires, state):
+    return qml.decomposition.controlled_resource_rep(
+        base_class=target_rep.op_type,
+        base_params=target_rep.params,
+        num_control_wires=sum(state),
+        num_work_wires=num_control_wires - sum(state),
+        num_zero_control_values=0,
+    )
+
+
+def _lazy_select_resources(op_reps, num_control_wires):
+    state_iterator = itertools.product([0, 1], repeat=num_control_wires)
+    lazy_op_reps = _op_reps_to_lazy_op_reps(op_reps)
+    resources = defaultdict(int)
+    for rep, state in zip(lazy_op_reps, state_iterator):
+        resources[_lazy_target(rep, num_control_wires, state)] += 1
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_lazy_select_resources)
+def _lazy_select_decomp(*_, wires=None, ops, control, target_wires=None):
+    lazy_ops = _ops_to_lazy_ops(ops)
+    state_iterator = itertools.product([0, 1], repeat=len(control))
+    for state, op in zip(state_iterator, lazy_ops):
+        qml.ctrl(op, [c for s, c in zip(state, control) if s])
+
+
+qml.add_decomps(Select, _lazy_select_decomp)
