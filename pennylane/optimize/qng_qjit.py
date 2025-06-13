@@ -16,6 +16,7 @@
 from pennylane import math
 from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
+from pennylane.workflow import QNode
 
 has_catalyst = True
 try:
@@ -76,6 +77,10 @@ class QNGOptimizerQJIT:
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         # pylint: disable=not-callable
+        if not isinstance(qnode, QNode):
+            raise ValueError(
+                "The objective function must be encoded as a single QNode to use the Quantum Natural Gradient optimizer."
+            )
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
         # reshape tensor into a matrix (acting on the flat grad vector)
         shape = math.shape(mt)
