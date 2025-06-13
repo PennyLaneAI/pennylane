@@ -923,14 +923,9 @@ class ResourceMultiControlledX(ResourceOperator):
     r"""Resource class for the MultiControlledX gate.
 
     Args:
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire (the last entry of ``wires``) where
-            the operation acts on
-        control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
-            should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-
-    Resource Parameters:
-        * num_ctrl_wires (int): the number of qubits the operation is controlled on
-        * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+        num_ctrl_wires (int): the number of qubits the operation is controlled on
+        num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+        wires (Sequence[int], optional): the wires this operation acts on
 
     Resources:
         The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
