@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Dict, Sequence
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
@@ -31,7 +31,7 @@ class ProductFormula:
     :math:`\alpha_k \in \mathbb{R}`.
 
     Args:
-        terms (Union[Sequence[Hashable], Sequence[``ProductFormula``]]): Either a list of labels for the
+        terms (Sequence[Hashable] | Sequence[``ProductFormula``]): Either a list of labels for the
             Hermitian operators or a list of ``ProductFormula`` objcts. When a list of labels is given,
             the product formula returned is the product of exponentials of the lables. When a list of product
             formulas is given the product formula returned is the product of the given product formulas.
@@ -46,7 +46,7 @@ class ProductFormula:
     Troter-Suzuki formula on three fragments. First we build the second order formula.
 
     >>> from pennylane.labs.trotter_error import ProductFormula
-
+    >>>
     >>> frag_labels = ["A", "B", "C", "B", "A"]
     >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
     >>> second_order = ProductFormula(frag_labels, frag_coeffs)
@@ -55,14 +55,14 @@ class ProductFormula:
 
     >>> u = 1 / (4 - 4**(1/3))
     >>> v = 1 - 4*u
-
+    >>>
     >>> fourth_order = second_order(u)**2 @ second_order(v) @ second_order(u)**2
 
     """
 
     def __init__(
         self,
-        terms: Union[Sequence[Hashable], Sequence[ProductFormula]],
+        terms: Sequence[Hashable] | Sequence[ProductFormula],
         coeffs: Sequence[float] = None,
         exponent: float = 1.0,
         label: str = None,

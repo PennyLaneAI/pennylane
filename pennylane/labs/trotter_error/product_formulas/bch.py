@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Hashable
+from functools import cache
 from itertools import permutations, product
 from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
 
@@ -40,7 +41,7 @@ def bch_expansion(
 
     **Example**
 
-    In this example we compute the BCH expansion of the second order Trotter-Suzuki formula. The output is a list of dictionaries. Each dictionary is indexed by
+    In this example we compute the BCH expansion of the second order Trotter-Suzuki formula. The output is a list of dictionaries where each dictionary is indexed by
     a tuple representing a right-nested commutator. For example, ``('A', 'A', 'B')`` represents the commutator :math:`[A, [A, B]]`.
 
     >>> from pprint import pp
@@ -48,7 +49,7 @@ def bch_expansion(
     >>> frag_labels = ["A", "B", "C", "B", "A"]
     >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
     >>> second_order = ProductFormula(frag_labels, frag_coeffs)
-    >>> pprint(bch_expansion(second_order, order=3))
+    >>> pp(bch_expansion(second_order, order=3))
     [defaultdict(<class 'complex'>,
                  {('A',): (1+0j),
                   ('B',): (1+0j),
@@ -69,9 +70,23 @@ def bch_expansion(
 
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
-) -> Dict[Tuple[Hashable], complex]:
+) -> List[Dict[Tuple[Hashable], complex]]:
     # pylint: disable=protected-access
-    """Recursively applies BCH to the product formula."""
+    """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
+    hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
+    and the ProductFormula objects are the recursive case.
+
+     Base case:
+         Directly compute BCH on the fragment labels and return the result
+
+     Recursive case:
+         1. Compute BCH on the ProductFormula objects as if they were the labels for fragments.
+         2. Call _bch_expansion recursively on each ProductFormula object
+         5. Merge the results in the following way:
+             If (PF1, PF2) is a commutator obtained from step 1, substitute the labels PF1 and PF2
+             with the commutators returned by calling _bch_expansion on PF1 and PF2
+         4. Simplify the commutators and return
+    """
 
     bch = _bch(
         product_formula.terms,
@@ -105,7 +120,15 @@ def _bch(
     coeffs: Sequence[complex],
     term_order: Dict[Hashable, int],
     order: int,
-):
+) -> List[Dict[Tuple[Hashable], complex]]:
+    """Computes BCH on a list of labels by recursively applying BCH to the head and tail of the list.
+    For a list [A, B, C] we compute BCH(A, BCH(B, C)). This is done with the following steps.
+
+    1. Set head = BCH(A) = A
+    2. Set tail = BCH(B, C)
+    3. Compute BCH(head, tail)
+    4. Subtitute A for head, and BCH(B, C) for tail in BCH(head, tail)
+    """
 
     if len(fragments) < 3:
         return _remove_redundancies(
@@ -129,6 +152,7 @@ def _bch(
 
 
 def _apply_exponent(bch, exponent):
+    """Scale the coefficients in the dictionary by the exponent"""
     for i, ith_order_commutators in enumerate(bch):
         for commutator, coeff in ith_order_commutators.items():
             bch[i][commutator] = coeff * exponent
@@ -138,7 +162,7 @@ def _apply_exponent(bch, exponent):
 
 def _kth_order_terms(
     fragments: Sequence[Hashable], coeffs: Sequence[complex], k: int
-) -> Dict[Tuple[int], complex]:
+) -> Dict[Tuple[Hashable], complex]:
     r"""Computes the kth order commutators of the BCH expansion of the product formula.
     See Proposition 1 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
 
@@ -161,9 +185,12 @@ def _kth_order_terms(
 
 
 def _merge_commutators(commutator, terms, order, bch_coeff):
+    """Substitute the labels in a commutator with the BCH expansion of the label, but only include
+    commutators whose order is at most ``order``"""
+
     merged = [defaultdict(complex) for _ in range(order)]
 
-    for x in _commutator_terms(commutator, terms, order):
+    for x in _generate_merged_commutators(commutator, terms, order):
         new_commutator = tuple(y[0] for y in x)
         term_coeff = math.prod(y[1] for y in x) * bch_coeff
         commutator_order = _commutator_order(new_commutator)
@@ -173,7 +200,13 @@ def _merge_commutators(commutator, terms, order, bch_coeff):
     return merged
 
 
-def _commutator_terms(commutator, terms, order):
+def _generate_merged_commutators(commutator, terms, order):
+    r"""Yields the commutators obtained by substituting the commutators in ``terms`` with the labels
+    in ``commutator`` whose order is at most ``order``. The algorithm is based on the identity
+    [\sum_i A_i, [\sum_j B_j, \sum_k C_k]]] = \sum_{i,j,k} [A_k, [B_j, C_k]].
+
+    """
+
     for i in range(order):
         for partition in _partitions_positive(len(commutator), i + 1):
             kept_terms = [
@@ -183,6 +216,7 @@ def _commutator_terms(commutator, terms, order):
 
 
 def _commutator_order(commutator):
+    """Returns the order of the commutator"""
     order = 0
 
     for term in commutator:
@@ -195,6 +229,7 @@ def _commutator_order(commutator):
 
 
 def _add_dicts(d1, d2):
+    """Add two defaultdicts"""
     for key, value in d2.items():
         d1[key] += value
 
@@ -214,7 +249,7 @@ def _partitions_nonnegative(m: int, n: int) -> Generator[Tuple[int]]:
                 yield (i,) + partition
 
 
-def _partitions_positive(m: int, n: int):
+def _partitions_positive(m: int, n: int) -> Generator[Tuple[int]]:
     """Yields tuples of m positive integers that sum to n"""
 
     if m == 1:
@@ -229,7 +264,7 @@ def _partitions_positive(m: int, n: int):
                 yield (i,) + partition
 
 
-def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
+def _phi(fragments: Sequence[Hashable]) -> Dict[Tuple[Hashable], float]:
     """Implements equation 13 from `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
     n = len(fragments)
     terms = defaultdict(complex)
@@ -242,7 +277,7 @@ def _phi(fragments: Sequence[int]) -> Dict[Tuple[int], float]:
     return terms
 
 
-def _n_descents(permutation: Sequence[int]) -> int:
+def _n_descents(permutation: Sequence[Hashable]) -> int:
     """Returns the number of descents in a permutation. For a permutation sigma, a descent in sigma
     is a pair i,i+1 such that sigma(i) > sigma(i+1)."""
     n = 0
@@ -255,9 +290,9 @@ def _n_descents(permutation: Sequence[int]) -> int:
 
 
 def _remove_redundancies(
-    term_dicts: List[Dict[Tuple[int], float]],
+    term_dicts: List[Dict[Tuple[Hashable], float]],
     term_order: Dict[Hashable, int],
-) -> List[Dict[Tuple[int], float]]:
+) -> List[Dict[Tuple[Hashable], float]]:
     """Applies the following identities to the commutators
 
     1. Express the commutator as a linear combination of right-nested commutators
@@ -294,8 +329,8 @@ def _remove_redundancies(
     term_dicts = [_make_right_nested(terms) for terms in term_dicts]
 
     for terms in term_dicts[1:]:
-        _delete(terms)
-        _swap(terms, less_than)
+        _commute_with_self(terms)
+        _antisymmetry(terms, less_than)
 
     if max_order < 4:
         return term_dicts
@@ -306,7 +341,8 @@ def _remove_redundancies(
     return term_dicts
 
 
-def _swap(terms, less_than):
+def _antisymmetry(terms, less_than):
+    """Apply the identity [A, B] = -[B, A]"""
     swap = []
     for commutator in terms.keys():
         if less_than(commutator[-1], commutator[-2]):
@@ -322,7 +358,8 @@ def _swap(terms, less_than):
         del terms[commutator]
 
 
-def _delete(terms):
+def _commute_with_self(terms):
+    """Apply the identity [A, A] = 0"""
     delete = []
     for commutator in terms.keys():
         if commutator[-1] == commutator[-2]:
@@ -333,6 +370,7 @@ def _delete(terms):
 
 
 def _fourth_order_simplification(terms):
+    """Apply the identity [A, B, B, A] = [A, B, A, B]"""
     swap = []
     for commutator in terms.keys():
         if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
@@ -349,6 +387,7 @@ def _fourth_order_simplification(terms):
 
 
 def _make_right_nested(terms):
+    """Transforms the commutators into linear combinations of right-nested commutators"""
     ret = defaultdict(complex)
 
     for commutator1, coeff1 in terms.items():
@@ -358,8 +397,15 @@ def _make_right_nested(terms):
     return ret
 
 
-def _right_nested(commutator) -> Dict[Tuple, float]:
-    """Express the commutator as a linear combation of right-nested commutators"""
+@cache
+def _right_nested(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
+    """Express the commutator as a linear combation of right-nested commutators.
+
+    Find the i such that commutaor[i] is a tuple representing a commutator, and commutator[j] is a hashable
+    label for each j > i. Then the commutator has the form [..., [[X_1,...,X_n], [Y_1,...,Y_m]]]
+    and the commutator of nested commutators [[X_1,...,X_n], [Y_1,...,Y_m]] is transformed into a linear
+    combination of right-nested commutators by calling _right_nest_two_comms. Repeat the process recursively.
+    """
     if isinstance(commutator[-1], tuple):
         commutator = commutator[:-1] + commutator[-1]
 
@@ -377,9 +423,9 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
         if isinstance(commutator[i], tuple):
             break
 
-    coc = (commutator[i], commutator[i + 1 :])
+    two_comms = (commutator[i], commutator[i + 1 :])
     partially_nested = {
-        commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(coc).items()
+        commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(two_comms).items()
     }
 
     ret = defaultdict(complex)
@@ -391,9 +437,13 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
     return ret
 
 
-def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
-    """Assume commutator is the commutator of two right-nested commutators
-    Apply the Jacobi identity [A, [B, C]] = [C, [B, A]] - [B, [C, A]]
+@cache
+def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
+    """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
+    linear combination of right-nested commutators [Z_1, ..., Z_{n+m}].
+
+    Set A = [X_1, ..., X_n], B = Y_1, and C = [Y_2, ..., Y_m] and apply the Jacobi identity [A, B, C] = [B, A, C] - [C, A, B]
+    to obtain [Y_1, [[X_1, ..., X_n], [Y_2, ..., Y_m]] - [[Y_1, X_1, ..., X_n], [Y_2, ..., Y_m]] and recurse on both commutators.
     """
 
     if len(commutator[0]) == 0:
@@ -412,7 +462,7 @@ def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     b = commutator[1][0]
     c = commutator[1][1:]
 
-    comm_bca = {(b,) + comm: -coeff for comm, coeff in _right_nest_two_comms((c, a)).items()}
+    comm_bca = {(b,) + comm: coeff for comm, coeff in _right_nest_two_comms((a, c)).items()}
     comm_cab = {comm: -coeff for comm, coeff in _right_nest_two_comms(((b,) + a, c)).items()}
 
     commutators = defaultdict(int)
@@ -426,7 +476,9 @@ def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     return commutators
 
 
-def _drop_zeros(term_dicts: List[Dict[Tuple[int], float]]) -> List[Dict[Tuple[int], float]]:
+def _drop_zeros(
+    term_dicts: List[Dict[Tuple[Hashable], float]],
+) -> List[Dict[Tuple[Hashable], float]]:
     """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:
         delete = []
