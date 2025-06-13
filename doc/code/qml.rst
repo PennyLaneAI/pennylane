@@ -5,4 +5,3 @@ qml
 
 .. automodapi:: pennylane
     :include-all-objects:
-    :skip: H
