@@ -38,6 +38,7 @@ from pennylane.decomposition import (
     list_decomps,
     resource_rep,
 )
+from .allocation import allocate, allocate_ctx, deallocate
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
