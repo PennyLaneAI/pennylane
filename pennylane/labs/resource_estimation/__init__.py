@@ -35,7 +35,10 @@ Resource Estimation Base Classes:
     ~GateCount
 
 Resource Estimation Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+WARNING: Failed to import pennylane.labs.
+Possible hints:
+* ImportError: cannot import name 'ResourceOperator' from partially initialized module 'pennylane.labs.resource_estimation' (most likely due to a circular import) (/Users/diksha.dhawan/Documents/resource_estimation/pennylane_review/pennylane/labs/resource_estimation/__init__.py)
+* AttributeError: module 'pennylane' has no attribute 'labs'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -71,6 +74,11 @@ Operators:
     ~ResourceX
     ~ResourceY
     ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
 
 """
 
@@ -78,16 +86,16 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
     ResourceS,
     ResourceT,
     ResourceX,
     ResourceY,
     ResourceZ,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceRot,
-    ResourcePhaseShift,
 )
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resource_mapping import map_to_resource_op
