@@ -275,7 +275,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), basis_length=10):
+def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
@@ -294,7 +294,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             a greater number of passes. Default is ``5``.
         basis_set (tuple[str]): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``('X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*')``, where ``*`` refers
-            to the gate adjoint. Default value is ``('T', 'T*', 'H')``.
+            to the gate adjoint. Default value is ``('H', 'S', 'T')``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
@@ -316,7 +316,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
         op  = qml.RZ(np.pi/3, wires=0)
 
-        # Get the gate decomposition in ['T', 'T*', 'H']
+        # Get the gate decomposition in ['H', 'S', 'T']
         ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
@@ -408,11 +408,18 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         )
 
     # Map the wires to that of the operation and queue
-    [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
+    if queuing := QueuingManager.recording():
+        QueuingManager.remove(op)
+
+    if (op_wire := op.wires[0]) != 0:
+        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+    else:
+        if queuing:
+            _ = [qml.apply(op) for op in new_tape.operations]
 
     # Get phase information based on the decomposition effort
     phase = approx_set_gph[index] - gate_gph
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
-    return map_tape.operations + [global_phase]
+    return new_tape.operations + [global_phase]

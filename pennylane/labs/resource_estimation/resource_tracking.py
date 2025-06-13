@@ -18,13 +18,13 @@ from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
-from pennylane.labs.resource_estimation.qubit_manager import (AllocWires,
-                                                              FreeWires,
-                                                              QubitManager)
-from pennylane.labs.resource_estimation.resource_mapping import \
-    map_to_resource_op
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
+from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
 from pennylane.labs.resource_estimation.resource_operator import (
-    CompressedResourceOp, GateCount, ResourceOperator)
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
 from pennylane.labs.resource_estimation.resources_base import Resources
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue, QueuingManager
