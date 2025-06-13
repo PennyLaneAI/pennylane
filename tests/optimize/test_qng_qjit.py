@@ -32,31 +32,31 @@ def circuit(params):
 
 
 class TestBasics:
-    """Test basic properties of the QNGOptimizerJax."""
+    """Test basic properties of the QNGOptimizerQJIT."""
 
     def test_initialization_default(self):
-        """Test that initializing QNGOptimizerJax with default values works."""
-        opt = qml.QNGOptimizerJax()
+        """Test that initializing QNGOptimizerQJIT with default values works."""
+        opt = qml.QNGOptimizerQJIT()
         assert opt.stepsize == 0.01
         assert opt.approx == "block-diag"
         assert opt.lam == 0
 
     def test_initialization_custom(self):
-        """Test that initializing QNGOptimizerJax with custom values works."""
-        opt = qml.QNGOptimizerJax(stepsize=0.05, approx="diag", lam=1e-9)
+        """Test that initializing QNGOptimizerQJIT with custom values works."""
+        opt = qml.QNGOptimizerQJIT(stepsize=0.05, approx="diag", lam=1e-9)
         assert opt.stepsize == 0.05
         assert opt.approx == "diag"
         assert opt.lam == 1e-9
 
     def test_init_none_state(self):
-        """Test that the QNGOptimizerJax state is initialized to `None`."""
-        opt = qml.QNGOptimizerJax()
+        """Test that the QNGOptimizerQJIT state is initialized to `None`."""
+        opt = qml.QNGOptimizerQJIT()
         state = opt.init([0.1, 0.2])
         assert state is None
 
 
 class TestGradients:
-    """Test gradient computation in the QNGOptimizerJax."""
+    """Test gradient computation in the QNGOptimizerQJIT."""
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
@@ -68,7 +68,7 @@ class TestGradients:
         device = qml.device(dev_name, wires=2)
         qml_qnode = qml.QNode(circuit, device=device)
 
-        opt = qml.QNGOptimizerJax()
+        opt = qml.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
         params_qml = qml.numpy.array(params)
@@ -89,7 +89,7 @@ class TestGradients:
         device = qml.device(dev_name, wires=2)
         qml_qnode = qml.QNode(circuit, device=device)
 
-        opt = qml.QNGOptimizerJax()
+        opt = qml.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
         params_qml = qml.numpy.array(params)
@@ -123,7 +123,7 @@ class TestApproxMetricTensor:
         eta = 0.7
         params = jnp.array([0.11, 0.412])
 
-        opt = qml.QNGOptimizerJax(approx=None)
+        opt = qml.QNGOptimizerQJIT(approx=None)
         mt = opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
@@ -152,10 +152,10 @@ class TestApproxMetricTensor:
         eta = 0.7
         params = jnp.array([0.11, 0.412])
 
-        blockdiag_opt = qml.QNGOptimizerJax(approx="block-diag")
+        blockdiag_opt = qml.QNGOptimizerQJIT(approx="block-diag")
         blockdiag_mt = blockdiag_opt._get_metric_tensor(circ, params)
 
-        diag_opt = qml.QNGOptimizerJax(approx="diag")
+        diag_opt = qml.QNGOptimizerQJIT(approx="diag")
         diag_mt = diag_opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation

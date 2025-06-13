@@ -30,7 +30,7 @@ except ImportError:
     has_jax = False
 
 
-class QNGOptimizerJax:
+class QNGOptimizerQJIT:
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
         self.stepsize = stepsize
