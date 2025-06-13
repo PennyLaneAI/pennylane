@@ -55,7 +55,7 @@ class Allocate(Operator):
     Keyword Args:
         require_zeros (bool): Whether or not the wire must start in a ``0`` state.
 
-    ..see-also:: :func:`~.allocate`, :func:`~.allocate_ctx`.
+    ..see-also:: :func:`~.allocate`, :func:`~.safe_allocate`.
 
     """
 
@@ -111,9 +111,9 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
     Returns:
         Wires: A wires object containing ``DynamicWire`` objects.
 
-    .. seealso:: :class:`~.allocate_ctx`
+    .. seealso:: :class:`~.safe_allocate`
 
-    :class:`~.allocate_ctx` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
+    :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
     Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
 
     ..code-block:: python
@@ -173,9 +173,9 @@ def deallocate(
         reset_to_original (bool): Whether or not the qubits will be reset to their original state upon deallocation.
 
 
-    .. seealso:: :class:`~.allocate_ctx`
+    .. seealso:: :class:`~.safe_allocate`
 
-    :class:`~.allocate_ctx` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
+    :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
     Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
 
     ..code-block:: python
@@ -219,7 +219,7 @@ def deallocate(
     return Deallocate(wires, reset_to_original=reset_to_original)
 
 
-class allocate_ctx:
+class safe_allocate:
     """Temporarily allocate dynamic wires while making sure to automatically deallocate them at the end.
 
     .. warning::
@@ -237,9 +237,9 @@ class allocate_ctx:
 
         @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
-            with qml.allocation.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.safe_allocate(2, require_zeros=True, reset_to_original=False) as wires:
                 qml.CNOT(wires)
-            with qml.allocation.allocate_ctx(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.safe_allocate(2, require_zeros=True, reset_to_original=False) as wires:
                 qml.IsingXX(0.5, wires)
             return qml.probs()
 
