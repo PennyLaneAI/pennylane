@@ -134,7 +134,7 @@ class ResourceGlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        wires (Iterable[Any], optional): the wires the operator acts on
 
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
