@@ -416,7 +416,7 @@ class ResourceY(ResourceOperator):
     r"""Resource class for the Y-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The Y-gate can be decomposed according to the following identities:
