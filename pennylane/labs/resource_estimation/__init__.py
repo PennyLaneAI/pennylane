@@ -57,8 +57,8 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
-Operators
-~~~~~~~~~
+Operators:
+~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -74,14 +74,28 @@ Operators
 
 """
 
-from .ops import (ResourceGlobalPhase, ResourceHadamard, ResourceIdentity,
-                  ResourceS, ResourceT, ResourceX, ResourceY, ResourceZ)
+from .ops import (
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourceS,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resource_mapping import map_to_resource_op
-from .resource_operator import (CompressedResourceOp, GateCount,
-                                ResourceOperator, ResourcesNotDefined,
-                                resource_rep, set_adj_decomp, set_ctrl_decomp,
-                                set_decomp, set_pow_decomp)
-from .resource_tracking import (DefaultGateSet, StandardGateSet,
-                                estimate_resources, resource_config)
+from .resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+)
+from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
 from .resources_base import Resources
