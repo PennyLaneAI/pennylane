@@ -4,7 +4,7 @@ qml.allocation
 Overview
 --------
 
-This module contains functions and allocating and deallocating dynamic wires.
+This module contains functions for allocating and deallocating dynamic wires.
 
 .. warning::
 

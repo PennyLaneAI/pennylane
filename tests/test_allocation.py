@@ -119,6 +119,7 @@ def test_allocate_function():
 
     assert len(q) == 1
     op = q.queue[0]
+    assert isinstance(op, Allocate)
     assert op.wires == wires
     assert op.require_zeros
 
@@ -144,10 +145,11 @@ class TestDeallocate:
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
+        assert isinstance(op, Deallocate)
 
     def test_error_non_dynamic_wire(self):
         """Test that an error is raised if a non-dynamic wire is attempted to be deallocated."""
-        with pytest.raises(ValueError, match="only accept DynamicWire wires."):
+        with pytest.raises(ValueError, match="only accepts DynamicWire wires."):
             deallocate((DynamicWire, 1))
 
     def test_multiple_dynamic_wires(self):
@@ -160,6 +162,7 @@ class TestDeallocate:
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
+        assert isinstance(op, Deallocate)
 
     def test_reset_to_original(self):
         """Test that reset_to_original is passed to the operator."""
