@@ -677,7 +677,9 @@ class QasmInterpreter:
 
         context.require_wires(wires)
 
-        resolved_wires = list(map(lambda wire: context.wire_map[wire] if wire in context.wire_map else wire, wires))
+        resolved_wires = list(
+            map(lambda wire: context.wire_map[wire] if wire in context.wire_map else wire, wires)
+        )
 
         return gate, args, resolved_wires
 
