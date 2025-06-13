@@ -68,4 +68,4 @@ class CombineGlobalPhasesPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-combine_global_phases_pass = xdsl_transform(CombineGlobalPhasesPattern)
+combine_global_phases_pass = xdsl_transform(CombineGlobalPhasesPass)
