@@ -872,12 +872,14 @@ class ResourceToffoli(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
+        elbow=None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            elbow (Union[str, None]): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
 
         Resources:
             The resources are expressed as one general :class:`~.ResourceMultiControlledX` gate.
