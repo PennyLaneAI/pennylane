@@ -41,7 +41,7 @@ class TestFactorization:
             (0, []),
             (100, [2, 2, 5, 5]),
             (60, [2, 2, 3, 5]),
-            (53, [53]),  # 47 is prime
+            (53, [53]),  # 53 is prime
         ],
     )
     def test_prime_factorize(self, num, expected):

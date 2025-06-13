@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -144,12 +144,21 @@ def _integer_factorize(n: int, max_tries=1000) -> int | None:
 def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
     r"""Find the factorization of a prime number :math:`p` in ring :math:`\mathbb{Z}[\sqrt{2}]`.
 
-    This uses congruence of :math:`p \text{mod} 8` and properties of the ring
-    :math:`\mathbb{Z}[\sqrt{2}]` to determine how a prime integer can be expressed
-    as a product of elements in this ring.
+    This uses theory from Appendix C.2 of `arXiv:1403.2975 <https://arxiv.org/abs/1403.2975>`_,
+    which includes the following results:
+
+        - Lemma C.7: Prime factorization of an integer prime :math:`p` in
+          :math:`\mathbb{Z}[\sqrt{2}]` consists of one or two factors.
+        - Lemma C.8: Prime factorization of :math:`\pm 2 = (0 + 1\sqrt{2})(0 \pm 1\sqrt{2})`
+          in :math:`\mathbb{Z}[\sqrt{2}]`.
+        - Lemma C.9: Prime factorization of :math:`p \equiv 3 \mod 8` and :math:`p \equiv 5 \mod 8`
+          is inert in :math:`\mathbb{Z}[\sqrt{2}]`.
+        - Lemma C.11: Prime factorization of :math:`p \equiv 1 \mod 8` and :math:`p \equiv 7 \mod 8`
+          is distinct split in :math:`\mathbb{Z}[\sqrt{2}]`.
 
     Args:
         n (int): The prime number for which to find the factorization.
+
     Returns:
         list[ZSqrtTwo]: A list of factors in the ring :math:`\mathbb{Z}[\sqrt{2}]`,
             or `None` if no factorization exists.
@@ -178,6 +187,18 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
     r"""Find a prime factor of an element :math:`x` in the ring :math:`\mathbb{Z}[\omega]`,
     where :math:`x` divides a prime integer :math:`p`.
 
+    This function uses theory from Appendix C.3 of `arXiv:1403.2975 <https://arxiv.org/abs/1403.2975>`_,
+    which includes the following results:
+
+        - Lemma C.13: Prime factorization of a prime :math:`p` in :math:`\mathbb{Z}[\sqrt{2}]`
+          has one or two factors in :math:`\mathbb{Z}[\omega]` consists.
+        - Lemma C.20-21: Prime factorization of a prime :math:`p` in :math:`\mathbb{Z}[\sqrt{2}]`\
+          is can be used as a possible solution to the Diophantine equation :math:`t^* t = \xi`
+          iff :math:`p == 2` or :math:`p \equiv 1, 3, 5 \mod 8`.
+        - Lemma C.20: For the cases, :math:`p \equiv 3 \mod 8` and :math:`p \equiv 1, 5 \mod 8`,
+          quadratic reciprocity in the proof of Lemma C.20 gives :math:`-2` and :math:`-1` as
+          square modulo :math:`p`, which are used for the factorization.
+
     Args:
         x (ZSqrtTwo): The element in the ring :math:`\mathbb{Z}[\sqrt{2}]`, such that x | p.
         p (int): The prime number for which to find the factorization.
@@ -194,13 +215,13 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
     if ((a := p % 8) % 2 == 0) or a == 7:
         return None
 
-    # p = (a + bω)(a - bω) with b = sqrt(-1) mod p
+    # p = 1, 5 mod 8, use h = sqrt(-1) mod p
     if a in (1, 5):
         if (h := _sqrt_modulo_p(-1, p)) is None:
             return None
         return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
 
-    # p = (a + bω)(a - bω) with b = sqrt(-2) mod p
+    # p = 1, 5 mod 8, use h = = sqrt(-2) mod p
     if a == 3:
         if (h := _sqrt_modulo_p(-2, p)) is None:
             return None
