@@ -350,7 +350,7 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 # }
 
 def setup(app):
-    from pennylane import H, X, Z, FromBloq
+    from pennylane import H, X, Z,Y, FromBloq
     from typing import TypeAlias
     # import shutil
     # need to assign the names here, otherwise autodoc won't document these classes,
@@ -362,18 +362,20 @@ def setup(app):
     # H.__name__ = 'H'
     # X.__module__ = __name__
     X.__name__ = 'X'
+    pennylane.PauliX = 'PauliX'
     # Z.__module__ = __name__
     Z.__name__ = 'Z'
+    pennylane.PauliZ.__name__ = 'pennylane.PauliZ'
     # pennylane.Y.__name__ = 'Y'
     # pennylane.H.__module__ = __name__
     # pennylane.FromBloq.__name__ = 'FromBloq'
     # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-    pennylane.Z.__doc__ = "The Pauli Z operator"
+    pennylane.Y.__doc__ = "The Pauli Y operator"
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
     H: TypeAlias = "pennylane.ops.qubit.non_parametric_ops.H"
-    FromBloq.__doc__ = pennylane.FromBloq.__doc__ 
+    FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_"""
     # pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     #         as a PennyLane :class:`~.Operation`.
 
