@@ -417,7 +417,8 @@ class QasmInterpreter:
             else:
                 if evald_arg in context.wire_map:
                     evald_arg = context.wire_map[evald_arg]
-                func_context.wire_map[param] = evald_arg
+                if evald_arg != param:
+                    func_context.wire_map[param] = evald_arg
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
