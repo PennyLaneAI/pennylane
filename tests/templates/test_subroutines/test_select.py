@@ -22,79 +22,123 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.subroutines.select import _partial_select
 
 
-def test_standard_checks():
+@pytest.mark.parametrize("new_option", [True, False])
+def test_standard_checks(new_option):
     """Run standard validity tests."""
-    ops = [qml.PauliX(0), qml.PauliY(0)]
+    ops = [qml.X(0), qml.Y(0)]
     control = [1]
 
-    op = qml.Select(ops, control)
+    op = qml.Select(ops, control, new_option=new_option)
     assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op)
 
 
 def test_repr():
     """Test the repr method."""
-    ops = [qml.PauliX(0), qml.PauliY(0)]
+    ops = [qml.X(0), qml.Y(0)]
     control = [1]
 
     op = qml.Select(ops, control)
     assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]))"
 
 
+@pytest.mark.parametrize(
+    "K, control, expected",
+    [
+        (2, ["a"], [[("a",), (0,)], [("a",), (1,)]]),
+        (2, ["a", 33], [[(33,), (0,)], [(33,), (1,)]]),
+        (3, [7, "aux"], [[(7, "aux"), (0, 0)], [("aux",), (1,)], [(7,), (1,)]]),
+        (
+            11,
+            [0, 1, 2, 3],
+            [
+                [(0, 1, 2, 3), (0, 0, 0, 0)],
+                [(0, 1, 2, 3), (0, 0, 0, 1)],
+                [(0, 1, 2, 3), (0, 0, 1, 0)],
+                [(1, 2, 3), (0, 1, 1)],
+                [(1, 2, 3), (1, 0, 0)],
+                [(1, 2, 3), (1, 0, 1)],
+                [(1, 2, 3), (1, 1, 0)],
+                [(1, 2, 3), (1, 1, 1)],
+                [(0, 2, 3), (1, 0, 0)],
+                [(0, 3), (1, 1)],
+                [(0, 2), (1, 1)],
+            ],
+        ),
+    ],
+)
+def test_partial_select(K, control, expected):
+    """Tests that the _partial_select function produces the correct simplified control
+    structure."""
+    out = _partial_select(K, control)
+    assert out == expected
+
+
 class TestSelect:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "n_wires"),
+        ("ops", "control", "expected_gates", "wires"),
         [
             (
-                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+                [qml.X(0), qml.Y(0)],
                 [1],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
-                    qml.ctrl(qml.PauliY(wires=0), control=1),
+                    qml.ctrl(qml.X(0), control=1, control_values=0),
+                    qml.ctrl(qml.Y(0), control=1),
                 ],
                 2,
             ),
             (
-                [qml.PauliX(wires=0), qml.Identity(wires=0), qml.PauliZ(wires=0)],
+                [qml.X(0), qml.I(0), qml.Z(0)],
                 [1, 2],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.PauliZ(wires=0), control=[1, 2], control_values=[1, 0]),
+                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.Z(0), control=[1, 2], control_values=[1, 0]),
                 ],
                 3,
             ),
             (
                 [
-                    qml.PauliX(wires=0),
-                    qml.Identity(wires=0),
-                    qml.Identity(wires=0),
-                    qml.RX(0.3, wires=0),
+                    qml.X(0),
+                    qml.I(0),
+                    qml.I(0),
+                    qml.RX(0.3, 0),
                 ],
                 [1, 2],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.RX(0.3, wires=0), control=[1, 2], control_values=[1, 1]),
+                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.RX(0.3, 0), control=[1, 2], control_values=[1, 1]),
                 ],
                 3,
             ),
             (
-                [qml.PauliX(wires="a"), qml.RX(0.7, wires="b")],
+                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
                 ["c", 1],
                 [
-                    qml.ctrl(qml.PauliX(wires="a"), control=["c", 1], control_values=[0, 0]),
-                    qml.ctrl(qml.RX(0.7, wires="b"), control=["c", 1], control_values=[0, 1]),
+                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
+                    qml.ctrl(qml.Z("b"), control=["c", 1], control_values=[0, 1]),
+                    qml.ctrl(qml.RX(0.7, "b"), control=["c", 1], control_values=[1, 0]),
+                ],
+                ["a", "b", "c", 1],
+            ),
+            (
+                [qml.X("a"), qml.RX(0.7, "b")],
+                ["c", 1],
+                [
+                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
+                    qml.ctrl(qml.RX(0.7, "b"), control=["c", 1], control_values=[0, 1]),
                 ],
                 ["a", "b", "c", 1],
             ),
         ],
     )
-    def test_operation_result(self, ops, control, expected_gates, n_wires):
+    def test_operation_result(self, ops, control, expected_gates, wires):
         """Test the correctness of the Select template output."""
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
         def circuit1():
@@ -115,15 +159,97 @@ class TestSelect:
         assert np.allclose(circuit1(), circuit2())
 
     @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates"),
+        ("ops", "control", "expected_gates", "wires"),
         [
             (
-                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+                [qml.X(0), qml.Y(0)],
                 [1],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
-                    qml.ctrl(qml.PauliY(wires=0), control=1),
+                    qml.ctrl(qml.X(0), control=1, control_values=0),
+                    qml.ctrl(qml.Y(0), control=1),
                 ],
+                2,
+            ),
+            (
+                [qml.X(0), qml.I(0), qml.Z(0)],
+                [1, 2],
+                [
+                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.Z(0), control=[1], control_values=[1]),
+                ],
+                3,
+            ),
+            (
+                [
+                    qml.X(0),
+                    qml.I(0),
+                    qml.I(0),
+                    qml.RX(0.3, 0),
+                ],
+                [1, 2],
+                [
+                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.RX(0.3, 0), control=[1, 2], control_values=[1, 1]),
+                ],
+                3,
+            ),
+            (
+                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
+                ["c", 1],
+                [
+                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
+                    qml.ctrl(qml.Z("b"), control=["c", 1], control_values=[0, 1]),
+                    qml.ctrl(qml.RX(0.7, "b"), control=["c"], control_values=[1]),
+                ],
+                ["a", "b", "c", 1],
+            ),
+            (
+                [qml.X("a"), qml.RX(0.7, "b")],
+                ["c", 1],
+                [
+                    qml.ctrl(qml.X("a"), control=[1], control_values=[0]),
+                    qml.ctrl(qml.RX(0.7, "b"), control=[1], control_values=[1]),
+                ],
+                ["a", "b", "c", 1],
+            ),
+        ],
+    )
+    def test_operation_result_new_option(self, ops, control, expected_gates, wires, seed):
+        """Test the correctness of the Select template output with new_option=True."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        # Prepare a state that only has overlap with the basis states used in Select
+        np.random.seed(seed)
+        state = np.random.random(len(ops))
+        state /= np.linalg.norm(state)
+        state = np.concatenate([state, np.zeros(2 ** len(control) - len(ops))])
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.StatePrep(state, wires=control)
+            qml.Select(ops, control, new_option=True)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.StatePrep(state, wires=control)
+            for op in expected_gates:
+                qml.apply(op)
+            return qml.state()
+
+        assert np.allclose(circuit1(), circuit2())
+
+    @pytest.mark.parametrize(
+        ("ops", "control", "expected_gates", "expected_gates_new_option"),
+        [
+            (
+                [qml.X(wires=0), qml.Y(wires=0)],
+                [1],
+                [
+                    qml.ctrl(qml.X(wires=0), control=1, control_values=0),
+                    qml.ctrl(qml.Y(wires=0), control=1),
+                ],
+                None,
             ),
             (
                 [qml.RX(0.5, wires=0), qml.RY(0.7, wires=1)],
@@ -132,25 +258,45 @@ class TestSelect:
                     qml.ctrl(qml.RX(0.5, wires=0), control=2, control_values=0),
                     qml.ctrl(qml.RY(0.7, wires=1), control=2),
                 ],
+                None,
             ),
             (
                 [
                     qml.RX(0.5, wires=0),
                     qml.RY(0.7, wires=1),
                     qml.RZ(0.3, wires=1),
-                    qml.PauliX(wires=2),
+                    qml.X(wires=2),
                 ],
                 [3, 4],
                 [
                     qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
                     qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
                     qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
-                    qml.ctrl(qml.PauliX(wires=2), control=[3, 4], control_values=[1, 1]),
+                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 1]),
+                ],
+                None,
+            ),
+            (
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.RY(0.7, wires=1),
+                    qml.X(wires=2),
+                ],
+                [3, 4],
+                [
+                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
+                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 0]),
+                ],
+                [
+                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=[4], control_values=[1]),
+                    qml.ctrl(qml.X(wires=2), control=[3], control_values=[1]),
                 ],
             ),
         ],
     )
-    def test_queued_ops(self, ops, control, expected_gates):
+    def test_queued_ops(self, ops, control, expected_gates, expected_gates_new_option):
         """Test the correctness of the Select template queued operations."""
         with qml.tape.OperationRecorder() as recorder:
             qml.Select(ops, control=control)
@@ -160,15 +306,24 @@ class TestSelect:
         assert [op.name for op in select_ops] == [op.name for op in expected_gates]
         assert [op.wires for op in select_ops] == [op.wires for op in expected_gates]
 
+        with qml.tape.OperationRecorder() as recorder:
+            qml.Select(ops, control=control, new_option=True)
+
+        expected_gates_new_option = expected_gates_new_option or expected_gates
+        select_ops = recorder.expand().operations
+
+        assert [op.name for op in select_ops] == [op.name for op in expected_gates_new_option]
+        assert [op.wires for op in select_ops] == [op.wires for op in expected_gates_new_option]
+
     @pytest.mark.parametrize(
         ("ops", "control", "expected_gates"),
         [
             (
-                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+                [qml.X(wires=0), qml.Y(wires=0)],
                 [1],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
-                    qml.ctrl(qml.PauliY(wires=0), control=1),
+                    qml.ctrl(qml.X(wires=0), control=1, control_values=0),
+                    qml.ctrl(qml.Y(wires=0), control=1),
                 ],
             ),
             (
@@ -184,14 +339,14 @@ class TestSelect:
                     qml.RX(0.5, wires=0),
                     qml.RY(0.7, wires=1),
                     qml.RZ(0.3, wires=1),
-                    qml.PauliX(wires=2),
+                    qml.X(wires=2),
                 ],
                 [3, 4],
                 [
                     qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
                     qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
                     qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
-                    qml.ctrl(qml.PauliX(wires=2), control=[3, 4], control_values=[1, 1]),
+                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 1]),
                 ],
             ),
         ],
@@ -200,7 +355,7 @@ class TestSelect:
         """Unit test checking that compute_decomposition and decomposition work as expected."""
         op = qml.Select(ops, control=control)
         select_decomposition = op.decomposition()
-        select_compute_decomposition = op.compute_decomposition(ops, control)
+        select_compute_decomposition = op.compute_decomposition(ops, control, new_option=False)
 
         for op1, op2 in zip(select_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
@@ -209,7 +364,7 @@ class TestSelect:
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
-        ops = [qml.PauliX(wires=2), qml.RX(0.2, wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
+        ops = [qml.X(wires=2), qml.RX(0.2, wires=3), qml.Y(wires=2), qml.SWAP([2, 3])]
         op = qml.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
@@ -223,17 +378,17 @@ class TestErrorMessages:
         ("ops", "control", "msg_match"),
         [
             (
-                [qml.PauliX(wires=1), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
+                [qml.X(wires=1), qml.Y(wires=0), qml.Z(wires=0)],
                 [1, 2],
                 "Control wires should be different from operation wires.",
             ),
             (
-                [qml.PauliX(wires=2)] * 4,
+                [qml.X(wires=2)] * 4,
                 [1, 2, 3],
                 "Control wires should be different from operation wires.",
             ),
             (
-                [qml.PauliX(wires="a"), qml.PauliY(wires="b")],
+                [qml.X(wires="a"), qml.Y(wires="b")],
                 ["a"],
                 "Control wires should be different from operation wires.",
             ),
@@ -248,17 +403,17 @@ class TestErrorMessages:
         ("ops", "control", "msg_match"),
         [
             (
-                [qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
+                [qml.X(wires=0), qml.Y(wires=0), qml.Z(wires=0)],
                 [1],
                 r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
             ),
             (
-                [qml.PauliX(wires=0)] * 10,
+                [qml.X(wires=0)] * 10,
                 [1, 2, 3],
                 r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required.",
             ),
             (
-                [qml.PauliX(wires="a"), qml.PauliY(wires="b"), qml.PauliZ(wires="c")],
+                [qml.X(wires="a"), qml.Y(wires="b"), qml.Z(wires="c")],
                 [1],
                 r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
             ),
@@ -272,15 +427,17 @@ class TestErrorMessages:
 
 def select_rx_circuit(angles):
     """Circuit that uses Select for tests."""
+    qml.RY(0.6135, 0)
     qml.Select([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control=0)
-    return qml.expval(qml.PauliZ(wires=1))
+    return qml.expval(qml.Z(wires=1))
 
 
 def manual_rx_circuit(angles):
     """Circuit that manually creates Select for tests."""
+    qml.RY(0.6135, 0)
     qml.ctrl(qml.RX(angles[0], wires=[1]), control=0, control_values=0)
     qml.ctrl(qml.RY(angles[1], wires=[1]), control=0)
-    return qml.expval(qml.PauliZ(wires=1))
+    return qml.expval(qml.Z(wires=1))
 
 
 class TestInterfaces:
