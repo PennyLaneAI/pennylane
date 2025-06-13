@@ -358,11 +358,11 @@ def setup(app):
     # pennylane.H.__name__ = 'H'
     # pennylane.Hadamard.__name__ = 'Hadamard'
     # pennylane.X.__name__ = 'X'
-    H.__module__ = __name__
-    H.__name__ = 'H'
-    X.__module__ = __name__
+    # H.__module__ = __name__
+    # H.__name__ = 'H'
+    # X.__module__ = __name__
     X.__name__ = 'X'
-    Z.__module__ = __name__
+    # Z.__module__ = __name__
     Z.__name__ = 'Z'
     # pennylane.Y.__name__ = 'Y'
     # pennylane.H.__module__ = __name__
@@ -372,7 +372,8 @@ def setup(app):
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    FromBloq: TypeAlias = "pennylane.io.qualtran_io.FromBloq"
+    H: TypeAlias = "pennylane.ops.qubit.non_parametric_ops.H"
+    FromBloq.__doc__ = pennylane.FromBloq.__doc__ 
     # pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     #         as a PennyLane :class:`~.Operation`.
 
