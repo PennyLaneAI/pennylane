@@ -58,13 +58,16 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @singledispatch
 def _get_op_call_graph(op):
+    """Return call graph for PennyLane Operator. If the call graph is not implemented,
+    return `None`, which means we will build the call graph via decomposition"""
+    
     # TODO: Integrate with resource operators and the new decomposition pipelines
-    """Return call graphs for given PennyLane Operator"""
     return None
 
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
+    """Call graph for Quantum Phase Estimation"""
     return {
         qt_gates.Hadamard(): len(op.estimation_wires),
         _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1])): (
@@ -77,6 +80,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.TrotterizedQfunc):
+    """Call graph for qml.trotterize"""
     n = op.hyperparameters["n"]
     order = op.hyperparameters["order"]
     k = order // 2
@@ -109,6 +113,7 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
 
 @_get_op_call_graph.register
 def _(op: qtemps.state_preparations.Superposition):
+    """Call graph for Superposition"""
     gate_types = defaultdict(int, {})
     wires = op.wires
     coeffs = op.coeffs
@@ -153,7 +158,7 @@ def _(op: qtemps.state_preparations.Superposition):
 
 @_get_op_call_graph.register
 def _(op: qtemps.state_preparations.QROMStatePreparation):
-    """Refactored call graph implementation for QROMStatePreparation."""
+    """Call graph for QROMStatePreparation"""
 
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
@@ -212,6 +217,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
 
 @_get_op_call_graph.register
 def _(op: qops.BasisState):
+    """Call graph for Basis State"""
     gate_types = {}
     gate_types[qt_gates.XGate()] = sum(op.parameters[0])
 
@@ -220,6 +226,7 @@ def _(op: qops.BasisState):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.QROM):
+    """Call graph for QROM"""
     gate_types = defaultdict(int)
     bitstrings = op.hyperparameters["bitstrings"]
     num_bitstrings = len(bitstrings)
@@ -285,7 +292,7 @@ def _(op: qtemps.subroutines.QROM):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.QFT):
-
+    """Call graph for Quantum Fourier Transform"""
     gate_types = defaultdict(int, {})
     num_wires = len(op.wires)
     gate_types[qt_gates.Hadamard()] = num_wires
@@ -298,6 +305,7 @@ def _(op: qtemps.subroutines.QFT):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.QSVT):
+    """Call graph for Quantum Singular Value Transform"""
     gate_types = defaultdict(int, {})
     UA = op.hyperparameters["UA"]
     projectors = op.hyperparameters["projectors"]
@@ -315,6 +323,7 @@ def _(op: qtemps.subroutines.QSVT):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.Select):
+    """Call graph for Select"""
     gate_types = defaultdict(int, {})
     ops = op.hyperparameters["ops"]
     cmpr_ops = [_map_to_bloq(op) for op in ops]
@@ -339,6 +348,7 @@ def _(op: qtemps.subroutines.Select):
 
 @_get_op_call_graph.register
 def _(op: qops.StatePrep):
+    """Call graph for StatePrep"""
     gate_types = defaultdict(int, {})
     num_wires = len(op.wires)
     rz = qt_gates.Rz(0)
@@ -357,7 +367,7 @@ def _(op: qops.StatePrep):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.ModExp):
-
+    """Call graph for ModExp"""
     mod = op.hyperparameters["mod"]
     num_work_wires = len(op.hyperparameters["work_wires"])
     num_x_wires = len(op.hyperparameters["x_wires"])
