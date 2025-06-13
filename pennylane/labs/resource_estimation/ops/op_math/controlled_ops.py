@@ -537,7 +537,7 @@ class ResourceCNOT(ResourceOperator):
     r"""Resource class for the CNOT gate.
 
     Args:
-        wires (Sequence[int]): the wires the operation acts on
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The CNOT gate is treated as a fundamental gate and thus it cannot be decomposed
