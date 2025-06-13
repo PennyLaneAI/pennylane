@@ -46,6 +46,7 @@ class Select(Operation):
                     :target: javascript:void(0);
 
     This operator is also known as **multiplexer**, or multiplexed operation.
+    
     If the applied operations :math:`\{U_i\}` are all single-qubit Pauli rotations about the
     same axis, with the angle determined by the control wires, this is also called a
     **uniformly controlled rotation** gate.
@@ -100,14 +101,14 @@ class Select(Operation):
         **Principle**
 
         Unary iteration leverages auxiliary wires to store intermediate values for reuse between
-        the different multi-controlled operators, avoiding to recompute these values.
+        the different multi-controlled operators, avoiding unnecessary recomputation.
         In addition to this caching functionality, unary iteration reduces the cost of the
-        computation itself, because the involved reversible AND, or Toffoli, gates can be
-        implemented at lower cost if the target is known to be in the :math:`|0\rangle` state,
-        see :class:`~TemporaryAND`.
+        computation directly, because the involved reversible AND (or Toffoli) gates can be
+        implemented at lower cost if the target is known to be in the :math:`|0\rangle` state
+        (see :class:`~TemporaryAND`).
 
         For :math:`K` operators to be Select-applied, :math:`c=\lceil\log_2 K\rceil` control
-        wires are needed. Unary iteration requires :math:`c-1` additional auxiliary wires.
+        wires are required. Unary iteration demands an additional :math:`c-1` auxiliary wires.
         Below we first show an example for :math:`K` being a power of two, i.e., :math:`K=2^c`.
         Then we elaborate on implementation details for the case :math:`K<2^c`, which we call
         a *partial Select* operator.
@@ -170,9 +171,9 @@ class Select(Operation):
             3:    ─────├U(M0)──├U(M1)─────├U(M2)───├U(M3)────────├U(M4)───├U(M5)─────├U(M6)───├U(M7)──┤
             4:    ─────╰U(M0)──╰U(M1)─────╰U(M2)───╰U(M3)────────╰U(M4)───╰U(M5)─────╰U(M6)───╰U(M7)──┤
 
-        An additional cost reduction then results from the fact that ``TemporaryAND`` gates
-        (``adjoint(TemporaryAND)`` gates) take four (zero) :class:`~T` gates, instead of the seven
-        ``T`` gates required by a decomposition of :class:`~Toffoli`.
+        An additional cost reduction then results from the fact that the ``TemporaryAND``
+        gate and its adjoint require four and zero :class:`~T` gates, respectively,
+        in contrast to the seven ``T`` gates required by a decomposition of :class:`~Toffoli`.
 
         For general :math:`c` and :math:`K=2^c`, the decomposition takes a similar form, with
         alternating control and auxiliary wires.
@@ -212,8 +213,8 @@ class Select(Operation):
 
         **Partial Select decomposition**
 
-        The unary iterator decomposition of the ``Select`` template can be reduced if
-        both of the following criteria are met:
+        The unary iterator decomposition of the ``Select`` template can be
+        simplified further if both of the following criteria are met:
 
         #. There are fewer target operators than would maximally be possible for the given
            number of control wires, i.e. :math:`K<2^c`.
