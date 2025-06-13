@@ -234,14 +234,14 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
 def _primality_test(n: int) -> bool:
     r"""Determines whether an integer is prime or not.
 
-    This function implements the `Miller-Rabin primality test
+    This function implements the deterministic variant of `Miller-Rabin primality test
     <https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test>`_.
 
     Args:
         n (int): The number to test for primality.
 
     Returns:
-        bool: True if :math:`n` is likely prime, False otherwise.
+        bool: ``True`` if :math:`n` is likely prime, ``False`` otherwise.
     """
     if n < 2 or n == 4:
         return False
@@ -350,7 +350,11 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
 
 
 def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
-    r"""Solve the Diophantine equation :math:`t^* t = \xi` for :math:`t \in \mathbb{Z}[\omega]` and :math:`\xi \in \mathbb{Z}[\sqrt{2}]`.
+    r"""Solve the Diophantine equation :math:`t^* t = \xi` for :math:`t \in \mathbb{Z}[\omega]`
+    and :math:`\xi \in \mathbb{Z}[\sqrt{2}]`.
+
+    This function uses the theory from Appendix C and D (Proof of Lemma 8.4) of
+    `arXiv:1403.2975 <https://arxiv.org/abs/1403.2975>`_.
 
     Args:
         xi (ZSqrtTwo): An element of the ring :math:`\mathbb{Z}[\sqrt{2}]`.
@@ -383,7 +387,6 @@ def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
     s_val = (scale.conj() * scale).to_sqrt_two()
     s_new, s_abs = (xi * s_val.adj2()), abs(s_val)
     if any(x_ % s_abs != 0 for x_ in s_new.flatten):
-        print("hi")
         return None
 
     # the remaining quotient should be a unit in Z[√2]
