@@ -73,7 +73,7 @@ class SemiAdder(Operation):
 
     **Example**
 
-    This example computes the sum of two integers :math:`x=5` and :math:`y=6`.
+    This example computes the sum of two integers :math:`x=3` and :math:`y=4`.
 
     .. code-block::
 
