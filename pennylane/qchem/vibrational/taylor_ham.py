@@ -308,7 +308,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 		\nonumber \vdots
 
     Note that the terms :math:`V_n` are represented here by an arrays of energy points computed
-    along the nornal coordinates. These energy data are then used in a multi-dimensional polynomial
+    along the normal coordinates. These energy data are then used in a multi-dimensional polynomial
     fit where each term :math:`V_n` is expanded in terms of products of :math:`Q` with exponents
     specified by ``min_deg`` and ``max_deg``.
 
@@ -317,11 +317,12 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     .. math::
 
-        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
+        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(3)}_j q_j^n,
 
-    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
-    three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
-    :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
+    where the largest power :math:`n` is determined by ``max_deg``. Similarly, the two-mode and
+    three-mode Taylor coefficients are computed if the two-mode and three-mode potential energy
+    surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are
+    provided.
 
     Args:
         pes (VibrationalPES): the vibrational potential energy surface object
