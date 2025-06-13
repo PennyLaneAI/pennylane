@@ -23,6 +23,10 @@ for float[64] f in my_floats {
    ry(f) q0;
 }
 
+for float[64] f in {1.2, -3.4, 0.5, 9.8} {
+   ry(f) q0;
+}
+
 // Loop over a register of bits.
 bit[6] register = "011011";
 for bit b in register {
@@ -43,4 +47,17 @@ for bit b in alias {
     z q0;
     continue;
     y q0;
+}
+
+for uint[64] i in [4294967296:4294967306] {
+   rx(i) q0;
+   continue;
+   ry(i) q0;
+}
+
+while(int[2](bits) != 1) {
+  z q0;
+  bits = 1;
+  continue;
+  x q0;
 }
