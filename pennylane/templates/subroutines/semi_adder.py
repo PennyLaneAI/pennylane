@@ -66,8 +66,11 @@ class SemiAdder(Operation):
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
     Args:
-        x_wires (Sequence[int]): the wires that store the integer :math:`x`
-        y_wires (Sequence[int]): the wires that store the integer :math:`y`
+        x_wires (Sequence[int]): The wires that store the integer :math:`x`. Must contain at
+            least :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
+        y_wires (Sequence[int]): The wires that store the integer :math:`y`. Must contain at
+            least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. These wires are also used
+            to encode the integer :math:`x+y` in the computational basis.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
             wires should be provided.
 
@@ -123,23 +126,6 @@ class SemiAdder(Operation):
         [0 0]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4 \equiv 0 \mod 2^2`.
-
-    .. details::
-        :title: Usage Details
-
-        This template takes three different sets of wires as input:
-
-        The first one is ``x_wires`` which is used
-        to encode the integer :math:`x` in the computational basis. Therefore, ``x_wires`` must contain
-        at least :math:`\lceil \log_2(x)\rceil` to represent :math:`x`.
-
-        The second one is ``y_wires`` which is used
-        to encode the integer :math:`y` in the computational basis. Therefore, ``y_wires`` must contain
-        at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. ``y_wires`` is also used
-        to encode the integer :math:`x+y` in the computational basis.
-
-        The third set of wires is ``work_wires`` which consists of :math:`m-1` auxiliary qubits used to perform the addition operation,
-        where :math:`m` is the number of ``y_wires``.
     """
 
     grad_method = None
