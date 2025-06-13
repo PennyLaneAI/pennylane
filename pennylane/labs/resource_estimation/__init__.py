@@ -34,6 +34,8 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~GateCount
 
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
     :toctree: api
 
