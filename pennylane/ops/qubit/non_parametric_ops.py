@@ -222,6 +222,7 @@ class Hadamard(Observable, Operation):
 
 
 H = Hadamard
+
 r"""H(wires)
 The Hadamard operator
 

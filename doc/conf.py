@@ -341,13 +341,14 @@ autodoc_typehints = "none"
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
-# autodoc_type_aliases = {
-#     'H': 'H',
-#     'I': 'pennylane.ops.identity.I',
-#     'X': 'pennylane.ops.qubit.non_parametric_ops.X',
-#     'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
-#     # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
-# }
+autodoc_type_aliases = {
+    'H': 'H',
+    'I': 'pennylane.ops.identity.I',
+    'X': 'pennylane.ops.qubit.non_parametric_ops.X',
+    'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
+    # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
+    'Z': 'Z'
+}
 
 def setup(app):
     from pennylane import H, X, Z,Y, FromBloq

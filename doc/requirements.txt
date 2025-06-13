@@ -14,7 +14,7 @@ pyzx
 scipy
 docutils==0.20
 sphinx==8.1
-sphinx-automodapi==0.13
+sphinx-automodapi==0.19
 sphinx-copybutton
 sphinxcontrib-bibtex==2.4.2
 sphinxcontrib-applehelp==2.0.0
@@ -27,7 +27,7 @@ tensorflow_macos==2.9.0; sys_platform == "darwin" and platform_machine == "arm64
 tensornetwork==0.3
 tomlkit
 torch==2.5.1
-jinja2>=3.0
+jinja2>=3.1
 rustworkx>=0.14.0
 networkx==3.1
 requests==2.32.3
