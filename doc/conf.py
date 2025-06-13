@@ -362,20 +362,20 @@ def setup(app):
     # H.__module__ = __name__
     # H.__name__ = 'H'
     # X.__module__ = __name__
-    X.__name__ = 'X'
-    pennylane.PauliX = 'PauliX'
+    # X.__name__ = 'X'
+    # pennylane.PauliX = 'PauliX'
     # Z.__module__ = __name__
-    Z.__name__ = 'Z'
-    pennylane.PauliZ.__name__ = 'pennylane.PauliZ'
+    # Z.__name__ = 'Z'
+    # pennylane.PauliZ.__name__ = 'pennylane.PauliZ'
     # pennylane.Y.__name__ = 'Y'
     # pennylane.H.__module__ = __name__
     # pennylane.FromBloq.__name__ = 'FromBloq'
     # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-    pennylane.Y.__doc__ = "The Pauli Y operator"
+    # pennylane.Y.__doc__ = "The Pauli Y operator"
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    H: TypeAlias = "pennylane.ops.qubit.non_parametric_ops.H"
+    # H: TypeAlias = "pennylane.ops.qubit.non_parametric_ops.H"
     FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_"""
     # pennylane.FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     #         as a PennyLane :class:`~.Operation`.
