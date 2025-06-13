@@ -1038,7 +1038,7 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-class z(PauliZ):
+class Z(PauliZ):
     r"""The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
