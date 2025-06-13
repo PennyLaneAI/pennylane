@@ -491,22 +491,21 @@ class PauliX(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
-X = PauliX
-X.__doc__ = PauliX.__doc__
-r"""The Pauli X operator
+class X(PauliX):
+    r"""The Pauli X operator
 
-.. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
+    .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~PauliX`
+    .. seealso:: The equivalent long-form alias :class:`~PauliX`
 
-**Details:**
+    **Details:**
 
-* Number of wires: 1
-* Number of parameters: 0
+    * Number of wires: 1
+    * Number of parameters: 0
 
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
 
 
 def _paulix_to_rx_resources():
@@ -1039,22 +1038,21 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
 
-Z = PauliZ
-Z.__doc__ = PauliZ.__doc__
-r"""The Pauli Z operator
+class z(PauliZ):
+    r"""The Pauli Z operator
 
-.. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
+    .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~PauliZ`
+    .. seealso:: The equivalent long-form alias :class:`~PauliZ`
 
-**Details:**
+    **Details:**
 
-* Number of wires: 1
-* Number of parameters: 0
+    * Number of wires: 1
+    * Number of parameters: 0
 
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
 
 
 def _pauliz_to_ps_resources():
