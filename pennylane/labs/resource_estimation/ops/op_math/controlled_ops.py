@@ -744,7 +744,7 @@ class ResourceToffoli(ResourceOperator):
     r"""Resource class for the Toffoli gate.
 
     Args:
-        wires (Sequence[int]): the subsystem the gate acts on
+        wires (Sequence[int], optional): the subsystem the gate acts on
 
     Resources:
         The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
