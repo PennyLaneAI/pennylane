@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Dict, Sequence
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
@@ -31,7 +31,7 @@ class ProductFormula:
     :math:`\alpha_k \in \mathbb{R}`.
 
     Args:
-        terms (Union[Sequence[Hashable], Sequence[``ProductFormula``]]): Either a list of labels for the
+        terms (Sequence[Hashable] | Sequence[``ProductFormula``]): Either a list of labels for the
             Hermitian operators or a list of ``ProductFormula`` objcts. When a list of labels is given,
             the product formula returned is the product of exponentials of the lables. When a list of product
             formulas is given the product formula returned is the product of the given product formulas.
@@ -62,7 +62,7 @@ class ProductFormula:
 
     def __init__(
         self,
-        terms: Union[Sequence[Hashable], Sequence[ProductFormula]],
+        terms: Sequence[Hashable] | Sequence[ProductFormula],
         coeffs: Sequence[float] = None,
         exponent: float = 1.0,
         label: str = None,

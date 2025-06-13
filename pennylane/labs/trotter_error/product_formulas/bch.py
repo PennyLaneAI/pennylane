@@ -48,7 +48,7 @@ def bch_expansion(
     >>> frag_labels = ["A", "B", "C", "B", "A"]
     >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
     >>> second_order = ProductFormula(frag_labels, frag_coeffs)
-    >>> pprint(bch_expansion(second_order, order=3))
+    >>> pp(bch_expansion(second_order, order=3))
     [defaultdict(<class 'complex'>,
                  {('A',): (1+0j),
                   ('B',): (1+0j),
@@ -72,21 +72,20 @@ def _bch_expansion(
 ) -> Dict[Tuple[Hashable], complex]:
     # pylint: disable=protected-access
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
-       hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
-       and the ProductFormula objects are the recursive case.
+    hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
+    and the ProductFormula objects are the recursive case.
 
-        Base case:
-            Directly compute BCH on the fragment labels and return the result
+     Base case:
+         Directly compute BCH on the fragment labels and return the result
 
-        Recursive case:
-            1. Compute BCH on the ProductFormula objects as if they were the labels for fragments.
-            2. Call _bch_expansion recursively on each ProductFormula object
-            3. Merge the results in the following way: 
-                If (PF1, PF2) is a commutator obtained from step 1, substitute the labels PF1 and PF2
-                with the commutators returned by calling _bch_expansion on PF1 and PF2
-            4. Simplify the commutators and return
-
-       """
+     Recursive case:
+         1. Compute BCH on the ProductFormula objects as if they were the labels for fragments.
+         2. Call _bch_expansion recursively on each ProductFormula object
+         5. Merge the results in the following way:
+             If (PF1, PF2) is a commutator obtained from step 1, substitute the labels PF1 and PF2
+             with the commutators returned by calling _bch_expansion on PF1 and PF2
+         4. Simplify the commutators and return
+    """
 
     bch = _bch(
         product_formula.terms,
@@ -185,8 +184,8 @@ def _kth_order_terms(
 
 
 def _merge_commutators(commutator, terms, order, bch_coeff):
-    """Substitute the labels in a commutator with the BCH expansion of the label, but only include commutators
-    whose order is at most ``order``"""
+    """Substitute the labels in a commutator with the BCH expansion of the label, but only include
+    commutators whose order is at most ``order``"""
 
     merged = [defaultdict(complex) for _ in range(order)]
 
@@ -201,8 +200,8 @@ def _merge_commutators(commutator, terms, order, bch_coeff):
 
 
 def _generate_merged_commutators(commutator, terms, order):
-    r"""Yields the commutators obtained by substituting the commutators in ``terms`` with the labels in ``commutator``
-    whose order is at most ``order``. The algorithm is based on the identity
+    r"""Yields the commutators obtained by substituting the commutators in ``terms`` with the labels
+    in ``commutator`` whose order is at most ``order``. The algorithm is based on the identity
     [\sum_i A_i, [\sum_j B_j, \sum_k C_k]]] = \sum_{i,j,k} [A_k, [B_j, C_k]].
 
     """
@@ -329,8 +328,8 @@ def _remove_redundancies(
     term_dicts = [_make_right_nested(terms) for terms in term_dicts]
 
     for terms in term_dicts[1:]:
-        _delete(terms)
-        _swap(terms, less_than)
+        _commute_with_self(terms)
+        _antisymmetry(terms, less_than)
 
     if max_order < 4:
         return term_dicts
@@ -341,7 +340,7 @@ def _remove_redundancies(
     return term_dicts
 
 
-def _swap(terms, less_than):
+def _antisymmetry(terms, less_than):
     """Apply the identity [A, B] = -[B, A]"""
     swap = []
     for commutator in terms.keys():
@@ -358,7 +357,7 @@ def _swap(terms, less_than):
         del terms[commutator]
 
 
-def _delete(terms):
+def _commute_with_self(terms):
     """Apply the identity [A, A] = 0"""
     delete = []
     for commutator in terms.keys():
@@ -422,9 +421,9 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
         if isinstance(commutator[i], tuple):
             break
 
-    coc = (commutator[i], commutator[i + 1 :])
+    two_comms = (commutator[i], commutator[i + 1 :])
     partially_nested = {
-        commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(coc).items()
+        commutator[:i] + nested: coeff for nested, coeff in _right_nest_two_comms(two_comms).items()
     }
 
     ret = defaultdict(complex)
@@ -437,7 +436,7 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
 
 
 def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
-    """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a 
+    """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
     single right-nested commutator [Z_1, ..., Z_{n+m}].
 
     Set A = [X_1, ..., X_n], B = Y_1, and C = [Y_2, ..., Y_m] and apply the Jacobi identity [A, B, C] = [B, A, C] - [C, A, B]
