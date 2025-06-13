@@ -95,7 +95,7 @@ def _parity_transforms() -> dict:
     }
 
 
-def ma_normal_form(
+def _ma_normal_form(
     op: SO3Matrix, compressed=False
 ) -> tuple[qml.operation.Operator] | tuple[int, tuple[int, ...], int]:
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.

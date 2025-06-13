@@ -19,8 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.normal_forms import (
     _clifford_group_to_SO3,
+    _ma_normal_form,
     _parity_transforms,
-    ma_normal_form,
 )
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega
 from pennylane.ops.op_math.decompositions.solovay_kitaev import (
@@ -115,12 +115,12 @@ class TestNormalForms:
         so3mat @= clifford_elements[cl_list[c]]
         so3rep @= cl_list[c]
 
-        (t_bit, rep_bits, c_bit) = ma_normal_form(so3mat, compressed=True)
+        (t_bit, rep_bits, c_bit) = _ma_normal_form(so3mat, compressed=True)
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"
         assert c_bit == c, "Clifford bit does not match expected value"
 
-        decomposition = ma_normal_form(so3mat, compressed=False)
+        decomposition = _ma_normal_form(so3mat, compressed=False)
         assert qml.equal(
             qml.simplify(decomposition), qml.simplify(so3rep)
         ), "Decomposition does not match expected operator"
