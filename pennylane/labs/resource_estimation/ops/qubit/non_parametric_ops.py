@@ -203,7 +203,7 @@ class ResourceT(ResourceOperator):
     r"""Resource class for the T-gate.
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int, optional): the wire the operation acts on
 
     Resources:
         The T-gate is treated as a fundamental gate and thus it cannot be decomposed
