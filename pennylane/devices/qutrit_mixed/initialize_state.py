@@ -20,8 +20,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import StatePrepBase
 
-from .utils import QUDIT_DIM
-
 
 def create_initial_state(
     wires: Union[qml.wires.Wires, Iterable],
