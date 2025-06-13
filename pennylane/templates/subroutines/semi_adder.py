@@ -99,7 +99,7 @@ class SemiAdder(Operation):
     The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
 
     Note that the result is subject to the size of the ``y_wires`` register, since due to overhead
-    it is taken modulo ``2^len(y_wires)``, as shown in this example:
+    it is taken modulo :math:`2^{\text{len(y_wires)}}`, as shown in this example:
 
     .. code-block::
 
