@@ -139,7 +139,7 @@ class ResourceCY(ResourceOperator):
     r"""Resource class for the CY gate.
 
     Args:
-        wires (Sequence[int]): the wires the operation acts on
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are derived from the following identity:
