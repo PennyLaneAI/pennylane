@@ -46,7 +46,7 @@ class ProductFormula:
     Troter-Suzuki formula on three fragments. First we build the second order formula.
 
     >>> from pennylane.labs.trotter_error import ProductFormula
-
+    >>>
     >>> frag_labels = ["A", "B", "C", "B", "A"]
     >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
     >>> second_order = ProductFormula(frag_labels, frag_coeffs)
