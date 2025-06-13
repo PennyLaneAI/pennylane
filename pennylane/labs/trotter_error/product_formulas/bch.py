@@ -70,7 +70,7 @@ def bch_expansion(
 
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
-    ) -> List[Dict[Tuple[Hashable], complex]]:
+) -> List[Dict[Tuple[Hashable], complex]]:
     # pylint: disable=protected-access
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
