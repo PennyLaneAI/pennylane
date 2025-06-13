@@ -36,6 +36,7 @@ Resource Estimation Base Classes:
 
 Resource Estimation Functions:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
