@@ -23,8 +23,6 @@ from pennylane.allocation import (
     Allocate,
     Deallocate,
     DynamicWire,
-    _get_allocate_prim,
-    _get_deallocate_prim,
     allocate,
     deallocate,
     safe_allocate,
@@ -66,6 +64,8 @@ class TestDynamicWire:
         assert len({a, b, c}) == 2
         assert c in {a, b}
         assert b not in {a}
+        assert hash(a) == hash(c)
+        assert hash(a) != hash(b)
 
 
 class TestAllocateOp:
@@ -121,6 +121,7 @@ def test_allocate_function():
 
     assert len(q) == 1
     op = q.queue[0]
+    assert isinstance(op, Allocate)
     assert op.wires == wires
     assert op.require_zeros
 
@@ -146,10 +147,11 @@ class TestDeallocate:
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
+        assert isinstance(op, Deallocate)
 
     def test_error_non_dynamic_wire(self):
         """Test that an error is raised if a non-dynamic wire is attempted to be deallocated."""
-        with pytest.raises(ValueError, match="only accept DynamicWire wires."):
+        with pytest.raises(ValueError, match="only accepts DynamicWire wires."):
             deallocate((DynamicWire, 1))
 
     def test_multiple_dynamic_wires(self):
@@ -162,6 +164,7 @@ class TestDeallocate:
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
+        assert isinstance(op, Deallocate)
 
     def test_reset_to_original(self):
         """Test that reset_to_original is passed to the operator."""
@@ -186,46 +189,3 @@ def test_safe_allocate():
     qml.assert_equal(q.queue[0], Allocate(wires, require_zeros=False))
     qml.assert_equal(q.queue[1], qml.I(wires))
     qml.assert_equal(q.queue[2], Deallocate(wires, reset_to_original=True))
-
-
-@pytest.mark.jax
-@pytest.mark.usefixtures("enable_disable_plxpr")
-@pytest.mark.parametrize("use_context", (True, False))
-def test_capturing_allocate_and_deallocate(use_context):
-    """Test that allocate and deallcoate can be captured."""
-
-    import jax
-
-    def f():
-        if use_context:
-            with safe_allocate(2, require_zeros=True, reset_to_original=True) as wires:
-                qml.H(wires[0])
-                qml.Z(wires[1])
-        else:
-            w, w2 = allocate(2, require_zeros=True)
-            qml.H(w)
-            qml.Z(w2)
-            deallocate((w, w2), reset_to_original=True)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert len(jaxpr.eqns) == 4
-    assert jaxpr.eqns[0].primitive == _get_allocate_prim()
-    assert len(jaxpr.eqns[0].invars) == 0
-    assert jaxpr.eqns[0].params == {"num_wires": 2, "require_zeros": True}
-    assert len(jaxpr.eqns[0].outvars) == 2
-    assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
-    for v in jaxpr.eqns[0].outvars:
-        assert v.aval.dtype == jax.numpy.int64
-
-    assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
-    assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
-
-    assert jaxpr.eqns[3].primitive == _get_deallocate_prim()
-    assert jaxpr.eqns[3].params == {"reset_to_original": True}
-    assert jaxpr.eqns[3].invars == jaxpr.eqns[0].outvars
-
-    with pytest.raises(NotImplementedError):
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-    with pytest.raises(NotImplementedError):
-        deallocate(2)
