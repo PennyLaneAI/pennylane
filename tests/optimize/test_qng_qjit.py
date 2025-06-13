@@ -297,10 +297,46 @@ class TestOptimize:
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
 
-        expected_mt = expected_mt = np.array([1 / 16, 1 / 4])
-        expected_params = params_qml - opt.stepsize * qml.grad(circ)(params_qml) / expected_mt
         expected_cost = circ(params)
+        expected_mt = np.array([1 / 16, 1 / 4])
+        expected_params = params_qml - opt.stepsize * qml.grad(circ)(params_qml) / expected_mt
 
+        assert np.allclose(cost, expected_cost)
         assert np.allclose(new_params1, expected_params)
         assert np.allclose(new_params2, expected_params)
-        assert np.allclose(cost, expected_cost)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_qubit_rotations_circuit(self, tol, dev_name):
+        """Test that a simple qubit rotations circuit gets optimized correctly, checking params and cost at each step."""
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circ(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def grad(params):
+            """Returns the gradient of the above circuit."""
+            da = -np.sin(params[0]) * np.cos(params[1])
+            db = -np.cos(params[0]) * np.sin(params[1])
+            return np.array([da, db])
+
+        opt = qml.QNGOptimizerQJIT(stepsize=0.1)
+        params = jnp.array([0.011, 0.012])
+        expected_params = jnp.array([0.011, 0.012])
+        state = opt.init(params)
+
+        num_steps = 30
+        for _ in range(num_steps):
+            params, state, cost = opt.step_and_cost(circ, params, state)
+
+            expected_cost = circ(expected_params)
+            expected_mt = np.array([0.25, (np.cos(expected_params[0]) ** 2) / 4])
+            expected_params -= opt.stepsize * grad(expected_params) / expected_mt
+
+            assert np.allclose(cost, expected_cost, atol=tol, rtol=0)
+            assert np.allclose(params, expected_params, atol=tol, rtol=0)
+
+        assert np.allclose(circ(params), -1)
