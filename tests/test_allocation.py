@@ -64,6 +64,8 @@ class TestDynamicWire:
         assert len({a, b, c}) == 2
         assert c in {a, b}
         assert b not in {a}
+        assert hash(a) == hash(c)
+        assert hash(a) != hash(b)
 
 
 class TestAllocateOp:
