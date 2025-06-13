@@ -41,7 +41,7 @@ def bch_expansion(
 
     **Example**
 
-    In this example we compute the BCH expansion of the second order Trotter-Suzuki formula. The output is a list of dictionaries. Each dictionary is indexed by
+    In this example we compute the BCH expansion of the second order Trotter-Suzuki formula. The output is a list of dictionaries where each dictionary is indexed by
     a tuple representing a right-nested commutator. For example, ``('A', 'A', 'B')`` represents the commutator :math:`[A, [A, B]]`.
 
     >>> from pprint import pp

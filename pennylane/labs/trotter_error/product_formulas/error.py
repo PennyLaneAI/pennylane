@@ -40,11 +40,11 @@ def effective_hamiltonian(
     order: int,
     timestep: float = 1.0,
 ):
-    r"""Compute the effective Hamiltonian :math:`H_{eff} = H + \hat{\epsilon}` with a given product formula.
+    r"""Compute the effective Hamiltonian :math:`\hat{H}_{eff} = \hat{H} + \hat{\epsilon}` that corresponds to a given product formula.
 
     Args:
-        product_formula (:class:`~.pennylane.trotter_error.labs.ProductFormula`): A product formula used to approximate the Hamiltonian simulation.
-        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`) The fragments that sum to the Hamiltonian. The keys in the dictionary must match the labels used to build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
+        product_formula (ProductFormula): A product formula used to approximate the time-evolution operator for a Hamiltonian.
+        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`): The fragments that sum to the Hamiltonian. The keys in the dictionary must match the labels used to build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
         order (int): The order of the approximatation.
         timestep (float): The timestep for simulation.
 
@@ -111,16 +111,16 @@ def perturbation_error(
     order: int,
     timestep: float = 1.0,
 ) -> List[float]:
-    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`H_{eff} = H + \hat{\epsilon}` from the given product formula.
+    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon}` = \hat{H}_{eff} - \hat{H} +  for a  given product formula.
 
 
     For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
 
     Args:
-        product_formula (ProductFormula): The :class:`~.pennylane.labs.trotter_error.ProductFormula` used to obtain the effective Hamiltonian.
+        product_formula (ProductFormula): the :class:`~.pennylane.labs.trotter_error.ProductFormula` used to obtain the effective Hamiltonian
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
-        states: (Sequence[AbstractState]): the states to compute expectation values from
+        states (Sequence[AbstractState]): the states to compute expectation values from
         delta (float): time step for the trotter error operator.
 
     Returns:
@@ -130,7 +130,7 @@ def perturbation_error(
 
     >>> import numpy as np
     >>> from pennylane.labs.trotter_error import HOState, ProductFormula, vibrational_fragments, perturbation_error
-
+    >>>
     >>> frag_labels = [0, 1, 1, 0]
     >>> frag_coeffs = [1/2, 1/2, 1/2, 1/2]
     >>> pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
