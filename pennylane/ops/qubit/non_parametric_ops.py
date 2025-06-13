@@ -221,23 +221,22 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
+class H(Hadamard):
+    r"""H(wires)
+    The Hadamard operator
 
-r"""H(wires)
-The Hadamard operator
+    .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
-.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+    .. seealso:: The equivalent long-form alias :class:`~Hadamard`
 
-.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+    **Details:**
 
-**Details:**
+    * Number of wires: 1
+    * Number of parameters: 0
 
-* Number of wires: 1
-* Number of parameters: 0
-
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
-H = Hadamard
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
 
 
 def _hadamard_rz_rx_resources():
