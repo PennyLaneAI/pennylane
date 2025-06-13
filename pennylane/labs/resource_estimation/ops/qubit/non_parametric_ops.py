@@ -273,15 +273,15 @@ class ResourceT(ResourceOperator):
             Consequently, for any integer power `z`, the effective quantum operation :math:`T^{z}` is equivalent
             to :math:`T^{z \pmod 8}`.
 
-        The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
-            - If `z' = 0`: The operation is equivalent to the Identity gate (`I`).
-            - If `z' = 1`: The operation is equivalent to the T-gate (`T`).
-            - If `z' = 2`: The operation is equivalent to the S-gate (`S`).
-            - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
-            - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
-            - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
-            - If `z' = 6`: The operation is equivalent to a composition of a Z-gate and an S-gate (:math:`Z \cdot S`).
-            - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
+            The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+                - If `z' = 0`: The operation is equivalent to the Identity gate (`I`).
+                - If `z' = 1`: The operation is equivalent to the T-gate (`T`).
+                - If `z' = 2`: The operation is equivalent to the S-gate (`S`).
+                - If `z' = 3`: The operation is equivalent to a composition of an S-gate and a T-gate (:math:`S \cdot T`).
+                - If `z' = 4` : The operation is equivalent to the Z-gate (`Z`).
+                - If `z' = 5`: The operation is equivalent to a composition of a Z-gate and a T-gate (:math:`Z \cdot T`).
+                - If `z' = 6`: The operation is equivalent to a composition of a Z-gate and an S-gate (:math:`Z \cdot S`).
+                - If `z' = 7`: The operation is equivalent to a composition of a Z-gate, an S-gate and a T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
