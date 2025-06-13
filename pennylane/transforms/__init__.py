@@ -123,6 +123,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.resolve_dynamic_wires
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -309,6 +310,7 @@ from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 from .combine_global_phases import combine_global_phases
+from .resolve_dynamic_wires import resolve_dynamic_wires
 
 from .mitigate import (
     mitigate_with_zne,

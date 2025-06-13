@@ -26,8 +26,8 @@ from pennylane.allocation import (
     _get_allocate_prim,
     _get_deallocate_prim,
     allocate,
-    allocate_ctx,
     deallocate,
+    safe_allocate,
 )
 
 
@@ -171,11 +171,11 @@ class TestDeallocate:
         assert op.hyperparameters == {"reset_to_original": True}
 
 
-def test_allocate_ctx():
-    """Test that allocate_ctx allocates and deallocates qubits."""
+def test_safe_allocate():
+    """Test that safe_allocate allocates and deallocates qubits."""
 
     with qml.queuing.AnnotatedQueue() as q:
-        with allocate_ctx(3, require_zeros=False, reset_to_original=True) as wires:
+        with safe_allocate(3, require_zeros=False, reset_to_original=True) as wires:
             assert len(wires) == 3
             assert all(isinstance(w, DynamicWire) for w in wires)
             assert len(set(wires)) == 3
@@ -198,7 +198,7 @@ def test_capturing_allocate_and_deallocate(use_context):
 
     def f():
         if use_context:
-            with allocate_ctx(2, require_zeros=True, reset_to_original=True) as wires:
+            with safe_allocate(2, require_zeros=True, reset_to_original=True) as wires:
                 qml.H(wires[0])
                 qml.Z(wires[1])
         else:
