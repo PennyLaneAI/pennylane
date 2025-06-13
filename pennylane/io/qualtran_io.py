@@ -338,8 +338,8 @@ def bloq_registers(bloq: "qt.Bloq"):
     signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
     .. note::
-        This function requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This function requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
@@ -428,8 +428,8 @@ class FromBloq(Operation):
     as a PennyLane :class:`~.Operation`.
 
     .. note::
-        This class requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
@@ -734,8 +734,8 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
-        This class requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
@@ -913,8 +913,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     Converts a PennyLane circuit or :class:`~.Operation` and returns the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
-        This class requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
