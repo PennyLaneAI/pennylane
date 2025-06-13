@@ -344,9 +344,9 @@ inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
 
 autodoc_type_aliases = {
     'H': 'H',
-    'I': 'pennylane.ops.identity.I',
-    'X': 'pennylane.ops.qubit.non_parametric_ops.X',
-    'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
+    'I': 'I',
+    'X': 'X',
+    'Y': 'Y',
     # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
     'Z': 'Z'
 }
