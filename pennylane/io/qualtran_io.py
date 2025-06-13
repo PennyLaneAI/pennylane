@@ -19,22 +19,187 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint: disable=unused-argument
 
 from collections import defaultdict
-from functools import lru_cache, singledispatch
+from functools import cached_property, singledispatch
+from typing import Dict, List, Tuple
 
 import numpy as np
 
+import pennylane.measurements as qmeas
 import pennylane.ops as qops
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operation
+import pennylane.templates as qtemps
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    MatrixUndefinedError,
+    Operation,
+    Operator,
+)
 from pennylane.registers import registers
+from pennylane.tape import make_qscript
 from pennylane.wires import WiresLike
+from pennylane.workflow import construct_tape
+from pennylane.workflow.qnode import QNode
 
 try:
+    import cirq
     import qualtran as qt
+    from qualtran import Bloq
+    from qualtran._infra.gate_with_registers import split_qubits
+    from qualtran.bloqs import basic_gates as qt_gates
+
+    qualtran = True
 except (ModuleNotFoundError, ImportError) as import_error:
-    pass
+    qualtran = False
+
+    Bloq = object
 
 
-@lru_cache
+@singledispatch
+def _get_op_call_graph(op):
+    # TODO: Integrate with resource operators and the new decomposition pipelines
+    """Return call graphs for given PennyLane Operator"""
+    return None
+
+
+@_get_op_call_graph.register
+def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
+    return {
+        qt_gates.Hadamard(): len(op.estimation_wires),
+        _map_to_bloq(op.hyperparameters["unitary"]).controlled(): (2 ** len(op.estimation_wires))
+        - 1,
+        _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
+    }
+
+
+@singledispatch
+def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
+    """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
+    mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
+    given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
+
+    if custom_mapping is not None:
+        return custom_mapping[op]
+
+    return ToBloq(op, map_ops=map_ops, **kwargs)
+
+
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(
+    op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
+    custom_mapping=None,
+    map_ops=True,
+    **kwargs,
+):
+    from qualtran.bloqs.phase_estimation import RectangularWindowState
+    from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+    if not map_ops:
+        return ToBloq(op, **kwargs)
+
+    if custom_mapping is not None:
+        return custom_mapping[op]
+
+    return TextbookQPE(
+        unitary=_map_to_bloq(op.hyperparameters["unitary"]),
+        ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+    )
+
+
+@_map_to_bloq.register
+def _(op: qops.GlobalPhase, **kwargs):
+    return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
+
+
+@_map_to_bloq.register
+def _(op: qops.Hadamard, **kwargs):
+    return qt_gates.Hadamard()
+
+
+@_map_to_bloq.register
+def _(op: qops.Identity, **kwargs):
+    return qt_gates.Identity()
+
+
+@_map_to_bloq.register
+def _(op: qops.RX, **kwargs):
+    return qt_gates.Rx(angle=float(op.data[0]))
+
+
+@_map_to_bloq.register
+def _(op: qops.RY, **kwargs):
+    return qt_gates.Ry(angle=float(op.data[0]))
+
+
+@_map_to_bloq.register
+def _(op: qops.RZ, **kwargs):
+    return qt_gates.Rz(angle=float(op.data[0]))
+
+
+@_map_to_bloq.register
+def _(op: qops.S, **kwargs):
+    return qt_gates.SGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.SWAP, **kwargs):
+    return qt_gates.TwoBitSwap()
+
+
+@_map_to_bloq.register
+def _(op: qops.CSWAP, **kwargs):
+    return qt_gates.TwoBitCSwap()
+
+
+@_map_to_bloq.register
+def _(op: qops.T, **kwargs):
+    return qt_gates.TGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.X, **kwargs):
+    return qt_gates.XGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.Y, **kwargs):
+    return qt_gates.YGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.CY, **kwargs):
+    return qt_gates.CYGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.Z, **kwargs):
+    return qt_gates.ZGate()
+
+
+@_map_to_bloq.register
+def _(op: qops.CZ, **kwargs):
+    return qt_gates.CZ()
+
+
+@_map_to_bloq.register
+def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
+    return _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).adjoint()
+
+
+@_map_to_bloq.register
+def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
+    if isinstance(op, qops.Toffoli):
+        return qt_gates.Toffoli()
+
+    return _map_to_bloq(
+        op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+    ).controlled()
+
+
+@_map_to_bloq.register
+def _(op: qmeas.MeasurementProcess, **kwargs):
+    return None
+
+
 def _get_to_pl_op():
     @singledispatch
     def _to_pl_op(bloq, wires):
@@ -120,13 +285,13 @@ def _get_to_pl_op():
     return _to_pl_op
 
 
-def bloq_registers(bloq):
+def bloq_registers(bloq: "qt.Bloq"):
     """Reads a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
     signature and returns a dictionary mapping the Bloq's register names to :class:`~.Wires`.
 
     .. note::
-        This function requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This function requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
@@ -215,8 +380,8 @@ class FromBloq(Operation):
     as a PennyLane :class:`~.Operation`.
 
     .. note::
-        This class requires the latest version of Qualtran. We recommend installing the main
-        branch via ``pip``:
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
 
         .. code-block:: console
 
@@ -418,3 +583,403 @@ class FromBloq(Operation):
             raise MatrixUndefinedError
 
         return matrix
+
+
+class _QReg:
+    """Used as a container for qubits that form a `Register` of a given bitsize. This is a modified
+    version of `_QReg <https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py>`_
+    found in Qualtran as well.
+
+    Each instance of `_QReg` would correspond to a `Soquet` in Bloqs and represents an opaque collection
+    of qubits that together form a quantum register.
+    """
+
+    def __init__(self, qubits: Tuple["cirq.Qid", ...], dtype: "qt.QDType"):
+        if isinstance(qubits, cirq.Qid):
+            self.qubits = (qubits,)
+        else:
+            self.qubits = tuple(qubits)
+
+        self.dtype = dtype
+        self._initialized = True
+
+    def __setattr__(self, name, value):
+        """Makes the instance immutable after initialization."""
+        if getattr(self, "_initialized", False):
+            raise AttributeError(
+                f"Cannot set attribute '{name}'. Instances of _QReg are immutable."
+            )
+        super().__setattr__(name, value)
+
+    def __repr__(self) -> str:
+        """Provides a developer-friendly string representation."""
+        return f"_QReg(qubits={self.qubits!r}, dtype={self.dtype!r})"
+
+    # Override the __eq__ and __hash__ functions to handle single qubit registers
+    # that are functionally the same but have different dtypes.
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, _QReg):
+            return False
+        return self.qubits == other.qubits
+
+    def __hash__(self):
+        return hash(self.qubits)
+
+
+def _ensure_in_reg_exists(
+    bb: "qt.BloqBuilder",
+    in_reg: "_QReg",
+    qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
+) -> None:
+    """Modified function from the Qualtran-Cirq interop module to ensure `qreg_to_qvar[in_reg]`
+    exists. If `in_reg` is not found in `qreg_to_qvar`, that means that the input qubit register
+    is a multi-qubit register. All in_regs should be single qubit registers, so this would be a
+    bug, and an AssertionError is raised. To capture control flow, multi-qubit registers will be
+    allowed, and we will remove the AssertionError and use Split and Join operations as needed.
+
+    Args:
+        bb (qt.BloqBuilder): an instance of a Qualtran BloqBuilder
+        in_reg (_QReg): a container for qubits that form a Register of a given bitsize
+        qreg_to_qvar (Dict[_QReg, qt.Soquet]): a dictionary of _QRegs that corresponds to Soquets
+
+    Raises:
+        AssertionError: `in_reg` was not found in `qreg_to_qvar`, meaning there exists multi-qubit
+            registers that we do not support at the moment
+    """
+
+    all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
+    qubits_to_allocate = [q for q in in_reg.qubits if q not in all_mapped_qubits]
+    if qubits_to_allocate:
+        n_alloc = len(qubits_to_allocate)
+        qreg_to_qvar[
+            _QReg(qubits_to_allocate, dtype=qt.QBit() if n_alloc == 1 else qt.QAny(n_alloc))
+        ] = bb.allocate(n_alloc)
+
+    # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
+    assert in_reg in qreg_to_qvar
+
+
+def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
+    """Modified function from Qualtran-Cirq interop module that collects input Soquets.
+
+    Args:
+        bb (qt.BloqBuilder): an instance of a Qualtran BloqBuilder
+        op_quregs (Dict[str, _QRegs]): a dict of register names that corresponds to _QRegs
+        qreg_to_qvar (Dict[str, qt.Soquet]): a dict of register names that corresponds to input Soquets
+
+    Returns:
+        dict: in_reg was not found in qreg_to_qvar
+    """
+    qvars_in = {}
+    for reg_name, quregs in op_quregs.items():
+        flat_soqs: List[qt.Soquet] = []
+        for qureg in quregs.flatten():
+            _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
+            flat_soqs.append(qreg_to_qvar[qureg])
+        qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
+    return qvars_in
+
+
+class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
+    r"""
+    An adapter for using a PennyLane :class:`~.Operation` as a
+    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+
+    Raises:
+        TypeError: operator must be an instance of :class:`~.Operation`.
+
+    .. seealso:: :func:`~.to_bloq`
+
+    **Example**
+
+    This example shows how to use ``qml.ToBloq``:
+
+    .. code-block::
+
+        from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+        control_wires = [2, 3]
+        estimation_wires = [4, 5, 6, 7, 8, 9]
+
+        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+        op = qml.QuantumPhaseEstimation(
+            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+        )
+
+        op_as_bloq = qml.ToBloq(op)
+        cbloq = op_as_bloq.decompose_bloq()
+        draw_musical_score(get_musical_score_data(cbloq))
+        show_bloq(cbloq)
+
+    """
+
+    _error_message = (
+        "Optional dependency 'qualtran' is required "
+        "for ToBloq functionality but is not installed. Try `pip install qualtran`."
+    )
+
+    def __init__(self, op, map_ops=False, **kwargs):
+        if not qualtran:
+            raise ImportError(self._error_message)
+
+        if not isinstance(op, Operator) and not isinstance(op, QNode) and not callable(op):
+            raise TypeError(
+                f"Input must be either an instance of {Operator}, {QNode} or a quantum function."
+            )
+
+        self.op = op
+        self.map_ops = map_ops
+        self._kwargs = kwargs
+        super().__init__()
+
+    @cached_property
+    def signature(self) -> "qt.Signature":
+        """Compute and return Qualtran signature for given op or QNode."""
+        if isinstance(self.op, QNode):
+            self.op.name = "QNode"
+            num_wires = len(construct_tape(self.op)(**self._kwargs).wires)
+        elif isinstance(self.op, Operator):
+            num_wires = len(self.op.wires)
+        else:
+            num_wires = len(make_qscript(self.op)(**self._kwargs).wires)
+        return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
+
+    def decompose_bloq(self):  # pylint:disable=too-many-branches
+        """Decompose the bloq using the op's decomposition or the tape of the QNode"""
+        try:
+            if isinstance(self.op, QNode):
+                tape = construct_tape(self.op)(**self._kwargs)
+                ops = tape.circuit
+                all_wires = list(tape.wires)
+            elif isinstance(self.op, Operator):
+                ops = self.op.decomposition()
+                all_wires = list(self.op.wires)
+            else:
+                tape = make_qscript(self.op)(**self._kwargs)
+                ops = tape.operations
+                all_wires = list(tape.wires)
+
+            signature = self.signature
+            in_quregs = out_quregs = {"qubits": np.array(all_wires).reshape(len(all_wires), 1)}
+
+            in_key = list(in_quregs.keys())[0]
+            out_key = list(out_quregs.keys())[0]
+
+            in_quregs = {
+                in_key: np.apply_along_axis(
+                    _QReg, -1, in_quregs[in_key], signature.get_left(in_key).dtype
+                )
+            }
+            out_quregs = {
+                out_key: np.apply_along_axis(
+                    _QReg, -1, out_quregs[out_key], signature.get_right(out_key).dtype
+                )
+            }
+
+            bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
+
+            # `signature.lefts()` can be thought of as input qubits. For our purposes LEFT and
+            # RIGHT signatures will (almost) always match since there are no allocated & freed
+            # qubits. Here, qreg_to_qvar is a map between a register and a Soquet. This serves
+            # as the foundation to wire up the rest of the bloqs.
+            qreg_to_qvar = {}
+            for reg in signature.lefts():
+                assert reg.name in in_quregs
+                soqs = initial_soqs[reg.name]
+                assert in_quregs[reg.name].shape == soqs.shape
+                qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
+
+            # 2. Add each operation to the composite Bloq.
+            for op in ops:
+                bloq = _map_to_bloq(op, map_ops=self.map_ops)
+                if bloq is None:
+                    continue
+
+                if bloq.signature == qt.Signature([]):
+                    bb.add(bloq)
+                    continue
+
+                reg_dtypes = [r.dtype for r in bloq.signature]
+                # 3.1 Find input / output registers.
+                all_op_quregs = {
+                    k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
+                    for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
+                }
+
+                in_op_quregs = {reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()}
+                # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+                # input `in_quregs` and updating the `qreg_to_qvar` mapping.
+                qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+
+                # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+                qvars_out = bb.add_d(bloq, **qvars_in)
+
+                # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+                for reg in bloq.signature:
+                    # all_op_quregs should exist for both LEFT & RIGHT registers.
+                    assert reg.name in all_op_quregs
+                    quregs = all_op_quregs[reg.name]
+                    if reg.side != qt.Side.LEFT:
+                        assert quregs.shape == np.array(qvars_out[reg.name]).shape
+                        qreg_to_qvar |= zip(
+                            quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
+                        )
+
+            # 4. Combine Soquets to match the right signature.
+            final_soqs_dict = _gather_input_soqs(
+                bb,
+                {reg.name: out_quregs[reg.name] for reg in signature.rights()},
+                qreg_to_qvar,
+            )
+            final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
+            # 5. Free all dangling Soquets which are not part of the final soquets set.
+            for qvar in qreg_to_qvar.values():
+                if qvar not in final_soqs_set:
+                    bb.free(qvar)
+
+            cbloq = bb.finalize(**final_soqs_dict)
+            return cbloq
+        except DecompositionUndefinedError as undefined_decomposition:
+            raise qt.DecomposeNotImplementedError from undefined_decomposition
+
+    def build_call_graph(self, ssa):
+        """Build Qualtran call graph with defined call graph if available, otherwise build
+        said call graph with the decomposition"""
+        call_graph = _get_op_call_graph(self.op)
+        if call_graph:
+            return call_graph
+
+        return self.decompose_bloq().build_call_graph(ssa)
+
+    def __repr__(self):
+        if isinstance(self.op, QNode):
+            return "ToBloq(QNode)"
+        if isinstance(self.op, Operation):
+            return f"ToBloq({self.op.name})"
+        return "ToBloq(Qfunc)"
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.op == other.op
+        return False
+
+    def __hash__(self):
+        return hash(self.op)
+
+    def __str__(self):
+        if hasattr(self.op, "name"):
+            return f"PL{self.op.name}"
+        return "PLQfunc"
+
+
+def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
+    """
+    Converts a PennyLane circuit or :class:`~.Operation` and returns the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+
+    .. note::
+        This class requires the latest version of Qualtran. We recommend installing the latest
+        release via ``pip``:
+
+        .. code-block:: console
+
+            pip install qualtran
+
+    Args:
+        circuit (QNode | Operation): a QNode or an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
+        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
+            as a `ToBloq`. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. A default mapping is used if not defined.
+
+    Returns:
+        Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
+            options.
+
+    .. seealso:: :class:`~.ToBloq`
+
+    **Example**
+
+    This example shows how to use ``qml.to_bloq``:
+
+    .. code-block::
+
+        from qualtran.drawing import show_call_graph, show_counts_sigma
+
+        control_wires = [2, 3]
+        estimation_wires = [4, 5, 6, 7, 8, 9]
+
+        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+        op = qml.QuantumPhaseEstimation(
+            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+        )
+
+        op_as_bloq = qml.to_bloq(op)
+        graph, sigma = wrapped_bloq.call_graph()
+        show_call_graph(graph)
+        show_counts_sigma(sigma)
+
+    .. details::
+        :title: Usage Details
+
+        Not every operator has a direct equivalent in Qualtran. For example, in Qualtran, there
+        exists many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
+        Quantum Phase Estimation, a smart default is chosen.
+
+        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
+        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ... ))
+        TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
+
+        Note that the chosen Qualtran Bloq may not be an exact equivalent. If you want an exact
+        equivalent, we recommend setting ``map_ops`` to False.
+
+        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
+        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ... ), map_ops=False)
+        ToBloq(QuantumPhaseEstimation)
+
+        This will wrap the input PennyLane operator as a Bloq, allowing you to use the functions
+        you would expect a Bloq to have, such as ``decompose_bloq`` or ``call_graph``.
+
+        Alternatively, you can provide a custom mapping that maps a PennyLane operator to a
+        specific Qualtran Bloq.
+
+        >>> op = qml.QuantumPhaseEstimation(
+        ...         unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        ...     )
+        >>> custom_mapping = {
+        ...     op : TextbookQPE(
+        ...         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+        ...         ctrl_state_prep=LPResourceState(4),
+        ...     )
+        ... }
+        >>> qml.to_bloq(op, custom_mapping=custom_mapping)
+        TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=LPResourceState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
+
+    """
+
+    if not qualtran:
+        raise ImportError(
+            "The `to_bloq`function requires Qualtran to be installed. You can install"
+            "qualtran via: pip install qualtran."
+        )
+
+    if map_ops:
+        if custom_mapping:
+            return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
+        return _map_to_bloq(circuit, map_ops=True, **kwargs)
+
+    return ToBloq(circuit, **kwargs)
