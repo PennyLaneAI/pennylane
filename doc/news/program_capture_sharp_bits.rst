@@ -181,8 +181,8 @@ NotImplementedError: Primitive ctrl_transform does not have a jvp rule and is no
 Gradients with lightning devices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When executing a QNode on ``lightning.qubit`` with capture enabled, calculating 
-the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert 
+When executing a QNode on ``lightning.qubit``, ``lightning.kokkos`` or ``lightning.gpu`` with capture enabled,
+calculating the gradient, jacobian, JVP, or VJP with JAX currently requires that we convert 
 the plxpr representation of the program back to a tape for the calculation of the 
 gradient, jacobian, JVP, or VJP. 
 
