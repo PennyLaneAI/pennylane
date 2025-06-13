@@ -14,7 +14,7 @@ number observables. It also includes functionalities to convert to and from Open
 
 .. note::
 
-    The function :func:`~pennylane.math.givens_decomposition` has been moved to the
+    The function :func:`~pennylane.math.decomposition.givens_decomposition` has been moved to the
     :mod:`~pennylane.math` module. The function is still available in the
     :mod:`~pennylane.qchem` module for backward compatibility, but it is recommended to import it
     from the new location in future code.
