@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import math
+from copy import copy
 from functools import lru_cache
 
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega
@@ -108,14 +109,6 @@ class Ellipse:
         """Calculate the uprightness of the ellipse (Eq. 32, arXiv:1403.2975)."""
         return math.pi / (4 * self.e)
 
-    def skew(self, ellipse: "Ellipse") -> float:
-        """Calculate the skew of the ellipse."""
-        return self.b**2 + ellipse.b**2
-
-    def bias(self, ellipse: "Ellipse") -> float:
-        """Calculate the bias of the ellipse."""
-        return self.z - ellipse.z
-
     def b_from_uprightness(self, uprightness: float) -> float:
         """Calculate the b value of the ellipse from its uprightness (Eq. 33, arXiv:1403.2975)."""
         return math.sqrt((math.pi / (4 * uprightness)) ** 2 - 1)
@@ -180,14 +173,116 @@ class Ellipse:
 
         return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2))
 
-    def apply_shift_op(self, ellipse: "Ellipse") -> int:
-        """Apply shift operators for the pair, returning the shift exponent."""
-        k = int(math.floor((1 - self.bias(ellipse)) / 2))
+
+class State:
+    """A class representing pair of normalized ellipses."""
+
+    def __init__(self, e1: Ellipse, e2: Ellipse):
+        self.e1 = e1
+        self.e2 = e2
+
+    def __repr__(self) -> str:
+        """Return a string representation of the state."""
+        return f"State(e1={self.e1}, e2={self.e2})"
+
+    @property
+    def skew(self) -> float:
+        """Calculate the skew of the state."""
+        # Uses Definition A.1 of arXiv:1403.2975
+        return self.e1.b**2 + self.e2.b**2
+
+    @property
+    def bias(self) -> float:
+        """Calculate the bias of the state."""
+        # Uses Definition A.1 of arXiv:1403.2975
+        return self.e1.z - self.e2.z
+
+    def grid_op(self) -> GridOp:
+        """Calculate the grid operation of the state."""
+        # Uses Lemma A.5 (Step Lemma) of arXiv:1403.2975 for obtaining special grid op.
+        grid_op = GridOp.from_string("I")
+        state = State(self.e1, self.e2)
+        while (skew := state.skew) >= 15:
+            new_grid_op, state = state.reduce_skew()
+            grid_op = grid_op * new_grid_op
+            if state.skew > 0.9 * skew:
+                raise ValueError(f"Skew was not decreased for state {state}")
+
+        return grid_op
+
+    def apply_grid_op(self, grid_op: GridOp) -> State:
+        """Apply a grid operation :math:`G` to the state."""
+        # Uses Definition A.3 of arXiv:1403.2975
+        return State(self.e1.apply_grid_op(grid_op), self.e2.apply_grid_op(grid_op.adj2()))
+
+    def apply_shift_op(self, k: int) -> tuple[State, int]:
+        """Apply a shift operator to the state."""
+        # Uses Definition A.6 of arXiv:1403.2975
+        k = int(math.floor((1 - self.bias()) / 2))
         pk_pow, nk_pow = _LAMBDA**k, _LAMBDA**-k
-        self.a, self.d, self.z = self.a * pk_pow, self.d * nk_pow, self.z - k
-        ellipse.a, ellipse.d, ellipse.z = ellipse.a * nk_pow, ellipse.d * pk_pow, ellipse.z + k
-        ellipse.b *= (-1) ** k
-        return k
+        e1, e2 = copy(self.e1), copy(self.e2)
+        e1.a, e1.d, e1.z = e1.a * pk_pow, e1.d * nk_pow, e1.z - k
+        e2.a, e2.d, e2.z = e2.a * nk_pow, e2.d * pk_pow, e2.z + k
+        e2.b *= (-1) ** k
+        # TODO: Update the e values
+        return State(e1, e2), k
+
+    # pylint: disable=too-many-branches
+    def reduce_skew(self) -> tuple[GridOp, State]:
+        """Reduce the skew of the state.
+
+        This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.
+
+        Returns:
+            tuple[GridOp, State]: A tuple containing the grid operation and the state with reduced skew.
+        """
+        if any(not e.positive_semi_definite for e in (self.e1, self.e2)):
+            raise ValueError("Ellipse is not positive semi-definite")
+
+        k = 0
+        state = copy(self)
+        grid_op = GridOp.from_string("I")
+        grid_op_z, grid_op_x = GridOp.from_string("Z"), GridOp.from_string("X")
+
+        if abs(state.bias) > 1:
+            state, k = state.apply_shift_op(k)
+
+        if state.e2.b < 0:
+            grid_op = grid_op * grid_op_z
+
+        if (state.e1.z + state.e2.z) < 0:
+            grid_op = grid_op * grid_op_x
+
+        state = state.apply_grid_op(grid_op)
+        e1, e2 = state.e1, state.e2
+
+        if e1.b >= 0:
+            if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
+                grid_op = grid_op * GridOp.from_string("R")
+            elif e1.z <= 0.3 and e2.z >= 0.8:
+                grid_op = grid_op * GridOp.from_string("K")
+            elif e1.z >= 0.3 and e2.z >= 0.3:
+                c = min(e1.z, e2.z)
+                n = int(max(1, math.floor((_LAMBDA**c) / 2)))
+                grid_op = grid_op * (GridOp.from_string("A") ** n)
+            elif e1.z >= 0.8 and e2.z <= 0.3:
+                grid_op = grid_op * GridOp.from_string("K").adj2()
+            else:
+                raise ValueError(f"Skew couldn't be reduced for the state {state}")
+        else:
+            if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
+                grid_op = grid_op * GridOp.from_string("R")
+            elif e1.z >= -0.2 and e2.z >= -0.2:
+                c = min(e1.z, e2.z)
+                n = int(max(1, math.floor((_LAMBDA**c) / 2)))
+                grid_op = grid_op * (GridOp.from_string("B") ** n)
+            else:
+                raise ValueError(f"Skew couldn't be reduced for the state {state}")
+
+        if k != 0:
+            grid_op = grid_op.apply_shift_op(k)
+
+        return grid_op, state.apply_grid_op(grid_op)
 
 
 class GridOp:
@@ -223,11 +318,11 @@ class GridOp:
 
     def __pow__(self, n: int) -> "GridOp":
         """Raise the grid operator to a power."""
-        if self == GridOp((1, 0), (0, 0), (0, 0), (1, 0)):  # Identity:
+        if self == self.from_string("I"):  # Identity:
             return self
-        if self == GridOp((1, 0), (-2, 0), (0, 0), (1, 0)):  # _useful_grid_ops()["A"]
+        if self == self.from_string("A"):  # A
             return GridOp((1, 0), (-2 * n, 0), (0, 0), (1, 0))
-        if self == GridOp((1, 0), (0, 2), (0, 0), (1, 0)):  # _useful_grid_ops()["B"]
+        if self == self.from_string("B"):  # B
             return GridOp((1, 0), (0, 2 * n), (0, 0), (1, 0))
 
         x, res = self, GridOp((1, 0), (0, 0), (0, 0), (1, 0))
@@ -287,6 +382,18 @@ class GridOp:
         d_ = self.a[0] * x1 + self.b[0] * y1 + (self.a[1] * x2 + self.b[1] * y2) // 2
         b_ = self.c[0] * x1 + self.d[0] * y1 + (self.c[1] * x2 + self.d[1] * y2) // 2
         return ZOmega((c_ - a_) // 2, b_, (c_ + a_) // 2, d_)
+
+    @classmethod
+    def from_string(cls, string: str) -> GridOp:
+        """Return the grid operation from a string.
+
+        Args:
+            string: Supported string are: "I", "R", "A", "B", "K", "X", "Z" (Fig 6, arXiv:1403.2975).
+
+        Returns:
+            GridOp: The grid operation corresponding to the string.
+        """
+        return _useful_grid_ops().get(string, "I")
 
     @property
     def determinant(self) -> tuple[float, float]:
@@ -351,9 +458,23 @@ class GridOp:
         """Apply the grid operator to an ellipse."""
         return ellipse.apply_grid_op(self)
 
-    def apply_to_ellipses(self, ellipse1: Ellipse, ellipse2: Ellipse) -> tuple[Ellipse, Ellipse]:
-        """Apply the grid operator to pairt of ellipses."""
-        return self.apply_to_ellipse(ellipse1), self.adj2().apply_to_ellipse(ellipse2)
+    def apply_to_state(self, state: State) -> tuple[Ellipse, Ellipse]:
+        """Apply the grid operator to a state."""
+        return state.apply_grid_op(self)
+
+    def apply_shift_op(self, k: int) -> "GridOp":
+        """Apply a shift operator to the grid operation."""
+        # Uses Lemma A.9 of arXiv:1403.2975
+        k, sign = abs(k), (-1) ** (k < 0)  # +1 if k > 0, -1 if k < 0
+        grid_op = self
+        for _ in range(k):
+            grid_op = GridOp(
+                (grid_op.a[0] + sign * grid_op.a[1], 2 * grid_op.a[0] + sign * grid_op.a[1]),
+                grid_op.b,
+                grid_op.c,
+                (grid_op.d[1] - sign * grid_op.d[0], 2 * grid_op.d[0] - sign * grid_op.d[1]),
+            )
+        return grid_op
 
 
 @lru_cache(maxsize=1)
