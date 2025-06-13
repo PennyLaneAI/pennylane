@@ -35,7 +35,7 @@ from pennylane.wires import Wires
 
 
 class Select(Operation):
-    r"""The ``Select`` operator, also known as the **multiplexer**, or a multiplexed operation,
+    r"""The ``Select`` operator, also known as multiplexer or multiplexed operation,
     applies different operations depending on the state of designated control wires.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle

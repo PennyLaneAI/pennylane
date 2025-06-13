@@ -5,10 +5,10 @@
 <h3>New features since last release</h3>
 
 * A new decomposition based on unary iteration was added to :class:`qml.Select`.
-  It requires :math:`c-1` auxiliary wires for a ``Select`` template with :math:`c` control wires,
-  but reduces the :class:`T` count significantly. The implementation makes use of a simplification
-  for partial Select templates, which only is valid if the state on the control wires has no
-  overlap with computational basis states that are not used by ``Select``. See the documentation
+  This new decomposition requires :math:`c-1` auxiliary wires for a ``Select`` operation with :math:`c` control wires,
+  but reduces the :class:`T` count significantly. The implementation uses a simplification
+  for partial ``Select`` templates, which is only valid if the state on the control wires has no
+  overlap with computational basis states not used by ``Select``. See the documentation
   for more details.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
 
