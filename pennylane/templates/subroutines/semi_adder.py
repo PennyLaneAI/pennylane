@@ -60,8 +60,7 @@ class SemiAdder(Operation):
 
         \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle,
 
-    This can be called a semi-out-place addition operation,
-    or more specifically, the operation is a quantum-quantum in-place addition.
+    This operation is also referred to as semi-out-place addition or quantum-quantum in-place addition in the literature.
 
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
@@ -101,8 +100,7 @@ class SemiAdder(Operation):
 
     The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
 
-    Note that the result is subject to the size of the ``y_wires`` register, since due to overhead
-    it is taken modulo :math:`2^{\text{len(y_wires)}}`, as shown in this example:
+    Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
     .. code-block::
 
@@ -125,7 +123,7 @@ class SemiAdder(Operation):
         >>> print(circuit())
         [0 0]
 
-    The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4 \equiv 0 \mod 2^2`.
+    The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """
 
     grad_method = None
