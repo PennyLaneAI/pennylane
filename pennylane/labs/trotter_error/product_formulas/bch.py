@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from collections.abc import Hashable
+from functools import cache
 from itertools import permutations, product
 from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
 
@@ -396,6 +397,7 @@ def _make_right_nested(terms):
     return ret
 
 
+@cache
 def _right_nested(commutator) -> Dict[Tuple, float]:
     """Express the commutator as a linear combation of right-nested commutators.
 
@@ -435,6 +437,7 @@ def _right_nested(commutator) -> Dict[Tuple, float]:
     return ret
 
 
+@cache
 def _right_nest_two_comms(commutator) -> Dict[Tuple, float]:
     """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
     linear combination of right-nested commutators [Z_1, ..., Z_{n+m}].
