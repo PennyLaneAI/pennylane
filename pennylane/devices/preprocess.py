@@ -29,8 +29,10 @@ import pennylane as qml
 from pennylane import Snapshot, transform
 from pennylane.allocation import (
     Allocate,
+    Borrow,
     Deallocate,
     DeallocateAll,
+    Return,
     _get_allocate_prim,
     _get_deallocate_prim,
 )
@@ -779,15 +781,24 @@ class WireManager:
         reg_class = deque if style == "queue" else list
         self._zeroed = reg_class(zeroed)
         self._dirty = reg_class(dirty)
+        self._borrowable = reg_class(())
         self._loaned = {}  # wire to final register type
         self.min_integer = min_integer
 
+    def make_borrowable(self, wire):
+        self._borrowable.append(wire)
+
+    def return_borrowable(self, wire):
+        self._borrowable.remove(wire)
+
     def get_wire(self, require_zeros, reset_to_original):
-        if not self._zeroed and not self._dirty:
+
+        if not self._zeroed and not self._dirty and not self._borrowable:
             if self.min_integer is None:
                 raise ValueError("no wires left to allocate.")
             self.min_integer += 1
             self._zeroed.append(self.min_integer)
+
         if require_zeros:
             if self._zeroed:
                 w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
@@ -798,10 +809,16 @@ class WireManager:
             m = measure(w, reset=True)
             return w, m.measurements
 
+        if self._borrowable and reset_to_original:
+            w = self._borrowable.popleft() if self.style == "queue" else self._borrowable.pop()
+            self._loaned[w] = "borrowed"
+            return w, []
+
         if self._dirty:
             w = self._dirty.popleft() if self.style == "queue" else self._dirty.pop()
             self._loaned[w] = "dirty"
             return w, []
+
         w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
         self._loaned[w] = "zeroed" if reset_to_original else "dirty"
         return w, []
@@ -810,8 +827,10 @@ class WireManager:
         reg_type = self._loaned.pop(wire)
         if reg_type == "dirty":
             self._dirty.append(wire)
-        else:
+        elif reg_type == "zeroed":
             self._zeroed.append(wire)
+        else:
+            self._borrowable.append(wire)
 
     def return_all(self):
         return list(chain(self.return_wire(w) for w in self._loaned))
@@ -883,6 +902,12 @@ def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="st
             for w in op.wires:
                 deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
+        elif isinstance(op, Borrow):
+            for w in op.wires:
+                manager.make_borrowable(w)
+        elif isinstance(op, Return):
+            for w in op.wires:
+                manager.return_borrowable(w)
         elif isinstance(op, DeallocateAll):
             new_ops += manager.return_all()
         else:

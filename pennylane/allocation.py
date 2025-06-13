@@ -120,6 +120,20 @@ class DeallocateAll(Operator):
     pass
 
 
+class Borrow(Operator):
+    """An instruction to borrow wires."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
+class Return(Operator):
+    """An instruction to return borrowed wires."""
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+
 def allocate(num_wires, require_zeros=True, reset_to_original=False):
     if capture_enabled():
         return _get_allocate_prim().bind(
@@ -186,3 +200,26 @@ class allocate_ctx:
 
     def __exit__(self, *_, **__):
         deallocate(self.wires)
+
+
+def borrow(wires):
+    """Borrow wires into the pool of work wires."""
+    return Borrow(wires)
+
+
+def return_borrowed(wires):
+    """Return wires borrowed into the pool of work wires."""
+    return Return(wires)
+
+
+class borrow_ctx:
+    """Temporarily borrow wires while making sure to automatically return them at the end."""
+
+    def __init__(self, wires):
+        self.wires = borrow(wires).wires
+
+    def __enter__(self):
+        return self.wires
+
+    def __exit__(self, *_, **__):
+        return_borrowed(self.wires)
