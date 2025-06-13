@@ -23,6 +23,7 @@ from openqasm3.ast import (
     ComplexType,
     ConstantDeclaration,
     ContinueStatement,
+    DiscreteSet,
     DurationLiteral,
     EndStatement,
     Expression,
@@ -45,7 +46,7 @@ from openqasm3.ast import (
     SwitchStatement,
     UintType,
     UnaryExpression,
-    WhileLoop, DiscreteSet,
+    WhileLoop,
 )
 from openqasm3.visitor import QASMNode
 
@@ -675,9 +676,6 @@ class QasmInterpreter:
         else:
             loop_params = self.visit(node.set_declaration, context)
 
-        if isinstance(loop_params, int):
-            loop_params = _get_bit_type_val(loop_params)
-
         # TODO: support dynamic start, stop, step?
         if isinstance(loop_params, slice):
             start = loop_params.start
@@ -715,9 +713,8 @@ class QasmInterpreter:
 
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
         # accepts (start, stop, step) and not a list of values.
-        if isinstance(
-            loop_params, Iterable
-        ):
+        if isinstance(loop_params, Iterable):
+
             def unrolled(execution_context):
                 for i in loop_params:
                     execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
