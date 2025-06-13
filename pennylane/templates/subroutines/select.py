@@ -86,8 +86,8 @@ class Select(Operation):
         :title: Unary iterator decomposition
 
         Generically, ``Select`` is decomposed into one multi-controlled operator for each target
-        operator. If auxiliary wires are available, though, a decomposition using a so-called
-        unary iterator can be applied. It was introduced by
+        operator. However, if auxiliary wires are available, a decomposition using a
+        "unary iterator" can be applied. It was introduced by
         `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__.
 
         .. note::
