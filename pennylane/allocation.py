@@ -15,10 +15,54 @@
 This module contains the commands for allocating and freeing wires dynamically.
 """
 import uuid
+from functools import lru_cache
 from typing import Optional, Sequence
 
+try:
+    import jax
+except ImportError:
+    jax = None
+
+from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
+
+@lru_cache()
+def _get_allocate_prim():
+    allocate_prim = jax.extend.core.Primitive("allocate")
+    allocate_prim.multiple_results = True
+
+    # pylint: disable=unused-argument
+    @allocate_prim.def_impl
+    def _(*, num_wires, require_zeros=True):
+        raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
+
+    # pylint: disable=unused-argument
+    @allocate_prim.def_abstract_eval
+    def _(*, num_wires, require_zeros=True):
+        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+
+    return allocate_prim
+
+
+@lru_cache
+def _get_deallocate_prim():
+
+    deallocate_prim = jax.extend.core.Primitive("deallocate")
+    deallocate_prim.multiple_results = True
+
+    # pylint: disable=unused-argument
+    @deallocate_prim.def_impl
+    def _(*wires, reset_to_original=False):
+        raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
+
+    # pylint: disable=unused-argument
+    @deallocate_prim.def_abstract_eval
+    def _(*wires, reset_to_original=False):
+        return []
+
+    return deallocate_prim
 
 
 class DynamicWire:
@@ -157,6 +201,8 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
 
     """
+    if capture_enabled():
+        return _get_allocate_prim().bind(num_wires=num_wires, require_zeros=require_zeros)
     op = Allocate.from_num_wires(num_wires, require_zeros=require_zeros)
     return op.wires
 
@@ -218,6 +264,8 @@ def deallocate(
     gate as well.
 
     """
+    if capture_enabled():
+        return _get_deallocate_prim().bind(*wires, reset_to_original=reset_to_original)
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate can only accept DynamicWire wires. Got {not_dynamic_wires}")
