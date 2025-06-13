@@ -82,6 +82,26 @@ Operators:
 
 """
 
+from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .resources_base import Resources
+from .resource_operator import (
+    CompressedResourceOp,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+    GateCount,
+)
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
 from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
@@ -97,18 +117,3 @@ from .ops import (
     ResourceY,
     ResourceZ,
 )
-from .qubit_manager import AllocWires, FreeWires, QubitManager
-from .resource_mapping import map_to_resource_op
-from .resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-    ResourcesNotDefined,
-    resource_rep,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
-)
-from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
-from .resources_base import Resources
