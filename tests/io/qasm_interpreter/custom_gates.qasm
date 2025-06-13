@@ -5,9 +5,16 @@ const float pi = 3.14159;
 
 gate custom(θ) a, b
 {
-  CX a, b;
-  CX a, b;
-  rx(θ / 2) b;
+    CX a, b;
+    CX a, b;
+    rx(θ / 2) b;
 }
 
-custom(pi / 2) q0, q1;
+gate custom_two(θ) c, d
+{
+    y c;
+    custom(θ / 2) d, c;
+    x d;
+}
+
+custom_two(pi) q1, q0;

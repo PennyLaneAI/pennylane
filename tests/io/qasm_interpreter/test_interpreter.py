@@ -859,9 +859,11 @@ class TestGates:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "custom-gates"})
 
         assert q.queue == [
+            PauliY("q1"),
             CNOT(wires=["q0", "q1"]),
             CNOT(wires=["q0", "q1"]),
             RX(0.7853975, wires=["q1"]),
+            PauliX("q0")
         ]
 
     def test_nested_modifiers(self):
