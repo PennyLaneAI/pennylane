@@ -10,27 +10,15 @@ qml
 
 
 Aliases
-=======
+--------
 
 .. currentmodule:: pennylane
 
-.. autoclass:: X
-   :members:
-   :no-index:
-   
+.. autosummary::
+    :toctree: api
 
-   The Pauli X operator.
-
-.. autoclass:: Y
-   :members:
-   :no-index:
-
-
-   The Pauli Y operator.
-
-.. autoclass:: Z
-   :members:
-   :no-index:
-   
-
-   The Pauli Z operator.
+    ~H
+    ~I
+    ~X
+    ~Y
+    ~Z

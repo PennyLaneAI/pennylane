@@ -222,7 +222,7 @@ class Hadamard(Observable, Operation):
 
 
 class H(Hadamard):
-    r"""H(wires)
+    r"""
     The Hadamard operator
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
@@ -774,22 +774,21 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-Y = PauliY
-Y.__doc__ = PauliY.__doc__
-r"""The Pauli Y operator
+class Y(PauliY):
+    r"""The Pauli Y operator
 
-.. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
+    .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~PauliY`
+    .. seealso:: The equivalent long-form alias :class:`~PauliY`
 
-**Details:**
+    **Details:**
 
-* Number of wires: 1
-* Number of parameters: 0
+    * Number of wires: 1
+    * Number of parameters: 0
 
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
 
 
 def _pauliy_to_ry_gp_resources():
