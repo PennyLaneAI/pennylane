@@ -14,6 +14,12 @@
   decompositions.
   [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
 
+<h4>Community contributions 🥳</h4>
+
+* New operation `qml.QutritDensityMatix` added used to initialize density matrix states for the device
+  `qml.devices.DefaultQutritMixed`.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Created a new ``~.labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
