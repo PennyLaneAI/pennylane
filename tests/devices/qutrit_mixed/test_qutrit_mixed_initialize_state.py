@@ -54,7 +54,6 @@ class TestInitializeState:
         state = create_initial_state([0, 1], prep_operation=prep_op)
         expected = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
 
-        assert math.allequal(state, expected)
         assert qp.math.allequal(state, expected)
         if interface == "autograd":
             assert qp.math.get_interface(state) == "numpy"
