@@ -42,8 +42,7 @@ class ResourceIdentity(ResourceOperator):
     []
     """
 
-    def __init__(self, wires=None):
-        super().__init__(wires=wires)
+    num_wires = 1
 
     @property
     def resource_params(self) -> dict:
@@ -83,8 +82,8 @@ class ResourceIdentity(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -106,8 +105,8 @@ class ResourceIdentity(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -124,8 +123,8 @@ class ResourceIdentity(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -150,9 +149,6 @@ class ResourceGlobalPhase(ResourceOperator):
     []
 
     """
-
-    def __init__(self, wires=None):
-        super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -193,8 +189,8 @@ class ResourceGlobalPhase(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -211,7 +207,7 @@ class ResourceGlobalPhase(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
