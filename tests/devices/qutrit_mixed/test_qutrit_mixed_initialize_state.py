@@ -69,6 +69,20 @@ class TestInitializeState:
         state[1, 2, 0, 1, 2, 0] = 0  # set to zero to make test below simple
         assert qp.math.allequal(state, np.zeros([3] * 6))
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ml_interfaces)
+    def test_create_initial_state_with_QutritDensityMatrix(self, interface):
+        """Tests that create_initial_state works with a state-prep operation."""
+        wires = [0, 1]
+        num_wires = len(wires)
+        state_correct = np.zeros((3, 3) * num_wires, dtype=complex)
+        state_correct[(0, 0) * num_wires] = 1
+        state_correct = math.asarray(state_correct, like=interface)
+        prep_op = QutritDensityMatrix(math.array(state_correct, like=interface), wires=wires)
+        state = create_initial_state(wires, prep_operation=prep_op, like=interface)
+        assert math.allequal(state, state_correct)
+        assert math.get_interface(state) == interface
+
     @pytest.mark.parametrize("wires", [(0, 1), qp.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):
         """Tests that create_initial_state works with qp.Wires object and list."""
