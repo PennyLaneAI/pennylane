@@ -525,7 +525,7 @@
 
 * New operation `qml.QutritDensityMatix` added used to initialize density matrix states for the device
   `qml.devices.DefaultQutritMixed`.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#7682)](https://github.com/PennyLaneAI/pennylane/pull/7682)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
