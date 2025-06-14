@@ -71,6 +71,11 @@ Operators:
     ~ResourceX
     ~ResourceY
     ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
 
 """
 
@@ -98,6 +103,11 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
     ResourceS,
     ResourceT,
     ResourceX,
