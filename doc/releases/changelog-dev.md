@@ -571,6 +571,10 @@
   estimation on circuits, `pennylane.labs.ResourceOperator` and `pennylane.labs.Resources` objects.
   [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
 
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for non-parametric single qubit gates.
+  [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
