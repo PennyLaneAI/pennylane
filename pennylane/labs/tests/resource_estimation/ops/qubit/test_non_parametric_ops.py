@@ -62,6 +62,106 @@ class TestHadamard:
         assert op.pow_resource_decomp(z) == expected_res
 
 
+class TestSWAP:
+    """Tests for ResourceSWAP"""
+
+    def test_resources(self):
+        """Test that SWAP decomposes into three CNOTs"""
+        op = plre.ResourceSWAP([0, 1])
+        cnot = plre.ResourceCNOT.resource_rep()
+        expected = [plre.GateCount(cnot, 3)]
+
+        assert op.resource_decomp() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = plre.ResourceSWAP([0, 1])
+        assert op.resource_params == {}
+
+    def test_resource_rep(self):
+        """Test the compact representation"""
+        expected = plre.CompressedResourceOp(plre.ResourceSWAP, {})
+        assert plre.ResourceSWAP.resource_rep() == expected
+
+    def test_resources_from_rep(self):
+        """Test that the resources can be computed from the compressed representation"""
+
+        op = plre.ResourceSWAP([0, 1])
+        expected = [plre.GateCount(plre.ResourceCNOT.resource_rep(), 3)]
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+
+    def test_adjoint_decomp(self):
+        """Test that the adjoint decomposition is correct."""
+        swap = plre.ResourceSWAP([0, 1])
+        expected = [plre.GateCount(swap.resource_rep(), 1)]
+
+        assert swap.adjoint_resource_decomp() == expected
+
+    ctrl_data = (
+        (
+            ["c1"],
+            [1],
+            [
+                plre.GateCount(plre.ResourceCSWAP.resource_rep(), 1),
+            ],
+        ),
+        (
+            ["c1"],
+            [0],
+            [
+                plre.GateCount(plre.ResourceCSWAP.resource_rep(), 1),
+                plre.GateCount(plre.ResourceX.resource_rep(), 2),
+            ],
+        ),
+        (
+            ["c1", "c2"],
+            [1, 1],
+            [
+                plre.GateCount(plre.ResourceCNOT.resource_rep(), 2),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 1),
+            ],
+        ),
+        (
+            ["c1", "c2", "c3"],
+            [1, 0, 0],
+            [
+                plre.GateCount(plre.ResourceCNOT.resource_rep(), 2),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 1),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, ctrl_values, expected_res",
+        ctrl_data,
+    )
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourceSWAP([0, 1])
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+
+    pow_data = (
+        (1, [plre.GateCount(plre.ResourceSWAP.resource_rep(), 1)]),
+        (2, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        (3, [plre.GateCount(plre.ResourceSWAP.resource_rep(), 1)]),
+        (4, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+    )
+
+    @pytest.mark.parametrize("z, expected_res", pow_data)
+    def test_pow_decomp(self, z, expected_res):
+        """Test that the pow decomposition is correct."""
+        op = plre.ResourceSWAP([0, 1])
+        assert op.pow_resource_decomp(z) == expected_res
+
+
 class TestS:
     """Tests for ResourceS"""
 
