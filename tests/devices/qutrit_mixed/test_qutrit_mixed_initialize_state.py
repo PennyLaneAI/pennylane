@@ -48,9 +48,7 @@ class TestInitializeState:
     @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
-        prep_op = self.DefaultPrep(
-            math.array([1 / np.sqrt(9)] * 9, like=interface), wires=[0, 1]
-        )
+        prep_op = self.DefaultPrep(math.array([1 / np.sqrt(9)] * 9, like=interface), wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
         expected = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
 
