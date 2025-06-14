@@ -74,7 +74,7 @@ class TestInitializeState:
         """Tests that create_initial_state works with a state-prep operation."""
         wires = [0, 1]
         num_wires = len(wires)
-        state_correct = np.zeros((2, 2) * num_wires, dtype=complex)
+        state_correct = np.zeros((3, 3) * num_wires, dtype=complex)
         state_correct[(0, 0) * num_wires] = 1
         state_correct = math.asarray(state_correct, like=interface)
         prep_op = QutritDensityMatrix(math.array(state_correct, like=interface), wires=wires)

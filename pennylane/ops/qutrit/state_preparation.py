@@ -118,6 +118,7 @@ class QutritBasisState(StatePrepBase):
         ket[tuple(indices)] = 1
         return math.convert_like(ket, prep_vals)
 
+
 class QutritDensityMatrix(QubitDensityMatrix):
     r"""QutritDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.
