@@ -636,6 +636,31 @@ class DiagonalQubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
+def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+    if num_wires == 1:
+        return {qml.RZ: 1, qml.GlobalPhase: 1}
+    return {
+        resource_rep(DiagonalQubitUnitary, num_wires=num_wires - 1): 1,
+        resource_rep(qml.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
+    }
+
+
+@register_resources(_diagonal_qu_resource)
+def _diagonal_qu_decomp(D, wires):
+    angles = qml.math.angle(D)
+    diff = angles[..., 1::2] - angles[..., ::2]
+    mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+    if len(wires) == 1:
+        qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
+        qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
+    else:
+        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
+
+
 def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
     return {resource_rep(base_class, **base_params): 1}
 

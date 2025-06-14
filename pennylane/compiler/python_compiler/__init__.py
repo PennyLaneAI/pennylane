@@ -11,8 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Python Compiler API for integration of Catalyst with xDSL."""
 
-"""PennyLane's native Python compiler submodule.
+from .compiler import Compiler
+from .quantum_dialect import QuantumDialect as Quantum
 
-This module is experimental and currently untested.
-"""
+__all__ = [
+    "Compiler",
+    "Quantum",
+]
