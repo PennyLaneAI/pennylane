@@ -160,7 +160,7 @@ class Ellipse:
         return (-x, x, -y, y)
 
     def offset(self, offset: float) -> "Ellipse":
-        """Offset the ellipse by a factor of offset."""
+        """Return the ellipse shifted by the offset."""
         p_offset = (self.p[0] + offset, self.p[1] + offset)
         return Ellipse((self.a, self.b, self.d), p_offset, self.axes)
 
