@@ -76,7 +76,6 @@ class PlxprVisualizer(PlxprInterpreter):
             return self._env_ascii[var_id]
 
         num_of_unique_ascii = len(set(list(self._env_ascii.values())))
-        print(num_of_unique_ascii, self._env_ascii)
         ascii = self._int_to_ascii(num_of_unique_ascii)
         return ascii
 
