@@ -22,21 +22,21 @@ bleach==6.2.0
 blinker==1.9.0
 build==1.2.2.post1
 cachetools==6.0.0
-certifi==2025.4.26
+certifi==2025.6.15
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.2
 chex==0.1.89
 cirq-core==1.4.0
-clarabel==0.11.0
+clarabel==0.11.1
 click==8.2.1
 comm==0.2.2
 contourpy==1.3.2
-cotengra==0.7.4
-coverage==7.8.2
-cryptography==45.0.3
+cotengra==0.7.5
+coverage==7.9.1
+cryptography==45.0.4
 cvxopt==1.3.2
-cvxpy==1.6.5
+cvxpy==1.6.6
 cycler==0.12.1
 cytoolz==1.0.1
 dash==3.0.4
@@ -47,7 +47,6 @@ diastatic-malt==2.15.2
 dill==0.4.0
 distlib==0.3.9
 duet==0.2.9
-etils==1.12.2
 exceptiongroup==1.3.0
 execnet==2.1.1
 executing==2.2.0
@@ -57,7 +56,7 @@ filelock==3.18.0
 flaky==3.8.1
 Flask==3.0.3
 flatbuffers==25.2.10
-fonttools==4.58.2
+fonttools==4.58.4
 fqdn==1.5.1
 fxpmath==0.4.9
 galois==0.4.6
@@ -66,13 +65,13 @@ gitdb==4.0.12
 GitPython==3.1.44
 google-pasta==0.2.0
 graphviz==0.20.3
-grpcio==1.72.1
+grpcio==1.73.0
 h11==0.16.0
 h5py==3.14.0
 httpcore==1.0.9
 httpx==0.28.1
-ibm-cloud-sdk-core==3.24.1
-ibm-platform-services==0.66.1
+ibm-cloud-sdk-core==3.24.2
+ibm-platform-services==0.66.2
 identify==2.6.12
 idna==3.10
 immutabledict==4.2.1
@@ -122,7 +121,7 @@ ml_dtypes==0.5.1
 mpmath==1.3.0
 mypy_extensions==1.1.0
 namex==0.1.0
-narwhals==1.41.1
+narwhals==1.42.1
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -135,7 +134,7 @@ numba==0.61.2
 numpy==1.26.4
 openqasm3==1.0.1
 opt_einsum==3.4.0
-optax==0.2.4
+optax==0.2.5
 optree==0.16.0
 ordered-set==4.1.0
 osqp==1.0.4
@@ -146,8 +145,8 @@ pandocfilters==1.5.1
 parso==0.8.4
 pathspec==0.12.1
 pbr==6.1.1
-PennyLane-Catalyst==0.12.0.dev50
-PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@5544c00d2022d8ca07fca97a0d3ec8de37811a88
+PennyLane-Catalyst==0.12.0.dev55
+PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@b03f27676c324d36dd23b643687157644356b251
 PennyLane_Lightning==0.42.0.dev16
 PennyLane_Lightning_Kokkos==0.42.0.dev16
 pexpect==4.9.0
@@ -167,7 +166,7 @@ pure_eval==0.2.3
 py==1.11.0
 py-cpuinfo==9.0.0
 pycparser==2.22
-pydantic==2.11.5
+pydantic==2.11.7
 pydantic_core==2.33.2
 pydot==3.0.4
 Pygments==2.19.1
@@ -179,7 +178,7 @@ pyproject_hooks==1.2.0
 pyspnego==0.11.2
 pytest==8.4.0
 pytest-benchmark==5.1.0
-pytest-cov==6.1.1
+pytest-cov==6.2.1
 pytest-forked==1.6.0
 pytest-mock==3.14.1
 pytest-rng==1.0.0
@@ -189,7 +188,7 @@ python-dateutil==2.9.0.post0
 python-json-logger==3.3.0
 pytz==2025.2
 PyYAML==6.0.2
-pyzmq==26.4.0
+pyzmq==27.0.0
 pyzx==0.9.0
 qiskit==1.2.4
 qiskit-aer==0.16.0
@@ -201,7 +200,7 @@ qsharp-widgets==1.17.0
 qualtran==0.6.1
 quimb==1.11.0
 referencing==0.36.2
-requests==2.32.3
+requests==2.32.4
 requests_ntlm==1.3.0
 retrying==1.3.4
 rfc3339-validator==0.1.4

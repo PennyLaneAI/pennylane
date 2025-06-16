@@ -18,15 +18,64 @@ Differs from xDSL's upstream implementation by allowing passes
 to be passed in as options.
 """
 
+import io
 from typing import Callable
 
+from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context
 from xdsl.dialects import builtin, transform
-from xdsl.interpreters import Interpreter
-from xdsl.passes import ModulePass
+from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
+from xdsl.interpreters.transform import TransformFunctions
+from xdsl.parser import Parser
+from xdsl.passes import ModulePass, PipelinePass
+from xdsl.printer import Printer
+from xdsl.rewriter import Rewriter
+from xdsl.utils import parse_pipeline
 from xdsl.utils.exceptions import PassFailedException
 
-from .interpreter import TransformFunctionsExt
+
+# pylint: disable=too-few-public-methods
+@register_impls
+class TransformFunctionsExt(TransformFunctions):
+    """
+    Unlike the implementation available in xDSL, this implementation overrides
+    the semantics of the `transform.apply_registered_pass` operation by
+    first always attempting to apply the xDSL pass, but if it isn't found
+    then it will try to run this pass in Catalyst.
+    """
+
+    @impl(transform.ApplyRegisteredPassOp)
+    def run_apply_registered_pass_op(  # pragma: no cover
+        self,
+        _interpreter: Interpreter,
+        op: transform.ApplyRegisteredPassOp,
+        args: PythonValues,
+    ) -> PythonValues:
+        """Try to run the pass in xDSL, if it can't run on catalyst"""
+
+        pass_name = op.pass_name.data  # pragma: no cover
+        if pass_name in self.passes:
+            # pragma: no cover
+            pipeline = PipelinePass(
+                tuple(
+                    PipelinePass.iter_passes(self.passes, parse_pipeline.parse_pipeline(pass_name))
+                )
+            )
+            pipeline.apply(self.ctx, args[0])
+            return (args[0],)
+
+        # pragma: no cover
+        buffer = io.StringIO()
+
+        Printer(stream=buffer, print_generic_format=True).print(args[0])
+        schedule = f"--{pass_name}"
+        modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
+
+        module = args[0]
+        data = Parser(self.ctx, modified).parse_module()
+        rewriter = Rewriter()
+        rewriter.replace_op(module, data)
+        return (data,)
 
 
 class TransformInterpreterPass(ModulePass):
