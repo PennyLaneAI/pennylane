@@ -426,7 +426,7 @@ def construct_batch(
     """
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     has_shots_param = "shots" in inspect.signature(qnode.func).parameters
-    default_shots = qnode.device.shots
+    default_shots = qnode._shots
 
     user_program = qnode.transform_program
     num_user_transforms = len(user_program)
@@ -437,6 +437,7 @@ def construct_batch(
             shots = default_shots
         else:
             shots = kwargs.pop("shots", default_shots)
+        # shots = qnode._shots
 
         if is_torch_layer:
             x = args[0]
