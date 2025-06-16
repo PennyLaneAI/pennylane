@@ -638,8 +638,8 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots : Shots = device.shots
-        self._shots_override_device : bool = False
+        self._shots: Shots = device.shots
+        self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -931,7 +931,7 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        if "shots" in kwargs and qml.set_shots in self.transform_program:
+        if "shots" in kwargs and self._shots_override_device:
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 "The transform will take precedence over 'shots='",
