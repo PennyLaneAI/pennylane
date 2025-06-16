@@ -25,6 +25,7 @@ from openqasm3.ast import (
     ComplexType,
     ConstantDeclaration,
     ContinueStatement,
+    DiscreteSet,
     DurationLiteral,
     EndStatement,
     Expression,
@@ -231,6 +232,7 @@ class Variable:
         size (int): The size of the variable if it has a size, like an array.
         line (int): The line number at which the variable was most recently updated.
         constant (bool): Whether the variable is a constant.
+        scope (str): The name of the scope of the variable.
     """
 
     ty: str
@@ -238,6 +240,7 @@ class Variable:
     size: int
     line: int
     constant: bool
+    scope: str = "global"
 
 
 class Context:
@@ -599,8 +602,6 @@ class QasmInterpreter:
         Raises:
             NotImplementedError: when an unsupported QASMNode type is found.
         """
-        if node is None:
-            return None
         raise NotImplementedError(
             f"An unsupported QASM instruction {node.__class__.__name__} "
             f"was encountered on line {node.span.start_line}, in {context.name}."
@@ -846,22 +847,26 @@ class QasmInterpreter:
         """
         context.init_loops_scope(node)
 
-        loop_params = node.set_declaration
-
-        # de-referencing
-        if isinstance(loop_params, Identifier):
-            loop_params = context.retrieve_variable(loop_params.name)
+        # We need custom logic here for handling Identifiers in case they are of BitType.
+        # If we introduce logic into retrieve_variable that returns BitType values as strings
+        # this messes with unary and binary expressions' ability to handle BitType vars.
+        # If we try to get a bit string directly from the integer representation natural to the parser here,
+        # we can only guess at the size of the register since there might be leading zeroes.
+        if isinstance(node.set_declaration, Identifier):
+            loop_params = context.retrieve_variable(node.set_declaration.name)
             if isinstance(loop_params, Variable):
                 if loop_params.ty == "BitType":
                     loop_params = _get_bit_type_val(loop_params)
                 else:
                     loop_params = loop_params.val
+        else:
+            loop_params = self.visit(node.set_declaration, context)
 
         # TODO: support dynamic start, stop, step?
-        if isinstance(loop_params, RangeDefinition):
-            start = self.visit(loop_params.start, context)
-            stop = self.visit(loop_params.end, context)
-            step = self.visit(loop_params.step, context)
+        if isinstance(loop_params, slice):
+            start = loop_params.start
+            stop = loop_params.stop
+            step = loop_params.step
             if step is None:
                 step = 1
 
@@ -894,15 +899,10 @@ class QasmInterpreter:
 
         # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
         # accepts (start, stop, step) and not a list of values.
-        elif isinstance(loop_params, ArrayLiteral):
-            iter = [self.visit(literal, context) for literal in loop_params.values]
-        elif isinstance(
-            loop_params, Iterable
-        ):  # it's an array literal that's been eval'd before TODO: unify these reprs?
-            iter = loop_params
+        if isinstance(loop_params, Iterable):
 
             def unrolled(execution_context):
-                for i in iter:
+                for i in loop_params:
                     execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
                         node.identifier.name
                     ] = Variable(
@@ -921,8 +921,6 @@ class QasmInterpreter:
                         pass  # eval of current iteration stops and we continue
 
             self._handle_break(unrolled, context)
-        elif loop_params is None:
-            print(f"Uninitialized iterator in loop {f'for_{node.span.start_line}'}.")
 
     @visit.register(QuantumMeasurementStatement)
     def visit_quantum_measurement_statement(self, node: QASMNode, context: Context):
@@ -1012,26 +1010,31 @@ class QasmInterpreter:
         # bind subroutine arguments
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
-            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                func_context.vars[param] = Variable(
-                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
-                )
-            else:
+            if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                 if evald_arg in context.wire_map:
                     evald_arg = context.wire_map[evald_arg]
-                func_context.wire_map[param] = evald_arg
+                if evald_arg != param:
+                    func_context.wire_map[param] = evald_arg
+            else:
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__,
+                    evald_arg,
+                    None,
+                    node.span.start_line,
+                    False,
+                    func_context.name,
+                )
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
 
         # reset context
-        func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
+        func_context.vars = {
+            k: v for k, v in func_context.vars.items() if (v.scope == context.name) and v.constant
+        }
 
         # the return value
-        try:
-            return getattr(func_context, "return")
-        except KeyError:
-            return None
+        return getattr(func_context, "return")
 
     @visit.register(RangeDefinition)
     def visit_range(self, node: RangeDefinition, context: Context):
@@ -1215,6 +1218,7 @@ class QasmInterpreter:
                 else node.span.start_line
             ),
             constant,
+            context.name,
         )
 
     @visit.register(ImaginaryLiteral)
@@ -1230,6 +1234,20 @@ class QasmInterpreter:
             complex: a complex number corresponding to the imaginary literal.
         """
         return 1j * node.value
+
+    @visit.register(DiscreteSet)
+    def visit_discrete_set(self, node: DiscreteSet, context: Context):
+        """
+        Evaluates a discrete set literal.
+
+        Args:
+            node (DiscreteSet): The set literal QASMNode.
+            context (Context): The current context.
+
+        Returns:
+            list: The evaluated set.
+        """
+        return (self.visit(literal, context) for literal in node.values)
 
     @visit.register(ArrayLiteral)
     def visit_array_literal(self, node: ArrayLiteral, context: Context):
@@ -1283,7 +1301,11 @@ class QasmInterpreter:
 
         # register the params
         for param in node.arguments:
-            if not isinstance(param, QuantumArgument):
+            if isinstance(param, QuantumArgument):
+                context.scopes["subroutines"][_resolve_name(node)].wires.append(
+                    _resolve_name(param)
+                )
+            else:
                 context.scopes["subroutines"][_resolve_name(node)].vars[_resolve_name(param)] = (
                     Variable(
                         ty=param.__class__.__name__,
@@ -1291,11 +1313,8 @@ class QasmInterpreter:
                         size=-1,
                         line=param.span.start_line,
                         constant=False,
+                        scope=_resolve_name(node),
                     )
-                )
-            else:
-                context.scopes["subroutines"][_resolve_name(node)].wires.append(
-                    _resolve_name(param)
                 )
 
     @visit.register(QuantumGate)
@@ -1357,12 +1376,9 @@ class QasmInterpreter:
 
         context.require_wires(wires)
 
-        resolved_wires = []
-        for wire in wires:
-            resolving = wire
-            while resolving in context.wire_map:
-                resolving = context.wire_map[resolving]
-            resolved_wires.append(resolving)
+        resolved_wires = list(
+            map(lambda wire: context.wire_map[wire] if wire in context.wire_map else wire, wires)
+        )
 
         return gate, args, resolved_wires
 
