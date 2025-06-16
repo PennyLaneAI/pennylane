@@ -27,32 +27,32 @@ from .core import transform
 
 class _WireManager:
 
-    def __init__(self, zeroed=(), dirty=(), min_integer=None):
+    def __init__(self, zeroed=(), any_state=(), min_int=None):
         self._zeroed = list(zeroed)
-        self._dirty = list(dirty)
+        self._any_state = list(any_state)
         self._loaned = {}  # wire to final register type
-        self.min_integer = min_integer
+        self.min_int = min_int
 
     def get_wire(self, require_zeros):
         """Retrieve a concrete wire label from available registers."""
-        if not self._zeroed and not self._dirty:
-            if self.min_integer is None:
+        if not self._zeroed and not self._any_state:
+            if self.min_int is None:
                 raise ValueError("no wires left to allocate.")
-            self._zeroed.append(self.min_integer)
-            self.min_integer += 1
+            self._zeroed.append(self.min_int)
+            self.min_int += 1
         if require_zeros:
             if self._zeroed:
                 w = self._zeroed.pop()
                 self._loaned[w] = "zeroed"
                 return w, []
-            w = self._dirty.pop()
-            self._loaned[w] = "dirty"
+            w = self._any_state.pop()
+            self._loaned[w] = "any_state"
             m = measure(w, reset=True)
             return w, m.measurements
 
-        if self._dirty:
-            w = self._dirty.pop()
-            self._loaned[w] = "dirty"
+        if self._any_state:
+            w = self._any_state.pop()
+            self._loaned[w] = "any_state"
             return w, []
         w = self._zeroed.pop()
         self._loaned[w] = "zeroed"
@@ -64,7 +64,7 @@ class _WireManager:
         if reg_type == "zeroed" and reset_to_original:
             self._zeroed.append(wire)
         else:
-            self._dirty.append(wire)
+            self._any_state.append(wire)
 
 
 def null_postprocessing(results: ResultBatch) -> Result:
@@ -76,66 +76,72 @@ def null_postprocessing(results: ResultBatch) -> Result:
 def resolve_dynamic_wires(
     tape: QuantumScript,
     zeroed: Sequence[Hashable] = (),
-    dirty: Sequence[Hashable] = (),
-    min_integer: Optional[int] = None,
+    any_state: Sequence[Hashable] = (),
+    min_int: Optional[int] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``dirty`` registers.
+    """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 
     Args:
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
         zeroed (Sequence[Hashable]): a register of wires known to be the zero state
-        dirty (Sequence[Hashable]): a register of wires with any state
+        any_state (Sequence[Hashable]): a register of wires with any state
 
     Returns:
         tuple[QuantumScript], Callable[[ResultBatch], Result]: A batch of tapes and a postprocessing function
 
+    .. node::
+
+        This transform currently uses a "Last In, First Out" (LIFO) stack based approach to distributing wires.
+        This minimizes the total number of wires used, at the cost of higher depth and more resets. Other
+        approaches could be taken as well, such as a "First In, First out" algorithm that minimizes depth.
+
+        This approach also means we pop wires from the *end* of the stack first.
+
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
-        def circuit(, require_zeros=True):
+        def circuit(require_zeros=True):
             with qml.allocation.safe_allocate(1, require_zeros=require_zeros) as wires:
                 qml.X(wires)
             with qml.allocation.safe_allocate(1, require_zeros=require_zeros) as wires:
                 qml.Y(wires)
-            return qml.state()
 
     >>> print(qml.draw(circuit)())
-    <DynamicWire>: ──Allocate──X──Deallocate─┤  State
-    <DynamicWire>: ──Allocate──Y──Deallocate─┤  State
+    <DynamicWire>: ──Allocate──X──Deallocate─┤
+    <DynamicWire>: ──Allocate──Y──Deallocate─┤
 
     If we provide two zeroed qubits to the transform, we can see that the two operations have been
     assigned to both wires known to be in the zero state.
 
     >>> assigned_two_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a", "b"))
     >>> print(qml.draw(assigned_two_zeroed)())
-    a: ──Y─┤  State
-    b: ──X─┤  State
+    a: ──Y─┤
+    b: ──X─┤
 
     If we only provide one zeroed wire, we perform a reset on that wire before reusing for the ``Y`` operation.
 
-    >>> assigned_one_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a", ))
+    >>> assigned_one_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a", "b"))
     >>> print(qml.draw(assigned_one_zeroed)())
-    a: ──X──┤↗│  │0⟩──Y─┤  State
+    b: ──X──┤↗│  │0⟩──Y─┤
 
-    If we only provide dirty qubits with unknown states, then they will be reset to zero before being used
+    If we only provide any_state qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
-    >>> assigned_dirty = qml.transforms.resolve_dynamic_wires(circuit, dirty=("a", "b"))
-    >>> print(qml.draw(assigned_dirty)())
-    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤  State
+    >>> assigned_any_state = qml.transforms.resolve_dynamic_wires(circuit, any_state=("a", "b"))
+    >>> print(qml.draw(assigned_any_state)())
+    b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
 
     If the wire allocations had ``require_zeros=False``, no reset operations would occur.
 
-    >>> print(qml.draw(assigned_dirty)(require_zeros=False))
-    b: ──X──Y─┤  State
+    >>> print(qml.draw(assigned_any_state)(require_zeros=False))
+    b: ──X──Y─┤
 
-    Instead of registers of available wires, a ``min_integer`` can be specified instead.  The ``min_integer`` indicates
+    Instead of registers of available wires, a ``min_int`` can be specified instead.  The ``min_int`` indicates
     the first integer to start allocating wires to.  Whenever we have no qubits available to allocate, we increment the integer
     and add a new wire to the pool:
 
-    >>> circuit_integers = qml.transforms.resolve_dynamic_wires(circuit, min_integer=0)
+    >>> circuit_integers = qml.transforms.resolve_dynamic_wires(circuit, min_int=0)
     >>> print(qml.draw(circuit_integers)())
-    0: ──X──┤↗│  │0⟩──Y─┤  State
+    0: ──X──┤↗│  │0⟩──Y─┤
 
     Note that we still prefer using already created wires over creating new wires.
 
@@ -149,14 +155,14 @@ def resolve_dynamic_wires(
                 qml.Toffoli(wires)
             return qml.state()
 
-    >>> circuit_integers2 = qml.transforms.resolve_dynamic_wires(multiple_allocations, min_integer=0)
+    >>> circuit_integers2 = qml.transforms.resolve_dynamic_wires(multiple_allocations, min_int=0)
     >>> print(qml.draw(circuit_integers2)())
     0: ──X──┤↗│  │0⟩─╭●─┤  State
     1: ──────────────├●─┤  State
     2: ──────────────╰X─┤  State
 
     """
-    manager = _WireManager(zeroed=zeroed, dirty=dirty, min_integer=min_integer)
+    manager = _WireManager(zeroed=zeroed, any_state=any_state, min_int=min_int)
 
     wire_map = {}
     deallocated = set()
@@ -176,9 +182,14 @@ def resolve_dynamic_wires(
             op = op.map_wires(wire_map)
             if intersection := deallocated.intersection(set(op.wires)):
                 raise ValueError(
-                    f"Encountered deallocated wires {intersection}. Dynamic wires cannot be used after deallocation."
+                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
                 )
             new_ops.append(op.map_wires(wire_map))
 
     mps = [mp.map_wires(wire_map) for mp in tape.measurements]
+    for mp in mps:
+        if intersection := deallocated.intersection(set(mp.wires)):
+            raise ValueError(
+                f"Encountered deallocated wires {intersection} in {mp}. Dynamic wires cannot be used after deallocation."
+            )
     return (tape.copy(ops=new_ops, measurements=mps),), null_postprocessing

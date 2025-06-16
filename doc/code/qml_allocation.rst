@@ -16,6 +16,6 @@ This module contains functions and allocating and deallocating dynamic wires.
 .. autosummary::
     :toctree: api
 
-    ~allocate_ctx
+    ~safe_allocate
     ~allocate
     ~deallocate
