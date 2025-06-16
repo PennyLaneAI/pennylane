@@ -15,6 +15,7 @@ from pennylane import (
     CRY,
     CRZ,
     CSWAP,
+    CU,
     CY,
     CZ,
     RX,
@@ -1209,6 +1210,7 @@ class TestGates:
             crx(0.2) q0, q1;
             cry(0.1) q0, q1;
             crz(0.3) q1, q0;
+            cu(0.1, 0.2, 0.3, 0.4) q0, q1;
             """,
             permissive=True,
         )
@@ -1225,6 +1227,7 @@ class TestGates:
             CRX(0.2, wires=["q0", "q1"]),
             CRY(0.1, wires=["q0", "q1"]),
             CRZ(0.3, wires=Wires(["q1", "q0"])),
+            CU(0.1, 0.2, 0.3, 0.4, wires=Wires(["q0", "q1"])),
         ]
 
     def test_interprets_multi_qubit_gates(self):
@@ -1300,7 +1303,9 @@ class TestGates:
             y q2;
             z q0;
             s q2;
+            sdg q2;
             t q1;
+            tdg q1;
             sx q0;
             ctrl @ id q0, q1;
             inv @ h q2;
@@ -1322,7 +1327,9 @@ class TestGates:
             PauliY("q2"),
             PauliZ("q0"),
             S("q2"),
+            Adjoint(S("q2")),
             T("q1"),
+            Adjoint(T("q1")),
             SX("q0"),
             Controlled(Identity("q1"), control_wires=["q0"]),
             Adjoint(Hadamard("q2")),
