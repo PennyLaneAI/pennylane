@@ -13,6 +13,8 @@
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -341,3 +343,74 @@ class TestOptimize:
             assert np.allclose(params, expected_params, atol=tol, rtol=0)
 
         assert np.allclose(circ(params), -1)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        """Test optimizer compatibility with jax.jit compilation."""
+        import jax
+        import jax.numpy as jnp
+
+        device = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, device=device)
+
+        params = [0.1, 0.2]
+        params = jnp.array(params)
+
+        opt = qml.QNGOptimizerQJIT()
+        state = opt.init(params)
+
+        new_params1, state1 = opt.step(qnode, params, state)
+        new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
+
+        step = jax.jit(partial(opt.step, qnode))
+        step_and_cost = jax.jit(partial(opt.step_and_cost, qnode))
+        new_params1_jit, state1_jit = step(params, state)
+        new_params2_jit, state2_jit, cost_jit = step_and_cost(params, state)
+
+        # check params have been updated
+        assert not np.allclose(params, new_params1)
+        assert not np.allclose(params, new_params2)
+
+        # check jitted results match
+        assert np.allclose(new_params1, new_params1_jit)
+        assert state1 is None
+        assert state1_jit is None
+        assert np.allclose(new_params2, new_params2_jit)
+        assert state2 is None
+        assert state2_jit is None
+        assert np.allclose(cost, cost_jit)
+
+    @pytest.mark.catalyst
+    def test_qjit(self):
+        """Test optimizer compatibility with qml.qjit compilation."""
+        import jax.numpy as jnp
+
+        device = qml.device("lightning.qubit", wires=2)
+        qnode = qml.QNode(circuit, device=device)
+
+        params = [0.1, 0.2]
+        params = jnp.array(params)
+
+        opt = qml.QNGOptimizerQJIT()
+        state = opt.init(params)
+
+        new_params1, state1 = opt.step(qnode, params, state)
+        new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
+
+        step = qml.qjit(partial(opt.step, qnode))
+        step_and_cost = qml.qjit(partial(opt.step_and_cost, qnode))
+        new_params1_qjit, state1_qjit = step(params, state)
+        new_params2_qjit, state2_qjit, cost_qjit = step_and_cost(params, state)
+
+        # check params have been updated
+        assert not np.allclose(params, new_params1)
+        assert not np.allclose(params, new_params2)
+
+        # check qjitted results match
+        assert np.allclose(new_params1, new_params1_qjit)
+        assert state1 is None
+        assert state1_qjit is None
+        assert np.allclose(new_params2, new_params2_qjit)
+        assert state2 is None
+        assert state2_qjit is None
+        assert np.allclose(cost, cost_qjit)
