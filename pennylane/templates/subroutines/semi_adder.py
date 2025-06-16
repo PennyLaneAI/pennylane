@@ -70,7 +70,7 @@ class SemiAdder(Operation):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. Must contain at
             least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`. These wires are also used
             to encode the integer :math:`x+y` in the computational basis.
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. ``len(y_wires) - 1`` work
+        work_wires (Sequence[int]): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
             wires should be provided.
 
     **Example**
