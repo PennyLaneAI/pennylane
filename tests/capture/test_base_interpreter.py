@@ -333,7 +333,7 @@ class ConstAdder(PlxprInterpreter):
     that consts propagate through higher order primitives correctly."""
 
 
-add_3 = jax.core.Primitive("add_3")
+add_3 = jax.extend.core.Primitive("add_3")
 scalar = jnp.array(3)
 
 
@@ -350,7 +350,7 @@ def add_3_aval(_):
 @ConstAdder.register_primitive(add_3)
 def handle_add_3(self, x):  # pylint: disable=unused-argument
     """This custom registration adds a closure variable to the input to register it as
-    a const rather than a jax.core.Literal."""
+    a const rather than a jax.extend.core.Literal."""
     return x + scalar
 
 
@@ -402,7 +402,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
 
     def test_ctrl_transform(self):
         """Test the higher order ctrl transform."""
@@ -439,12 +439,14 @@ class TestHigherOrderPrimitiveRegistrations:
             qml.ctrl(g, control)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5, 1)
+
         assert len(jaxpr.consts) == 0
         assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].invars) == 1
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, 1)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
 
     def test_cond(self):
         """Test the cond higher order primitive."""
@@ -697,7 +699,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))()
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
+        assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 0
 
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):
@@ -796,6 +798,7 @@ class TestDynamicShapes:
         assert jax.numpy.allclose(output[0], 7)  # 4 + 1
         assert jax.numpy.allclose(output[1], 2 * jax.numpy.arange(7))
 
+    @pytest.mark.xfail  # v0.5.3 broke the ability to capture this
     def test_hstack(self):
         """Test that eval_jaxpr can handle the hstack primitive. hstack primitive produces a pjit equation,
         which currently does not work with dynamic shapes."""

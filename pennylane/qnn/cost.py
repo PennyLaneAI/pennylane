@@ -15,7 +15,8 @@
 This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments
-import pennylane as qml
+from pennylane import measurements
+from pennylane.workflow.qnode import qnode
 
 
 class SquaredErrorLoss:
@@ -35,7 +36,7 @@ class SquaredErrorLoss:
             where ``params`` are the trainable weights of the variational circuit, and
             ``kwargs`` are any additional keyword arguments that need to be passed
             to the template.
-        observables (Iterable[.Observable]): observables to measure during the
+        observables (Iterable[.Operator]): observables to measure during the
             final step of each circuit
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             function should be executed. This can either be a single device, or a list
@@ -87,6 +88,7 @@ class SquaredErrorLoss:
     :doc:`optimizer </introduction/interfaces>`.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         ansatz,
@@ -97,12 +99,13 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
-        def qnode(params, **circuit_kwargs):
-            ansatz(params, wires=device.wires, **circuit_kwargs)
-            return [getattr(qml, measure)(o) for o in observables]
 
-        self.qnode = qnode
+        @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
+        def qn(params, **circuit_kwargs):
+            ansatz(params, wires=device.wires, **circuit_kwargs)
+            return [getattr(measurements, measure)(o) for o in observables]
+
+        self.qnode = qn
 
     def loss(self, *args, target=None, **kwargs):
         r"""Calculates the squared error loss between the observables'

@@ -14,3 +14,4 @@ isort==5.13.2
 pylint==2.7.4
 rich>=13.7.1
 tach==0.28.5
+build

@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -27,7 +28,6 @@ from pennylane.gradients.parameter_shift import (
     _put_zeros_in_pdA2_involutory,
 )
 from pennylane.measurements.shots import Shots
-from pennylane.operation import Observable
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values
@@ -2596,7 +2596,7 @@ class TestParameterShiftRule:
                 return SpecialObject(new)
 
         # pylint: disable=too-few-public-methods
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
@@ -4564,7 +4564,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.param_shift(circuit, argnum=argnums)(x, y)

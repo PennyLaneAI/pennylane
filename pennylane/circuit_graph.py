@@ -23,7 +23,7 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Operator
 from pennylane.ops.identity import I
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
@@ -84,7 +84,7 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
-        obs (List[Union[MeasurementProcess, Observable]]): terminal measurements, in temporal order
+        obs (List[Union[MeasurementProcess, Operator]]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
         par_info (Optional[list[dict]]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
@@ -93,11 +93,11 @@ class CircuitGraph:
             quantum circuit.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         ops: list[Union[Operator, MeasurementProcess]],
-        obs: List[Union[MeasurementProcess, Observable]],
+        obs: List[Union[MeasurementProcess, Operator]],
         wires: Wires,
         par_info: Optional[list[dict]] = None,
         trainable_params: Optional[set[int]] = None,
@@ -166,7 +166,7 @@ class CircuitGraph:
         for mp in self.observables_in_order:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
-            serialization_string += mp.__class__.__name__  # pylint: disable=protected-access
+            serialization_string += mp.__class__.__name__
             serialization_string += delimiter
             serialization_string += name
             for param in data:
@@ -195,7 +195,7 @@ class CircuitGraph:
         Currently the topological order is determined by the queue index.
 
         Returns:
-            List[Union[MeasurementProcess, Observable]]: observables
+            List[Union[MeasurementProcess, Operator]]: observables
         """
         return self._observables
 

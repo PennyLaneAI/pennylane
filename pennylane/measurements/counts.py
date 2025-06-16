@@ -20,6 +20,7 @@ from typing import Optional
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -41,7 +42,7 @@ def counts(
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
@@ -68,8 +69,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -89,8 +92,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -107,8 +112,10 @@ def counts(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2, shots=4)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=4)
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -143,7 +150,7 @@ def counts(
             or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
             for o in op
         ):
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
@@ -299,8 +306,10 @@ class CountsMP(SampleMeasurement):
 
              .. code-block:: python3
 
-                dev = qml.device("default.qubit", wires=2, shots=4)
+                from functools import partial
+                dev = qml.device("default.qubit", wires=2)
 
+                @partial(qml.set_shots, shots=4)
                 @qml.qnode(dev)
                 def circuit(x):
                     qml.RX(x, wires=0)

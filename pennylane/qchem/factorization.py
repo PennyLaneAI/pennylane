@@ -23,7 +23,7 @@ import pennylane as qml
 
 has_jax_optax = True
 try:  # pragma: no cover
-    # pylint: disable=unused-import
+
     import optax
     from jax import jit
     from jax import numpy as jnp
@@ -530,7 +530,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
             :func:`~.factorize` method for all the available options with ``compressed=True``.
 
     Returns:
-        tuple(list[array[float]], list[list[Observable]], list[array[float]]): Tuple containing
+        tuple(list[array[float]], list[list[Operator]], list[array[float]]): Tuple containing
         grouped coefficients, grouped observables and basis rotation transformation matrices.
 
     **Example**
@@ -677,7 +677,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     This converts the input two-body tensor :math:`h_{pqrs}` that constructs :math:`\sum_{pqrs} h_{pqrs} a^\dagger_p a^\dagger_q a_r a_s`
     to a transformed two-body tensor :math:`V_{pqrs}` that follows the chemists' convention to construct :math:`\sum_{pqrs} V_{pqrs} a^\dagger_p a_q a^\dagger_r a_s`
-    in the spatial basis. During the tranformation, some extra one-body terms come out. These are returned as a one-body tensor :math:`T_{pq}` in the
+    in the spatial basis. During the transformation, some extra one-body terms come out. These are returned as a one-body tensor :math:`T_{pq}` in the
     chemists' notation either as is or after summation with the input one-body tensor :math:`h_{pq}`, if provided.
 
     Args:
@@ -742,7 +742,8 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
-        # pylint:disable=invalid-unary-operand-type
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=invalid-unary-operand-type
         one_body_coeffs = -np.einsum("prrs", chemist_two_body_coeffs)
 
         if chemist_one_body_coeffs is None:

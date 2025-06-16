@@ -183,7 +183,6 @@ class GroverOperator(Operation):
         *wires, work_wires, n_wires
     ):  # pylint: disable=arguments-differ
         wires = qml.math.array(wires, like="jax")
-        work_wires = qml.math.array(work_wires, like="jax")
         ctrl_values = [0] * (n_wires - 1)
 
         @qml.for_loop(len(wires) - 1)

@@ -31,10 +31,10 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
-from .simulate import _postselection_postprocess  # pylint: disable=protected-access
+from .simulate import _postselection_postprocess
 
 
-# pylint: disable=attribute-defined-outside-init, access-member-before-definition,too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 class DefaultQubitInterpreter(FlattenedInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
@@ -191,7 +191,7 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
 
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         if "mcm" in eqn.primitive.name:
             raise NotImplementedError(
                 "DefaultQubitInterpreter does not yet support postprocessing mcms"
@@ -230,14 +230,10 @@ def _(self, *invals, reset, postselect):
     return mcms[mp]
 
 
-# pylint: disable=unused-argument
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, n_consts, lazy=True):
-    # TODO: requires jaxpr -> list of ops first
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
+def _(self, *invals, jaxpr, lazy=True):
     recorder = CollectOpsandMeas()
-    recorder.eval(jaxpr, consts, *args)
+    recorder.eval(jaxpr, [], *invals)
 
     ops = recorder.state["ops"]
     with pause():
@@ -253,13 +249,12 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def _(self, *invals, n_control, jaxpr, control_values, work_wires):
     # TODO: requires jaxpr -> list of ops first
-    consts = invals[:n_consts]
     control_wires = invals[-n_control:]
-    args = invals[n_consts:-n_control]
+    args = invals[:-n_control]
     recorder = CollectOpsandMeas()
-    recorder.eval(jaxpr, consts, *args)
+    recorder.eval(jaxpr, [], *args)
 
     ops = recorder.state["ops"]
     with pause():

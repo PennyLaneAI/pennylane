@@ -22,11 +22,18 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math.utils import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+from .capture_measurements import (
+    create_measurement_mcm_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+)
 
 
 class MeasurementShapeError(ValueError):
@@ -50,20 +57,18 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             where the instance has to be identified
     """
 
-    # pylint:disable=too-many-instance-attributes
-
     _shortname = None
 
-    _obs_primitive: Optional["jax.core.Primitive"] = None
-    _wires_primitive: Optional["jax.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.core.Primitive"] = None
+    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
+    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
+    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         name = cls._shortname or cls.__name__
-        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
-        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
-        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
+        cls._wires_primitive = create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
@@ -145,7 +150,6 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             return cls(eigvals=data[1], **dict(metadata))
         return cls(**dict(metadata))
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Optional[
@@ -203,7 +207,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
@@ -232,7 +236,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ()
 
         """
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
@@ -489,11 +493,14 @@ class SampleMeasurement(MeasurementProcess):
 
     We can now execute it in a QNode:
 
-    >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-    >>> @qml.qnode(dev)
+    >>> from functools import partial
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @partial(qml.set_shots, shots=1000)
+    ... @qml.qnode(dev)
     ... def circuit():
     ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+    ...
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """

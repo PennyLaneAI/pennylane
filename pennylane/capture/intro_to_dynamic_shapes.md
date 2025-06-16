@@ -284,7 +284,7 @@ We can now take these learnings to make a custom higher order primitive that sup
 
 
 ```python
-prim = jax.core.Primitive("hop")
+prim = jax.extend.core.Primitive("hop")
 prim.multiple_results = True
 
 @prim.def_impl
@@ -368,7 +368,7 @@ For example, with for loops and while loops, we can insist that the output shape
 
 
 ```python
-prim2 = jax.core.Primitive("hop")
+prim2 = jax.extend.core.Primitive("hop")
 prim2.multiple_results = True
 
 @prim2.def_impl
@@ -430,7 +430,7 @@ Here we are going to create a primitive that accepts an argument `n`, and return
 
 
 ```python
-prim3 = jax.core.Primitive("dynamic_output")
+prim3 = jax.extend.core.Primitive("dynamic_output")
 prim3.multiple_results = True
 ```
 
@@ -438,7 +438,7 @@ prim3.multiple_results = True
 
 
 ```python
-from jax._src.interpreters import partial_eval as pe
+from jax.interpreters import partial_eval as pe
 
 def custom_staging_rule(jaxpr_trace, *invars, **params):
     new_shapes = [jax.core.DShapedArray((invars[0],2), jax.numpy.float32.dtype)]

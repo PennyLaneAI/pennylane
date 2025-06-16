@@ -215,7 +215,7 @@ gradients; a well-known example of this approach is backpropagation. These metho
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
-:doc:`quantum backpropagation <demos/tutorial_backprop>` demonstration.
+`quantum backpropagation <https://pennylane.ai/qml/demos/tutorial_backprop>`__ demonstration.
 
 * ``"backprop"``: Use standard backpropagation.
 
@@ -238,7 +238,7 @@ Hardware-compatible differentiation
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
 However, when using a simulator, you may notice that the number of circuit executions required to
-compute the gradients with these methods :doc:`scales linearly <demos/tutorial_backprop>`
+compute the gradients with these methods `scales linearly <https://pennylane.ai/qml/demos/tutorial_backprop>`__
 with the number of trainable circuit parameters.
 
 * ``"parameter-shift"``: Use the analytic `parameter-shift rule

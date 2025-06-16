@@ -312,11 +312,11 @@ class TestDynamicDecomposition:
         max_expansion = 1
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        def circuit(work_wires, wires):
+        def circuit(wires):
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
+        jaxpr = jax.make_jaxpr(circuit)(wires)
 
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
@@ -339,7 +339,7 @@ class TestDynamicDecomposition:
 
         # Validate Ops
         collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires, work_wires)
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
         ops_list = collector.state["ops"]
 
         tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
@@ -370,7 +370,7 @@ class TestDynamicDecomposition:
     )
     def test_grover(
         self, max_expansion, gate_set, wires, work_wires, autograph
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that Grover gives correct result after dynamic decomposition."""
 
         from functools import partial
@@ -381,12 +381,12 @@ class TestDynamicDecomposition:
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=autograph)
-        def circuit(wires, work_wires):
+        def circuit(wires):
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(circuit)(wires=wires, work_wires=work_wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, *work_wires)
+        jaxpr = jax.make_jaxpr(circuit)(wires)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 

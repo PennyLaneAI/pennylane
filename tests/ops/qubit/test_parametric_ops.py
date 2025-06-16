@@ -25,6 +25,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
@@ -220,13 +221,8 @@ class TestOperations:
             return qml.state()
 
         def _get_expected_state(phase, dim, size):
-            return (
-                np.array(
-                    [np.exp(1j * phase) if i < dim else np.exp(-1j * phase) for i in range(size)]
-                )
-                * 1
-                / 2
-            )
+            phase = np.exp(1j * phase)
+            return np.concatenate([phase * np.ones(dim), phase.conj() * np.ones(size - dim)]) / 2
 
         assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
 
@@ -245,7 +241,7 @@ class TestParameterFrequencies:
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        if not qml.operation.has_gen(op):
+        if not op.has_generator:
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
         gen = op.generator()
@@ -654,29 +650,58 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "op", (qml.PCPhase(1.23, dim=1, wires=[0]), qml.PCPhase(1.23, dim=5, wires=[0, 1, 2]))
-    )
-    def test_pc_phase_decomposition(self, op):
+    two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
+    five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
+    other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
+
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition(self, dim, wires):
         """Test that the PCPhase decomposition produces the same unitary"""
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) > 1 else decomp_ops[0]
 
-        expected_mat = qml.matrix(op)
-        decomp_mat = qml.matrix(decomp_op)
+        expected_mat = qml.matrix(op, wire_order=wires)
+        decomp_mat = qml.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
-    def test_pc_phase_decomposition_broadcasted(self):
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
-        op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
+        op = qml.PCPhase(np.random.random(3), dim, wires=wires)
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
 
-        expected_mats = qml.matrix(op)
-        decomp_mats = qml.matrix(decomp_op)
+        expected_mats = qml.matrix(op, wire_order=wires)
+        decomp_mats = qml.matrix(decomp_op, wire_order=wires)
 
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_new(self, dim, wires):
+        """Tests the PCPhase decomposition rules."""
+
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
+        for rule in qml.list_decomps(qml.PCPhase):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pcphase_decomposition_graph(self):
+        """Tests that the PCPhase can be decomposed all the way down."""
+
+        tape = qml.tape.QuantumScript(
+            [qml.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], []
+        )
+        expected_matrix = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        [decomp], _ = qml.transforms.decompose(
+            tape, gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.X, qml.Toffoli, qml.GlobalPhase}
+        )
+        mat = qml.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+        assert qml.math.allclose(mat, expected_matrix)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize(
@@ -697,6 +722,19 @@ class TestDecompositions:
         exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    def test_controlled_phase_shift_decomp_new(self, work_wire_type):
+        """tests the new controlled phase shift decomposition"""
+
+        op = qml.ctrl(
+            qml.PhaseShift(0.123, wires=0),
+            control=[1, 2, 3],
+            work_wires=[4, 5],
+            work_wire_type=work_wire_type,
+        )
+        for rule in qml.list_decomps("C(PhaseShift)"):
+            _test_decomposition_rule(op, rule)
 
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]

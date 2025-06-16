@@ -120,7 +120,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=unused-argument, too-many-arguments
+    # pylint: disable=too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None
@@ -393,9 +393,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     `Wierichs, Izaac, Wang and Lin (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__ .
     An introduction to the concept of quantum circuits as Fourier series can also be found in
     the
-    :doc:`Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`
+    `Quantum models as Fourier series <demos/tutorial_expressivity_fourier_series>`__
     and
-    :doc:`General parameter-shift rules <demos/tutorial_general_parshift>`
+    `General parameter-shift rules <demos/tutorial_general_parshift>`__
     demos as well as the
     :mod:`qml.fourier <pennylane.fourier>` module docstring.
 

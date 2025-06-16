@@ -47,7 +47,7 @@ def execute(
     *,
     transform_program: TransformProgram = None,
     grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache] = True,
+    cache: Union[None, bool, dict, Cache, Literal["auto"]] = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
     device_vjp: Union[bool, None] = False,
@@ -75,8 +75,13 @@ def execute(
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
-            a significant reduction in quantum evaluations during gradient computations.
+        cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
+            ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
+            a reduction in quantum evaluations during higher order gradient computations.
+            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
+            execution. If ``False``, no caching is used. You may also pass your own cache
+            to be used; this can be any object that implements the special methods
+            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
         cachesize (int): the size of the cache.
         max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
@@ -186,7 +191,16 @@ def execute(
     if not tapes:
         return ()
 
-    ### Specifying and preprocessing variables ####
+    ### Apply the user transforms ####
+    transform_program = transform_program or TransformProgram()
+    tapes, user_post_processing = transform_program(tapes)
+    if transform_program.is_informative:
+        return user_post_processing(tapes)
+
+    if not tapes:
+        return user_post_processing(())
+
+    ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
 
@@ -200,18 +214,14 @@ def execute(
         derivative_order=max_diff,
         executor_backend=executor_backend,
     )
-    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
+    config = _resolve_execution_config(config, device, tapes)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
-    transform_program, inner_transform = _setup_transform_program(
-        transform_program, device, config, cache, cachesize
-    )
+    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
-    tapes, post_processing = transform_program(tapes)
+    tapes, outer_post_processing = outer_transform(tapes)
 
-    if transform_program.is_informative:
-        return post_processing(tapes)
+    assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
-    return post_processing(results)
+    return user_post_processing(outer_post_processing(results))

@@ -35,8 +35,9 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from .promote_consts import promote_consts
 
-FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 .. code-block::
@@ -92,8 +93,8 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
 
 def jaxpr_to_jaxpr(
-    interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
-) -> "jax.core.Jaxpr":
+    interpreter: "PlxprInterpreter", jaxpr: "jax.extend.core.Jaxpr", consts, *args
+) -> "jax.extend.core.ClosedJaxpr":
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     f = partial(interpreter.eval, jaxpr, consts)
@@ -218,7 +219,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
+    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -227,11 +228,13 @@ class PlxprInterpreter:
         self._env = {}
 
     @classmethod
-    def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
+    def register_primitive(
+        cls, primitive: "jax.extend.core.Primitive"
+    ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.core.Primitive): the primitive we want custom behavior for
+            primitive (jax.extend.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -242,7 +245,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitve")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
@@ -258,7 +261,7 @@ class PlxprInterpreter:
 
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        return var.val if isinstance(var, jax.core.Literal) else self._env[var]
+        return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
@@ -294,11 +297,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(op)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
 
         Args:
-            eqn (jax.core.JaxprEqn): a jax equation for an operator.
+            eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
 
         See also: :meth:`~.interpret_operation`.
 
@@ -310,11 +313,11 @@ class PlxprInterpreter:
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            eqn (jax.core.JaxprEqn)
+            eqn (jax.extend.core.JaxprEqn)
 
         See also :meth:`~.interpret_measurement`.
 
@@ -336,11 +339,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+    def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
-            jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+            jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
             consts (list[TensorLike]): the constant variables for the jaxpr
             *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -410,7 +413,7 @@ class PlxprInterpreter:
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
-def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
     >>> import jax
@@ -430,12 +433,14 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     # needs custom primitive as jax.core.eval_jaxpr will error out with this
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
-    return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
+    return jax.lax.broadcast_in_dim(
+        x, new_shape, broadcast_dimensions=broadcast_dimensions, out_sharding=sharding
+    )
 
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape):
+def _(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -450,38 +455,31 @@ def _(self, *dyn_shape, dimension, dtype, shape):
     """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
-    return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, lazy):
     """Interpret an adjoint transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-
-    return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
-    )
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
+    jaxpr, new_invals = promote_consts(jaxpr, invals)
+    return adjoint_transform_prim.bind(*new_invals, jaxpr=jaxpr, lazy=lazy)
 
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires):
     """Interpret a ctrl transform primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+    args = invals[:-n_control]
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
+    jaxpr, new_invals = promote_consts(jaxpr, invals)
 
     return ctrl_transform_prim.bind(
-        *jaxpr.consts,
-        *args,
-        *invals[-n_control:],
+        *new_invals,
         n_control=n_control,
-        jaxpr=jaxpr.jaxpr,
+        jaxpr=jaxpr,
         control_values=control_values,
         work_wires=work_wires,
-        n_consts=len(jaxpr.consts),
     )
 
 
@@ -581,24 +579,20 @@ def handle_while_loop(
     )
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
+def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr):
     """Handle a qnode primitive."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
-
+    qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
+    jaxpr, new_invals = promote_consts(qfunc_jaxpr, invals)
     return qnode_prim.bind(
-        *new_qfunc_jaxpr.consts,
-        *args,
+        *new_invals,
         shots=shots,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
-        qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
-        n_consts=len(new_qfunc_jaxpr.consts),
+        qfunc_jaxpr=jaxpr,
     )
 
 
@@ -710,11 +704,11 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
     """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
-        jaxpr (jax.core.Jaxpr): a jaxpr
+        jaxpr (jax.extend.core.Jaxpr): a jaxpr
         consts (list[TensorLike]): the constants for the jaxpr
         *args (TensorLike): the arguments for the jaxpr
 

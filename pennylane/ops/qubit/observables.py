@@ -25,7 +25,8 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import Observable, Operation
+from pennylane._deprecated_observable import Observable
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -58,6 +59,9 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
 
+    _queue_category = None
+
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -133,7 +137,7 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(A, format="csr") -> csr_matrix:
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
@@ -296,6 +300,8 @@ class SparseHamiltonian(Observable):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
+    _queue_category = None
+    is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -362,7 +368,9 @@ class SparseHamiltonian(Observable):
         """
         return H.toarray()
 
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable=arguments-differ
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
@@ -443,6 +451,7 @@ class Projector(Observable):
 
     """
 
+    is_hermitian = True
     name = "Projector"
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -516,7 +525,7 @@ class BasisStateProjector(Projector, Operation):
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
     def label(
@@ -686,9 +695,10 @@ class StateVectorProjector(Projector):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
+    # pylint: disable=unused-argument
     def label(
         self,
         decimals: Optional[int] = None,
@@ -745,7 +755,7 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_matrix(  # pylint: disable=arguments-differ
         state_vector: TensorLike,
     ) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -774,7 +784,7 @@ class StateVectorProjector(Projector):
         return qml.math.outer(state_vector, qml.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_eigvals(  # pylint: disable=arguments-differ
         state_vector: TensorLike,
     ) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -808,7 +818,7 @@ class StateVectorProjector(Projector):
         return qml.math.convert_like(w, state_vector)
 
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
         state_vector: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).

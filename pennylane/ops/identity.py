@@ -21,6 +21,9 @@ from typing import Sequence
 from scipy import sparse
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import CVObservable, Operation, SparseMatrixUndefinedError
 from pennylane.wires import WiresLike
 
@@ -53,6 +56,12 @@ class Identity(CVObservable, Operation):
     _queue_category = "_ops"
 
     ev_order = 1
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @classmethod
     def _primitive_bind_call(
@@ -203,9 +212,12 @@ class Identity(CVObservable, Operation):
     def adjoint(self):
         return I(wires=self.wires)
 
-    # pylint: disable=unused-argument
     def pow(self, z):
         return [I(wires=self.wires)]
+
+    def queue(self, context=qml.QueuingManager):
+        context.append(self)
+        return self
 
 
 I = Identity
@@ -226,6 +238,11 @@ Args:
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
 """
+
+add_decomps(Identity, null_decomp)
+add_decomps("Adjoint(Identity)", null_decomp)
+add_decomps("C(Identity)", null_decomp)
+add_decomps("Pow(Identity)", null_decomp)
 
 
 class GlobalPhase(Operation):
@@ -465,3 +482,59 @@ class GlobalPhase(Operation):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
         return qml.s_prod(-1, qml.I(self.wires))
+
+
+add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
+add_decomps("Pow(GlobalPhase)", pow_rotation)
+
+
+def _controlled_g_phase_resource(
+    *_, num_control_wires, num_zero_control_values, num_work_wires, **__
+):
+    if num_control_wires == 1 and num_zero_control_values == 1:
+        return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
+
+    if num_control_wires == 1:
+        return {qml.PhaseShift: 1}
+
+    if num_control_wires == 2:
+        return {qml.X: num_zero_control_values * 2, qml.ControlledPhaseShift: 1}
+
+    return {
+        qml.X: num_zero_control_values * 2,
+        controlled_resource_rep(
+            qml.PhaseShift,
+            base_params={},
+            num_control_wires=num_control_wires - 1,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+        ): 1,
+    }
+
+
+@register_resources(_controlled_g_phase_resource)
+def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, work_wires, **__):
+    """The decomposition rule for a controlled global phase."""
+
+    if len(control_wires) == 1 and control_values[0]:
+        qml.PhaseShift(-params[0], wires=control_wires[-1])
+        return
+
+    if len(control_wires) == 1 and not control_values[0]:
+        qml.PhaseShift(params[0], wires=control_wires[-1])
+        qml.GlobalPhase(params[0])
+        return
+
+    zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
+    for w in zero_control_wires:
+        qml.PauliX(w)
+    qml.ctrl(
+        qml.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
+        control=wires[: len(control_wires) - 1],
+        work_wires=work_wires,
+    )
+    for w in zero_control_wires:
+        qml.PauliX(w)
+
+
+add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)

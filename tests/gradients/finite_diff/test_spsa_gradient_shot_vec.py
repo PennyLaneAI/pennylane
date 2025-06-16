@@ -23,9 +23,10 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 
 h_val = 0.1
 spsa_shot_vec_tol = 0.33
@@ -185,7 +186,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.torch
@@ -201,7 +202,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.tf
@@ -217,7 +218,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     @pytest.mark.jax
@@ -233,7 +234,7 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
     def test_all_zero_diff_methods(self, seed):
@@ -453,7 +454,7 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(Operator):
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods

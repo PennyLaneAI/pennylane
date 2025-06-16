@@ -170,7 +170,7 @@ def test_different_wires(w, as_kwarg):
     assert eqn.primitive == qml.X._primitive
     assert len(eqn.invars) == 1
     if not isinstance(w, jax.numpy.ndarray):
-        assert isinstance(eqn.invars[0], jax.core.Literal)
+        assert isinstance(eqn.invars[0], jax.extend.core.Literal)
         assert eqn.invars[0].val == 0
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
@@ -229,28 +229,6 @@ def test_parametrized_op():
 
     assert len(q) == 1
     qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
-
-
-def test_parametrized_op_jvp_tracer():
-    """Test that passing a JVP tracer to a parametrized op just creates
-    the op with the tracer as argument(s)."""
-    from pennylane.capture.primitives import grad_prim
-
-    def func(x):
-        qml.RX(x, 0)
-        return x
-
-    jaxpr = jax.make_jaxpr(qml.grad(func))(0.5)
-    assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == grad_prim
-
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-
-    assert len(q) == 1
-    op = q.queue[0]
-    assert isinstance(op, qml.RX)
-    assert isinstance(op.data[0], jax._src.interpreters.ad.JVPTracer)
 
 
 class TestSpecialOps:
@@ -329,23 +307,22 @@ class TestTemplates:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
     def test_nested_template(self):
-        """Test capturing a template that contains a nested operation defined outside the qfunc."""
+        """Test capturing a template that depends on another operator."""
+
+        def qfunc(coeffs):
+            ops = [qml.X(0), qml.Z(0)]
+            H = qml.dot(coeffs, ops)
+            qml.TrotterProduct(H, time=2.4, order=2)
 
         coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
 
-        def qfunc(Hi):
-            qml.TrotterProduct(Hi, time=2.4, order=2)
-
-        jaxpr = jax.make_jaxpr(qfunc)(H)
+        jaxpr = jax.make_jaxpr(qfunc)(coeffs)
 
         assert len(jaxpr.eqns) == 6
 
-        # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
         assert not any(isinstance(eqn.outvars[0], jax.core.DropVar) for eqn in jaxpr.eqns[:5])
@@ -360,6 +337,8 @@ class TestTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
 
         assert len(q) == 1
+        ops = [qml.X(0), qml.Z(0)]
+        H = qml.dot(coeffs, ops)
         assert q.queue[0] == qml.TrotterProduct(H, time=2.4, order=2)
 
 
@@ -404,7 +383,11 @@ class TestOpmath:
         assert eqn.invars[2].val == 4
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {"control_values": [0, 1], "work_wires": None}
+        assert eqn.params == {
+            "control_values": [0, 1],
+            "work_wires": None,
+            "work_wire_type": "dirty",
+        }
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)

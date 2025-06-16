@@ -97,13 +97,11 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):
+def _(self, *invals, jaxpr, lazy):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
     child = CollectOpsandMeas()
-    child.eval(jaxpr, consts, *args)
+    child.eval(jaxpr, [], *invals)
     assert child.state
 
     for op in reversed(child.state["ops"]):
@@ -113,16 +111,15 @@ def _(self, *invals, jaxpr, lazy, n_consts):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _(self, *invals, n_control, jaxpr, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
-    consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
+    args = invals[:-n_control]
     control = invals[-n_control:]
 
     child = CollectOpsandMeas()
-    child.eval(jaxpr, consts, *args)
+    child.eval(jaxpr, [], *args)
     assert child.state
 
     for op in child.state["ops"]:
@@ -177,7 +174,6 @@ def _(self, wires, reset, postselect):
     return m0
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(grad_prim)
 def _(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
@@ -191,24 +187,21 @@ def _(self, *invals, jaxpr, n_consts, **params):
 
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
-    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
-):  # pylint: disable=too-many-arguments,unused-argument
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
-
+    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr
+):  # pylint: disable=too-many-arguments
     child = CollectOpsandMeas()
-    out = child.eval(qfunc_jaxpr, consts, *args)
+    out = child.eval(qfunc_jaxpr, [], *invals)
     assert child.state
     self.state["ops"].extend(child.state["ops"])
     self.state["measurements"].extend(child.state["measurements"])
     return out
 
 
-def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
 

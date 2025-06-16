@@ -3,11 +3,38 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
 --------------------
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
+
+* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
+  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
+  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+  processed into the circuit.
+
+  .. code-block:: python
+
+      class MyObs(Operator):
+      
+          is_hermitian = True
+
+          def queue(self, context=qml.QueuingManager):
+              return self
+
+  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+
+  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
   on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
@@ -15,6 +42,50 @@ Pending deprecations
 
   - Deprecated in v0.42
   - Will be removed in v0.43
+
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
+  use instead.
+  These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
+  ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
+
+.. code-block:: python
+
+    def not_tape(obj):
+        return not isinstance(obj, qml.tape.QuantumScript)
+
+    def has_gen(obj):
+        return obj.has_generator
+
+    def has_grad_method(obj):
+        return obj.grad_method is not None
+
+    def has_multipar(obj):
+        return obj.num_params > 1
+
+    def has_nopar(obj):
+        return obj.num_params == 0
+
+    def has_unitary_gen(obj):
+        return obj in qml.ops.qubit.attributes.has_unitary_generator
+
+    def is_measurement(obj):
+        return isinstance(obj, qml.measurements.MeasurementProcess)
+
+    def defines_diagonalizing_gates(obj):
+        return obj.has_diagonalizing_gates
+
+    def gen_is_multi_term_hamiltonian(obj):
+        if not isinstance(obj, Operator) or not obj.has_generator:
+            return False
+        try:
+            generator = obj.generator()
+            _, ops = generator.terms() 
+            return len(ops) > 1
+        except TermsUndefinedError:
+            return False
 
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
@@ -68,7 +139,8 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like :doc:`PyTorch <demos/tutorial_qnn_module_torch>` or :doc:`JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_ 
+  or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
 
   - Deprecated in v0.41
   - Removed in v0.42

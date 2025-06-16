@@ -18,9 +18,10 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
+from pennylane._deprecated_observable import Observable
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
 
 from .symbolicop import SymbolicOp
@@ -190,20 +191,18 @@ def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    adjoint_prim = NonInterpPrimitive("adjoint_transform")
+    adjoint_prim = QmlPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
     adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy, n_consts):
+    def _(*args, jaxpr, lazy):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-        consts = args[:n_consts]
-        args = args[n_consts:]
         collector = CollectOpsandMeas()
-        collector.eval(jaxpr, consts, *args)
+        collector.eval(jaxpr, [], *args)
         for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
@@ -227,13 +226,13 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
         flat_args = jax.tree_util.tree_leaves(args)
+        jaxpr, new_args = qml.capture.promote_consts(
+            jaxpr, tuple(abstract_shapes) + tuple(flat_args)
+        )
         adjoint_prim.bind(
-            *jaxpr.consts,
-            *abstract_shapes,
-            *flat_args,
-            jaxpr=jaxpr.jaxpr,
+            *new_args,
+            jaxpr=jaxpr,
             lazy=lazy,
-            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
@@ -268,7 +267,6 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     return Adjoint(op)
 
 
-# pylint: disable=too-many-public-methods
 class Adjoint(SymbolicOp):
     """
     The Adjoint of an operator.
@@ -332,6 +330,7 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
@@ -391,7 +390,6 @@ class Adjoint(SymbolicOp):
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
@@ -434,7 +432,6 @@ class Adjoint(SymbolicOp):
         return Adjoint(base=base)
 
 
-# pylint: disable=no-member
 class AdjointOperation(Adjoint, Operation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
@@ -456,7 +453,6 @@ class AdjointOperation(Adjoint, Operation):
     def name(self):
         return self._name
 
-    # pylint: disable=missing-function-docstring
     @property
     def basis(self):
         return self.base.basis
@@ -498,6 +494,7 @@ class AdjointObs(Adjoint, Observable):
         return object.__new__(cls)
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
 # pylint: disable=too-many-ancestors
 class AdjointOpObs(AdjointOperation, Observable):
     """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
