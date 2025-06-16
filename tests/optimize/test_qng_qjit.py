@@ -382,6 +382,7 @@ class TestOptimize:
 
     @pytest.mark.jax
     @pytest.mark.catalyst
+    @pytest.mark.external
     def test_qjit(self):
         """Test optimizer compatibility with qml.qjit compilation."""
         import jax.numpy as jnp
