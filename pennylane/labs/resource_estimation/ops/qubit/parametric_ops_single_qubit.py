@@ -619,4 +619,5 @@ class ResourceRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+
         return [GateCount(cls.resource_rep(eps))]
