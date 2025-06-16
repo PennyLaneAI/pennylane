@@ -137,7 +137,7 @@ class Context:
 
     def init_loops_scope(self, node: ForInLoop | WhileLoop):
         """
-        Inits the loops scope on the current context.
+        Initializes the loops scope on the current context.
 
         Args:
             node (ForInLoop | WhileLoop): the loop node.
