@@ -39,6 +39,7 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
                 %1 = quantum.custom "RX"() %0 : !quantum.bit
                 %2 = quantum.custom "RY"() %1 : !quantum.bit
+                //quantum.gphase %arg0
                 return
             }
         """
@@ -54,7 +55,7 @@ class TestCombineGlobalPhasesPass:
 
         run_filecheck(program, module)
 
-    # def test_composable_ops(self, run_filecheck):
+    # def test_combinable_ops(self, run_filecheck):
     #     """Test that composable gates are merged."""
     #     program = """
     #         func.func @test_func(%arg0: f64, %arg1: f64) {
@@ -63,8 +64,8 @@ class TestCombineGlobalPhasesPass:
     #             // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
     #             // CHECK-DAG: quantum.custom "RX"([[phi0:%.*]]) [[q0:%.*]] : !quantum.bit
     #             // CHECK-NOT: "quantum.custom"
-    #             %1 = quantum.custom "RX"(%arg0) %0 : !quantum.bit
-    #             %2 = quantum.custom "RX"(%arg1) %1 : !quantum.bit
+    #             %1 = quantum.custom "GlobalPhase"(%arg0) %0 : !quantum.bit
+    #             %2 = quantum.custom "GlobalPhase"(%arg1) %1 : !quantum.bit
     #             return
     #         }
     #     """

@@ -18,7 +18,7 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import builtin, func
+from xdsl.dialects import arith, builtin, func
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import GlobalPhaseOp
@@ -39,19 +39,19 @@ class CombineGlobalPhasesPattern(
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         consecutive composable rotations."""
-        phi = 0
+        phi = 0.0
+        rewrite_required = False
         for op in funcOp.body.walk():
             if not isinstance(op, GlobalPhaseOp):
                 continue
-
-            phi += op.params
+            rewrite_required = True
+            addOp = arith.AddFOp(op.operands[0], phi)
+            phi = addOp.result
             rewriter.erase_op(op)
 
-        new_op = GlobalPhaseOp(
-            params=(phi,),
-        )
-        last_op = funcOp.body.walk()[-1]
-        rewriter.insert_op(new_op, InsertPoint.after(last_op))
+        if rewrite_required: 
+            new_op = GlobalPhaseOp(params=phi)
+            rewriter.insert_op(new_op, InsertPoint.at_end(funcOp.body.block))
 
 
 @dataclass(frozen=True)

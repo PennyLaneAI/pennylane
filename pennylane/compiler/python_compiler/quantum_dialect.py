@@ -31,6 +31,7 @@ from xdsl.dialects.builtin import (
     AnyAttr,
     AnyOf,
     BaseAttr,
+    FloatAttr,
     Float64Type,
     IntegerAttr,
     IntegerType,
@@ -439,9 +440,14 @@ class GlobalPhaseOp(IRDLOperation):
 
     name = "quantum.gphase"
 
-    # assembly_format = """
-    #        `(` $params `)` attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           $params 
+           (`adj` $adjoint^)? 
+           attr-dict 
+           ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  
+           ( `ctrlvals` `(` $in_ctrl_values^ `)` )? 
+           `:` (`ctrls` type($out_ctrl_qubits)^ )?
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -462,7 +468,7 @@ class GlobalPhaseOp(IRDLOperation):
     def __init__(
         self,
         *,
-        params: SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None = None,
+        params: float | SSAValue[Float64Type],
         in_ctrl_qubits: (
             QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
         ) = None,
@@ -475,12 +481,11 @@ class GlobalPhaseOp(IRDLOperation):
         ) = None,
         adjoint: UnitAttr | bool = False,
     ):
-        params = () if params is None else params
+        if isinstance(params, float): 
+            params = FloatAttr(data=params, type = Float64Type())
         in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
         in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
 
-        if not isinstance(params, Sequence):
-            params = (params,)
         if not isinstance(in_ctrl_qubits, Sequence):
             in_ctrl_qubits = (in_ctrl_qubits,)
         if not isinstance(in_ctrl_values, Sequence):
