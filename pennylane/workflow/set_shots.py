@@ -24,7 +24,7 @@ from .qnode import QNode
 def set_shots(
     qnode: QNode,
     shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
-):
+) -> QNode:
     """Transform used to set or update a circuit's shots.
 
     Args:
