@@ -113,7 +113,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
     .. seealso:: :class:`~.safe_allocate`
 
     :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
-    Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
+    Manual use of ``allocate`` and ``deallocate`` should be used with caution.
 
     ..code-block:: python
 
@@ -175,7 +175,7 @@ def deallocate(
     .. seealso:: :class:`~.safe_allocate`
 
     :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
-    Manual use of ``allocate`` and ``deallocate`` should be used with more deliberate care.
+    Manual use of ``allocate`` and ``deallocate`` should be used with caution.
 
     ..code-block:: python
 
