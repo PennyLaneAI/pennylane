@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains methods that decomposes unitary matrices."""
+"""Utility functions for decompositions are available from ``qml.math.decomposition``."""
 
 import numpy as np
 
