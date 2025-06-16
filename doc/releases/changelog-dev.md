@@ -36,6 +36,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -638,6 +639,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* `qml.QNode` has `_shots` now and the `qml.set_shots` transform has been refactored for better decoupling.
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
 * The `qml.compiler.python_compiler` submodule has been restructured.
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
