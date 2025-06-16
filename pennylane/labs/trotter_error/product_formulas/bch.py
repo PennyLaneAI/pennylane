@@ -298,6 +298,8 @@ def _remove_redundancies(
     2. Apply [A, A] = 0
     3. Apply [A, B] = -[A, B]
     4. Apply [A, B, B, A] = [B, A, A, B]
+
+    A derivation of identity 4 can be found in the appendix of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
     """
 
     def less_than(x, y):
