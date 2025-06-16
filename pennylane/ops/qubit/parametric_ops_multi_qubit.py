@@ -599,6 +599,118 @@ add_decomps("Adjoint(PauliRot)", adjoint_rotation)
 add_decomps("Pow(PauliRot)", pow_rotation)
 
 
+class CU(Operation):
+    r"""
+    Arbitrary controlled qubit unitary.
+
+    .. math::
+
+        CU(\theta, \phi, \delta, \gamma) = I_b \ket{0}\bra{0}_a
+            + e^{i \gamma} U_{3_b}(\theta, \phi, \delta) \ket{1}\bra{1}_a
+
+    The :math:`CU` gate is related to the 3-parameter single-qubit unitary :math:`U_3` (:class:`U3`) and is a controlled
+    version of it with an additional fourth parameter :math:`\gamma` that gives the relative phase of the controlled
+    operation.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 4
+    * Number of dimensions per parameter: (0, 0, 0, 0)
+
+    Args:
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+        gamma (float): relative controlled phase :math:`\gamma`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+        id (str or None): String representing the operation (optional)
+    """
+
+    num_wires = 2
+    num_params = 4
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    parameter_frequencies = [(1,), (1,), (1,), (1,)]
+
+    resource_keys = set()
+
+    # pylint: disable=too-many-positional-arguments
+    def __init__(
+        self,
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        gamma: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+    ):
+        super().__init__(theta, phi, delta, gamma, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    @staticmethod
+    def compute_matrix(
+        theta: TensorLike, phi: TensorLike, delta: TensorLike, gamma: TensorLike
+    ) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        Args:
+            theta (tensor_like or float): polar angle
+            phi (tensor_like or float): azimuthal angle
+            delta (tensor_like or float): quantum phase
+            gamma (tensor_like or float): relative controlled phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CU.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), torch.tensor(0.4))
+
+        """
+
+        # If anything is not tensorflow, it must be cast
+        interface = qml.math.get_interface(theta, phi, delta, gamma)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(qml.math.asarray(theta, like=interface), 1j)
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
+            gamma = qml.math.cast_like(qml.math.asarray(gamma, like=interface), 1j)
+
+        mat = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [
+                0,
+                0,
+                qml.math.exp(1j * gamma) * (1 + qml.math.exp(1j * theta)),
+                qml.math.exp(1j * gamma)
+                * (-1j * qml.math.exp(1j * delta) * (1 - qml.math.exp(1j * theta))),
+            ],
+            [
+                0,
+                0,
+                qml.math.exp(1j * gamma)
+                * (1j * qml.math.exp(1j * phi) * (1 - qml.math.exp(1j * theta))),
+                qml.math.exp(1j * gamma)
+                * (qml.math.exp(1j * (phi + delta)) * (1 + qml.math.exp(1j * theta))),
+            ],
+        ]
+
+        return qml.math.stack([stack_last(row) for row in mat])
+
+
 class PCPhase(Operation):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
