@@ -732,8 +732,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
+  [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
+
 * The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
-  additional supported lightning devices: ``lightning.kokkos`` and ``lightning.gpu``.
+  additional supported lightning devices: `lightning.kokkos` and `lightning.gpu`.
   [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
