@@ -10,7 +10,7 @@ botocore==1.34.46
 certifi==2023.11.17
 chardet==5.2.0
 click==8.1.6
-cloud-init==25.1.2
+cloud-init==24.4.1
 colorama==0.4.6
 command-not-found==0.3
 configobj==5.0.8
