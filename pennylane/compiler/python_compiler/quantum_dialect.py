@@ -491,12 +491,10 @@ class GlobalPhaseOp(IRDLOperation):
 
         out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
         properties = {"gate_name": gate_name}
-        #if adjoint:
-        #    properties["adjoint"] = UnitAttr()
 
         super().__init__(
             operands=(params, in_ctrl_qubits, in_ctrl_values),
-            result_types=(out_ctrl_qubits),
+            result_types=(QubitType(),),
             properties=properties,
         )
 
