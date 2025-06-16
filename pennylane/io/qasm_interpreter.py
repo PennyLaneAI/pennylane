@@ -92,6 +92,7 @@ class Variable:
         size (int): The size of the variable if it has a size, like an array.
         line (int): The line number at which the variable was most recently updated.
         constant (bool): Whether the variable is a constant.
+        scope (str): The name of the scope of the variable.
     """
 
     ty: str
@@ -99,6 +100,7 @@ class Variable:
     size: int
     line: int
     constant: bool
+    scope: str = "global"
 
 
 class Context:
@@ -417,14 +419,21 @@ class QasmInterpreter:
                     func_context.wire_map[param] = evald_arg
             else:
                 func_context.vars[param] = Variable(
-                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
+                    evald_arg.__class__.__name__,
+                    evald_arg,
+                    None,
+                    node.span.start_line,
+                    False,
+                    func_context.name,
                 )
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
 
         # reset context
-        func_context.vars = {k: v for k, v in func_context.vars.items() if v.constant}
+        func_context.vars = {
+            k: v for k, v in func_context.vars.items() if (v.scope == context.name) and v.constant
+        }
 
         # the return value
         return getattr(func_context, "return")
@@ -564,6 +573,7 @@ class QasmInterpreter:
                 else node.span.start_line
             ),
             constant,
+            context.name,
         )
 
     @visit.register(ImaginaryLiteral)
@@ -619,6 +629,7 @@ class QasmInterpreter:
                         size=-1,
                         line=param.span.start_line,
                         constant=False,
+                        scope=_resolve_name(node),
                     )
                 )
 

@@ -55,6 +55,21 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_scoping_const(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "nested-subroutines", "wire_map": None}
+        )
+
+        assert context.vars["a"].val == 0.5
+        assert context.vars["c"].val == 2
+        assert context.vars["d"].val == 2.5
+
     def test_nested_renaming(self):
         # parse the QASM
         ast = parse(
@@ -142,9 +157,7 @@ class TestSubroutine:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -410,9 +423,7 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -481,9 +492,7 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
