@@ -4,178 +4,21 @@
 
 <h3>New features since last release</h3>
 
-* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
-  that can be subsequently loaded into QNodes and executed. 
-  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
-  [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
-  [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
-  [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
+<h4>Dynamically allocate work wires 🧠</h4>
 
-  ```python
-  import pennylane as qml
-
-  dev = qml.device("default.qubit", wires=[0, 1])
-  
-  @qml.qnode(dev)
-  def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qml.draw(my_circuit)())
-  0: ──RY(0.20)──X²─┤  <Z>
-  1: ──RX(1.00)─────┤  
-  ```
-  
-  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
-  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
-
-* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
-  [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
-  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
-  [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
-
-  The :func:`~.transforms.set_shots` transform can be used as a decorator:
-
-  ```python
-  @partial(qml.set_shots, shots=2)
-  @qml.qnode(qml.device("default.qubit", wires=1))
-  def circuit():
-      qml.RX(1.23, wires=0)
-      return qml.sample(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> circuit()
-  array([1., -1.])
-  ```
-  
-  Additionally, it can be used in-line to update a circuit's `shots`:
-
-  ```pycon
-  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
-  >>> new_circ()
-  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
-  ```
-
-* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
-  [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
-
-  Consider this simple circuit in PennyLane:
-  ```python
-  dev = qml.device("default.qubit", wires=2, shots=100)
-
-  @qml.qnode(dev)
-  def circuit(theta, phi):
-      qml.RX(theta, wires=0)
-      qml.CNOT(wires=[0,1])
-      qml.RZ(phi, wires=1)
-      return qml.sample()
-  ```
-
-  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
-  ```pycon
-  >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
-  >>> print(openqasm_circ)
-  OPENQASM 2.0;
-  include "qelib1.inc";
-  qreg q[2];
-  creg c[2];
-  rx(1.2) q[0];
-  cx q[0],q[1];
-  rz(0.9) q[1];
-  measure q[0] -> c[0];
-  measure q[1] -> c[1];
-  ```
-
-* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
-  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
-  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
-  [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
-
-  ```python
-  angles = np.array([1.0, 2.0, 3.0, 4.0])
-
-  wires = qml.registers({"control": 2, "target": 1})
-  dev = qml.device("default.qubit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.SelectPauliRot(
-        angles,
-        control_wires=wires["control"],
-        target_wire=wires["target"],
-        rot_axis="Y")
-      return qml.state()
-  ```
-  
-  ```pycon
-  >>> print(circuit())
-  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
-  ```
-
-* The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
-  circuits to a limited gate-set that can be translated to the MBQC formalism.
-  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
-
-* Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
-  iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
-  matrices much more performant.
-  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
-  [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
-
-* The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
-  gate-set that can be translated to the MBQC formalism.
-  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
-
-* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
-  allowing angle computation for polynomials of large degrees (> 1000).
-  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
-  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
-  [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
-
-* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-
-* A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
-  operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
-  that leverages extra information about the target wire to enable more efficient circuit decompositions.
-  The ``TemporaryAND`` assumes the target qubit to be initialized in ``|0〉``, while the ``Adjoint(TemporaryAND)`` assumes the target output to be ``|0〉``.
-  For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
-  :class:`~.TemporaryAND` is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
-  [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
-
-  ```python
-  dev = qml.device("default.qubit", shots=1)
-  @qml.qnode(dev)
-  def circuit():
-      # |0000⟩
-      qml.X(0) # |1000⟩
-      qml.X(1) # |1100⟩
-      # The target wire is in state |0>, so we can apply TemporaryAND
-      qml.TemporaryAND([0,1,2]) # |1110⟩
-      qml.CNOT([2,3]) # |1111⟩
-      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied, so we can apply adjoint(TemporaryAND)
-      qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
-      return qml.sample(wires=[0,1,2,3])
-  ```
-  
-  ```pycon
-  >>> print(circuit())
-  [1 1 0 1]
-  ```
-
-* The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
-  expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
-  relevant gate-set with the `convert_to_mbqc_gateset` transform.
-  [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
-  [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
 
 <h4>Resource-efficient Decompositions 🔎</h4>
+
+* A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and :class:`~pennylane.ControlledQubitUnitary`
+  for more fine-grained control over the type of work wire used in their decompositions.
+  [(#7612)](https://github.com/PennyLaneAI/pennylane/pull/7612)
+
+* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with 
+  graph-based decomposition enabled, which must be a function that returns `True` if an operator 
+  does not need to be decomposed (it meets the requirements as described in `stopping_condition`).
+  See the documentation for more details.
+  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
 * The :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, allowing for 
   preferential treatment of certain gates in a target `gate_set` over others.
@@ -359,17 +202,187 @@
   1: ────────────╰X──RY(-0.50)─┤
   ```
 
-* A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and :class:`~pennylane.ControlledQubitUnitary`
-  for more fine-grained control over the type of work wire used in their decompositions.
-  [(#7612)](https://github.com/PennyLaneAI/pennylane/pull/7612)
+<h4>Setting shots 🔁</h4>
 
-* The :func:`~.transforms.decompose` transform now accepts a `stopping_condition` argument with 
-  graph-based decomposition enabled, which must be a function that returns `True` if an operator 
-  does not need to be decomposed (it meets the requirements as described in `stopping_condition`).
-  See the documentation for more details.
-  [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
+* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
+  [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
+  [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+
+  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+
+  ```python
+  @partial(qml.set_shots, shots=2)
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit():
+      qml.RX(1.23, wires=0)
+      return qml.sample(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([1., -1.])
+  ```
+  
+  Additionally, it can be used in-line to update a circuit's `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+  >>> new_circ()
+  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+  ```
+
+<h4>Something algorithms</h4>
+
+* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
+  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+  [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
+
+  ```python
+  angles = np.array([1.0, 2.0, 3.0, 4.0])
+
+  wires = qml.registers({"control": 2, "target": 1})
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.SelectPauliRot(
+        angles,
+        control_wires=wires["control"],
+        target_wire=wires["target"],
+        rot_axis="Y")
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
+   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+  ```
+
+* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
+  allowing angle computation for polynomials of large degrees (> 1000).
+  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
+  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
+  [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
+
+* Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
+  operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
+  that leverages extra information about the target wire to enable more efficient circuit decompositions.
+  The ``TemporaryAND`` assumes the target qubit to be initialized in ``|0〉``, while the ``Adjoint(TemporaryAND)`` assumes the target output to be ``|0〉``.
+  For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
+  :class:`~.TemporaryAND` is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
+  [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
+
+  ```python
+  dev = qml.device("default.qubit", shots=1)
+  @qml.qnode(dev)
+  def circuit():
+      # |0000⟩
+      qml.X(0) # |1000⟩
+      qml.X(1) # |1100⟩
+      # The target wire is in state |0>, so we can apply TemporaryAND
+      qml.TemporaryAND([0,1,2]) # |1110⟩
+      qml.CNOT([2,3]) # |1111⟩
+      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied, so we can apply adjoint(TemporaryAND)
+      qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
+      return qml.sample(wires=[0,1,2,3])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [1 1 0 1]
+  ```
+
+<h4>OpenQASM 🤝 PennyLane</h4>
+
+* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+  [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
+
+  Consider this simple circuit in PennyLane:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=100)
+
+  @qml.qnode(dev)
+  def circuit(theta, phi):
+      qml.RX(theta, wires=0)
+      qml.CNOT(wires=[0,1])
+      qml.RZ(phi, wires=1)
+      return qml.sample()
+  ```
+
+  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
+  ```pycon
+  >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
+  >>> print(openqasm_circ)
+  OPENQASM 2.0;
+  include "qelib1.inc";
+  qreg q[2];
+  creg c[2];
+  rx(1.2) q[0];
+  cx q[0],q[1];
+  rz(0.9) q[1];
+  measure q[0] -> c[0];
+  measure q[1] -> c[1];
+  ```
+
+* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+  that can be subsequently loaded into QNodes and executed. 
+  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+  [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
+  [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
+  [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit", wires=[0, 1])
+  
+  @qml.qnode(dev)
+  def my_circuit():
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(my_circuit)())
+  0: ──RY(0.20)──X²─┤  <Z>
+  1: ──RX(1.00)─────┤  
+  ```
+  
+  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
+  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
+  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
 <h3>Improvements 🛠</h3>
+
+<h4>Experimental FTQC module</h4>
+
+* The transform `convert_to_mbqc_gateset` is added to the `ftqc` module to convert arbitrary 
+  circuits to a limited gate-set that can be translated to the MBQC formalism.
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
+  gate-set that can be translated to the MBQC formalism.
+  [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
+
+* The transform `convert_to_mbqc_formalism` is added to the `ftqc` module to convert a circuit already
+  expressed in a limited, compatible gate-set into the MBQC formalism. Circuits can be converted to the 
+  relevant gate-set with the `convert_to_mbqc_gateset` transform.
+  [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
+  [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
+
+<h4>Other improvements</h4>
+
+* Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
+  iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
+  matrices much more performant.
+  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
+  [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
 
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
