@@ -32,6 +32,7 @@ except ImportError:
 
 
 class QNGOptimizerQJIT:
+    """TODO"""
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
         self.stepsize = stepsize
@@ -39,17 +40,20 @@ class QNGOptimizerQJIT:
         self.lam = lam
 
     def init(self, params):
+        """TODO"""
         # pylint:disable=unused-argument
         # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):
+        """TODO"""
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         grad = self._get_grad(qnode, params, **kwargs)
         new_params, new_state = self._apply_grad(mt, grad, params, state)
         return new_params, new_state
 
     def step_and_cost(self, qnode, params, state, **kwargs):
+        """TODO"""
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         cost, grad = self._get_value_and_grad(qnode, params, **kwargs)
         new_params, new_state = self._apply_grad(mt, grad, params, state)
@@ -57,6 +61,7 @@ class QNGOptimizerQJIT:
 
     @staticmethod
     def _get_grad(qnode, params, **kwargs):
+        """TODO"""
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.grad(qnode)(params, **kwargs)
@@ -67,6 +72,7 @@ class QNGOptimizerQJIT:
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
+        """TODO"""
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.value_and_grad(qnode)(params, **kwargs)
@@ -76,6 +82,7 @@ class QNGOptimizerQJIT:
         raise ImportError("Jax is required.")
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
+        """TODO"""
         # pylint: disable=not-callable
         if not isinstance(qnode, QNode):
             raise ValueError(
@@ -92,6 +99,7 @@ class QNGOptimizerQJIT:
         return mt_matrix
 
     def _apply_grad(self, mt, grad, params, state):
+        """TODO"""
         shape = math.shape(grad)
         grad_flat = math.flatten(grad)
         update_flat = math.linalg.pinv(mt) @ grad_flat
