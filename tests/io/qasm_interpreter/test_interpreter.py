@@ -152,6 +152,21 @@ class TestControlFlow:
 @pytest.mark.external
 class TestSubroutine:
 
+    def test_scoping_const(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "nested-subroutines", "wire_map": None}
+        )
+
+        assert context.vars["a"].val == 0.5
+        assert context.vars["c"].val == 2
+        assert context.vars["d"].val == 2.5
+
     def test_nested_renaming(self):
         # parse the QASM
         ast = parse(
