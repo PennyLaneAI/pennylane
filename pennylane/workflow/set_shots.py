@@ -23,7 +23,6 @@ from .qnode import QNode
 
 def set_shots(
     qnode: QNode,
-    *,
     shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
 ):
     """Transform used to set or update a circuit's shots.
@@ -73,6 +72,6 @@ def set_shots(
 
     """
     # When called directly with a function/QNode
-    if hasattr(qnode, "update_shots"):
+    if isinstance(qnode, QNode):
         return qnode.update_shots(shots)
     raise ValueError("set_shots can only be applied to QNodes")
