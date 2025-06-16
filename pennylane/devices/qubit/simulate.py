@@ -15,6 +15,8 @@
 import logging
 
 # pylint: disable=protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
 from typing import Optional
@@ -215,7 +217,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments
 @debug_logger
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
@@ -250,7 +251,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         if mid_measurements is not None:
             raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
 
-        # print(circuit.measurements[0])
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
@@ -464,24 +464,12 @@ def simulate_tree_mcm(
     # zero-branch and one-branch measurements are available.
     depth = 0
 
-    visited = 0
     while stack.any_is_empty(1):
 
         ###########################################
         # Combine measurements & step up the tree #
         ###########################################
 
-        print("-"*100)
-        print("visited", visited)
-        print("depth", depth)
-        print("mcms", mcms)
-        print("mcm_current", mcm_current)   
-        print("mid_measurements", mid_measurements)
-        print("stack.results_0", stack.results_0)
-        print("stack.results_1", stack.results_1)
-        print("stack.probs", stack.probs)
-        
-        visited += 1
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
             # Call `combine_measurements` to count-average measurements
@@ -560,7 +548,6 @@ def simulate_tree_mcm(
                 **execution_kwargs,
             )
             measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
-            print("measurements")
 
         #####################################
         # Update stack & step down the tree #
@@ -587,7 +574,6 @@ def simulate_tree_mcm(
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
-            print("Assign the probabilities to the stack")
             continue
 
         ################################################
@@ -602,11 +588,9 @@ def simulate_tree_mcm(
             stack.results_0[depth] = measurements
             mcm_current[depth] = True
             mid_measurements[mcms[depth]] = True
-            print("Update for results_0")
             continue
         # If at a one-branch leaf, update measurements
         stack.results_1[depth] = measurements
-        print("Update for results_1")
 
     ##################################################
     # Finalize terminal measurements post-processing #
@@ -881,7 +865,7 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
 
 
 @singledispatch
-def combine_measurements_core(original_measurement, measures):  # pylint: disable=unused-argument
+def combine_measurements_core(original_measurement, measures):
     """Returns the combined measurement value of a given type."""
     raise TypeError(
         f"Native mid-circuit measurement mode does not support {type(original_measurement).__name__}"
@@ -889,7 +873,7 @@ def combine_measurements_core(original_measurement, measures):  # pylint: disabl
 
 
 @combine_measurements_core.register
-def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: CountsMP, measures):
     """The counts are accumulated using a ``Counter`` object."""
     keys = list(measures.keys())
     new_counts = Counter()
@@ -901,7 +885,7 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
 
 
 @combine_measurements_core.register
-def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ExpectationMP, measures):
     """The expectation value of two branches is a weighted sum of expectation values."""
     cum_value = 0
     total_counts = 0
@@ -910,12 +894,11 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
             continue
         cum_value += qml.math.multiply(v[0], v[1])
         total_counts += v[0]
-        # total_counts += 1
     return cum_value / total_counts
 
 
 @combine_measurements_core.register
-def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ProbabilityMP, measures):
     """The combined probability of two branches is a weighted sum of the probabilities. Note the implementation is the same as for ``ExpectationMP``."""
     cum_value = 0
     total_counts = 0
@@ -928,7 +911,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 
 @combine_measurements_core.register
-def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: SampleMP, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
