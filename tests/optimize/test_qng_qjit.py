@@ -380,6 +380,7 @@ class TestOptimize:
         assert state2_jit is None
         assert np.allclose(cost, cost_jit)
 
+    @pytest.mark.jax
     @pytest.mark.catalyst
     def test_qjit(self):
         """Test optimizer compatibility with qml.qjit compilation."""
