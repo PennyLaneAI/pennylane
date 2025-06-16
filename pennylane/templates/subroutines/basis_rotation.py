@@ -17,10 +17,11 @@ This module contains the template for performing basis transformation defined by
 
 import pennylane as qml
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
-# pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
     r"""Implement a circuit that provides a unitary that can be used to do an exact single-body basis rotation.
 
@@ -97,6 +98,8 @@ class BasisRotation(Operation):
 
     grad_method = None
 
+    resource_keys = {"dim"}
+
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
         # pylint: disable=arguments-differ
@@ -128,6 +131,10 @@ class BasisRotation(Operation):
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         super().__init__(unitary_matrix, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"dim": qml.math.shape(self.data[0])[0]}
 
     @property
     def num_params(self):
@@ -171,7 +178,7 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        phase_list, givens_list = math.givens_decomposition(unitary_matrix)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(math.angle(phase), wires=wires[idx]))
@@ -188,6 +195,33 @@ class BasisRotation(Operation):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
+
+
+def _basis_rotation_decomp_resources(dim):
+    se_count = dim * (dim - 1) / 2
+    ps_count = dim + se_count
+    return {qml.PhaseShift: ps_count, qml.SingleExcitation: se_count}
+
+
+@register_resources(_basis_rotation_decomp_resources)
+def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
+
+    def _phase_shift(_phi, _wires):
+        qml.PhaseShift(_phi, wires=_wires)
+
+    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+
+    for idx, phase in enumerate(phase_list):
+        qml.PhaseShift(math.angle(phase), wires=wires[idx])
+
+    for grot_mat, indices in givens_list:
+        theta = math.arccos(math.real(grot_mat[1, 1]))
+        phi = math.angle(grot_mat[0, 0])
+        qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
+        qml.cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[indices[0]])
+
+
+add_decomps(BasisRotation, _basis_rotation_decomp)
 
 
 # Program capture needs to unpack and re-pack the wires to support dynamic wires. For

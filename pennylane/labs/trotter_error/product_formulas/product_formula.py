@@ -192,6 +192,7 @@ class ProductFormula:
 
         return fractional_matrix_power(accumulator, self.exponent)
 
+    @property
     def ordered_fragments(self) -> Dict[Hashable, int]:
         """Return the fragment ordering used by the product formula.
 
@@ -204,17 +205,17 @@ class ProductFormula:
         >>>
         >>> pf = pf1 @ pf2
         >>>
-        >>> pf.ordered_fragments()
+        >>> pf.ordered_fragments
         {'A': 0, 'B': 1, 'C': 2, 'X': 3, 'Y': 4, 'Z': 5}
         """
 
         if not self.recursive:
-            return self._ordered_terms
+            return self.ordered_terms
 
         ordered_fragments = {}
         position = 0
         for term in self.terms:
-            for fragment in term.ordered_fragments():
+            for fragment in term.ordered_fragments:
                 if fragment in ordered_fragments:
                     continue
 
@@ -222,6 +223,35 @@ class ProductFormula:
                 position += 1
 
         return ordered_fragments
+
+    @property
+    def ordered_terms(self) -> Dict[Hashable, int]:
+        """Return the term ordering used by the product formula.
+
+        **Example**
+
+        >>> from pennylane.labs.trotter_error import ProductFormula, bch_expansion
+        >>>
+        >>> frag_labels = ["A", "B", "C", "B", "A"]
+        >>> frag_coeffs = [1/2, 1/2, 1, 1/2, 1/2]
+        >>> second_order = ProductFormula(frag_labels, frag_coeffs, label="U")
+        >>>
+        >>> u = 1 / (4 - 4**(1/3))
+        >>> v = 1 - 4*u
+        >>>
+        >>> fourth_order = second_order(u)**2 @ second_order(v) @ second_order(u)**2
+        >>> fourth_order.ordered_terms
+        {U(0.4144907717943757)@U(-0.6579630871775028): 0, U(0.4144907717943757)**2.0: 1}
+        """
+
+        ordered_terms = {}
+        position = 0
+        for term in self.terms:
+            if term not in ordered_terms:
+                ordered_terms[term] = position
+                position += 1
+
+        return ordered_terms
 
 
 class _MultiplicativeIdentity:
