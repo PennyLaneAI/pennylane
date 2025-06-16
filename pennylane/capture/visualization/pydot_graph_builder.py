@@ -1,4 +1,5 @@
 import uuid
+from copy import copy
 from typing import Sequence, Union
 
 import pydot
@@ -88,19 +89,20 @@ class ControlFlowCluster(pydot.Cluster):
         self.set_name(new_name)
 
         # Increment the counter and use it for a unique node name
-        unique_name = f"{new_name}_info_node"
-        rank_subgraph = pydot.Subgraph()
-        node = pydot.Node(
-            unique_name,
-            label=info_label,
-            shape="rectangle",
-            style="dashed",
-            fontname="Helvetica",
-            penwidth=2,
-        )
-        rank_subgraph.add_node(node)
-        self.add_subgraph(rank_subgraph)
-        self.add_node(node)
+        if info_label:
+            unique_name = f"{new_name}_info_node"
+            rank_subgraph = pydot.Subgraph()
+            node = pydot.Node(
+                unique_name,
+                label=info_label,
+                shape="rectangle",
+                style="dashed",
+                fontname="Helvetica",
+                penwidth=2,
+            )
+            rank_subgraph.add_node(node)
+            self.add_subgraph(rank_subgraph)
+            self.add_node(node)
 
 
 class QNodeCluster(pydot.Cluster):

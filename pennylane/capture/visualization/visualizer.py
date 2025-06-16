@@ -1,4 +1,5 @@
 from copy import copy
+from functools import partial
 from typing import Callable, Sequence
 
 import jax
@@ -8,7 +9,7 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from ..base_interpreter import PlxprInterpreter
-from ..primitives import for_loop_prim, qnode_prim, while_loop_prim
+from ..primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from .pydot_graph_builder import (
     ControlFlowCluster,
     DeviceNode,
@@ -34,6 +35,8 @@ class PlxprVisualizer(PlxprInterpreter):
 
         # holds ASCII representations of the environment
         self._env_ascii = {}
+
+        self._cond_eqns = {}
 
     def __copy__(self):
         """Create a copy of the visualizer with the same graph."""
@@ -119,6 +122,14 @@ class PlxprVisualizer(PlxprInterpreter):
             elif getattr(primitive, "prim_type", "") == "measurement":
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
+                print(
+                    f"Warning: No custom handler for primitive {primitive.name}. Using default handling."
+                )
+                # These primitives might be used in cond expressions so we
+                # need to record them down
+                for outvar in eqn.outvars:
+                    self._cond_eqns[outvar] = eqn
+
                 invals = [self.read(invar) for invar in eqn.invars]
                 subfuns, params = primitive.get_bind_params(eqn.params)
                 outvals = primitive.bind(*subfuns, *invals, **params)
@@ -385,4 +396,88 @@ def handle_while_loop(
         consts_body,
         *init_state,
         ascii_context=ascii_context,
+    )
+
+
+def jaxpr_to_jaxpr(
+    interpreter: PlxprVisualizer, jaxpr: core.Jaxpr, consts, *args
+) -> core.ClosedJaxpr:
+    """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
+
+    f = partial(interpreter.eval, jaxpr, consts)
+
+    return jax.make_jaxpr(f)(*args)
+
+
+@PlxprVisualizer.register_primitive(cond_prim)
+def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, eqn=None):
+    """Handle a cond primitive."""
+    args = invals[args_slice]
+
+    new_jaxprs = []
+    new_consts = []
+    new_consts_slices = []
+    end_const_ind = len(jaxpr_branches)
+
+    cond_eqn_invars = eqn.invars[: len(jaxpr_branches)]
+    cond_eqn_invars[-1] = None  # This is the "else" branch
+    jaxpr_cond_eqns = [self._cond_eqns.get(invar, None) for invar in cond_eqn_invars]
+
+    # Create cond cluster
+    cond_cluster = ControlFlowCluster(info_label="")
+    self.plxpr_graph.add_cluster_to_graph(cond_cluster)
+
+    label_map = {1: "if", 2: "elif", 0: "else"}
+    get_branch_label = lambda x: label_map.get(x % len(jaxpr_branches), "unknown")
+    branch_counter = 1
+
+    # Since each jaxpr is a "parallel" branch
+    # we need to keep track of the wires to nodes mapping for each branch
+    branch_wires_to_nodes = {}
+    for const_slice, jaxpr, cond_jaxpr in zip(
+        consts_slices, jaxpr_branches, jaxpr_cond_eqns, strict=True
+    ):
+
+        consts = invals[const_slice]
+        if jaxpr is None:
+            new_jaxprs.append(None)
+            new_consts_slices.append(slice(0, 0))
+        else:
+
+            # Create branch cluster
+            branch_label = f"<{get_branch_label(branch_counter)} ({cond_jaxpr})>"
+            branch_cluster = ControlFlowCluster(info_label=branch_label)
+            self.plxpr_graph.add_cluster_to_graph(branch_cluster, graph=cond_cluster)
+
+            interpreter_copy = copy(self)
+            # Copy so we don't modify the original interpreter's graph
+            interpreter_copy.plxpr_graph.wires_to_nodes = copy(self.plxpr_graph.wires_to_nodes)
+            interpreter_copy.plxpr_graph.current_cluster = branch_cluster
+
+            new_jaxpr = jaxpr_to_jaxpr(interpreter_copy, jaxpr, consts, *args)
+
+            # Record what we saw so we know how to connect things after the cond
+            for wire, node in interpreter_copy.plxpr_graph.wires_to_nodes.items():
+                if wire not in branch_wires_to_nodes:
+                    branch_wires_to_nodes[wire] = []
+                if branch_wires_to_nodes[wire] != node:
+                    branch_wires_to_nodes[wire].extend(node)
+
+            new_jaxprs.append(new_jaxpr.jaxpr)
+            new_consts.extend(new_jaxpr.consts)
+            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+            end_const_ind += len(new_jaxpr.consts)
+
+        branch_counter += 1
+
+    # Update the interpreter's graph with the wires to nodes mapping
+    self.plxpr_graph.wires_to_nodes = branch_wires_to_nodes
+    new_args_slice = slice(end_const_ind, None)
+    return cond_prim.bind(
+        *invals[: len(jaxpr_branches)],
+        *new_consts,
+        *args,
+        jaxpr_branches=new_jaxprs,
+        consts_slices=new_consts_slices,
+        args_slice=new_args_slice,
     )
