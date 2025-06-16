@@ -96,10 +96,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.xfail(
-        reason="Have not yet implemented transform for probs",
-        strict=True,
-    )
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
