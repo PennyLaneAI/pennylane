@@ -71,7 +71,6 @@ def bch_expansion(
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
 ) -> List[Dict[Tuple[Hashable], complex]]:
-    # pylint: disable=protected-access
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
     and the ProductFormula objects are the recursive case.
@@ -91,7 +90,7 @@ def _bch_expansion(
     bch = _bch(
         product_formula.terms,
         product_formula.coeffs,
-        product_formula._ordered_terms,
+        product_formula.ordered_terms,
         order,
     )
 
@@ -111,7 +110,7 @@ def _bch_expansion(
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return _remove_redundancies(
-        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments()
+        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments
     )
 
 
