@@ -11,9 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""xDSL transforms core API."""
 
-"""Public API"""
+from .apply_transform_sequence import ApplyTransformSequence, available_passes, register_pass
+from .transform_interpreter import TransformFunctionsExt, TransformInterpreterPass
+from .xdsl_transform import PassDispatcher, xdsl_transform
 
-from .impl import TransformFunctionsExt
-
-__all__ = ["TransformFunctionsExt"]
+__all__ = [
+    "ApplyTransformSequence",
+    "available_passes",
+    "PassDispatcher",
+    "register_pass",
+    "TransformFunctionsExt",
+    "TransformInterpreterPass",
+    "xdsl_transform",
+]
