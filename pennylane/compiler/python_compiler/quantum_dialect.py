@@ -441,8 +441,7 @@ class GlobalPhaseOp(IRDLOperation):
     name = "quantum.gphase"
 
     assembly_format = """
-           $params 
-           (`adj` $adjoint^)? 
+           `(` $params `)` 
            attr-dict 
            ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  
            ( `ctrlvals` `(` $in_ctrl_values^ `)` )? 
@@ -455,8 +454,6 @@ class GlobalPhaseOp(IRDLOperation):
     ]
 
     params = operand_def(EqAttrConstraint(Float64Type()))
-
-    adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
 
     in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
 
@@ -479,7 +476,6 @@ class GlobalPhaseOp(IRDLOperation):
             | Sequence[Operation]
             | None
         ) = None,
-        adjoint: UnitAttr | bool = False,
     ):
         if isinstance(params, float): 
             params = FloatAttr(data=params, type = Float64Type())
@@ -495,8 +491,8 @@ class GlobalPhaseOp(IRDLOperation):
 
         out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
         properties = {"gate_name": gate_name}
-        if adjoint:
-            properties["adjoint"] = UnitAttr()
+        #if adjoint:
+        #    properties["adjoint"] = UnitAttr()
 
         super().__init__(
             operands=(params, in_ctrl_qubits, in_ctrl_values),

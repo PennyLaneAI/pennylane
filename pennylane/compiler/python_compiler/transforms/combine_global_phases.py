@@ -39,17 +39,17 @@ class CombineGlobalPhasesPattern(
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         consecutive composable rotations."""
-        phi = 0.0
-        rewrite_required = False
+        phi = None
         for op in funcOp.body.walk():
             if not isinstance(op, GlobalPhaseOp):
                 continue
-            rewrite_required = True
-            addOp = arith.AddFOp(op.operands[0], phi)
-            phi = addOp.result
+            if phi is None:
+                phi = op.operands[0]
+            else:
+                addOp = arith.AddfOp(op.operands[0], phi)
+                phi = addOp.result
             rewriter.erase_op(op)
-
-        if rewrite_required: 
+        if phi:
             new_op = GlobalPhaseOp(params=phi)
             rewriter.insert_op(new_op, InsertPoint.at_end(funcOp.body.block))
 
@@ -63,6 +63,7 @@ class CombineGlobalPhasesPass(passes.ModulePass):
     # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the combination of global phase gates pass."""
+        print("~~~~~")
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier([CombineGlobalPhasesPattern()])
         ).rewrite_module(module)

@@ -39,7 +39,6 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
                 %1 = quantum.custom "RX"() %0 : !quantum.bit
                 %2 = quantum.custom "RY"() %1 : !quantum.bit
-                //quantum.gphase %arg0
                 return
             }
         """
@@ -55,31 +54,29 @@ class TestCombineGlobalPhasesPass:
 
         run_filecheck(program, module)
 
-    # def test_combinable_ops(self, run_filecheck):
-    #     """Test that composable gates are merged."""
-    #     program = """
-    #         func.func @test_func(%arg0: f64, %arg1: f64) {
-    #             // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-    #             %0 = "test.op"() : () -> !quantum.bit
-    #             // CHECK-DAG: [[phi0:%.*]] = arith.addf %arg0, %arg1 : f64
-    #             // CHECK-DAG: quantum.custom "RX"([[phi0:%.*]]) [[q0:%.*]] : !quantum.bit
-    #             // CHECK-NOT: "quantum.custom"
-    #             %1 = quantum.custom "GlobalPhase"(%arg0) %0 : !quantum.bit
-    #             %2 = quantum.custom "GlobalPhase"(%arg1) %1 : !quantum.bit
-    #             return
-    #         }
-    #     """
+    def test_combinable_ops(self, run_filecheck):
+        """Test that composable gates are merged."""
+        program = """
+            func.func @test_func(%arg0: f64, %arg1: f64) {
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: quantum.gphase(%arg0) :
+                quantum.gphase %arg0
+                quantum.gphase %arg1
+                return
+            }
+        """
 
-    #     ctx = Context()
-    #     ctx.load_dialect(func.Func)
-    #     ctx.load_dialect(test.Test)
-    #     ctx.load_dialect(Quantum)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
 
-    #     module = xdsl.parser.Parser(ctx, program).parse_module()
-    #     pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-    #     pipeline.apply(ctx, module)
-
-    #     run_filecheck(program, module)
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
+        print(module)
+        pipeline.apply(ctx, module)
+        run_filecheck(program, module)
 
     # def test_many_composable_ops(self, run_filecheck):
     #     """Test that more than 2 composable ops are merged correctly."""
