@@ -78,8 +78,8 @@ class ResourceHadamard(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(), 1)]
 
@@ -96,8 +96,8 @@ class ResourceHadamard(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(plre.resource_rep(plre.ResourceIdentity))]
@@ -156,13 +156,13 @@ class ResourceS(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \dot \hat{S}`
+            The adjoint of the S-gate is equivalent to :math:`\hat{Z} \cdot \hat{S}`.
             The resources are defined as one instance of Z-gate, and one instance of S-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         z = resource_rep(ResourceZ)
         return [GateCount(z, 1), GateCount(cls.resource_rep(), 1)]
@@ -175,18 +175,18 @@ class ResourceS(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Resources:
-            The S-gate, when raised to a power which is a multiple of four, produces identity.
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to one, means one instance of the S-gate.
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to two, means one instance of the Z-gate.
-            The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
-            is equal to three, means one instance of the Z-gate and one instance of S-gate.
+            - The S-gate, when raised to a power which is a multiple of four, produces identity.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+              is equal to one, means one instance of the S-gate.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+              is equal to two, means one instance of the Z-gate.
+            - The cost of raising to an arbitrary integer power :math:`z`, when :math:`z \mod 4`
+              is equal to three, means one instance of the Z-gate and one instance of S-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         mod_4 = pow_z % 4
         if mod_4 == 0:
@@ -197,6 +197,7 @@ class ResourceS(ResourceOperator):
             return [GateCount(resource_rep(ResourceZ))]
 
         return [GateCount(resource_rep(ResourceZ)), GateCount(cls.resource_rep())]
+
 
 
 class ResourceSWAP(ResourceOperator):
@@ -381,7 +382,6 @@ class ResourceSWAP(ResourceOperator):
             return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
 
-
 class ResourceT(ResourceOperator):
     r"""Resource class for the T-gate.
 
@@ -437,8 +437,8 @@ class ResourceT(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         z = resource_rep(ResourceZ)
         s = resource_rep(ResourceS)
@@ -456,7 +456,8 @@ class ResourceT(ResourceOperator):
             Consequently, for any integer power `z`, the effective quantum operation :math:`T^{z}` is equivalent
             to :math:`T^{z \pmod 8}`.
 
-        The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+            The decomposition for :math:`T^{z}` (where :math:`z \pmod 8` is denoted as `z'`) is as follows:
+
             - If `z' = 0`: The operation is equivalent to the Identity gate (`I`).
             - If `z' = 1`: The operation is equivalent to the T-gate (`T`).
             - If `z' = 2`: The operation is equivalent to the S-gate (`S`).
@@ -468,8 +469,8 @@ class ResourceT(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         if (mod_8 := pow_z % 8) == 0:
@@ -569,8 +570,8 @@ class ResourceX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -587,8 +588,8 @@ class ResourceX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(plre.ResourceIdentity))]
@@ -678,8 +679,8 @@ class ResourceY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -696,8 +697,8 @@ class ResourceY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(plre.ResourceIdentity))]
@@ -769,8 +770,8 @@ class ResourceZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -787,8 +788,8 @@ class ResourceZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(plre.ResourceIdentity))]

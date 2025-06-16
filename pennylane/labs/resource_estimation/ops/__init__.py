@@ -14,6 +14,7 @@
 r"""This module contains resource operators for PennyLane Operators"""
 
 from .identity import ResourceGlobalPhase, ResourceIdentity
+
 from .op_math import (
     ResourceCCZ,
     ResourceCH,
@@ -30,6 +31,7 @@ from .op_math import (
     ResourceTempAND,
     ResourceToffoli,
 )
+
 from .qubit import (
     ResourceHadamard,
     ResourcePhaseShift,

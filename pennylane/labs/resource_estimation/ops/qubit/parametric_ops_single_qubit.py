@@ -33,15 +33,15 @@ def _rotation_resources(epsilon=10e-3):
     Synthesis of Universal Repeat-Until-Success Circuits <https://arxiv.org/abs/1404.5320>`_.
     The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     Args:
         epsilon (float): the acceptable error threshold for the approximation
 
     Returns:
         list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
+        represents a specific quantum gate and the number of times it appears
+        in the decomposition.
     """
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
     t = resource_rep(plre.ResourceT)
@@ -127,8 +127,8 @@ class ResourcePhaseShift(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps=eps))]
 
@@ -145,8 +145,8 @@ class ResourcePhaseShift(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps=eps))]
@@ -165,7 +165,7 @@ class ResourceRX(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RX`
 
@@ -236,7 +236,7 @@ class ResourceRX(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         """
         eps = eps or kwargs["config"]["error_rx"]
@@ -252,8 +252,8 @@ class ResourceRX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -270,8 +270,8 @@ class ResourceRX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -290,7 +290,7 @@ class ResourceRY(ResourceOperator):
         from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RY`
 
@@ -360,7 +360,7 @@ class ResourceRY(ResourceOperator):
             from (the 'Simulation Results' section) `Efficient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Args:
             config (dict): a dictionary containing the error threshold
@@ -378,8 +378,8 @@ class ResourceRY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -396,8 +396,8 @@ class ResourceRY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -416,7 +416,7 @@ class ResourceRZ(ResourceOperator):
         from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
         Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-        .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+        .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
     .. seealso:: :class:`~.RZ`
 
@@ -484,7 +484,7 @@ class ResourceRZ(ResourceOperator):
             from (the 'Simulation Results' section) `Eﬃcient Synthesis of Universal Repeat-Until-Success
             Circuits <https://arxiv.org/abs/1404.5320>`_. The cost is given as:
 
-            .. math:: T_{count} = \ceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)
+            .. math:: T_{count} = \lceil(1.149 * log_{2}(\frac{1}{\epsilon}) + 9.2)\rceil
 
         Args:
             config (dict): a dictionary containing the error threshold
@@ -502,8 +502,8 @@ class ResourceRZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -598,8 +598,8 @@ class ResourceRot(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -616,7 +616,7 @@ class ResourceRot(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]

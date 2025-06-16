@@ -161,7 +161,6 @@ class TestSWAP:
         op = plre.ResourceSWAP([0, 1])
         assert op.pow_resource_decomp(z) == expected_res
 
-
 class TestS:
     """Tests for ResourceS"""
 
