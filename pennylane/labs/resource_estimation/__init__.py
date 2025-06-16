@@ -76,6 +76,7 @@ Operators:
     ~ResourceRZ
     ~ResourceRot
     ~ResourcePhaseShift
+    ~ResourceSWAP
     ~ResourceCH
     ~ResourceCY
     ~ResourceCZ
