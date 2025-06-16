@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the BCH approximation"""
 
+import copy
 from itertools import product
 
 import numpy as np
@@ -20,10 +21,10 @@ import pytest
 from scipy.linalg import logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
-from pennylane.labs.trotter_error.abstract import commutator, nested_commutator
+from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 
-deltas = [1, 0.1, 0.01]
+deltas = [0.45, 0.1, 0.01]
 
 fragment_list = [
     {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
@@ -47,7 +48,7 @@ def test_first_order(fragments, r, delta):
 
     for j in range(n_frags - 1):
         for k in range(j + 1, n_frags):
-            expected += (1 / 2) * commutator(fragments[j], fragments[k])
+            expected += (1 / 2) * nested_commutator([fragments[j], fragments[k]])
 
     expected *= 1j / r * delta
 
@@ -84,6 +85,87 @@ def test_second_order(fragments, r, delta):
     eff = 1j * delta * (expected + ham)
 
     assert np.allclose(eff, actual)
+
+
+@pytest.mark.parametrize("fragments, delta", product(fragment_list, deltas))
+def test_fourth_order(fragments, delta):
+    """Test that the effective_hamiltonian function returns the correct result for fourth order Trotter.
+    The expected Hamiltonian was generated via Sympy."""
+    u = 1 / (4 - 4 ** (1 / 3))
+    v = 1 - 4 * u
+    y3 = -0.00405944185443219
+    y5 = -0.074375995396295
+
+    frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
+    frag_coeffs = [1 / 2] * len(frag_labels)
+
+    second_order = ProductFormula(frag_labels, frag_coeffs)
+    fourth_order = (
+        second_order(delta * u) ** 2 @ second_order(delta * v) @ second_order(delta * u) ** 2
+    )
+
+    ham = 1j * delta * (sum(fragments.values(), np.zeros_like(fragments[0])))
+    expected = copy.copy(ham)
+
+    bch = bch_expansion(second_order, order=5)
+    for commutator, coeff in bch[2].items():
+        commutator = tuple(1j * delta * fragments[x] for x in commutator)
+        commutator = (ham, commutator, ham)
+        expected += y3 * coeff * nested_commutator(commutator)
+    for commutator, coeff in bch[4].items():
+        commutator = tuple(1j * delta * fragments[x] for x in commutator)
+        expected += y5 * coeff * nested_commutator(commutator)
+
+    actual = effective_hamiltonian(fourth_order, fragments, order=5)
+
+    assert np.allclose(expected, actual)
+
+
+@pytest.mark.parametrize("fragments, delta", product(fragment_list, deltas))
+def test_sixth_order(fragments, delta):
+    """Test that the effective_hamiltonian function returns the correct result for sixth order Trotter.
+    The expected Hamiltonian was generated via Sympy."""
+    u4 = 1 / (4 - 4 ** (1 / 3))
+    u6 = 1 / (4 - 4 ** (1 / 5))
+    v4 = 1 - 4 * u4
+    v6 = 1 - 4 * u6
+    h_y3_hhh = -2.76996810612187 * 10e-6
+    h_y3_y3 = -1.0079377060157 * 10e-5
+    h_y5_h = 5.28018804117902 * 10e-5
+    y7 = 0.000134097740473571
+
+    frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
+    frag_coeffs = [1 / 2] * len(frag_labels)
+    second_order = ProductFormula(frag_labels, frag_coeffs)
+    fourth_order = second_order(u4) ** 2 @ second_order(v4) @ second_order(u4) ** 2
+    sixth_order = (
+        fourth_order(delta * u6) ** 2 @ fourth_order(delta * v6) @ fourth_order(delta * u6) ** 2
+    )
+
+    ham = 1j * delta * (sum(fragments.values(), np.zeros_like(fragments[0])))
+    expected = copy.copy(ham)
+
+    bch = bch_expansion(second_order, order=7)
+    for commutator, coeff in bch[2].items():
+        commutator = tuple(1j * delta * fragments[x] for x in commutator)
+        new_commutator = (ham, commutator, commutator)
+        expected += h_y3_y3 * coeff * nested_commutator(new_commutator)
+
+        new_commutator = (ham, commutator, ham, ham, ham)
+        expected += h_y3_hhh * coeff * nested_commutator(new_commutator)
+
+    for commutator, coeff in bch[4].items():
+        commutator = tuple(1j * delta * fragments[x] for x in commutator)
+        new_commutator = (ham, commutator, ham)
+        expected += h_y5_h * coeff * nested_commutator(new_commutator)
+
+    for commutator, coeff in bch[6].items():
+        commutator = tuple(1j * delta * fragments[x] for x in commutator)
+        expected += y7 * coeff * nested_commutator(commutator)
+
+    actual = effective_hamiltonian(sixth_order, fragments, order=7)
+
+    assert np.allclose(expected, actual)
 
 
 fragment_list = [
@@ -156,26 +238,26 @@ fragment_list = [
     ({"X": np.ones(shape=(3, 3)), "Y": np.ones(shape=(3, 3))}),
 ]
 
-second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
-u = 1 / (4 - 4 ** (1 / 3))
-fourth_order1 = second_order(u) ** 2 @ second_order((1 - 4 * u)) @ second_order(u) ** 2
+second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
+c = 1 / (4 - 4 ** (1 / 3))
+fourth_order1 = second_order_pf(c) ** 2 @ second_order_pf((1 - 4 * c)) @ second_order_pf(c) ** 2
 fourth_order_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
 fourth_order_coeffs = [
-    u / 2,
-    u,
-    u,
-    u,
-    (1 - (3 * u)) / 2,
-    (1 - (4 * u)),
-    (1 - (3 * u)) / 2,
-    u,
-    u,
-    u,
-    u / 2,
+    c / 2,
+    c,
+    c,
+    c,
+    (1 - (3 * c)) / 2,
+    (1 - (4 * c)),
+    (1 - (3 * c)) / 2,
+    c,
+    c,
+    c,
+    c / 2,
 ]
 
 fourth_order2 = ProductFormula(fourth_order_labels, coeffs=fourth_order_coeffs)
-product_formulas = [(second_order, 3), (fourth_order1, 5), (fourth_order2, 5)]
+product_formulas = [(second_order_pf, 3), (fourth_order1, 5), (fourth_order2, 5)]
 
 
 @pytest.mark.parametrize("fragments, product_formula", product(fragment_list, product_formulas))
