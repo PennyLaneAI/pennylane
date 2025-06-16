@@ -376,9 +376,9 @@ def setup(app):
     # pennylane.PauliY.__name__ = 'PauliY'
     # pennylane.H.__doc__ = pennylane.H.__doc__
     # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    H: TypeAlias = "pennylane.H"
+    # H: TypeAlias = "pennylane.H"
     FromBloq.__doc__ = """An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
-            as a PennyLane :class:`~.Operation`.
+            as a PennyLane.
 
             .. note::
                 This class requires the latest version of Qualtran. We recommend installing the main
