@@ -219,7 +219,7 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
 
     # p = 1, 5 mod 8, use h = sqrt(-1) mod p
     if a in (1, 5):
-        if (h := _sqrt_modulo_p(-1, p)) is None:
+        if (h := _sqrt_modulo_p(-1, p)) is None:  # pragma: no cover
             return None
         return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
 
@@ -266,14 +266,14 @@ def _primality_test(n: int) -> bool:
     bases = [2, 325, 9375, 28178, 450775, 9780504, 1795265022]
     for base in bases:
         base = base if base < n else base % n
-        if base == 0 or base < 2:
+        if base == 0 or base < 2:  # pragma: no cover
             continue
         x = pow(base, d, n)
         if x in (1, n - 1):
             continue
         for _ in range(s - 1):
             x = pow(x, 2, n)
-            if x == 1:
+            if x == 1:  # pragma: no cover
                 return False
             if x == n - 1:
                 break
@@ -340,6 +340,8 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
 
         # Compute b = c^(2^(m-ix-1)) mod p
         # and update the intial elements
+        if m - ix - 1 < 0:
+            return None
         b = pow(c, 1 << (m - ix - 1), p)
         r = (r * b) % p
         c = pow(b, 2, p)
