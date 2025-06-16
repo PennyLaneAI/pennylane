@@ -199,7 +199,6 @@ class ResourceS(ResourceOperator):
         return [GateCount(resource_rep(ResourceZ)), GateCount(cls.resource_rep())]
 
 
-
 class ResourceSWAP(ResourceOperator):
     r"""Resource class for the SWAP gate.
 
@@ -381,6 +380,7 @@ class ResourceSWAP(ResourceOperator):
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(plre.ResourceIdentity))]
         return [GateCount(cls.resource_rep())]
+
 
 class ResourceT(ResourceOperator):
     r"""Resource class for the T-gate.
