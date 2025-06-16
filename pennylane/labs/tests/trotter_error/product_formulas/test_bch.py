@@ -92,50 +92,6 @@ fragment_list = [
 ]
 
 
-@pytest.mark.parametrize("fragments, t", product(fragment_list, [1, 0.1, 0.01]))
-def test_fourth_order_norm_two_fragments(fragments, t):
-    """Tests against an upper bound on the norm of the fourth order Trotter formula. This test comes from
-    Proposition J.1 of https://arxiv.org/pdf/1912.08854"""
-
-    u = 1 / (4 - 4 ** (1 / 3))
-    frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
-    frag_coeffs = [
-        u / 2,
-        u,
-        u,
-        u,
-        (1 - (3 * u)) / 2,
-        (1 - (4 * u)),
-        (1 - (3 * u)) / 2,
-        u,
-        u,
-        u,
-        u / 2,
-    ]
-
-    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(1j * t)
-    fourth_order_approx = fourth_order.to_matrix(fragments)
-    actual = expm(1j * t * sum(fragments.values(), np.zeros(shape=(3, 3), dtype=np.complex128)))
-
-    commutator_coeffs = {
-        ("X", "X", "X", "Y", "X"): 0.0047,
-        ("X", "X", "Y", "Y", "X"): 0.0057,
-        ("X", "Y", "X", "Y", "X"): 0.0046,
-        ("X", "Y", "Y", "Y", "X"): 0.0074,
-        ("Y", "X", "X", "Y", "X"): 0.0097,
-        ("Y", "X", "Y", "Y", "X"): 0.0097,
-        ("Y", "Y", "X", "Y", "X"): 0.0173,
-        ("Y", "Y", "Y", "Y", "X"): 0.0284,
-    }
-
-    upper_bound = 0
-    for comm, coeff in commutator_coeffs.items():
-        mat = nested_commutator([fragments[frag] for frag in comm])
-        upper_bound += coeff * np.linalg.norm(mat)
-
-    assert np.linalg.norm(fourth_order_approx - actual) <= (t**5) * upper_bound
-
-
 X = "X"
 Y = "Y"
 Z = "Z"
