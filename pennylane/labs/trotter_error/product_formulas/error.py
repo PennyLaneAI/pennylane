@@ -246,7 +246,7 @@ def perturbation_error(
 
 
 def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
-    """Returns the state obtained from applying ``commutators`` to ``state`` and computing the expectation value."""
+    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     new_state = _AdditiveIdentity()
     for commutator, coeff in commutators.items():
