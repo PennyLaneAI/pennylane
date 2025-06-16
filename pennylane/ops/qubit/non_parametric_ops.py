@@ -221,24 +221,6 @@ class Hadamard(Observable, Operation):
         return super().pow(z % 2)
 
 
-H = Hadamard
-r"""H(wires)
-The Hadamard operator
-
-.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
-
-.. seealso:: The equivalent long-form alias :class:`~Hadamard`
-
-**Details:**
-
-* Number of wires: 1
-* Number of parameters: 0
-
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
-"""
-
-
 def _hadamard_rz_rx_resources():
     return {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1}
 
@@ -304,6 +286,23 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 
 
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
+
+H = Hadamard
+r"""H(wires)
+The Hadamard operator
+
+.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class PauliX(Observable, Operation):
