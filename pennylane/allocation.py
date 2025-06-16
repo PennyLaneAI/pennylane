@@ -80,18 +80,18 @@ class Deallocate(Operator):
 
     Args:
         wires (DynamicWire, Sequence[DynamicWire]): one or more dynamic wires to deallocate.
-        reset_to_original (bool): Whether or not the qubit will be in the same state upon being freed.
+        restored (bool): Whether or not the qubit will be in the same state upon being freed.
 
     """
 
-    def __init__(self, wires: DynamicWire | Sequence[DynamicWire], reset_to_original=False):
+    def __init__(self, wires: DynamicWire | Sequence[DynamicWire], restored=False):
         super().__init__(wires=wires)
-        self._hyperparameters = {"reset_to_original": reset_to_original}
+        self._hyperparameters = {"restored": restored}
 
     @property
-    def reset_to_original(self):
+    def restored(self):
         """Whether or not the dynamic wire will be returned to its original state."""
-        return self.hyperparameters["reset_to_original"]
+        return self.hyperparameters["restored"]
 
 
 def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
@@ -99,8 +99,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
     .. warning::
 
-        This feature is experimental and may not be possible on all devices.
-
+        This feature is experimental and is not possible on any device yet.
 
     Args:
         num_wires (int): the number of wires to allocate
@@ -125,7 +124,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
             wires = qml.allocation.allocate(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.allocation.deallocate(wires, reset_to_original=True)
+            qml.allocation.deallocate(wires, restored=True)
 
             new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
@@ -137,7 +136,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
 
     >>> print(qml.draw(c, level="user")())
-    0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
     >>> print(qml.draw(c, level="device")())
@@ -157,20 +156,19 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 
 
 def deallocate(
-    wires: DynamicWire | Wires | Sequence[DynamicWire], reset_to_original: bool = False
+    wires: DynamicWire | Wires | Sequence[DynamicWire], restored: bool = False
 ) -> Deallocate:
     """Deallocate dynamic wires back to the pool of wires available for allocation.
 
     .. warning::
 
-        This feature is experimental and may not be available on all devices.
-
+        This feature is experimental and is not possible on any device yet.
 
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
 
     Keyword Args:
-        reset_to_original (bool): Whether or not the qubits will be reset to their original state upon deallocation.
+        restored (bool): Whether or not the qubits will be reset to their original state upon deallocation.
 
 
     .. seealso:: :class:`~.safe_allocate`
@@ -187,7 +185,7 @@ def deallocate(
             wires = qml.allocation.allocate(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.allocation.deallocate(wires, reset_to_original=True)
+            qml.allocation.deallocate(wires, restored=True)
 
             new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
@@ -199,7 +197,7 @@ def deallocate(
 
 
     >>> print(qml.draw(c, level="user")())
-    0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
     >>> print(qml.draw(c, level="device")())
@@ -216,7 +214,7 @@ def deallocate(
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
-    return Deallocate(wires, reset_to_original=reset_to_original)
+    return Deallocate(wires, restored=restored)
 
 
 class safe_allocate:
@@ -224,22 +222,22 @@ class safe_allocate:
 
     .. warning::
 
-        This feature is experimental and may not be available on all devices.
+        This feature is experimental and is not possible on any device yet.
 
     Args:
         num_wires (int): the number of dynamic wires to allocate.
 
     Keyword Args:
         require_zeros (bool): whether or not the wires must start in the ``0`` state
-        reset_to_original (bool): whether or not the wires return to the same state as they started.
+        restored (bool): whether or not the wires return to the same state as they started.
 
     .. code-block:: python
 
         @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
-            with qml.allocation.safe_allocate(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.safe_allocate(2, require_zeros=True, restored=False) as wires:
                 qml.CNOT(wires)
-            with qml.allocation.safe_allocate(2, require_zeros=True, reset_to_original=False) as wires:
+            with qml.allocation.safe_allocate(2, require_zeros=True, restored=False) as wires:
                 qml.IsingXX(0.5, wires)
             return qml.probs()
 
@@ -259,12 +257,12 @@ class safe_allocate:
 
     """
 
-    def __init__(self, num_wires: int, require_zeros: bool = True, reset_to_original: bool = False):
+    def __init__(self, num_wires: int, require_zeros: bool = True, restored: bool = False):
         self.wires = allocate(num_wires, require_zeros=require_zeros)
-        self._reset_to_original = reset_to_original
+        self._restored = restored
 
     def __enter__(self):
         return self.wires
 
     def __exit__(self, *_, **__):
-        deallocate(self.wires, reset_to_original=self._reset_to_original)
+        deallocate(self.wires, restored=self._restored)
