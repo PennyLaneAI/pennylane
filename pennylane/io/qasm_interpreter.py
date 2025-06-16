@@ -897,8 +897,6 @@ class QasmInterpreter:
         """
         name = _resolve_name(node.target) # str or Identifier
         res = measure(self.visit(node.measure.qubit, context))
-        name = _resolve_name(node.target)  # str or Identifier
-        res = meas()
         context.vars[name].val = res
         context.vars[name].line = node.span.start_line
         return res
