@@ -427,7 +427,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
 * Update documentation for Mid Circuit Measure using the Tree Traversal algorithm. 
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
 
 <h3>Contributors ✍️</h3>
