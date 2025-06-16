@@ -499,7 +499,7 @@ class TestMeasureFunctions:
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
-        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, 1.5707, "XY")]
+        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
     )
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
@@ -522,10 +522,9 @@ class TestMeasureFunctions:
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
 
-        # last section is parameters
-        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        assert str(angle) in dynamic_params
-        assert str(wire) in dynamic_params
+        # parameters held in invars
+        assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+        assert jax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
@@ -539,14 +538,22 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
-    def test_arbitrary_basis_with_program_capture(self, angle, plane, wire, reset, postselect):
+    @pytest.mark.parametrize("angle_type", ["numpy", "jax.numpy"])
+    def test_arbitrary_basis_with_program_capture(
+        self, angle, plane, wire, reset, postselect, angle_type
+    ):
         """Test that the measure_ functions are captured as expected"""
+        import importlib
+
         import jax
         import networkx as nx
 
+        np_type = importlib.import_module(angle_type)
+        local_angle = np_type.array(angle)
+
         def circ():
             m = measure_arbitrary_basis(
-                wire, angle=angle, plane=plane, reset=reset, postselect=postselect
+                wire, angle=local_angle, plane=plane, reset=reset, postselect=postselect
             )
             qml.cond(m, qml.X, qml.Y)(0)
             qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
@@ -555,16 +562,20 @@ class TestMeasureFunctions:
         plxpr = jax.make_jaxpr(circ)()
         captured_measurement = str(plxpr.eqns[0])
 
-        # measurement is captured as epxected
+        # measurement is captured as expected
         assert "measure_in_basis" in captured_measurement
         assert f"plane={plane}" in captured_measurement
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
 
-        # last section is parameters
-        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        assert str(angle) in dynamic_params
-        assert str(wire) in dynamic_params
+        # dynamic parameters held in invars for numpy, and consts for jax
+        if "jax" in angle_type:
+            assert jax.numpy.isclose(angle, plxpr.consts[0])
+        else:
+            assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+
+        # Wires captured as invars
+        assert jax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
