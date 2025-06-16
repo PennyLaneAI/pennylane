@@ -170,7 +170,7 @@ class Context:
 
     def init_branches_scope(self, node: QASMNode):
         """
-        Inits the branches scope on the current context.
+        Initializes the branches scope on the current context.
 
         Args:
             node (BranchingStatement): the branch node.
