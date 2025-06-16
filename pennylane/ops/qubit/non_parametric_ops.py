@@ -223,7 +223,7 @@ class Hadamard(Observable, Operation):
 
 H = Hadamard
 H.__doc__ = """H(wires)
-The Hadamard operator
+The Hadamard (H) operator
 
 .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
