@@ -107,8 +107,8 @@ class ResourceCH(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -125,8 +125,8 @@ class ResourceCH(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -204,8 +204,8 @@ class ResourceCY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -222,8 +222,8 @@ class ResourceCY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -303,8 +303,8 @@ class ResourceCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -321,8 +321,8 @@ class ResourceCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -407,8 +407,8 @@ class ResourceCSWAP(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -425,8 +425,8 @@ class ResourceCSWAP(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -505,8 +505,8 @@ class ResourceCCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -523,8 +523,8 @@ class ResourceCCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -588,8 +588,8 @@ class ResourceCNOT(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -610,8 +610,8 @@ class ResourceCNOT(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
             return [GateCount(resource_rep(ResourceToffoli))]
@@ -640,8 +640,8 @@ class ResourceCNOT(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -694,8 +694,8 @@ class ResourceTempAND(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         tof = resource_rep(ResourceToffoli, {"elbow": "left"})
         return [GateCount(tof)]
@@ -709,8 +709,8 @@ class ResourceTempAND(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         h = resource_rep(re.ResourceHadamard)
         cz = resource_rep(ResourceCZ)
@@ -733,8 +733,8 @@ class ResourceTempAND(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         mcx = resource_rep(
             re.ResourceMultiControlledX,
@@ -751,9 +751,15 @@ class ResourceToffoli(ResourceOperator):
 
     Args:
         wires (Sequence[int], optional): the subsystem the gate acts on
+        elbow (Union[str, None]): String identifier to determine if this is a special type of
+            Toffoli gate (left or right elbow). Default value is `None`.
 
     Resources:
-        The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+        If `elbow` is provided, resources are obtained from Figure 4 of
+        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+
+        If `elbow` is `None`, the resources are obtained from Figure 1 of
+        `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
         The circuit which applies the Toffoli gate on target wire 'target' with control wires
         ('c1', 'c2') is defined as:
@@ -794,7 +800,11 @@ class ResourceToffoli(ResourceOperator):
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
-            The resources are obtained from Figure 1 of `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
+            If `elbow` is provided, resources are obtained from Figure 4 of
+            `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+
+            If `elbow` is `None`, the resources are obtained from Figure 1 of
+            `Jones 2012 <https://arxiv.org/pdf/1212.5069>`_.
 
             The circuit which applies the Toffoli gate on target wire 'target' with control wires
             ('c1', 'c2') is defined as:
@@ -821,7 +831,10 @@ class ResourceToffoli(ResourceOperator):
         Each GateCount object specifies a gate type and its total occurrence count.
 
         Resources:
-            The resources are taken from Figure 4.9 of `Nielsen, M. A., & Chuang, I. L. (2010)
+            If `elbow` is provided, resources are obtained from Figure 4 of
+            `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+
+            If `elbow` is `None`, the resources are taken from Figure 4.9 of `Nielsen, M. A., & Chuang, I. L. (2010)
             <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
             The circuit is defined as:
@@ -864,8 +877,8 @@ class ResourceToffoli(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if elbow is None:
             return [GateCount(cls.resource_rep())]
@@ -878,7 +891,6 @@ class ResourceToffoli(ResourceOperator):
         cls,
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
-        elbow=None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -886,14 +898,14 @@ class ResourceToffoli(ResourceOperator):
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             elbow (Union[str, None]): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
-
+                Default value is `None`.
         Resources:
             The resources are expressed as one general :class:`~.ResourceMultiControlledX` gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         mcx = resource_rep(
             re.ResourceMultiControlledX,
@@ -917,8 +929,8 @@ class ResourceToffoli(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -936,17 +948,8 @@ class ResourceMultiControlledX(ResourceOperator):
         wires (Sequence[int], optional): the wires this operation acts on
 
     Resources:
-        The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
-        <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
-        resources are defined as the following rules:
-
-        * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
-
-        * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
-
-        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceToffoli` gate.
-
-        * If there are more than three control qubits (:math:`n`), the resources are defined as :math:`36n - 111` :class:`~.ResourceCNOT` gates.
+        The resources are obtained based on the unary iteration technique described in
+        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
 
     .. seealso:: :class:`~.MultiControlledX`
 
@@ -954,7 +957,7 @@ class ResourceMultiControlledX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceMultiControlledX.resources(num_ctrl_wires=5, num_ctrl_values=2)
+    >>> re.ResourceMultiControlledX.resource_decomp(num_ctrl_wires=5, num_ctrl_values=2)
     [(4 x X), AllocWires(3), (3 x TempAND), (3 x Toffoli), (1 x Toffoli), FreeWires(3)]
     """
 
@@ -1017,21 +1020,8 @@ class ResourceMultiControlledX(ResourceOperator):
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Resources:
-            The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
-            <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
-            resources are defined as the following rules:
-
-            * If there are no control qubits, treat the operation as a :class:`~.ResourceX` gate.
-
-            * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
-
-            * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
-
-            * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and
-            one :class:`~.ResourceToffoli` gate.
-
-            * If there are more than three control qubits (:math:`n`), the resources are defined as
-            :math:`36n - 111` :class:`~.ResourceCNOT` gates.
+            The resources are obtained based on the unary iteration technique described in
+            `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
         """
         gate_lst = []
 
@@ -1087,8 +1077,8 @@ class ResourceMultiControlledX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(num_ctrl_wires, num_ctrl_values))]
 
@@ -1118,8 +1108,8 @@ class ResourceMultiControlledX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [
             GateCount(
@@ -1135,7 +1125,7 @@ class ResourceMultiControlledX(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
@@ -1145,8 +1135,8 @@ class ResourceMultiControlledX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return (
             [GateCount(resource_rep(re.ResourceIdentity))]
@@ -1159,8 +1149,9 @@ class ResourceCRX(ResourceOperator):
     r"""Resource class for the CRX gate.
 
     Args:
-        wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
+        wires (Sequence[int], optional): the wire the operation acts on
+        eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1237,8 +1228,8 @@ class ResourceCRX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -1248,6 +1239,8 @@ class ResourceCRX(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+                The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1255,8 +1248,8 @@ class ResourceCRX(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -1266,7 +1259,9 @@ class ResourceCRY(ResourceOperator):
     r"""Resource class for the CRY gate.
 
     Args:
-        wires (Sequence[int]): the wire the operation acts on
+        wires (Sequence[int], optional): the wire the operation acts on
+        eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1341,8 +1336,8 @@ class ResourceCRY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -1352,6 +1347,8 @@ class ResourceCRY(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+                The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1359,8 +1356,8 @@ class ResourceCRY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -1370,9 +1367,9 @@ class ResourceCRZ(ResourceOperator):
     r"""Resource class for the CRZ gate.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
+        wires (Sequence[int], optional): the wire the operation acts on
+        eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1447,8 +1444,8 @@ class ResourceCRZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -1458,6 +1455,8 @@ class ResourceCRZ(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+                The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
             Taking arbitrary powers of a single qubit rotation produces a sum of rotations.
@@ -1465,8 +1464,8 @@ class ResourceCRZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -1476,7 +1475,9 @@ class ResourceCRot(ResourceOperator):
     r"""Resource class for the CRot gate.
 
     Args:
-        wires (Sequence[int]): the wire the operation acts on
+        wires (Sequence[int], optional): the wire the operation acts on
+        eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
         The resources are taken from Figure 1b of `Gheorghiu, V., Mosca, M. & Mukhopadhyay
@@ -1570,8 +1571,8 @@ class ResourceCRot(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -1581,6 +1582,8 @@ class ResourceCRot(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+                The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
             Taking arbitrary powers of a general single qubit rotation produces a sum of rotations.
@@ -1588,8 +1591,8 @@ class ResourceCRot(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
@@ -1599,9 +1602,9 @@ class ResourceControlledPhaseShift(ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.
 
     Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int]): the wire the operation acts on
-        id (str or None): String representing the operation (optional)
+        wires (Sequence[int], optional): the wire the operation acts on
+        eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+            The default value is `None` which corresponds to using the epsilon stated in the config.
 
     Resources:
         The resources are derived using the fact that a :class:`~.ResourcePhaseShift` gate is
@@ -1665,8 +1668,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep(eps))]
 
@@ -1676,6 +1679,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Args:
             pow_z (int): the power that the operator is being raised to
+            eps (float, optional): The error threshold for clifford plus T decomposition of the rotation gate.
+                The default value is `None` which corresponds to using the epsilon stated in the config.
 
         Resources:
             Taking arbitrary powers of a phase shift produces a sum of shifts.
@@ -1683,8 +1688,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
 
         return [GateCount(cls.resource_rep(eps))]
