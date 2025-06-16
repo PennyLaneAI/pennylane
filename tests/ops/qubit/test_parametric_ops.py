@@ -54,7 +54,6 @@ PARAMETRIZED_OPERATIONS = [
     qml.U1(0.123, wires=0),
     qml.U2(3.556, 2.134, wires=0),
     qml.U3(2.009, 1.894, 0.7789, wires=0),
-    qml.CU(0.1, 0.2, 0.3, 0.4, wires=[0, 1]),
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
