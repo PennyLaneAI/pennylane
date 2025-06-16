@@ -178,7 +178,8 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit", shots = 1))
+            @partial(qml.set_shots, shots=1)
+            @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # load values of x and y
                 qml.BasisEmbedding(3, wires=wires["x"])
@@ -223,7 +224,8 @@ class OutPoly(Operation):
             def f(x, y):
                 return x ** 2 + y
 
-            @qml.qnode(qml.device("default.qubit", shots = 1))
+            @partial(qml.set_shots, shots=1)
+            @qml.qnode(qml.device("default.qubit"))
             def circuit():
                 # loading values for x and y
                 qml.BasisEmbedding(3, wires=x_wires)
@@ -362,7 +364,7 @@ class OutPoly(Operation):
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(**self.hyperparameters)
 
     @staticmethod

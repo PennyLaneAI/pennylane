@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
@@ -35,17 +36,6 @@ from pennylane.workflow.qnode import _make_execution_config
 def dummyfunc():
     """dummy func."""
     return None
-
-
-def test_additional_kwargs_is_deprecated():
-    """Test that passing gradient_kwargs as additional kwargs raises a deprecation warning."""
-    dev = qml.device("default.qubit", wires=1)
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
-    ):
-        QNode(dummyfunc, dev, atol=1)
 
 
 # pylint: disable=unused-argument
@@ -80,7 +70,7 @@ def test_no_measure():
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+    with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
         _ = circuit(0.65)
 
 
@@ -175,12 +165,6 @@ class TestUpdate:
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
-        with pytest.warns(
-            UserWarning,
-            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
-        ):
-            circuit.update(gradient_kwargs={"blah": 1})
-
     def test_update_multiple_arguments(self):
         """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
@@ -228,7 +212,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is False
+        assert f.execute_kwargs["cache"] == "auto"
 
     def test_cache_initialization_maxdiff_2(self):
         """Test that when max_diff = 2, the cache initialization to True."""
@@ -237,7 +221,7 @@ class TestInitialization:
         def f():
             return qml.state()
 
-        assert f.execute_kwargs["cache"] is True
+        assert f.execute_kwargs["cache"] == "auto"
 
 
 # pylint: disable=too-many-public-methods
@@ -253,24 +237,6 @@ class TestValidation:
             return return_type([qml.expval(qml.Z(0))])
 
         assert isinstance(circuit(return_type), return_type)
-
-    def test_expansion_strategy_error(self):
-        """Test that an error is raised if expansion_strategy is passed to the qnode."""
-
-        with pytest.raises(ValueError, match="'expansion_strategy' is no longer"):
-
-            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
-            def _():
-                return qml.state()
-
-    def test_max_expansion_error(self):
-        """Test that an error is raised if max_expansion is passed to the QNode."""
-
-        with pytest.raises(ValueError, match="'max_expansion' is no longer a valid"):
-
-            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
-            def _():
-                qml.state()
 
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
@@ -300,7 +266,7 @@ class TestValidation:
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
     # pylint: disable=protected-access, too-many-statements
@@ -365,7 +331,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Differentiation method hello not recognized",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
@@ -391,7 +357,7 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not support adjoint with requested circuit",
         ):
             circ(shots=1)
@@ -408,7 +374,7 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not support backprop with requested circuit",
         ):
             qml.grad(circuit, argnum=0)([0.5])
@@ -456,43 +422,6 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
-
-    # pylint: disable=unused-variable
-    def test_unrecognized_kwargs_raise_warning(self):
-        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            assert len(w) == 1
-            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
-
-    # pylint: disable=unused-variable
-    def test_incorrect_diff_method_kwargs_raise_warning(self):
-        """Tests that using one of the incorrect kwargs previously used in some examples in PennyLane
-        (grad_method, gradient_fn) to set the qnode diff_method raises a warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
-            def circuit0(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-            def circuit2(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-        assert len(w) == 2
-        assert "Use diff_method instead" in str(w[0].message)
-        assert "Use diff_method instead" in str(w[1].message)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
@@ -608,9 +537,7 @@ class TestTapeConstruction:
 
         qn = QNode(func0, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
         def func2(x, y):
@@ -621,9 +548,7 @@ class TestTapeConstruction:
 
         qn = QNode(func2, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
         def func3(x, y):
@@ -634,9 +559,7 @@ class TestTapeConstruction:
 
         qn = QNode(func3, dev)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
     def test_inconsistent_measurement_order(self):
@@ -654,7 +577,7 @@ class TestTapeConstruction:
         qn = QNode(func, dev)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="measurements must be returned in the order they are measured",
         ):
             qn(5, 1)
@@ -1188,7 +1111,7 @@ class TestIntegration:
         def circuit():
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="device_vjp=True is not supported"):
+        with pytest.raises(QuantumFunctionError, match="device_vjp=True is not supported"):
             circuit()
 
     @pytest.mark.parametrize(
@@ -1213,7 +1136,7 @@ class TestIntegration:
         res = circuit(x)  # execution works fine
         assert qml.math.allclose(res, np.cos(0.5))
 
-        with pytest.raises(qml.QuantumFunctionError, match="with diff_method=None"):
+        with pytest.raises(QuantumFunctionError, match="with diff_method=None"):
             qml.math.grad(circuit)(x)
 
 
@@ -1323,22 +1246,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
-    def test_shots_passed_as_unrecognized_kwarg(self):
-        """Test that an error is raised if shots are passed to QNode initialization."""
-        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
-
-        def ansatz0():
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-            qml.QNode(ansatz0, dev, gradient_kwargs={"shots": 100})
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-
-            @qml.qnode(dev, gradient_kwargs={"shots": 100})
-            def _():
-                return qml.expval(qml.X(0))
-
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
         """Tests that per-call shots setting does not change the number of shots in the device."""
@@ -1398,6 +1305,20 @@ class TestShots:
         qml.execute([tape], dev, None, cache=cache)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             qml.execute([tape], dev, None, cache=cache)
+
+        cache2 = {}
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qml.execute([tape, tape], dev, cache=cache2)
+
+    def test_no_caching_by_default(self):
+        """Test that caching is turned off by default."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        tape = qml.tape.QuantumScript([qml.H(0)], [qml.sample(wires=0)], shots=1000)
+
+        res1, res2 = qml.execute([tape, tape], dev)
+        assert not np.allclose(res1, res2)
 
     def test_no_warning_infinite_shots(self):
         """Tests that no warning is raised when caching is used with infinite shots."""
@@ -1653,7 +1574,7 @@ class TestGetGradientFn:
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
@@ -1666,7 +1587,7 @@ class TestGetGradientFn:
         dev = qml.device("default.gaussian", wires=1)
         tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             res = qml.QNode.get_gradient_fn(
@@ -1678,7 +1599,7 @@ class TestGetGradientFn:
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
         dev = qml.devices.DefaultQubit()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
@@ -1689,11 +1610,11 @@ class TestGetGradientFn:
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=r"Device CustomDevice does not support adjoint",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
@@ -1701,11 +1622,11 @@ class TestGetGradientFn:
     def test_error_for_backprop_with_custom_device(self):
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=r"Device CustomDevice does not support backprop",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, "autograd", "backprop")
@@ -1725,7 +1646,7 @@ class TestGetGradientFn:
 
         dev = BackpropDevice()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1750,7 +1671,7 @@ class TestGetGradientFn:
 
         dev = DerivativeDevice()
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
@@ -1761,7 +1682,7 @@ class TestGetGradientFn:
     def test_diff_method_is_none(self):
         """Test get_gradient_fn behaves correctly."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1774,7 +1695,7 @@ class TestGetGradientFn:
     def test_transform_dispatcher_as_diff_method(self):
         """Test when diff_method is of type TransformDispatcher"""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1787,11 +1708,11 @@ class TestGetGradientFn:
     def test_invalid_diff_method(self):
         """Test that an invalid diff method raises an error."""
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Differentiation method invalid-method not recognized",
         ):
             with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
                 match="deprecated",
             ):
                 QNode.get_gradient_fn(self.dev, None, diff_method="invalid-method")
@@ -1806,7 +1727,7 @@ class TestGetGradientFn:
             "hadamard": qml.gradients.hadamard_grad,
         }
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1820,7 +1741,7 @@ class TestGetGradientFn:
         """Test that 'parameter-shift-cv' is used when CV operations are present."""
         tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="deprecated",
         ):
             gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
@@ -1863,12 +1784,12 @@ class TestNewDeviceIntegration:
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
-            def _setup_execution_config(self, execution_config=qml.devices.DefaultExecutionConfig):
-                if execution_config.gradient_method in {"best", "hello"}:
-                    return replace(
-                        execution_config, gradient_method="hello", use_device_gradient=True
-                    )
-                return execution_config
+            def setup_execution_config(
+                self, config=qml.devices.DefaultExecutionConfig, circuit=None
+            ):
+                if config.gradient_method in {"best", "hello"}:
+                    return replace(config, gradient_method="hello", use_device_gradient=True)
+                return config
 
             def compute_derivatives(
                 self, circuits, execution_config=qml.devices.DefaultExecutionConfig
@@ -1902,7 +1823,7 @@ class TestNewDeviceIntegration:
         def circuit():
             return qml.sample(wires=(0, 1))
 
-        with pytest.raises(qml.DeviceError, match="not accepted for analytic simulation"):
+        with pytest.raises(DeviceError, match="not accepted for analytic simulation"):
             circuit()
 
         results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
@@ -2182,7 +2103,7 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qml.state()
 
-    with pytest.raises(qml.DeviceError):
+    with pytest.raises(DeviceError):
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"

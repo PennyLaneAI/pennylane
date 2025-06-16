@@ -80,10 +80,11 @@ The easiest way of computing expectation values with classical shadows in PennyL
 
     H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.Z(1)])
 
-    dev = qml.device("default.qubit", shots=10000)
+    dev = qml.device("default.qubit")
 
     # shadow_expval + mid-circuit measurements require to defer measurements
     @qml.defer_measurements
+    @partial(qml.set_shots, shots=10000)
     @qml.qnode(dev)
     def qnode(x):
         qml.Hadamard(0)

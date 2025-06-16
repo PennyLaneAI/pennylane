@@ -65,7 +65,7 @@ class RotoselectOptimizer:
 
     Set up the PennyLane circuit using the ``default.qubit`` simulator device.
 
-    >>> dev = qml.device("default.qubit", shots=None, wires=2)
+    >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params, generators=None):  # generators will be passed as a keyword arg
     ...     generators[0](params[0], wires=0)
@@ -89,8 +89,6 @@ class RotoselectOptimizer:
     The optimized values for x should now be stored in ``x`` together with the optimal gates for
     the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, possible_generators=None):
         self.possible_generators = possible_generators or [RX, RY, RZ]

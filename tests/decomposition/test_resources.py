@@ -37,6 +37,7 @@ class TestResources:
         resources = Resources()
         assert resources.num_gates == 0
         assert resources.gate_counts == {}
+        assert resources.weighted_cost == 0.0
 
     def test_negative_gate_counts(self):
         """Tests that an error is raised if the gate count is negative."""
@@ -48,14 +49,26 @@ class TestResources:
                 }
             )
 
+    def test_negative_weighted_cost(self):
+        """Tests that an error is raised if the cost is negative."""
+        with pytest.raises(AssertionError):
+            Resources(
+                gate_counts={
+                    CompressedResourceOp(qml.RX, {}): 2,
+                },
+                weighted_cost=-2.0,
+            )
+
     def test_add_resources(self):
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
+            weighted_cost=6.0,
         )
         resources2 = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 1, CompressedResourceOp(qml.RY, {}): 1},
+            weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
@@ -65,12 +78,14 @@ class TestResources:
             CompressedResourceOp(qml.RZ, {}): 1,
             CompressedResourceOp(qml.RY, {}): 1,
         }
+        assert resources.weighted_cost == 8.0
 
     def test_mul_resource_with_scalar(self):
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            gate_counts={CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1},
+            weighted_cost=2.0,
         )
 
         resources = resources * 2
@@ -79,14 +94,15 @@ class TestResources:
             CompressedResourceOp(qml.RX, {}): 4,
             CompressedResourceOp(qml.RZ, {}): 2,
         }
+        assert resources.weighted_cost == 4
 
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
         resources = Resources(
-            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}
+            {CompressedResourceOp(qml.RX, {}): 2, CompressedResourceOp(qml.RZ, {}): 1}, 5.0
         )
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}>"
+        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -213,7 +229,7 @@ class TestCompressedResourceOp:
         [
             (resource_rep(qml.RX), "RX"),
             (adjoint_resource_rep(qml.RX, {}), "Adjoint(RX)"),
-            (controlled_resource_rep(qml.RX, {}, 1, 0, 0), "C(RX)"),
+            (controlled_resource_rep(qml.T, {}, 1, 0, 0), "C(T)"),
             (pow_resource_rep(qml.RX, {}, 2), "Pow(RX)"),
         ],
     )
@@ -276,6 +292,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
         )
 
@@ -290,6 +307,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
             1,
             1,
@@ -303,29 +321,8 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
+                "work_wire_type": "dirty",
             },
-        )
-
-    def test_resource_rep_dispatch_to_controlled_resource_rep(self, mocker):
-        """Tests that resource_rep dispatches to controlled_resource_rep for Controlled."""
-
-        expected_fn = mocker.patch("pennylane.decomposition.resources.controlled_resource_rep")
-        _ = resource_rep(
-            qml.ops.Controlled,
-            **{
-                "base_class": qml.CRX,
-                "base_params": {},
-                "num_control_wires": 2,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-            },
-        )
-        expected_fn.assert_called_once_with(
-            base_class=qml.CRX,
-            base_params={},
-            num_control_wires=2,
-            num_zero_control_values=1,
-            num_work_wires=1,
         )
 
     def test_controlled_resource_op_base_param_mismatch(self):
@@ -345,57 +342,89 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
+                    "work_wire_type": "clean",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "clean",
             },
             1,
             1,
             1,
+            "clean",
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.MultiControlledX,
             {
-                "base_class": qml.X,
-                "base_params": {},
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+                "work_wire_type": "clean",
+            },
+        )
+
+    def test_controlled_qubit_unitary(self):
+        """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
+
+        rep = controlled_resource_rep(
+            qml.ops.Controlled,
+            {
+                "base_class": qml.QubitUnitary,
+                "base_params": {"num_wires": 2},
+                "num_control_wires": 1,
+                "num_zero_control_values": 1,
+                "num_work_wires": 1,
+                "work_wire_type": "clean",
+            },
+            1,
+            1,
+            1,
+            "clean",
+        )
+        assert rep == CompressedResourceOp(
+            qml.ops.ControlledQubitUnitary,
+            {
+                "num_target_wires": 2,
+                "num_control_wires": 2,
+                "num_zero_control_values": 2,
+                "num_work_wires": 2,
+                "work_wire_type": "clean",
             },
         )
 
     def test_nested_controlled_qubit_unitary(self):
         """Tests that a nested controlled qubit unitary is flattened."""
 
-        U = qml.math.eye(2)
-
         rep = controlled_resource_rep(
             qml.ops.Controlled,
             {
                 "base_class": qml.ControlledQubitUnitary,
                 "base_params": {
+                    "num_target_wires": 1,
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "base": qml.QubitUnitary(U, wires=[0]),
+                    "work_wire_type": "dirty",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
+                "work_wire_type": "dirty",
             },
             1,
             1,
             1,
+            "clean",
         )
         assert rep == CompressedResourceOp(
-            qml.ops.Controlled,
+            qml.ops.ControlledQubitUnitary,
             {
-                "base_class": qml.QubitUnitary,
-                "base_params": {"num_wires": 1},
+                "num_target_wires": 1,
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
+                "work_wire_type": "dirty",
             },
         )
 
@@ -434,39 +463,6 @@ class TestSymbolicResourceRep:
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             qml.decomposition.adjoint_resource_rep(DummyOp, {})
 
-    def test_adjoint_resource_rep_flattens_inner_nested_controlled_op(self):
-        """Tests that the adjoint of a nested controlled op is flattened."""
-
-        rep = qml.decomposition.adjoint_resource_rep(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Controlled,
-                "base_params": {
-                    "base_class": qml.CRX,
-                    "base_params": {},
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
-                },
-            },
-        )
-        assert rep == CompressedResourceOp(
-            qml.ops.Adjoint,
-            {
-                "base_class": qml.ops.Adjoint,
-                "base_params": {
-                    "base_class": qml.ops.Controlled,
-                    "base_params": {
-                        "base_class": qml.RX,
-                        "base_params": {},
-                        "num_control_wires": 3,
-                        "num_zero_control_values": 1,
-                        "num_work_wires": 1,
-                    },
-                },
-            },
-        )
-
     def test_adjoint_custom_controlled_ops(self):
         """Tests that the adjoint of custom controlled ops remain as the custom version."""
 
@@ -490,12 +486,3 @@ class TestSymbolicResourceRep:
 
         op = qml.pow(qml.MultiRZ(0.5, wires=[0, 1, 2]), 3)
         assert op.resource_params == rep.params
-
-    def test_non_integer_pow_not_supported(self):
-        """Tests that non-integer power is not supported yet."""
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, 3.5)
-
-        with pytest.raises(NotImplementedError, match="Non-integer powers"):
-            qml.decomposition.pow_resource_rep(qml.MultiRZ, {"num_wires": 3}, -1)
