@@ -895,7 +895,7 @@ class QasmInterpreter:
             node (QASMNode): the quantum measurement node.
             context (Context): the current context.
         """
-        name = _resolve_name(node.target) # str or Identifier
+        name = _resolve_name(node.target)  # str or Identifier
         res = measure(self.visit(node.measure.qubit, context))
         context.vars[name].val = res
         context.vars[name].line = node.span.start_line
