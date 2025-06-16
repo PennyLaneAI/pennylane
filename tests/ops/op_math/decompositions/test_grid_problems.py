@@ -15,6 +15,9 @@
 
 # pylint: disable = too-few-public-methods, unused-variable, unused-import
 
+import inspect
+import math
+
 import pytest
 
 from pennylane.ops.op_math.decompositions.grid_problems import Ellipse, GridIterator, GridOp, State
@@ -26,24 +29,15 @@ class TestEllipse:
 
     def test_init_and_repr(self):
         """Test that Ellipse initializes correctly and has correct representations."""
-        ellipse = Ellipse((1, 2, 3), (4, 5), (6, 7))
-        assert ellipse.a == 1
-        assert ellipse.b == 2
-        assert ellipse.d == 3
-        assert ellipse.p == (4, 5)
-        assert ellipse.axes == (6, 7)
-        assert repr(ellipse) == "Ellipse(a=1, b=2, d=3, p=(4, 5), axes=(6, 7))"
-        assert str(ellipse) == "Ellipse(a=1, b=2, d=3, p=(4, 5), axes=(6, 7))"
-        assert ellipse.determinant == 1 * 2 * 3 - 2 * 2 * 2
-        assert ellipse.descriminant == 1 * 2 * 3 - 2 * 2 * 2
+        ellipse = Ellipse((1, 0, 1), (4, 5), (6, 7))
+        assert ellipse.a == 1 and ellipse.b == 0 and ellipse.d == 1
+        assert ellipse.p == (4, 5) and ellipse.axes == (6, 7)
+        assert repr(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
+        assert str(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
+        assert ellipse.determinant == 1 and ellipse.descriminant == 0
         assert ellipse.bounding_box() == (-1, 1, -1, 1)
-        assert ellipse.offset(1) == Ellipse((1, 2, 3), (5, 6), (6, 7))
-        assert ellipse.apply_grid_op(GridOp((1, 2, 3, 4), (5, 6, 7, 8))) == Ellipse(
-            (1, 2, 3), (5, 6), (6, 7)
-        )
-        assert ellipse.apply_grid_op(GridOp((1, 2, 3, 4), (5, 6, 7, 8))) == Ellipse(
-            (1, 2, 3), (5, 6), (6, 7)
-        )
+        assert ellipse.offset(1) == Ellipse((1, 0, 1), p=(5, 6), axes=(6, 7))
+        assert ellipse.b_from_uprightness(0.2) == math.sqrt((math.pi / 0.8) ** 2 - 1)
 
 
 class TestState:
@@ -51,66 +45,80 @@ class TestState:
 
     def test_init_and_repr(self):
         """Test that State initializes correctly and has correct representations."""
-        e1 = Ellipse((1, 2, 3), (4, 5), (6, 7))
-        e2 = Ellipse((8, 9, 10), (11, 12), (13, 14))
+        e1 = Ellipse((1, 0, 1), (4, 5), (6, 7))
+        e2 = Ellipse((2, 1, 2), (2, 3), (4, 5))
         state = State(e1, e2)
         assert state.e1 == e1
         assert state.e2 == e2
-        assert (
-            repr(state)
-            == "State(e1=Ellipse(a=1, b=2, d=3, p=(4, 5), axes=(6, 7)), e2=Ellipse(a=8, b=9, d=10, p=(11, 12), axes=(13, 14)))"
-        )
-        assert (
-            str(state)
-            == "State(e1=Ellipse(a=1, b=2, d=3, p=(4, 5), axes=(6, 7)), e2=Ellipse(a=8, b=9, d=10, p=(11, 12), axes=(13, 14)))"
-        )
-
-
-class TestGridOp:
-    """Tests for the GridOp class."""
-
-    def test_init_and_repr(self):
-        """Test that GridOp initializes correctly and has correct representations."""
-        grid_op = GridOp((1, 2, 3, 4), (5, 6, 7, 8))
-        assert grid_op.a == 1
-        assert grid_op.b == 2
-        assert grid_op.c == 3
-        assert grid_op.d == 4
-
-    def test_grid_op_apply(self):
-        """Test that GridOp applies correctly."""
-        grid_op = GridOp((1, 2, 3, 4), (5, 6, 7, 8))
-        state = State(Ellipse((1, 2, 3), (4, 5), (6, 7)), Ellipse((8, 9, 10), (11, 12), (13, 14)))
-        assert grid_op.apply(state) == State(
-            Ellipse((1, 2, 3), (5, 6), (6, 7)), Ellipse((8, 9, 10), (12, 13), (13, 14))
-        )
+        assert repr(state) == f"State(e1={e1}, e2={e2})"
+        assert state.skew == 1.0 and state.bias == 0.0
 
 
 class TestGridIterator:
     """Tests for the GridIterator class."""
 
-    def test_one_dim_problem(self):
+    # pylint: disable = too-many-arguments
+    @pytest.mark.parametrize(
+        "x0, x1, y0, y1, num",
+        [
+            (8.9, 9.5, -21, -18, 2),
+            (246.023423, 248.5823575862261, 778, 779.0106829464769, 3),
+            (13734300, 13734500, -13874089.232, -13874089.181, 6),
+        ],
+    )
+    def test_one_dim_problem(self, x0, x1, y0, y1, num):
         """Test that the one dimensional grid problem is solved correctly."""
-        grid_iterator = GridIterator(0.1, 0.2)
-        state = State(Ellipse((1, 2, 3), (4, 5), (6, 7)), Ellipse((8, 9, 10), (11, 12), (13, 14)))
-        solutions = grid_iterator.solve_one_dim_problem(0, 1, 0, 1)
-        assert len(solutions) == 1
-        assert solutions[0] == ZSqrtTwo(1, 0)
+        gitr = GridIterator()
+        sols = gitr.solve_one_dim_problem(x0, x1, y0, y1)
+        assert inspect.isgenerator(sols)
+        assert gitr.bbox_grid_points((x0, x1, y0, y1)) == num
 
-    def test_upright_problem(self):
+        ix = 0
+        for sol in sols:
+            ix, s1, s2 = ix + 1, float(sol), float(sol.adj2())
+            assert x0 <= s1 <= x1
+            assert y0 <= s2 <= y1
+        assert 0 < ix <= num
+
+    @pytest.mark.parametrize(
+        "bbox1, bbox2, res",
+        [
+            ((5, 6, 4, 5), (2, 3, -1, 0), (1, 2, 3, 4)),
+            ((-4, -3.8, 2.2, 2.4), (-9, -8, 2.5, 4.2), (-2, 3, 1, -6)),
+        ],
+    )
+    def test_upright_problem(self, bbox1, bbox2, res):
         """Test that the upright grid problem is solved correctly."""
-        grid_iterator = GridIterator(0.1, 0.2)
-        state = State(Ellipse((1, 2, 3), (4, 5), (6, 7)), Ellipse((8, 9, 10), (11, 12), (13, 14)))
-        solutions = grid_iterator.solve_upright_problem(
-            state, (0, 1, 0, 1), (0, 1, 0, 1), True, ZOmega()
-        )
-        assert len(solutions) == 1
-        assert solutions[0] == ZOmega(1, 0, 0, 0)
+        D, num_b, shifts = (1, 0, 1), [0, 0], [ZOmega(), ZOmega(c=1)]
+        bbox3 = tuple(bb_ - 1 / math.sqrt(2) for bb_ in bbox1)
+        bbox4 = tuple(bb_ + 1 / math.sqrt(2) for bb_ in bbox2)
+        state = State(Ellipse(D), Ellipse(D))
 
-    def test_two_dim_problem(self):
+        gitr = GridIterator()
+        sols1 = gitr.solve_upright_problem(state, bbox1, bbox2, num_b, shifts[0])
+        sols2 = gitr.solve_upright_problem(state, bbox3, bbox4, num_b, shifts[1])
+        assert inspect.isgenerator(sols1) and inspect.isgenerator(sols2)
+        assert ZOmega(*res) in list(sols1) + list(sols2)
+
+    @pytest.mark.parametrize(
+        "e1, e2, res",
+        [
+            (
+                Ellipse((3, 0.5, 1.0), (-1.7, 13.95)),
+                Ellipse((3, 0.3, 0.3), (-12.3, -7.9)),
+                (4, 3, 12, -7),
+            ),
+            (
+                Ellipse((2, 0.6, 0.9), (-1.8, 14.93)),
+                Ellipse((2, 0.4, 0.2), (-11.3, -6.9)),
+                (4, 4, 11, -6),
+            ),
+        ],
+    )
+    def test_two_dim_problem(self, e1, e2, res):
         """Test that the two dimensional grid problem is solved correctly."""
-        grid_iterator = GridIterator(0.1, 0.2)
-        state = State(Ellipse((1, 2, 3), (4, 5), (6, 7)), Ellipse((8, 9, 10), (11, 12), (13, 14)))
-        solutions = grid_iterator.solve_two_dim_problem(state)
-        assert len(solutions) == 1
-        assert solutions[0] == ZOmega(1, 0, 0, 0)
+        state = State(e1, e2)
+        gitr = GridIterator()
+        sols = gitr.solve_two_dim_problem(state)
+        assert inspect.isgenerator(sols)
+        assert ZOmega(*res) in list(sols)

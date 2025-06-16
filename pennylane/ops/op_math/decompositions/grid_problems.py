@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from copy import copy
 from functools import lru_cache
+from itertools import chain
 from typing import Iterable
 
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega, ZSqrtTwo
@@ -88,7 +89,17 @@ class Ellipse:
 
     def __repr__(self) -> str:
         """Return a string representation of the ellipse."""
-        return f"Ellipse(a={self.a}, b={self.b}, d={self.d}, p={self.p}, axes={self.axes}, z={self.z}, e={self.e})"
+        return f"Ellipse(a={self.a}, b={self.b}, d={self.d}, p={self.p}, axes={self.axes})"
+
+    def __eq__(self, other: "Ellipse") -> bool:
+        """Check if the ellipses are equal."""
+        return (
+            self.a == other.a
+            and self.b == other.b
+            and self.d == other.d
+            and self.p == other.p
+            and self.axes == other.axes
+        )
 
     @property
     def descriminant(self) -> float:
@@ -110,13 +121,15 @@ class Ellipse:
         """Calculate the uprightness of the ellipse (Eq. 32, arXiv:1403.2975)."""
         return math.pi / (4 * self.e)
 
-    def b_from_uprightness(self, uprightness: float) -> float:
+    @staticmethod
+    def b_from_uprightness(uprightness: float) -> float:
         """Calculate the b value of the ellipse from its uprightness (Eq. 33, arXiv:1403.2975)."""
         return math.sqrt((math.pi / (4 * uprightness)) ** 2 - 1)
 
     def contains(self, x: float, y: float) -> bool:
         """Check if the point (x, y) is inside the ellipse."""
-        return (self.a * x**2 + 2 * self.b * x * y + self.d * y**2) <= 1
+        x_, y_ = x - self.p[0], y - self.p[1]
+        return (self.a * x_**2 + 2 * self.b * x_ * y_ + self.d * y_**2) <= 1
 
     def normalize(self) -> tuple["Ellipse", float]:
         """Normalize the ellipse to have a determinant of 1."""
@@ -500,7 +513,7 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
 class GridIterator:
     """Solve the grid problem for one and two dimensions."""
 
-    def __init__(self, epsilon: float, theta: float, max_iter: int = 100):
+    def __init__(self, epsilon: float = 1e-3, theta: float = 0.0, max_iter: int = 100):
         self.epsilon = epsilon
         self.theta = theta
         self.zval = math.cos(theta), math.sin(theta)
@@ -551,12 +564,12 @@ class GridIterator:
         """
         e1, e2 = state.e1, state.e2
         bbox1 = e1.bounding_box()
-        bbox11 = (bb_ + e1.p[ix_ // 2] for ix_, bb_ in enumerate(bbox1))
-        bbox12 = (bb_ - _SQRT2 for bb_ in bbox1)
+        bbox11 = tuple(bb_ + e1.p[ix_ // 2] for ix_, bb_ in enumerate(bbox1))
+        bbox12 = tuple(bb_ - 1 / _SQRT2 for bb_ in bbox11)
 
         bbox2 = e2.bounding_box()
-        bbox21 = (bb_ + e2.p[ix_ // 2] for ix_, bb_ in enumerate(bbox2))
-        bbox22 = (bb_ + _SQRT2 for bb_ in bbox2)
+        bbox21 = tuple(bb_ + e2.p[ix_ // 2] for ix_, bb_ in enumerate(bbox2))
+        bbox22 = tuple(bb_ + 1 / _SQRT2 for bb_ in bbox21)
 
         num_x1, num_y1 = (self.bbox_grid_points(bbox) for bbox in (bbox11, bbox21))
         num_x2, num_y2 = (self.bbox_grid_points(bbox) for bbox in (bbox12, bbox22))
@@ -567,9 +580,10 @@ class GridIterator:
         potential_solutions2 = self.solve_upright_problem(
             state, bbox12, bbox22, num_b2, ZOmega(c=1)
         )
-        for solution in potential_solutions1 + potential_solutions2:
-            x1, y1 = (getattr(solution, part) for part in ("real", "imag"))
-            x2, y2 = (getattr(solution.adj2(), part) for part in ("real", "imag"))
+        for solution in chain(potential_solutions1, potential_solutions2):
+            sol1, sol2 = complex(solution), complex(solution.adj2())
+            x1, y1 = sol1.real, sol1.imag
+            x2, y2 = sol2.real, sol2.imag
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
@@ -613,7 +627,7 @@ class GridIterator:
                         Ax0_tmp, Ax1_tmp, Bx0_tmp, Bx1_tmp
                     )
                     for alpha in new_alpha_solutions:
-                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+                        yield ZOmega.from_sqrt_pair(alpha, beta, shift)
         elif num_b[1]:
             alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
             for alpha in alpha_solutions1:
@@ -624,7 +638,7 @@ class GridIterator:
                         Ay0_tmp, Ay1_tmp, By0_tmp, By1_tmp
                     )
                     for beta in new_beta_solutions:
-                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+                        yield ZOmega.from_sqrt_pair(alpha, beta, shift)
         else:
             alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
@@ -633,23 +647,24 @@ class GridIterator:
                 if len(found_beta1_solutions) == 0:
                     for beta in beta_solutions1:
                         found_beta1_solutions.append(beta)
-                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+                        yield ZOmega.from_sqrt_pair(alpha, beta, shift)
                 else:
                     for beta in found_beta1_solutions:
-                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+                        yield ZOmega.from_sqrt_pair(alpha, beta, shift)
 
-    def bbox_grid_points(self, bbox: tuple[float, float, float, float]) -> int:
+    @staticmethod
+    def bbox_grid_points(bbox: tuple[float, float, float, float]) -> int:
         """Count the number of grid points in a bounding box."""
         d_ = math.log2(ZSqrtTwo(1, 1))
         l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
         d1, d2 = (bbox[1] - bbox[0], bbox[3] - bbox[2])
 
         k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
-        if abs(k1) <= abs(k2):
-            k1, k2 = k2, k1
+        if abs(k1) > abs(k2):
+            bbox, k1, k2 = (bbox[2], bbox[3], bbox[0], bbox[1]), k2, k1
 
-        x_scale = (l1 if k1 < 0 else l2) ** abs(k1)
-        y_scale = (-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1)
+        x_scale = float((l1 if k1 < 0 else l2) ** abs(k1))
+        y_scale = float((-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1))
 
         x0_scaled, x1_scaled = x_scale * bbox[0], x_scale * bbox[1]
         y0_scaled, y1_scaled = sorted((y_scale * bbox[2], y_scale * bbox[3]))
@@ -661,8 +676,8 @@ class GridIterator:
         upper_bound_b = (x1_scaled - y0_scaled) / (2 * _SQRT2)
         return 1 + int(upper_bound_b - lower_bound_b)
 
+    @staticmethod
     def solve_one_dim_problem(
-        self,
         x0: float,
         x1: float,
         y0: float,
@@ -688,13 +703,15 @@ class GridIterator:
         l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
         d1, d2 = (x1 - x0, y1 - y0)
 
-        conj_flag = False
+        f_adj2 = False
         k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
-        if abs(k1) <= abs(k2):
-            conj_flag, k1, k2 = True, k2, k1
+        if abs(k1) > abs(k2):
+            f_adj2, k1, k2 = True, k2, k1
+            x0, x1, y0, y1 = y0, y1, x0, x1
 
-        x_scale = (l1 if k1 < 0 else l2) ** abs(k1)
-        y_scale = (-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1)
+        s_scale = ZSqrtTwo(1, 1) ** abs(k1)
+        x_scale = float((l1 if k1 < 0 else l2) ** abs(k1))
+        y_scale = float((-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1))
 
         x0_scaled, x1_scaled = x_scale * x0, x_scale * x1
         y0_scaled, y1_scaled = sorted((y_scale * y0, y_scale * y1))
@@ -716,5 +733,5 @@ class GridIterator:
                 if (x0_scaled + y0_scaled <= 2 * a) and (2 * a <= x1_scaled + y1_scaled):
                     alpha, beta = a + b * _SQRT2, a - b * _SQRT2
                     if x0_scaled <= alpha <= x1_scaled and y0_scaled <= beta <= y1_scaled:
-                        sol = ZSqrtTwo(a, b) * ZSqrtTwo(1, 1) ** abs(k1)
-                        yield (sol if not conj_flag else sol.conj())
+                        sol = ZSqrtTwo(a, b) / s_scale if k1 < 0 else ZSqrtTwo(a, b) * s_scale
+                        yield sol if not f_adj2 else sol.adj2()

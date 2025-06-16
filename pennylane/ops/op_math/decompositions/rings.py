@@ -283,6 +283,12 @@ class ZOmega:
         n = self * other.conj() * ((other * other.conj()).adj2())
         return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
 
+    @classmethod
+    def from_sqrt_pair(cls, alpha: ZSqrtTwo, beta: ZSqrtTwo, shift: ZOmega) -> ZOmega:
+        """Return ``ZOmega`` element as :math:`A + 1j * B + shift`, where :math:`A` and
+        :math:`B` are ``ZSqrtTwo`` elements and ``shift`` is ``ZOmega`` element."""
+        return cls(beta.b - alpha.b, beta.a, beta.b + alpha.b, alpha.a) + shift
+
     @property
     def flatten(self: ZOmega) -> List[int]:
         """Flatten to a list."""
