@@ -29,7 +29,7 @@ from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
@@ -761,11 +761,11 @@ class QNode:
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
 
-    def update_shots(self, shots: Union[int, qml.measurements.Shots]) -> "QNode":
+    def update_shots(self, shots: Union[int, Shots]) -> "QNode":
         """Update the number of shots used by the QNode.
 
         Args:
-            shots (int or qml.measurements.Shots): The new number of shots to use.
+            shots (int or Shots): The new number of shots to use.
 
         Returns:
             qnode (QNode): new QNode with updated shots
@@ -780,14 +780,14 @@ class QNode:
 
         return updated_qn
 
-    def _set_shots(self, shots: Union[int, qml.measurements.Shots]) -> None:
+    def _set_shots(self, shots: Union[int, Shots]) -> None:
         """Set the number of shots used by the QNode.
 
         Args:
-            shots (int or qml.measurements.Shots): The new number of shots to use.
+            shots (int or Shots): The new number of shots to use.
         """
 
-        self._shots = qml.measurements.Shots(shots)
+        self._shots = Shots(shots)
         self._shots_override_device = bool(self._shots != self.device.shots)
 
     # pylint: disable=too-many-return-statements, unused-argument
