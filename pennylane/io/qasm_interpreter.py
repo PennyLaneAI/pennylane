@@ -410,15 +410,15 @@ class QasmInterpreter:
         # bind subroutine arguments
         evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
-            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                func_context.vars[param] = Variable(
-                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
-                )
-            else:
+            if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                 if evald_arg in context.wire_map:
                     evald_arg = context.wire_map[evald_arg]
                 if evald_arg != param:
                     func_context.wire_map[param] = evald_arg
+            else:
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
+                )
 
         # execute the subroutine
         self.visit(func_context.body, func_context)
