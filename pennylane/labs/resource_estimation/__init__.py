@@ -57,6 +57,21 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
+Operators:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+
 """
 
 from .qubit_manager import AllocWires, FreeWires, QubitManager
@@ -78,4 +93,14 @@ from .resource_tracking import (
     DefaultGateSet,
     resource_config,
     estimate_resources,
+)
+from .ops import (
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourceS,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
