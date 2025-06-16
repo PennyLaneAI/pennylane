@@ -297,7 +297,7 @@ def _remove_redundancies(
     1. Express the commutator as a linear combination of right-nested commutators
     2. Apply [A, A] = 0
     3. Apply [A, B] = -[A, B]
-    4. Apply [A, B, B, A] = [B, A, A, B]
+    4. Apply [A, B, B, A] = [B, A, B, A]
 
     A derivation of identity 4 can be found in the appendix of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
     """
