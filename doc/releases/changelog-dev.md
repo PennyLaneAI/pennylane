@@ -636,6 +636,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* The `qml.compiler.python_compiler` submodule has been restructured.
+  [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
+
 * Move program capture code closer to where it is used.
   [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
 
@@ -719,6 +722,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
+  additional supported lightning devices: ``lightning.kokkos`` and ``lightning.gpu``.
+  [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
+
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
   Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
   [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)
@@ -741,6 +748,16 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
+  in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
+  up to a global phase _and_ there is no Pauli representation of the product operator.
+  [(#7671)](https://github.com/PennyLaneAI/pennylane/pull/7671)
+
+* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
+  interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
+  Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
+  [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
