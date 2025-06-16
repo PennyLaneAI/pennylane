@@ -280,8 +280,8 @@ class RealspaceSum(Fragment):
 
         self.modes = modes
 
-        # Note defaultdict cannot be used here,
-        # not picklable with qml.concurrency mp_pool and cf_procpool
+        # Note defaultdict with custom types cannot be used with mp_pool or cf_procpool
+        # https://stackoverflow.com/questions/9256687/using-defaultdict-with-multiprocessing
         self._lookup = {}
 
         for op in ops:
