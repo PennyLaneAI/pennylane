@@ -14,7 +14,7 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
-from collections import defaultdict
+from collections import Counter
 from collections.abc import Hashable
 from typing import Dict, List, Sequence, Tuple
 
@@ -95,16 +95,13 @@ def _insert_fragments(
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
 
-    ret = tuple()
-    for term in commutator:
-        if isinstance(term, tuple):
-            ret += (_insert_fragments(term, fragments),)
-        else:
-            ret += (fragments[term],)
-
-    return ret
+    return tuple(
+        _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
+        for term in commutator
+    )
 
 
+# pylint: disable=too-many-arguments
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
@@ -129,9 +126,12 @@ def perturbation_error(
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
-        parallel_mode (str): the mode of parallelization to use. Options are "state" or "commutator".
+        parallel_mode (str): the mode of parallelization to use.
+            Options are "state", "commutator" or "nested_commutator".
             "state" parallelizes the computation of expectation values per state,
             while "commutator" parallelizes the application of commutators to each state.
+            As a finer-grained option to "commutator", the mode "nested_commutator" parallelizes
+            the application of commutators to each state using a task-based executor.
             Default value is set to "state".
 
     Returns:
@@ -164,6 +164,10 @@ def perturbation_error(
     >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
+    >>>
+    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=4, backend="mp_pool", parallel_mode="state")
+    >>> print(errors)
+    [0.9189251160920877j, 4.797716682426847j]
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
@@ -174,8 +178,10 @@ def perturbation_error(
         commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
     }
 
-    ##### A serial implementation of the perturbation error computation.
+    # A serial implementation of the perturbation error computation
+    # TODO: this can be removed once the exploration of parallel modes is complete.
     if backend == "serial":
+        assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
             new_state = _AdditiveIdentity()
@@ -186,7 +192,7 @@ def perturbation_error(
 
         return expectations
 
-    ##### Use a task-based executor to parallelize the computation of expectation values per state.
+    # Parallelize the computation of expval per state
     if parallel_mode == "state":
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
@@ -194,15 +200,14 @@ def perturbation_error(
                 _get_expval_state,
                 [(commutators, fragments, state) for state in states],
             )
+
         return expectations
 
-    ##### Apply the commutators to each state in parallel using a task-based executor.
+    # Apply the commutators to each state in parallel
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
-
         for state in states:
-
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
                     _apply_commutator_coeff,
@@ -220,7 +225,10 @@ def perturbation_error(
 
         return expectations
 
-    ##### Use a task-based executor to parallelize the application of commutators to each state.
+    # Parallelize the application of commutators to each state
+    # Note this mode isn't optimized for performance, but allows
+    # for a finer-grained parallelization of the commutators themselves.
+    # It could be useful for cases where the commutators are expensive to compute.
     if parallel_mode == "nested_commutator":
         expectations = []
         for state in states:
@@ -234,7 +242,7 @@ def perturbation_error(
 
         return expectations
 
-    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
+    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator' or 'nested_commutator'.")
 
 
 def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
@@ -272,7 +280,8 @@ def _apply_parallel_commutator(
     num_workers=1,
 ) -> AbstractState:
     """Returns the state obtained from applying ``commutator`` to ``state``.
-    In this function, we use a task-based executor to parallelize the application of fragments."""
+    In this function, we use a task-based executor to parallelize the application
+    of fragments."""
 
     executor = concurrency.backends.get_executor(backend)
     with executor(max_workers=num_workers) as ex:
@@ -317,26 +326,22 @@ def _apply_commutator_coeff(
 def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
-    commutator = tuple(commutator)
-
-    if len(commutator) == 0:
-        return {}
-
-    if len(commutator) == 1:
-        return {commutator: 1}
-
-    if len(commutator) == 2:
-        return {
-            (commutator[0], commutator[1]): 1,
-            (commutator[1], commutator[0]): -1,
-        }
+    if not commutator:
+        return Counter()
 
     head, *tail = commutator
 
-    ops1 = defaultdict(int, {(head, *ops): coeff for ops, coeff in _op_list(tail).items()})
-    ops2 = defaultdict(int, {(*ops, head): -coeff for ops, coeff in _op_list(tail).items()})
+    if not tail:
+        return Counter({(head,): 1})
 
-    for op, coeff in ops2.items():
-        ops1[op] += coeff
+    # Recursively get operations for the tail
+    tail_ops_coeffs = _op_list(tuple(tail))
+
+    # Create operations for the head and tail
+    ops1 = Counter({(head, *ops): coeff for ops, coeff in tail_ops_coeffs.items()})
+    ops2 = Counter({(*ops, head): -coeff for ops, coeff in tail_ops_coeffs.items()})
+
+    # Combine the two Counters efficiently!
+    ops1.update(ops2)
 
     return ops1
