@@ -18,8 +18,9 @@ from __future__ import annotations
 import math
 from copy import copy
 from functools import lru_cache
+from typing import Iterable
 
-from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega
+from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega, ZSqrtTwo
 
 _LAMBDA = 1 + math.sqrt(2)
 
@@ -128,18 +129,6 @@ class Ellipse:
         axes = (self.axes[0] * math.sqrt(scale), self.axes[1] * math.sqrt(scale))
         return Ellipse(D, self.p, axes)
 
-    def y_points(self, x: float) -> tuple[float, float] | None:
-        """Compute the y-points of the ellipse for a given x-value."""
-        x -= self.p[0]  # shift x to the origin
-        descriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
-        if descriminant < 0:
-            return None
-
-        y0, d0 = self.p[1], math.sqrt(descriminant)
-        y1 = (-self.b * x - d0) / self.d
-        y2 = (-self.b * x + d0) / self.d
-        return y0 + y1, y0 + y2
-
     def x_points(self, y: float) -> tuple[float, float]:
         """Compute the x-points of the ellipse for a given y-value."""
         y -= self.p[1]  # shift y to the origin
@@ -152,11 +141,28 @@ class Ellipse:
         x2 = (-self.b * y + d0) / self.a
         return x0 + x1, x0 + x2
 
+    def y_points(self, x: float) -> tuple[float, float] | None:
+        """Compute the y-points of the ellipse for a given x-value."""
+        x -= self.p[0]  # shift x to the origin
+        descriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
+        if descriminant < 0:
+            return None
+
+        y0, d0 = self.p[1], math.sqrt(descriminant)
+        y1 = (-self.b * x - d0) / self.d
+        y2 = (-self.b * x + d0) / self.d
+        return y0 + y1, y0 + y2
+
     def bounding_box(self) -> tuple[float, float, float, float]:
         """Return the bounding box of the ellipse in the form [[x0, x1], [y0, y1]]."""
         denom = self.determinant
         x, y = math.sqrt((self.d / denom)), math.sqrt((self.a / denom))
         return (-x, x, -y, y)
+
+    def offset(self, offset: float) -> "Ellipse":
+        """Offset the ellipse by a factor of offset."""
+        p_offset = (self.p[0] + offset, self.p[1] + offset)
+        return Ellipse((self.a, self.b, self.d), p_offset, self.axes)
 
     def apply_grid_op(self, grid_op: GridOp) -> "Ellipse":
         """Apply a grid operation :math:`G` to the ellipse :math:`E` as :math:`G^T E G`."""
@@ -489,3 +495,226 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
         "X": GridOp((0, 0), (1, 0), (1, 0), (0, 0)),
         "Z": GridOp((1, 0), (0, 0), (0, 0), (-1, 0)),
     }
+
+
+class GridIterator:
+    """Solve the grid problem for one and two dimensions."""
+
+    def __init__(self, epsilon: float, theta: float, max_iter: int = 100):
+        self.epsilon = epsilon
+        self.theta = theta
+        self.zval = math.cos(theta), math.sin(theta)
+        self.kmin = int(3 * math.log2(1 / epsilon) // 2)
+        self.max_iter = max_iter
+        self.target = 1 - self.epsilon**2 / 2
+
+    def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
+        """Iterate over the grid problem."""
+
+        k = self.kmin
+        e1, _ = Ellipse.from_region(self.epsilon, self.theta, k).normalize()
+        e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))
+        grid_op = State(e1, e2).grid_op()
+
+        for _ in range(self.max_iter):
+            radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
+            e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+
+            state = State(e1, e2).apply_grid_op(grid_op)
+            potential_solutions = self.solve_two_dim_problem(state)
+
+            for solution in potential_solutions:
+                scaled_sol = grid_op * solution
+                sol_real, sol_imag = (getattr(scaled_sol) for part in ("real", "imag"))
+                norm_zsqrt_two = scaled_sol.norm().to_zsqrt_two()
+                dot_prod = (self.zval[0] * sol_real.real + self.zval[1] * sol_imag.imag) / (
+                    2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
+                )
+
+                if abs(norm_zsqrt_two) <= 2**k and dot_prod >= self.target:
+                    yield scaled_sol, k
+
+            e1 = Ellipse.from_region(self.epsilon, self.theta, (k := k + 1))
+
+    def solve_two_dim_problem(self, state: State, num_points: int = 1000) -> Iterable[ZOmega]:
+        r"""Solve the grid problem for the state(E1, E2).
+
+        The solutions :math:`u \in Z[\omega]` are such that :math:`u \in E1` and
+        :math:`u.adj2() \in E2`, where ``adj2`` is :math:`\sqrt(2)` conjugation.
+
+        Args:
+            state: The state of the grid problem.
+            num_points: The number of points to use to determine if the rectangle is wider than the other.
+
+        Returns:
+            Iterable[ZOmega]: The list of solutions to the two dimensional grid problem.
+        """
+        e1, e2 = state.e1, state.e2
+        bbox1 = e1.bounding_box()
+        bbox11 = (bb_ + e1.p[ix_ // 2] for ix_, bb_ in enumerate(bbox1))
+        bbox12 = (bb_ - _SQRT2 for bb_ in bbox1)
+
+        bbox2 = e2.bounding_box()
+        bbox21 = (bb_ + e2.p[ix_ // 2] for ix_, bb_ in enumerate(bbox2))
+        bbox22 = (bb_ + _SQRT2 for bb_ in bbox2)
+
+        num_x1, num_y1 = (self.bbox_grid_points(bbox) for bbox in (bbox11, bbox21))
+        num_x2, num_y2 = (self.bbox_grid_points(bbox) for bbox in (bbox12, bbox22))
+        num_b1 = [num_x1 > num_points * num_y1, num_y1 > num_points * num_x1]
+        num_b2 = [num_x2 > num_points * num_y2, num_y2 > num_points * num_x2]
+
+        potential_solutions1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
+        potential_solutions2 = self.solve_upright_problem(
+            state, bbox12, bbox22, num_b2, ZOmega(c=1)
+        )
+        for solution in potential_solutions1 + potential_solutions2:
+            x1, y1 = (getattr(solution, part) for part in ("real", "imag"))
+            x2, y2 = (getattr(solution.adj2(), part) for part in ("real", "imag"))
+            if e1.contains(x1, y1) and e2.contains(x2, y2):
+                yield solution
+
+    # pylint:disable = too-many-arguments, too-many-branches
+    def solve_upright_problem(
+        self,
+        state: State,
+        bbox1: tuple[float],
+        bbox2: tuple[float],
+        num_b: bool,
+        shift: ZOmega,
+    ) -> Iterable[ZOmega]:
+        r"""Iterates over the solutions to the grid problem for two upright rectangles.
+
+        The solutions :math:`u \in Z[\omega]` are such that :math:`u \in A` and
+        :math:`u.adj2() \in B`, where ``adj2`` is :math:`\sqrt(2)` conjugation
+        and two rectangles :math:`A` and :math:`B`, form the subregions of
+        :math:`\mathbb{R}^2` of the form :math:`[x0, x1] \times [y0, y1]`.
+
+        Args:
+            state: The state of the grid problem.
+            bbox1: The bounding box of the first rectangle.
+            bbox2: The bounding box of the second rectangle.
+            num_b: Whether the second rectangle is wider than the first.
+            shift: The shift operator.
+
+        Returns:
+            Iterable[ZOmega]: The list of solutions to the upright grid problem for two rectangles.
+        """
+        e1, e2 = state.e1, state.e2
+        Ax0, Ax1, Ay0, Ay1 = bbox1
+        Bx0, Bx1, By0, By1 = bbox2
+
+        if num_b[0]:
+            beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
+            for beta in beta_solutions1:
+                Ax0_tmp, Ax1_tmp = e1.compute_x_points(beta)
+                Bx0_tmp, Bx1_tmp = e2.compute_x_points(beta.conj())
+                if Ax1_tmp - Ax0_tmp > 0 and Bx1_tmp - Bx0_tmp > 0:
+                    new_alpha_solutions = self.solve_one_dim_problem(
+                        Ax0_tmp, Ax1_tmp, Bx0_tmp, Bx1_tmp
+                    )
+                    for alpha in new_alpha_solutions:
+                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+        elif num_b[1]:
+            alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
+            for alpha in alpha_solutions1:
+                Ay0_tmp, Ay1_tmp = e1.compute_y_points(alpha)
+                By0_tmp, By1_tmp = e2.compute_y_points(alpha.conj())
+                if Ay1_tmp - Ay0_tmp >= 0 and By1_tmp - By0_tmp >= 0:
+                    new_beta_solutions = self.solve_one_dim_problem(
+                        Ay0_tmp, Ay1_tmp, By0_tmp, By1_tmp
+                    )
+                    for beta in new_beta_solutions:
+                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+        else:
+            alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
+            beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
+            found_beta1_solutions = []
+            for alpha in alpha_solutions1:
+                if len(found_beta1_solutions) == 0:
+                    for beta in beta_solutions1:
+                        found_beta1_solutions.append(beta)
+                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+                else:
+                    for beta in found_beta1_solutions:
+                        yield ZSqrtTwo(alpha, beta).to_omega() + shift
+
+    def bbox_grid_points(self, bbox: tuple[float, float, float, float]) -> int:
+        """Count the number of grid points in a bounding box."""
+        d_ = math.log2(ZSqrtTwo(1, 1))
+        l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
+        d1, d2 = (bbox[1] - bbox[0], bbox[3] - bbox[2])
+
+        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
+        if abs(k1) <= abs(k2):
+            k1, k2 = k2, k1
+
+        x_scale = (l1 if k1 < 0 else l2) ** abs(k1)
+        y_scale = (-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1)
+
+        x0_scaled, x1_scaled = x_scale * bbox[0], x_scale * bbox[1]
+        y0_scaled, y1_scaled = sorted((y_scale * bbox[2], y_scale * bbox[3]))
+
+        if x1_scaled - x0_scaled < 1 - _SQRT2:
+            raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
+
+        lower_bound_b = (x0_scaled - y1_scaled) / (2 * _SQRT2)
+        upper_bound_b = (x1_scaled - y0_scaled) / (2 * _SQRT2)
+        return 1 + int(upper_bound_b - lower_bound_b)
+
+    def solve_one_dim_problem(
+        self,
+        x0: float,
+        x1: float,
+        y0: float,
+        y1: float,
+    ) -> Iterable[ZSqrtTwo]:
+        r"""Iterates the solutions to the one dimensional grid problem given intervals :math:`[x0, x1]` and :math:`[y0, y1]`.
+
+        Given two real intervals :math:`[x0, x1]` and :math:`[y0, y1]`
+        such that :math:`\sqrt{(x1 - x0)*(y1 - y0)} >= (1 + \sqrt(2))`,
+        iterates over all solutions of the form :math:`a + b\sqrt(2)` such that
+        :math:`a + b\sqrt(2) \in [x0, x1]` and :math:`a - b\sqrt(2) \in [y0, y1]`.
+
+        Args:
+            x0: The lower bound of the x-interval.
+            x1: The upper bound of the x-interval.
+            y0: The lower bound of the y-interval.
+            y1: The upper bound of the y-interval.
+
+        Returns:
+            Iterable[ZSqrtTwo]: The list of solutions to the one dimensional grid problem.
+        """
+        d_ = math.log2(ZSqrtTwo(1, 1))
+        l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
+        d1, d2 = (x1 - x0, y1 - y0)
+
+        conj_flag = False
+        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
+        if abs(k1) <= abs(k2):
+            conj_flag, k1, k2 = True, k2, k1
+
+        x_scale = (l1 if k1 < 0 else l2) ** abs(k1)
+        y_scale = (-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1)
+
+        x0_scaled, x1_scaled = x_scale * x0, x_scale * x1
+        y0_scaled, y1_scaled = sorted((y_scale * y0, y_scale * y1))
+
+        if x1_scaled - x0_scaled < 1 - _SQRT2:
+            bbox = (x0_scaled, x1_scaled, y0_scaled, y1_scaled)
+            raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
+
+        lower_bound_b = (x0_scaled - y1_scaled) / (2 * _SQRT2)
+        upper_bound_b = (x1_scaled - y0_scaled) / (2 * _SQRT2)
+
+        for b in range(int(math.floor(upper_bound_b)), int(math.ceil(lower_bound_b)) - 1, -1):
+            lower_bound_a = x0_scaled - b * _SQRT2
+            upper_bound_a = x1_scaled - b * _SQRT2
+            assert upper_bound_a - lower_bound_a < 1
+
+            if math.ceil(lower_bound_a) == math.floor(upper_bound_a):
+                a = int(math.ceil(lower_bound_a))
+                if (x0_scaled + y0_scaled <= 2 * a) and (2 * a <= x1_scaled + y1_scaled):
+                    alpha, beta = a + b * _SQRT2, a - b * _SQRT2
+                    if x0_scaled <= alpha <= x1_scaled and y0_scaled <= beta <= y1_scaled:
+                        sol = ZSqrtTwo(a, b) * ZSqrtTwo(1, 1) ** abs(k1)
+                        yield (sol if not conj_flag else sol.conj())
