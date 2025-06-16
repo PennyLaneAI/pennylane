@@ -68,10 +68,10 @@ class PhaseAdder(Operation):
         x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
             for a binary representation of the value being targeted, :math:`x`. In some cases an additional
             wire is needed, see usage details below. The number of wires also limits the maximum
-            value for `mod`.
+            value for ``mod``.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple. The work wire must
+            when ``mod`` is :math:`2^{\text{len(x_wires)}}`. Defaults to empty tuple. The work wire must
             be in the :math:`|0\rangle` state.
 
     **Example**
