@@ -340,8 +340,8 @@ class ResourceSWAP(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
             gate_types = [GateCount(resource_rep(plre.ResourceCSWAP))]
