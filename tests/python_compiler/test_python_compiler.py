@@ -21,22 +21,29 @@ import pytest
 
 pytestmark = pytest.mark.external
 
-xdsl = pytest.importorskip("xdsl")
+catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 jaxlib = pytest.importorskip("jaxlib")
+xdsl = pytest.importorskip("xdsl")
 
+from catalyst import CompileError
+from xdsl import passes
+from xdsl.context import Context
+from xdsl.dialects import builtin, transform
+from xdsl.interpreters import Interpreter
 
-from pennylane.compiler.python_compiler.impl import Compiler
+from pennylane.compiler.python_compiler import Compiler
 from pennylane.compiler.python_compiler.jax_utils import (
     jax_from_docstring,
     module,
     xdsl_from_docstring,
 )
-from pennylane.compiler.python_compiler.transforms.transform_interpreter.interpreter import (
+from pennylane.compiler.python_compiler.transforms.api import (
+    ApplyTransformSequence,
     TransformFunctionsExt,
-)
-from pennylane.compiler.python_compiler.transforms.transform_interpreter.transform_interpreter_catalyst import (
     TransformInterpreterPass,
+    available_passes,
+    xdsl_transform,
 )
 
 
@@ -137,11 +144,6 @@ def test_raises_error_when_pass_does_not_exists():
         }
         """
 
-    from catalyst import CompileError
-    from xdsl.context import Context
-    from xdsl.dialects import builtin, transform
-    from xdsl.interpreters import Interpreter
-
     ctx = Context()
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(transform.Transform)
@@ -157,15 +159,6 @@ def test_raises_error_when_pass_does_not_exists():
 def test_decorator():
     """Test that the decorator has modified the available_passes dictionary"""
 
-    from xdsl import passes
-    from xdsl.context import Context
-    from xdsl.dialects import builtin
-
-    from pennylane.compiler.python_compiler.transforms import xdsl_transform
-    from pennylane.compiler.python_compiler.transforms.apply_transform_sequence import (
-        available_passes,
-    )
-
     @dataclass(frozen=True)
     class PrintModule(passes.ModulePass):
         name = "print-module"
@@ -180,11 +173,6 @@ def test_decorator():
 
 def test_integration_for_transform_interpreter(capsys):
     """Test that a pass is run via the transform interpreter"""
-    from xdsl import passes
-    from xdsl.context import Context
-    from xdsl.dialects import builtin, transform
-
-    from pennylane.compiler.python_compiler.transforms import xdsl_transform
 
     @xdsl_transform
     @dataclass(frozen=True)
@@ -206,8 +194,6 @@ def test_integration_for_transform_interpreter(capsys):
           }
         }
         """
-
-    from pennylane.compiler.python_compiler.transforms import ApplyTransformSequence
 
     ctx = xdsl.context.Context()
     ctx.load_dialect(builtin.Builtin)
