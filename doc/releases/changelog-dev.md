@@ -548,7 +548,6 @@
   to perform multiprocess and multithreaded execution of workloads. 
   [(#7401)](https://github.com/PennyLaneAI/pennylane/pull/7401)
 
-
 * A `rowcol` function is now available in `pennylane.labs.intermediate_reps`.
   Given the parity matrix of a CNOT circuit and a qubit connectivity graph, it synthesizes a
   possible implementation of the parity matrix that respects the connectivity.
@@ -565,6 +564,10 @@
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
 <h3>Breaking changes 💔</h3>
+
+* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
+  new `gradient_kwargs` keyword argument accordingly.
+  [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
 
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
   when `max_diff > 1`.
@@ -638,6 +641,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
+
+* `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
+  to match the expected binary distribution format naming conventions.
+  [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
 
 * The `qml.compiler.python_compiler` submodule has been restructured.
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
