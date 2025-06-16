@@ -287,9 +287,9 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
+H = Hadamard
 
-class H(Observable, Operation):
-    r"""H(wires)
+H.__doc__ = r"""H(wires)
     The Hadamard operator
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
@@ -304,9 +304,6 @@ class H(Observable, Operation):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-
-
-H = Hadamard
 
 
 class PauliX(Observable, Operation):
