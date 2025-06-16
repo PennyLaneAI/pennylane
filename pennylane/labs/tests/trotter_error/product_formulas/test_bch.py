@@ -159,8 +159,8 @@ fragment_list = [
 second_order = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
 u = 1 / (4 - 4 ** (1 / 3))
 fourth_order1 = second_order(u) ** 2 @ second_order((1 - 4 * u)) @ second_order(u) ** 2
-frag_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
-frag_coeffs = [
+fourth_order_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
+fourth_order_coeffs = [
     u / 2,
     u,
     u,
@@ -174,7 +174,7 @@ frag_coeffs = [
     u / 2,
 ]
 
-fourth_order2 = ProductFormula(frag_labels, coeffs=frag_coeffs)
+fourth_order2 = ProductFormula(fourth_order_labels, coeffs=fourth_order_coeffs)
 product_formulas = [(second_order, 3), (fourth_order1, 5), (fourth_order2, 5)]
 
 
