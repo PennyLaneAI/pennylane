@@ -258,6 +258,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.BasisRotation`
+    [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
+
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
