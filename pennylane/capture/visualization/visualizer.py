@@ -8,7 +8,7 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from ..base_interpreter import PlxprInterpreter
-from ..primitives import for_loop_prim, qnode_prim
+from ..primitives import for_loop_prim, qnode_prim, while_loop_prim
 from .pydot_graph_builder import (
     ControlFlowCluster,
     DeviceNode,
@@ -232,7 +232,7 @@ def handle_qnode(
     args = invals[n_consts:]
 
     # Create QNode cluster
-    qnode_cluster = QNodeCluster(info_label="", color="white")
+    qnode_cluster = QNodeCluster(info_label="")
     self.plxpr_graph.add_cluster_to_graph(qnode_cluster)
 
     # Create a node for the QNode
@@ -314,6 +314,8 @@ def handle_for_loop(
     inner_loop_var = jaxpr_body_fn.invars[0]
     inner_loop_var_ascii = self._convert_var_to_ascii(inner_loop_var)
     ascii_context[inner_loop_var] = inner_loop_var_ascii
+    # Need to add to _env_ascii so the counter is correct
+    self._env_ascii[inner_loop_var] = inner_loop_var_ascii
 
     start_label, stop_label, step_label = map(self.read_ascii, eqn.invars[:3])
 
@@ -326,4 +328,62 @@ def handle_for_loop(
     interpreter_copy.plxpr_graph.current_cluster = for_loop_cluster
     return interpreter_copy.eval(
         jaxpr_body_fn, consts, *abstract_shapes, start, *init_state, ascii_context=ascii_context
+    )
+
+
+@PlxprVisualizer.register_primitive(while_loop_prim)
+def handle_while_loop(
+    self,
+    *invals,
+    jaxpr_body_fn,
+    jaxpr_cond_fn,
+    body_slice,
+    cond_slice,
+    args_slice,
+    eqn=None,
+):
+    """Handle a while loop primitive."""
+    print("Handling while loop primitive")
+
+    consts_body = invals[body_slice]
+    consts_cond = invals[cond_slice]
+    init_state = invals[args_slice]
+
+    ascii_context = {}
+
+    # Handle context for any constants being passed to the body
+    outer_consts = eqn.invars[body_slice]
+    inner_body_consts = jaxpr_body_fn.constvars
+    for inner_const, outer_const in zip(inner_body_consts, outer_consts, strict=True):
+        ascii_context[inner_const] = self.read_ascii(outer_const)
+
+    # # The cond variable could be used in the body, so we need to record it
+    for cond_invar, body_invar in zip(jaxpr_cond_fn.invars, jaxpr_body_fn.invars, strict=True):
+        ascii = self._convert_var_to_ascii(cond_invar)
+        ascii_context[body_invar] = ascii
+        # Need to add to _env_ascii so the counter is correct
+        self._env_ascii[body_invar] = ascii
+
+    # Get label for the while loop condition
+    cond_invar_ascii = ascii_context.get(jaxpr_body_fn.invars[0], "unknown condition")
+    prim_to_sym = {
+        "lt": "&lt;",
+        "le": "&le;",
+        "gt": "&gt;",
+        "ge": "&ge;",
+        "eq": "==",
+        "ne": "!=",
+    }
+
+    label = f"<while {cond_invar_ascii} {prim_to_sym.get(jaxpr_cond_fn.eqns[-1].primitive.name, 'unknown primitive')} {jaxpr_cond_fn.eqns[-1].invars[-1]}>"
+    while_loop_cluster = ControlFlowCluster(info_label=label)
+    self.plxpr_graph.add_cluster_to_graph(while_loop_cluster)
+
+    interpreter_copy = copy(self)
+    interpreter_copy.plxpr_graph.current_cluster = while_loop_cluster
+    return interpreter_copy.eval(
+        jaxpr_body_fn,
+        consts_body,
+        *init_state,
+        ascii_context=ascii_context,
     )
