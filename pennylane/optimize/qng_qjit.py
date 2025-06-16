@@ -65,10 +65,10 @@ class QNGOptimizerQJIT:
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.grad(qnode)(params, **kwargs)
-            raise ImportError("Catalyst is required.")
+            raise ImportError("Catalyst is required.")  # pragma: no cover
         if has_jax:
             return jax.grad(qnode)(params, **kwargs)
-        raise ImportError("Jax is required.")
+        raise ImportError("Jax is required.")  # pragma: no cover
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
@@ -76,10 +76,10 @@ class QNGOptimizerQJIT:
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.value_and_grad(qnode)(params, **kwargs)
-            raise ImportError("Catalyst is required.")
+            raise ImportError("Catalyst is required.")  # pragma: no cover
         if has_jax:
             return jax.value_and_grad(qnode)(params, **kwargs)
-        raise ImportError("Jax is required.")
+        raise ImportError("Jax is required.")  # pragma: no cover
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         """TODO"""
