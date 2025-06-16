@@ -267,13 +267,8 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
-<<<<<<< qpe-decomp
-  * :class:`~.QuantumPhaseEstimation`
-    [(#7637)](https://github.com/PennyLaneAI/pennylane/pull/7637)
-=======
   * :class:`~.BasisRotation`
     [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
->>>>>>> master
 
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
@@ -585,7 +580,7 @@
 
   [(#7224)](https://github.com/PennyLaneAI/pennylane/pull/7224)
 
-* Optimized the :class:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>`
+* Optimized the :func:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>`
   module for better performance by using a task-based executor to parallelize the computationally heavy
   parts of the algorithm.
 
@@ -760,9 +755,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
-<<<<<<< HEAD
-* Updated the circuit drawing for `qml.Select` to include two commonly used symbols for
-=======
 * The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
   [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
 
@@ -771,7 +763,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
->>>>>>> 2de85a2a97e5e5737699cb1475647f0146b3e88c
   Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
   [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)
 
