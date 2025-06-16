@@ -640,9 +640,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* `qml.QNode` has `_shots` now and the `qml.set_shots` transform has been refactored for better decoupling.
-  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
-
 * The `qml.compiler.python_compiler` submodule has been restructured.
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
 
