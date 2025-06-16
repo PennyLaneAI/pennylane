@@ -35,6 +35,11 @@ fragment_dicts = [
     {0: _hermitian(np.random.random(size=(3, 3))), 1: _hermitian(np.random.random(size=(3, 3)))},
     {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
     {0: np.random.random(size=(2, 2)), 1: np.random.random(size=(2, 2))},
+    {
+        0: np.random.random(size=(3, 3)),
+        1: np.random.random(size=(3, 3)),
+        2: np.random.random(size=(3, 3)),
+    },
 ]
 
 
@@ -72,66 +77,19 @@ def test_fourth_order_recursive(fragment_dict):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
     u = 1 / (4 - 4 ** (1 / 3))
-    frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-    frag_coeffs = [
-        u / 2,
-        u,
-        u,
-        u,
-        (1 - (3 * u)) / 2,
-        (1 - (4 * u)),
-        (1 - (3 * u)) / 2,
-        u,
-        u,
-        u,
-        u / 2,
-    ]
-
-    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")
-
-    second_order_labels = [0, 1, 0]
-    second_order_coeffs = [1 / 2, 1, 1 / 2]
-
-    second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
-
-    pfs = [
-        second_order(u) ** 2,
-        second_order((1 - (4 * u))),
-        second_order(u) ** 2,
-    ]
-
-    fourth_order_2 = ProductFormula(pfs, label="U4")
-
-    eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
-    eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
-
-    assert np.allclose(eff_1, eff_2)
-
-
-def test_fourth_order_recursive_three_frags():
-    """Test the recursive version on three fragments"""
-
-    fragment_dict = {
-        0: np.random.random(size=(3, 3)),
-        1: np.random.random(size=(3, 3)),
-        2: np.random.random(size=(3, 3)),
-    }
-
-    u = 1 / (4 - 4 ** (1 / 3))
     v = 1 - 4 * u
 
-    frag_labels = [0, 1, 2, 1, 0] * 5
-    frag_coeffs = (
-        [u / 2, u / 2, u, u / 2, u / 2] * 2
-        + [v / 2, v / 2, v, v / 2, v / 2]
-        + [u / 2, u / 2, u, u / 2, u / 2] * 2
-    )
+    n_frags = len(fragment_dict)
+
+    frag_labels = (list(range(n_frags)) + list(reversed(range(n_frags)))) * 5
+    frag_coeffs = [u / 2] * (n_frags * 4) + [v / 2] * (n_frags * 2) + [u / 2] * (n_frags * 4)
 
     fourth_order1 = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
-    second_order = ProductFormula(
-        [0, 1, 2, 1, 0], coeffs=[1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], label="U"
-    )
+    frag_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
+    frag_coeffs = [1 / 2] * len(frag_labels)
+
+    second_order = ProductFormula(frag_labels, frag_coeffs)
     fourth_order2 = second_order(u) ** 2 @ second_order(1 - 4 * u) @ second_order(u) ** 2
 
     eff1 = effective_hamiltonian(fourth_order1, fragment_dict, order=5)
@@ -248,7 +206,7 @@ def test_matrix(fragment_dict):
     assert np.allclose(mat1, mat2)
 
 
-@pytest.mark.parametrize("fragments, t", product(fragment_dicts, [1, 0.1, 0.01]))
+@pytest.mark.parametrize("fragments, t", product(fragment_dicts[:-1], [1, 0.1, 0.01]))
 def test_fourth_order_norm_two_fragments(fragments, t):
     """Tests against an upper bound on the norm of the fourth order Trotter formula. This test comes from
     Proposition J.1 of https://arxiv.org/pdf/1912.08854"""

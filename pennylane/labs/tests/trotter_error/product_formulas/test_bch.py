@@ -24,8 +24,9 @@ from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 
-deltas = [0.45, 0.1, 0.01]
+deltas = [0.5, 0.1, 0.01]
 
+np.random.seed(42)
 fragment_list = [
     {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))},
     {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
