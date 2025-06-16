@@ -653,7 +653,7 @@ class CU(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {}
+        return {"num_wires": len(self.wires)}
 
     @staticmethod
     def compute_matrix(
