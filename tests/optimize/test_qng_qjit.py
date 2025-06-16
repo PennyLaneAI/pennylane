@@ -387,6 +387,8 @@ class TestOptimize:
         """Test optimizer compatibility with qml.qjit compilation."""
         import jax.numpy as jnp
 
+        pytest.importorskip("catalyst")
+
         device = qml.device("lightning.qubit", wires=2)
         qnode = qml.QNode(circuit, device=device)
 
