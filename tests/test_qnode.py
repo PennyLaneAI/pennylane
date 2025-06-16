@@ -1499,9 +1499,13 @@ class TestShots:
         qn = qml.QNode(dummyfunc, dev1)
         assert qn._shots == qml.measurements.Shots(100)
 
-        dev2 = qml.device("default.qubit", wires=1, shots=200)
-        updated_qnode = qn.update(device=dev2)
-        assert updated_qnode._shots == qml.measurements.Shots(200)
+        # _shots should take precedence over device shots
+        with pytest.warns(
+            UserWarning, match="The device's shots value does not match the QNode's shots value."
+        ):
+            dev2 = qml.device("default.qubit", wires=1, shots=200)
+            updated_qnode = qn.update(device=dev2)
+        assert updated_qnode._shots == qml.measurements.Shots(100)
 
     def test_shots_preserved_in_other_updates(self):
         """Test that _shots is preserved when updating other QNode parameters."""
