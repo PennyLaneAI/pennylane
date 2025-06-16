@@ -14,4 +14,16 @@
 r"""This module contains resource operators for PennyLane Operators"""
 
 from .identity import ResourceGlobalPhase, ResourceIdentity
-from .qubit import ResourceHadamard, ResourceS, ResourceT, ResourceX, ResourceY, ResourceZ
+from .qubit import (
+    ResourceHadamard,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)

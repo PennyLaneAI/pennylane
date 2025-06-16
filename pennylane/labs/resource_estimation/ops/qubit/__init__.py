@@ -21,3 +21,10 @@ from .non_parametric_ops import (
     ResourceY,
     ResourceZ,
 )
+from .parametric_ops_single_qubit import (
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
