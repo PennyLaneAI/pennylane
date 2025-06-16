@@ -258,6 +258,9 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
+  * :class:`~.BasisRotation`
+    [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
+
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
@@ -729,6 +732,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
 
 <h3>Documentation 📝</h3>
+
+* The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
+  additional supported lightning devices: ``lightning.kokkos`` and ``lightning.gpu``.
+  [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
   Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
