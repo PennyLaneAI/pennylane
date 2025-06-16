@@ -17,7 +17,7 @@ from itertools import product
 
 import numpy as np
 import pytest
-from scipy.linalg import expm, logm
+from scipy.linalg import logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import commutator, nested_commutator
