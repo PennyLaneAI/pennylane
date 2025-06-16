@@ -88,14 +88,6 @@ class Select(Operation):
         "unary iterator" can be applied. It was introduced by
         `Babbush et al. (2018) <https://arxiv.org/abs/1805.03662>`__.
 
-        .. note::
-
-            This decomposition of ``Select`` using unary iteration will only be correct if
-            the state :math:`|\psi\rangle` on the control wires satisfies
-            :math:`\langle j | \psi\rangle=0` for all :math:`j \in [K, 2^c)`, where :math:`K` is
-            the number of target operators and :math:`c=\lceil\log_2 (K)\rceil` is the number of
-            required control wires. For :math:`K=2^c`, no constraint applies.
-
         **Principle**
 
         Unary iteration leverages auxiliary wires to store intermediate values for reuse between
