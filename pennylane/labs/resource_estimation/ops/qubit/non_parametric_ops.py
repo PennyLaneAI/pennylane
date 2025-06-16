@@ -374,8 +374,8 @@ class ResourceSWAP(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if pow_z % 2 == 0:
             return [GateCount(resource_rep(plre.ResourceIdentity))]
