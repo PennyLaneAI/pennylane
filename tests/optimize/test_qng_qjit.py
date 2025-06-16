@@ -213,6 +213,7 @@ class TestMetricTensor:
         assert np.isclose(new_params[1], y)
 
 
+# pylint:disable=too-few-public-methods
 class TestExceptions:
     """Test exceptions are raised for incorrect usage."""
 
