@@ -395,15 +395,15 @@ cost.
 
 .. warning::
 
-    The tree-traversal algorithm is currently supported on
+    The tree-traversal algorithm is currently supported by the following devices only:
 
-    * :class:`~.pennylane.devices.DefaultQubit` device, 
+    * :class:`~.pennylane.devices.DefaultQubit`,
     
-    * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_ device, 
+    * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
     
-    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_ device,
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_,
     
-    * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_ device,
+    * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
     
     and currently does not support just-in-time (JIT) compilation.
 
