@@ -426,6 +426,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   using `diagonalize_mcms`.
   [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
+* Update documentation for Mid Circuit Measure using the Tree Traversal algorithm. 
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -439,6 +443,7 @@ Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
+Luis Alfredo Nuñez Meneses
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
