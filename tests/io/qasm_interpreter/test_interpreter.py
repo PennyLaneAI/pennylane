@@ -163,7 +163,7 @@ class TestControlFlow:
 
         assert q.queue == [PauliX("q0")]
 
-    def test_loops(self, mocker):
+    def test_loops(self):
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
@@ -175,14 +175,20 @@ class TestControlFlow:
         assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
             RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
         ] + [RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]] + [
+            RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]
+        ] + [
             RZ(0.1, wires=["q0"]) for _ in range(6)
         ] + [
             PauliY("q0") for _ in range(6)
         ] + [
             PauliZ("q0") for _ in range(5)
+        ] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [
+            PauliZ("q0")
         ]
 
-    def test_switch(self, mocker):
+    def test_switch(self):
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
@@ -241,6 +247,21 @@ class TestControlFlow:
 
 @pytest.mark.external
 class TestSubroutine:
+
+    def test_scoping_const(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "nested-subroutines", "wire_map": None}
+        )
+
+        assert context.vars["a"].val == 0.5
+        assert context.vars["c"].val == 2
+        assert context.vars["d"].val == 2.5
 
     def test_nested_renaming(self):
         # parse the QASM
