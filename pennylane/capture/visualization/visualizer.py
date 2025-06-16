@@ -343,7 +343,6 @@ def handle_while_loop(
     eqn=None,
 ):
     """Handle a while loop primitive."""
-    print("Handling while loop primitive")
 
     consts_body = invals[body_slice]
     consts_cond = invals[cond_slice]
@@ -375,7 +374,7 @@ def handle_while_loop(
         "ne": "!=",
     }
 
-    label = f"<while {cond_invar_ascii} {prim_to_sym.get(jaxpr_cond_fn.eqns[-1].primitive.name, 'unknown primitive')} {jaxpr_cond_fn.eqns[-1].invars[-1]}>"
+    label = f"<while ({self._bold_str(cond_invar_ascii)} {prim_to_sym.get(jaxpr_cond_fn.eqns[-1].primitive.name, 'unknown primitive')} {jaxpr_cond_fn.eqns[-1].invars[-1]})>"
     while_loop_cluster = ControlFlowCluster(info_label=label)
     self.plxpr_graph.add_cluster_to_graph(while_loop_cluster)
 
