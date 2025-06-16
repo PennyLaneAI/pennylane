@@ -288,7 +288,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
-class H(Hadamard):
+class H(Observable, Operation):
     r"""H(wires)
     The Hadamard operator
 
