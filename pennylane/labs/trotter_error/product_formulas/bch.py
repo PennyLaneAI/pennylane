@@ -297,7 +297,7 @@ def _remove_redundancies(
     1. Express the commutator as a linear combination of right-nested commutators
     2. Apply [A, A] = 0
     3. Apply [A, B] = -[A, B]
-    4. Apply [A, B, B, A] = [A, B, A, B]
+    4. Apply [A, B, B, A] = [B, A, A, B]
     """
 
     def less_than(x, y):
@@ -369,7 +369,7 @@ def _commute_with_self(terms):
 
 
 def _fourth_order_simplification(terms):
-    """Apply the identity [A, B, B, A] = [A, B, A, B]"""
+    """Apply the identity [A, B, B, A] = [B, A, B, A]"""
     swap = []
     for commutator in terms.keys():
         if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
