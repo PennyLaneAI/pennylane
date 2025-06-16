@@ -95,7 +95,7 @@ class Deallocate(Operator):
 
 
 def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
-    """Allocate dynamic wires for temporary use within a circuit.
+    """Requests and allocates quantum memory.
 
     .. warning::
 
@@ -108,7 +108,7 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
         require_zeros (bool): Whether or not the wires must start in the ``0`` state.
 
     Returns:
-        Wires: A wires object containing ``DynamicWire`` objects.
+        Wires: Wires with unique labels representing the dynamically allocated quantum memory.
 
     .. seealso:: :class:`~.safe_allocate`
 
@@ -158,7 +158,8 @@ def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
 def deallocate(
     wires: DynamicWire | Wires | Sequence[DynamicWire], restored: bool = False
 ) -> Deallocate:
-    """Deallocate dynamic wires back to the pool of wires available for allocation.
+    """Frees quantum memory that had previously been allocated with :func:`~.allocate`.
+    Upon freeing quantum memory, that memory is available to be allocated thereafter.
 
     .. warning::
 
@@ -168,8 +169,8 @@ def deallocate(
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
 
     Keyword Args:
-        restored (bool): Whether or not the qubits will be reset to their original state upon deallocation.
-
+        restored (bool): upon deallocating, specifies whether to reset the deallocated memory
+        to its original state when it was allocated (`True`) or to leave it in its current state (`False`).
 
     .. seealso:: :class:`~.safe_allocate`
 
