@@ -306,6 +306,9 @@ class H(Hadamard):
     """
 
 
+H = Hadamard
+
+
 class PauliX(Observable, Operation):
     r"""
     The Pauli X operator
