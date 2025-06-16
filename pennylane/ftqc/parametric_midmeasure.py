@@ -27,7 +27,7 @@ import numpy as np
 from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.math import isscalar, ndim, unwrap
+from pennylane.math import array, is_abstract, isscalar, ndim
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -391,12 +391,20 @@ class ParametricMidMeasureMP(MidMeasureMP):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        if isscalar(self.angle) or ndim(self.angle) == 0:
-            param_hasher = hashlib.sha256(unwrap(self.angle))
+        if is_abstract(self.angle):
+            # no unique value from tracer to values, hash based on angle string
+            param_hash = hashlib.sha256(str(self.angle).encode()).digest()
+        elif isscalar(self.angle) or ndim(self.angle) == 0:
+            # Values are 0-dim arrays or scalars, array-ify
+            param_hash = hashlib.sha256(array(self.angle)).digest()
+        else:
+            # otherwise, use the existing array structure
+            param_hash = hashlib.sha256(self.angle).digest()
+
         fingerprint = (
             self.__class__.__name__,
             self.plane,
-            param_hasher.digest(),
+            param_hash,
             tuple(self.wires.tolist()),
             self.id,
         )
