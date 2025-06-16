@@ -122,47 +122,27 @@ def test_fourth_order_mult(fragment_dict):
 
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_pow(fragment_dict):
-    """Test that product formulas can be correctly raised to a power"""
-    second_order_labels = [0, 1, 1, 0]
-    second_order_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+def test_mul_and_pow(fragment_dict):
+    """Test that multiplying a product formula by itself and raising it to a power give the same result"""
 
+    n_frags = len(fragment_dict)
+    second_order_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
+    second_order_coeffs = [1 / 2] * len(second_order_labels)
     second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
 
     pf1 = second_order @ second_order @ second_order
     pf2 = second_order**3
     pf3 = ProductFormula([second_order, second_order, second_order])
+    pf4 = ProductFormula(second_order_labels * 3, second_order_coeffs * 3)
 
     eff1 = effective_hamiltonian(pf1, fragment_dict, order=7)
     eff2 = effective_hamiltonian(pf2, fragment_dict, order=7)
     eff3 = effective_hamiltonian(pf3, fragment_dict, order=7)
+    eff4 = effective_hamiltonian(pf4, fragment_dict, order=7)
 
     assert np.allclose(eff1, eff2)
-    assert np.allclose(eff1, eff3)
     assert np.allclose(eff2, eff3)
-
-
-@pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_mul(fragment_dict):
-    """Test that three ways of multiplying product formulas return the same result"""
-
-    t = 1
-    frags = [0, 1, 0]
-    coeffs = [1 / 2, 1, 1 / 2]
-
-    second_order_trotter = ProductFormula(frags, coeffs=coeffs, label="U")
-
-    pf1 = second_order_trotter(t) @ second_order_trotter(t)
-    pf2 = ProductFormula([0, 1, 0, 0, 1, 0], coeffs=[t / 2, t, t / 2, t / 2, t, t / 2])
-    pf3 = ProductFormula([second_order_trotter(t), second_order_trotter(t)])
-
-    eff1 = effective_hamiltonian(pf1, fragment_dict, order=7)
-    eff2 = effective_hamiltonian(pf2, fragment_dict, order=7)
-    eff3 = effective_hamiltonian(pf3, fragment_dict, order=7)
-
-    assert np.allclose(eff1, eff2)
-    assert np.allclose(eff1, eff3)
-    assert np.allclose(eff2, eff3)
+    assert np.allclose(eff3, eff4)
 
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
