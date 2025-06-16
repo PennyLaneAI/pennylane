@@ -3,7 +3,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 from re import escape
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -67,7 +67,7 @@ class TestMeasurementReset:
 
         assert isinstance(q.queue[0], MidMeasureMP)
         assert q.queue[0].wires == Wires(["qubits"])
-        assert q.queue[0].reset == True
+        assert q.queue[0].reset
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
@@ -113,25 +113,25 @@ class TestMeasurementReset:
             return res_1 == res_2 and meas_1 == meas_2
 
         # first call
-        call = 0
+        curr_call = 0
         # c = c + 1;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[curr_call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1:] == ("+", 1, 4)
+        assert eval_binary.call_args_list[curr_call].args[1:] == ("+", 1, 4)
 
         # second call
-        call += 1
+        curr_call += 1
         # c = d / c;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[curr_call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1] == "/"
+        assert eval_binary.call_args_list[curr_call].args[1] == "/"
         assert compare_measurement_values(
             MeasurementValue([PauliX(0)], (lambda: mock_one() + 1)),
-            eval_binary.call_args_list[call].args[2],
+            eval_binary.call_args_list[curr_call].args[2],
         )
-        assert eval_binary.call_args_list[call].args[3] == 5
+        assert eval_binary.call_args_list[curr_call].args[3] == 5
 
     def test_measurement(self):
         # parse the QASM

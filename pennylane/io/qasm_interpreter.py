@@ -162,6 +162,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
+# pylint: disable=too-many-return-statements
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.
@@ -379,7 +380,8 @@ class Context:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def process_measurement(self, operator: str, line: int, lhs: Variable, rhs: Variable = None):
+    @staticmethod
+    def process_measurement(operator: str, line: int, lhs: Variable, rhs: Variable = None):
         """
         Updates a MeasurementValue's processing function to reflect classical logic applied to
         the MeasurementValue.
@@ -398,8 +400,7 @@ class Context:
             if rhs is not None:
                 right = rhs_call(*args) if isinstance(rhs.val, MeasurementValue) else rhs.val
                 return _eval_binary_op(left, operator, right, line)
-            else:
-                return _eval_unary_op(left, operator, line)
+            return _eval_unary_op(left, operator, line)
 
         if isinstance(lhs.val, MeasurementValue) and isinstance(rhs.val, MeasurementValue):
             new_measurements = lhs.val.measurements + rhs.val.measurements
@@ -410,7 +411,8 @@ class Context:
 
         return MeasurementValue(new_measurements, new_processing_fn)
 
-    def update_measurement(self, value: any, prev: Variable, operator: str, line: int):
+    @staticmethod
+    def update_measurement(value: any, prev: Variable, operator: str, line: int):
         """
         Updates a MeasurementValue's processing function to reflect classical logic applied to
         the MeasurementValue.
@@ -1349,8 +1351,7 @@ class QasmInterpreter:
             isinstance(rhs, Variable) and isinstance(rhs.val, MeasurementValue)
         ):
             return context.process_measurement(node.op.name, node.span.start_line, lhs, rhs)
-        else:
-            return _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
+        return _eval_binary_op(lhs, node.op.name, rhs, node.span.start_line)
 
     @visit.register(UnaryExpression)
     def visit_unary_expression(self, node: UnaryExpression, context: Context):
