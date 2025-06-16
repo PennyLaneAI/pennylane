@@ -158,7 +158,7 @@ class Context:
 
     def init_switches_scope(self, node: QASMNode):
         """
-        Inits the switches scope on the current context.
+        Initializes the switches scope on the current context.
 
         Args:
             node (QASMNode): the switch node.
