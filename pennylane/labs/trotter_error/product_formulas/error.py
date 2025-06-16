@@ -111,7 +111,7 @@ def perturbation_error(
     order: int,
     timestep: float = 1.0,
 ) -> List[float]:
-    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon}` = \hat{H}_{eff} - \hat{H} +  for a  given product formula.
+    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
     For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
