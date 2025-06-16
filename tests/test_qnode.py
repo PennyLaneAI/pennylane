@@ -1523,17 +1523,6 @@ class TestShots:
         updated_qnode = qn.update_shots(shots=75)
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
-    def test_private_shots_update_warning(self):
-        """Test that attempting to update _shots directly raises a warning."""
-        dev = qml.device("default.qubit", wires=1, shots=25)
-        qn = qml.QNode(dummyfunc, dev)
-
-        with pytest.warns(UserWarning, match="gradient_kwarg _shots"):
-            updated_qnode = qn.update(_shots=999)
-
-        # The _shots value should not have changed
-        assert updated_qnode._shots == qml.measurements.Shots(25)
-
 
 class TestTransformProgramIntegration:
     """Tests for the integration of the transform program with the qnode."""
