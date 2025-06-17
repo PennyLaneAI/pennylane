@@ -694,9 +694,9 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             pip install qualtran
 
     Args:
-        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
         map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
-            as a `ToBloq`. Default is True.
+            as a ``ToBloq``. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
@@ -899,7 +899,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     Args:
         circuit (QNode | Operation): A QNode or an initialized PennyLane operator to be converted to a Qualtran Bloq.
         map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
-            as a `ToBloq`. Default is True.
+            as a ``ToBloq``. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
