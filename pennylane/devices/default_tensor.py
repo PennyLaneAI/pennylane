@@ -591,8 +591,8 @@ class DefaultTensor(Device):
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
-        if execution_config is None:
-            execution_config = ExecutionConfig()
+        if config is None:
+            config = ExecutionConfig()
         updated_values = {}
 
         new_device_options = dict(config.device_options)
