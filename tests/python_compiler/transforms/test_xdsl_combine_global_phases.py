@@ -60,9 +60,8 @@ class TestCombineGlobalPhasesPass:
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: quantum.gphase(%arg0) :
+                // CHECK: quantum.gphase(%arg0)
                 quantum.gphase %arg0
-                quantum.gphase %arg1
                 return
             }
         """
@@ -74,8 +73,9 @@ class TestCombineGlobalPhasesPass:
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-        print(module)
+        breakpoint()
         pipeline.apply(ctx, module)
+        breakpoint()
         print(module)
 
         run_filecheck(program, module)

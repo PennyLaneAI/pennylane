@@ -41,6 +41,11 @@ class CombineGlobalPhasesPattern(
         consecutive composable rotations."""
         phi = None
         for op in funcOp.body.walk():
+            if isinstance(op, func.ReturnOp) and phi:
+                new_op = GlobalPhaseOp(params=phi)
+                rewriter.insert_op_before_matched_op(new_op)
+                break
+
             if not isinstance(op, GlobalPhaseOp):
                 continue
             if phi is None:
@@ -48,11 +53,12 @@ class CombineGlobalPhasesPattern(
             else:
                 addOp = arith.AddfOp(op.operands[0], phi)
                 phi = addOp.result
+
             rewriter.erase_op(op)
 
-        if phi:
-            new_op = GlobalPhaseOp(params=phi)
-            rewriter.insert_op(new_op, InsertPoint.before(funcOp.get_return_op()))
+        # if phi:
+        #     new_op = GlobalPhaseOp(params=phi)
+        #     rewriter.insert_op(new_op, InsertPoint.before(funcOp.get_return_op()))
 
 
 @dataclass(frozen=True)

@@ -445,7 +445,7 @@ class GlobalPhaseOp(IRDLOperation):
            attr-dict 
            ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  
            ( `ctrlvals` `(` $in_ctrl_values^ `)` )? 
-           `:` (`ctrls` type($out_ctrl_qubits)^ )?
+           `:` type(results)
        """
 
     irdl_options = [
@@ -491,7 +491,7 @@ class GlobalPhaseOp(IRDLOperation):
 
         super().__init__(
             operands=(params, in_ctrl_qubits, in_ctrl_values),
-            result_types=(QubitType(),),
+            result_types=(out_ctrl_qubits,),
         )
 
 
