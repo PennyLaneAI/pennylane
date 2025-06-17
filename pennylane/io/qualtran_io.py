@@ -104,6 +104,7 @@ def _(
         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
     )
 
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
@@ -116,6 +117,7 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
         return custom_mapping[op]
 
     return QFTTextBook(len(op.wires))
+
 
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
@@ -134,6 +136,7 @@ def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
         return QROAMClean.build_from_data(data)
 
     return SelectSwapQROM.build_from_data(data)
+
 
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
