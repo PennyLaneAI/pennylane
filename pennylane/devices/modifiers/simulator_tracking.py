@@ -26,6 +26,9 @@ def _track_execute(untracked_execute):
 
     @wraps(untracked_execute)
     def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         results = untracked_execute(self, circuits, execution_config)
         if isinstance(circuits, QuantumScript):
             batch = (circuits,)
@@ -66,6 +69,8 @@ def _track_compute_derivatives(untracked_compute_derivatives):
 
     @wraps(untracked_compute_derivatives)
     def compute_derivatives(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             if isinstance(circuits, QuantumScript):
                 derivatives = 1
@@ -85,6 +90,8 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
     def execute_and_compute_derivatives(
         self, circuits, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -105,6 +112,8 @@ def _track_compute_jvp(untracked_compute_jvp):
 
     @wraps(untracked_compute_jvp)
     def compute_jvp(self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(jvp_batches=1, jvps=len(batch))
@@ -121,6 +130,8 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
     def execute_and_compute_jvp(
         self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -138,6 +149,8 @@ def _track_compute_vjp(untracked_compute_vjp):
 
     @wraps(untracked_compute_vjp)
     def compute_vjp(self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(vjp_batches=1, vjps=len(batch))
@@ -155,6 +168,8 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
     def execute_and_compute_vjp(
         self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:

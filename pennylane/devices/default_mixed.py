@@ -267,6 +267,8 @@ class DefaultMixed(Device):
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(
             simulate(
                 c,

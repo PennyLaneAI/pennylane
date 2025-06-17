@@ -591,6 +591,8 @@ class DefaultTensor(Device):
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         updated_values = {}
 
         new_device_options = dict(config.device_options)
@@ -626,7 +628,8 @@ class DefaultTensor(Device):
         * Does not support derivatives.
         * Does not support vector-Jacobian products.
         """
-
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
 
         program = TransformProgram()
@@ -659,7 +662,8 @@ class DefaultTensor(Device):
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
-
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = []
         for circuit in circuits:
             if self.wires is not None and not self.wires.contains_wires(circuit.wires):

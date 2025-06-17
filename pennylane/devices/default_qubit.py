@@ -679,6 +679,8 @@ class DefaultQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
@@ -747,6 +749,8 @@ class DefaultQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
@@ -768,6 +772,8 @@ class DefaultQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -803,6 +809,8 @@ class DefaultQubit(Device):
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.supports_derivatives(execution_config, circuit)
 
     @debug_logger
@@ -812,6 +820,8 @@ class DefaultQubit(Device):
         tangents: tuple[Number, ...],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
@@ -832,6 +842,8 @@ class DefaultQubit(Device):
         tangents: tuple[Number, ...],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -871,6 +883,8 @@ class DefaultQubit(Device):
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.supports_derivatives(execution_config, circuit)
 
     @debug_logger
@@ -919,6 +933,8 @@ class DefaultQubit(Device):
           then the shape must be ``(batch_size,)``.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
 
@@ -948,6 +964,8 @@ class DefaultQubit(Device):
         cotangents: tuple[Number, ...],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:

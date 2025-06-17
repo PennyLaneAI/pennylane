@@ -471,6 +471,8 @@ class DefaultClifford(Device):
         This device currently does not intrinsically support parameter broadcasting.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -507,6 +509,8 @@ class DefaultClifford(Device):
         circuits: Union[QuantumScript, QuantumScriptBatch],
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))

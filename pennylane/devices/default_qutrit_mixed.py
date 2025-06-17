@@ -356,6 +356,8 @@ class DefaultQutritMixed(Device):
         * Supports any qutrit channel that provides Kraus matrices
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -387,6 +389,8 @@ class DefaultQutritMixed(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

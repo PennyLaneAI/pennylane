@@ -24,6 +24,8 @@ def _make_execute(batch_execute):
 
     @wraps(batch_execute)
     def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -39,6 +41,8 @@ def _make_compute_derivatives(batch_derivatives):
 
     @wraps(batch_derivatives)
     def compute_derivatives(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -56,6 +60,8 @@ def _make_execute_and_compute_derivatives(batch_execute_and_compute_derivatives)
     def execute_and_compute_derivatives(
         self, circuits, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -71,6 +77,8 @@ def _make_compute_jvp(batch_compute_jvp):
 
     @wraps(batch_compute_jvp)
     def compute_jvp(self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -90,6 +98,8 @@ def _make_execute_and_compute_jvp(batch_execute_and_compute_jvp):
     def execute_and_compute_jvp(
         self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -108,6 +118,8 @@ def _make_compute_vjp(batch_compute_vjp):
 
     @wraps(batch_compute_vjp)
     def compute_vjp(self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -128,6 +140,8 @@ def _make_execute_and_compute_vjp(batch_execute_and_compute_vjp):
     def execute_and_compute_vjp(
         self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True

@@ -345,6 +345,8 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config: Optional[ExecutionConfig] = None
     ) -> tuple[TransformProgram, ExecutionConfig]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
@@ -386,6 +388,8 @@ class NullQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -422,6 +426,8 @@ class NullQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
@@ -429,6 +435,8 @@ class NullQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
@@ -440,6 +448,8 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
@@ -448,6 +458,8 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
@@ -459,6 +471,8 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
@@ -467,6 +481,8 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps

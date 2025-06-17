@@ -134,6 +134,8 @@ class ReferenceQubit(Device):
         self._rng = np.random.default_rng(seed)
 
     def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
 
         # Here we convert an arbitrary tape into one natively supported by the device
         program = qml.transforms.core.TransformProgram()

@@ -344,6 +344,8 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         execution_config = self.setup_execution_config(execution_config)
         transform_program = self.preprocess_transforms(execution_config)
         return transform_program, execution_config
@@ -811,6 +813,8 @@ class Device(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_derivatives(
             circuits, execution_config
         )
@@ -872,6 +876,8 @@ class Device(abc.ABC):
 
         .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_jvp`
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
         )
@@ -952,6 +958,8 @@ class Device(abc.ABC):
 
         .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_vjp`
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config
         )

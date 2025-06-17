@@ -221,6 +221,9 @@ class LegacyDeviceFacade(Device):
         self._device._debugger = new_debugger
 
     def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         execution_config = self._setup_execution_config(execution_config)
         program = qml.transforms.core.TransformProgram()
 
@@ -368,6 +371,9 @@ class LegacyDeviceFacade(Device):
         return self._device.capabilities().get("provides_jacobian", False)
 
     def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         dev = self.target_device
 
         kwargs = {}
@@ -384,6 +390,9 @@ class LegacyDeviceFacade(Device):
     def execute_and_compute_derivatives(
         self, circuits, execution_config: Optional[ExecutionConfig] = None
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
             return _set_shots(self._device, first_shot)(self._device.execute_and_gradients)(
@@ -395,6 +404,8 @@ class LegacyDeviceFacade(Device):
         return tuple(zip(*batched_res))
 
     def compute_derivatives(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
             return _set_shots(self._device, first_shot)(self._device.gradients)(
