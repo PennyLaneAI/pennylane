@@ -34,7 +34,7 @@ from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Po
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
+from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -795,4 +795,20 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
+    """Determine whether two QSVT are equal"""
+    if not equal(UA1 := op1.hyperparameters["UA"], UA2 := op2.hyperparameters["UA"]):
+        return f"op1 and op2 have different block encodings UA. Got {UA1} and {UA2}."
+    projectors1 = op1.hyperparameters["projectors"]
+    projectors2 = op2.hyperparameters["projectors"]
+    if len(projectors1) != len(projectors2):
+        return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
+    for i, (p1, p2) in enumerate(zip(projectors1, projectors2)):
+        if not equal(p1, p2):
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}."
+
     return True

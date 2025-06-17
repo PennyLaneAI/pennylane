@@ -98,6 +98,10 @@ class PrepSelPrep(Operation):
         return (self.lcu,), (self.control,)
 
     @classmethod
+    def _primitive_bind_call(cls, lcu, control, **kwargs):
+        return super()._primitive_bind_call(lcu, wires=control, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata) -> "PrepSelPrep":
         return cls(data[0], metadata[0])
 
@@ -203,3 +207,12 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+# pylint: disable=protected-access
+if PrepSelPrep._primitive is not None:
+
+    @PrepSelPrep._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (lcu,), control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(PrepSelPrep, lcu, control, **kwargs)
