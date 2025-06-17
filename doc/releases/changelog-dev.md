@@ -203,9 +203,11 @@
   cbloq = qml.to_bloq(op).decompose_bloq()
   fig, ax = draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
+  ```
 
-  # Let's define a custom mapping instead
+  Let's define a custom mapping instead.
 
+  ```python
   from qualtran.bloqs.phase_estimation import LPResourceState
   from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
