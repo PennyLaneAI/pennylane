@@ -22,6 +22,7 @@ from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .qnode import QNode, _make_execution_config
+from .resolution import _resolve_interface
 
 
 def null_postprocessing(results):
@@ -454,22 +455,42 @@ def construct_batch(
         program = user_program[level_slice_initial]
         tapes, user_post_processing = program((initial_tape,))
 
-        execution_config = qml.workflow.construct_execution_config(qnode, resolve=False)(
-            *args, **kwargs
-        )
+        # The config that used to work well. Here I put them as reference for debugging purposes.
+        # execution_config0 = qml.workflow.construct_execution_config(qnode, resolve=False)(
+        #     *args, **kwargs
+        # )
         # pylint: disable = protected-access
 
-        execution_config = qml.devices.ExecutionConfig()
-
-        execution_config = qnode.device.setup_execution_config(
-            config=execution_config, circuit=tapes[0]
+        # The new config process we would like to use.
+        interface = _resolve_interface(qnode.interface, tapes)
+        execution_config = qml.devices.ExecutionConfig(
+            interface=interface,
+            gradient_method=qnode.diff_method,
+            grad_on_execution=(
+                None
+                if qnode.execute_kwargs.get("grad_on_execution") == "best"
+                else qnode.execute_kwargs.get("grad_on_execution")
+            ),
+            use_device_gradient=(
+                None
+                if qnode.execute_kwargs.get("use_device_gradient") == "best"
+                else qnode.execute_kwargs.get("use_device_gradient")
+            ),
+            gradient_keyword_arguments=qnode.gradient_kwargs,
+            derivative_order=qnode.execute_kwargs.get("derivative_order", 1),
+            mcm_config=qml.devices.MCMConfig(
+                postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
+                mcm_method=qnode.execute_kwargs.get("mcm_method"),
+            ),
         )
+        # execution_config = qnode.device.setup_execution_config(
+        #     config=execution_config, circuit=tapes[0]
+        # )
 
         ###### Resolution of the execution config ######
         execution_config = qml.workflow.resolution._resolve_execution_config(
             execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
-
         gradient_fn = execution_config.gradient_method
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
