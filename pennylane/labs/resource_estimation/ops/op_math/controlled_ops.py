@@ -1103,7 +1103,7 @@ class ResourceMultiControlledX(ResourceOperator):
 
         Resources:
             The resources are derived by combining the control qubits, control-values and
-            work qubits into a single instance of :class:`~.ResourceMultiControlledX` gate, controlled
+            into a single instance of :class:`~.ResourceMultiControlledX` gate, controlled
             on the whole set of control-qubits.
 
         Returns:
@@ -1114,8 +1114,8 @@ class ResourceMultiControlledX(ResourceOperator):
         return [
             GateCount(
                 cls.resource_rep(
-                    outer_num_ctrl_wires + num_ctrl_wires,
-                    outer_num_ctrl_values + num_ctrl_values,
+                    ctrl_num_ctrl_wires + num_ctrl_wires,
+                    ctrl_num_ctrl_values + num_ctrl_values,
                 )
             )
         ]
