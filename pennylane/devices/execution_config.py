@@ -23,7 +23,7 @@ from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 
-@dataclass
+@dataclass(frozen=True)
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
@@ -49,7 +49,7 @@ class MCMConfig:
 
 
 # pylint: disable=too-many-instance-attributes
-@dataclass
+@dataclass(frozen=True)
 class ExecutionConfig:
     """
     A class to configure the execution of a quantum circuit on a device.
@@ -116,7 +116,7 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        self.interface = get_canonical_interface_name(self.interface)
+        object.__setattr__(self, "interface", get_canonical_interface_name(self.interface))
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(
@@ -124,10 +124,10 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            self.device_options = {}
+            object.__setattr__(self, "device_options", {})
 
         if self.gradient_keyword_arguments is None:
-            self.gradient_keyword_arguments = {}
+            object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
@@ -138,13 +138,16 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            self.mcm_config = MCMConfig(**self.mcm_config)  # pylint: disable=not-a-mapping
+            # pylint: disable=not-a-mapping
+            object.__setattr__(self, "mcm_config", {MCMConfig(**self.mcm_config)})
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
         if self.executor_backend is None:
-            self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
+            object.__setattr__(
+                self, "executor_backend", {get_executor(backend=ExecBackends.MP_Pool)}
+            )
 
 
 DefaultExecutionConfig = ExecutionConfig()
