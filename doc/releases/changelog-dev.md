@@ -204,9 +204,11 @@
   cbloq = qml.to_bloq(op).decompose_bloq()
   fig, ax = draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
+  ```
 
-  # Let's define a custom mapping instead
+  Let's define a custom mapping instead.
 
+  ```python
   from qualtran.bloqs.phase_estimation import LPResourceState
   from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
@@ -218,25 +220,25 @@
   }
 
   cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
   ```
 
   Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
-  PennyLane decomposition by setting map_ops to False.
+  PennyLane decomposition by setting `map_ops` to False.
 
   ```python
   op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
   cbloq = op_wrapped_as_bloq.decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
 
-  # We can also leverage Qualtran to get resource counts and call graphs, among other things
+  # We can also leverage Qualtran features to get resource counts and call graphs, among other things
   from qualtran.drawing import show_call_graph, show_counts_sigma  
 
-  wrapped_graph, wrapped_sigma = qml.to_bloq(op, map_ops=True).call_graph()
-  show_call_graph(wrapped_graph)
-  show_counts_sigma(wrapped_sigma)
+  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(graph)
+  show_counts_sigma(sigma)
   ```
 
 
@@ -806,6 +808,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
+  in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
+  up to a global phase _and_ there is no Pauli representation of the product operator.
+  [(#7671)](https://github.com/PennyLaneAI/pennylane/pull/7671)
 
 * The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
   interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
