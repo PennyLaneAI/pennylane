@@ -712,6 +712,28 @@ class TestToBloq:
                 },
             ),
             (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=True,
+                ),
+                # From ResourceQROM
+                {
+                    (qml.Hadamard(0), True): 6,
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        ),
+                        True,
+                    ): 8,
+                    (qml.X(0), True): 8,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
+                },
+            ),
+            (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
                     (
@@ -848,6 +870,26 @@ class TestToBloq:
                     (qml.RX(phi=0.012, wires=[0]), True): 2,
                     (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
                     (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=1,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.RX(phi=0.012, wires=[0]), True): 1,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 1,
+                    (qml.CNOT(wires=[0, 1]), True): 1,
                 },
             ),
             (
