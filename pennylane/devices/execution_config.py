@@ -139,15 +139,13 @@ class ExecutionConfig:
 
         if isinstance(self.mcm_config, dict):
             # pylint: disable=not-a-mapping
-            object.__setattr__(self, "mcm_config", {MCMConfig(**self.mcm_config)})
+            object.__setattr__(self, "mcm_config", MCMConfig(**self.mcm_config))
 
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
         if self.executor_backend is None:
-            object.__setattr__(
-                self, "executor_backend", {get_executor(backend=ExecBackends.MP_Pool)}
-            )
+            object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
 
 DefaultExecutionConfig = ExecutionConfig()
