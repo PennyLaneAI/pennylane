@@ -40,20 +40,69 @@ class QNGOptimizerQJIT:
         self.lam = lam
 
     def init(self, params):
-        """TODO"""
+        """Return the initial state of the optimizer.
+
+        Args:
+            params (array): QNode parameters
+
+        Returns:
+            None
+
+        .. note::
+
+            Since the Quantum Natural Gradient (QNG) algorithm doesn't actually require any particular state,
+            this method always returns an empty ``None`` state. However, it is provided to match
+            the ``optax``-like interface for all Jax-based quantum-specific optimizers.
+
+        """
         # pylint:disable=unused-argument
         # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):
-        """TODO"""
+        """Update the QNode parameters and the optimizer's state for a single optimization step.
+
+        Args:
+            qnode (QNode): QNode objective function to be optimized
+            params (array): QNode parameters to be updated
+            state: current state of the optimizer
+            **kwargs : variable length keyword arguments for the QNode
+
+        Returns:
+            tuple: (new paramaters values, new optimizer's state)
+
+        .. note::
+
+            Since the Quantum Natural Gradient (QNG) algorithm doesn't actually require any particular state,
+            the ``state`` object is never really updated in this case. However, it is carried over the
+            optimization to match the ``optax``-like interface for all Jax-based quantum-specific optimizers.
+
+        """
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         grad = self._get_grad(qnode, params, **kwargs)
         new_params, new_state = self._apply_grad(mt, grad, params, state)
         return new_params, new_state
 
     def step_and_cost(self, qnode, params, state, **kwargs):
-        """TODO"""
+        """Update the QNode parameters and the optimizer's state for a single optimization step
+        and return the corresponding objective function value prior to the step.
+
+        Args:
+            qnode (QNode): QNode objective function to be optimized
+            params (array): QNode parameters to be updated
+            state: current state of the optimizer
+            **kwargs : variable length keyword arguments for the QNode
+
+        Returns:
+            tuple: (new paramaters values, new optimizer's state, objective function value)
+
+        .. note::
+
+            Since the Quantum Natural Gradient (QNG) algorithm doesn't actually require any particular state,
+            the ``state`` object is never really updated in this case. However, it is carried over the
+            optimization to match the ``optax``-like interface for all Jax-based quantum-specific optimizers.
+
+        """
         mt = self._get_metric_tensor(qnode, params, **kwargs)
         cost, grad = self._get_value_and_grad(qnode, params, **kwargs)
         new_params, new_state = self._apply_grad(mt, grad, params, state)
@@ -113,8 +162,8 @@ class QNGOptimizerQJIT:
 
     def _apply_grad(self, mt, grad, params, state):
         """Update the parameter array ``params`` for a single optimization step according to the Quantum
-        Natural Gradient algorithm. The methods doesn't perform any transformation on ``state`` since the QNG
-        optimizer doesn't actually require any particular internal state.
+        Natural Gradient algorithm. The method doesn't perform any transformation on ``state`` since the QNG
+        optimizer doesn't actually require any particular state.
         """
         shape = math.shape(grad)
         grad_flat = math.flatten(grad)
