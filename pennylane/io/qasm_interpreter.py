@@ -98,7 +98,7 @@ class Context:
 
     def init_loops_scope(self, node: ast.ForInLoop | ast.WhileLoop):
         """
-        Inits the loops scope on the current context.
+        Initializes the loops scope on the current context.
 
         Args:
             node (ast.ForInLoop | ast.WhileLoop): the loop node.
@@ -119,7 +119,7 @@ class Context:
 
     def init_switches_scope(self, node: QASMNode):
         """
-        Inits the switches scope on the current context.
+        Initializes the switches scope on the current context.
 
         Args:
             node (QASMNode): the switch node.
@@ -131,7 +131,7 @@ class Context:
 
     def init_branches_scope(self, node: QASMNode):
         """
-        Inits the branches scope on the current context.
+        Initializes the branches scope on the current context.
 
         Args:
             node (ast.BranchingStatement): the branch node.
