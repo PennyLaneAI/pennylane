@@ -376,7 +376,7 @@ def _preprocess_bloq(bloq):
 
 
 class FromBloq(Operation):
-    r"""An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    r"""An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__
     as a PennyLane :class:`~.Operation`.
 
     .. note::
@@ -683,7 +683,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
 class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
     r"""
     An adapter for using a PennyLane :class:`~.Operation` as a
-    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+    `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the latest
