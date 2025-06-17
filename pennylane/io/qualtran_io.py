@@ -952,7 +952,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         ToBloq(QuantumPhaseEstimation)
 
 
-        Alternatively, you can provide a custom mapping that maps a PennyLane operator to a
+        Alternatively, users can provide a custom mapping that maps a PennyLane operator to a
         specific Qualtran Bloq.
 
         >>> op = qml.QuantumPhaseEstimation(
