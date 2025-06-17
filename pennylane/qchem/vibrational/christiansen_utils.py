@@ -1086,7 +1086,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+        cubic(bool): Flag to include three-mode integrals. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is
             set to 1.
         backend (string): the executor backend from the list of supported backends. Available
@@ -1094,7 +1094,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
-        TensorLike[float]: the integrals for the Christiansen Hamiltonian
+        TensorLike[float]: the one-mode and two-mode integrals for the Christiansen Hamiltonian
 
     **Example**
 
