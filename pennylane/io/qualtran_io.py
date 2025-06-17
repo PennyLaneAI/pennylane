@@ -886,7 +886,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
-    Converts a PennyLane circuit or :class:`~.Operation` and returns the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
+    Converts a PennyLane circuit or :class:`~.Operation` to the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the latest
