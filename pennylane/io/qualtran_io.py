@@ -932,6 +932,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     And(cv1=1, cv2=1, uncompute=False): 1,
     ZPowGate(exponent=\phi, eps=1e-10): 1,
     TwoBitSwap(): 1}
+
     .. details::
         :title: Usage Details
 
