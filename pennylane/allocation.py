@@ -104,14 +104,10 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
 
-    Keyword Args:
-        restored (bool): upon deallocating, specifies whether to reset the deallocated memory
-        to its original state when it was allocated (`True`) or to leave it in its current state (`False`).
-
     .. seealso:: :class:`~.safe_allocate`
 
-    :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
-    Manual use of ``allocate`` and ``deallocate`` should be used with caution.
+    Using :func:`~.allocate` as a context manager is the recommended syntax, as it will automatically
+    deallocate all dynamic wires at the end of the scope.
 
     ..code-block:: python
 
