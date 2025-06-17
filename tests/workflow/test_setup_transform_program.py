@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
 
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pennylane as qml
@@ -66,7 +67,7 @@ def test_device_transform_program():
     assert repr(full_tp) == "TransformProgram(device_transform)"
     assert inner_tp.is_empty()
 
-    config.use_device_gradient = False
+    config = replace(config, use_device_gradient=False)
 
     full_tp, inner_tp = _setup_transform_program(device, config)
 
