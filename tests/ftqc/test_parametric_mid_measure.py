@@ -940,6 +940,9 @@ class TestWorkflows:
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 
+        if "jax" in angle_type or use_jit:
+            pytest.importorskip("jax")
+
         if mcm_method == "tree-traversal" and use_jit:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
             pytest.skip("TT & jax.jit are incompatible")
