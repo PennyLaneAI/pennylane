@@ -579,6 +579,10 @@
   estimation for parametric single qubit gates.
   [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
 
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for controlled gates.
+  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   

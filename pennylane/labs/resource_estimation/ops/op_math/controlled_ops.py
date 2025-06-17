@@ -784,7 +784,7 @@ class ResourceToffoli(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> re.ResourceToffoli.resource_decomp()
-    {CNOT: 9, Hadamard: 3, S: 1, CZ: 1, T: 2, Adjoint(T): 2}
+    [AllocWires(2), (9 x CNOT), (3 x Hadamard), (1 x S), (1 x CZ), (2 x T), (2 x Adjoint(T)), FreeWires(2)]
     """
 
     num_wires = 3
@@ -857,7 +857,9 @@ class ResourceToffoli(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * elbow (Union[str, None]): String identifier to determine if this is a special type of Toffoli gate (left or right elbow).
+
         """
         return {"elbow": self.elbow}
 
@@ -1185,7 +1187,8 @@ class ResourceCRX(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -1295,7 +1298,9 @@ class ResourceCRY(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
+
         """
         return {"eps": self.eps}
 
@@ -1403,7 +1408,8 @@ class ResourceCRZ(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
         """
         return {"eps": self.eps}
 
@@ -1519,7 +1525,9 @@ class ResourceCRot(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
+
         """
         return {"eps": self.eps}
 
@@ -1638,7 +1646,9 @@ class ResourceControlledPhaseShift(ResourceOperator):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
-            dict: Empty dictionary. The resources of this operation don't depend on any additional parameters.
+            A dictionary containing the resource parameters:
+                * eps (Union[float, None]): error threshold for the approximation
+
         """
         return {"eps": self.eps}
 
