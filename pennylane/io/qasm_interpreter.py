@@ -645,8 +645,24 @@ class QasmInterpreter:
             if step is None:
                 step = 1
 
-            @for_loop(start, stop, step)
-            def loop(i, execution_context):
+        if isinstance(loop_params, Iterable):
+            start = 0
+            stop = len(loop_params)
+            step = 1
+
+        @for_loop(start, stop, step)
+        def loop(i, execution_context):
+            if isinstance(loop_params, Iterable):
+                execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
+                    node.identifier.name
+                ] = Variable(
+                    ty=loop_params[i].__class__.__name__,
+                    val=loop_params[i],
+                    size=-1,
+                    line=node.span.start_line,
+                    constant=False,
+                )
+            else:
                 execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
                     node.identifier.name
                 ] = Variable(
@@ -656,46 +672,19 @@ class QasmInterpreter:
                     line=node.span.start_line,
                     constant=False,
                 )
-                try:
-                    # we only want to execute the gates in the loop's scope
-                    # updates vars in sub context... need to propagate these to outer context
-                    self.visit(
-                        node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"]
-                    )
-                except ContinueException:
-                    pass  # evaluation of the current iteration stops and we continue
-                inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
-                context.vars = inner_context.vars
-                context.wires = inner_context.wires
+            try:
+                # we only want to execute the gates in the loop's scope
+                # updates vars in sub context... need to propagate these to outer context
+                self.visit(node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"])
+            except ContinueException:
+                pass  # evaluation of the current iteration stops and we continue
+            inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
+            context.vars = inner_context.vars
+            context.wires = inner_context.wires
 
-                return execution_context
+            return execution_context
 
-            self._handle_break(loop, context)
-
-        # we unroll the loop in the following case when we don't have a range since qml.for_loop() only
-        # accepts (start, stop, step) and not a list of values.
-        if isinstance(loop_params, Iterable):
-
-            def unrolled(execution_context):
-                for i in loop_params:
-                    execution_context.scopes["loops"][f"for_{node.span.start_line}"].vars[
-                        node.identifier.name
-                    ] = Variable(
-                        ty=i.__class__.__name__,
-                        val=i,
-                        size=-1,
-                        line=node.span.start_line,
-                        constant=False,
-                    )
-                    try:
-                        # visit the nodes once per loop iteration
-                        self.visit(
-                            node.block, context.scopes["loops"][f"for_{node.span.start_line}"]
-                        )  # updates vars in sub context if any measurements etc. occur
-                    except ContinueException:
-                        pass  # eval of current iteration stops and we continue
-
-            self._handle_break(unrolled, context)
+        self._handle_break(loop, context)
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
@@ -917,7 +906,7 @@ class QasmInterpreter:
         Returns:
             list: The evaluated set.
         """
-        return (self.visit(literal, context) for literal in node.values)
+        return [self.visit(literal, context) for literal in node.values]
 
     @visit.register(ast.ArrayLiteral)
     def visit_array_literal(self, node: ast.ArrayLiteral, context: Context):
