@@ -273,6 +273,9 @@
   * :class:`~.BasisRotation`
     [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
 
+  * :class:`~.PhaseAdder`
+    [(#7070)](https://github.com/PennyLaneAI/pennylane/pull/7070)
+
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
