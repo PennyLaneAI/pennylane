@@ -977,9 +977,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             "qualtran via: pip install qualtran."
         )
 
-    if map_ops:
-        if custom_mapping:
-            return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
-        return _map_to_bloq(circuit, map_ops=True, **kwargs)
+    if map_ops and custom_mapping:
+        return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
 
-    return _map_to_bloq(circuit, map_ops=False, **kwargs)
+    return _map_to_bloq(circuit, map_ops=map_ops, **kwargs)
