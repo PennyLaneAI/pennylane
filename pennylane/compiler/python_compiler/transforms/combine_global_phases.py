@@ -49,10 +49,12 @@ class CombineGlobalPhasesPattern(
                     addOp = arith.AddfOp(op.operands[0], phi)
                     phi = addOp.result
                 rewriter.erase_op(op)
+        
         if phi:
             new_op = GlobalPhaseOp(params=phi)
-            rewriter.insert_op(new_op, InsertPoint.at_end(funcOp.body.parent_block()))
-
+            rewriter.insert_op(new_op, InsertPoint.before(funcOp.get_return_op()))
+            #rewriter.insert_op(new_op, InsertPoint.before(op))
+            #rewriter.insert_op_before_matched_op(funcOp.get_return_op())
 
 @dataclass(frozen=True)
 class CombineGlobalPhasesPass(passes.ModulePass):
