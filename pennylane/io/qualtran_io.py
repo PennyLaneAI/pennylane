@@ -709,35 +709,22 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     This example shows how to use ``qml.ToBloq``:
 
-    >>> from qualtran.drawing import show_call_graph, show_counts_sigma
+    >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
 
-    >>> control_wires = [2, 3]
-    >>> estimation_wires = [4, 5]
-
-    >>> H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1)
-
     >>> op = qml.QuantumPhaseEstimation(
-    ...     qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+    ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
     ... )
 
-    >>> op_as_bloq = qml.to_bloq(op)
+    >>> op_as_bloq = qml.ToBloq(op)
     >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
     >>> sigma
-    {Allocate(dtype=QFxp(bitsize=2, num_frac=2, signed=False), dirty=False): 1,
-    Hadamard(): 4,
-    CNOT(): 6,
-    ZPowGate(exponent=\phi, eps=1e-11): 12,
-    Identity(bitsize=2): 12,
-    And(cv1=1, cv2=1, uncompute=True): 22,
-    And(cv1=1, cv2=1, uncompute=False): 22,
-    ZPowGate(exponent=\phi, eps=5e-12): 6,
-    Toffoli(): 18,
-    CZ(): 6,
-    Controlled(subbloq=Ry(angle=0.7137243789447656, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 6,
-    Controlled(subbloq=Ry(angle=-0.7137243789447656, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 6,
-    ZPowGate(exponent=\phi, eps=1e-10): 1,
-    TwoBitSwap(): 1}
+    {Hadamard(): 4,
+    Controlled(subbloq=Rx(angle=0.2, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 3,
+    TwoBitSwap(): 1,
+    CNOT(): 2,
+    ZPowGate(exponent=\phi, eps=5e-12): 2,
+    ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
     _error_message = (
@@ -928,24 +915,23 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     This example shows how to use ``qml.to_bloq``:
 
-    .. code-block::
+    >>> from qualtran.drawing import show_call_graph
+    >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
 
-        from qualtran.drawing import show_call_graph, show_counts_sigma
+    >>> op = qml.QuantumPhaseEstimation(
+    ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
+    ... )
 
-        control_wires = [2, 3]
-        estimation_wires = [4, 5, 6, 7, 8, 9]
-
-        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
-
-        op = qml.QuantumPhaseEstimation(
-            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
-        )
-
-        op_as_bloq = qml.to_bloq(op)
-        graph, sigma = op_as_bloq.call_graph()
-        show_call_graph(graph)
-        show_counts_sigma(sigma)
-
+    >>> op_as_bloq = qml.to_bloq(op)
+    >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
+    >>> sigma
+    {Allocate(dtype=QFxp(bitsize=2, num_frac=2, signed=False), dirty=False): 1,
+    Hadamard(): 4,
+    Controlled(subbloq=Rx(angle=0.2, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 3,
+    And(cv1=1, cv2=1, uncompute=True): 1,
+    And(cv1=1, cv2=1, uncompute=False): 1,
+    ZPowGate(exponent=\phi, eps=1e-10): 1,
+    TwoBitSwap(): 1}
     .. details::
         :title: Usage Details
 
