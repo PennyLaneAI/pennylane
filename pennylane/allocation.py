@@ -71,7 +71,7 @@ class Allocate(Operator):
 
     @property
     def restored(self):
-        """Whether or not the allocated wires are required to be in the zero state."""
+        """Whether the allocated wires will be restored to their original state before deallocation."""
         return self.hyperparameters["restored"]
 
     @classmethod
