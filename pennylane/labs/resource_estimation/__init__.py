@@ -76,6 +76,21 @@ Operators:
     ~ResourceRZ
     ~ResourceRot
     ~ResourcePhaseShift
+    ~ResourceSWAP
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
 
 """
 
@@ -100,17 +115,32 @@ from .resource_tracking import (
     estimate_resources,
 )
 from .ops import (
-    ResourceGlobalPhase,
     ResourceHadamard,
-    ResourceIdentity,
-    ResourcePhaseShift,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
     ResourceS,
-    ResourceT,
     ResourceX,
     ResourceY,
     ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceT,
+    ResourcePhaseShift,
+    ResourceGlobalPhase,
+    ResourceRot,
+    ResourceIdentity,
+    ResourceSWAP,
+    ResourceCH,
+    ResourceCY,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCNOT,
+    ResourceToffoli,
+    ResourceMultiControlledX,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCRot,
+    ResourceControlledPhaseShift,
+    ResourceTempAND,
 )
