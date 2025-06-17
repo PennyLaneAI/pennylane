@@ -546,7 +546,7 @@ class TestMeasureFunctions:
         import jax
         import networkx as nx
 
-        if not (angle_type == "float"):
+        if not angle_type == "float":
             import importlib
 
             np_type = importlib.import_module(angle_type)
@@ -936,7 +936,7 @@ class TestWorkflows:
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
         self, mcm_method, shots, angle, angle_type, use_jit
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 
@@ -946,7 +946,7 @@ class TestWorkflows:
 
         dev = qml.device("default.qubit", shots=shots)
 
-        if not (angle_type == "float"):
+        if not angle_type == "float":
             import importlib
 
             np_type = importlib.import_module(angle_type)
