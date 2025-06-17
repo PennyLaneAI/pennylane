@@ -212,7 +212,7 @@ def _preprocess_bloq(bloq):
 
 class FromBloq(Operation):
     """
-    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`_
+    An adapter for using a `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`
     as a PennyLane :class:`~.Operation`.
 
     .. note::
