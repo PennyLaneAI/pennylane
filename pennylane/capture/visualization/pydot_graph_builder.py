@@ -121,6 +121,74 @@ class QNodeCluster(pydot.Cluster):
         self.set_name(new_name)
 
 
+class ControlCluster(pydot.Cluster):
+    """Cluster representing a control flow structure in the graph, such as a loop or conditional."""
+
+    _counter = 1
+
+    def __init__(self, info_label="", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_penwidth(2)
+        self.set_fontname("Helvetica")
+        self.set_style("filled")
+        self.set_fillcolor(kwargs.get("fillcolor", "darkgoldenrod1"))
+        self.set_color(kwargs.get("color", "darkgoldenrod3"))
+
+        cur_name = self.get_name()
+        new_name = f"{cur_name}{ControlCluster._counter}"
+        ControlCluster._counter += 1
+        self.set_name(new_name)
+
+        # Increment the counter and use it for a unique node name
+        if info_label:
+            unique_name = f"{new_name}_info_node"
+            rank_subgraph = pydot.Subgraph()
+            node = pydot.Node(
+                unique_name,
+                label=info_label,
+                shape="ellipse",
+                style="dashed",
+                fontname="Helvetica",
+                penwidth=2,
+                color="darkgoldenrod3",
+            )
+            rank_subgraph.add_node(node)
+            self.add_subgraph(rank_subgraph)
+            self.add_node(node)
+
+
+class AdjointCluster(pydot.Cluster):
+    """Cluster representing a control flow structure in the graph, such as a loop or conditional."""
+
+    _counter = 1
+
+    def __init__(self, info_label="", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_penwidth(2)
+        self.set_fontname("Helvetica")
+
+        cur_name = self.get_name()
+        new_name = f"{cur_name}{ControlFlowCluster._counter}"
+        ControlFlowCluster._counter += 1
+        self.set_name(new_name)
+
+        # Increment the counter and use it for a unique node name
+        if info_label:
+            unique_name = f"{new_name}_info_node"
+            rank_subgraph = pydot.Subgraph()
+            node = pydot.Node(
+                unique_name,
+                label=info_label,
+                shape="rectangle",
+                style="dashed",
+                fontname="Helvetica",
+                penwidth=2,
+            )
+            rank_subgraph.add_node(node)
+            self.add_subgraph(rank_subgraph)
+            self.add_node(node)
+
+
 class PyDotGraphBuilder:
     """Object to build and store the graph representation of a captured PennyLane circuit."""
 

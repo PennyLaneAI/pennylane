@@ -1,6 +1,6 @@
 from copy import copy
 from functools import partial
-from typing import Callable, Sequence
+from typing import Sequence
 
 import jax
 from jax.extend import core
@@ -9,8 +9,17 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from ..base_interpreter import PlxprInterpreter
-from ..primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
+from ..primitives import (
+    adjoint_transform_prim,
+    cond_prim,
+    ctrl_transform_prim,
+    for_loop_prim,
+    qnode_prim,
+    while_loop_prim,
+)
 from .pydot_graph_builder import (
+    AdjointCluster,
+    ControlCluster,
     ControlFlowCluster,
     DeviceNode,
     MeasurementNode,
@@ -182,6 +191,26 @@ class PlxprVisualizer(PlxprInterpreter):
 
             return self.interpret_operation(op)
 
+        if type(self.plxpr_graph.current_cluster) is ControlCluster:
+            # This is a stand-alone operation that does not return a value
+            num_wires = len(op.wires)
+
+            # Invals could contain multiple things so we need to extract out the wires
+            op_wires = invals_ascii[-num_wires:]
+            op_misc = invals_ascii[:-num_wires]
+
+            # Create operator node
+            op_node = OperatorNode(
+                wires=op_wires,
+                name=op.name,
+                label=f"<{op.name} {', '.join(list(map(str, op_misc)))}: ({', '.join(list(map(self._bold_str, op_wires)))})>",
+            )
+            self.plxpr_graph.add_quantum_node_to_graph(
+                op_node,
+                auto_connect=True,
+            )
+
+            return self.interpret_operation(op)
         # This operator is part of a bigger thing and is returning something
         # to be processed later (i.e. control or measurement)
         assert len(eqn.outvars) == 1, "Expected a single output variable for the operation."
@@ -481,3 +510,64 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, eqn=No
         consts_slices=new_consts_slices,
         args_slice=new_args_slice,
     )
+
+
+@PlxprVisualizer.register_primitive(ctrl_transform_prim)
+def handle_ctrl_transform(
+    self, *invals, n_control, jaxpr, control_values, work_wires, n_consts, eqn=None
+):
+    """Interpret a ctrl transform primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:-n_control]
+
+    ascii_context = {}
+
+    controls = eqn.invars[-n_control:]
+    # TODO: Not sure why the slicing is off here, but it works for now
+    outer_invars = eqn.invars[-n_consts - n_control : -n_control]
+    outer_constants = eqn.invars[: -n_consts - n_control]
+
+    controls_ascii = [self.read_ascii(control) for control in controls]
+
+    if not outer_invars:
+        # This is if you give an operator type to qml.ctrl
+        for outer_const, inner_const in zip(outer_invars, jaxpr.constvars, strict=True):
+            assert (
+                inner_const not in ascii_context
+            ), f"Variable {inner_const} already exists in ascii_context."
+            ascii_context[inner_const] = self.read_ascii(outer_const)
+
+        for outer_var, inner_var in zip(outer_constants, jaxpr.invars, strict=True):
+            assert (
+                inner_var not in ascii_context
+            ), f"Variable {inner_var} already exists in ascii_context."
+            ascii_context[inner_var] = self.read_ascii(outer_var)
+
+    else:
+        # This is if you give a qfunc to qml.ctrl
+        for outer_const, inner_const in zip(outer_constants, jaxpr.constvars, strict=True):
+            assert (
+                inner_const not in ascii_context
+            ), f"Variable {inner_const} already exists in ascii_context."
+            ascii_context[inner_const] = self.read_ascii(outer_const)
+
+        for outer_var, inner_var in zip(outer_invars, jaxpr.invars, strict=True):
+            assert (
+                inner_var not in ascii_context
+            ), f"Variable {inner_var} already exists in ascii_context."
+            ascii_context[inner_var] = self.read_ascii(outer_var)
+
+    # Create ctrl cluster
+    ctrl_cluster = ControlCluster(
+        info_label=f"<control : {', '.join(map(self._bold_str,controls_ascii))}>"
+    )
+    self.plxpr_graph.add_cluster_to_graph(ctrl_cluster)
+
+    interpreter_copy = copy(self)
+    interpreter_copy.plxpr_graph.current_cluster = ctrl_cluster
+    op = interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
+
+    if op:
+        print(op)
+
+    return []
