@@ -32,7 +32,74 @@ except ImportError:
 
 
 class QNGOptimizerQJIT:
-    """TODO"""
+    r"""Jax-based and ``jax.jit``/``qml.qjit``-compatible implementation of the ``QNGOptimizer``,
+    a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
+    the optimization space based on the Fubini-Study metric tensor.
+
+    For more details, see the :class:`~.QNGOptimizer` documentation.
+
+    .. note::
+
+        A few limitations of the current implementation:
+
+            - It supports a single QNode only to encode the objective function (as for the ``QNGOptimizer``).
+
+            - It does not support any QNode with multiple arguments. A potential workaround
+              would be to combine all parameters into a single objective function argument.
+
+            - It does not work correctly if there is any classical processing in the QNode circuit
+              (e.g. something like ``2 * theta`` as a gate parameter).
+
+    **Example:**
+
+    Consider the following QNode encoding a simple objective function as an example:
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return qml.expval(qml.Z(0) + qml.X(1))
+
+    To make the optimization loop faster, the :meth:`~.step` (or :meth:`~.step_and_cost`) method can be
+    just-in-time compiled using ``qml.qjit`` (or ``jax.jit``, much more efficient for the ``default.qubit`` device):
+
+    .. code-block:: python
+
+        import jax.numpy as jnp
+        from functools import partial
+
+        opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+        step = qml.qjit(partial(opt.step, circuit))
+
+        params = jnp.array([0.1, 0.2])
+        state = opt.init(params)
+        for _ in range(100):
+            params, state = step(params, state)
+
+    >>> params
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+
+    Keyword Args:
+        stepsize=0.01 (float): the user-defined stepsize hyperparameter
+        approx="block-diag" (str): approximation method for the metric tensor.
+
+            - If ``None``, the full metric tensor is computed
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly
+
+            - If ``"diag"``, the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``)
+
+        lam=0 (float): metric tensor regularization to be applied at each optimization step
+    """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
         self.stepsize = stepsize
