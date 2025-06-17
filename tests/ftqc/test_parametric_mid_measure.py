@@ -538,22 +538,23 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
-    @pytest.mark.parametrize("angle_type", ["numpy", "jax.numpy"])
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
     def test_arbitrary_basis_with_program_capture(
         self, angle, plane, wire, reset, postselect, angle_type
     ):
         """Test that the measure_ functions are captured as expected"""
-        import importlib
-
         import jax
         import networkx as nx
 
-        np_type = importlib.import_module(angle_type)
-        local_angle = np_type.array(angle)
+        if not (angle_type == "float"):
+            import importlib
+
+            np_type = importlib.import_module(angle_type)
+            angle = np_type.array(angle)
 
         def circ():
             m = measure_arbitrary_basis(
-                wire, angle=local_angle, plane=plane, reset=reset, postselect=postselect
+                wire, angle=angle, plane=plane, reset=reset, postselect=postselect
             )
             qml.cond(m, qml.X, qml.Y)(0)
             qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
@@ -930,18 +931,41 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1])
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    def test_diagonalize_mcms_returns_parametrized_mcms(self, mcm_method, shots):
+    @pytest.mark.parametrize("angle", [0.1234, -0.789])
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_diagonalize_mcms_returns_parametrized_mcms(
+        self, mcm_method, shots, angle, angle_type, use_jit
+    ):
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 
+        if mcm_method == "tree-traversal" and use_jit:
+            # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
+            pytest.skip("TT & jax.jit are incompatible")
+
         dev = qml.device("default.qubit", shots=shots)
 
+        if not (angle_type == "float"):
+            import importlib
+
+            np_type = importlib.import_module(angle_type)
+            angle = np_type.array(angle)
+
+        def jit_wrapper(func):
+            if use_jit:
+                import jax
+
+                return jax.jit(func)
+            return func
+
+        @jit_wrapper
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             m0 = measure_x(0)
             m1 = measure_y(1)
-            m2 = measure_arbitrary_basis(2, angle=1.23, plane="XY")
+            m2 = measure_arbitrary_basis(2, angle=angle, plane="XY")
 
             return qml.expval(m0), qml.expval(m1), qml.expval(m2)
 
