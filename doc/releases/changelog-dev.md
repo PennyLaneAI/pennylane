@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
+  This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
+  auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
+  Unary iteration leverages these auxiliary wires to store intermediate values for reuse
+  among the different multi-controlled operators, avoiding unnecessary recomputation.
+  Check out the documentation for a thorough explanation.
+  [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
+
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
@@ -139,6 +147,7 @@
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
 
 * A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
   operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
@@ -533,7 +542,7 @@
   these dependencies only have to be installed for the functions that use them, not to use
   ``labs`` functionalities in general. This decouples the various submodules, and even functions
   within the same submodule, from each other.
-  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
+  [(#7650)](https://github.com/PennyLaneAI/pennylane/pull/7650)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
@@ -738,8 +747,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
+  [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
+
 * The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
-  additional supported lightning devices: ``lightning.kokkos`` and ``lightning.gpu``.
+  additional supported lightning devices: `lightning.kokkos` and `lightning.gpu`.
   [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
