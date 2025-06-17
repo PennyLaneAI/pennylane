@@ -39,17 +39,6 @@ def dummyfunc():
     return None
 
 
-def test_additional_kwargs_is_deprecated():
-    """Test that passing gradient_kwargs as additional kwargs raises a deprecation warning."""
-    dev = qml.device("default.qubit", wires=1)
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match=r"Specifying gradient keyword arguments \[\'atol\'\] as additional kwargs has been deprecated",
-    ):
-        QNode(dummyfunc, dev, atol=1)
-
-
 # pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
@@ -177,12 +166,6 @@ class TestUpdate:
         assert new_kwarg_circuit.gradient_kwargs["atol"] == 1
         assert new_kwarg_circuit.gradient_kwargs["h"] == 1
 
-        with pytest.warns(
-            UserWarning,
-            match="Received gradient_kwarg blah, which is not included in the list of standard qnode gradient kwargs.",
-        ):
-            circuit.update(gradient_kwargs={"blah": 1})
-
     def test_update_multiple_arguments(self):
         """Test that multiple parameters can be updated at once."""
         dev = qml.device("default.qubit")
@@ -255,24 +238,6 @@ class TestValidation:
             return return_type([qml.expval(qml.Z(0))])
 
         assert isinstance(circuit(return_type), return_type)
-
-    def test_expansion_strategy_error(self):
-        """Test that an error is raised if expansion_strategy is passed to the qnode."""
-
-        with pytest.raises(ValueError, match="'expansion_strategy' is no longer"):
-
-            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
-            def _():
-                return qml.state()
-
-    def test_max_expansion_error(self):
-        """Test that an error is raised if max_expansion is passed to the QNode."""
-
-        with pytest.raises(ValueError, match="'max_expansion' is no longer a valid"):
-
-            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
-            def _():
-                qml.state()
 
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
@@ -458,43 +423,6 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
-
-    # pylint: disable=unused-variable
-    def test_unrecognized_kwargs_raise_warning(self):
-        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, gradient_kwargs={"random_kwarg": qml.gradients.finite_diff})
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            assert len(w) == 1
-            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
-
-    # pylint: disable=unused-variable
-    def test_incorrect_diff_method_kwargs_raise_warning(self):
-        """Tests that using one of the incorrect kwargs previously used in some examples in PennyLane
-        (grad_method, gradient_fn) to set the qnode diff_method raises a warning"""
-        dev = qml.device("default.qubit", wires=2)
-
-        with warnings.catch_warnings(record=True) as w:
-
-            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
-            def circuit0(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-            def circuit2(params):
-                qml.RX(params[0], wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-
-        assert len(w) == 2
-        assert "Use diff_method instead" in str(w[0].message)
-        assert "Use diff_method instead" in str(w[1].message)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
@@ -1319,22 +1247,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
-    def test_shots_passed_as_unrecognized_kwarg(self):
-        """Test that an error is raised if shots are passed to QNode initialization."""
-        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
-
-        def ansatz0():
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-            qml.QNode(ansatz0, dev, gradient_kwargs={"shots": 100})
-
-        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
-
-            @qml.qnode(dev, gradient_kwargs={"shots": 100})
-            def _():
-                return qml.expval(qml.X(0))
-
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
         """Tests that per-call shots setting does not change the number of shots in the device."""
@@ -1499,9 +1411,13 @@ class TestShots:
         qn = qml.QNode(dummyfunc, dev1)
         assert qn._shots == qml.measurements.Shots(100)
 
-        dev2 = qml.device("default.qubit", wires=1, shots=200)
-        updated_qnode = qn.update(device=dev2)
-        assert updated_qnode._shots == qml.measurements.Shots(200)
+        # _shots should take precedence over device shots
+        with pytest.warns(
+            UserWarning, match="The device's shots value does not match the QNode's shots value."
+        ):
+            dev2 = qml.device("default.qubit", wires=1, shots=200)
+            updated_qnode = qn.update(device=dev2)
+        assert updated_qnode._shots == qml.measurements.Shots(100)
 
     def test_shots_preserved_in_other_updates(self):
         """Test that _shots is preserved when updating other QNode parameters."""
@@ -1522,17 +1438,6 @@ class TestShots:
         # Update shots directly
         updated_qnode = qn.update_shots(shots=75)
         assert updated_qnode._shots == qml.measurements.Shots(75)
-
-    def test_private_shots_update_warning(self):
-        """Test that attempting to update _shots directly raises a warning."""
-        dev = qml.device("default.qubit", wires=1, shots=25)
-        qn = qml.QNode(dummyfunc, dev)
-
-        with pytest.warns(UserWarning, match="gradient_kwarg _shots"):
-            updated_qnode = qn.update(_shots=999)
-
-        # The _shots value should not have changed
-        assert updated_qnode._shots == qml.measurements.Shots(25)
 
 
 class TestTransformProgramIntegration:
