@@ -112,7 +112,7 @@ def perturbation_error(
     backend: str = "serial",
     parallel_mode: str = "state",
 ) -> List[float]:
-    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon}` = \hat{H}_{eff} - \hat{H} +  for a  given product formula.
+    r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
     For a state :math:`\left| \psi \right\rangle` the perturbation theory error is given by the expectation value :math:`\left\langle \psi \right| \hat{\epsilon} \left| \psi \right\rangle`.
@@ -246,7 +246,7 @@ def perturbation_error(
 
 
 def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
-    """Returns the state obtained from applying ``commutators`` to ``state`` and computing the expectation value."""
+    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     new_state = _AdditiveIdentity()
     for commutator, coeff in commutators.items():

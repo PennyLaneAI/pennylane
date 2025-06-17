@@ -13,10 +13,14 @@
 # limitations under the License.
 """Tests for the product formula representations"""
 
+from itertools import product
+
 import numpy as np
 import pytest
+from scipy.sparse.linalg import expm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
+from pennylane.labs.trotter_error.abstract import nested_commutator
 
 
 def _hermitian(mat):
@@ -31,6 +35,11 @@ fragment_dicts = [
     {0: _hermitian(np.random.random(size=(3, 3))), 1: _hermitian(np.random.random(size=(3, 3)))},
     {0: np.random.random(size=(3, 3)), 1: np.random.random(size=(3, 3))},
     {0: np.random.random(size=(2, 2)), 1: np.random.random(size=(2, 2))},
+    {
+        0: np.random.random(size=(3, 3)),
+        1: np.random.random(size=(3, 3)),
+        2: np.random.random(size=(3, 3)),
+    },
 ]
 
 
@@ -68,66 +77,19 @@ def test_fourth_order_recursive(fragment_dict):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as the unraveled product formula"""
 
     u = 1 / (4 - 4 ** (1 / 3))
-    frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
-    frag_coeffs = [
-        u / 2,
-        u,
-        u,
-        u,
-        (1 - (3 * u)) / 2,
-        (1 - (4 * u)),
-        (1 - (3 * u)) / 2,
-        u,
-        u,
-        u,
-        u / 2,
-    ]
-
-    fourth_order_1 = ProductFormula(frag_labels, coeffs=frag_coeffs, label="U4")
-
-    second_order_labels = [0, 1, 0]
-    second_order_coeffs = [1 / 2, 1, 1 / 2]
-
-    second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
-
-    pfs = [
-        second_order(u) ** 2,
-        second_order((1 - (4 * u))),
-        second_order(u) ** 2,
-    ]
-
-    fourth_order_2 = ProductFormula(pfs, label="U4")
-
-    eff_1 = effective_hamiltonian(fourth_order_1, fragment_dict, order=5)
-    eff_2 = effective_hamiltonian(fourth_order_2, fragment_dict, order=5)
-
-    assert np.allclose(eff_1, eff_2)
-
-
-def test_fourth_order_recursive_three_frags():
-    """Test the recursive version on three fragments"""
-
-    fragment_dict = {
-        0: np.random.random(size=(3, 3)),
-        1: np.random.random(size=(3, 3)),
-        2: np.random.random(size=(3, 3)),
-    }
-
-    u = 1 / (4 - 4 ** (1 / 3))
     v = 1 - 4 * u
 
-    frag_labels = [0, 1, 2, 1, 0] * 5
-    frag_coeffs = (
-        [u / 2, u / 2, u, u / 2, u / 2] * 2
-        + [v / 2, v / 2, v, v / 2, v / 2]
-        + [u / 2, u / 2, u, u / 2, u / 2] * 2
-    )
+    n_frags = len(fragment_dict)
+
+    frag_labels = (list(range(n_frags)) + list(reversed(range(n_frags)))) * 5
+    frag_coeffs = [u / 2] * (n_frags * 4) + [v / 2] * (n_frags * 2) + [u / 2] * (n_frags * 4)
 
     fourth_order1 = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
-    second_order = ProductFormula(
-        [0, 1, 2, 1, 0], coeffs=[1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], label="U"
-    )
+    frag_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
+    frag_coeffs = [1 / 2] * len(frag_labels)
+
+    second_order = ProductFormula(frag_labels, frag_coeffs)
     fourth_order2 = second_order(u) ** 2 @ second_order(1 - 4 * u) @ second_order(u) ** 2
 
     eff1 = effective_hamiltonian(fourth_order1, fragment_dict, order=5)
@@ -160,47 +122,27 @@ def test_fourth_order_mult(fragment_dict):
 
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_pow(fragment_dict):
-    """Test that product formulas can be correctly raised to a power"""
-    second_order_labels = [0, 1, 1, 0]
-    second_order_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+def test_mul_and_pow(fragment_dict):
+    """Test that multiplying a product formula by itself and raising it to a power give the same result"""
 
+    n_frags = len(fragment_dict)
+    second_order_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
+    second_order_coeffs = [1 / 2] * len(second_order_labels)
     second_order = ProductFormula(second_order_labels, coeffs=second_order_coeffs, label="U2")
 
     pf1 = second_order @ second_order @ second_order
     pf2 = second_order**3
     pf3 = ProductFormula([second_order, second_order, second_order])
+    pf4 = ProductFormula(second_order_labels * 3, second_order_coeffs * 3)
 
     eff1 = effective_hamiltonian(pf1, fragment_dict, order=7)
     eff2 = effective_hamiltonian(pf2, fragment_dict, order=7)
     eff3 = effective_hamiltonian(pf3, fragment_dict, order=7)
+    eff4 = effective_hamiltonian(pf4, fragment_dict, order=7)
 
     assert np.allclose(eff1, eff2)
-    assert np.allclose(eff1, eff3)
     assert np.allclose(eff2, eff3)
-
-
-@pytest.mark.parametrize("fragment_dict", fragment_dicts)
-def test_mul(fragment_dict):
-    """Test that three ways of multiplying product formulas return the same result"""
-
-    t = 1
-    frags = [0, 1, 0]
-    coeffs = [1 / 2, 1, 1 / 2]
-
-    second_order_trotter = ProductFormula(frags, coeffs=coeffs, label="U")
-
-    pf1 = second_order_trotter(t) @ second_order_trotter(t)
-    pf2 = ProductFormula([0, 1, 0, 0, 1, 0], coeffs=[t / 2, t, t / 2, t / 2, t, t / 2])
-    pf3 = ProductFormula([second_order_trotter(t), second_order_trotter(t)])
-
-    eff1 = effective_hamiltonian(pf1, fragment_dict, order=7)
-    eff2 = effective_hamiltonian(pf2, fragment_dict, order=7)
-    eff3 = effective_hamiltonian(pf3, fragment_dict, order=7)
-
-    assert np.allclose(eff1, eff2)
-    assert np.allclose(eff1, eff3)
-    assert np.allclose(eff2, eff3)
+    assert np.allclose(eff3, eff4)
 
 
 @pytest.mark.parametrize("fragment_dict", fragment_dicts)
@@ -242,3 +184,49 @@ def test_matrix(fragment_dict):
     mat2 = fourth_order_2.to_matrix(fragment_dict)
 
     assert np.allclose(mat1, mat2)
+
+
+@pytest.mark.parametrize("fragments, t", product(fragment_dicts[:-1], [1, 0.1, 0.01]))
+def test_fourth_order_norm_two_fragments(fragments, t):
+    """Tests against an upper bound on the norm of the fourth order Trotter formula. This test comes from
+    Proposition J.1 of https://arxiv.org/pdf/1912.08854"""
+
+    u = 1 / (4 - 4 ** (1 / 3))
+    frag_labels = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+    frag_coeffs = [
+        u / 2,
+        u,
+        u,
+        u,
+        (1 - (3 * u)) / 2,
+        (1 - (4 * u)),
+        (1 - (3 * u)) / 2,
+        u,
+        u,
+        u,
+        u / 2,
+    ]
+
+    fourth_order = ProductFormula(frag_labels, coeffs=frag_coeffs)(1j * t)
+    fourth_order_approx = fourth_order.to_matrix(fragments)
+    actual = expm(1j * t * sum(fragments.values(), np.zeros_like(fragments[0])))
+
+    commutator_coeffs = {
+        (0, 0, 0, 1, 0): 0.0047,
+        (0, 0, 1, 1, 0): 0.0057,
+        (0, 1, 0, 1, 0): 0.0046,
+        (0, 1, 1, 1, 0): 0.0074,
+        (1, 0, 0, 1, 0): 0.0097,
+        (1, 0, 1, 1, 0): 0.0097,
+        (1, 1, 0, 1, 0): 0.0173,
+        (1, 1, 1, 1, 0): 0.0284,
+    }
+
+    upper_bound = 0
+    for comm, coeff in commutator_coeffs.items():
+        mat = nested_commutator([fragments[frag] for frag in comm])
+        upper_bound += coeff * np.linalg.norm(mat)
+
+    difference = np.linalg.norm(fourth_order_approx - actual)
+
+    assert difference <= (t**5) * upper_bound or np.isclose(difference, (t**5) * upper_bound)

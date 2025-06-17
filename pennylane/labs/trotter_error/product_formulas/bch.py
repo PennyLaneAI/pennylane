@@ -71,7 +71,6 @@ def bch_expansion(
 def _bch_expansion(
     product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
 ) -> List[Dict[Tuple[Hashable], complex]]:
-    # pylint: disable=protected-access
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
     and the ProductFormula objects are the recursive case.
@@ -91,7 +90,7 @@ def _bch_expansion(
     bch = _bch(
         product_formula.terms,
         product_formula.coeffs,
-        product_formula._ordered_terms,
+        product_formula.ordered_terms,
         order,
     )
 
@@ -111,7 +110,7 @@ def _bch_expansion(
                 merged_bch[j] = _add_dicts(merged_bch[j], merged)
 
     return _remove_redundancies(
-        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments()
+        _apply_exponent(merged_bch, product_formula.exponent), product_formula.ordered_fragments
     )
 
 
@@ -298,7 +297,9 @@ def _remove_redundancies(
     1. Express the commutator as a linear combination of right-nested commutators
     2. Apply [A, A] = 0
     3. Apply [A, B] = -[A, B]
-    4. Apply [A, B, B, A] = [A, B, A, B]
+    4. Apply [A, B, B, A] = [B, A, B, A]
+
+    A derivation of identity 4 can be found in the appendix of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`.
     """
 
     def less_than(x, y):
@@ -370,7 +371,7 @@ def _commute_with_self(terms):
 
 
 def _fourth_order_simplification(terms):
-    """Apply the identity [A, B, B, A] = [A, B, A, B]"""
+    """Apply the identity [A, B, B, A] = [B, A, B, A]"""
     swap = []
     for commutator in terms.keys():
         if commutator[-1] == commutator[-4] and commutator[-2] == commutator[-3]:
