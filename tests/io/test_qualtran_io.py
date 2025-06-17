@@ -654,11 +654,11 @@ class TestToBloq:
         def _build_expected_qualtran_bloq(qt_bloq):
             """Factory function inside for parametrization of test cases"""
             from qualtran.bloqs.cryptography.rsa import ModExp
+            from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+            from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
             from qualtran.bloqs.qft import QFTTextBook
-            from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
-            from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
