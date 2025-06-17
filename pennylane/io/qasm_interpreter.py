@@ -2,7 +2,6 @@
 This submodule contains the interpreter for OpenQASM 3.0.
 """
 
-import copy
 import functools
 from dataclasses import dataclass
 from functools import partial
@@ -14,7 +13,6 @@ from openqasm3.ast import (
     ArrayLiteral,
     BinaryExpression,
     BitstringLiteral,
-    BitType,
     BooleanLiteral,
     BoolType,
     BranchingStatement,
@@ -862,21 +860,6 @@ class QasmInterpreter:
                         pass  # eval of current iteration stops and we continue
 
             self._handle_break(unrolled, context)
-
-    @visit.register(QuantumMeasurementStatement)
-    def visit_quantum_measurement_statement(self, node: QASMNode, context: Context):
-        """
-        Registers a quantum measurement.
-
-        Args:
-            node (QASMNode): the quantum measurement node.
-            context (Context): the current context.
-        """
-        name = _resolve_name(node.target)  # str or Identifier
-        res = measure(self.visit(node.measure.qubit, context))
-        context.vars[name].val = res
-        context.vars[name].line = node.span.start_line
-        return res
 
     @visit.register(QuantumReset)
     def visit_quantum_reset(self, node: QASMNode, context: dict):
