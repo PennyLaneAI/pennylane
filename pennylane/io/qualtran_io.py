@@ -801,7 +801,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                 assert in_quregs[reg.name].shape == soqs.shape
                 qreg_to_qvar |= zip(in_quregs[reg.name].flatten(), soqs.flatten())
 
-            # 2. Add each operation to the composite Bloq.
+            # Add each operation to the composite Bloq.
             for op in ops:
                 bloq = _map_to_bloq(op, map_ops=self.map_ops)
                 if bloq is None:
@@ -812,21 +812,21 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                     continue
 
                 reg_dtypes = [r.dtype for r in bloq.signature]
-                # 3.1 Find input / output registers.
+                # Find input / output registers.
                 all_op_quregs = {
                     k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
                     for i, (k, v) in enumerate(split_qubits(bloq.signature, op.wires).items())
                 }
 
                 in_op_quregs = {reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()}
-                # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
+                # Find input Soquets, by potentially allocating new Bloq registers corresponding to
                 # input `in_quregs` and updating the `qreg_to_qvar` mapping.
                 qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
 
-                # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
+                # Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
                 qvars_out = bb.add_d(bloq, **qvars_in)
 
-                # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
+                # Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
                 for reg in bloq.signature:
                     # all_op_quregs should exist for both LEFT & RIGHT registers.
                     assert reg.name in all_op_quregs
@@ -837,14 +837,14 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                             quregs.flatten(), np.array(qvars_out[reg.name]).flatten()
                         )
 
-            # 4. Combine Soquets to match the right signature.
+            # Combine Soquets to match the right signature.
             final_soqs_dict = _gather_input_soqs(
                 bb,
                 {reg.name: out_quregs[reg.name] for reg in signature.rights()},
                 qreg_to_qvar,
             )
             final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
-            # 5. Free all dangling Soquets which are not part of the final soquets set.
+            # Free all dangling Soquets which are not part of the final soquets set.
             for qvar in qreg_to_qvar.values():
                 if qvar not in final_soqs_set:
                     bb.free(qvar)
@@ -946,7 +946,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
         equivalent is needed, we recommend setting ``map_ops`` to False.
         This will wrap the input PennyLane operator as a Qualtran Bloq, allowing to use Qualtran functions
-        such as ``decompose_bloq`` or ``call_graph``.      
+        such as ``decompose_bloq`` or ``call_graph``.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
