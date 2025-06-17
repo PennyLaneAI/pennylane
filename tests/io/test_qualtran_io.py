@@ -518,7 +518,7 @@ class TestToBloq:
         }
 
     def test_decomposition_undefined_error(self):
-        """Tests that DecomposeNotImplementedError is raised when the input op has no decomposition"""
+        """Tests that DecomposeTypeError is raised when the input op has no decomposition"""
         import qualtran as qt
 
         with pytest.raises(qt.DecomposeTypeError):
