@@ -927,7 +927,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         )
 
         op_as_bloq = qml.to_bloq(op)
-        graph, sigma = wrapped_bloq.call_graph()
+        graph, sigma = op_as_bloq.call_graph()
         show_call_graph(graph)
         show_counts_sigma(sigma)
 
