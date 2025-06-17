@@ -22,10 +22,10 @@ import pennylane as qml
 from pennylane.allocation import (
     Allocate,
     Deallocate,
+    DynamicRegister,
     DynamicWire,
     allocate,
     deallocate,
-    safe_allocate,
 )
 
 
@@ -78,35 +78,37 @@ class TestAllocateOp:
     def test_allocate_from_num_wires(self):
         """Test that the op can be instantiated with from_num_wires"""
 
-        op = Allocate.from_num_wires(3, require_zeros=False)
+        op = Allocate.from_num_wires(3, require_zeros=False, restored=True)
         assert len(op.wires) == 3
-        assert op.hyperparameters == {"require_zeros": False}
+        assert op.hyperparameters == {"require_zeros": False, "restored": True}
         assert not op.require_zeros
+        assert op.restored
 
     def test_normal_initialization(self):
         """Test that the op can also be initialized with already created dynamic wires."""
         wires = [DynamicWire() for _ in range(5)]
-        op = Allocate(wires, require_zeros=False)
+        op = Allocate(wires, require_zeros=False, restored=True)
         assert op.wires == qml.wires.Wires(wires)
-        assert op.hyperparameters == {"require_zeros": False}
+        assert op.hyperparameters == {"require_zeros": False, "restored": True}
         assert not op.require_zeros
+        assert op.restored
 
     def test_default_hyperparameters(self):
         """Test the values of the default hyperparameters."""
 
         op = Allocate.from_num_wires(2)
         assert op.require_zeros
+        assert not op.restored
 
         op2 = Allocate(DynamicWire())
         assert op2.require_zeros
+        assert not op.restored
 
 
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]
-    op = Deallocate(wires, reset_to_original=True)
-    assert op.reset_to_original
-    assert op.hyperparameters == {"reset_to_original": True}
+    op = Deallocate(wires)
     assert op.wires == qml.wires.Wires(wires)
     qml.ops.functions.assert_valid(op)
 
@@ -115,14 +117,15 @@ def test_allocate_function():
     """Test that allocate returns dynamic wires and queues an Allocate op."""
     with qml.queuing.AnnotatedQueue() as q:
         wires = allocate(4)
-    assert isinstance(wires, qml.wires.Wires)
+    assert isinstance(wires, DynamicRegister)
     assert len(wires) == 4
+    assert isinstance(wires[:3], qml.wires.Wires)
     assert all(isinstance(w, DynamicWire) for w in wires)
 
     assert len(q) == 1
     op = q.queue[0]
     assert isinstance(op, Allocate)
-    assert op.wires == wires
+    assert op.wires == qml.wires.Wires(wires)
     assert op.require_zeros
 
 
@@ -130,10 +133,11 @@ def test_allocate_kwargs():
     """Test that the kwargs to allocate get passed to the op."""
 
     with qml.queuing.AnnotatedQueue() as q:
-        allocate(3, require_zeros=False)
+        allocate(3, require_zeros=False, restored=True)
 
     op = q.queue[0]
     assert not op.require_zeros
+    assert op.restored
 
 
 class TestDeallocate:
@@ -166,19 +170,12 @@ class TestDeallocate:
         assert op is q.queue[0]
         assert isinstance(op, Deallocate)
 
-    def test_reset_to_original(self):
-        """Test that reset_to_original is passed to the operator."""
 
-        op = deallocate(DynamicWire(), reset_to_original=True)
-        assert op.reset_to_original
-        assert op.hyperparameters == {"reset_to_original": True}
-
-
-def test_safe_allocate():
-    """Test that safe_allocate allocates and deallocates qubits."""
+def test_allocate():
+    """Test that allocate allocates and deallocates qubits."""
 
     with qml.queuing.AnnotatedQueue() as q:
-        with safe_allocate(3, require_zeros=False, reset_to_original=True) as wires:
+        with allocate(3, require_zeros=False, restored=True) as wires:
             assert len(wires) == 3
             assert all(isinstance(w, DynamicWire) for w in wires)
             assert len(set(wires)) == 3
@@ -186,6 +183,6 @@ def test_safe_allocate():
             qml.I(wires)
 
     assert len(q.queue) == 3
-    qml.assert_equal(q.queue[0], Allocate(wires, require_zeros=False))
+    qml.assert_equal(q.queue[0], Allocate(wires, require_zeros=False, restored=True))
     qml.assert_equal(q.queue[1], qml.I(wires))
-    qml.assert_equal(q.queue[2], Deallocate(wires, reset_to_original=True))
+    qml.assert_equal(q.queue[2], Deallocate(wires))

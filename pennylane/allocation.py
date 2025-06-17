@@ -54,25 +54,31 @@ class Allocate(Operator):
 
     Keyword Args:
         require_zeros (bool): Whether or not the wire must start in a ``0`` state.
+        restored (bool): Whether or not the qubit will be in the same state upon being freed.
 
     ..see-also:: :func:`~.allocate`, :func:`~.safe_allocate`.
 
     """
 
-    def __init__(self, wires, require_zeros=True):
+    def __init__(self, wires, require_zeros=True, restored=False):
         super().__init__(wires=wires)
-        self._hyperparameters = {"require_zeros": require_zeros}
+        self._hyperparameters = {"require_zeros": require_zeros, "restored": restored}
 
     @property
     def require_zeros(self):
         """Whether or not the allocated wires are required to be in the zero state."""
         return self.hyperparameters["require_zeros"]
 
+    @property
+    def restored(self):
+        """Whether or not the allocated wires are required to be in the zero state."""
+        return self.hyperparameters["restored"]
+
     @classmethod
-    def from_num_wires(cls, num_wires: int, require_zeros=True) -> "Allocate":
+    def from_num_wires(cls, num_wires: int, require_zeros=True, restored=False) -> "Allocate":
         """Initialize an ``Allocate`` op from a number of wires instead of already constructed dynamic wires."""
         wires = tuple(DynamicWire() for _ in range(num_wires))
-        return cls(wires=wires, require_zeros=require_zeros)
+        return cls(wires=wires, require_zeros=require_zeros, restored=restored)
 
 
 class Deallocate(Operator):
@@ -80,84 +86,14 @@ class Deallocate(Operator):
 
     Args:
         wires (DynamicWire, Sequence[DynamicWire]): one or more dynamic wires to deallocate.
-        restored (bool): Whether or not the qubit will be in the same state upon being freed.
 
     """
 
-    def __init__(self, wires: DynamicWire | Sequence[DynamicWire], restored=False):
+    def __init__(self, wires: DynamicWire | Sequence[DynamicWire]):
         super().__init__(wires=wires)
-        self._hyperparameters = {"restored": restored}
-
-    @property
-    def restored(self):
-        """Whether or not the dynamic wire will be returned to its original state."""
-        return self.hyperparameters["restored"]
 
 
-def allocate(num_wires: int, require_zeros: bool = True) -> Wires:
-    """Requests and allocates quantum memory.
-
-    .. warning::
-
-        This feature is experimental and is not possible on any device yet.
-
-    Args:
-        num_wires (int): the number of wires to allocate
-
-    Keyword Args:
-        require_zeros (bool): Whether or not the wires must start in the ``0`` state.
-
-    Returns:
-        Wires: Wires with unique labels representing the dynamically allocated quantum memory.
-
-    .. seealso:: :class:`~.safe_allocate`
-
-    :class:`~.safe_allocate` is recommended as the preferred way to allocate wires, as it enforces automatic deallocation.
-    Manual use of ``allocate`` and ``deallocate`` should be used with caution.
-
-    ..code-block:: python
-
-        @qml.qnode(qml.device('default.qubit'))
-        def c():
-            qml.H(0)
-
-            wires = qml.allocation.allocate(1, require_zeros=True)
-            qml.CNOT((0, wires[0]))
-            qml.CNOT((0, wires[0]))
-            qml.allocation.deallocate(wires, restored=True)
-
-            new_wires = qml.allocation.allocate(1)
-            qml.SWAP((0, new_wires[0]))
-            qml.allocation.deallocate(new_wires)
-
-            return qml.probs(wires=0)
-
-        print(qml.draw(c, level="user")())
-
-
-    >>> print(qml.draw(c, level="user")())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
-    <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
-    <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
-    >>> print(qml.draw(c, level="device")())
-    0: ──H─╭●─╭●─╭SWAP─┤  Probs
-    1: ────╰X─╰X─╰SWAP─┤
-
-
-    Here two dynamic wires are allocated in the circuit originally. When we are determining
-    what concrete values to use for dynamic wires, we can see that the first dynamic wire is already
-    deallocated back into the zero state. This allows us to use it for the second allocation used in the ``SWAP``
-    gate as well.
-
-
-    """
-    op = Allocate.from_num_wires(num_wires, require_zeros=require_zeros)
-    return op.wires
-
-
-def deallocate(
-    wires: DynamicWire | Wires | Sequence[DynamicWire], restored: bool = False
-) -> Deallocate:
+def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
     """Frees quantum memory that had previously been allocated with :func:`~.allocate`.
     Upon freeing quantum memory, that memory is available to be allocated thereafter.
 
@@ -215,10 +151,10 @@ def deallocate(
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
-    return Deallocate(wires, restored=restored)
+    return Deallocate(wires)
 
 
-class safe_allocate:
+def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False):
     """Temporarily allocate dynamic wires while making sure to automatically deallocate them at the end.
 
     .. warning::
@@ -230,16 +166,22 @@ class safe_allocate:
 
     Keyword Args:
         require_zeros (bool): whether or not the wires must start in the ``0`` state
-        restored (bool): whether or not the wires return to the same state as they started.
+        restored (bool): whether or not the wires are returned to the same state they started in.
+
+    This function can be used as a context manager with automatic deallocation or with manual
+    deallocation via :func:`~.deallocate`.
 
     .. code-block:: python
 
         @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
-            with qml.allocation.safe_allocate(2, require_zeros=True, restored=False) as wires:
+            with qml.allocation.allocate(2, require_zeros=True, restored=False) as wires:
                 qml.CNOT(wires)
-            with qml.allocation.safe_allocate(2, require_zeros=True, restored=False) as wires:
-                qml.IsingXX(0.5, wires)
+
+            wires = qml.allocation.allocate(2, require_zeros=True, restored=False)
+            qml.IsingXX(0.5, wires)
+            qml.allocation.deallocate(wires)
+
             return qml.probs()
 
 
@@ -257,13 +199,30 @@ class safe_allocate:
     before being re-used again in the second block.
 
     """
+    wires = [DynamicWire() for _ in range(num_wires)]
+    reg = DynamicRegister(wires, require_zeros=require_zeros, restored=restored)
+    Allocate(reg, require_zeros=require_zeros, restored=restored)
+    return reg
 
-    def __init__(self, num_wires: int, require_zeros: bool = True, restored: bool = False):
-        self.wires = allocate(num_wires, require_zeros=require_zeros)
+
+class DynamicRegister(Wires):
+    """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
+
+    def __repr__(self):
+        return f"<DynamicRegister: size={len(self._labels)}, require_zeros={self._require_zeros}, restored={self._restored}>"
+
+    def __init__(
+        self,
+        dynamic_wires: Sequence[DynamicWire],
+        require_zeros: bool = True,
+        restored: bool = False,
+    ):
+        self._require_zeros = require_zeros
         self._restored = restored
+        super().__init__(dynamic_wires)
 
     def __enter__(self):
-        return self.wires
+        return self
 
     def __exit__(self, *_, **__):
-        deallocate(self.wires, restored=self._restored)
+        Deallocate(self)
