@@ -951,8 +951,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         ... ), map_ops=False)
         ToBloq(QuantumPhaseEstimation)
 
-        This will wrap the input PennyLane operator as a Bloq, allowing you to use the functions
-        you would expect a Bloq to have, such as ``decompose_bloq`` or ``call_graph``.
 
         Alternatively, you can provide a custom mapping that maps a PennyLane operator to a
         specific Qualtran Bloq.
