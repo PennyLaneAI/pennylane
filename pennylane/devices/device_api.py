@@ -34,7 +34,7 @@ from .capabilities import (
     observable_stopping_condition_factory,
     validate_mcm_method,
 )
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import (
     decompose,
     validate_device_wires,
@@ -581,20 +581,22 @@ class Device(abc.ABC):
     @abc.abstractmethod
     @overload
     def execute(
-        self, circuits: QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
+        self, circuits: QuantumScript, execution_config: Optional[ExecutionConfig] = None
     ) -> Result: ...
+
     @abc.abstractmethod
     @overload
     def execute(
         self,
         circuits: QuantumScriptBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> ResultBatch: ...
+
     @abc.abstractmethod
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
 
@@ -760,7 +762,7 @@ class Device(abc.ABC):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Calculate the jacobian of either a single or a batch of circuits on the device.
 
@@ -790,7 +792,7 @@ class Device(abc.ABC):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Compute the results and jacobians of circuits at the same time.
 
@@ -817,7 +819,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
@@ -856,7 +858,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Execute a batch of circuits and compute their jacobian vector products.
 
@@ -894,7 +896,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation.
 
@@ -934,7 +936,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.
 

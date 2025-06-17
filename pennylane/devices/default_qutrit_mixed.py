@@ -32,7 +32,7 @@ from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -335,7 +335,7 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
@@ -385,7 +385,7 @@ class DefaultQutritMixed(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
         interface = (
             execution_config.interface

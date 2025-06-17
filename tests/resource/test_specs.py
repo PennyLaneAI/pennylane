@@ -15,6 +15,7 @@
 # pylint: disable=invalid-sequence-index
 from collections import defaultdict
 from contextlib import nullcontext
+from typing import Optional
 
 import pytest
 
@@ -206,7 +207,9 @@ class TestSpecsTransform:
                     return False
                 return True
 
-            def preprocess_transforms(self, execution_config=qml.devices.DefaultExecutionConfig):
+            def preprocess_transforms(
+                self, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition

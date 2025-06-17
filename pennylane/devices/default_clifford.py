@@ -19,7 +19,7 @@ import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -48,7 +48,7 @@ from pennylane.typing import Result, ResultBatch
 
 from .default_qubit import accepted_sample_measurement
 from .device_api import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -455,7 +455,7 @@ class DefaultClifford(Device):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -505,7 +505,7 @@ class DefaultClifford(Device):
     def execute(
         self,
         circuits: Union[QuantumScript, QuantumScriptBatch],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:

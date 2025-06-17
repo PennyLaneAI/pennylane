@@ -20,6 +20,7 @@ import types
 import warnings
 from collections.abc import Sequence
 from copy import copy
+from typing import Optional
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -111,7 +112,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
 
         def preprocess(
             self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+            execution_config: Optional[qml.devices.ExecutionConfig] = None,
         ):
             """This function updates the original device transform program to be applied."""
             program, config = self.original_device.preprocess(execution_config)
@@ -145,7 +146,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
 
         def preprocess_transforms(
             self,
-            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+            execution_config: Optional[qml.devices.ExecutionConfig] = None,
         ):
             """This function updates the original device transform program to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)

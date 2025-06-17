@@ -18,6 +18,7 @@ import copy
 import warnings
 from dataclasses import replace
 from functools import partial
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -1785,14 +1786,14 @@ class TestNewDeviceIntegration:
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
             def setup_execution_config(
-                self, config=qml.devices.DefaultExecutionConfig, circuit=None
+                self, config: Optional[qml.devices.ExecutionConfig] = None, circuit=None
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)
                 return config
 
             def compute_derivatives(
-                self, circuits, execution_config=qml.devices.DefaultExecutionConfig
+                self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
             ):
                 if self.tracker.active:
                     self.tracker.update(derivative_config=execution_config)

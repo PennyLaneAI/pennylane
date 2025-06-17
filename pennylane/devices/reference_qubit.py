@@ -16,12 +16,14 @@ Contains the ReferenceQubit device, a minimal device that can be used for testin
 and plugin development purposes.
 """
 
+from typing import Optional
+
 import numpy as np
 
 import pennylane as qml
 
 from .device_api import Device
-from .execution_config import DefaultExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import decompose, validate_device_wires, validate_measurements
 
@@ -131,7 +133,7 @@ class ReferenceQubit(Device):
         # numpy practices to use a local random number generator
         self._rng = np.random.default_rng(seed)
 
-    def preprocess(self, execution_config=DefaultExecutionConfig):
+    def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
 
         # Here we convert an arbitrary tape into one natively supported by the device
         program = qml.transforms.core.TransformProgram()
@@ -152,7 +154,7 @@ class ReferenceQubit(Device):
         # no need to preprocess the config as the device does not support derivatives
         return program, execution_config
 
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
         for tape in circuits:
             assert all(supports_operation(op) for op in tape.operations)
         return tuple(simulate(tape, seed=self._rng) for tape in circuits)

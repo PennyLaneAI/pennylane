@@ -111,7 +111,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
@@ -156,7 +156,7 @@ Qutrit Mixed-State Simulation Tools
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
-from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .execution_config import ExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit

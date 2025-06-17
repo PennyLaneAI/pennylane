@@ -37,7 +37,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from . import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -677,7 +677,7 @@ class DefaultQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -745,7 +745,7 @@ class DefaultQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -766,7 +766,7 @@ class DefaultQubit(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -810,7 +810,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -830,7 +830,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -878,7 +878,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
         adjoint differentiation method to compute the VJP.
@@ -946,7 +946,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)

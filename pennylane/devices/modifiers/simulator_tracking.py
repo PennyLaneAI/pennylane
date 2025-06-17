@@ -13,8 +13,9 @@
 # limitations under the License.
 """Defines the ``simulator_tracking`` device modifier."""
 from functools import wraps
+from typing import Optional
 
-from pennylane.devices import DefaultExecutionConfig, Device
+from pennylane.devices import Device, ExecutionConfig
 from pennylane.tape import QuantumScript
 
 from ..qubit.sampling import get_num_shots_and_executions
@@ -24,7 +25,7 @@ def _track_execute(untracked_execute):
     """Adds default tracking to an execute method."""
 
     @wraps(untracked_execute)
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
         results = untracked_execute(self, circuits, execution_config)
         if isinstance(circuits, QuantumScript):
             batch = (circuits,)
@@ -64,7 +65,7 @@ def _track_compute_derivatives(untracked_compute_derivatives):
     """Adds default tracking to a ``compute_derivatives`` method."""
 
     @wraps(untracked_compute_derivatives)
-    def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def compute_derivatives(self, circuits, execution_config: Optional[ExecutionConfig] = None):
         if self.tracker.active:
             if isinstance(circuits, QuantumScript):
                 derivatives = 1
@@ -81,7 +82,9 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
     """Adds default tracking to a ``execute_and_compute_derivatives`` method."""
 
     @wraps(untracked_execute_and_compute_derivatives)
-    def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_derivatives(
+        self, circuits, execution_config: Optional[ExecutionConfig] = None
+    ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -101,7 +104,7 @@ def _track_compute_jvp(untracked_compute_jvp):
     """Adds default tracking to a ``compute_jvp`` method."""
 
     @wraps(untracked_compute_jvp)
-    def compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def compute_jvp(self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(jvp_batches=1, jvps=len(batch))
@@ -115,7 +118,9 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
     """Adds default tracking to a ``execute_and_compute_jvp`` method."""
 
     @wraps(untracked_execute_and_compute_jvp)
-    def execute_and_compute_jvp(self, circuits, tangents, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_jvp(
+        self, circuits, tangents, execution_config: Optional[ExecutionConfig] = None
+    ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
@@ -132,7 +137,7 @@ def _track_compute_vjp(untracked_compute_vjp):
     """Adds default tracking to a ``compute_vjp`` method."""
 
     @wraps(untracked_compute_vjp)
-    def compute_vjp(self, circuits, cotangents, execution_config=DefaultExecutionConfig):
+    def compute_vjp(self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             self.tracker.update(vjp_batches=1, vjps=len(batch))
@@ -148,7 +153,7 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
 
     @wraps(untracked_execute_and_compute_vjp)
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config=DefaultExecutionConfig
+        self, circuits, cotangents, execution_config: Optional[ExecutionConfig] = None
     ):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
@@ -202,7 +207,7 @@ def simulator_tracking(cls: type) -> type:
         @single_tape_support
         class MyDevice(qml.devices.Device):
 
-            def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
                 return tuple(0.0 for c in circuits)
 
     >>> dev = MyDevice()
