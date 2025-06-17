@@ -695,6 +695,10 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     Args:
         op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran ``Bloq``.
+        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
+            as a `ToBloq`. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. A default mapping is used if not defined.
 
     Raises:
         TypeError: operator must be an instance of :class:`~.Operation`.
@@ -705,24 +709,35 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     This example shows how to use ``qml.ToBloq``:
 
-    .. code-block::
+    >>> from qualtran.drawing import show_call_graph, show_counts_sigma
+    >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
 
-        from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+    >>> control_wires = [2, 3]
+    >>> estimation_wires = [4, 5]
 
-        control_wires = [2, 3]
-        estimation_wires = [4, 5, 6, 7, 8, 9]
+    >>> H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1)
 
-        H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+    >>> op = qml.QuantumPhaseEstimation(
+    ...     qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+    ... )
 
-        op = qml.QuantumPhaseEstimation(
-            qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
-        )
-
-        op_as_bloq = qml.ToBloq(op)
-        cbloq = op_as_bloq.decompose_bloq()
-        draw_musical_score(get_musical_score_data(cbloq))
-        show_bloq(cbloq)
-
+    >>> op_as_bloq = qml.to_bloq(op)
+    >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
+    >>> sigma
+    {Allocate(dtype=QFxp(bitsize=2, num_frac=2, signed=False), dirty=False): 1,
+    Hadamard(): 4,
+    CNOT(): 6,
+    ZPowGate(exponent=\phi, eps=1e-11): 12,
+    Identity(bitsize=2): 12,
+    And(cv1=1, cv2=1, uncompute=True): 22,
+    And(cv1=1, cv2=1, uncompute=False): 22,
+    ZPowGate(exponent=\phi, eps=5e-12): 6,
+    Toffoli(): 18,
+    CZ(): 6,
+    Controlled(subbloq=Ry(angle=0.7137243789447656, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 6,
+    Controlled(subbloq=Ry(angle=-0.7137243789447656, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 6,
+    ZPowGate(exponent=\phi, eps=1e-10): 1,
+    TwoBitSwap(): 1}
     """
 
     _error_message = (
@@ -897,7 +912,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             pip install qualtran
 
     Args:
-        circuit (QNode | Operation): A QNode or an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
+        circuit (QNode | Operation): A QNode or an initialized PennyLane operator to be converted to a Qualtran Bloq.
         map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
             as a `ToBloq`. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
