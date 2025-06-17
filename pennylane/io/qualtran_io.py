@@ -791,7 +791,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             bb, initial_soqs = qt.BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
             # `signature.lefts()` can be thought of as input qubits. For our purposes LEFT and
-            # RIGHT signatures will (almost) always match since there are no allocated & freed
+            # RIGHT signatures will in most cases match since there are no allocated & freed
             # qubits. Here, qreg_to_qvar is a map between a register and a Soquet. This serves
             # as the foundation to wire up the rest of the bloqs.
             qreg_to_qvar = {}
