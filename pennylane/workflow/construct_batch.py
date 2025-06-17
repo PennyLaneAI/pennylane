@@ -153,12 +153,8 @@ def _interpret_level_inner(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
 
-    if level is None:
-        return slice(start, None)  # Include all remaining transforms
-
-    if isinstance(level, int):
-        # Calculate how many transforms beyond user transforms are needed
-        return slice(start, level)
+    if level is None or isinstance(level, int):
+        return slice(start, level)  # Include all remaining transforms
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
     if isinstance(level, slice):
