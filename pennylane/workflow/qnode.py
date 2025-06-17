@@ -847,9 +847,9 @@ class QNode:
         else:
             shots = kwargs.pop("shots", self.device.shots)
 
-        # QNode._shots precedency: if None, we still override it
-        # pylint: disable=protected-access
-        shots = self._shots or shots
+        # QNode._shots precedency: 
+        if self._shots_override_device:
+            shots = self._shots
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -901,7 +901,7 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        if "shots" in kwargs and (self._shots != kwargs["shots"]):
+        if "shots" in kwargs and self._shots_override_device:
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 "The transform will take precedence over 'shots='",
