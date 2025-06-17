@@ -462,7 +462,7 @@ def construct_batch(
         execution_config = qml.devices.ExecutionConfig()
 
         execution_config = qnode.device.setup_execution_config(
-            config=execution_config, circuit=tapes
+            config=execution_config, circuit=tapes[0]
         )
 
         ###### Resolution of the execution config ######
