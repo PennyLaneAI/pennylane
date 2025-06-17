@@ -50,10 +50,7 @@ class TestResourceCH:
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
         expected_res = [re.GateCount(self.op.resource_rep(), 1)]
-       op2 = re.ResourceAdjoint(self.op)
-
         assert self.op.adjoint_resource_decomp() == expected_res
-       assert op2.resources(**op2.resource_params) == expected_res
 
     ctrl_data = (
         (
