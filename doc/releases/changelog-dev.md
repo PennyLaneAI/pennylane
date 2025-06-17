@@ -267,13 +267,14 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
-<<<<<<< qpe-decomp
   * :class:`~.QuantumPhaseEstimation`
     [(#7637)](https://github.com/PennyLaneAI/pennylane/pull/7637)
-=======
+
   * :class:`~.BasisRotation`
     [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
->>>>>>> master
+
+  * :class:`~.PhaseAdder`
+    [(#7070)](https://github.com/PennyLaneAI/pennylane/pull/7070)
 
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
