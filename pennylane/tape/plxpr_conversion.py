@@ -97,9 +97,10 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy, n_consts):
+def _(self, *invals, jaxpr, lazy, **kwargs):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
+    n_consts = kwargs.get("n_consts", 0)
     consts = invals[:n_consts]
     args = invals[n_consts:]
     child = CollectOpsandMeas()
@@ -113,10 +114,11 @@ def _(self, *invals, jaxpr, lazy, n_consts):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, n_consts, **params):
+def _(self, *invals, n_control, jaxpr, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
+    n_consts = params.get("n_consts", 0)
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
     control = invals[-n_control:]
