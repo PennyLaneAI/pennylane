@@ -842,10 +842,14 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
-        if not self._qfunc_uses_shots_arg:
-            kwargs.pop("shots", self.device.shots)
+        if self._qfunc_uses_shots_arg:
+            shots = self.device.shots
+        else:
+            shots = kwargs.pop("shots", self.device.shots)
 
-        shots = self._shots
+        # QNode._shots precedency: if None, we still override it
+        # pylint: disable=protected-access
+        shots = self._shots or shots
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
