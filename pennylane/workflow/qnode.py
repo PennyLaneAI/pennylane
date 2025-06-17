@@ -847,7 +847,7 @@ class QNode:
         else:
             shots = kwargs.pop("shots", self.device.shots)
 
-        # QNode._shots precedency: 
+        # QNode._shots precedency:
         if self._shots_override_device:
             shots = self._shots
 
