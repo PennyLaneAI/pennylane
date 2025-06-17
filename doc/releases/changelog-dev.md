@@ -222,7 +222,7 @@
   ```
 
   Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
-  PennyLane decomposition by setting map_ops to False.
+  PennyLane decomposition by setting `map_ops` to False.
 
   ```python
   op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
