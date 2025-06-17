@@ -767,7 +767,9 @@ class QasmInterpreter:
         step = self.visit(node.step, context) if node.step else None
         return slice(start, stop, step)
 
-    def _index_into_var(self, var: Iterable | Variable, node: ast.IndexExpression, context: Context):
+    def _index_into_var(
+        self, var: Iterable | Variable, node: ast.IndexExpression, context: Context
+    ):
         """
         Index into a variable using an ast.IndexExpression.
 
@@ -1022,7 +1024,9 @@ class QasmInterpreter:
 
         return gate, args, resolved_wires
 
-    def apply_modifier(self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list):
+    def apply_modifier(
+        self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list
+    ):
         """
         Applies a modifier to the previous gate or modified gate.
 
