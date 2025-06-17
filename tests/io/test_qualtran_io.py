@@ -631,6 +631,25 @@ class TestToBloq:
                 ),
                 "modexp_bloq",
             ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_bloq_clean",
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                    clean=False,
+                ),
+                "qrom_bloq_dirty",
+            ),
         ],
     )
     def test_default_mapping(self, op, qt_bloq):
@@ -642,6 +661,8 @@ class TestToBloq:
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
             from qualtran.bloqs.qft import QFTTextBook
+            from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+            from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
@@ -650,6 +671,8 @@ class TestToBloq:
                 ),
                 "qft_bloq": QFTTextBook(4),
                 "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
+                "qrom_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
+                "qrom_bloq_dirty": SelectSwapQROM.build_from_data([2, 7, 6, 0]),
             }
 
             return qualtran_bloqs[qt_bloq]
