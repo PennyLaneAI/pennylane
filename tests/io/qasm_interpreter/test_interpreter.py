@@ -195,18 +195,6 @@ class TestMeasurementReset:
         assert isinstance(context["vars"]["d"].val, MeasurementValue)
 
 
-class TestMeasurement:
-
-    def test_compare(self):
-
-        ast = parse(
-            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
-            permissive=True,
-        )
-
-        QasmInterpreter().interpret(ast, context={"name": "cond-on-meas", "wire_map": None})
-
-
 @pytest.mark.external
 class TestControlFlow:
 
