@@ -847,7 +847,9 @@ class QNode:
         else:
             shots = kwargs.pop("shots", self.device.shots)
 
-        shots = self._shots if self._shots_override_device else shots
+        # QNode._shots precedency: 
+        if self._shots_override_device:
+            shots = self._shots
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
