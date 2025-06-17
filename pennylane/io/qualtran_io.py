@@ -104,7 +104,7 @@ def _(
         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
     )
 
-
+# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.qft import QFTTextBook
@@ -117,7 +117,7 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
 
     return QFTTextBook(len(op.wires))
 
-
+# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
@@ -135,7 +135,7 @@ def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
 
     return SelectSwapQROM.build_from_data(data)
 
-
+# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.ModExp, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.cryptography.rsa import ModExp
