@@ -60,12 +60,12 @@ merged.
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 
 
-* **Module Dependencies**: We use `tach <https://github.com/gauge-sh/tach>` to declare and enforce
+* **Module Dependencies**: We use `tach <https://github.com/gauge-sh/tach/>` to declare and enforce
   dependencies between modules. This is to ensure that the code follows a layered architecture, where
   higher-level modules do not depend on lower-level ones. With this philosophy, circular dependencies
   are minimized and the code is easier to maintain.
 
-  If you would like to check the module dependencies locally, you can run:
+  If you modified any module dependencies and would like to verify the change locally, you can run:
 
   .. code-block:: bash
 
