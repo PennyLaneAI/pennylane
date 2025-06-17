@@ -20,6 +20,7 @@ import math
 
 import pytest
 
+from pennylane import math as pmath
 from pennylane.ops.op_math.decompositions.grid_problems import Ellipse, GridIterator, GridOp, State
 from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
 
@@ -122,3 +123,24 @@ class TestGridIterator:
         sols = gitr.solve_two_dim_problem(state)
         assert inspect.isgenerator(sols)
         assert ZOmega(*res) in list(sols)
+
+    @pytest.mark.parametrize(
+        "theta, epsilon",
+        [
+            (0.0, 1e-3),
+            (math.pi / 4, 1e-4),
+            (math.pi / 8, 1e-4),
+            (math.pi / 3, 1e-3),
+            (math.pi / 5, 1e-5),
+        ],
+    )
+    def test_grid_iterator(self, theta, epsilon):
+        """Test that the two dimensional grid problem is solved correctly."""
+        grid_sols = GridIterator(theta=theta, epsilon=epsilon)
+        assert repr(grid_sols) == f"GridIterator(theta={theta}, epsilon={epsilon}, max_iter=100)"
+        assert hasattr(grid_sols, "__iter__")
+        u_sol, k_sol = next(iter(grid_sols))
+        assert u_sol is not None
+        u_sol_complex = complex(u_sol) / math.sqrt(2) ** k_sol
+        assert pmath.allclose(u_sol_complex.real, pmath.cos(theta), atol=epsilon)
+        assert pmath.allclose(u_sol_complex.imag, pmath.sin(theta), atol=epsilon)

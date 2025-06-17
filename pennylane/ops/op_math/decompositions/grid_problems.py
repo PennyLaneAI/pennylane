@@ -80,7 +80,7 @@ class Ellipse:
         with :math:`u \in \frac{1}{\sqrt{2}^k} \mathbb{Z}[\omega]` and :math`z = \exp{-i\theta / 2}`.
         """
         const = 1 - epsilon**2 / 2
-        shift = (1 + const) / 3
+        shift = (1 - const) / 3
         scale = (2 ** (k // 2)) * (_SQRT2 ** (k % 2))
         semi_major = 2 * scale * shift
         semi_minor = 2 * scale * math.sqrt((const + 0.5 * epsilon**2) * epsilon**2 / 3)
@@ -237,13 +237,13 @@ class State:
     def apply_shift_op(self, k: int) -> tuple[State, int]:
         """Apply a shift operator to the state."""
         # Uses Definition A.6 of arXiv:1403.2975
-        k = int(math.floor((1 - self.bias()) / 2))
+        k = int(math.floor((1 - self.bias) / 2))
         pk_pow, nk_pow = _LAMBDA**k, _LAMBDA**-k
         e1, e2 = copy(self.e1), copy(self.e2)
         e1.a, e1.d, e1.z = e1.a * pk_pow, e1.d * nk_pow, e1.z - k
         e2.a, e2.d, e2.z = e2.a * nk_pow, e2.d * pk_pow, e2.z + k
         e2.b *= (-1) ** k
-        # TODO: Update the e values
+        e1.e, e2.e = math.sqrt(e1.a * e1.d), math.sqrt(e2.a * e2.d)
         return State(e1, e2), k
 
     # pylint: disable=too-many-branches
@@ -258,19 +258,17 @@ class State:
         if any(not e.positive_semi_definite for e in (self.e1, self.e2)):
             raise ValueError("Ellipse is not positive semi-definite")
 
-        k = 0
-        state = copy(self)
+        state, k = copy(self), 0
         grid_op = GridOp.from_string("I")
-        grid_op_z, grid_op_x = GridOp.from_string("Z"), GridOp.from_string("X")
 
         if abs(state.bias) > 1:
             state, k = state.apply_shift_op(k)
 
         if state.e2.b < 0:
-            grid_op = grid_op * grid_op_z
+            grid_op = grid_op * GridOp.from_string("Z")
 
         if (state.e1.z + state.e2.z) < 0:
-            grid_op = grid_op * grid_op_x
+            grid_op = grid_op * GridOp.from_string("X")
 
         new_state = state.apply_grid_op(grid_op)
         e1, e2 = new_state.e1, new_state.e2
@@ -301,7 +299,7 @@ class State:
         if k != 0:
             grid_op = grid_op.apply_shift_op(k)
 
-        return grid_op, state.apply_grid_op(grid_op)
+        return grid_op, self.apply_grid_op(grid_op)
 
 
 class GridOp:
@@ -488,7 +486,7 @@ class GridOp:
         grid_op = self
         for _ in range(k):
             grid_op = GridOp(
-                (grid_op.a[0] + sign * grid_op.a[1], 2 * grid_op.a[0] + sign * grid_op.a[1]),
+                (grid_op.a[1] + sign * grid_op.a[0], 2 * grid_op.a[0] + sign * grid_op.a[1]),
                 grid_op.b,
                 grid_op.c,
                 (grid_op.d[1] - sign * grid_op.d[0], 2 * grid_op.d[0] - sign * grid_op.d[1]),
@@ -513,13 +511,17 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
 class GridIterator:
     """Solve the grid problem for one and two dimensions."""
 
-    def __init__(self, epsilon: float = 1e-3, theta: float = 0.0, max_iter: int = 100):
-        self.epsilon = epsilon
+    def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_iter: int = 100):
         self.theta = theta
+        self.epsilon = epsilon
         self.zval = math.cos(theta), math.sin(theta)
         self.kmin = int(3 * math.log2(1 / epsilon) // 2)
         self.max_iter = max_iter
         self.target = 1 - self.epsilon**2 / 2
+
+    def __repr__(self) -> str:
+        """Return a string representation of the grid iterator."""
+        return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_iter={self.max_iter})"
 
     def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
         """Iterate over the grid problem."""
@@ -539,9 +541,12 @@ class GridIterator:
 
             for solution in potential_solutions:
                 scaled_sol, kf = (grid_op * solution).normalize()
-                k_, complx_sol = k - kf, complex(scaled_sol)
+
+                complx_sol = complex(scaled_sol)
                 sol_real, sol_imag = complx_sol.real, complx_sol.imag
                 norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
+
+                k_ = k - kf
                 dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
                     2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
                 )
@@ -626,7 +631,7 @@ class GridIterator:
             for beta in beta_solutions1:
                 Ax0_tmp, Ax1_tmp = e1.x_points(beta)
                 Bx0_tmp, Bx1_tmp = e2.x_points(beta.adj2())
-                if Ax1_tmp - Ax0_tmp >= 0 and Bx1_tmp - Bx0_tmp >= 0:
+                if Ax1_tmp - Ax0_tmp > 0 and Bx1_tmp - Bx0_tmp > 0:
                     new_alpha_solutions = self.solve_one_dim_problem(
                         Ax0_tmp, Ax1_tmp, Bx0_tmp, Bx1_tmp
                     )
@@ -637,7 +642,7 @@ class GridIterator:
             for alpha in alpha_solutions1:
                 Ay0_tmp, Ay1_tmp = e1.y_points(alpha)
                 By0_tmp, By1_tmp = e2.y_points(alpha.adj2())
-                if Ay1_tmp - Ay0_tmp >= 0 and By1_tmp - By0_tmp >= 0:
+                if Ay1_tmp - Ay0_tmp > 0 and By1_tmp - By0_tmp > 0:
                     new_beta_solutions = self.solve_one_dim_problem(
                         Ay0_tmp, Ay1_tmp, By0_tmp, By1_tmp
                     )
