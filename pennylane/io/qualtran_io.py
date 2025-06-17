@@ -982,4 +982,4 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
         return _map_to_bloq(circuit, map_ops=True, **kwargs)
 
-    return ToBloq(circuit, **kwargs)
+    return _map_to_bloq(circuit, map_ops=False, **kwargs)
