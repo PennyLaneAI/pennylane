@@ -65,10 +65,10 @@ class SemiAdder(Operation):
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
     Args:
-        x_wires (Sequence[int]): The wires that store the integer :math:`x`. Must contain at
-            least :math:`\lceil \log_2(x)\rceil` wires.
-        y_wires (Sequence[int]): The wires that store the integer :math:`y`. Must contain at
-            least :math:`\lceil \log_2(y)\rceil` wires. These wires are also used
+        x_wires (Sequence[int]): The wires that store the integer :math:`x`. The number of wires must be sufficient to
+            represent :math:`x` in binary.
+        y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
+            represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
         work_wires (Sequence[int]): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
             wires should be provided.
@@ -204,9 +204,13 @@ class SemiAdder(Operation):
         The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
         Args:
-            x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. Exactly ``len(y_wires) - 1`` work
+
+            x_wires (Sequence[int]): The wires that store the integer :math:`x`. The number of wires must be sufficient to
+                represent :math:`x` in binary.
+            y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
+                represent :math:`y` in binary. These wires are also used
+                to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
+            work_wires (Sequence[int]): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
                 wires should be provided.
 
         Returns:
