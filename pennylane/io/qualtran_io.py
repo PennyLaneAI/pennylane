@@ -711,11 +711,9 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
-
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
     ... )
-
     >>> op_as_bloq = qml.ToBloq(op)
     >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
     >>> sigma
@@ -917,11 +915,9 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
-
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
     ... )
-
     >>> op_as_bloq = qml.to_bloq(op)
     >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
     >>> sigma
