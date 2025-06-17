@@ -118,13 +118,7 @@ class ControlledQubitUnitary(ControlledOp):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_target_wires",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
+    resource_keys = {"num_target_wires", "num_control_wires", "num_zero_control_values"}
 
     grad_method = None
     """Gradient computation method."""
@@ -213,8 +207,6 @@ class ControlledQubitUnitary(ControlledOp):
             "num_target_wires": len(self.base.wires),
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
         }
 
     def _controlled(self, wire):
@@ -1389,12 +1381,7 @@ class MultiControlledX(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
-    }
+    resource_keys = {"num_control_wires", "num_zero_control_values"}
 
     name = "MultiControlledX"
 
@@ -1489,8 +1476,6 @@ class MultiControlledX(ControlledOp):
         return {
             "num_control_wires": len(self.control_wires),
             "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
         }
 
     def adjoint(self):

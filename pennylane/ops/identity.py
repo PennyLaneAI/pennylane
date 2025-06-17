@@ -488,9 +488,8 @@ add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
 add_decomps("Pow(GlobalPhase)", pow_rotation)
 
 
-def _controlled_g_phase_resource(
-    *_, num_control_wires, num_zero_control_values, num_work_wires, **__
-):
+def _controlled_g_phase_resource(num_control_wires, num_zero_control_values, **__):
+
     if num_control_wires == 1 and num_zero_control_values == 1:
         return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
 
@@ -507,13 +506,12 @@ def _controlled_g_phase_resource(
             base_params={},
             num_control_wires=num_control_wires - 1,
             num_zero_control_values=0,
-            num_work_wires=num_work_wires,
         ): 1,
     }
 
 
 @register_resources(_controlled_g_phase_resource)
-def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, work_wires, **__):
+def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, **__):
     """The decomposition rule for a controlled global phase."""
 
     if len(control_wires) == 1 and control_values[0]:
@@ -531,7 +529,6 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
     qml.ctrl(
         qml.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
         control=wires[: len(control_wires) - 1],
-        work_wires=work_wires,
     )
     for w in zero_control_wires:
         qml.PauliX(w)

@@ -19,6 +19,7 @@ from typing import Optional
 import numpy as np
 
 from pennylane import control_flow, math, ops, queuing
+from pennylane.allocation import borrow_ctx
 from pennylane.decomposition import (
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -324,7 +325,8 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
 
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U, return_global_phase=True)
     _single_control_zyz(phi, theta, omega, wires=wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
+    with borrow_ctx(wires[:-1]):
+        ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
 def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
@@ -887,13 +889,8 @@ def _CRY(phi, wires):
     ops.CRY(phi, wires=wires)
 
 
-def _ctrl_global_phase(phase, control_wires, work_wires=None, work_wire_type="dirty"):
-    ops.ctrl(
-        ops.GlobalPhase(-phase),
-        control=control_wires,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
+def _ctrl_global_phase(phase, control_wires):
+    ops.ctrl(ops.GlobalPhase(-phase), control=control_wires)
 
 
 def _controlled_x(target_wire, control, work_wires, work_wire_type):
