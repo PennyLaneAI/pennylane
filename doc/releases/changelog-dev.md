@@ -93,6 +93,7 @@
 * A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
   is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
+  [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
 
   ```python
   angles = np.array([1.0, 2.0, 3.0, 4.0])
@@ -187,9 +188,54 @@
   The following example converts a PennyLane Operator into a Qualtran Bloq:
 
   ```python
+  import pennylane as qml
+  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+  control_wires = [2, 3]
+  estimation_wires = [4, 5, 6, 7, 8, 9]
   
-  >>> qml.to_bloq(qml.CNOT([0, 1]))
-  CNOT()
+  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+  
+  op = qml.QuantumPhaseEstimation(
+      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+  )
+  
+  cbloq = qml.to_bloq(op).decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # Let's define a custom mapping instead
+
+  from qualtran.bloqs.phase_estimation import LPResourceState
+  from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+  custom_map = {
+    op: TextbookQPE(
+        unitary=qml.to_bloq(qml.Qubitization(H, control_wires)), 
+        ctrl_state_prep=LPResourceState(len(estimation_wires))
+    )
+  }
+
+  cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
+  PennyLane decomposition by setting map_ops to False.
+
+  ```python
+  op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
+  cbloq = op_wrapped_as_bloq.decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # We can also leverage Qualtran to get resource counts and call graphs, among other things
+  from qualtran.drawing import show_call_graph, show_counts_sigma  
+
+  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(graph)
+  show_counts_sigma(sigma)
   ```
 
 
@@ -259,6 +305,9 @@
 
   * :class:`~.ControlledQubitUnitary`
     [(#7371)](https://github.com/PennyLaneAI/pennylane/pull/7371)
+
+  * :class:`~.DiagonalQubitUnitary`
+    [(#7625)](https://github.com/PennyLaneAI/pennylane/pull/7625)
 
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
@@ -538,6 +587,11 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
+* The imports of dependencies introduced by ``labs`` functionalities have been modified such that
+  these dependencies only have to be installed for the functions that use them, not to use
+  ``labs`` functionalities in general. This decouples the various submodules, and even functions
+  within the same submodule, from each other.
+  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
@@ -722,6 +776,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
   [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
+
+* The decomposition test in `assert_valid` no longer checks the matrix of the decomposition if the operator
+  does not define a matrix representation.
+  [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
+
 <h3>Documentation 📝</h3>
 
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
@@ -746,6 +805,16 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
+  in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
+  up to a global phase _and_ there is no Pauli representation of the product operator.
+  [(#7671)](https://github.com/PennyLaneAI/pennylane/pull/7671)
+
+* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
+  interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
+  Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
+  [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
