@@ -442,7 +442,7 @@ class TestToBloq:
         assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
         assert qml.to_bloq(qfunc).__repr__() == "ToBloq(Qfunc)"
         assert qml.to_bloq(qfunc).__str__() == "PLQfunc"
-        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "ToBloq(Hadamard)"
+        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "Hadamard()"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
         assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
@@ -490,7 +490,7 @@ class TestToBloq:
             qml.FromBloq(_map_to_bloq(expected_decomp_ops[5]), wires=[2, 0]),
             qml.FromBloq(_map_to_bloq(expected_decomp_ops[6]), wires=[3, 0]),
             qml.FromBloq(_map_to_bloq(expected_decomp_ops[7]), wires=[4, 0]),
-            qml.FromBloq(_map_to_bloq(expected_decomp_ops[8]), wires=range(1, 5)),
+            qml.FromBloq(_map_to_bloq(expected_decomp_ops[8], map_ops=False), wires=range(1, 5)),
         ]
 
     def test_circuit_to_bloq_kwargs(self):
