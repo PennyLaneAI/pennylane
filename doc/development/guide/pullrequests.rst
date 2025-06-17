@@ -62,8 +62,8 @@ merged.
 
 * **Module Dependencies**: We use `tach <https://github.com/gauge-sh/tach/>` to declare and enforce
   dependencies between modules. This is to ensure that the code follows a layered architecture, where
-  higher-level modules do not depend on lower-level ones. With this philosophy, circular dependencies
-  are minimized and the code is easier to maintain.
+  higher level modules can depend on lower level modules but not the other way around. 
+  With this philosophy, circular dependencies are minimized and the code is easier to maintain.
 
   If you modified any module dependencies and would like to verify the change locally, you can run:
 
