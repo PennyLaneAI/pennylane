@@ -101,7 +101,7 @@ class Context:
         Initializes the loops scope on the current context.
 
         Args:
-            node (ast.ForInLoop | ast.WhileLoop): the loop node.
+            node (ForInLoop | WhileLoop): the loop node.
         """
         if "loops" not in self.scopes:
             self.scopes["loops"] = dict()
@@ -134,7 +134,7 @@ class Context:
         Initializes the branches scope on the current context.
 
         Args:
-            node (ast.BranchingStatement): the branch node.
+            node (BranchingStatement): the branch node.
         """
         if "branches" not in self.scopes:
             self.scopes["branches"] = dict()
@@ -146,7 +146,7 @@ class Context:
         Initializes a sub context with all the params, constants, subroutines and qubits it has access to.
 
         Args:
-            node (ast.SubroutineDefinition): the subroutine definition.
+            node (SubroutineDefinition): the subroutine definition.
         """
 
         # outer scope variables are available to inner scopes... but not vice versa!
@@ -319,7 +319,7 @@ def _get_bit_type_val(var):
 
 def _resolve_name(node: QASMNode):
     """
-    Fully resolves the name of a node which may be provided as an ast.Identifier or string,
+    Fully resolves the name of a node which may be provided as an Identifier or string,
     and therefore may require referencing different attributes.
 
     Args:
@@ -704,7 +704,7 @@ class QasmInterpreter:
         is available in the current scope.
 
         Args:
-            node (ast.FunctionCall): The ast.FunctionCall QASMNode.
+            node (FunctionCall): The FunctionCall QASMNode.
             context (Context): The current context.
 
         Raises:
@@ -756,7 +756,7 @@ class QasmInterpreter:
         Processes a range definition.
 
         Args:
-            node (ast.RangeDefinition): The range to process.
+            node (RangeDefinition): The range to process.
             context (Context): the current context.
 
         Returns:
@@ -771,11 +771,11 @@ class QasmInterpreter:
         self, var: Iterable | Variable, node: ast.IndexExpression, context: Context
     ):
         """
-        Index into a variable using an ast.IndexExpression.
+        Index into a variable using an IndexExpression.
 
         Args:
             var (Variable): The data structure representing the variable to index.
-            node (ast.IndexExpression): The ast.IndexExpression.
+            node (IndexExpression): The IndexExpression.
             context (Context): the current context.
 
         Returns:
@@ -811,7 +811,7 @@ class QasmInterpreter:
         in context.wires. Note: Qubit declarations must be global.
 
         Args:
-            node (QASMNode): The ast.QubitDeclaration QASMNode.
+            node (QASMNode): The QubitDeclaration QASMNode.
             context (Context): The current context.
         """
         context.wires.append(node.qubit.name)
@@ -865,7 +865,7 @@ class QasmInterpreter:
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
         Args:
-            node (QASMNode): The ast.ClassicalDeclaration QASMNode.
+            node (QASMNode): The ClassicalDeclaration QASMNode.
             context (Context): The current context.
             constant (bool): Whether the classical variable is a constant.
         """
@@ -897,7 +897,7 @@ class QasmInterpreter:
         Registers an imaginary literal.
 
         Args:
-            node (ast.ImaginaryLiteral): The imaginary literal QASMNode.
+            node (ImaginaryLiteral): The imaginary literal QASMNode.
             context (Context): the current context.
 
         Returns:
@@ -911,7 +911,7 @@ class QasmInterpreter:
         Evaluates a discrete set literal.
 
         Args:
-            node (ast.DiscreteSet): The set literal QASMNode.
+            node (DiscreteSet): The set literal QASMNode.
             context (Context): The current context.
 
         Returns:
@@ -925,7 +925,7 @@ class QasmInterpreter:
         Evaluates an array literal.
 
         Args:
-            node (ast.ArrayLiteral): The array literal QASMNode.
+            node (ArrayLiteral): The array literal QASMNode.
             context (Context): The current context.
 
         Returns:
@@ -969,7 +969,7 @@ class QasmInterpreter:
         (parameterized or non-parameterized).
 
         Args:
-            node (QASMNode): The ast.QuantumGate QASMNode.
+            node (QASMNode): The QuantumGate QASMNode.
             context (Context): The current context.
         """
         name = node.name.name.upper()
@@ -998,13 +998,13 @@ class QasmInterpreter:
         Helper to setup the quantum gate call, also resolving arguments and wires.
 
         Args:
-            node (ast.QuantumGate): The ast.QuantumGate QASMNode.
+            node (QuantumGate): The QuantumGate QASMNode.
             gates_dict (dict): the gates dictionary.
             context (Context): the current context.
 
         Returns:
-            ast.QuantumGate: The gate to execute.
-            list: The list of arguments to the ast.QuantumGate.
+            QuantumGate: The gate to execute.
+            list: The list of arguments to the QuantumGate.
             list: The wires the gate applies to.
         """
         # setup arguments
@@ -1065,7 +1065,7 @@ class QasmInterpreter:
         """
         Registers an expression statement.
         Args:
-            node (ast.ExpressionStatement): The expression statement.
+            node (ExpressionStatement): The expression statement.
             context (Context): The current context.
         """
         return self.visit(node.expression, context)
@@ -1073,10 +1073,10 @@ class QasmInterpreter:
     @visit.register(ast.Cast)
     def visit_cast(self, node: ast.Cast, context: Context):
         """
-        Registers a ast.Cast expression.
+        Registers a Cast expression.
 
         Args:
-            node (ast.Cast): The ast.Cast expression.
+            node (Cast): The Cast expression.
             context (Context): The current context.
 
         Returns:
@@ -1113,7 +1113,7 @@ class QasmInterpreter:
         Registers a binary expression.
 
         Args:
-            node (ast.BinaryExpression): The binary expression.
+            node (BinaryExpression): The binary expression.
             context (Context): The current context.
 
         Returns:
@@ -1173,7 +1173,7 @@ class QasmInterpreter:
         Registers a unary expression.
 
         Args:
-            node (ast.UnaryExpression): The unary expression.
+            node (UnaryExpression): The unary expression.
             context (Context): The current context.
 
         Returns:
@@ -1200,7 +1200,7 @@ class QasmInterpreter:
         Registers an index expression.
 
         Args:
-            node (ast.IndexExpression): The index expression.
+            node (IndexExpression): The index expression.
             context (Context): The current context.
             aliasing (bool): If ``True``, the expression will be treated as an alias.
 
@@ -1243,9 +1243,9 @@ class QasmInterpreter:
         Registers an identifier.
 
         Args:
-            node (ast.Identifier): The identifier.
+            node (Identifier): The identifier.
             context (Context): The current context.
-            aliasing (bool): If ``True``, the ast.Identifier will be treated as an alias.
+            aliasing (bool): If ``True``, the Identifier will be treated as an alias.
 
         Returns:
             The de-referenced identifier.
