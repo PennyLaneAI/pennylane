@@ -500,7 +500,7 @@ class DefaultClifford(Device):
         # Validate derivatives
         transform_program.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
-            config.gradient_method = None
+            config = replace(config, gradient_method=None)
 
         return transform_program, config
 
