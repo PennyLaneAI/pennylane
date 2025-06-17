@@ -47,7 +47,7 @@ def execute(
     *,
     transform_program: TransformProgram = None,
     grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache] = True,
+    cache: Union[None, bool, dict, Cache, Literal["auto"]] = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
     device_vjp: Union[bool, None] = False,
@@ -75,8 +75,13 @@ def execute(
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
-            a significant reduction in quantum evaluations during gradient computations.
+        cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
+            ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
+            a reduction in quantum evaluations during higher order gradient computations.
+            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
+            execution. If ``False``, no caching is used. You may also pass your own cache
+            to be used; this can be any object that implements the special methods
+            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
         cachesize (int): the size of the cache.
         max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
