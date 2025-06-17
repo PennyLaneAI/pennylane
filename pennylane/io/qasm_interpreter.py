@@ -56,7 +56,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import measure
+from pennylane.measurements import MeasurementValue, measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -564,6 +564,23 @@ class QasmInterpreter:
             pass
         return context
 
+    @visit.register(QuantumMeasurementStatement)
+    def visit_quantum_measurement_statement(
+        self, node: QuantumMeasurementStatement, context: Context
+    ):
+        """
+        Registers a quantum measurement statement.
+
+        Args:
+            node (QuantumMeasurementStatement): the quantum measurement statement to register.
+            context (Context): the current context.
+        """
+        name = _resolve_name(node.target)  # str or Identifier
+        res = measure(self.visit(node.measure.qubit, context))
+        context.vars[name].val = res
+        context.vars[name].line = node.span.start_line
+        return res
+
     @visit.register(BreakStatement)
     def visit_break_statement(self, node: QASMNode, context: Context):
         """
@@ -727,6 +744,15 @@ class QasmInterpreter:
         """
         context.init_loops_scope(node)
 
+        def _check_for_mcm(curr_context: Context):
+            if isinstance(self.visit(node.while_condition, curr_context), MeasurementValue):
+                raise ValueError(
+                    "Mid circuit measurement outcomes can not be used as while conditions. "
+                    "To condition on the outcome of a measurement, please use if / else."
+                )
+
+        _check_for_mcm(context)
+
         @while_loop(partial(self.visit, node.while_condition))  # traces data dep through context
         def loop(context):
             """
@@ -746,6 +772,7 @@ class QasmInterpreter:
             context.vars = inner_context.vars
             context.wires = inner_context.wires
 
+            _check_for_mcm(context)
             return context
 
         self._handle_break(loop, context)
