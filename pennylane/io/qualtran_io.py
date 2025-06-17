@@ -943,8 +943,10 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         ... ))
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
 
-        Note that the chosen Qualtran Bloq may not be an exact equivalent. If you want an exact
-        equivalent, we recommend setting ``map_ops`` to False.
+        Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
+        equivalent is needed, we recommend setting ``map_ops`` to False.
+        This will wrap the input PennyLane operator as a Qualtran Bloq, allowing to use Qualtran functions
+        such as ``decompose_bloq`` or ``call_graph``.      
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
