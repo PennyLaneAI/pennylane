@@ -230,7 +230,7 @@
   draw_musical_score(get_musical_score_data(cbloq))
   show_bloq(cbloq)
 
-  # We can also leverage Qualtran to get resource counts and call graphs, among other things
+  # We can also leverage Qualtran features to get resource counts and call graphs, among other things
   from qualtran.drawing import show_call_graph, show_counts_sigma  
 
   graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
