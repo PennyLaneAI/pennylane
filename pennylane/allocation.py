@@ -104,12 +104,12 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
 
-    .. seealso:: :class:`~.safe_allocate`
+    .. seealso:: :func:`~.allocate`
 
     Using :func:`~.allocate` as a context manager is the recommended syntax, as it will automatically
     deallocate all dynamic wires at the end of the scope.
 
-    ..code-block:: python
+    .. code-block:: python
 
         @qml.qnode(qml.device('default.qubit'))
         def c():
@@ -125,8 +125,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             qml.allocation.deallocate(new_wires)
 
             return qml.probs(wires=0)
-
-        print(qml.draw(c, level="user")())
 
 
     >>> print(qml.draw(c, level="user")())
@@ -150,6 +148,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     return Deallocate(wires)
 
 
+# pylint: disable=too-many-ancestors
 class DynamicRegister(Wires):
     """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
 
