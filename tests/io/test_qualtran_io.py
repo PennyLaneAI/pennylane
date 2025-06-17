@@ -402,7 +402,6 @@ class TestToBloq:
         from qualtran.bloqs.basic_gates import CZPowGate
         from qualtran.bloqs.bookkeeping import Allocate, Free
 
-        # TODO: this would ideally be only 1 allocate and free
         assert (
             qml.to_bloq(qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1])).call_graph()[1][
                 Allocate(QAny(bitsize=1))
@@ -476,9 +475,6 @@ class TestToBloq:
         )
         qpe_bloq = qml.to_bloq(qpe_op, map_ops=False)
 
-        # This test will also fail if FromBloq's decomposition() is bugged
-        # It is hard to test decompose_bloq by itself; but if this test passes we can be
-        # confident that decompose_bloq is working properly.
         decomp_ops = qml.FromBloq(qpe_bloq, wires=range(5)).decomposition()
         expected_decomp_ops = qpe_op.decomposition()
         assert decomp_ops == [
