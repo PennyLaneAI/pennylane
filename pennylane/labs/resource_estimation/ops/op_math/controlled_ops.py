@@ -1085,17 +1085,17 @@ class ResourceMultiControlledX(ResourceOperator):
     @classmethod
     def default_controlled_resource_decomp(
         cls,
-        outer_num_ctrl_wires,
-        outer_num_ctrl_values,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
         num_ctrl_wires,
         num_ctrl_values,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
-            outer_num_ctrl_wires (int): The number of control qubits to further control the base
+            ctrl_num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            outer_num_ctrl_values (int): The subset of those control qubits, which further control
+            ctrl_num_ctrl_values (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
