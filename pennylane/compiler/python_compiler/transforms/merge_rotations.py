@@ -23,7 +23,7 @@ from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import CustomOp
-from .utils import xdsl_transform
+from .api import xdsl_transform
 
 # Can handle all composible rotations except Rot... for now
 composable_rotations = [
@@ -112,7 +112,7 @@ class MergeRotationsPattern(
 class MergeRotationsPass(passes.ModulePass):
     """Pass for merging consecutive composable rotation gates."""
 
-    name = "merge-rotations"
+    name = "xdsl-merge-rotations"
 
     # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
