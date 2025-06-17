@@ -1020,10 +1020,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     """
 
-<<<<<<< pl_qualtran_mapper
-    if map_ops and custom_mapping:
-        return _map_to_bloq()(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
-=======
     if not qualtran:
         raise ImportError(
             "The `to_bloq`function requires Qualtran to be installed. You can install"
@@ -1034,6 +1030,5 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         if custom_mapping:
             return _map_to_bloq(circuit, map_ops=True, custom_mapping=custom_mapping, **kwargs)
         return _map_to_bloq(circuit, map_ops=True, **kwargs)
->>>>>>> pl_qualtran_prototype
 
     return _map_to_bloq()(circuit, map_ops=map_ops, **kwargs)
