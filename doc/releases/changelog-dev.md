@@ -178,6 +178,7 @@
 
 * It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
+  [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It 
   requires one input and takes in two optional inputs:
