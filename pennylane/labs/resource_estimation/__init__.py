@@ -43,6 +43,20 @@ Resource Estimation Base Classes:
     ~Resources
     ~ResourceOperator
     ~CompressedResourceOp
+    ~GateCount
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate_resources
+    ~resource_rep
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,6 +67,41 @@ Qubit Management Classes:
     ~QubitManager
     ~AllocWires
     ~FreeWires
+
+Operators:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
+    ~ResourceSWAP
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
 
 """
 
@@ -72,7 +121,24 @@ from .resource_operator import (
 )
 from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
 from .resources_base import Resources
-
+from .resource_operator import (
+    CompressedResourceOp,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+    GateCount,
+)
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
 from .ops import (
     ResourceHadamard,
     ResourceS,
@@ -87,6 +153,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceRot,
     ResourceIdentity,
+    ResourceSWAP,
     ResourceCH,
     ResourceCY,
     ResourceCZ,
@@ -106,5 +173,4 @@ from .ops import (
     ResourceProd,
     ResourceChangeBasisOp,
     ResourcePow,
-    ResourceSWAP,
 )

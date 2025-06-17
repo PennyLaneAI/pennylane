@@ -29,7 +29,7 @@ from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
 
 from .quantum_dialect import QuantumDialect as Quantum
-from .transforms import ApplyTransformSequence
+from .transforms.api import ApplyTransformSequence
 
 
 # pylint: disable=too-few-public-methods

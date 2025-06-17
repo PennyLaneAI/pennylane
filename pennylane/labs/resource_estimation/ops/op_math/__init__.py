@@ -14,5 +14,27 @@
 r"""This module contains classes which integrate arithemtic operators with
 resource estimation."""
 
-from .symbolic import *
-from .controlled_ops import *
+from .controlled_ops import (
+    ResourceCCZ,
+    ResourceCH,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceMultiControlledX,
+    ResourceTempAND,
+    ResourceToffoli,
+)
+
+from .symbolic import (
+    ResourceAdjoint,
+    ResourceChangeBasisOp,
+    ResourceControlled,
+    ResourcePow,
+    ResourceProd,
+)

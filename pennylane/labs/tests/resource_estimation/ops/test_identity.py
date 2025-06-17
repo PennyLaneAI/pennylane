@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ Tests for identity resource operators
 """
 import pytest
 
-import pennylane.labs.resource_estimation as re
+import pennylane.labs.resource_estimation as plre
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
@@ -26,22 +26,22 @@ class TestIdentity:
 
     def test_resources(self):
         """ResourceIdentity should have empty resources"""
-        op = re.ResourceIdentity()
+        op = plre.ResourceIdentity()
         assert op.resource_decomp() == []
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = re.CompressedResourceOp(re.ResourceIdentity, {})
-        assert re.ResourceIdentity.resource_rep() == expected
+        expected = plre.CompressedResourceOp(plre.ResourceIdentity, {})
+        assert plre.ResourceIdentity.resource_rep() == expected
 
     def test_resource_params(self):
         """Test the resource params are correct"""
-        op = re.ResourceIdentity(0)
+        op = plre.ResourceIdentity(0)
         assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
-        op = re.ResourceIdentity()
+        op = plre.ResourceIdentity()
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -51,29 +51,37 @@ class TestIdentity:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        op = re.ResourceIdentity(0)
-        assert op.adjoint_resource_decomp() == [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]
+        op = plre.ResourceIdentity(0)
+        assert op.adjoint_resource_decomp() == [
+            plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)
+        ]
 
     identity_ctrl_data = (
-        ([1], [1], [], {re.ResourceIdentity.resource_rep(): 1}),
-        ([1, 2], [1, 1], ["w1"], {re.ResourceIdentity.resource_rep(): 1}),
-        ([1, 2, 3], [1, 0, 0], ["w1", "w2"], {re.ResourceIdentity.resource_rep(): 1}),
+        ([1], [1], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        ([1, 2], [1, 1], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        ([1, 2, 3], [1, 0, 0], [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
     )
 
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", identity_ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourceIdentity(0)
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+
     identity_pow_data = (
-        (1, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
-        (2, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
-        (5, [re.GateCount(re.ResourceIdentity.resource_rep(), 1)]),
+        (1, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        (2, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
+        (5, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
     )
 
     @pytest.mark.parametrize("z, expected_res", identity_pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        op = re.ResourceIdentity(0)
+        op = plre.ResourceIdentity(0)
         assert op.pow_resource_decomp(z) == expected_res
-
-        # op2 = re.ResourcePow(op, z)
-        # assert op2.resources(**op2.resource_params) == expected_res
 
 
 class TestGlobalPhase:
@@ -81,22 +89,22 @@ class TestGlobalPhase:
 
     def test_resources(self):
         """ResourceGlobalPhase should have empty resources"""
-        op = re.ResourceGlobalPhase(wires=0)
+        op = plre.ResourceGlobalPhase(wires=0)
         assert op.resource_decomp() == []
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = re.CompressedResourceOp(re.ResourceGlobalPhase, {})
-        assert re.ResourceGlobalPhase.resource_rep() == expected
+        expected = plre.CompressedResourceOp(plre.ResourceGlobalPhase, {})
+        assert plre.ResourceGlobalPhase.resource_rep() == expected
 
     def test_resource_params(self):
         """Test the resource params are correct"""
-        op = re.ResourceGlobalPhase()
+        op = plre.ResourceGlobalPhase()
         assert op.resource_params == {}
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
-        op = re.ResourceGlobalPhase(wires=0)
+        op = plre.ResourceGlobalPhase(wires=0)
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -106,19 +114,19 @@ class TestGlobalPhase:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        op = re.ResourceGlobalPhase(wires=0)
+        op = plre.ResourceGlobalPhase(wires=0)
         assert op.adjoint_resource_decomp() == [
-            re.GateCount(re.ResourceGlobalPhase.resource_rep(), 1)
+            plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)
         ]
 
     globalphase_pow_data = (
-        (1, [re.GateCount(re.ResourceGlobalPhase.resource_rep(), 1)]),
-        (2, [re.GateCount(re.ResourceGlobalPhase.resource_rep(), 1)]),
-        (5, [re.GateCount(re.ResourceGlobalPhase.resource_rep(), 1)]),
+        (1, [plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)]),
+        (2, [plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)]),
+        (5, [plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)]),
     )
 
     @pytest.mark.parametrize("z, expected_res", globalphase_pow_data)
     def test_resource_pow(self, z, expected_res):
         """Test that the pow resources are as expected"""
-        op = re.ResourceGlobalPhase()
+        op = plre.ResourceGlobalPhase()
         assert op.pow_resource_decomp(z) == expected_res

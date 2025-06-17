@@ -13,5 +13,19 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .non_parametric_ops import *
-from .parametric_ops_single_qubit import *
+from .non_parametric_ops import (
+    ResourceHadamard,
+    ResourceS,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+    ResourceSWAP,
+)
+from .parametric_ops_single_qubit import (
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+)
