@@ -60,8 +60,6 @@ DefaultGateSet = {
     "CNOT",
     "S",
     "T",
-    "Adjoint(T)",
-    "Adjoint(S)",
     "Toffoli",
 }
 
