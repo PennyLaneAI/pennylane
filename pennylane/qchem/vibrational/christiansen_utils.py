@@ -1052,15 +1052,15 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) + V_1^{[i]}(Q_i) \right)
-        \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{(i)} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{(i)}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} = \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{(i,j)}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents  the kinetic energy operator and :math:`V` represents the potential energy operator
@@ -1138,7 +1138,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     r"""Computes Christiansen vibrational dipole integrals.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
-    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
+    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_. The dipole
     operator is defined as
 
     .. math::
@@ -1154,14 +1154,14 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( \D_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{(i)} = \int \phi_i^{k_i}(Q_i) \left( D_1^{(i)}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-        \D_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} = \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        D_2^{(i,j)}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate and :math:`D`
     represents the dipole function obtained from the expansion

@@ -41,15 +41,15 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
-        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{(i)} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{(i)}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} = \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{(i,j)}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents the kinetic energy operator and :math:`V` represents the potential energy operator.
@@ -211,15 +211,15 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
-        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{(i)} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
+        V_1^{(i)}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} = \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        V_2^{(i,j)}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents the kinetic energy operator and :math:`V` represents the potential energy operator.
@@ -312,18 +312,22 @@ def christiansen_dipole(pes, n_states=16):
 
     .. math::
 
-        C_{k_i, l_i}^{i} = \int \phi_i^{k_i}(Q_i) \left( T(Q_i) +
-        V_1^{[i]}(Q_i) \right) \phi_i^{h_i}(Q_i),
+        C_{k_i, l_i}^{(i)} = \int \phi_i^{k_i}(Q_i) \left( D_1^{(i)}(Q_i) \right) \phi_i^{h_i}(Q_i),
 
     and
 
     .. math::
 
-        C_{k_i, k_j, l_i, l_j}^{(i,j)} \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
-        V_2^{[i,j]}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
+        C_{k_i, k_j, l_i, l_j}^{(i,j)} = \int \int \phi_i^{k_i}(Q_i) \phi_j^{k_j}(Q_j)
+        D_2^{(i,j)}(Q_i, Q_j) \phi_i^{l_i}(Q_i) \phi_j^{l_j}(Q_j) \; \text{d} Q_i \text{d} Q_j,
 
-    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
-    represents the kinetic energy operator and :math:`V` represents the potential energy operator.
+    where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate and :math:`D`
+    represents the dipole function obtained from the expansion
+
+    .. math::
+
+        D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
+
     Similarly, the three-mode integrals can be obtained following
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
