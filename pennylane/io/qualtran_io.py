@@ -930,7 +930,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     Controlled(subbloq=Rx(angle=0.2, eps=1e-11), ctrl_spec=CtrlSpec(qdtypes=(QBit(),), cvs=(array(1),))): 3,
     And(cv1=1, cv2=1, uncompute=True): 1,
     And(cv1=1, cv2=1, uncompute=False): 1,
-    ZPowGate(exponent=\phi, eps=1e-10): 1,
+    ZPowGate(exponent=\\phi, eps=1e-10): 1,
     TwoBitSwap(): 1}
 
     .. details::
