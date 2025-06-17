@@ -57,6 +57,7 @@ hf_state = qml.qchem.hf_state(electrons=mol.n_electrons, orbitals=len(circ_wires
 
 @qml.qnode(qml.device("default.qubit", wires=circ_wires))
 def create_state():
+    """Create a basis state"""
     qml.BasisState(hf_state, wires=circ_wires)
     return qml.state()
 
@@ -112,7 +113,9 @@ params = [
 
 
 @pytest.mark.parametrize("backend, num_workers, parallel_mode, n_states", params)
-def test_perturbation_theory(backend, num_workers, parallel_mode, n_states):
+def test_perturbation_error(backend, num_workers, parallel_mode, n_states):
+    """Test that perturbation_error returns the correct result. This is a precomputed example
+    of perturbation theory on a CDF Hamiltonian."""
     pf = ProductFormula(frag_labels, coeffs=frag_coeffs)(h)
     states = [state] * n_states
     actual = perturbation_error(
