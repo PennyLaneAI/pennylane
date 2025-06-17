@@ -881,8 +881,6 @@ class DefaultQubit(Device):
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
         """
-        if execution_config is None:
-            execution_config = ExecutionConfig()
         return self.supports_derivatives(execution_config, circuit)
 
     @debug_logger
