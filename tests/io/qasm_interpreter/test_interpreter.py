@@ -33,7 +33,7 @@ from pennylane import (
     S,
     T,
     Toffoli,
-    queuing,
+    queuing, qnode, measure, device, probs,
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
@@ -58,9 +58,37 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestMeasurementReset:
 
+    def test_combine_processing_functions(self):
+        # parse the QASM
+        ast = parse(open("add_multiple_measurements.qasm", mode="r").read(), permissive=True)
+
+        results = {
+            "res_1": None,
+            "res_2": None,
+            "res_3": None,
+        }
+
+        @qnode(device("default.qubit", wires=[0, 1, 2]))
+        def add_meas(results):
+            m1 = measure(0)
+            m2 = measure(1)
+            m = m1 + m2
+            results["res_1"] = m1.processing_fn(1)
+            results["res_2"] = m2.processing_fn(2)
+            results["res_3"] = m.processing_fn(1, 2)
+            return probs(0)
+
+        context = QasmInterpreter().interpret(ast, context={"name": "add_meas", "wire_map": None})
+
+        add_meas(results)
+
+        assert results["res_1"] == context.vars["c"].val.processing_fn(1) == 1
+        assert results["res_2"] == context.vars["d"].val.processing_fn(2) == 2
+        assert results["res_3"] == context.vars["res"].val.processing_fn(1, 2) == 3
+
     def test_resets(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("resets.qasm", mode="r").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
@@ -74,7 +102,7 @@ class TestMeasurementReset:
 
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
+            open("post_processing.qasm", mode="r").read(), permissive=True
         )
 
         # setup mocks
@@ -136,7 +164,7 @@ class TestMeasurementReset:
     def test_measurement(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
+            open("measurements.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -154,7 +182,7 @@ class TestControlFlow:
     def test_nested_end(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+            open("nested_end.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -166,7 +194,7 @@ class TestControlFlow:
     def test_loops(self):
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("loops.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -191,7 +219,7 @@ class TestControlFlow:
     def test_switch(self):
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("switch.qasm", mode="r").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -204,7 +232,7 @@ class TestControlFlow:
 
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+            open("if_else.qasm", mode="r").read(), permissive=True
         )
 
         # setup mocks
@@ -251,7 +279,7 @@ class TestSubroutine:
     def test_scoping_const(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            open("scoping_const.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -266,7 +294,7 @@ class TestSubroutine:
     def test_nested_renaming(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/nested_renaming.qasm", mode="r").read(),
+            open("nested_renaming.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -281,7 +309,7 @@ class TestSubroutine:
     def test_repeated_calls(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
+            open("repeated_calls.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -320,7 +348,7 @@ class TestSubroutine:
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            open("standalone_subroutines.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -335,7 +363,7 @@ class TestSubroutine:
     def test_complex_subroutines(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            open("complex_subroutines.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -351,7 +379,7 @@ class TestSubroutine:
     def test_subroutines(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+            open("subroutines.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -368,7 +396,7 @@ class TestExpressions:
     def test_different_unary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
+            open("unary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -384,7 +412,7 @@ class TestExpressions:
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
+            open("binary_expressions.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -422,7 +450,7 @@ class TestExpressions:
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
+            open("assignment.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -620,7 +648,7 @@ class TestVariables:
     def test_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+            open("variables.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -691,7 +719,7 @@ class TestVariables:
     def test_classical_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+            open("classical.qasm", mode="r").read(), permissive=True
         )
 
         # run the program
@@ -709,7 +737,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
@@ -908,7 +936,7 @@ class TestGates:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
