@@ -64,7 +64,10 @@ class TestMeasurementReset:
 
     def test_condition_on_measurement(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
+            permissive=True,
+        )
 
         with pytest.raises(
             ValueError, match="Mid circuit measurement outcomes can not be used as while conditions"
@@ -73,7 +76,10 @@ class TestMeasurementReset:
 
     def test_combine_processing_functions(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(),
+            permissive=True,
+        )
 
         results = {
             "res_1": None,
@@ -114,7 +120,9 @@ class TestMeasurementReset:
         import pennylane
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
+        )
 
         # setup mocks
         eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
@@ -174,7 +182,9 @@ class TestMeasurementReset:
 
     def test_measurement(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -202,7 +212,9 @@ class TestControlFlow:
 
     def test_nested_end(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -250,7 +262,9 @@ class TestControlFlow:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+        )
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
@@ -395,7 +409,9 @@ class TestSubroutine:
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -662,7 +678,9 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -731,7 +749,9 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+        )
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
