@@ -12,12 +12,10 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-from __future__ import annotations
 
 import os
 import re
 import sys
-import inspect
 from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -113,13 +111,6 @@ copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False
-autodoc_type_aliases = {
-    'H': 'pennylane.ops.qubit.non_parametric_ops.H',
-    'I': 'pennylane.ops.identity.I',
-    'X': 'pennylane.ops.qubit.non_parametric_ops.X',
-    'Y': 'pennylane.ops.qubit.non_parametric_ops.Y',
-    'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
-}
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -341,63 +332,3 @@ autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
-
-autodoc_type_aliases = {
-    'H': 'H',
-    'I': 'I',
-    'X': 'X',
-    'Y': 'Y',
-    # 'Z': 'pennylane.ops.qubit.non_parametric_ops.Z',
-    'Z': 'Z'
-}
-
-def setup(app):
-    from pennylane import H, X, Z,Y, FromBloq
-    from typing import TypeAlias
-    # import shutil
-    # need to assign the names here, otherwise autodoc won't document these classes,
-    # and will instead just say 'alias of ...'
-    # pennylane.H.__name__ = 'H'
-    # pennylane.Hadamard.__name__ = 'Hadamard'
-    # pennylane.X.__name__ = 'X'
-    # H.__module__ = __name__
-    # H.__name__ = 'H'
-    # X.__module__ = __name__
-    # X.__name__ = 'X'
-    # pennylane.PauliX = 'PauliX'
-    # Z.__module__ = __name__
-    # Z.__name__ = 'Z'
-    # pennylane.PauliZ.__name__ = 'pennylane.PauliZ'
-    # pennylane.Y.__name__ = 'Y'
-    # pennylane.H.__module__ = __name__
-    # pennylane.FromBloq.__name__ = 'FromBloq'
-    # pennylane.H.__doc__ = pennylane.Hadamard.__doc__
-    # pennylane.Y.__doc__ = "The Pauli Y operator"
-    # pennylane.PauliY.__name__ = 'PauliY'
-    # pennylane.H.__doc__ = pennylane.H.__doc__
-    # pennylane.GPUTreeExplainer.__name__ = 'GPUTreeExplainer'
-    # H: TypeAlias = "pennylane.H"
-#     FromBloq.__doc__ = """Lorem ipsum dolor sit amet, consectetur adipiscing elit `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__. Proin nec nulla vel velit vestibulum luctus sed eu quam. Sed mattis magna turpis. Nullam at risus urna. Aliquam malesuada metus sed metus suscipit tincidunt. Praesent eget odio malesuada, lobortis arcu et, egestas neque. Nulla enim est, tincidunt id pretium quis, finibus in ex. Sed velit orci, sagittis vel euismod id, laoreet nec turpis. Donec finibus non lorem quis rhoncus. In eleifend pellentesque ex. Duis maximus facilisis erat ut feugiat.
-
-# Nunc in augue eget mauris placerat ultrices. Mauris augue sapien, volutpat nec mattis et, maximus sit amet velit. Proin porta nisi orci, vestibulum sollicitudin enim bibendum a. Etiam viverra arcu non metus finibus tincidunt. Donec aliquam tristique varius. Duis in consectetur magna. Nam luctus in nulla at tincidunt. Duis vulputate et elit eu eleifend. Etiam elementum faucibus pretium. Donec dolor mi, elementum eget commodo ut, gravida in purus. Pellentesque lectus dui, lacinia eget luctus sit amet, venenatis vitae nulla. Praesent pulvinar aliquam consectetur. Nunc bibendum magna vel neque mattis placerat. Aenean et sapien lorem. Vestibulum luctus enim non ante rutrum, quis gravida tortor vulputate.
-
-# Phasellus sit amet ex sit amet risus suscipit egestas at ac justo. Suspendisse potenti. Duis id convallis arcu. Donec quis quam nibh. Integer posuere placerat nisi, id sagittis sapien hendrerit sit amet. Donec viverra ligula ornare nulla pulvinar lobortis. Etiam eleifend leo risus, non lobortis est luctus at. Ut iaculis ipsum non odio viverra congue. Sed purus est, venenatis vitae viverra a, aliquet id turpis. Nullam suscipit augue tempor sem auctor, ut cursus nisi scelerisque.
-
-# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin nec nulla vel velit vestibulum luctus sed eu quam. Sed mattis magna turpis. Nullam at risus urna. Aliquam malesuada metus sed metus suscipit tincidunt. Praesent eget odio malesuada, lobortis arcu et, egestas neque. Nulla enim est, tincidunt id pretium quis, finibus in ex. Sed velit orci, sagittis vel euismod id, laoreet nec turpis. Donec finibus non lorem quis rhoncus. In eleifend pellentesque ex. Duis maximus facilisis erat ut feugiat.
-
-# Nunc in augue eget mauris placerat ultrices. Mauris augue sapien, volutpat nec mattis et, maximus sit amet velit. Proin porta nisi orci, vestibulum sollicitudin enim bibendum a. Etiam viverra arcu non metus finibus tincidunt. Donec aliquam tristique varius. Duis in consectetur magna. Nam luctus in nulla at tincidunt. Duis vulputate et elit eu eleifend. Etiam elementum faucibus pretium. Donec dolor mi, elementum eget commodo ut, gravida in purus. Pellentesque lectus dui, lacinia eget luctus sit amet, venenatis vitae nulla. Praesent pulvinar aliquam consectetur. Nunc bibendum magna vel neque mattis placerat. Aenean et sapien lorem. Vestibulum luctus enim non ante rutrum, quis gravida tortor vulputate.
-
-# Phasellus sit amet ex sit amet risus suscipit egestas at ac justo. Suspendisse potenti. Duis id convallis arcu. Donec quis quam nibh. Integer posuere placerat nisi, id sagittis sapien hendrerit sit amet. Donec viverra ligula ornare nulla pulvinar lobortis. Etiam eleifend leo risus, non lobortis est luctus at. Ut iaculis ipsum non odio viverra congue. Sed purus est, venenatis vitae viverra a, aliquet id turpis. Nullam suscipit augue tempor sem auctor, ut cursus nisi scelerisque.
-
-# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin nec nulla vel velit vestibulum luctus sed eu quam. Sed mattis magna turpis. Nullam at risus urna. Aliquam malesuada metus sed metus suscipit tincidunt. Praesent eget odio malesuada, lobortis arcu et, egestas neque. Nulla enim est, tincidunt id pretium quis, finibus in ex. Sed velit orci, sagittis vel euismod id, laoreet nec turpis. Donec finibus non lorem quis rhoncus. In eleifend pellentesque ex. Duis maximus facilisis erat ut feugiat.
-
-# Nunc in augue eget mauris placerat ultrices. Mauris augue sapien, volutpat nec mattis et, maximus sit amet velit. Proin porta nisi orci, vestibulum sollicitudin enim bibendum a. Etiam viverra arcu non metus finibus tincidunt. Donec aliquam tristique varius. Duis in consectetur magna. Nam luctus in nulla at tincidunt. Duis vulputate et elit eu eleifend. Etiam elementum faucibus pretium. Donec dolor mi, elementum eget commodo ut, gravida in purus. Pellentesque lectus dui, lacinia eget luctus sit amet, venenatis vitae nulla. Praesent pulvinar aliquam consectetur. Nunc bibendum magna vel neque mattis placerat. Aenean et sapien lorem. Vestibulum luctus enim non ante rutrum, quis gravida tortor vulputate.
-
-# Phasellus sit amet ex sit amet risus suscipit egestas at ac justo. Suspendisse potenti. Duis id convallis arcu. Donec quis quam nibh. Integer posuere placerat nisi, id sagittis sapien hendrerit sit amet. Donec viverra ligula ornare nulla pulvinar lobortis. Etiam eleifend leo risus, non lobortis est luctus at. Ut iaculis ipsum non odio viverra congue. Sed purus est, venenatis vitae viverra a, aliquet id turpis. Nullam suscipit augue tempor sem auctor, ut cursus nisi scelerisque.
-
-# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin nec nulla vel velit vestibulum luctus sed eu quam. Sed mattis magna turpis. Nullam at risus urna. Aliquam malesuada metus sed metus suscipit tincidunt. Praesent eget odio malesuada, lobortis arcu et, egestas neque. Nulla enim est, tincidunt id pretium quis, finibus in ex. Sed velit orci, sagittis vel euismod id, laoreet nec turpis. Donec finibus non lorem quis rhoncus. In eleifend pellentesque ex. Duis maximus facilisis erat ut feugiat.
-
-# Nunc in augue eget mauris placerat ultrices. Mauris augue sapien, volutpat nec mattis et, maximus sit amet velit. Proin porta nisi orci, vestibulum sollicitudin enim bibendum a. Etiam viverra arcu non metus finibus tincidunt. Donec aliquam tristique varius. Duis in consectetur magna. Nam luctus in nulla at tincidunt. Duis vulputate et elit eu eleifend. Etiam elementum faucibus pretium. Donec dolor mi, elementum eget commodo ut, gravida in purus. Pellentesque lectus dui, lacinia eget luctus sit amet, venenatis vitae nulla. Praesent pulvinar aliquam consectetur. Nunc bibendum magna vel neque mattis placerat. Aenean et sapien lorem. Vestibulum luctus enim non ante rutrum, quis gravida tortor vulputate.
-
-# Phasellus sit amet ex sit amet risus suscipit egestas at ac justo. Suspendisse potenti. Duis id convallis arcu. Donec quis quam nibh. Integer posuere placerat nisi, id sagittis sapien hendrerit sit amet. Donec viverra ligula ornare nulla pulvinar lobortis. Etiam eleifend leo risus, non lobortis est luctus at. Ut iaculis ipsum non odio viverra congue. Sed purus est, venenatis vitae viverra a, aliquet id turpis. Nullam suscipit augue tempor sem auctor, ut cursus nisi scelerisque.
-#             """
