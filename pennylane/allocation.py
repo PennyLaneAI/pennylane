@@ -150,7 +150,20 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     return Deallocate(wires)
 
 
-def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False):
+class DynamicRegister(Wires):
+    """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
+
+    def __repr__(self):
+        return f"<DynamicRegister: size={len(self._labels)}>"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_, **__):
+        Deallocate(self)
+
+
+def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
     """Temporarily allocate dynamic wires while making sure to automatically deallocate them at the end.
 
     .. warning::
@@ -196,29 +209,6 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
 
     """
     wires = [DynamicWire() for _ in range(num_wires)]
-    reg = DynamicRegister(wires, require_zeros=require_zeros, restored=restored)
+    reg = DynamicRegister(wires)
     Allocate(reg, require_zeros=require_zeros, restored=restored)
     return reg
-
-
-class DynamicRegister(Wires):
-    """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
-
-    def __repr__(self):
-        return f"<DynamicRegister: size={len(self._labels)}, require_zeros={self._require_zeros}, restored={self._restored}>"
-
-    def __init__(
-        self,
-        dynamic_wires: Sequence[DynamicWire],
-        require_zeros: bool = True,
-        restored: bool = False,
-    ):
-        self._require_zeros = require_zeros
-        self._restored = restored
-        super().__init__(dynamic_wires)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_, **__):
-        Deallocate(self)

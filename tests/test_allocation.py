@@ -171,6 +171,13 @@ class TestDeallocate:
         assert isinstance(op, Deallocate)
 
 
+def test_dynamic_register_repr():
+    """Test the repr for the DynamicRegister."""
+
+    reg = DynamicRegister((DynamicWire(), DynamicWire()))
+    assert repr(reg) == "<DynamicRegister: size=2>"
+
+
 def test_allocate():
     """Test that allocate allocates and deallocates qubits."""
 
