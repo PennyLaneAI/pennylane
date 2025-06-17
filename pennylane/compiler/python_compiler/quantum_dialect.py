@@ -487,15 +487,11 @@ class GlobalPhaseOp(IRDLOperation):
         if not isinstance(in_ctrl_values, Sequence):
             in_ctrl_values = (in_ctrl_values,)
 
-        gate_name = StringAttr(data=self.name)
-
         out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
-        properties = {"gate_name": gate_name}
 
         super().__init__(
             operands=(params, in_ctrl_qubits, in_ctrl_values),
             result_types=(QubitType(),),
-            properties=properties,
         )
 
 
