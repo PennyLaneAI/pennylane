@@ -61,7 +61,11 @@ class QNGOptimizerQJIT:
 
     @staticmethod
     def _get_grad(qnode, params, **kwargs):
-        """TODO"""
+        """Return the gradient of the QNode objective function at the given point. The method is implemented to dispatch
+        to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
+
+        Raise an ``ImportError`` if the required package is not installed.
+        """
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.grad(qnode)(params, **kwargs)
@@ -72,7 +76,11 @@ class QNGOptimizerQJIT:
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
-        """TODO"""
+        """Return the value and the gradient of the QNode objective function at the given point. The method is implemented
+        to dispatch to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
+
+        Raise an ``ImportError`` if the required package is not installed.
+        """
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.value_and_grad(qnode)(params, **kwargs)
@@ -82,7 +90,12 @@ class QNGOptimizerQJIT:
         raise ImportError("Jax is required.")  # pragma: no cover
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
-        """TODO"""
+        """Compute the metric tensor of the QNode objective function at the given point using the method specified
+        by the optimizer's ``approx`` attribute. It returns the reshaped matrix after applying the regularization
+        given by the optimizer's ``lam`` attribute.
+
+        Raise a ``ValueError`` if the given objective function is not encoded as a QNode.
+        """
         # pylint: disable=not-callable
         if not isinstance(qnode, QNode):
             raise ValueError(
@@ -99,7 +112,10 @@ class QNGOptimizerQJIT:
         return mt_matrix
 
     def _apply_grad(self, mt, grad, params, state):
-        """TODO"""
+        """Update the parameter array ``params`` for a single optimization step according to the Quantum
+        Natural Gradient algorithm. The methods doesn't perform any transformation on ``state`` since the QNG
+        optimizer doesn't actually require any particular internal state.
+        """
         shape = math.shape(grad)
         grad_flat = math.flatten(grad)
         update_flat = math.linalg.pinv(mt) @ grad_flat
