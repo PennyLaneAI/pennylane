@@ -654,7 +654,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Update development guide.
+* Update `jax` and `tensorflow` dependencies for `doc` builds and add `tach` to the continuous integration checks in the development guide.
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
 * `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
