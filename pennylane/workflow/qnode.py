@@ -842,12 +842,10 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
-        if self._qfunc_uses_shots_arg:
-            shots = self.device.shots
-        else:
-            shots = kwargs.pop("shots", self.device.shots)
+        if not self._qfunc_uses_shots_arg:
+            kwargs.pop("shots", self.device.shots)
 
-        shots = self._shots if self._shots_override_device else shots
+        shots = self._shots
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -899,7 +897,7 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        if "shots" in kwargs and self._shots_override_device:
+        if "shots" in kwargs and (self._shots != kwargs["shots"]):
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 "The transform will take precedence over 'shots='",
