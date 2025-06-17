@@ -934,7 +934,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
     .. details::
         :title: Usage Details
 
-        Not every operator has a direct equivalent in Qualtran. For example, in Qualtran, there
+        Some PennyLane operators don't have a direct equivalent in Qualtran. For example, in Qualtran, there
         exists many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
         Quantum Phase Estimation, a smart default is chosen.
 
