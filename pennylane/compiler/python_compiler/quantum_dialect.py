@@ -31,8 +31,8 @@ from xdsl.dialects.builtin import (
     AnyAttr,
     AnyOf,
     BaseAttr,
-    FloatAttr,
     Float64Type,
+    FloatAttr,
     IntegerAttr,
     IntegerType,
     StringAttr,
@@ -461,7 +461,7 @@ class GlobalPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
 
-        # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
@@ -477,8 +477,8 @@ class GlobalPhaseOp(IRDLOperation):
             | None
         ) = None,
     ):
-        if isinstance(params, float): 
-            params = FloatAttr(data=params, type = Float64Type())
+        if isinstance(params, float):
+            params = FloatAttr(data=params, type=Float64Type())
         in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
         in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
 

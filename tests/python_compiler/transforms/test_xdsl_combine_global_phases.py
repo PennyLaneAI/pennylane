@@ -80,5 +80,6 @@ class TestCombineGlobalPhasesPass:
 
         run_filecheck(program, module)
 
+
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
