@@ -12,7 +12,6 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 import os
 import re
 import sys
@@ -93,7 +92,6 @@ mathjax_path = (
 )
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
-autodoc_inherit_docstrings = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

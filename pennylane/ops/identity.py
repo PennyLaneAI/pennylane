@@ -220,24 +220,24 @@ class Identity(CVObservable, Operation):
         return self
 
 
-class I(Identity):
-    r"""The Identity operator
+I = Identity
+r"""The Identity operator
 
-    The expectation of this observable
+The expectation of this observable
 
-    .. math::
-        E[I] = \text{Tr}(I \rho)
+.. math::
+    E[I] = \text{Tr}(I \rho)
 
-    .. seealso:: The equivalent long-form alias :class:`~Identity`
+.. seealso:: The equivalent long-form alias :class:`~Identity`
 
-    Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+Args:
+    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    id (str): custom label given to an operator instance,
+        can be useful for some applications where the instance has to be identified.
 
-    Corresponds to the trace of the quantum state, which in exact
-    simulators should always be equal to 1.
-    """
+Corresponds to the trace of the quantum state, which in exact
+simulators should always be equal to 1.
+"""
 
 add_decomps(Identity, null_decomp)
 add_decomps("Adjoint(Identity)", null_decomp)

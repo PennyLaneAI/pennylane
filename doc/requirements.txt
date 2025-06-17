@@ -16,7 +16,6 @@ docutils==0.20
 sphinx==8.1
 sphinx-automodapi==0.19
 sphinx-copybutton
-sphinx-autodoc-typehints
 sphinxcontrib-bibtex==2.6.3
 sphinxcontrib-applehelp==2.0.0
 sphinxcontrib-devhelp==2.0.0
@@ -38,4 +37,3 @@ pennylane-sphinx-theme
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
 sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
-diastatic-malt
