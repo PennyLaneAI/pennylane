@@ -328,6 +328,18 @@ class ZOmega:
             return ZSqrtTwo(self.d, (self.c - self.a) // 2)
         raise ValueError("Cannot convert ZOmega to ZSqrtTwo.")
 
+    def normalize(self: ZOmega) -> tuple[ZOmega, int]:
+        """Normalize the ZOmega element and return the number of times 2 was factored out."""
+        res, ix = self, 0
+        while (res.a + res.c) % 2 == 0 and (res.b + res.d) % 2 == 0:
+            a = (res.b - res.d) // 2
+            b = (res.a + res.c) // 2
+            c = (res.b + res.d) // 2
+            d = (res.c - res.a) // 2
+            res = ZOmega(a, b, c, d)
+            ix += 1
+        return res, ix
+
 
 class DyadicMatrix:
     r"""Represents the matrices over the ring :math:`\mathbb{D}[\omega]`,

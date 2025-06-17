@@ -133,7 +133,7 @@ class Ellipse:
 
     def normalize(self) -> tuple["Ellipse", float]:
         """Normalize the ellipse to have a determinant of 1."""
-        s_val = math.sqrt(self.determinant)
+        s_val = 1 / math.sqrt(self.determinant)
         return self.scale(scale=s_val), s_val
 
     def scale(self, scale: float) -> "Ellipse":
@@ -144,7 +144,7 @@ class Ellipse:
 
     def x_points(self, y: float) -> tuple[float, float]:
         """Compute the x-points of the ellipse for a given y-value."""
-        y -= self.p[1]  # shift y to the origin
+        y = float(y) - self.p[1]  # shift y to the origin
         descriminant = y**2 * (self.b**2 - self.a * self.d) + self.a
         if descriminant < 0:
             return None
@@ -156,7 +156,7 @@ class Ellipse:
 
     def y_points(self, x: float) -> tuple[float, float] | None:
         """Compute the y-points of the ellipse for a given x-value."""
-        x -= self.p[0]  # shift x to the origin
+        x = float(x) - self.p[0]  # shift x to the origin
         descriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
         if descriminant < 0:
             return None
@@ -214,7 +214,7 @@ class State:
     def bias(self) -> float:
         """Calculate the bias of the state."""
         # Uses Definition A.1 of arXiv:1403.2975
-        return self.e1.z - self.e2.z
+        return self.e2.z - self.e1.z
 
     def grid_op(self) -> GridOp:
         """Calculate the grid operation of the state."""
@@ -272,11 +272,11 @@ class State:
         if (state.e1.z + state.e2.z) < 0:
             grid_op = grid_op * grid_op_x
 
-        state = state.apply_grid_op(grid_op)
-        e1, e2 = state.e1, state.e2
+        new_state = state.apply_grid_op(grid_op)
+        e1, e2 = new_state.e1, new_state.e2
 
         if e1.b >= 0:
-            if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
+            if -0.8 <= e1.z <= 0.8 and -0.8 <= e2.z <= 0.8:
                 grid_op = grid_op * GridOp.from_string("R")
             elif e1.z <= 0.3 and e2.z >= 0.8:
                 grid_op = grid_op * GridOp.from_string("K")
@@ -525,9 +525,10 @@ class GridIterator:
         """Iterate over the grid problem."""
 
         k = self.kmin
-        e1, _ = Ellipse.from_region(self.epsilon, self.theta, k).normalize()
+        e1 = Ellipse.from_region(self.epsilon, self.theta, k)
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))
-        grid_op = State(e1, e2).grid_op()
+        en, _ = e1.normalize()
+        grid_op = State(en, e2).grid_op()
 
         for _ in range(self.max_iter):
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
@@ -537,15 +538,16 @@ class GridIterator:
             potential_solutions = self.solve_two_dim_problem(state)
 
             for solution in potential_solutions:
-                scaled_sol = grid_op * solution
-                sol_real, sol_imag = (getattr(scaled_sol) for part in ("real", "imag"))
-                norm_zsqrt_two = scaled_sol.norm().to_zsqrt_two()
-                dot_prod = (self.zval[0] * sol_real.real + self.zval[1] * sol_imag.imag) / (
-                    2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
+                scaled_sol, kf = (grid_op * solution).normalize()
+                k_, complx_sol = k - kf, complex(scaled_sol)
+                sol_real, sol_imag = complx_sol.real, complx_sol.imag
+                norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
+                dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
+                    2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
                 )
 
-                if abs(norm_zsqrt_two) <= 2**k and dot_prod >= self.target:
-                    yield scaled_sol, k
+                if abs(norm_zsqrt_two) <= 2**k_ and dot_prod >= self.target:
+                    yield scaled_sol, k_
 
             e1 = Ellipse.from_region(self.epsilon, self.theta, (k := k + 1))
 
@@ -563,6 +565,8 @@ class GridIterator:
             Iterable[ZOmega]: The list of solutions to the two dimensional grid problem.
         """
         e1, e2 = state.e1, state.e2
+        state2 = State(e1.offset(-1 / _SQRT2), e2.offset(1 / _SQRT2))
+
         bbox1 = e1.bounding_box()
         bbox11 = tuple(bb_ + e1.p[ix_ // 2] for ix_, bb_ in enumerate(bbox1))
         bbox12 = tuple(bb_ - 1 / _SQRT2 for bb_ in bbox11)
@@ -578,7 +582,7 @@ class GridIterator:
 
         potential_solutions1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
         potential_solutions2 = self.solve_upright_problem(
-            state, bbox12, bbox22, num_b2, ZOmega(c=1)
+            state2, bbox12, bbox22, num_b2, ZOmega(c=1)
         )
         for solution in chain(potential_solutions1, potential_solutions2):
             sol1, sol2 = complex(solution), complex(solution.adj2())
@@ -620,9 +624,9 @@ class GridIterator:
         if num_b[0]:
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
             for beta in beta_solutions1:
-                Ax0_tmp, Ax1_tmp = e1.compute_x_points(beta)
-                Bx0_tmp, Bx1_tmp = e2.compute_x_points(beta.conj())
-                if Ax1_tmp - Ax0_tmp > 0 and Bx1_tmp - Bx0_tmp > 0:
+                Ax0_tmp, Ax1_tmp = e1.x_points(beta)
+                Bx0_tmp, Bx1_tmp = e2.x_points(beta.adj2())
+                if Ax1_tmp - Ax0_tmp >= 0 and Bx1_tmp - Bx0_tmp >= 0:
                     new_alpha_solutions = self.solve_one_dim_problem(
                         Ax0_tmp, Ax1_tmp, Bx0_tmp, Bx1_tmp
                     )
@@ -631,8 +635,8 @@ class GridIterator:
         elif num_b[1]:
             alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
             for alpha in alpha_solutions1:
-                Ay0_tmp, Ay1_tmp = e1.compute_y_points(alpha)
-                By0_tmp, By1_tmp = e2.compute_y_points(alpha.conj())
+                Ay0_tmp, Ay1_tmp = e1.y_points(alpha)
+                By0_tmp, By1_tmp = e2.y_points(alpha.adj2())
                 if Ay1_tmp - Ay0_tmp >= 0 and By1_tmp - By0_tmp >= 0:
                     new_beta_solutions = self.solve_one_dim_problem(
                         Ay0_tmp, Ay1_tmp, By0_tmp, By1_tmp
