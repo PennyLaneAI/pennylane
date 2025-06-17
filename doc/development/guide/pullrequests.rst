@@ -60,6 +60,17 @@ merged.
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 
 
+* **Module Dependencies**: We use `tach <https://github.com/gauge-sh/tach>` to declare and enforce
+  dependencies between modules. This is to ensure that the code follows a layered architecture, where
+  higher-level modules do not depend on lower-level ones. With this philosophy, circular dependencies
+  are minimized and the code is easier to maintain.
+
+  If you would like to check the module dependencies locally, you can run:
+
+  .. code-block:: bash
+
+      tach check
+
 To make sure that the formatting and the quality of the new piece of code is up
 to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ dedicated tools
 (``black``, ``isort`` and ``pylint``) should be run locally.
