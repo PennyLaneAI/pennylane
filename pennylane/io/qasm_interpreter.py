@@ -8,46 +8,7 @@ from functools import partial
 from typing import Any, Callable, Iterable
 
 from numpy import uint
-from openqasm3.ast import (
-    AliasStatement,
-    ArrayLiteral,
-    BinaryExpression,
-    BitstringLiteral,
-    BooleanLiteral,
-    BoolType,
-    BranchingStatement,
-    BreakStatement,
-    Cast,
-    ClassicalAssignment,
-    ClassicalDeclaration,
-    ComplexType,
-    ConstantDeclaration,
-    ContinueStatement,
-    DiscreteSet,
-    DurationLiteral,
-    EndStatement,
-    Expression,
-    ExpressionStatement,
-    FloatLiteral,
-    FloatType,
-    ForInLoop,
-    FunctionCall,
-    Identifier,
-    ImaginaryLiteral,
-    IndexExpression,
-    IntegerLiteral,
-    IntType,
-    QuantumArgument,
-    QuantumGate,
-    QubitDeclaration,
-    RangeDefinition,
-    ReturnStatement,
-    SubroutineDefinition,
-    SwitchStatement,
-    UintType,
-    UnaryExpression,
-    WhileLoop,
-)
+from openqasm3 import ast
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -135,23 +96,23 @@ class Context:
             context["return"] = None
         self.context = context
 
-    def init_loops_scope(self, node: ForInLoop | WhileLoop):
+    def init_loops_scope(self, node: ast.ForInLoop | ast.WhileLoop):
         """
         Inits the loops scope on the current context.
 
         Args:
-            node (ForInLoop | WhileLoop): the loop node.
+            node (ast.ForInLoop | ast.WhileLoop): the loop node.
         """
         if "loops" not in self.scopes:
             self.scopes["loops"] = dict()
 
         # the namespace is shared with the outer scope, but we need to keep track of the gates separately
-        if isinstance(node, WhileLoop):
+        if isinstance(node, ast.WhileLoop):
             self.scopes["loops"][f"while_{node.span.start_line}"] = (
                 self.init_clause_in_same_namespace(self, f"while_{node.span.start_line}")
             )
 
-        elif isinstance(node, ForInLoop):
+        elif isinstance(node, ast.ForInLoop):
             self.scopes["loops"][f"for_{node.span.start_line}"] = (
                 self.init_clause_in_same_namespace(self, f"for_{node.span.start_line}")
             )
@@ -173,19 +134,19 @@ class Context:
         Inits the branches scope on the current context.
 
         Args:
-            node (BranchingStatement): the branch node.
+            node (ast.BranchingStatement): the branch node.
         """
         if "branches" not in self.scopes:
             self.scopes["branches"] = dict()
 
         self.scopes["branches"][f"branch_{node.span.start_line}"] = dict()
 
-    def init_subroutine_scope(self, node: SubroutineDefinition):
+    def init_subroutine_scope(self, node: ast.SubroutineDefinition):
         """
         Initializes a sub context with all the params, constants, subroutines and qubits it has access to.
 
         Args:
-            node (SubroutineDefinition): the subroutine definition.
+            node (ast.SubroutineDefinition): the subroutine definition.
         """
 
         # outer scope variables are available to inner scopes... but not vice versa!
@@ -358,7 +319,7 @@ def _get_bit_type_val(var):
 
 def _resolve_name(node: QASMNode):
     """
-    Fully resolves the name of a node which may be provided as an Identifier or string,
+    Fully resolves the name of a node which may be provided as an ast.Identifier or string,
     and therefore may require referencing different attributes.
 
     Args:
@@ -367,7 +328,7 @@ def _resolve_name(node: QASMNode):
     Returns:
         str: the resolved name.
     """
-    # parser will sometimes represent a name as a str and sometimes as an Identifier
+    # parser will sometimes represent a name as a str and sometimes as an ast.Identifier
     return node.name if isinstance(node.name, str) else node.name.name
 
 
@@ -464,7 +425,7 @@ class QasmInterpreter:
             pass
         return context
 
-    @visit.register(BreakStatement)
+    @visit.register(ast.BreakStatement)
     def visit_break_statement(self, node: QASMNode, context: Context):
         """
         Registers a break statement.
@@ -476,7 +437,7 @@ class QasmInterpreter:
 
         raise BreakException(f"Break statement encountered in {context.name}")
 
-    @visit.register(ContinueStatement)
+    @visit.register(ast.ContinueStatement)
     def visit_continue_statement(self, node: QASMNode, context: Context):
         """
         Registers a continue statement.
@@ -488,7 +449,7 @@ class QasmInterpreter:
 
         raise ContinueException(f"Continue statement encountered in {context.name}")
 
-    @visit.register(BranchingStatement)
+    @visit.register(ast.BranchingStatement)
     def visit_branching_statement(self, node: QASMNode, context: Context):
         """
         Registers a branching statement. Like switches, uses qml.cond.
@@ -537,7 +498,7 @@ class QasmInterpreter:
             ),
         )()
 
-    @visit.register(SwitchStatement)
+    @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: QASMNode, context: Context):
         """
         Registers a switch statement.
@@ -616,8 +577,8 @@ class QasmInterpreter:
         except BreakException:
             pass  # evaluation of the loop stops
 
-    @visit.register(WhileLoop)
-    def visit_while_loop(self, node: WhileLoop, context: Context):
+    @visit.register(ast.WhileLoop)
+    def visit_while_loop(self, node: ast.WhileLoop, context: Context):
         """
         Registers a while loop.
 
@@ -650,8 +611,8 @@ class QasmInterpreter:
 
         self._handle_break(loop, context)
 
-    @visit.register(ForInLoop)
-    def visit_for_in_loop(self, node: ForInLoop, context: Context):
+    @visit.register(ast.ForInLoop)
+    def visit_for_in_loop(self, node: ast.ForInLoop, context: Context):
         """
         Registers a for loop.
 
@@ -661,12 +622,12 @@ class QasmInterpreter:
         """
         context.init_loops_scope(node)
 
-        # We need custom logic here for handling Identifiers in case they are of BitType.
+        # We need custom logic here for handling ast.Identifiers in case they are of BitType.
         # If we introduce logic into retrieve_variable that returns BitType values as strings
         # this messes with unary and binary expressions' ability to handle BitType vars.
         # If we try to get a bit string directly from the integer representation natural to the parser here,
         # we can only guess at the size of the register since there might be leading zeroes.
-        if isinstance(node.set_declaration, Identifier):
+        if isinstance(node.set_declaration, ast.Identifier):
             loop_params = context.retrieve_variable(node.set_declaration.name)
             if isinstance(loop_params, Variable):
                 if loop_params.ty == "BitType":
@@ -736,20 +697,20 @@ class QasmInterpreter:
 
             self._handle_break(unrolled, context)
 
-    @visit.register(FunctionCall)
-    def visit_function_call(self, node: FunctionCall, context: Context):
+    @visit.register(ast.FunctionCall)
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
         """
         Registers a function call. The node must refer to a subroutine that has been defined and
         is available in the current scope.
 
         Args:
-            node (FunctionCall): The FunctionCall QASMNode.
+            node (ast.FunctionCall): The ast.FunctionCall QASMNode.
             context (Context): The current context.
 
         Raises:
             NameError: When the subroutine is not defined.
         """
-        name = _resolve_name(node)  # str or Identifier
+        name = _resolve_name(node)  # str or ast.Identifier
         if name not in context.scopes["subroutines"]:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
@@ -789,13 +750,13 @@ class QasmInterpreter:
         # the return value
         return getattr(func_context, "return")
 
-    @visit.register(RangeDefinition)
-    def visit_range(self, node: RangeDefinition, context: Context):
+    @visit.register(ast.RangeDefinition)
+    def visit_range(self, node: ast.RangeDefinition, context: Context):
         """
         Processes a range definition.
 
         Args:
-            node (RangeDefinition): The range to process.
+            node (ast.RangeDefinition): The range to process.
             context (Context): the current context.
 
         Returns:
@@ -806,13 +767,13 @@ class QasmInterpreter:
         step = self.visit(node.step, context) if node.step else None
         return slice(start, stop, step)
 
-    def _index_into_var(self, var: Iterable | Variable, node: IndexExpression, context: Context):
+    def _index_into_var(self, var: Iterable | Variable, node: ast.IndexExpression, context: Context):
         """
-        Index into a variable using an IndexExpression.
+        Index into a variable using an ast.IndexExpression.
 
         Args:
             var (Variable): The data structure representing the variable to index.
-            node (IndexExpression): The IndexExpression.
+            node (ast.IndexExpression): The ast.IndexExpression.
             context (Context): the current context.
 
         Returns:
@@ -827,7 +788,7 @@ class QasmInterpreter:
             f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
         )
 
-    @visit.register(EndStatement)
+    @visit.register(ast.EndStatement)
     def visit_end_statement(self, node: QASMNode, context: Context):
         """
         Ends the program.
@@ -841,19 +802,19 @@ class QasmInterpreter:
         )
 
     # needs to have same signature as visit()
-    @visit.register(QubitDeclaration)
-    def visit_qubit_declaration(self, node: QubitDeclaration, context: Context):
+    @visit.register(ast.QubitDeclaration)
+    def visit_qubit_declaration(self, node: ast.QubitDeclaration, context: Context):
         """
         Registers a qubit declaration. Named qubits are mapped to numbered wires by their indices
         in context.wires. Note: Qubit declarations must be global.
 
         Args:
-            node (QASMNode): The QubitDeclaration QASMNode.
+            node (QASMNode): The ast.QubitDeclaration QASMNode.
             context (Context): The current context.
         """
         context.wires.append(node.qubit.name)
 
-    @visit.register(ClassicalAssignment)
+    @visit.register(ast.ClassicalAssignment)
     def visit_classical_assignment(self, node: QASMNode, context: Context):
         """
         Registers a classical assignment.
@@ -866,7 +827,7 @@ class QasmInterpreter:
         res = self.visit(node.rvalue, context)
         context.update_var(res, name, node.op.name, node.span.start_line)
 
-    @visit.register(AliasStatement)
+    @visit.register(ast.AliasStatement)
     def visit_alias_statement(self, node: QASMNode, context: Context):
         """
         Registers an alias statement.
@@ -876,7 +837,7 @@ class QasmInterpreter:
         """
         context.aliases[node.target.name] = self.visit(node.value, context, aliasing=True)
 
-    @visit.register(ReturnStatement)
+    @visit.register(ast.ReturnStatement)
     def visit_return_statement(self, node: QASMNode, context: Context):
         """
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
@@ -884,7 +845,7 @@ class QasmInterpreter:
         """
         context.context["return"] = self.visit(node.expression, context)
 
-    @visit.register(ConstantDeclaration)
+    @visit.register(ast.ConstantDeclaration)
     def visit_constant_declaration(self, node: QASMNode, context: Context):
         """
         Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
@@ -896,13 +857,13 @@ class QasmInterpreter:
         """
         self.visit_classical_declaration(node, context, constant=True)
 
-    @visit.register(ClassicalDeclaration)
+    @visit.register(ast.ClassicalDeclaration)
     def visit_classical_declaration(self, node: QASMNode, context: Context, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
         Args:
-            node (QASMNode): The ClassicalDeclaration QASMNode.
+            node (QASMNode): The ast.ClassicalDeclaration QASMNode.
             context (Context): The current context.
             constant (bool): Whether the classical variable is a constant.
         """
@@ -928,13 +889,13 @@ class QasmInterpreter:
             context.name,
         )
 
-    @visit.register(ImaginaryLiteral)
-    def visit_imaginary_literal(self, node: ImaginaryLiteral, context: Context):
+    @visit.register(ast.ImaginaryLiteral)
+    def visit_imaginary_literal(self, node: ast.ImaginaryLiteral, context: Context):
         """
         Registers an imaginary literal.
 
         Args:
-            node (ImaginaryLiteral): The imaginary literal QASMNode.
+            node (ast.ImaginaryLiteral): The imaginary literal QASMNode.
             context (Context): the current context.
 
         Returns:
@@ -942,13 +903,13 @@ class QasmInterpreter:
         """
         return 1j * node.value
 
-    @visit.register(DiscreteSet)
-    def visit_discrete_set(self, node: DiscreteSet, context: Context):
+    @visit.register(ast.DiscreteSet)
+    def visit_discrete_set(self, node: ast.DiscreteSet, context: Context):
         """
         Evaluates a discrete set literal.
 
         Args:
-            node (DiscreteSet): The set literal QASMNode.
+            node (ast.DiscreteSet): The set literal QASMNode.
             context (Context): The current context.
 
         Returns:
@@ -956,13 +917,13 @@ class QasmInterpreter:
         """
         return (self.visit(literal, context) for literal in node.values)
 
-    @visit.register(ArrayLiteral)
-    def visit_array_literal(self, node: ArrayLiteral, context: Context):
+    @visit.register(ast.ArrayLiteral)
+    def visit_array_literal(self, node: ast.ArrayLiteral, context: Context):
         """
         Evaluates an array literal.
 
         Args:
-            node (ArrayLiteral): The array literal QASMNode.
+            node (ast.ArrayLiteral): The array literal QASMNode.
             context (Context): The current context.
 
         Returns:
@@ -970,7 +931,7 @@ class QasmInterpreter:
         """
         return [self.visit(literal, context) for literal in node.values]
 
-    @visit.register(SubroutineDefinition)
+    @visit.register(ast.SubroutineDefinition)
     def visit_subroutine_definition(self, node: QASMNode, context: Context):
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
@@ -983,7 +944,7 @@ class QasmInterpreter:
 
         # register the params
         for param in node.arguments:
-            if isinstance(param, QuantumArgument):
+            if isinstance(param, ast.QuantumArgument):
                 context.scopes["subroutines"][_resolve_name(node)].wires.append(
                     _resolve_name(param)
                 )
@@ -999,14 +960,14 @@ class QasmInterpreter:
                     )
                 )
 
-    @visit.register(QuantumGate)
-    def visit_quantum_gate(self, node: QuantumGate, context: Context):
+    @visit.register(ast.QuantumGate)
+    def visit_quantum_gate(self, node: ast.QuantumGate, context: Context):
         """
         Registers a quantum gate application. Calls the appropriate handler based on the sort of gate
         (parameterized or non-parameterized).
 
         Args:
-            node (QASMNode): The QuantumGate QASMNode.
+            node (QASMNode): The ast.QuantumGate QASMNode.
             context (Context): The current context.
         """
         name = node.name.name.upper()
@@ -1030,18 +991,18 @@ class QasmInterpreter:
         for mod in reversed(node.modifiers):
             op, control_wires = self.apply_modifier(mod, op, context, control_wires)
 
-    def _gate_setup_helper(self, node: QuantumGate, gates_dict: dict, context: Context):
+    def _gate_setup_helper(self, node: ast.QuantumGate, gates_dict: dict, context: Context):
         """
         Helper to setup the quantum gate call, also resolving arguments and wires.
 
         Args:
-            node (QuantumGate): The QuantumGate QASMNode.
+            node (ast.QuantumGate): The ast.QuantumGate QASMNode.
             gates_dict (dict): the gates dictionary.
             context (Context): the current context.
 
         Returns:
-            QuantumGate: The gate to execute.
-            list: The list of arguments to the QuantumGate.
+            ast.QuantumGate: The gate to execute.
+            list: The list of arguments to the ast.QuantumGate.
             list: The wires the gate applies to.
         """
         # setup arguments
@@ -1061,7 +1022,7 @@ class QasmInterpreter:
 
         return gate, args, resolved_wires
 
-    def apply_modifier(self, mod: QuantumGate, previous: Operator, context: Context, wires: list):
+    def apply_modifier(self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list):
         """
         Applies a modifier to the previous gate or modified gate.
 
@@ -1095,23 +1056,23 @@ class QasmInterpreter:
 
         return next, wires
 
-    @visit.register(ExpressionStatement)
-    def visit_expression_statement(self, node: ExpressionStatement, context: Context):
+    @visit.register(ast.ExpressionStatement)
+    def visit_expression_statement(self, node: ast.ExpressionStatement, context: Context):
         """
         Registers an expression statement.
         Args:
-            node (ExpressionStatement): The expression statement.
+            node (ast.ExpressionStatement): The expression statement.
             context (Context): The current context.
         """
         return self.visit(node.expression, context)
 
-    @visit.register(Cast)
-    def visit_cast(self, node: Cast, context: Context):
+    @visit.register(ast.Cast)
+    def visit_cast(self, node: ast.Cast, context: Context):
         """
-        Registers a Cast expression.
+        Registers a ast.Cast expression.
 
         Args:
-            node (Cast): The Cast expression.
+            node (ast.Cast): The ast.Cast expression.
             context (Context): The current context.
 
         Returns:
@@ -1123,15 +1084,15 @@ class QasmInterpreter:
         arg = self.visit(node.argument, context)
         ret = arg
         try:
-            if isinstance(node.type, IntType):
+            if isinstance(node.type, ast.IntType):
                 ret = int(arg)
-            if isinstance(node.type, UintType):
+            if isinstance(node.type, ast.UintType):
                 ret = uint(arg)
-            if isinstance(node.type, FloatType):
+            if isinstance(node.type, ast.FloatType):
                 ret = float(arg)
-            if isinstance(node.type, ComplexType):
+            if isinstance(node.type, ast.ComplexType):
                 ret = complex(arg)
-            if isinstance(node.type, BoolType):
+            if isinstance(node.type, ast.BoolType):
                 ret = bool(arg)
             # TODO: durations, angles, etc.
         except TypeError as e:
@@ -1140,15 +1101,15 @@ class QasmInterpreter:
             ) from e
         return ret
 
-    @visit.register(BinaryExpression)
+    @visit.register(ast.BinaryExpression)
     def visit_binary_expression(
-        self, node: BinaryExpression, context: Context
+        self, node: ast.BinaryExpression, context: Context
     ):  # pylint: disable=too-many-branches, too-many-return-statements
         """
         Registers a binary expression.
 
         Args:
-            node (BinaryExpression): The binary expression.
+            node (ast.BinaryExpression): The binary expression.
             context (Context): The current context.
 
         Returns:
@@ -1202,13 +1163,13 @@ class QasmInterpreter:
                     f"on line {node.span.start_line}."
                 )  # pragma: no cover
 
-    @visit.register(UnaryExpression)
-    def visit_unary_expression(self, node: UnaryExpression, context: Context):
+    @visit.register(ast.UnaryExpression)
+    def visit_unary_expression(self, node: ast.UnaryExpression, context: Context):
         """
         Registers a unary expression.
 
         Args:
-            node (UnaryExpression): The unary expression.
+            node (ast.UnaryExpression): The unary expression.
             context (Context): The current context.
 
         Returns:
@@ -1227,15 +1188,15 @@ class QasmInterpreter:
             f"on line {node.span.start_line}."
         )  # pragma: no cover
 
-    @visit.register(IndexExpression)
+    @visit.register(ast.IndexExpression)
     def visit_index_expression(
-        self, node: IndexExpression, context: Context, aliasing: bool = False
+        self, node: ast.IndexExpression, context: Context, aliasing: bool = False
     ):
         """
         Registers an index expression.
 
         Args:
-            node (IndexExpression): The index expression.
+            node (ast.IndexExpression): The index expression.
             context (Context): The current context.
             aliasing (bool): If ``True``, the expression will be treated as an alias.
 
@@ -1250,7 +1211,7 @@ class QasmInterpreter:
         var = context.retrieve_variable(node.collection.name)
         return self._index_into_var(var, node, context)
 
-    def _alias(self, node: Identifier | IndexExpression, context: Context):
+    def _alias(self, node: ast.Identifier | ast.IndexExpression, context: Context):
         """
         An alias is registered as a callable since we need to be able to
         evaluate it at a later time.
@@ -1272,15 +1233,15 @@ class QasmInterpreter:
                 f"Attempt to alias an undeclared variable " f"{node.name} in {context.name}."
             ) from e
 
-    @visit.register(Identifier)
-    def visit_identifier(self, node: Identifier, context: Context, aliasing: bool = False):
+    @visit.register(ast.Identifier)
+    def visit_identifier(self, node: ast.Identifier, context: Context, aliasing: bool = False):
         """
         Registers an identifier.
 
         Args:
-            node (Identifier): The identifier.
+            node (ast.Identifier): The identifier.
             context (Context): The current context.
-            aliasing (bool): If ``True``, the Identifier will be treated as an alias.
+            aliasing (bool): If ``True``, the ast.Identifier will be treated as an alias.
 
         Returns:
             The de-referenced identifier.
@@ -1301,12 +1262,12 @@ class QasmInterpreter:
                 str(e) or f"Reference to an undeclared variable {node.name} in {context.name}."
             ) from e
 
-    @visit.register(IntegerLiteral)
-    @visit.register(FloatLiteral)
-    @visit.register(BooleanLiteral)
-    @visit.register(BitstringLiteral)
-    @visit.register(DurationLiteral)
-    def visit_literal(self, node: Expression, context: Context):
+    @visit.register(ast.IntegerLiteral)
+    @visit.register(ast.FloatLiteral)
+    @visit.register(ast.BooleanLiteral)
+    @visit.register(ast.BitstringLiteral)
+    @visit.register(ast.DurationLiteral)
+    def visit_literal(self, node: ast.Expression, context: Context):
         """
         Visits a literal.
 
