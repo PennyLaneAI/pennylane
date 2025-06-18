@@ -61,10 +61,12 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
             are the number of modes and the maximum number of bosonic states per mode, repectively
         two (TensorLike[float]): two-body integrals with shape ``(m, m, n, n, n, n)`` where ``m``
             and ``n`` are the number of modes and the maximum number of bosonic states per mode,
-            repectively
+            repectively. Default is ``None`` which means that the two-body terms will not be
+            included in the Hamiltonian.
         three (TensorLike[float]): three-body integrals with shape ``(m, m, m, n, n, n, n, n, n)``
             where ``m`` and ``n`` are the number of modes and the maximum number of bosonic states
-            per mode, repectively
+            per mode, repectively. Default is ``None`` which means that the two-body terms will not
+            be included in the Hamiltonian.
         cutoff (float): tolerance for discarding the negligible coefficients
         ordered (bool): indicates if integral matrix elements are already ordered. Default is ``True``.
 
