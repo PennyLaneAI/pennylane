@@ -604,6 +604,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ExecutionConfig` and `MCMConfig` are now frozen dataclasses. This means that their properties cannot be modified in place and instead need to be updated with `dataclasses.replace`.
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
   new `gradient_kwargs` keyword argument accordingly.
   [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
