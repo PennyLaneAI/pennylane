@@ -66,7 +66,7 @@ def _eval_unary_op(operand: int | float | complex | bool | uint, operator: str, 
         return -operand  # pylint: disable=invalid-unary-operand-type
     if operator == "~":
         return ~operand  # pylint: disable=invalid-unary-operand-type
-    # we shouldn't ever get thi error if the parser did its job right
+    # we shouldn't ever get this error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
@@ -704,7 +704,7 @@ class QasmInterpreter:
         def _check_for_mcm(curr_context: Context):
             if isinstance(self.visit(node.while_condition, curr_context), MeasurementValue):
                 raise ValueError(
-                    "Mid circuit measurement outcomes can not be used as while conditions. "
+                    "Mid circuit measurement outcomes can not be used as conditions to a while loop. "
                     "To condition on the outcome of a measurement, please use if / else."
                 )
 
