@@ -180,7 +180,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     described in `J. Chem. Phys. 141, 104105 (2014)
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
     Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_. The localizing
-    unitary is defined in terms of the normal and local coordinates, :math:`q` and
+    unitary :math:`U` is defined in terms of the normal and local coordinates, :math:`q` and
     :math:`\tilde{q}`, respectively as:
 
     .. math::
@@ -191,8 +191,8 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     can be separately localized, to prevent mixing between specific groups of normal modes, by
     defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
     localize modes that have frequencies above and below :math:`2600` reciprocal centimetre (:math:`\text{cm}^{-1}`).
-    Similarly, `bins = [1300, 2600]`` allows to separately localize modes in three groups that have
-    frequencies below :math:`1300`, between :math:`1300-2600` and above :math:`2600` and so on.
+    Similarly, ``bins = [1300, 2600]`` allows to separately localize modes in three groups that have
+    frequencies below :math:`1300`, between :math:`1300-2600` and above :math:`2600`.
 
     Args:
         freqs (List[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
