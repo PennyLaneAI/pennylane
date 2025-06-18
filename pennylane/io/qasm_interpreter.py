@@ -406,7 +406,7 @@ class QasmInterpreter:
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (dict): The initial context populated with the name of the program (the outermost scope).
+            context (Context): The initial context populated with the name of the program (the outermost scope).
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
@@ -699,7 +699,7 @@ class QasmInterpreter:
         Raises:
             NameError: When the subroutine is not defined.
         """
-        name = _resolve_name(node)  # str or ast.Identifier
+        name = _resolve_name(node)  # str or Identifier
         if name not in context.scopes["subroutines"]:
             raise NameError(
                 f"Reference to subroutine {name} not available in calling namespace "
@@ -829,21 +829,25 @@ class QasmInterpreter:
         context.aliases[node.target.name] = self.visit(node.value, context, aliasing=True)
 
     @visit.register(ast.ReturnStatement)
-    def visit_return_statement(self, node: QASMNode, context: Context):
+    def visit_return_statement(self, node: ast.ReturnStatement, context: Context):
         """
         Registers a return statement. Points to the var that needs to be set in an outer scope when this
         subroutine is called.
+
+        Args:
+            node (ReturnStatement): The return statement QASMNode.
+            context (Context): the current context.
         """
         context.context["return"] = self.visit(node.expression, context)
 
     @visit.register(ast.ConstantDeclaration)
-    def visit_constant_declaration(self, node: QASMNode, context: Context):
+    def visit_constant_declaration(self, node: ast.ConstantDeclaration, context: Context):
         """
         Registers a constant declaration. Traces data flow through the context, transforming QASMNodes into
         Python type variables that can be readily used in expression eval, etc.
 
         Args:
-            node (QASMNode): The constant QASMNode.
+            node (ConstantDeclaration): The constant QASMNode.
             context (Context): The current context.
         """
         self.visit_classical_declaration(node, context, constant=True)
@@ -923,12 +927,12 @@ class QasmInterpreter:
         return [self.visit(literal, context) for literal in node.values]
 
     @visit.register(ast.SubroutineDefinition)
-    def visit_subroutine_definition(self, node: QASMNode, context: Context):
+    def visit_subroutine_definition(self, node: ast.SubroutineDefinition, context: Context):
         """
         Registers a subroutine definition. Maintains a namespace in the context, starts populating it with
         its parameters.
         Args:
-            node (QASMNode): the subroutine node.
+            node (SubroutineDefinition): the subroutine node.
             context (Context): the current context.
         """
         context.init_subroutine_scope(node)
