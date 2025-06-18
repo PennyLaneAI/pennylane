@@ -459,27 +459,11 @@ def construct_batch(
         # pylint: disable = protected-access
 
         # The new config process we would like to use.
-        interface = _resolve_interface(qnode.interface, tapes)
-        execution_config = qml.devices.ExecutionConfig(
-            interface=interface,
-            gradient_method=qnode.diff_method,
-            grad_on_execution=(
-                None
-                if qnode.execute_kwargs.get("grad_on_execution") == "best"
-                else qnode.execute_kwargs.get("grad_on_execution")
-            ),
-            use_device_gradient=(
-                None
-                if qnode.execute_kwargs.get("use_device_gradient") == "best"
-                else qnode.execute_kwargs.get("use_device_gradient")
-            ),
-            gradient_keyword_arguments=qnode.gradient_kwargs,
-            derivative_order=qnode.execute_kwargs.get("derivative_order", 1),
-            mcm_config=qml.devices.MCMConfig(
-                postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
-                mcm_method=qnode.execute_kwargs.get("mcm_method"),
-            ),
+        mcm_config = qml.devices.MCMConfig(
+            postselect_mode=qnode.execute_kwargs["postselect_mode"],
+            mcm_method=qnode.execute_kwargs["mcm_method"],
         )
+        execution_config = _make_execution_config(qnode, qnode.diff_method, mcm_config)
         # execution_config = qnode.device.setup_execution_config(
         #     config=execution_config, circuit=tapes[0]
         # )
