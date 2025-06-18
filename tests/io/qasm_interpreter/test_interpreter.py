@@ -69,7 +69,7 @@ class TestIO:
 
         with pytest.raises(
             ValueError,
-            match="Missing input theta. Please pass theta as " "a keyword argument to from_qasm3.",
+            match="Missing input theta. Please pass theta as a keyword argument to from_qasm3.",
         ):
             QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
 

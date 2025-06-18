@@ -1014,8 +1014,7 @@ class QasmInterpreter:
     @visit.register(IODeclaration)
     def visit_io_declaration(self, node: IODeclaration, context: Context):
         """
-        When we encounter an input / output declaration we want to return a callable that will execute the
-        OpenQASM 3.0 circuit at the end.
+        Registers an input declaration (outputs to come in a future PR).
 
         Args:
             node (IODeclaration): The IODeclaration QASMNode.
