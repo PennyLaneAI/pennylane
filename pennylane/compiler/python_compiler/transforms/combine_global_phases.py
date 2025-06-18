@@ -38,27 +38,25 @@ class CombineGlobalPhasesPattern(
         self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
-        consecutive composable rotations."""
+        GlobalPhase oprations."""
         phi = None
-        for op in funcOp.body.walk():
-            if isinstance(op, func.ReturnOp) and phi:
-                new_op = GlobalPhaseOp(params=phi)
-                rewriter.insert_op_before_matched_op(new_op)
-                break
+        global_phases = [op for op in funcOp.body.walk() if isinstance(op, GlobalPhaseOp)]
+        if len(global_phases) < 2:
+            return
 
-            if not isinstance(op, GlobalPhaseOp):
-                continue
-            if phi is None:
-                phi = op.operands[0]
-            else:
-                addOp = arith.AddfOp(op.operands[0], phi)
-                phi = addOp.result
+        prev = global_phases[0]
+        phi_sum = prev.operands[0]
+        for current in global_phases[1:]:
+            phi = current.operands[0]
+            addOp = arith.AddfOp(phi, phi_sum)
+            rewriter.insert_op(addOp, InsertPoint.before(current))
+            phi_sum = addOp.result
 
-            rewriter.erase_op(op)
+            rewriter.erase_op(prev)
+            prev = current
 
-        # if phi:
-        #     new_op = GlobalPhaseOp(params=phi)
-        #     rewriter.insert_op(new_op, InsertPoint.before(funcOp.get_return_op()))
+        prev.operands[0] = phi_sum
+        rewriter.notify_op_modified(prev)
 
 
 @dataclass(frozen=True)
