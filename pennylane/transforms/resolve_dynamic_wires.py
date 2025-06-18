@@ -33,7 +33,7 @@ class _WireManager:
         self._loaned = {}  # wire to final register type
         self.min_int = min_int
 
-    def get_wire(self, require_zeros):
+    def get_wire(self, require_zeros, restored):
         """Retrieve a concrete wire label from available registers."""
         if not self._zeroed and not self._any_state:
             if self.min_int is None:
@@ -43,10 +43,10 @@ class _WireManager:
         if require_zeros:
             if self._zeroed:
                 w = self._zeroed.pop()
-                self._loaned[w] = "zeroed"
+                self._loaned[w] = "zeroed" if restored else "any_state"
                 return w, []
             w = self._any_state.pop()
-            self._loaned[w] = "any_state"
+            self._loaned[w] = "zeroed" if restored else "any_state"
             m = measure(w, reset=True)
             return w, m.measurements
 
@@ -55,13 +55,13 @@ class _WireManager:
             self._loaned[w] = "any_state"
             return w, []
         w = self._zeroed.pop()
-        self._loaned[w] = "zeroed"
+        self._loaned[w] = "zeroed" if restored else "any_state"
         return w, []
 
-    def return_wire(self, wire, reset_to_original=False):
+    def return_wire(self, wire):
         """Return a wire label back to be re-used."""
         reg_type = self._loaned.pop(wire)
-        if reg_type == "zeroed" and reset_to_original:
+        if reg_type == "zeroed":
             self._zeroed.append(wire)
         else:
             self._any_state.append(wire)
@@ -177,7 +177,7 @@ def resolve_dynamic_wires(
         elif isinstance(op, Deallocate):
             for w in op.wires:
                 deallocated.add(w)
-                manager.return_wire(wire_map.pop(w), **op.hyperparameters)
+                manager.return_wire(wire_map.pop(w))
         else:
             op = op.map_wires(wire_map)
             if intersection := deallocated.intersection(set(op.wires)):

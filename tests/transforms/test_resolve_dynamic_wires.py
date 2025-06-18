@@ -146,10 +146,10 @@ class TestReuse:
     def test_reuse_zeroed_qubit(self):
         """Test that zeroed qubits can be reused without reset."""
 
-        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True)
-        dealloc1 = qml.allocation.Deallocate(alloc1.wires, reset_to_original=True)
-        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True)
-        dealloc2 = qml.allocation.Deallocate(alloc2.wires, reset_to_original=True)
+        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True, restored=True)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True, restored=True)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
 
         tape = qml.tape.QuantumScript(
             [alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
@@ -164,10 +164,10 @@ class TestReuse:
     def test_reuse_garbage_qubit(self):
         """Test that garbage qubits can be reused with `require_zeros=False` without reset."""
 
-        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False)
-        dealloc1 = qml.allocation.Deallocate(alloc1.wires, reset_to_original=False)
-        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False)
-        dealloc2 = qml.allocation.Deallocate(alloc2.wires, reset_to_original=False)
+        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False, restored=False)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False, restored=False)
+        dealloc2 = qml.allocation.Deallocate(alloc2.wires)
 
         tape = qml.tape.QuantumScript(
             [alloc1, qml.X(alloc1.wires), dealloc1, alloc2, qml.Y(alloc2.wires), dealloc2]
@@ -182,9 +182,9 @@ class TestReuse:
     def test_reused_garbage_qubit_as_zeroed(self):
         """Test that a garbage qubit can be reused in conjunction with a reset."""
 
-        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False)
-        dealloc1 = qml.allocation.Deallocate(alloc1.wires, reset_to_original=False)
-        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True)
+        alloc1 = qml.allocation.Allocate.from_num_wires(1, require_zeros=False, restored=False)
+        dealloc1 = qml.allocation.Deallocate(alloc1.wires)
+        alloc2 = qml.allocation.Allocate.from_num_wires(1, require_zeros=True, restored=False)
         dealloc2 = qml.allocation.Deallocate(alloc2.wires)
 
         tape = qml.tape.QuantumScript(
