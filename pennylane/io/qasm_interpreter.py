@@ -591,6 +591,8 @@ class Context:
 def _get_bit_type_val(var):
     if isinstance(var, Variable) and var.ty == "BitType":
         return bin(var.val)[2:].zfill(var.size)
+    elif isinstance(var, Variable) and var.ty == "IntType":
+        return bin(var.val)[2:].zfill(int(np.floor(np.log2(var.val))) + 1)
     elif isinstance(var, int):
         return bin(var)[2:].zfill(int(np.floor(np.log2(var))) + 1)
     else:
