@@ -34,3 +34,7 @@ class PennyLaneDeprecationWarning(UserWarning):  # pragma: no cover
 
 class ExperimentalWarning(UserWarning):  # pragma: no cover
     """Warning raised to indicate experimental/non-stable feature or support."""
+
+
+class WireError(Exception):
+    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""

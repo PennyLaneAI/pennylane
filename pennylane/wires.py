@@ -25,6 +25,8 @@ import numpy as np
 from pennylane import math
 from pennylane.pytrees import register_pytree
 
+from .exceptions import WireError
+
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
     jax_available = True
@@ -35,10 +37,6 @@ else:
 if jax_available:
     # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
-
-
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
 
 def _process(wires):
