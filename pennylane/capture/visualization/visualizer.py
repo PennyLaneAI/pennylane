@@ -475,7 +475,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, eqn=No
         else:
 
             # Create branch cluster
-            branch_label = f"<{get_branch_label(branch_counter)} ({cond_jaxpr})>"
+            branch_label = f"<{get_branch_label(branch_counter)} ({cond_jaxpr or ''})>"
             branch_cluster = ControlFlowCluster(info_label=branch_label)
             self.plxpr_graph.add_cluster_to_graph(branch_cluster, graph=cond_cluster)
 
