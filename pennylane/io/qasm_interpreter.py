@@ -650,7 +650,9 @@ class QasmInterpreter:
             step = 1
         else:
             # we shouldn't be able to get here if the parser does its job
-            raise TypeError(f"Expected iterable type or a range in loop, got {type(loop_params)}.")  # pragma: no cover
+            raise TypeError(
+                f"Expected iterable type or a range in loop, got {type(loop_params)}."
+            )  # pragma: no cover
 
         @for_loop(start, stop, step)
         def loop(i, execution_context):
@@ -855,7 +857,9 @@ class QasmInterpreter:
         self.visit_classical_declaration(node, context, constant=True)
 
     @visit.register(ast.ClassicalDeclaration)
-    def visit_classical_declaration(self, node: ast.ClassicalDeclaration, context: Context, constant: bool = False):
+    def visit_classical_declaration(
+        self, node: ast.ClassicalDeclaration, context: Context, constant: bool = False
+    ):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
