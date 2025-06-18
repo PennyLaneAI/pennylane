@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the :class:`ExecutionConfig` data class.
+Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Literal, Optional
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
@@ -27,20 +27,20 @@ from pennylane.transforms.core import TransformDispatcher
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Optional[str] = None
+    mcm_method: Optional[Literal["deferred", "one-shot"] | str] = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: Optional[Literal["hw-like", "fill-shots", "pad-invalid-samples"]] = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
     will be of the same size as the original number of shots. If not specified, the device will
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
-    instead of ``"hw-like"`` when using jax/catalyst"""
+    instead of ``"hw-like"`` when using jax/catalyst."""
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
@@ -80,7 +80,7 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[Union[str, TransformDispatcher]] = None
+    gradient_method: Optional[str | TransformDispatcher] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
     gradient_keyword_arguments: Optional[dict] = None
@@ -95,7 +95,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: MCMConfig = field(default_factory=MCMConfig)
+    mcm_config: MCMConfig | dict = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
     convert_to_numpy: bool = True
@@ -138,9 +138,7 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            # pylint: disable=not-a-mapping
             object.__setattr__(self, "mcm_config", MCMConfig(**self.mcm_config))
-
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
