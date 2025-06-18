@@ -718,7 +718,7 @@ class QNode:
             if old_shots != kwargs["device"].shots:
                 warnings.warn(
                     "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `update_shots` to update the QNode's shots.",
+                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
                     UserWarning,
                 )
 
