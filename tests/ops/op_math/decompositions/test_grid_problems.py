@@ -35,7 +35,7 @@ class TestEllipse:
         assert ellipse.p == (4, 5) and ellipse.axes == (6, 7)
         assert repr(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
         assert str(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
-        assert ellipse.determinant == 1 and ellipse.descriminant == 0
+        assert ellipse.determinant == 1 and ellipse.discriminant == 0
         assert ellipse.bounding_box() == (-1, 1, -1, 1)
         assert ellipse.offset(1) == Ellipse((1, 0, 1), p=(5, 6), axes=(6, 7))
         assert ellipse.b_from_uprightness(0.2) == math.sqrt((math.pi / 0.8) ** 2 - 1)
