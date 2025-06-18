@@ -60,8 +60,8 @@ class TestCombineGlobalPhasesPass:
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: %1 = arith.addf %arg1, %arg0 : f64
-                // CHECK: quantum.gphase(%1)
+                // CHECK: [[phi:%.*]] = arith.addf [[arg1:%.*]], [[arg0:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum:%.*]])
                 // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 quantum.gphase %arg0
                 quantum.gphase %arg1
