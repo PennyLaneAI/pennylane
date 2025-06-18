@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit test module for the merge rotations transform"""
+"""Unit test module for the combine global phases transform"""
 import pytest
 
 pytestmark = pytest.mark.external
@@ -29,30 +29,30 @@ from pennylane.compiler.python_compiler.transforms import CombineGlobalPhasesPas
 class TestCombineGlobalPhasesPass:
     """Unit tests for CombineGlobalPhasesPass."""
 
-    # def test_no_global_phases_ops(self, run_filecheck):
-    #     """Test that nothing changes when there are no composable gates."""
-    #     program = """
-    #         func.func @test_func(%arg0: f64, %arg1: f64) {
-    #             // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-    #             %0 = "test.op"() : () -> !quantum.bit
-    #             // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-    #             // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
-    #             %1 = quantum.custom "RX"() %0 : !quantum.bit
-    #             %2 = quantum.custom "RY"() %1 : !quantum.bit
-    #             return
-    #         }
-    #     """
+    def test_no_global_phases_ops(self, run_filecheck):
+        """Test that nothing changes when there are no composable gates."""
+        program = """
+            func.func @test_func(%arg0: f64, %arg1: f64) {
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
+                %1 = quantum.custom "RX"() %0 : !quantum.bit
+                %2 = quantum.custom "RY"() %1 : !quantum.bit
+                return
+            }
+        """
 
-    #     ctx = Context()
-    #     ctx.load_dialect(func.Func)
-    #     ctx.load_dialect(test.Test)
-    #     ctx.load_dialect(Quantum)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
 
-    #     module = xdsl.parser.Parser(ctx, program).parse_module()
-    #     pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-    #     pipeline.apply(ctx, module)
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
+        pipeline.apply(ctx, module)
 
-    #     run_filecheck(program, module)
+        run_filecheck(program, module)
 
     def test_combinable_ops(self, run_filecheck):
         """Test that composable gates are merged."""
