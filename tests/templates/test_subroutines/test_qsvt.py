@@ -79,6 +79,7 @@ def generate_polynomial_coeffs(degree, parity=None):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]

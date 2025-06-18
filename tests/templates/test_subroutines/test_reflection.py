@@ -27,6 +27,7 @@ def hadamards(wires):
         qml.Hadamard(wires=wire)
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])

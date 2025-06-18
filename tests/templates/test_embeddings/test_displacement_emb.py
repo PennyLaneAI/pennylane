@@ -23,11 +23,13 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     feature_vector = [1.0, 2.0, 3.0]
     op = qml.DisplacementEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)  # Skip because it's CV op.
+    # Skip some tests because it's a CV op.
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
 
 def test_flatten_unflatten_methods():

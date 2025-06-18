@@ -512,4 +512,5 @@ def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
     _check_generator(op)
     if not kwargs.get("skip_differentiation", False):
         _check_differentiation(op)
-    _check_capture(op)
+    if not kwargs.get("skip_capture", False):
+        _check_capture(op)

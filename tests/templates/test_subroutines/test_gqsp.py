@@ -26,6 +26,7 @@ from pennylane import numpy as np
 class TestGQSP:
     """Test the qml.GQSP template."""
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
 
