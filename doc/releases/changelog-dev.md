@@ -45,6 +45,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
