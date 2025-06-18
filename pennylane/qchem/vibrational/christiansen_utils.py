@@ -1079,7 +1079,8 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     Similarly, the three-mode integrals can be obtained
     following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
-    These integrals can be computed efficiently by using the Gauss-Hermite quadrature, which
+    These integrals can be computed efficiently by using the 
+    `Gauss-Hermite quadrature <https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature>`_, which
     expresses the integral as
 
     .. math::
@@ -1092,7 +1093,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        cubic(bool): Flag to include three-mode integrals. Default is ``False``.
+        cubic(bool): Whether to include three-mode integrals. Default is ``False``.
         num_workers (int): the number of concurrent units used for the computation. Default value is
             set to 1.
         backend (string): the executor backend from the list of supported backends. Available
