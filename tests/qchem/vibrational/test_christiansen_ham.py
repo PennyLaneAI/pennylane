@@ -98,7 +98,6 @@ def test_christiansen_bosonic():
     ops, coeffs = zip(*list(christiansen_bos_op.items()))
 
     for i, ele in enumerate(cform_ops_ref):
-        print("ssssssssss", i, ele)
         cform_ops_ref[i] = BoseWord(ele)
 
     assert list(ops) == cform_ops_ref
