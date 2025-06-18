@@ -603,7 +603,10 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
-* Fixed missing table descriptions [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
+* Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
+  :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
+  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
+  [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
 
 <h3>Breaking changes 💔</h3>
 
