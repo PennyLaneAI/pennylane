@@ -140,7 +140,7 @@ class ZSqrtTwo:
         return ZSqrtTwo(self.a, self.b)
 
     def adj2(self) -> ZSqrtTwo:
-        r"""Return the root-2 conjugate.
+        r"""Return the adjoint, i.e., the root-2 conjugate.
 
         .. math::
             (a + b\sqrt{2})^{\bullet} = a - b\sqrt{2}
@@ -155,14 +155,19 @@ class ZSqrtTwo:
 
         xs = (math.isqrt((self.a + r) // 2), math.isqrt((self.a - r) // 2))
         ys = (math.isqrt((self.a - r) // 4), math.isqrt((self.a + r) // 4))
+
+        res = None
         for x, y in zip(xs, ys):
             zrt = ZSqrtTwo(x, y)
             if zrt * zrt == self:
-                return zrt
+                res = zrt
+                break
             art = zrt.adj2()
             if art * art == self:  # pragma: no cover
-                return art
-        return None  # pragma: no cover
+                res = art
+                break
+
+        return res
 
     def to_omega(self) -> ZOmega:
         """Convert to the an ring of integers adjoined with omega."""
@@ -303,7 +308,7 @@ class ZOmega:
         return ZOmega(-self.c, -self.b, -self.a, self.d)
 
     def adj2(self: ZOmega) -> ZOmega:
-        r"""Return the root-2 conjugate.
+        r"""Return the adjoint, i.e., the root-2 conjugate.
 
         .. math::
             (a\omega^3 + b\omega^2 + c\omega + d)^{\bullet} = -a\omega^3 + b\omega^2 - c\omega + d
@@ -315,7 +320,7 @@ class ZOmega:
         return self * self.conj()
 
     def parity(self: ZOmega) -> int:
-        """Return the parity for conversion to ZSqrtTwo."""
+        """Return the parity indicating structure of real and imaginary parts as a DyadicMatrix element."""
         return (self.a + self.c) % 2
 
     def to_sqrt_two(self: ZOmega) -> ZSqrtTwo:
@@ -384,7 +389,7 @@ class DyadicMatrix:
         return f"[[{self.a}, {self.b}], [{self.c}, {self.d}]]"
 
     def __repr__(self: DyadicMatrix) -> str:
-        return f"DyadicMatrix({self.a}, {self.b}, {self.c}, {self.d})"
+        return f"DyadicMatrix(a={self.a}, b={self.b}, c={self.c}, d={self.d}, k={self.k})"
 
     def __neg__(self: DyadicMatrix) -> DyadicMatrix:
         return DyadicMatrix(-self.a, -self.b, -self.c, -self.d, self.k)
@@ -501,7 +506,14 @@ class DyadicMatrix:
         )
 
     def normalize(self: DyadicMatrix) -> None:
-        """Reduce the k value of the dyadic matrix."""
+        """Reduce the k value of the dyadic matrix.
+
+        Example:
+            >>> A = DyadicMatrix(ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), k = 4)
+            >>> A.normalize()
+            >>> A
+            DyadicMatrix(a=1, b=1, c=1, d=1, k=2)
+        """
         # a, b, c, d = self.flatten
         # Factoring 2: Derived using (1 - w^4) [a', b', c', d'] => [a, b, c, d]
         if all(ZOmega() == s for s in self.flatten):
@@ -563,7 +575,7 @@ class SO3Matrix:
         str_repr = "["
         for i in range(3):
             str_repr += f"[{elements[i * 3]}, {elements[i * 3 + 1]}, {elements[i * 3 + 2]}], \n"
-        str_repr = str_repr.rstrip(", \n") + "]" + (f" * √2^-{self.k}" if self.k else "")
+        str_repr = str_repr.rstrip(", \n") + "]" + (f" * 1 / √2^{self.k}" if self.k else "")
         return str_repr
 
     def __repr__(self: SO3Matrix) -> str:
@@ -654,7 +666,14 @@ class SO3Matrix:
         return so3_mat
 
     def normalize(self: SO3Matrix) -> None:
-        """Reduce the k value of the SO(3) matrix."""
+        """Reduce the k value of the SO(3) matrix.
+
+        Example:
+            >>> A = DyadicMatrix(ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), ZOmega(d=2), k = 4) * 2
+            >>> B = SO3Matrix(A @ A)
+            >>> B.normalize()
+            SO3Matrix(matrix=[[1, 1], [1, 1]], k=-6)
+        """
         elements = self.flatten
         if all(s.a == 0 and s.b == 0 for s in elements):
             self.k = 0

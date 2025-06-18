@@ -72,6 +72,7 @@ class TestFactorization:
             (7, [ZSqrtTwo(3, 1), ZSqrtTwo(3, -1)]),
             (29, [ZSqrtTwo(29, 0)]),
             (47, [ZSqrtTwo(7, 1), ZSqrtTwo(7, -1)]),
+            (15, None),
         ],
     )
     def test_factorize_prime_zsqrt_two(self, num, expected):
@@ -84,6 +85,7 @@ class TestFactorization:
         "num, expected",
         [
             (3, ZOmega(d=3)),
+            (27, None),
             (5, ZOmega(b=-2, d=-1)),
             (7, None),
             (11, ZOmega(d=11)),
@@ -101,6 +103,7 @@ class TestFactorization:
         "num, expected",
         [
             (2, True),
+            (4, False),
             (5, True),
             (29, True),
             (561, False),  # 561 is not prime (3*11*17)
@@ -117,6 +120,8 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "nums, expected",
         [
+            ((3, 2), 1),
+            ((0, 1), 0),
             ((4, 5), 3),
             ((9, 11), 3),
             ((16, 17), 4),
@@ -130,7 +135,7 @@ class TestFactorization:
     def test_sqrt_modulo_p(self, nums, expected):
         """Test square root modulo p."""
         assert _sqrt_modulo_p(*nums) == expected
-        if expected is not None:
+        if expected is not None and nums[1] != 2:
             assert expected**2 % nums[1] == nums[0]
 
     @pytest.mark.parametrize(

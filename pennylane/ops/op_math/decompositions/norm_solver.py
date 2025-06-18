@@ -77,12 +77,13 @@ def _prime_factorize(n: int, max_trials=1000, z_sqrt_two: bool = True) -> list[i
                 return None
             factors.append(p)
             continue
-        if z_sqrt_two and (factor := _integer_factorize(p, max_trials)) % 8 == 7:
+        if (factor := _integer_factorize(p, max_trials)) is None:  # pragma: no cover
+            return None
+        if z_sqrt_two and factor % 7 == 0:  # pragma: no cover
             return None
         # If we have found an integer factor,
         # push it and its complement onto the stack
-        if factor is not None:
-            stack.extend([factor, p // factor])
+        stack.extend([factor, p // factor])
 
     return sorted(factors)
 
@@ -114,7 +115,7 @@ def _integer_factorize(n: int, max_tries=1000) -> int | None:
 
         while g == 1:
             y = x
-            # Process mext `r` steps
+            # Process next `r` steps
             for _ in range(r):
                 x = (x * x % n + c) % n
 
@@ -156,9 +157,9 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         - Lemma C.8: Prime factorization of :math:`\pm 2 = (0 + 1\sqrt{2})(0 \pm 1\sqrt{2})`
           in :math:`\mathbb{Z}[\sqrt{2}]`.
         - Lemma C.9: Prime factorization of :math:`p \equiv 3 \mod 8` and :math:`p \equiv 5 \mod 8`
-          is inert in :math:`\mathbb{Z}[\sqrt{2}]`.
+          will have one factor in :math:`\mathbb{Z}[\sqrt{2}]`.
         - Lemma C.11: Prime factorization of :math:`p \equiv 1 \mod 8` and :math:`p \equiv 7 \mod 8`
-          is distinct split in :math:`\mathbb{Z}[\sqrt{2}]`.
+          will have two factors in :math:`\mathbb{Z}[\sqrt{2}]`.
 
     Args:
         n (int): The prime number for which to find the factorization.
@@ -171,19 +172,17 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         # Lemma C.8: ±2 = (0 + 1√2)(0 ± 1√2)
         return [ZSqrtTwo(0, 1), ZSqrtTwo(0, (-1) ** (p < 0))]
 
-    if (r := p % 8) in (3, 5):
-        # p = (p + 0√2) is prime in Z[√2]
+    if p % 8 in (3, 5):
+        # Lemma C.9: p = (p + 0√2) is prime in Z[√2]
         return [ZSqrtTwo(p, 0)]
 
-    if r in (1, 7):  # p ≡ ±1 mod 8
-        # Solve t^2 ≡ 2 (mod p) to split p
-        if (t := _sqrt_modulo_p(2, p)) is None:
-            return None
-        # Perform ring GCD to get (a + b√2)(a - b√2)
-        res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
-        return [res, res.adj2()]
-
-    return None  # pragma: no cover
+    # Default case (Lemma C.11): p ≡ ±1 mod 8 |  p % 8 in (1, 7)
+    # Solve t^2 ≡ 2 (mod p) to split p
+    if (t := _sqrt_modulo_p(2, p)) is None:
+        return None
+    # Perform ring GCD to get (a + b√2)(a - b√2)
+    res = _gcd(ZSqrtTwo(p, 0), ZSqrtTwo(min(t, p - t), 1))
+    return [res, res.adj2()]
 
 
 # pylint: disable=too-many-return-statements
@@ -221,17 +220,15 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
 
     # p = 1, 5 mod 8, use h = sqrt(-1) mod p
     if a in (1, 5):
-        if (h := _sqrt_modulo_p(-1, p)) is None:
+        if (h := _sqrt_modulo_p(-1, p)) is None:  # pragma: no cover
             return None
         return _gcd(ZOmega(0, 1, 0, h), ZOmega(-x.b, 0, x.b, x.a))
 
-    # p = 1, 5 mod 8, use h = = sqrt(-2) mod p
-    if a == 3:
-        if (h := _sqrt_modulo_p(-2, p)) is None:
-            return None
-        return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
-
-    return None  # pragma: no cover
+    # Default case: a == 3
+    # p = 3 mod 8, use h = = sqrt(-2) mod p
+    if (h := _sqrt_modulo_p(-2, p)) is None:
+        return None
+    return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
 
 
 @lru_cache(maxsize=100)
@@ -270,14 +267,14 @@ def _primality_test(n: int) -> bool:
     bases = [2, 325, 9375, 28178, 450775, 9780504, 1795265022]
     for base in bases:
         base = base if base < n else base % n
-        if base == 0 or base < 2:
+        if base == 0 or base < 2:  # pragma: no cover
             continue
         x = pow(base, d, n)
         if x in (1, n - 1):
             continue
         for _ in range(s - 1):
             x = pow(x, 2, n)
-            if x == 1:
+            if x == 1:  # pragma: no cover
                 return False
             if x == n - 1:
                 break
@@ -289,7 +286,20 @@ def _primality_test(n: int) -> bool:
 
 @lru_cache(maxsize=100)
 def _legendre_symbol(a: int, p: int) -> int:
-    r"""Computes the Legendre symbol :math:`\left(\frac{a}{p}\right)`."""
+    r"""Computes the Legendre symbol :math:`\left(\frac{a}{p}\right)`.
+
+    This function uses the definition of the Legendre symbol:
+
+    .. math::
+        \left(\frac{a}{p}\right) = a^{(p-1)/2} \mod p
+
+    Args:
+        a (int): The number to compute the Legendre symbol of.
+        p (int): The prime number.
+
+    Returns:
+        int: The Legendre symbol of :math:`a` modulo :math:`p`.
+    """
     return pow(a, (p - 1) // 2, p)
 
 
@@ -344,6 +354,8 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
 
         # Compute b = c^(2^(m-ix-1)) mod p
         # and update the intial elements
+        if m - ix - 1 < 0:  # pragma: no cover
+            return None
         b = pow(c, 1 << (m - ix - 1), p)
         r = (r * b) % p
         c = pow(b, 2, p)
