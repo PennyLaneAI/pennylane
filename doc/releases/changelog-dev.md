@@ -451,6 +451,7 @@
   xDSL module has been added for the experimental xDSL Python compiler integration.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
+  [(#7664)](https://github.com/PennyLaneAI/pennylane/pull/7664)
 
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
@@ -684,6 +685,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `jax` and `tensorflow` dependencies for `doc` builds.
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
+
 * `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
   to match the expected binary distribution format naming conventions.
   [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
@@ -710,6 +714,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
   [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
@@ -803,6 +808,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
+  inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
+  drawing.
+  [(#7668)](https://github.com/PennyLaneAI/pennylane/pull/7668)
 
 * A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
   in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
