@@ -23,7 +23,7 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 
 
 def christiansen_bosonic(one, two=None, three=None, ordered=True):
-    r"""Returns Christiansen bosonic vibrational Hamiltonian.
+    r"""Generates a Christiansen bosonic vibrational Hamiltonian.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
@@ -193,7 +193,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
 
 
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
-    r"""Returns Christiansen vibrational Hamiltonian.
+    r"""Generates a Christiansen vibrational Hamiltonian.
 
     The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
     `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
