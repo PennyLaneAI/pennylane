@@ -12,25 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the set_shots transform, which sets the number of shots for a given tape.
+This module contains the set_shots decorator.
 """
-from typing import Sequence, Union
+from typing import Sequence, Tuple, Union
 
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import transform
-from pennylane.typing import PostprocessingFn
+
+from .qnode import QNode
 
 
-def null_postprocessing(results):
-    """An empty post-processing function."""
-    return results[0]
-
-
-@transform
 def set_shots(
-    tape: QuantumScript, shots: Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    qnode: QNode,
+    shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
+) -> QNode:
     """Transform used to set or update a circuit's shots.
 
     Args:
@@ -77,6 +71,7 @@ def set_shots(
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    if tape.shots != Shots(shots):
-        tape = tape.copy(shots=shots)
-    return (tape,), null_postprocessing
+    # When called directly with a function/QNode
+    if isinstance(qnode, QNode):
+        return qnode.update_shots(shots)
+    raise ValueError("set_shots can only be applied to QNodes")

@@ -45,6 +45,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -689,6 +690,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
   to match the expected binary distribution format naming conventions.
   [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
+
+* Adjust workflow helper function `construct_batch` to be consistent with `set_shots` and other user transforms, following similar logic as `execute`.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
 
 * The `qml.compiler.python_compiler` submodule has been restructured.
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)

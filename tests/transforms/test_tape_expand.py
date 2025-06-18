@@ -17,6 +17,8 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 
+from functools import partial
+
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -869,10 +871,10 @@ class TestCreateCustomDecompExpandFn:
     @pytest.mark.parametrize("shots", [None, 100])
     def test_custom_decomp_with_mcm(self, shots):
         """Test that specifying a single custom decomposition works as expected."""
-
         custom_decomps = {"Hadamard": custom_hadamard}
-        decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit", custom_decomps=custom_decomps)
 
+        @partial(qml.set_shots, shots=shots)
         @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)

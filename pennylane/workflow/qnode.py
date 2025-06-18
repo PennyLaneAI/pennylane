@@ -30,7 +30,7 @@ from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
@@ -595,6 +595,8 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
+        self._shots: Shots = device.shots
+        self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
@@ -699,6 +701,7 @@ class QNode:
             raise ValueError(
                 f"Must specify at least one configuration property to update. Valid properties are: {valid_params}."
             )
+
         original_init_args = self._init_args.copy()
         # gradient_kwargs defaults to None
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
@@ -708,11 +711,53 @@ class QNode:
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 
+        # pylint: disable=protected-access
+        old_shots = self._shots
+        # set shots issue
+        if "device" in kwargs:
+            if old_shots != kwargs["device"].shots:
+                warnings.warn(
+                    "The device's shots value does not match the QNode's shots value. "
+                    "This may lead to unexpected behavior. Use `update_shots` to update the QNode's shots.",
+                    UserWarning,
+                )
+
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
+        updated_qn = updated_qn.update_shots(old_shots)
+
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
+
+    def update_shots(self, shots: Union[int, Shots]) -> "QNode":
+        """Update the number of shots used by the QNode.
+
+        Args:
+            shots (int or Shots): The new number of shots to use.
+
+        Returns:
+            qnode (QNode): new QNode with updated shots
+        """
+
+        # Create a copy of the current QNode
+        updated_qn = copy.copy(self)
+
+        # Update the shots attribute directly
+        # pylint: disable=protected-access
+        updated_qn._set_shots(shots)
+
+        return updated_qn
+
+    def _set_shots(self, shots: Union[int, Shots]) -> None:
+        """Set the number of shots used by the QNode.
+
+        Args:
+            shots (int or Shots): The new number of shots to use.
+        """
+
+        self._shots = Shots(shots)
+        self._shots_override_device = bool(self._shots != self.device.shots)
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
@@ -802,6 +847,10 @@ class QNode:
         else:
             shots = kwargs.pop("shots", self.device.shots)
 
+        # QNode._shots precedency:
+        if self._shots_override_device:
+            shots = self._shots
+
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
@@ -851,8 +900,8 @@ class QNode:
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
-    def __call__(self, *args, **kwargs) -> Result:
-        if "shots" in kwargs and qml.set_shots in self.transform_program:
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+        if "shots" in kwargs and self._shots_override_device:
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 "The transform will take precedence over 'shots='",
