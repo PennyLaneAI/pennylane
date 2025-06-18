@@ -66,7 +66,7 @@ def _eval_unary_op(operand: any, operator: str, line: int):
         return -operand  # pylint: disable=invalid-unary-operand-type
     if operator == "~":
         return ~operand  # pylint: disable=invalid-unary-operand-type
-    # we shouldn't ever get thi error if the parser did its job right
+    # we shouldn't ever get this error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
     )  # pragma: no cover
