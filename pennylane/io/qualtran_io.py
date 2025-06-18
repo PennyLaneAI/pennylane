@@ -897,7 +897,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             pip install qualtran
 
     Args:
-        circuit (QNode | Operation): A QNode or an initialized PennyLane operator to be converted to a Qualtran Bloq.
+        circuit (QNode | Operation): A :class:`~pennylane.QNode` or an initialized PennyLane operator to be converted to a Qualtran Bloq.
         map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
             as a ``ToBloq``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
