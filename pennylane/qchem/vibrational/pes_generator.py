@@ -763,7 +763,7 @@ def vibrational_pes(
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
-       ~.VibrationalPES object.
+       VibrationalPES: the VibrationalPES object
 
     **Example**
 
