@@ -842,7 +842,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
         if "shots" in kwargs and self._shots_override_device:
-            _kwargs_shots = kwargs.pop('shots')
+            _kwargs_shots = kwargs.pop("shots")
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 f"The transform will take precedence over 'shots={_kwargs_shots}.'",

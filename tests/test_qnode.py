@@ -525,6 +525,31 @@ class TestPyTreeStructure:
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
+    def test_shots_override_warning(self):
+        """Test that a warning is raised when both set_shots transform and shots parameter are used."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # First apply set_shots to override device shots
+        modified_circuit = qml.set_shots(circuit, shots=50)
+        assert modified_circuit._shots == qml.measurements.Shots(50)
+        assert modified_circuit._shots_override_device is True
+
+        # Then try to pass shots parameter when calling the QNode
+        with pytest.warns(
+            UserWarning,
+            match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+            "The transform will take precedence over 'shots=25'.",
+        ):
+            result = modified_circuit(shots=25)
+
+        # Verify that the set_shots value (50) was used, not the parameter value (25)
+        assert len(result) == 50
+
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
         is returned from the QNode."""
