@@ -81,7 +81,7 @@ def _interpret_level_initial(
 ) -> slice:
     """Interpret the level specification for the initial user transform slice.
 
-    This function handles slicing into the user transforms only, before any
+    This function handles slicing into the user transforms before any
     gradient or device transforms are applied.
 
     Args:
