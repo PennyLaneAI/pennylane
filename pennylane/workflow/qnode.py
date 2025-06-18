@@ -840,14 +840,15 @@ class QNode:
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
         if "shots" in kwargs and self._shots_override_device:
+            _kwargs_shots = kwargs.pop('shots')
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                "The transform will take precedence over 'shots='",
+                f"The transform will take precedence over 'shots={kwargs_shots}.'",
                 UserWarning,
                 stacklevel=2,
             )
-        kwargs = copy.copy(kwargs)
 
         if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
             shots = self._shots
