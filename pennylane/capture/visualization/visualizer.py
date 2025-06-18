@@ -191,7 +191,7 @@ class PlxprVisualizer(PlxprInterpreter):
 
             return self.interpret_operation(op)
 
-        if type(self.plxpr_graph.current_cluster) is ControlCluster:
+        if isinstance(self.plxpr_graph.current_cluster, (ControlCluster, AdjointCluster)):
             # This is a stand-alone operation that does not return a value
             num_wires = len(op.wires)
 
@@ -565,9 +565,55 @@ def handle_ctrl_transform(
 
     interpreter_copy = copy(self)
     interpreter_copy.plxpr_graph.current_cluster = ctrl_cluster
-    op = interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
+    interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
 
-    if op:
-        print(op)
+    return []
+
+
+@PlxprVisualizer.register_primitive(adjoint_transform_prim)
+def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts, eqn=None):
+    """Interpret an adjoint transform primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    ascii_context = {}
+
+    outer_invars = eqn.invars[n_consts:]
+    outer_constants = eqn.invars[:n_consts]
+
+    if not outer_invars:
+        # This is if you give an operator type to qml.ctrl
+        for outer_const, inner_const in zip(outer_invars, jaxpr.constvars, strict=True):
+            assert (
+                inner_const not in ascii_context
+            ), f"Variable {inner_const} already exists in ascii_context."
+            ascii_context[inner_const] = self.read_ascii(outer_const)
+
+        for outer_var, inner_var in zip(outer_constants, jaxpr.invars, strict=True):
+            assert (
+                inner_var not in ascii_context
+            ), f"Variable {inner_var} already exists in ascii_context."
+            ascii_context[inner_var] = self.read_ascii(outer_var)
+
+    else:
+        # This is if you give a qfunc to qml.ctrl
+        for outer_const, inner_const in zip(outer_constants, jaxpr.constvars, strict=True):
+            assert (
+                inner_const not in ascii_context
+            ), f"Variable {inner_const} already exists in ascii_context."
+            ascii_context[inner_const] = self.read_ascii(outer_const)
+
+        for outer_var, inner_var in zip(outer_invars, jaxpr.invars, strict=True):
+            assert (
+                inner_var not in ascii_context
+            ), f"Variable {inner_var} already exists in ascii_context."
+            ascii_context[inner_var] = self.read_ascii(outer_var)
+
+    adjoint_cluster = AdjointCluster(info_label="adjoint")
+    self.plxpr_graph.add_cluster_to_graph(adjoint_cluster)
+
+    interpreter_copy = copy(self)
+    interpreter_copy.plxpr_graph.current_cluster = adjoint_cluster
+    interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
 
     return []

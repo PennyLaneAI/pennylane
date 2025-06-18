@@ -166,10 +166,13 @@ class AdjointCluster(pydot.Cluster):
         super().__init__(*args, **kwargs)
         self.set_penwidth(2)
         self.set_fontname("Helvetica")
+        self.set_style("filled")
+        self.set_fillcolor(kwargs.get("fillcolor", "hotpink1"))
+        self.set_color(kwargs.get("color", "hotpink3"))
 
         cur_name = self.get_name()
-        new_name = f"{cur_name}{ControlFlowCluster._counter}"
-        ControlFlowCluster._counter += 1
+        new_name = f"{cur_name}{AdjointCluster._counter}"
+        AdjointCluster._counter += 1
         self.set_name(new_name)
 
         # Increment the counter and use it for a unique node name
@@ -179,10 +182,11 @@ class AdjointCluster(pydot.Cluster):
             node = pydot.Node(
                 unique_name,
                 label=info_label,
-                shape="rectangle",
+                shape="ellipse",
                 style="dashed",
                 fontname="Helvetica",
                 penwidth=2,
+                color="hotpink3",
             )
             rank_subgraph.add_node(node)
             self.add_subgraph(rank_subgraph)
