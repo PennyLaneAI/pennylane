@@ -191,6 +191,8 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     can be separately localized, to prevent mixing between specific groups of normal modes, by
     defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
     localize modes that have frequencies above and below :math:`2600` reciprocal centimetre (:math:`\text{cm}^{-1}`).
+    Similarly, `bins = [1300, 2600]`` allows to separately localize modes in three groups that have
+    frequencies below :math:`1300`, between :math:`1300-2600` and above :math:`2600` and so on.
 
     Args:
         freqs (List[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
