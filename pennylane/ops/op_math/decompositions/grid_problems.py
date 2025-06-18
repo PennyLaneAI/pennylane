@@ -147,7 +147,7 @@ class Ellipse:
         y = float(y) - self.p[1]  # shift y to the origin
         descriminant = y**2 * (self.b**2 - self.a * self.d) + self.a
         if descriminant < 0:
-            return None
+            raise ValueError(f"Point y={y} is outside the ellipse")
 
         x0, d0 = self.p[0], math.sqrt(descriminant)
         x1 = (-self.b * y - d0) / self.a
@@ -159,7 +159,7 @@ class Ellipse:
         x = float(x) - self.p[0]  # shift x to the origin
         descriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
         if descriminant < 0:
-            return None
+            raise ValueError(f"Point x={x} is outside the ellipse")
 
         y0, d0 = self.p[1], math.sqrt(descriminant)
         y1 = (-self.b * x - d0) / self.d
@@ -194,7 +194,16 @@ class Ellipse:
 
 
 class State:
-    """A class representing pair of normalized ellipses."""
+    """A class representing pair of normalized ellipses.
+
+    This is based on the Definition A.1 of arXiv:1403.2975,
+    where the pair of ellipses are represented by real symmetric
+    positive semi-definite matrices of determinant 1.
+
+    Args:
+        e1: The first ellipse.
+        e2: The second ellipse.
+    """
 
     def __init__(self, e1: Ellipse, e2: Ellipse):
         self.e1 = e1
@@ -303,14 +312,31 @@ class State:
 
 
 class GridOp:
-    """A class representing a grid operation on a 2D grid."""
+    r"""A class representing a grid operation on a 2D grid.
+
+    This follows Definition 5.10 and Lemma 5.11 of arXiv:1403.2975,
+    where a grid operator :math:`G` is described as a linear map,
+    which can be identifed with a :math:`2 \times 2` matrix as follows:
+
+    .. math::
+        G = \begin{pmatrix} a & b \\ c & d \end{pmatrix}.
+
+    Each entry :math:`m` of the matrix is of the form :math:`m = m_0 + m_1 / \sqrt{2}`,
+    where :math:`m_0, m_1 \in \mathbb{Z}` and :math:`a+b+c+d \equiv 0 \mod 2`.
+
+    Args:
+        a (tuple[int, int]): The a-coefficient of the grid operation.
+        b (tuple[int, int]): The b-coefficient of the grid operation.
+        c (tuple[int, int]): The c-coefficient of the grid operation.
+        d (tuple[int, int]): The d-coefficient of the grid operation.
+    """
 
     def __init__(
         self,
-        a: tuple[float, float],
-        b: tuple[float, float],
-        c: tuple[float, float],
-        d: tuple[float, float],
+        a: tuple[int, int],
+        b: tuple[int, int],
+        c: tuple[int, int],
+        d: tuple[int, int],
     ) -> None:
         """Initialize the grid operation."""
         self.a = a
@@ -405,7 +431,8 @@ class GridOp:
         """Return the grid operation from a string.
 
         Args:
-            string: Supported string are: "I", "R", "A", "B", "K", "X", "Z" (Fig 6, arXiv:1403.2975).
+            string: Supported string are: "I", "R", "A", "B", "K", "X", "Z".
+                (Fig 6, arXiv:1403.2975).
 
         Returns:
             GridOp: The grid operation corresponding to the string.
@@ -427,13 +454,13 @@ class GridOp:
 
     @property
     def is_special(self) -> bool:
-        """Check if the grid operation is special."""
+        """Check if the grid operation is special based on Proposition 5.13 of arXiv:1403.2975."""
         det1, det2 = self.determinant
         return det2 == 0 and det1 in {1, -1}
 
     @property
     def flatten(self) -> list[float]:
-        """Flatten the grid operation."""
+        """Flatten the grid operation based on description in Lemma 5.11 of arXiv:1403.2975."""
         return [
             self.a[0] + self.a[1] / _SQRT2,
             self.b[0] + self.b[1] / _SQRT2,
@@ -472,16 +499,15 @@ class GridOp:
         )
 
     def apply_to_ellipse(self, ellipse: Ellipse) -> Ellipse:
-        """Apply the grid operator to an ellipse."""
+        """Apply the grid operator to an ellipse based on Lemma A.4's proof in arXiv:1403.2975."""
         return ellipse.apply_grid_op(self)
 
     def apply_to_state(self, state: State) -> tuple[Ellipse, Ellipse]:
-        """Apply the grid operator to a state."""
+        """Apply the grid operator to a state based on Definition A.3 of arXiv:1403.2975."""
         return state.apply_grid_op(self)
 
     def apply_shift_op(self, k: int) -> "GridOp":
-        """Apply a shift operator to the grid operation."""
-        # Uses Lemma A.9 of arXiv:1403.2975
+        """Apply a shift operator to the grid operation based on Lemma A.9 of arXiv:1403.2975."""
         k, sign = abs(k), (-1) ** (k < 0)  # +1 if k > 0, -1 if k < 0
         grid_op = self
         for _ in range(k):
@@ -496,7 +522,7 @@ class GridOp:
 
 @lru_cache(maxsize=1)
 def _useful_grid_ops() -> dict["str", "GridOp"]:
-    """Generate a list of useful grid operations (Fig 6, arXiv:1403.2975)."""
+    """Generate a list of useful grid operations based on Fig 6 of arXiv:1403.2975."""
     return {
         "I": GridOp((1, 0), (0, 0), (0, 0), (1, 0)),
         "R": GridOp((0, 1), (0, -1), (0, 1), (0, 1)),
@@ -509,7 +535,21 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
 
 
 class GridIterator:
-    """Solve the grid problem for one and two dimensions."""
+    r"""Iterate over the solutions to the scaled grid problem.
+
+    This is based on the Section 5 of arXiv:1403.2975 and
+    implements Proposition 5.22, to enumerate all solutions
+    to the scaled grid problem over the :math:`\epsilon`-region,
+    and a unit disk.
+
+    It implements an ``__iter__`` method to iterate over the
+    solutions efficiently as a generator.
+
+    Args:
+        theta (float): The angle of the grid problem.
+        epsilon (float): The epsilon of the grid problem.
+        max_iter (int): The maximum number of iterations.
+    """
 
     def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_iter: int = 100):
         self.theta = theta
@@ -524,33 +564,35 @@ class GridIterator:
         return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_iter={self.max_iter})"
 
     def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
-        """Iterate over the grid problem."""
+        """Iterate over the solutions to the scaled grid problem."""
 
-        k = self.kmin
-        e1 = Ellipse.from_region(self.epsilon, self.theta, k)
-        e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))
-        en, _ = e1.normalize()
-        grid_op = State(en, e2).grid_op()
+        k = self.kmin  # Start with the lower-bound on k.
+        e1 = Ellipse.from_region(self.epsilon, self.theta, k)  # Ellipse for the epsilon-region.
+        e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
+        en, _ = e1.normalize()  # Normalize the epsilon-region.
+        grid_op = State(en, e2).grid_op()  # Grid operation for the epsilon-region.
 
         for _ in range(self.max_iter):
+            # Update the radius of the unit disk.
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
             e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
-
+            # Apply the grid operation to the state and solve the two-dimensional grid problem.
             state = State(e1, e2).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
 
             for solution in potential_solutions:
+                # Normalize the solution and obtain the scaling exponent of sqrt(2).
                 scaled_sol, kf = (grid_op * solution).normalize()
 
                 complx_sol = complex(scaled_sol)
                 sol_real, sol_imag = complx_sol.real, complx_sol.imag
                 norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
 
-                k_ = k - kf
+                k_ = k - kf  # Update the scaling exponent of sqrt(2).
                 dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
                     2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
                 )
-
+                # Check if the solution is follows the constraints of the target-region.
                 if abs(norm_zsqrt_two) <= 2**k_ and dot_prod >= self.target:
                     yield scaled_sol, k_
 
@@ -561,6 +603,8 @@ class GridIterator:
 
         The solutions :math:`u \in Z[\omega]` are such that :math:`u \in E1` and
         :math:`u.adj2() \in E2`, where ``adj2`` is :math:`\sqrt(2)` conjugation.
+
+        This is based on Proposition 5.21 and Theorem 5.18 of arXiv:1403.2975.
 
         Args:
             state: The state of the grid problem.
@@ -580,12 +624,16 @@ class GridIterator:
         bbox21 = tuple(bb_ + e2.p[ix_ // 2] for ix_, bb_ in enumerate(bbox2))
         bbox22 = tuple(bb_ + 1 / _SQRT2 for bb_ in bbox21)
 
+        # Check if it is easier to solve problem for either of x-or-y-interval.
+        # Based on this, we can try to first solve for alpha-or-beta and then refine for other.
+        # If both of them are balanced, rely on doing naive search over both.
         bbox_zip = list(zip((bbox11, bbox12), (bbox21, bbox22)))
         num_x1, num_x2 = (self.bbox_grid_points(bb1[:2] + bb2[:2]) for bb1, bb2 in bbox_zip)
         num_y1, num_y2 = (self.bbox_grid_points(bb1[2:] + bb2[2:]) for bb1, bb2 in bbox_zip)
         num_b1 = [num_x1 > num_points * num_y1, num_y1 > num_points * num_x1]
         num_b2 = [num_x2 > num_points * num_y2, num_y2 > num_points * num_x2]
 
+        # Solve the problem for the two cosets of ZOmega ring and add non-zero offset to odd one.
         potential_sols1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
         potential_sols2 = self.solve_upright_problem(state2, bbox12, bbox22, num_b2, ZOmega(c=1))
         for solution in chain(potential_sols1, potential_sols2):
@@ -625,7 +673,7 @@ class GridIterator:
         Ax0, Ax1, Ay0, Ay1 = bbox1
         Bx0, Bx1, By0, By1 = bbox2
 
-        if num_b[0]:
+        if num_b[0]:  # If it is easier to solve for beta first.
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
             for beta in beta_solutions1:
                 Ax0_tmp, Ax1_tmp = e1.x_points(beta)
@@ -636,7 +684,7 @@ class GridIterator:
                     )
                     for alpha in new_alpha_solutions:
                         yield ZOmega.from_sqrt_pair(alpha, beta, shift)
-        elif num_b[1]:
+        elif num_b[1]:  # If it is easier to solve for alpha first.
             alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
             for alpha in alpha_solutions1:
                 Ay0_tmp, Ay1_tmp = e1.y_points(alpha)
@@ -647,7 +695,7 @@ class GridIterator:
                     )
                     for beta in new_beta_solutions:
                         yield ZOmega.from_sqrt_pair(alpha, beta, shift)
-        else:
+        else:  # If both of them are balanced, solve for both and refine.
             alpha_solutions1 = self.solve_one_dim_problem(Ax0, Ax1, Bx0, Bx1)
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
             found_beta1_solutions = []
@@ -662,24 +710,41 @@ class GridIterator:
 
     @staticmethod
     def bbox_grid_points(bbox: tuple[float, float, float, float]) -> int:
-        """Count the number of grid points in a bounding box."""
+        """Count the number of grid points in a bounding box.
+
+        This gives an estimation on the expected number of solution within
+        the bounding box. This is based on the Lemma 16 of arXiv:1212.6253.
+
+        Args:
+            bbox (tuple[float, float, float, float]): The bounding box.
+
+        Returns:
+            int: The number of grid points in the bounding box.
+        """
         d_ = math.log2(ZSqrtTwo(1, 1))
         l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
         d1, d2 = (bbox[1] - bbox[0], bbox[3] - bbox[2])
 
+        # Find the integer scaling factor for the x and y intervals, such that
+        # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
         k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
-        if abs(k1) > abs(k2):
+        if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             bbox, k1, k2 = (bbox[2], bbox[3], bbox[0], bbox[1]), k2, k1
 
+        # Scale the x and y intervals to enter the intended interval.
+        # Look at `solve_one_dim_problem` for more details.
         x_scale = float((l1 if k1 < 0 else l2) ** abs(k1))
         y_scale = float((-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1))
 
         x0_scaled, x1_scaled = x_scale * bbox[0], x_scale * bbox[1]
         y0_scaled, y1_scaled = sorted((y_scale * bbox[2], y_scale * bbox[3]))
 
+        # Check if we are indeed within the intended interval.
         if x1_scaled - x0_scaled < 1 - _SQRT2:
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
+        # Use the constraints x0 <= a + b * sqrt(2) <= x1 and y0 <= a - b * sqrt(2) <= y1
+        # to obtain the bounds on b and eliminate the variable a to obtain the bounds on b.
         lower_bound_b = (x0_scaled - y1_scaled) / (2 * _SQRT2)
         upper_bound_b = (x1_scaled - y0_scaled) / (2 * _SQRT2)
         return 1 + int(upper_bound_b - lower_bound_b)
@@ -698,11 +763,13 @@ class GridIterator:
         iterates over all solutions of the form :math:`a + b\sqrt(2)` such that
         :math:`a + b\sqrt(2) \in [x0, x1]` and :math:`a - b\sqrt(2) \in [y0, y1]`.
 
+        This is based on the Lemmas 16 and 17 of arXiv:1212.6253.
+
         Args:
-            x0: The lower bound of the x-interval.
-            x1: The upper bound of the x-interval.
-            y0: The lower bound of the y-interval.
-            y1: The upper bound of the y-interval.
+            x0 (float): The lower bound of the x-interval.
+            x1 (float): The upper bound of the x-interval.
+            y0 (float): The lower bound of the y-interval.
+            y1 (float): The upper bound of the y-interval.
 
         Returns:
             Iterable[ZSqrtTwo]: The list of solutions to the one dimensional grid problem.
@@ -711,12 +778,17 @@ class GridIterator:
         l1, l2 = ZSqrtTwo(1, 1), ZSqrtTwo(-1, 1)
         d1, d2 = (x1 - x0, y1 - y0)
 
-        f_adj2 = False
+        f_adj2 = False  # Check if we need to apply the sqrt(2) conjugation.
+        # Find the integer scaling factor for the x and y intervals, such that
+        # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
         k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
-        if abs(k1) > abs(k2):
+        if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             f_adj2, k1, k2 = True, k2, k1
             x0, x1, y0, y1 = y0, y1, x0, x1
 
+        # Turn the problem into a scaled grid problem,
+        # such that we get to solve the specific case of:
+        # -1 + √2 <= x1 - x0 < 1 and (x1 - x0)(y1 - y0) >= (1 + √2)^2.
         s_scale = ZSqrtTwo(1, 1) ** abs(k1)
         x_scale = float((l1 if k1 < 0 else l2) ** abs(k1))
         y_scale = float((-1) ** k1 * (l2 if k1 < 0 else l1) ** abs(k1))
@@ -724,22 +796,31 @@ class GridIterator:
         x0_scaled, x1_scaled = x_scale * x0, x_scale * x1
         y0_scaled, y1_scaled = sorted((y_scale * y0, y_scale * y1))
 
+        # Check if we are solving the problem for the intended interval.
         if x1_scaled - x0_scaled < 1 - _SQRT2:
             bbox = (x0_scaled, x1_scaled, y0_scaled, y1_scaled)
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
+        # Use the constraints y0 <= a - b * sqrt(2) <= y1 and x0 <= a + b * sqrt(2) <= x1
+        # to obtain the bounds on b and eliminate the variable a to obtain the bounds on b.
         lower_bound_b = (x0_scaled - y1_scaled) / (2 * _SQRT2)
         upper_bound_b = (x1_scaled - y0_scaled) / (2 * _SQRT2)
 
         for b in range(int(math.floor(upper_bound_b)), int(math.ceil(lower_bound_b)) - 1, -1):
+            # Use the constraints x0 <= a + b * sqrt(2) <= x1 to obtain the bounds on a.
             lower_bound_a = x0_scaled - b * _SQRT2
             upper_bound_a = x1_scaled - b * _SQRT2
-            assert upper_bound_a - lower_bound_a < 1
+            if upper_bound_a - lower_bound_a < 1:  # pragma: no cover
+                raise ValueError(f"Value should be less than 1 for bbox {bbox}")
 
+            # Check if the bounds on the interval contains an integer.
             if math.ceil(lower_bound_a) == math.floor(upper_bound_a):
                 a = int(math.ceil(lower_bound_a))
+                # Check if the solution satisfies both bounds on x and y.
                 if (x0_scaled + y0_scaled <= 2 * a) and (2 * a <= x1_scaled + y1_scaled):
                     alpha, beta = a + b * _SQRT2, a - b * _SQRT2
+                    # Check if the consecutive solutions are within the desired bounds.
                     if x0_scaled <= alpha <= x1_scaled and y0_scaled <= beta <= y1_scaled:
+                        # Undo the scaling to obtain the solution.
                         sol = ZSqrtTwo(a, b) / s_scale if k1 < 0 else ZSqrtTwo(a, b) * s_scale
                         yield sol if not f_adj2 else sol.adj2()
