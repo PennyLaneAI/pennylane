@@ -28,7 +28,42 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.compiler import CompileError
 from pennylane.compiler.python_compiler import quantum_dialect as quantum
 from pennylane.compiler.python_compiler.jax_utils import xdsl_module
-from pennylane.compiler.python_compiler.transforms.utils import xdsl_transform
+from pennylane.compiler.python_compiler.transforms.api import xdsl_transform
+
+
+@dataclass(frozen=True)
+class MeasurementsFromSamplesPass(passes.ModulePass):
+    """Pass that replaces all terminal measurements in a program with a single
+    :func:`pennylane.sample` measurement, and adds postprocessing instructions to recover the
+    original measurement.
+    """
+
+    name = "measurements-from-samples"
+
+    # pylint: disable=arguments-renamed
+    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
+        """Apply the measurements-from-samples pass."""
+        shots = _get_static_shots_value_from_first_device_op(module)
+
+        # TODO: Do we want a walker or a greedy applier? TBD
+        # walker = pattern_rewriter.PatternRewriteWalker(MeasurementsFromSamplesPattern(shots))
+        # walker.rewrite_module(module)
+
+        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
+            [
+                SamplePattern(shots),
+                ExpvalPattern(shots),
+                VarPattern(shots),
+                ProbsPattern(shots),
+                CountsPattern(shots),
+                StatePattern(shots),
+            ]
+        )
+        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker.rewrite_module(module)
+
+
+measurements_from_samples_pass = xdsl_transform(MeasurementsFromSamplesPass)
 
 
 # pylint: disable=too-few-public-methods
@@ -52,8 +87,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
     def match_and_rewrite(self, op: ir.Operation, rewriter: PatternRewriter, /):
         """Abstract method for measurements-from-samples match-and-rewrite patterns."""
 
-    @classmethod
-    def _validate_observable_op(cls, op: quantum.NamedObsOp):
+    @staticmethod
+    def _validate_observable_op(op: quantum.NamedObsOp):
         """Validate the observable op.
 
         Assert that the op is a quantum.NamedObsOp and check if it is supported in the current
@@ -153,9 +188,9 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
         return sample_op
 
-    @classmethod
+    @staticmethod
     def _get_postprocessing_func_op_from_block_by_name(
-        cls, block: ir.Block, name: str
+        block: ir.Block, name: str
     ) -> func.FuncOp | None:
         """Return the post-processing FuncOp from the given `block` with the given `name`.
 
@@ -215,8 +250,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
         return postprocessing_func_op
 
-    @classmethod
-    def _get_postprocessing_func_op_clone_from_module(cls, module: builtin.ModuleOp) -> func.FuncOp:
+    @staticmethod
+    def _get_postprocessing_func_op_clone_from_module(module: builtin.ModuleOp) -> func.FuncOp:
         """Get a clone of the post-processing FuncOp from the given `module`.
 
         Helper function to ``_get_postprocessing_func_from_module_and_insert()``.
@@ -244,9 +279,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         # Need to clone since original postprocessing_func_op is attached to the jax.jit module
         return postprocessing_func_op.clone()
 
-    @classmethod
+    @staticmethod
     def _insert_constant_int_op(
-        cls,
         value: int,
         insert_point: InsertPoint,
         rewriter: PatternRewriter,
@@ -533,68 +567,6 @@ class StatePattern(MeasurementsFromSamplesPattern):
         raise NotImplementedError("qml.state() operations are not supported.")
 
 
-@xdsl_transform
-@dataclass(frozen=True)
-class MeasurementsFromSamplesPass(passes.ModulePass):
-    """Pass that replaces all terminal measurements in a program with a single
-    :func:`pennylane.sample` measurement, and adds postprocessing instructions to recover the
-    original measurement.
-    """
-
-    name = "measurements-from-samples"
-
-    # pylint: disable=arguments-renamed
-    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
-        """Apply the measurements-from-samples pass."""
-        shots = _get_static_shots_value_from_first_device_op(module)
-
-        # TODO: Do we want a walker or a greedy applier? TBD
-        # walker = pattern_rewriter.PatternRewriteWalker(MeasurementsFromSamplesPattern(shots))
-        # walker.rewrite_module(module)
-
-        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
-            [
-                SamplePattern(shots),
-                ExpvalPattern(shots),
-                VarPattern(shots),
-                ProbsPattern(shots),
-                CountsPattern(shots),
-                StatePattern(shots),
-            ]
-        )
-        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
-        walker.rewrite_module(module)
-
-
-@xdsl_module
-@jax.jit
-def _postprocessing_expval(samples, wire):
-    """Post-processing to recover the expectation value from the given `samples` array."""
-    return jnp.mean(1.0 - 2.0 * samples[:, wire])
-
-
-@xdsl_module
-@jax.jit
-def _postprocessing_var(samples, wire):
-    """Post-processing to recover the variance from the given `samples` array."""
-    # We have to compute the variance manually here, rather than using jnp.var.
-    # The reason is that jnp.var does not get lowered (for some reason) and is left as a call to an
-    # undefined `_var` function in the generated module.
-    a = 1.0 - 2.0 * samples[:, wire]
-    return jnp.sum((a - jnp.mean(a)) ** 2) / a.size
-
-
-@xdsl_module
-@jax.jit
-def _postprocessing_probs(samples):
-    """Post-processing to recover the probability values from the given `samples` array."""
-    n_samples = samples.size
-    probs_0 = jnp.sum(samples == 0) / n_samples
-    probs_1 = jnp.sum(samples == 1) / n_samples
-
-    return jnp.array([probs_0, probs_1], dtype=float)
-
-
 def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> int:
     """Returns the number of shots as a static (i.e. known at compile time) integer value from the
     first instance of a device-initialization op (quantum.DeviceInitOp) found in `module`.
@@ -615,8 +587,6 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     Raises:
         CompileError: If `module` does not contain a quantum.DeviceInitOp.
     """
-    print("[DEBUG]: Getting number of shots from DeviceInitOp")  # FIXME: delete
-
     device_op = None
 
     for op in module.body.walk():
@@ -650,3 +620,32 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
     assert len(shots_int_values) == 1, f"Expected a single shots value, got {len(shots_int_values)}"
 
     return shots_int_values[0]
+
+
+@xdsl_module
+@jax.jit
+def _postprocessing_expval(samples, wire):
+    """Post-processing to recover the expectation value from the given `samples` array."""
+    return jnp.mean(1.0 - 2.0 * samples[:, wire])
+
+
+@xdsl_module
+@jax.jit
+def _postprocessing_var(samples, wire):
+    """Post-processing to recover the variance from the given `samples` array."""
+    # We have to compute the variance manually here, rather than using jnp.var.
+    # The reason is that jnp.var does not get lowered (for some reason) and is left as a call to an
+    # undefined `_var` function in the generated module.
+    a = 1.0 - 2.0 * samples[:, wire]
+    return jnp.sum((a - jnp.mean(a)) ** 2) / a.size
+
+
+@xdsl_module
+@jax.jit
+def _postprocessing_probs(samples):
+    """Post-processing to recover the probability values from the given `samples` array."""
+    n_samples = samples.size
+    probs_0 = jnp.sum(samples == 0) / n_samples
+    probs_1 = jnp.sum(samples == 1) / n_samples
+
+    return jnp.array([probs_0, probs_1], dtype=float)
