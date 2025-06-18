@@ -21,8 +21,9 @@ import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
+from ._setup_transform_program import _setup_transform_program
 from .qnode import QNode, _make_execution_config
-from .resolution import _resolve_interface
+from .resolution import _resolve_execution_config, _resolve_interface
 
 
 def null_postprocessing(results):
@@ -484,7 +485,7 @@ def construct_batch(
         # )
 
         ###### Resolution of the execution config ######
-        execution_config = qml.workflow.resolution._resolve_execution_config(
+        execution_config = _resolve_execution_config(
             execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
         )
         gradient_fn = execution_config.gradient_method
@@ -494,7 +495,7 @@ def construct_batch(
         level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
 
         # Use _setup_transform_program like execute() does
-        outer_transform_program, inner_transform_program = qml.workflow._setup_transform_program(
+        outer_transform_program, inner_transform_program = _setup_transform_program(
             qnode.device,
             execution_config,
             cache=qnode.execute_kwargs["cache"],
