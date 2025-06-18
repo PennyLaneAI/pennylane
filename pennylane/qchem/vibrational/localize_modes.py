@@ -195,15 +195,15 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     frequencies below :math:`1300`, between :math:`1300-2600` and above :math:`2600`.
 
     Args:
-        freqs (List[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
+        freqs (TensorLike[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
         vecs (TensorLike[float]): displacement vectors of the normal modes
         bins (List[float]): grid of frequencies for grouping normal modes.
             Default is ``[2600]``.
 
     Returns:
         tuple: A tuple containing the following:
-         - List[float] : localized frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
-         - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : localized frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
+         - List[TensorLike[float]] : localized displacement vectors
          - TensorLike[float] : localization matrix describing the relationship between the
            original and the localized modes
 
