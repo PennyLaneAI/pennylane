@@ -1101,7 +1101,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
-        TensorLike[float]: the one-mode and two-mode integrals for the Christiansen Hamiltonian
+        List[TensorLike[float]]: the one-mode and two-mode integrals for the Christiansen Hamiltonian
 
     .. note::
 
@@ -1199,7 +1199,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
 
     Returns:
-        TensorLike[float]: the integrals for the Christiansen dipole operator
+        List[TensorLike[float]]: the integrals for the Christiansen dipole operator
 
     .. note::
 
