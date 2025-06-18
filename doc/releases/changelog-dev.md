@@ -776,6 +776,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* A new :doc:`/code/qml_compiler_python_compiler` page has been added to the Internals section with documentation
+  for the `qml.compiler.python_compiler` submodule.
+  [(#7662)](https://github.com/PennyLaneAI/pennylane/pull/7662)
+
 * The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
   [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
 

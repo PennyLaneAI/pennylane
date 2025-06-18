@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""xDSL transforms core API."""
+"""PennyLane-xDSL transforms integration core API."""
 
 from .apply_transform_sequence import ApplyTransformSequence, available_passes, register_pass
 from .transform_interpreter import TransformFunctionsExt, TransformInterpreterPass
