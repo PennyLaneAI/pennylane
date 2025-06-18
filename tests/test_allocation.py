@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -178,8 +178,8 @@ def test_dynamic_register_repr():
     assert repr(reg) == "<DynamicRegister: size=2>"
 
 
-def test_allocate():
-    """Test that allocate allocates and deallocates qubits."""
+def test_allocate_context_manager():
+    """Test that allocate when used as context manager allocates and deallocates qubits."""
 
     with qml.queuing.AnnotatedQueue() as q:
         with allocate(3, require_zeros=False, restored=True) as wires:

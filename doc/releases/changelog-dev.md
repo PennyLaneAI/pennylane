@@ -410,7 +410,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Adds new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
+* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
   experimental and not integrated.
   [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
 

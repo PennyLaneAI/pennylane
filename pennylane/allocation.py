@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the commands for allocating and freeing wires dynamically.
+This module contains the commands for allocating and deallocating wires dynamically.
 """
 import uuid
 from typing import Optional, Sequence
@@ -25,7 +25,7 @@ class DynamicWire:
     """A wire whose concrete value will be determined later during a compilation step or execution.
 
     Multiple dynamic wires can correspond to the same device wire as long as they are properly allocated and
-    freed.
+    deallocated.
 
     Args:
         key (Optional[str]): a ``uuid4`` string to uniquely identify the dynamic wire.
@@ -47,16 +47,16 @@ class DynamicWire:
 
 
 class Allocate(Operator):
-    """An instruction to values for dynamic wires.
+    """An instruction to request dynamic wires.
 
     Args:
         wires (list[DynamicWire]): a list of dynamic wire values.
 
     Keyword Args:
         require_zeros (bool): Whether or not the wire must start in a ``0`` state.
-        restored (bool): Whether or not the qubit will be in the same state upon being freed.
+        restored (bool): Whether or not the qubit will be restored to the original state before being deallocated.
 
-    ..see-also:: :func:`~.allocate`, :func:`~.safe_allocate`.
+    ..see-also:: :func:`~.allocate`.
 
     """
 
@@ -94,12 +94,12 @@ class Deallocate(Operator):
 
 
 def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
-    """Frees quantum memory that had previously been allocated with :func:`~.allocate`.
+    """Frees quantum memory that has previously been allocated with :func:`~.allocate`.
     Upon freeing quantum memory, that memory is available to be allocated thereafter.
 
     .. warning::
 
-        This feature is experimental and is not possible on any device yet.
+        This feature is experimental and is not available on any device yet.
 
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
@@ -163,7 +163,8 @@ class DynamicRegister(Wires):
 
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
-    """Temporarily allocate dynamic wires while making sure to automatically deallocate them at the end.
+    """Dynamically allocates new wires in-line or as a context manager, which also safely deallocates the
+    new wires upon exiting the context.
 
     .. warning::
 
@@ -176,7 +177,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
         require_zeros (bool): whether or not the wires must start in the ``0`` state
         restored (bool): whether or not the wires are returned to the same state they started in.
 
-    This function can be used as a context manager with automatic deallocation or with manual
+    This function can be used as a context manager with automatic deallocation (preferred) or with manual
     deallocation via :func:`~.deallocate`.
 
     .. code-block:: python
