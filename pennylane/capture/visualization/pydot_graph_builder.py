@@ -84,7 +84,7 @@ class ControlFlowCluster(pydot.Cluster):
         self.set_fontname("Helvetica")
 
         cur_name = self.get_name()
-        new_name = f"{cur_name}{ControlFlowCluster._counter}"
+        new_name = f"{cur_name}_control_flow_{ControlFlowCluster._counter}"
         ControlFlowCluster._counter += 1
         self.set_name(new_name)
 
@@ -116,7 +116,7 @@ class QNodeCluster(pydot.Cluster):
         self.set_fontname("Helvetica")
 
         cur_name = self.get_name()
-        new_name = f"{cur_name}{QNodeCluster._counter}"
+        new_name = f"{cur_name}_qnode_{QNodeCluster._counter}"
         QNodeCluster._counter += 1
         self.set_name(new_name)
 
@@ -126,7 +126,7 @@ class ControlCluster(pydot.Cluster):
 
     _counter = 1
 
-    def __init__(self, info_label="", *args, **kwargs):
+    def __init__(self, *args, info_label="", **kwargs):
         super().__init__(*args, **kwargs)
         self.set_penwidth(2)
         self.set_fontname("Helvetica")
@@ -135,7 +135,7 @@ class ControlCluster(pydot.Cluster):
         self.set_color(kwargs.get("color", "darkgoldenrod3"))
 
         cur_name = self.get_name()
-        new_name = f"{cur_name}{ControlCluster._counter}"
+        new_name = f"{cur_name}_control_{ControlCluster._counter}"
         ControlCluster._counter += 1
         self.set_name(new_name)
 
@@ -162,7 +162,7 @@ class AdjointCluster(pydot.Cluster):
 
     _counter = 1
 
-    def __init__(self, info_label="", *args, **kwargs):
+    def __init__(self, *args, info_label="", **kwargs):
         super().__init__(*args, **kwargs)
         self.set_penwidth(2)
         self.set_fontname("Helvetica")
@@ -171,7 +171,7 @@ class AdjointCluster(pydot.Cluster):
         self.set_color(kwargs.get("color", "hotpink3"))
 
         cur_name = self.get_name()
-        new_name = f"{cur_name}{AdjointCluster._counter}"
+        new_name = f"{cur_name}_adjoint_{AdjointCluster._counter}"
         AdjointCluster._counter += 1
         self.set_name(new_name)
 

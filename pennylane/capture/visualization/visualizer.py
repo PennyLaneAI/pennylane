@@ -92,6 +92,7 @@ class PlxprVisualizer(PlxprInterpreter):
         return ascii
 
     def eval(self, jaxpr: core.Jaxpr, consts: Sequence, *args, ascii_context: dict = None) -> list:
+        print(self.plxpr_graph.current_cluster.get_name())
 
         self._env = {}
         if ascii_context:
@@ -565,7 +566,7 @@ def handle_ctrl_transform(
 
     interpreter_copy = copy(self)
     interpreter_copy.plxpr_graph.current_cluster = ctrl_cluster
-    interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
+    _ = interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
 
     return []
 
@@ -614,6 +615,6 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts, eqn=None):
 
     interpreter_copy = copy(self)
     interpreter_copy.plxpr_graph.current_cluster = adjoint_cluster
-    interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
+    _ = interpreter_copy.eval(jaxpr, consts, *args, ascii_context=ascii_context)
 
     return []
