@@ -605,6 +605,18 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `Device` API now defaults `execution_config : Optional[ExecutionConfig] = None` instead of defaulting
+  to `qml.devices.DefaultExecutionConfig`.  This prevents accidental mutation of a global variable that
+  would alter the default behaviour on later executions.
+  
+  This change applies to all methods that accept an `execution_config`. The new call signature for `execute`
+  is:
+  # tick marks here
+  def execute(self, circuits: QuantumScriptOrBatch, execution_config: Optional[ExecutionConfig] =None):
+  # tick marks here
+
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697/)
+
 * `ExecutionConfig` and `MCMConfig` are now frozen dataclasses. This means that their properties cannot be modified in place and instead need to be updated with `dataclasses.replace`.
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
