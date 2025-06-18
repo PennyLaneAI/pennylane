@@ -810,7 +810,7 @@ class GridIterator:
             # Use the constraints x0 <= a + b * sqrt(2) <= x1 to obtain the bounds on a.
             lower_bound_a = x0_scaled - b * _SQRT2
             upper_bound_a = x1_scaled - b * _SQRT2
-            if upper_bound_a - lower_bound_a < 1:  # pragma: no cover
+            if upper_bound_a - lower_bound_a >= 1:  # pragma: no cover
                 raise ValueError(f"Value should be less than one for {(x0, x1, y0, y1)}")
 
             # Check if the bounds on the interval contains an integer.
