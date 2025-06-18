@@ -811,7 +811,7 @@ class GridIterator:
             lower_bound_a = x0_scaled - b * _SQRT2
             upper_bound_a = x1_scaled - b * _SQRT2
             if upper_bound_a - lower_bound_a < 1:  # pragma: no cover
-                raise ValueError(f"Value should be less than 1 for bbox {bbox}")
+                raise ValueError(f"Value should be less than one for {(x0, x1, y0, y1)}")
 
             # Check if the bounds on the interval contains an integer.
             if math.ceil(lower_bound_a) == math.floor(upper_bound_a):

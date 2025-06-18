@@ -39,6 +39,15 @@ class TestEllipse:
         assert ellipse.bounding_box() == (-1, 1, -1, 1)
         assert ellipse.offset(1) == Ellipse((1, 0, 1), p=(5, 6), axes=(6, 7))
         assert ellipse.b_from_uprightness(0.2) == math.sqrt((math.pi / 0.8) ** 2 - 1)
+        assert ellipse.positive_semi_definite
+
+    def test_raise_error(self):
+        """Test that Ellipse raises an error when the ellipse is not valid."""
+        ellipse = Ellipse((1, 0, 1), (4, 5), (6, 7))
+        with pytest.raises(ValueError, match="is outside the ellipse"):
+            ellipse.x_points(24)
+        with pytest.raises(ValueError, match="is outside the ellipse"):
+            ellipse.y_points(24)
 
 
 class TestState:
