@@ -14,7 +14,7 @@
 """
 Contains the GQSP template.
 """
-# pylint: disable=too-many-arguments
+
 
 import copy
 
@@ -118,7 +118,7 @@ class GQSP(Operation):
         return new_op
 
     @staticmethod
-    def compute_decomposition(*parameters, **hyperparameters):  # pylint: disable=arguments-differ
+    def compute_decomposition(*parameters, **hyperparameters):
         r"""
         Representation of the operator as a product of other operators (static method).
 

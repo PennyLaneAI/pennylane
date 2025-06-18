@@ -222,7 +222,7 @@ class TestMidMeasureCapture:
         assert jaxpr.eqns[3].primitive.name == fn.__name__
         assert jaxpr.eqns[3].invars == [mcm_f]
 
-    def mid_measure_broadcast_capture(self):
+    def test_mid_measure_broadcast_capture(self):
         """Test that creating and using arrays of mid-circuit measurements can be captured."""
 
         def f(x):
@@ -291,6 +291,19 @@ def compare_with_capture_disabled(qnode, *args, **kwargs):
     return qml.math.allclose(res, expected)
 
 
+@pytest.mark.parametrize("mcm_method", ("deferred", "one-shot", "tree-traversal"))
+def test_capture_mcm_method(mcm_method):
+    """Test that the mcm_method is present in the plxpr."""
+
+    @qml.qnode(qml.device("default.qubit", wires=3), mcm_method=mcm_method)
+    def f():
+        return qml.state()
+
+    jaxpr = jax.make_jaxpr(f)()
+    config = jaxpr.eqns[0].params["execution_config"]
+    assert config.mcm_config.mcm_method == mcm_method
+
+
 @pytest.fixture(scope="function")
 def get_device():
     def get_qubit_device(*args, **kwargs):
@@ -307,6 +320,9 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
+    # NOTE: this test has an estimated fail rate of around 20%~30%
+    # We have to fix the seed to ensure that the test is deterministic.
+    @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
@@ -350,6 +366,9 @@ class TestMidMeasureExecute:
         else:
             assert compare_with_capture_disabled(f, phi)
 
+    # NOTE: this test has an estimated fail rate of around 20%~30%
+    # We have to fix the seed to ensure that the test is deterministic.
+    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(

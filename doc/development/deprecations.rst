@@ -3,11 +3,17 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
 --------------------
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
@@ -86,13 +92,6 @@ Pending deprecations
   - Deprecated in v0.42
   - Will be removed in v0.43
 
-* Specifying gradient keyword arguments as any additional keyword argument to the qnode is deprecated
-  and will be removed in v0.42.  The gradient keyword arguments should be passed to the new
-  keyword argument ``gradient_kwargs`` via an explicit dictionary, like ``gradient_kwargs={"h": 1e-4}``.
-
-  - Deprecated in v0.41
-  - Will be removed in v0.42
-
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
  - Deprecated in v0.40
@@ -125,6 +124,13 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
+  The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 
+  dictionary, like ``gradient_kwargs={"h": 1e-4}``.
+
+  - Deprecated in v0.41
+  - Removed in v0.42
 
 * The ``return_type`` property of ``MeasurementProcess`` has been removed.
   If observable type checking is needed, please use ``isinstance`` instead.

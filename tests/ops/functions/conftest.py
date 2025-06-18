@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane._deprecated_observable import Observable
+from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
@@ -42,7 +43,11 @@ _INSTANCES_TO_TEST = [
     (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
     (
         qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
-        {"skip_differentiation": True},
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
+        {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (
         qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
@@ -58,6 +63,10 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qml.QubitUnitary(np.eye(4), wires=[0, 1]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.QubitUnitary(qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
         {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
@@ -105,7 +114,7 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.PauliError("X", 0.5, wires=0),
-        AssertionError,  # each data element must be tensorlike
+        DeviceError,  # not supported with default.qubit and does not provide a decomposition
     ),
     (
         qml.THermitian(np.eye(3), wires=0),

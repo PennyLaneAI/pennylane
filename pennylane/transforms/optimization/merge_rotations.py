@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-# pylint: disable=too-many-branches
+
 
 from functools import lru_cache, partial
 from typing import Optional
@@ -42,7 +42,7 @@ def _get_plxpr_merge_rotations():
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name, too-few-public-methods
+    # pylint: disable=redefined-outer-name
     class MergeRotationsInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
@@ -78,7 +78,7 @@ def _get_plxpr_merge_rotations():
             for prev_op in previous_ops_on_wires:
                 super().interpret_operation(prev_op)
 
-        # pylint: disable=inconsistent-return-statements
+        # pylint: disable=inconsistent-return-statements,too-many-branches
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
@@ -101,14 +101,23 @@ def _get_plxpr_merge_rotations():
                 return self._update_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
-            if previous_op is None:
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+            if previous_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't merge. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to merge, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (previous_op is None or other_saved_wires):
+                    self._interpret_remaining_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return
 
             # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
-            can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
+            can_merge = op.wires == previous_op.wires and type(op) == type(previous_op)
             if not can_merge:
                 self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
@@ -136,6 +145,12 @@ def _get_plxpr_merge_rotations():
                 or qml.math.requires_grad(cumulative_angles)
                 or not angles_cancel
             )
+
+            if any(qml.math.is_abstract(w) for w in op.wires):
+                for w in op.wires:
+                    del self.previous_ops[w]
+                self._interpret_remaining_ops()
+
             if keep_merged_op:
                 # pylint: disable = protected-access
                 new_op = op._primitive.impl(*cumulative_angles, wires=op.wires)
@@ -167,7 +182,7 @@ def _get_plxpr_merge_rotations():
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

@@ -59,7 +59,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
-    Tracker
 
 Preprocessing Transforms
 ------------------------
@@ -72,6 +71,8 @@ method for devices.
     :toctree: api
 
     decompose
+    measurements_from_counts
+    measurements_from_samples
     validate_observables
     validate_measurements
     validate_device_wires

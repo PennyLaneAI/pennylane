@@ -25,13 +25,16 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
+from pennylane import math, pytrees
 from pennylane.concurrency.executors.base import RemoteExec
-from pennylane.debugging import pldb_device_manager
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
+from pennylane.typing import Result, TensorLike
 
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
@@ -55,7 +58,7 @@ def _convert_to_interface(result, interface: Interface):
     if isinstance(result, dict):
         return {k: _convert_to_interface(v, interface) for k, v in result.items()}
 
-    return qml.math.asarray(result, like=interface.get_like())
+    return math.asarray(result, like=interface.get_like())
 
 
 def _make_execution_config(
@@ -80,19 +83,17 @@ def _make_execution_config(
     )
 
 
-def _to_qfunc_output_type(
-    results: qml.typing.Result, qfunc_output, has_partitioned_shots
-) -> qml.typing.Result:
+def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) -> Result:
 
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
+    qfunc_output_leaves, qfunc_output_structure = pytrees.flatten(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
 
     # counts results are treated as a leaf
-    results_leaves = qml.pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
+    results_leaves = pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
 
     # patch for transforms that change the number of results like metric_tensor
     if len(results_leaves) != len(qfunc_output_leaves):
@@ -105,46 +106,15 @@ def _to_qfunc_output_type(
     if len(qfunc_output_leaves) == 1:
         results = (results,)
 
-    return qml.pytrees.unflatten(results, qfunc_output_structure)
+    return pytrees.unflatten(results, qfunc_output_structure)
 
 
 def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
-def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
-    for kwarg in gradient_kwargs:
-        if kwarg == "expansion_strategy":
-            raise ValueError(
-                "'expansion_strategy' is no longer a valid keyword argument to QNode."
-                " To inspect the circuit at a given stage in the transform program, please"
-                " use qml.workflow.construct_batch instead."
-            )
-
-        if kwarg == "max_expansion":
-            raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
-        if kwarg in ["gradient_fn", "grad_method"]:
-            warnings.warn(
-                "It appears you may be trying to set the method of differentiation via the "
-                f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                "backpropogation. Use diff_method instead."
-            )
-        elif kwarg == "shots":
-            raise ValueError(
-                "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
-                "argument 'shots' or if you want to set the number of shots with which the "
-                "QNode is executed, pass it to the QNode call, not its definition."
-            )
-        elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-            warnings.warn(
-                f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                "standard qnode gradient kwargs. Please specify all gradient kwargs through "
-                "the gradient_kwargs argument as a dictionary."
-            )
-
-
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
-    measurement_processes = qml.pytrees.flatten(
+    measurement_processes = pytrees.flatten(
         qfunc_output,
         is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
     )[0]
@@ -155,7 +125,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     else:
         # patch for tensor measurement objects, e.g., qml.math.hstack <-> [tensor([tensor(...), tensor(...)])]
         if isinstance(measurement_processes[0], Iterable) and any(
-            isinstance(m, qml.typing.TensorLike) for m in measurement_processes[0]
+            isinstance(m, TensorLike) for m in measurement_processes[0]
         ):
             measurement_processes = [
                 m.base.item()
@@ -166,7 +136,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
     ):
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "A quantum function must return either a single measurement, "
             "or a nonempty sequence of measurements."
         )
@@ -174,7 +144,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
     if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
 
@@ -191,7 +161,7 @@ def _validate_diff_method(
     if device.supports_derivatives(config):
         return
     if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
     if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
@@ -199,7 +169,7 @@ def _validate_diff_method(
     if isinstance(diff_method, TransformDispatcher):
         return
 
-    raise qml.QuantumFunctionError(
+    raise QuantumFunctionError(
         f"Differentiation method {diff_method} not recognized. Allowed "
         f"options are {tuple(get_args(SupportedDiffMethods))}."
     )
@@ -550,11 +520,9 @@ class QNode:
         static_argnums: Union[int, Iterable[int]] = (),
         autograph: bool = True,
         executor_backend: Optional[Union[RemoteExec, str]] = None,
-        **kwargs,
     ):
         self._init_args = locals()
         del self._init_args["self"]
-        del self._init_args["kwargs"]
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -575,23 +543,12 @@ class QNode:
             )
 
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
-            raise qml.QuantumFunctionError(
-                "Invalid device. Device must be a valid PennyLane device."
-            )
+            raise QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
 
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
         gradient_kwargs = gradient_kwargs or {}
-        if kwargs:
-            if any(k in qml.gradients.SUPPORTED_GRADIENT_KWARGS for k in list(kwargs.keys())):
-                warnings.warn(
-                    f"Specifying gradient keyword arguments {list(kwargs.keys())} as additional kwargs has been deprecated and will be removed in v0.42. \
-                    Instead, please specify these arguments through the `gradient_kwargs` dictionary argument.",
-                    qml.PennyLaneDeprecationWarning,
-                )
-            gradient_kwargs |= kwargs
-        _validate_gradient_kwargs(gradient_kwargs)
 
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
@@ -613,7 +570,6 @@ class QNode:
             _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
-        cache = (max_diff > 1) if cache == "auto" else cache
 
         self.capture_cache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
@@ -651,7 +607,7 @@ class QNode:
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
         copied_qnode._transform_program = qml.transforms.core.TransformProgram(
             self.transform_program
-        )  # pylint: disable=protected-access
+        )
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -773,7 +729,6 @@ class QNode:
         .. warning::
 
             This function is deprecated and will be removed in v0.43. Instead, use
-
             :func:`~.workflow.get_best_diff_method` to determine the best differentiation method.
 
 
@@ -793,7 +748,7 @@ class QNode:
         warnings.warn(
             "The `qml.QNode.get_gradient_fn` method is deprecated and will be removed in a future release."
             "Instead, use `qml.workflow.get_best_diff_method` to determine the best differentiation method.",
-            qml.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
         )
         if diff_method is None:
             return None, {}, device
@@ -805,7 +760,7 @@ class QNode:
             return new_config.gradient_method, {}, device
 
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 f"Device {device} does not support {diff_method} with requested circuit."
             )
 
@@ -832,7 +787,7 @@ class QNode:
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
@@ -850,20 +805,23 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
+        # pylint: disable=import-outside-toplevel
+        from pennylane.debugging import pldb_device_manager
+
         with pldb_device_manager(self.device):
-            with qml.queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
         tape = QuantumScript.from_queue(q, shots)
 
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = math.get_trainable_indices(params)
 
         _validate_qfunc_output(self._qfunc_output, tape.measurements)
         self._tape = tape
         return tape
 
-    def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
+    def _impl_call(self, *args, **kwargs) -> Result:
 
         # construct the tape
         tape = self.construct(args, kwargs)
@@ -889,11 +847,18 @@ class QNode:
             and not self._transform_program.is_informative
             and self.interface != "auto"
         ):
-            res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
+            res = _convert_to_interface(res, math.get_canonical_interface_name(self.interface))
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def __call__(self, *args, **kwargs) -> Result:
+        if "shots" in kwargs and qml.set_shots in self.transform_program:
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over 'shots='",
+                UserWarning,
+                stacklevel=2,
+            )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 

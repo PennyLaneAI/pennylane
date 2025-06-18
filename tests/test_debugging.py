@@ -19,12 +19,12 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from flaky import flaky
 from scipy.stats import ttest_ind
 
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -152,7 +152,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
@@ -164,7 +164,7 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
@@ -632,9 +632,9 @@ class TestSnapshotUnsupportedQNode:
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
             _ = qml.snapshots(circuit)
 
-    @flaky(max_runs=3)
-    def test_lightning_qubit_finite_shots(self):
-        dev = qml.device("lightning.qubit", wires=2, shots=500)
+    @pytest.mark.local_salt(1)
+    def test_lightning_qubit_finite_shots(self, seed):
+        dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
 
         @qml.qnode(dev, diff_method=None)
         def circuit():
@@ -659,7 +659,7 @@ class TestSnapshotUnsupportedQNode:
         dev = qml.device("lightning.qubit", wires=2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match=f"does not support {diff_method} with requested circuit",
         ):
 
