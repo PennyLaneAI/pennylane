@@ -104,7 +104,7 @@ class Context:
             node (ForInLoop | WhileLoop): the loop node.
         """
         if "loops" not in self.scopes:
-            self.scopes["loops"] = dict()
+            self.scopes["loops"] = {}
 
         # the namespace is shared with the outer scope, but we need to keep track of the gates separately
         if isinstance(node, ast.WhileLoop):
@@ -125,9 +125,9 @@ class Context:
             node (SwitchStatement): the switch node.
         """
         if "switches" not in self.scopes:
-            self.scopes["switches"] = dict()
+            self.scopes["switches"] = {}
 
-        self.scopes["switches"][f"switch_{node.span.start_line}"] = dict()
+        self.scopes["switches"][f"switch_{node.span.start_line}"] = {}
 
     def init_branches_scope(self, node: ast.BranchingStatement):
         """
@@ -137,9 +137,9 @@ class Context:
             node (BranchingStatement): the branch node.
         """
         if "branches" not in self.scopes:
-            self.scopes["branches"] = dict()
+            self.scopes["branches"] = {}
 
-        self.scopes["branches"][f"branch_{node.span.start_line}"] = dict()
+        self.scopes["branches"][f"branch_{node.span.start_line}"] = {}
 
     def init_subroutine_scope(self, node: ast.SubroutineDefinition):
         """
