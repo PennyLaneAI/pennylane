@@ -840,6 +840,13 @@ class QNode:
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        if "shots" in kwargs and self._shots_override_device:
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over 'shots='",
+                UserWarning,
+                stacklevel=2,
+            )
         kwargs = copy.copy(kwargs)
 
         if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
@@ -897,13 +904,6 @@ class QNode:
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        if "shots" in kwargs and self._shots_override_device:
-            warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                "The transform will take precedence over 'shots='",
-                UserWarning,
-                stacklevel=2,
-            )
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 
