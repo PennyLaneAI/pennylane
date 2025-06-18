@@ -18,6 +18,7 @@ Contains the PrepSelPrep template.
 import copy
 
 import pennylane as qml
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.operation import Operation
 
 
@@ -73,25 +74,17 @@ class PrepSelPrep(Operation):
 
     grad_method = None
 
-    def __init__(self, lcu, control=None, id=None):
+    def __init__(self, lcu, id=None):
 
         coeffs, ops = lcu.terms()
-        control = qml.wires.Wires(control)
         self.hyperparameters["lcu"] = qml.ops.LinearCombination(coeffs, ops)
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
-        self.hyperparameters["control"] = control
-
-        if any(
-            control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
-            for control_wire in control
-        ):
-            raise ValueError("Control wires should be different from operation wires.")
 
         target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
-        all_wires = target_wires + control
+        all_wires = target_wires
         super().__init__(*self.data, wires=all_wires, id=id)
 
     def _flatten(self):
@@ -102,16 +95,15 @@ class PrepSelPrep(Operation):
         return cls(data[0], metadata[0])
 
     def __repr__(self):
-        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"
+        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)})"
 
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
-        new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
         new_lcu = qml.ops.LinearCombination(self.hyperparameters["coeffs"], new_ops)
-        return PrepSelPrep(new_lcu, new_control)
+        return PrepSelPrep(new_lcu)
 
     def decomposition(self):
-        return self.compute_decomposition(self.lcu, self.control)
+        return self.compute_decomposition(self.lcu)
 
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         op_label = base_label or self.__class__.__name__
@@ -132,19 +124,23 @@ class PrepSelPrep(Operation):
         return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
 
     @staticmethod
-    def compute_decomposition(lcu, control):
+    def compute_decomposition(lcu):
         coeffs, ops = _get_new_terms(lcu)
 
+        work_wires = [DynamicWire() for _ in ops]
+
         decomp_ops = [
+            Allocate(work_wires, reset_to_original=True),
             qml.AmplitudeEmbedding(
-                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
+                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=work_wires
             ),
-            qml.Select(ops, control),
+            qml.Select(ops, work_wires),
             qml.adjoint(
                 qml.AmplitudeEmbedding(
-                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
+                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=work_wires
                 )
             ),
+            Deallocate(work_wires),
         ]
 
         return decomp_ops
@@ -202,4 +198,4 @@ class PrepSelPrep(Operation):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+        return self.hyperparameters["target_wires"]

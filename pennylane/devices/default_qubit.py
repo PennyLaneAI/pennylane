@@ -41,6 +41,7 @@ from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
+    device_resolve_dynamic_wires,
     mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
@@ -63,7 +64,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    if op.name == "Snapshot":
+    if op.name in {"Snapshot", "Allocate", "Deallocate", "DeallocateAll"}:
         return True
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
@@ -560,14 +561,15 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
         )
-        # validate_device_wires needs to be after defer_measurement has added more wires.
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
+        # validate_device_wires needs to be after defer_measurement has added more wires.
+        transform_program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             validate_measurements,
             analytic_measurements=accepted_analytic_measurement,
