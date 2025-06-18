@@ -682,7 +682,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
     :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
 
-    This real space form of the vibrational Hamiltonian can be represented in the bosonic basis by
+    This real-space form of the vibrational Hamiltonian can be represented in the bosonic basis by
     using equations defined in Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
 
     .. math::
@@ -694,6 +694,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     respectively.
 
     Args:
+        coeffs (list(tensorlike(float))): the coefficients of a Taylor vibrational Hamiltonian
         freqs (array(float)): the harmonic vibrational frequencies in atomic units
         one_mode (array(float)): one-mode coefficients of the Taylor Hamiltonian with shape
             ``(m, l)`` where ``m = len(freqs)`` and ``l > 0``
