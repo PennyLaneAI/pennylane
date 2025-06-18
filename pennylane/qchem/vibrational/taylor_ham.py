@@ -276,54 +276,6 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Computes the coefficients of a Taylor vibrational Hamiltonian.
 
-    The potential energy surface is defined as [Eq. 7 of
-    `J. Chem. Phys. 135, 134108 (2011) <https://pubs.aip.org/aip/jcp/article-abstract/135/13/134108/191108/Size-extensive-vibrational-self-consistent-field?redirectedFrom=PDF>`_]:
-
-    .. math::
-
-        V = V_0 + \sum_{i} F_i Q_i + \sum_{i,j} F_{ij} Q_i Q_j +
-                   \sum_{i,j,k} F_{ijk} Q_i Q_j Q_k + \cdots,
-
-    where :math:`Q` is a normal coordinate and :math:`F` represents the derivatives of the potential
-    energy surface.
-
-    This function computes these derivatives via Taylor expansion of the potential energy data by
-    performing a multi-dimensional polynomial fit over potential energy surface data. The potential
-    energy surface along the normal coordinate can be defined as
-
-    .. math::
-
-        V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
-        V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
-
-    where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
-    computed along the normal coordinate. The :math:`V_n` terms are defined as:
-
-    .. math::
-
-		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
-		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
-		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
-		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
-		\nonumber \vdots
-
-    Note that the terms :math:`V_n` are represented here by an array of energy points computed
-    along the normal coordinates. These energy data are then used in a multi-dimensional polynomial
-    fit where each term :math:`V_n` is expanded in terms of products of :math:`Q` with exponents
-    specified by ``min_deg`` and ``max_deg``.
-
-    The one-mode Taylor coefficients, :math:`\Phi`, computed here are related to the potential
-    energy surface as:
-
-    .. math::
-
-        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(3)}_j q_j^n,
-
-    where the largest power :math:`n` is determined by ``max_deg``. Similarly, the two-mode and
-    three-mode Taylor coefficients are computed if the two-mode and three-mode potential energy
-    surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are
-    provided.
-
     Args:
         pes (VibrationalPES): the vibrational potential energy surface object
         max_deg (int): maximum degree of the polynomial used to compute the coefficients
@@ -340,6 +292,58 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
     >>> print(coeffs)
     [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
+
+    .. details::
+        :title: Theory
+
+        A molecular potential energy surface can be defined as [Eq. 7 of
+        `J. Chem. Phys. 135, 134108 (2011) <https://pubs.aip.org/aip/jcp/article-abstract/135/13/134108/191108/Size-extensive-vibrational-self-consistent-field?redirectedFrom=PDF>`_]:
+
+        .. math::
+
+            V = V_0 + \sum_{i} F_i q_i + \sum_{i,j} F_{ij} q_i q_j +
+                       \sum_{i,j,k} F_{ijk} q_i q_j q_k + \cdots,
+
+        where :math:`q` is a normal coordinate and :math:`F` represents the derivatives of the
+        potential energy surface.
+
+        This function computes these derivatives via Taylor expansion of the potential energy data
+        by performing a multi-dimensional polynomial fit.
+
+        The potential energy surface along the normal coordinate can be defined as
+
+        .. math::
+
+            V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+            V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+        where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+        computed along the normal coordinate. The :math:`V_n` terms are defined as:
+
+        .. math::
+
+            V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+            V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+            V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+            V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
+            \nonumber \vdots
+
+        Note that the terms :math:`V_n` are represented here by an array of energy points computed
+        along the normal coordinates. These energy data are then used in a multi-dimensional
+        polynomial fit where each term :math:`V_n` is expanded in terms of products of :math:`q`
+        with exponents specified by ``min_deg`` and ``max_deg``.
+
+        The one-mode Taylor coefficients, :math:`\Phi`, computed here are related to the potential
+        energy surface as:
+
+        .. math::
+
+            V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(3)}_j q_j^n,
+
+        where the largest power :math:`n` is determined by ``max_deg``. Similarly, the two-mode and
+        three-mode Taylor coefficients are computed if the two-mode and three-mode potential energy
+        surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are
+        provided.
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
