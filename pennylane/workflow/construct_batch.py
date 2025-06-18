@@ -467,11 +467,6 @@ def construct_batch(
             qnode.device,
             tapes=user_transformed_tapes,  # Use the user-transformed tapes
         )
-        gradient_fn = execution_config.gradient_method
-        has_gradient_expand = bool(
-            getattr(gradient_fn, "expand_transform", False)
-        )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
 
         # Use _setup_transform_program like execute() does
         outer_transform_program, inner_transform_program = _setup_transform_program(
@@ -482,6 +477,11 @@ def construct_batch(
         )
         full_transform_program = user_program + outer_transform_program + inner_transform_program
 
+        gradient_fn = execution_config.gradient_method
+        has_gradient_expand = bool(
+            getattr(gradient_fn, "expand_transform", False)
+        )  # Note that it could exist as None which is still False, but can't use hasattr on it.
+        level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
         resolved_program = full_transform_program[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(
