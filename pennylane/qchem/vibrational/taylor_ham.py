@@ -276,6 +276,9 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Computes the coefficients of a Taylor vibrational Hamiltonian.
 
+    The coefficients are computed from a multi-dimensional polynomial fit over potential energy data
+    computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
+
     Args:
         pes (VibrationalPES): the vibrational potential energy surface object
         max_deg (int): maximum degree of the polynomial used to compute the coefficients
