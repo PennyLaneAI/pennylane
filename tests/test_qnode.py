@@ -1428,7 +1428,7 @@ class TestShots:
 
         dev_analytic = qml.device("default.qubit", wires=1)
         qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
-        assert qnode_analytic._shots is None or qnode_analytic._shots.total_shots is None
+        assert qnode_analytic._shots.total_shots is None
 
     def test_shots_update_with_device(self):
         """Test that _shots is updated when updating the QNode with a new device."""
@@ -2293,6 +2293,7 @@ class TestSetShots:
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
+        assert qml.math.allcose(result, np.cos(1.0))
 
     def test_set_shots_preserves_original_qnode(self):
         """Test that set_shots creates a new QNode without modifying the original."""
