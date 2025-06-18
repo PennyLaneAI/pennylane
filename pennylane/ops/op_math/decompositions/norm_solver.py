@@ -378,6 +378,9 @@ def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
     Returns:
         ZOmega | None: An element of the ring :math:`\mathbb{Z}[\omega]` that satisfies the equation, or ``None`` if no solution exists.
     """
+    if xi.a == 0 and xi.b == 0:
+        return ZOmega(0, 0, 0, 0)
+
     if (p := abs(xi)) < 2:
         return None
 

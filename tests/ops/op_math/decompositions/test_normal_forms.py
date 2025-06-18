@@ -119,7 +119,7 @@ class TestNormalForms:
             so3rep @= op_
 
         (t_bit, rep_bits, c_bit) = _ma_normal_form(so3mat, compressed=True)
-        print(t_bit, rep_bits, c_bit)
+
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"
         assert c_bit == c, "Clifford bit does not match expected value"

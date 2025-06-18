@@ -566,13 +566,21 @@ class GridIterator:
     def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
         """Iterate over the solutions to the scaled grid problem."""
 
-        k = self.kmin  # Start with the lower-bound on k.
+        k = 0  # Start with trivial solution finding.
         e1 = Ellipse.from_region(self.epsilon, self.theta, k)  # Ellipse for the epsilon-region.
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
         grid_op = State(en, e2).grid_op()  # Grid operation for the epsilon-region.
+        guess_solutions = (  # Solutions for the trivial cases.
+            ZOmega(a=-1),
+            ZOmega(b=-1),
+            ZOmega(b=1),
+            ZOmega(c=1),
+            ZOmega(d=1),
+            ZOmega(d=-1),
+        )
 
-        for _ in range(self.max_trials):
+        for ix in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
             e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
@@ -580,9 +588,10 @@ class GridIterator:
             state = State(e1, e2).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
 
-            for solution in potential_solutions:
+            for solution in chain(guess_solutions, potential_solutions):
                 # Normalize the solution and obtain the scaling exponent of sqrt(2).
                 scaled_sol, kf = (grid_op * solution).normalize()
+                # print(scaled_sol, kf, k, solution)
 
                 complx_sol = complex(scaled_sol)
                 sol_real, sol_imag = complx_sol.real, complx_sol.imag
@@ -595,6 +604,9 @@ class GridIterator:
                 # Check if the solution is follows the constraints of the target-region.
                 if abs(norm_zsqrt_two) <= 2**k_ and dot_prod >= self.target:
                     yield scaled_sol, k_
+
+            if ix == 1:  # Start now with the lower-bound on k.
+                k = max(self.kmin - 1, ix)
 
             e1 = Ellipse.from_region(self.epsilon, self.theta, (k := k + 1))
 

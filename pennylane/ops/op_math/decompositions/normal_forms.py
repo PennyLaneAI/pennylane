@@ -133,6 +133,8 @@ def _ma_normal_form(
             break
 
     if not compressed:
+        if len(decomposition) == 1:
+            return decomposition
         return qml.prod(*decomposition)
 
     t_bit = int(decomposition[0] == qml.T(0))

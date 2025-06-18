@@ -155,7 +155,7 @@ class TestCliffordCompile:
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
-    @pytest.mark.parametrize("circuit", [circuit_1, circuit_3])
+    @pytest.mark.parametrize("circuit", [circuit_1, circuit_2, circuit_3])
     def test_decomposition_with_rs(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method."""
 
