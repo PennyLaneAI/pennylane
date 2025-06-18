@@ -644,11 +644,13 @@ class QasmInterpreter:
             step = loop_params.step
             if step is None:
                 step = 1
-
-        if isinstance(loop_params, Iterable):
+        elif isinstance(loop_params, Iterable):
             start = 0
             stop = len(loop_params)
             step = 1
+        else:
+            # we shouldn't be able to get here if the parser does its job
+            raise TypeError(f"Expected iterable type or a range in loop, got {type(loop_params)}.")  # pragma: no cover
 
         @for_loop(start, stop, step)
         def loop(i, execution_context):
