@@ -15,10 +15,54 @@
 This module contains the commands for allocating and deallocating wires dynamically.
 """
 import uuid
+from functools import lru_cache
 from typing import Optional, Sequence
 
+from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
+try:
+    import jax
+except ImportError:
+    jax = None
+
+
+@lru_cache()
+def _get_allocate_prim():
+    allocate_prim = jax.extend.core.Primitive("allocate")
+    allocate_prim.multiple_results = True
+
+    # pylint: disable=unused-argument
+    @allocate_prim.def_impl
+    def _(*, num_wires, require_zeros=True, restored=False):
+        raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
+
+    # pylint: disable=unused-argument
+    @allocate_prim.def_abstract_eval
+    def _(*, num_wires, require_zeros=True, restored=False):
+        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+
+    return allocate_prim
+
+
+@lru_cache
+def _get_deallocate_prim():
+
+    deallocate_prim = jax.extend.core.Primitive("deallocate")
+    deallocate_prim.multiple_results = True
+
+    # pylint: disable=unused-argument
+    @deallocate_prim.def_impl
+    def _(*wires):
+        raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
+
+    # pylint: disable=unused-argument
+    @deallocate_prim.def_abstract_eval
+    def _(*wires):
+        return []
+
+    return deallocate_prim
 
 
 class DynamicWire:
@@ -142,6 +186,10 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     gate as well.
 
     """
+    if capture_enabled():
+        if not isinstance(wires, Sequence):
+            wires = (wires,)
+        return _get_deallocate_prim().bind(*wires)
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
@@ -159,7 +207,10 @@ class DynamicRegister(Wires):
         return self
 
     def __exit__(self, *_, **__):
-        Deallocate(self)
+        if capture_enabled():
+            deallocate(self)
+        else:
+            Deallocate(self)
 
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
@@ -208,7 +259,13 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     before being re-used again in the second block.
 
     """
-    wires = [DynamicWire() for _ in range(num_wires)]
+    if capture_enabled():
+        wires = _get_allocate_prim().bind(
+            num_wires=num_wires, require_zeros=require_zeros, restored=restored
+        )
+    else:
+        wires = [DynamicWire() for _ in range(num_wires)]
     reg = DynamicRegister(wires)
-    Allocate(reg, require_zeros=require_zeros, restored=restored)
+    if not capture_enabled():
+        Allocate(reg, require_zeros=require_zeros, restored=restored)
     return reg
