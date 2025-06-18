@@ -42,9 +42,7 @@ def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
 
 
 def module(func: JaxJittedFunction) -> Callable[..., jModule]:
-    """
-    Decorator for _module_inline
-    """
+    """Decorator for _module_inline"""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> jModule:
@@ -54,18 +52,14 @@ def module(func: JaxJittedFunction) -> Callable[..., jModule]:
 
 
 def _generic_inline(func: JaxJittedFunction, *args, **kwargs) -> str:  # pragma: no cover
-    """
-    Create the generic textual representation for the jax.jit'ed function
-    """
+    """Create the generic textual representation for the jax.jit'ed function"""
     lowered = func.lower(*args, **kwargs)
     mod = lowered.compiler_ir()
     return mod.operation.get_asm(binary=False, print_generic_op_form=True, assume_verified=True)
 
 
 def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
-    """
-    Decorator for _generic_inline.
-    """
+    """Decorator for _generic_inline."""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> str:
@@ -125,12 +119,25 @@ def xdsl_from_docstring(func: Callable) -> xbuiltin.ModuleOp:  # pragma: no cove
 
 
 def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  # pragma: no cover
-    """
-    Decorator for _xdsl_module_inline
-    """
+    """Decorator for _xdsl_module_inline"""
 
     @wraps(func)
     def wrapper(*args, **kwargs) -> xbuiltin.ModuleOp:
         return _xdsl_module_inline(func, *args, **kwargs)
+
+    return wrapper
+
+
+def xdsl_function(func: JaxJittedFunction) -> Callable[..., xfunc.FuncOp]:
+    """Decorator to convert a Python function into an xDSL func.FuncOp."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> xfunc.FuncOp:
+        xmod = _xdsl_module_inline(func, *args, **kwargs)
+        funcOp = xmod.regions[0].blocks[0].first_op
+        # We create a clone because the original FuncOp is attached to xmod's region
+        funcOp = funcOp.clone()
+        funcOp.properties["sym_name"] = xbuiltin.StringAttr(f"{func.__name__}")
+        return funcOp
 
     return wrapper
