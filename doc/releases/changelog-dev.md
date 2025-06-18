@@ -810,6 +810,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   some arguments are trainable and an intermediate transform does not preserve trainability information.
   [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
 
+* A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
+  inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
+  drawing.
+  [(#7668)](https://github.com/PennyLaneAI/pennylane/pull/7668)
+
 * A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
   in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
   up to a global phase _and_ there is no Pauli representation of the product operator.
