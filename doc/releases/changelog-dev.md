@@ -470,6 +470,7 @@
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
   [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
   [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
+  [(#7706)](https://github.com/PennyLaneAI/pennylane/pull/7706)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
