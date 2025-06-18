@@ -23,7 +23,7 @@ from pennylane.typing import PostprocessingFn
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import QNode, _make_execution_config
-from .resolution import _resolve_execution_config, _resolve_interface
+from .resolution import _resolve_execution_config
 
 
 def null_postprocessing(results):
@@ -452,21 +452,14 @@ def construct_batch(
         program = user_program[level_slice_initial]
         tapes, user_post_processing = program((initial_tape,))
 
-        # The config that used to work well. Here I put them as reference for debugging purposes.
-        # execution_config0 = qml.workflow.construct_execution_config(qnode, resolve=False)(
-        #     *args, **kwargs
-        # )
-        # pylint: disable = protected-access
-
         # The new config process we would like to use.
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
-        execution_config = _make_execution_config(qnode, qnode.diff_method, mcm_config)
-        # execution_config = qnode.device.setup_execution_config(
-        #     config=execution_config, circuit=tapes[0]
-        # )
+        execution_config = _make_execution_config(
+            qnode, qnode.diff_method, mcm_config
+        )  # pylint: disable = protected-access
 
         ###### Resolution of the execution config ######
         execution_config = _resolve_execution_config(
