@@ -971,7 +971,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if not qualtran:
         raise ImportError(
-            "The `to_bloq`function requires Qualtran to be installed. You can install"
+            "The `to_bloq` function requires Qualtran to be installed. You can install"
             "qualtran via: pip install qualtran."
         )
 
