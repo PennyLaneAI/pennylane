@@ -874,7 +874,9 @@ class TestVariables:
 class TestGates:
 
     def test_custom_gates(self):
-        ast = parse(open("custom_gates.qasm", mode="r").read(), permissive=True)
+        ast = parse(
+            open("tests/io/qasm_interpreter/custom_gates.qasm", mode="r").read(), permissive=True
+        )
 
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "custom-gates"})
