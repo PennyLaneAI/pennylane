@@ -782,6 +782,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The functions in `qml.qchem.vibrational` are updated to include additional equations.
+  [(#6918)](https://github.com/PennyLaneAI/pennylane/pull/6918)
+
 * The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
   [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
 
