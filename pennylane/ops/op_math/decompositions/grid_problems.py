@@ -104,7 +104,7 @@ class Ellipse:
     @property
     def descriminant(self) -> float:
         """Calculate the descriminant of the ellipse."""
-        return 1 * ((self.a + self.d) ** 2 - 4 * (self.a * self.d - self.b**2))
+        return (self.a + self.d) ** 2 - 4 * (self.a * self.d - self.b**2)
 
     @property
     def determinant(self) -> float:
@@ -580,16 +580,15 @@ class GridIterator:
         bbox21 = tuple(bb_ + e2.p[ix_ // 2] for ix_, bb_ in enumerate(bbox2))
         bbox22 = tuple(bb_ + 1 / _SQRT2 for bb_ in bbox21)
 
-        num_x1, num_y1 = (self.bbox_grid_points(bbox) for bbox in (bbox11, bbox21))
-        num_x2, num_y2 = (self.bbox_grid_points(bbox) for bbox in (bbox12, bbox22))
+        bbox_zip = list(zip((bbox11, bbox12), (bbox21, bbox22)))
+        num_x1, num_x2 = (self.bbox_grid_points(bb1[:2] + bb2[:2]) for bb1, bb2 in bbox_zip)
+        num_y1, num_y2 = (self.bbox_grid_points(bb1[2:] + bb2[2:]) for bb1, bb2 in bbox_zip)
         num_b1 = [num_x1 > num_points * num_y1, num_y1 > num_points * num_x1]
         num_b2 = [num_x2 > num_points * num_y2, num_y2 > num_points * num_x2]
 
-        potential_solutions1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
-        potential_solutions2 = self.solve_upright_problem(
-            state2, bbox12, bbox22, num_b2, ZOmega(c=1)
-        )
-        for solution in chain(potential_solutions1, potential_solutions2):
+        potential_sols1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
+        potential_sols2 = self.solve_upright_problem(state2, bbox12, bbox22, num_b2, ZOmega(c=1))
+        for solution in chain(potential_sols1, potential_sols2):
             sol1, sol2 = complex(solution), complex(solution.adj2())
             x1, y1 = sol1.real, sol1.imag
             x2, y2 = sol2.real, sol2.imag

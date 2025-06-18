@@ -132,6 +132,11 @@ class TestGridIterator:
             (math.pi / 8, 1e-4),
             (math.pi / 3, 1e-3),
             (math.pi / 5, 1e-5),
+            (0.392125483789636, 1e-6),
+            (0.6789684841313233, 1e-3),
+            (0.056202026824044335, 1e-5),
+            (0.21375826964510297, 1e-4),
+            (0.5549739238125396, 1e-6),
         ],
     )
     def test_grid_iterator(self, theta, epsilon):
