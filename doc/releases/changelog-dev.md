@@ -183,6 +183,30 @@
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
+* A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
+  This operator performs the plain addition of two integers in the computational basis.
+  [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
+
+  ```python
+  x = 3
+  y = 4
+
+  wires = qml.registers({"x":3, "y":6, "work":5})
+
+  dev = qml.device("default.qubit", shots=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisEmbedding(x, wires=wires["x"])
+      qml.BasisEmbedding(y, wires=wires["y"])
+      qml.SemiAdder(wires["x"], wires["y"], wires["work"])
+      return qml.sample(wires=wires["y"])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0 0 0 1 1 1]
+  ```
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
@@ -267,13 +291,14 @@
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
 
-<<<<<<< qpe-decomp
   * :class:`~.QuantumPhaseEstimation`
     [(#7637)](https://github.com/PennyLaneAI/pennylane/pull/7637)
-=======
+
   * :class:`~.BasisRotation`
     [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
->>>>>>> master
+
+  * :class:`~.PhaseAdder`
+    [(#7070)](https://github.com/PennyLaneAI/pennylane/pull/7070)
 
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
@@ -426,6 +451,7 @@
   xDSL module has been added for the experimental xDSL Python compiler integration.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
+  [(#7664)](https://github.com/PennyLaneAI/pennylane/pull/7664)
 
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
@@ -656,6 +682,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `jax` and `tensorflow` dependencies for `doc` builds.
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
+
 * `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
   to match the expected binary distribution format naming conventions.
   [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
@@ -682,6 +711,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
   [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
