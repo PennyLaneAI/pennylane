@@ -548,20 +548,20 @@ class GridIterator:
     Args:
         theta (float): The angle of the grid problem.
         epsilon (float): The epsilon of the grid problem.
-        max_iter (int): The maximum number of iterations.
+        max_trials (int): The maximum number of iterations.
     """
 
-    def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_iter: int = 100):
+    def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_trials: int = 100):
         self.theta = theta
         self.epsilon = epsilon
         self.zval = math.cos(theta), math.sin(theta)
         self.kmin = int(3 * math.log2(1 / epsilon) // 2)
-        self.max_iter = max_iter
+        self.max_trials = max_trials
         self.target = 1 - self.epsilon**2 / 2
 
     def __repr__(self) -> str:
         """Return a string representation of the grid iterator."""
-        return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_iter={self.max_iter})"
+        return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_trials={self.max_trials})"
 
     def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
         """Iterate over the solutions to the scaled grid problem."""
@@ -572,7 +572,7 @@ class GridIterator:
         en, _ = e1.normalize()  # Normalize the epsilon-region.
         grid_op = State(en, e2).grid_op()  # Grid operation for the epsilon-region.
 
-        for _ in range(self.max_iter):
+        for _ in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
             e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
