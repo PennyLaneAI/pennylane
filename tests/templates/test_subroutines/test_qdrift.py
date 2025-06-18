@@ -32,7 +32,10 @@ test_hamiltonians = (
     ),
     (
         [1.23, -0.45j],
-        [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1))],
+        [
+            qml.s_prod(0.1, qml.PauliX(0)),
+            qml.prod(qml.PauliZ(0), qml.PauliX(1)),
+        ],  #  Here we chose such hamiltonian to have non-commutability
     ),  # op arith
     (
         [1, -0.5, 0.5],
@@ -200,7 +203,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp],
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -231,7 +234,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -261,7 +264,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -270,18 +273,7 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "coeffs, ops",
-        [
-            pytest.param(
-                *test_hamiltonians[0],
-                marks=pytest.mark.xfail(
-                    reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
-                ),
-            ),
-            *test_hamiltonians[1:],
-        ],
-    )
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_tf(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using tensorflow"""
         import tensorflow as tf
@@ -302,7 +294,7 @@ class TestIntegration:
         expected_state = tf.linalg.matvec(
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             ),
             initial_state,
         )
@@ -311,18 +303,7 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "coeffs, ops",
-        [
-            pytest.param(
-                *test_hamiltonians[0],
-                marks=pytest.mark.xfail(
-                    reason="Suspicious test that seems to indicate bug. Xfailed temporarily. sc-91298"
-                ),
-            ),
-            *test_hamiltonians[1:],
-        ],
-    )
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
         from jax import numpy as jnp
@@ -343,7 +324,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -375,7 +356,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
