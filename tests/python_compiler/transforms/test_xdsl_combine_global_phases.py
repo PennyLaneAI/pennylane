@@ -30,7 +30,7 @@ class TestCombineGlobalPhasesPass:
     """Unit tests for CombineGlobalPhasesPass."""
 
     def test_no_global_phases_ops(self, run_filecheck):
-        """Test that nothing changes when there are no composable gates."""
+        """Test that nothing changes when there are no global phase operations."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
@@ -54,8 +54,8 @@ class TestCombineGlobalPhasesPass:
 
         run_filecheck(program, module)
 
-    def test_combinable_ops(self, run_filecheck):
-        """Test that composable gates are merged."""
+    def test_combinable_ops_without_control_flow(self, run_filecheck):
+        """Test that combine global phases in a func without control flows."""
         program = """
             func.func @test_func(%arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
