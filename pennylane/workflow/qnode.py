@@ -757,7 +757,7 @@ class QNode:
         """
 
         self._shots = Shots(shots)
-        self._shots_override_device = bool(self._shots != self.device.shots)
+        self._shots_override_device = True
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
