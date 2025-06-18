@@ -57,7 +57,7 @@ def rs_decomposition(op, epsilon, *, max_trials=100):
     This algorithm produces a decomposition with :math:`O(3\text{log}_2(1/\epsilon)) + O(\text{log}_2(\text{log}_2(1/\epsilon)))` operations.
 
     .. note::
-        Currently, this misses the global phase information and is only valid for Pauli-Z rotation gates.
+        Currently, this misses the global phase information and is only valid for phase shift rotation gates.
 
     Args:
         op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
