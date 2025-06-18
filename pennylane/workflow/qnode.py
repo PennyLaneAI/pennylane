@@ -845,7 +845,7 @@ class QNode:
             _kwargs_shots = kwargs.pop('shots')
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                f"The transform will take precedence over 'shots={kwargs_shots}.'",
+                f"The transform will take precedence over 'shots={_kwargs_shots}.'",
                 UserWarning,
                 stacklevel=2,
             )
