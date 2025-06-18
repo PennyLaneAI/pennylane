@@ -381,9 +381,9 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
 
     Returns:
         tuple: a tuple containing:
-            - list(array(floats)): coefficients for x-displacements
-            - list(array(floats)): coefficients for y-displacements
-            - list(array(floats)): coefficients for z-displacements
+            - List(TensorLike[float]): coefficients for x-displacements
+            - List(TensorLike[float]): coefficients for y-displacements
+            - List(TensorLike[float]): coefficients for z-displacements
 
     **Example**
 
@@ -703,7 +703,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
         three_mode (array(float)): three-mode coefficients of the Taylor Hamiltonian with shape
             ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Whether the vibrational modes are localized. Default is ``True``.
-        uloc (array(array(float))): normal mode localization matrix with shape ``(m, m)`` where
+        uloc (tensorlike(float)): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
 
     Returns:
