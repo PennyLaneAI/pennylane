@@ -613,6 +613,7 @@
   is:
   ```python
   def execute(self, circuits: QuantumScriptOrBatch, execution_config: Optional[ExecutionConfig] = None):
+    ...
   ```
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697/)
 
