@@ -374,36 +374,6 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
     computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
-    The dipole :math:`D` along each of the :math:`x, y,` and :math:`z` directions is defined as:
-
-    .. math::
-
-        D(q_1,\cdots,q_M) = D_0 + \sum_{i=1}^M D_1^{(i)}(q_i) + \sum_{i>j}
-        D_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} D_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
-
-    where :math:`q` is a normal coordinate and :math:`D_n` represents the :math:`n`-mode component
-    of the dipole computed along the normal coordinate. The :math:`D_n` terms are defined
-    as:
-
-    .. math::
-
-		D_0 &\equiv D(q_1=0,\cdots,q_M=0) \\
-		D_1^{(i)}(q_i) &\equiv D(0,\cdots,0,q_i,0,\cdots,0) - D_0 \\
-		D_2^{(i,j)}(q_i,q_j) &\equiv D(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
-		D_1^{(i)}(q_i) - D_1^{(j)}(q_j) - D_0  \\
-		\nonumber \vdots
-
-    The one-mode Taylor dipole coefficients, :math:`\Phi`, computed here are related to the dipole
-    data as:
-
-    .. math::
-
-        D_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
-
-    Similarly, the two-mode and three-mode Taylor dipole coefficients are computed if the two-mode
-    and three-mode dipole data, :math:`D_2^{(j, k)}(q_j, q_k)` and
-    :math:`D_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
-
     Args:
         pes (VibrationalPES): the vibrational potential energy surface object
         max_deg (int): maximum degree of the polynomial used to compute the coefficients
@@ -427,6 +397,39 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     >>> coeffs_x, coeffs_y, coeffs_z = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
     >>> print(coeffs_z)
     [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])]
+
+    .. details::
+        :title: Theory
+
+        The dipole :math:`D` along each of the :math:`x, y,` and :math:`z` directions is defined as:
+
+        .. math::
+
+            D(q_1,\cdots,q_M) = D_0 + \sum_{i=1}^M D_1^{(i)}(q_i) + \sum_{i>j}
+            D_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} D_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+        where :math:`q` is a normal coordinate and :math:`D_n` represents the :math:`n`-mode
+        component of the dipole computed along the normal coordinate. The :math:`D_n` terms are
+        defined as:
+
+        .. math::
+
+            D_0 &\equiv D(q_1=0,\cdots,q_M=0) \\
+            D_1^{(i)}(q_i) &\equiv D(0,\cdots,0,q_i,0,\cdots,0) - D_0 \\
+            D_2^{(i,j)}(q_i,q_j) &\equiv D(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+            D_1^{(i)}(q_i) - D_1^{(j)}(q_j) - D_0  \\
+            \nonumber \vdots
+
+        The one-mode Taylor dipole coefficients, :math:`\Phi`, computed here are related to the
+        dipole data as:
+
+        .. math::
+
+            D_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
+
+        Similarly, the two-mode and three-mode Taylor dipole coefficients are computed if the
+        two-mode and three-mode dipole data, :math:`D_2^{(j, k)}(q_j, q_k)` and
+        :math:`D_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
     """
     coeffs_x_1D, predicted_x_1D = _fit_onebody(
         pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg
