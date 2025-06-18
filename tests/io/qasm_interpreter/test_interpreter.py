@@ -70,7 +70,7 @@ class TestMeasurementReset:
         )
 
         with pytest.raises(
-            ValueError, match="Mid circuit measurement outcomes can not be used as while conditions"
+            ValueError, match="Mid circuit measurement outcomes can not be used as conditions"
         ):
             QasmInterpreter().interpret(ast, context={"name": "cond_meas", "wire_map": None})
 
