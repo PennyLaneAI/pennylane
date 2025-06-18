@@ -1111,9 +1111,9 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     **Example**
 
     >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> pes = qml.qchem.vibrational_pes(mol, optimize=False)
     >>> integrals = qml.qchem.vibrational.christiansen_integrals(pes,n_states=4)
     >>> print(integrals[0])
     [[[0.0103548  0.0019394  0.00046436 0.0016381 ]
@@ -1209,15 +1209,13 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     **Example**
 
     >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol, dipole_level = 3, cubic=True)
-    >>> integrals = qml.qchem.vibrational.christiansen_integrals_dipole(pes,n_states=4)
-    >>> print(integrals[0][0])
-    [[[-9.31636026e-19 -1.33891348e-17  2.10011990e-17 -3.84033144e-18]
-      [-1.33891348e-17  2.87685444e-17 -2.55867452e-17  5.07982953e-17]
-      [ 2.10011990e-17 -2.55867452e-17  7.61334058e-17 -6.83190790e-17]
-      [-3.84033144e-18  5.07982953e-17 -6.83190790e-17  8.72907459e-17]]]
+    >>> pes = qml.qchem.vibrational_pes(mol, optimize = False, dipole_level = 3, cubic=True)
+    >>> integrals = qml.qchem.vibrational.christiansen_integrals_dipole(pes, n_states = 2)
+    >>> print(integrals[0][2])
+    [[[-0.00074107 -0.02287269]
+    [-0.02287269 -0.00216419]]]
     """
     if not has_h5py:  # pragma: no cover
         raise ImportError(

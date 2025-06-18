@@ -768,9 +768,9 @@ def vibrational_pes(
     **Example**
 
     >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol)
+    >>> pes = qml.qchem.vibrational_pes(mol, optimize=False)
     >>> print(pes.freqs)
     [0.02038828]
     """
