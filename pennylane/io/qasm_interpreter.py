@@ -704,7 +704,7 @@ class QasmInterpreter:
         def _check_for_mcm(curr_context: Context):
             if isinstance(self.visit(node.while_condition, curr_context), MeasurementValue):
                 raise ValueError(
-                    "Mid circuit measurement outcomes can not be used as while conditions. "
+                    "Mid circuit measurement outcomes can not be used as conditions to a while loop. "
                     "To condition on the outcome of a measurement, please use if / else."
                 )
 
