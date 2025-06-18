@@ -77,12 +77,13 @@ def _prime_factorize(n: int, max_trials=1000, z_sqrt_two: bool = True) -> list[i
                 return None
             factors.append(p)
             continue
-        if z_sqrt_two and (factor := _integer_factorize(p, max_trials)) % 8 == 7:
+        if (factor := _integer_factorize(p, max_trials)) is None:  # pragma: no cover
+            return None
+        if z_sqrt_two and factor % 7 == 0:  # pragma: no cover
             return None
         # If we have found an integer factor,
         # push it and its complement onto the stack
-        if factor is not None:
-            stack.extend([factor, p // factor])
+        stack.extend([factor, p // factor])
 
     return sorted(factors)
 
@@ -114,7 +115,7 @@ def _integer_factorize(n: int, max_tries=1000) -> int | None:
 
         while g == 1:
             y = x
-            # Process mext `r` steps
+            # Process next `r` steps
             for _ in range(r):
                 x = (x * x % n + c) % n
 
@@ -172,10 +173,10 @@ def _factorize_prime_zsqrt_two(p: int) -> list[ZSqrtTwo]:
         return [ZSqrtTwo(0, 1), ZSqrtTwo(0, (-1) ** (p < 0))]
 
     if p % 8 in (3, 5):
-        # p = (p + 0√2) is prime in Z[√2]
+        # Lemma C.9: p = (p + 0√2) is prime in Z[√2]
         return [ZSqrtTwo(p, 0)]
 
-    # Default case: p ≡ ±1 mod 8 |  p % 8 in (1, 7)
+    # Default case (Lemma C.11): p ≡ ±1 mod 8 |  p % 8 in (1, 7)
     # Solve t^2 ≡ 2 (mod p) to split p
     if (t := _sqrt_modulo_p(2, p)) is None:
         return None
@@ -285,7 +286,20 @@ def _primality_test(n: int) -> bool:
 
 @lru_cache(maxsize=100)
 def _legendre_symbol(a: int, p: int) -> int:
-    r"""Computes the Legendre symbol :math:`\left(\frac{a}{p}\right)`."""
+    r"""Computes the Legendre symbol :math:`\left(\frac{a}{p}\right)`.
+
+    This function uses the definition of the Legendre symbol:
+
+    .. math::
+        \left(\frac{a}{p}\right) = a^{(p-1)/2} \mod p
+
+    Args:
+        a (int): The number to compute the Legendre symbol of.
+        p (int): The prime number.
+
+    Returns:
+        int: The Legendre symbol of :math:`a` modulo :math:`p`.
+    """
     return pow(a, (p - 1) // 2, p)
 
 
@@ -340,7 +354,7 @@ def _sqrt_modulo_p(n: int, p: int) -> int | None:
 
         # Compute b = c^(2^(m-ix-1)) mod p
         # and update the intial elements
-        if m - ix - 1 < 0:
+        if m - ix - 1 < 0:  # pragma: no cover
             return None
         b = pow(c, 1 << (m - ix - 1), p)
         r = (r * b) % p
