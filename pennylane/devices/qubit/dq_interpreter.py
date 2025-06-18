@@ -22,7 +22,7 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.devices import ExecutionConfig
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.qubit import Projector
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -203,9 +203,10 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
         # but those intermediaries will not work with capture enabled when jitting
         with pause():
             if self.shots:
+
                 self.key, new_key = jax.random.split(self.key, 2)
                 # note that this does *not* group commuting measurements
-                # further work could figure out how to perform multiple measurements at the same time
+                # further work could figure out how to perform multiple measurements at the same timexp
                 output = measure_with_samples(
                     [measurement],
                     self.state,
@@ -213,6 +214,11 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
                     prng_key=new_key,
                     is_state_batched=self.is_state_batched,
                 )[0]
+                if isinstance(measurement, CountsMP):
+                    keys = np.array([int(key, 2) for key in output])
+                    values = np.hstack(list(output.values()))
+                    output = np.vstack([keys, values])
+
             else:
                 output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
         return output

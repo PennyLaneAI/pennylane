@@ -113,6 +113,7 @@ from numbers import Number
 from warnings import warn
 
 import jax
+import numpy as np
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
@@ -125,6 +126,40 @@ from .construct_execution_config import construct_execution_config
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+class Counts:
+
+    def __init__(self, keys_and_values, num_wires):
+        self.keys_and_values = keys_and_values
+        self.num_wires = num_wires
+
+    @property
+    def keys(self):
+        return self.keys_and_values[0]
+
+    @property
+    def values(self):
+        return self.keys_and_values[1]
+
+    def __getitem__(self, key):
+        key = int(key, 2)
+        return jax.numpy.sum(jax.numpy.where(self.keys == key, self.values, 0))
+
+    def items(self):
+        return (
+            (np.binary_repr(k, width=self.num_wires), v) for k, v in zip(self.keys, self.values)
+        )
+
+    def __repr__(self):
+        return repr(dict(self.items()))
+
+
+qml.pytrees.register_pytree(
+    Counts,
+    lambda r: ((r.keys_and_values,), (r.num_wires,)),
+    lambda data, metadata: Counts(*data, *metadata),
+)
 
 
 def _is_scalar_tensor(arg) -> bool:
@@ -571,5 +606,9 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         execution_config=config,
         qfunc_jaxpr=qfunc_jaxpr,
     )
+    new_res = [
+        Counts(r, v.aval._n_wires) if v.aval.is_counts else r
+        for r, v in zip(res, qfunc_jaxpr.outvars)
+    ]
 
-    return jax.tree_util.tree_unflatten(out_tree, res)
+    return jax.tree_util.tree_unflatten(out_tree, new_res)

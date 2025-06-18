@@ -49,11 +49,16 @@ def _get_abstract_measurement():
         """
 
         def __init__(
-            self, abstract_eval: Callable, n_wires: Optional[int] = None, has_eigvals: bool = False
+            self,
+            abstract_eval: Callable,
+            n_wires: Optional[int] = None,
+            has_eigvals: bool = False,
+            is_counts=False,
         ):
             self._abstract_eval = abstract_eval
             self._n_wires = n_wires
             self.has_eigvals: bool = has_eigvals
+            self.is_counts = is_counts
 
         def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
             """Calculate the shape and dtype for an evaluation with specified number of device
