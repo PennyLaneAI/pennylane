@@ -149,7 +149,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
 
     """
 
-    wire_map = wire_map or default_wire_map(operations)
+    wire_map = wire_map or default_wire_map(operations)[1]
     bit_map = bit_map or {}
 
     # initialize for operation layers

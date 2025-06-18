@@ -30,6 +30,7 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
@@ -100,6 +101,7 @@ from .utils import (
     in_backprop,
     requires_grad,
     is_abstract,
+    binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
     get_canonical_interface_name,
@@ -216,6 +218,7 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
+    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",
