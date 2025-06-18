@@ -274,7 +274,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Computes the coefficients of Taylor vibrational Hamiltonian.
+    r"""Computes the coefficients of a Taylor vibrational Hamiltonian.
 
     The potential energy surface is defined as [Eq. 7 of
     `J. Chem. Phys. 135, 134108 (2011) <https://pubs.aip.org/aip/jcp/article-abstract/135/13/134108/191108/Size-extensive-vibrational-self-consistent-field?redirectedFrom=PDF>`_]:
@@ -287,7 +287,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     where :math:`Q` is a normal coordinate and :math:`F` represents the derivatives of the potential
     energy surface.
 
-    This functions computes these derivatives via Taylor expansion of the potential energy data by
+    This function computes these derivatives via Taylor expansion of the potential energy data by
     performing a multi-dimensional polynomial fit over potential energy surface data. The potential
     energy surface along the normal coordinate can be defined as
 
@@ -307,7 +307,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots
 
-    Note that the terms :math:`V_n` are represented here by an arrays of energy points computed
+    Note that the terms :math:`V_n` are represented here by an array of energy points computed
     along the normal coordinates. These energy data are then used in a multi-dimensional polynomial
     fit where each term :math:`V_n` is expanded in terms of products of :math:`Q` with exponents
     specified by ``min_deg`` and ``max_deg``.
@@ -362,12 +362,12 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
-    r"""Computes the coefficients of Taylor dipole operator.
+    r"""Computes the coefficients of a Taylor dipole operator.
 
     The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
     computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
-    The dipole :math:`D` along each of :math:`x, y, z` directions is defined as:
+    The dipole :math:`D` along each of the :math:`x, y,` and :math:`z` directions is defined as:
 
     .. math::
 
@@ -619,7 +619,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
-    r"""Returns Taylor bosonic vibrational Hamiltonian.
+    r"""Returns a Taylor bosonic vibrational Hamiltonian.
 
     The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
     :math:`V` components  as:
@@ -628,7 +628,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
         H = T + V.
 
-    The kinetic term is defined in terms of momentum :math:`p` operator as
+    The kinetic term is defined in terms of momentum :math:`p` operators as
 
     .. math::
 
@@ -691,7 +691,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
             ``(m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         three_mode (array(float)): three-mode coefficients of the Taylor Hamiltonian with shape
             ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
-        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
+        is_local (bool): Whether the vibrational modes are localized. Default is ``True``.
         uloc (array(array(float))): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
 
@@ -759,7 +759,7 @@ def taylor_hamiltonian(
 
         K_{ij} = \sum_{k=1}^M \frac{\omega_k}{2} U_{ki} U_{kj}.
 
-    The potential term is defined in terms of normal coordinate operator :math:`q` as:
+    The potential term is defined in terms of the normal coordinate operator :math:`q` as:
 
     .. math::
 

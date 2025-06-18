@@ -190,17 +190,17 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     where :math:`M` is the number of modes. The normal modes
     can be separately localized, to prevent mixing between specific groups of normal modes, by
     defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
-    localize modes that have frequencies above and below :math:`2600` reciprocal centimetre.
+    localize modes that have frequencies above and below :math:`2600` reciprocal centimetre (:math:`\text{cm}^{-1}`).
 
     Args:
-        freqs (List[float]): normal mode frequencies in reciprocal centimetre
+        freqs (List[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
         vecs (TensorLike[float]): displacement vectors of the normal modes
         bins (List[float]): grid of frequencies for grouping normal modes.
             Default is ``[2600]``.
 
     Returns:
         tuple: A tuple containing the following:
-         - List[float] : localized frequencies in reciprocal centimetre
+         - List[float] : localized frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
          - TensorLike[float] : localized displacement vectors
          - TensorLike[float] : localization matrix describing the relationship between the
            original and the localized modes
