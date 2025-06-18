@@ -207,10 +207,7 @@ class DynamicRegister(Wires):
         return self
 
     def __exit__(self, *_, **__):
-        if capture_enabled():
-            deallocate(self)
-        else:
-            Deallocate(self)
+        deallocate(self)
 
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
