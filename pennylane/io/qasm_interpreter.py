@@ -233,18 +233,6 @@ class Context:
             f"No attribute {name} on Context and no {name} key found on context {self.name}"
         )
 
-    def __getitem__(self, item):
-        """
-        Allows accessing items on the context by subscripting.
-
-        Args:
-            item: the name of the key to retrieve.
-
-        Returns:
-            Any: the value corresponding to the key.
-        """
-        return self.context[item]
-
 
 def _get_bit_type_val(var):
     return bin(var.val)[2:].zfill(var.size)
