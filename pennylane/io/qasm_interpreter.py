@@ -599,13 +599,9 @@ class QasmInterpreter:
             """
             try:
                 # updates vars in context... need to propagate these to outer scope
-                self.visit(node.block, context.scopes["loops"][f"while_{node.span.start_line}"])
+                self.visit(node.block, context)
             except ContinueException:
                 pass  # evaluation of this iteration ends, and we continue to the next
-
-            inner_context = context.scopes["loops"][f"while_{node.span.start_line}"]
-            context.vars = inner_context.vars
-            context.wires = inner_context.wires
 
             return context
 
@@ -679,12 +675,9 @@ class QasmInterpreter:
             try:
                 # we only want to execute the gates in the loop's scope
                 # updates vars in sub context... need to propagate these to outer context
-                self.visit(node.block, context["scopes"]["loops"][f"for_{node.span.start_line}"])
+                self.visit(node.block, execution_context)
             except ContinueException:
                 pass  # evaluation of the current iteration stops and we continue
-            inner_context = execution_context.scopes["loops"][f"for_{node.span.start_line}"]
-            context.vars = inner_context.vars
-            context.wires = inner_context.wires
 
             return execution_context
 
