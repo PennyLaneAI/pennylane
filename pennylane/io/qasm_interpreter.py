@@ -51,7 +51,7 @@ PARAMETERIZED_GATES = {
 }
 
 
-def _eval_unary_op(operand: any, operator: str, line: int):
+def _eval_unary_op(operand: int | float | complex | bool | uint, operator: str, line: int):
     """
     Evaluates a unary operator.
 
