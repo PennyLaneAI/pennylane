@@ -603,6 +603,8 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* Fixed missing table descriptions [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
+
 <h3>Breaking changes 💔</h3>
 
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
