@@ -450,7 +450,7 @@ def construct_batch(
             level, num_user_transforms
         )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
         program = user_program[level_slice_initial]
-        tapes, user_post_processing = program((initial_tape,))
+        user_transformed_tapes, user_post_processing = program((initial_tape,))
 
         # The new config process we would like to use.
         mcm_config = qml.devices.MCMConfig(
@@ -463,7 +463,9 @@ def construct_batch(
 
         ###### Resolution of the execution config ######
         execution_config = _resolve_execution_config(
-            execution_config, qnode.device, tapes=tapes  # Use the user-transformed tapes
+            execution_config,
+            qnode.device,
+            tapes=user_transformed_tapes,  # Use the user-transformed tapes
         )
         gradient_fn = execution_config.gradient_method
         has_gradient_expand = bool(
@@ -482,7 +484,9 @@ def construct_batch(
 
         resolved_program = full_transform_program[level_slice_inner]
 
-        batch, remaining_post_processing = resolved_program(tapes)  # Use the user-transformed tapes
+        batch, remaining_post_processing = resolved_program(
+            user_transformed_tapes
+        )  # Use the user-transformed tapes
 
         def combined_post_processing(results):
             """Combine the user post-processing with the remaining post-processing."""
