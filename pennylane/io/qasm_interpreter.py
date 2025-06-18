@@ -117,19 +117,19 @@ class Context:
                 self.init_clause_in_same_namespace(self, f"for_{node.span.start_line}")
             )
 
-    def init_switches_scope(self, node: QASMNode):
+    def init_switches_scope(self, node: ast.SwitchStatement):
         """
         Initializes the switches scope on the current context.
 
         Args:
-            node (QASMNode): the switch node.
+            node (SwitchStatement): the switch node.
         """
         if "switches" not in self.scopes:
             self.scopes["switches"] = dict()
 
         self.scopes["switches"][f"switch_{node.span.start_line}"] = dict()
 
-    def init_branches_scope(self, node: QASMNode):
+    def init_branches_scope(self, node: ast.BranchingStatement):
         """
         Initializes the branches scope on the current context.
 
@@ -426,36 +426,36 @@ class QasmInterpreter:
         return context
 
     @visit.register(ast.BreakStatement)
-    def visit_break_statement(self, node: QASMNode, context: Context):
+    def visit_break_statement(self, node: ast.BreakStatement, context: Context):
         """
         Registers a break statement.
 
         Args:
-            node (QASMNode): the break QASMNode.
+            node (BreakStatement): the break QASMNode.
             context (Context): the current context.
         """
 
         raise BreakException(f"Break statement encountered in {context.name}")
 
     @visit.register(ast.ContinueStatement)
-    def visit_continue_statement(self, node: QASMNode, context: Context):
+    def visit_continue_statement(self, node: ast.ContinueStatement, context: Context):
         """
         Registers a continue statement.
 
         Args:
-            node (QASMNode): the continue QASMNode.
+            node (ContinueStatement): the continue QASMNode.
             context (Context): the current context.
         """
 
         raise ContinueException(f"Continue statement encountered in {context.name}")
 
     @visit.register(ast.BranchingStatement)
-    def visit_branching_statement(self, node: QASMNode, context: Context):
+    def visit_branching_statement(self, node: ast.BranchingStatement, context: Context):
         """
         Registers a branching statement. Like switches, uses qml.cond.
 
         Args:
-            node (QASMNode): the branch QASMNode.
+            node (BranchingStatement): the branch QASMNode.
             context (Context): the current context.
         """
         context.init_branches_scope(node)
@@ -499,12 +499,12 @@ class QasmInterpreter:
         )()
 
     @visit.register(ast.SwitchStatement)
-    def visit_switch_statement(self, node: QASMNode, context: Context):
+    def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
         """
         Registers a switch statement.
 
         Args:
-            node (QASMNode): the switch QASMNode.
+            node (SwitchStatement): the switch QASMNode.
             context (Context): the current context.
         """
         context.init_switches_scope(node)
@@ -780,11 +780,11 @@ class QasmInterpreter:
         )
 
     @visit.register(ast.EndStatement)
-    def visit_end_statement(self, node: QASMNode, context: Context):
+    def visit_end_statement(self, node: ast.EndStatement, context: Context):
         """
         Ends the program.
         Args:
-            node (QASMNode): The end statement QASMNode.
+            node (EndStatement): The end statement QASMNode.
             context (Context): the current context.
         """
         raise EndProgram(
@@ -806,11 +806,11 @@ class QasmInterpreter:
         context.wires.append(node.qubit.name)
 
     @visit.register(ast.ClassicalAssignment)
-    def visit_classical_assignment(self, node: QASMNode, context: Context):
+    def visit_classical_assignment(self, node: ast.ClassicalAssignment, context: Context):
         """
         Registers a classical assignment.
         Args:
-            node (QASMNode): the assignment QASMNode.
+            node (ClassicalAssignment): the assignment QASMNode.
             context (Context): the current context.
         """
         # references to an unresolved value see a func for now
@@ -819,11 +819,11 @@ class QasmInterpreter:
         context.update_var(res, name, node.op.name, node.span.start_line)
 
     @visit.register(ast.AliasStatement)
-    def visit_alias_statement(self, node: QASMNode, context: Context):
+    def visit_alias_statement(self, node: ast.AliasStatement, context: Context):
         """
         Registers an alias statement.
         Args:
-            node (QASMNode): the alias QASMNode.
+            node (AliasStatement): the alias QASMNode.
             context (Context): the current context.
         """
         context.aliases[node.target.name] = self.visit(node.value, context, aliasing=True)
@@ -853,12 +853,12 @@ class QasmInterpreter:
         self.visit_classical_declaration(node, context, constant=True)
 
     @visit.register(ast.ClassicalDeclaration)
-    def visit_classical_declaration(self, node: QASMNode, context: Context, constant: bool = False):
+    def visit_classical_declaration(self, node: ast.ClassicalDeclaration, context: Context, constant: bool = False):
         """
         Registers a classical declaration. Traces data flow through the context, transforming QASMNodes into Python
         type variables that can be readily used in expression evaluation, for example.
         Args:
-            node (QASMNode): The ClassicalDeclaration QASMNode.
+            node (ClassicalDeclaration): The ClassicalDeclaration QASMNode.
             context (Context): The current context.
             constant (bool): Whether the classical variable is a constant.
         """
@@ -962,7 +962,7 @@ class QasmInterpreter:
         (parameterized or non-parameterized).
 
         Args:
-            node (QASMNode): The QuantumGate QASMNode.
+            node (QuantumGate): The QuantumGate QASMNode.
             context (Context): The current context.
         """
         name = node.name.name.upper()
