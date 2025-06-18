@@ -615,9 +615,8 @@
   def execute(self, circuits: QuantumScriptOrBatch, execution_config: Optional[ExecutionConfig] = None):
     ...
   ```
-  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697/)
 
-* `ExecutionConfig` and `MCMConfig` are now frozen dataclasses. This means that their properties cannot be modified in place and instead need to be updated with `dataclasses.replace`.
+  Furthermore, `ExecutionConfig` and `MCMConfig` are now frozen dataclasses. This means that their properties cannot be modified in place and instead need to be updated with `dataclasses.replace`.
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
