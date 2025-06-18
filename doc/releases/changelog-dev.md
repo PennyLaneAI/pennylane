@@ -4,6 +4,38 @@
 
 <h3>New features since last release</h3>
 
+* A new Jax-based :class:`~.QNGOptimizerQJIT` has been added to provide a `jax.jit`/`qml.qjit`-compatible
+  implementation of the :class:`~.QNGOptimizer` algorithm. It's now possible to just-in-time compile the `step`
+  or `step_and_cost` method of the optimizer to make the optimization loop significantly faster.
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+  from functools import partial
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RY(params[1], wires=1)
+      return qml.expval(qml.Z(0) + qml.X(1))
+
+  opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  step = qml.qjit(partial(opt.step, circuit))
+
+  params = jnp.array([0.1, 0.2])
+  state = opt.init(params)
+  for _ in range(100):
+      params, state = step(params, state)
+  ```
+
+  ```pycon
+  >>> params
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
