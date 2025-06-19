@@ -145,7 +145,9 @@ def _interpret_level_inner(
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
-        return slice(start, num_user_transforms + end_idx - int(has_final_transform)) # if it has final, then in the end we will see an extra user transform, e.g. param_shift
+        return slice(
+            start, num_user_transforms + end_idx - int(has_final_transform)
+        )  # if it has final, then in the end we will see an extra user transform, e.g. param_shift
 
     if level == "device":
         return slice(start, None)  # Include all remaining transforms
