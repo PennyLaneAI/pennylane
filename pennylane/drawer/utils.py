@@ -15,10 +15,11 @@
 This module contains some useful utility functions for circuit drawing.
 """
 from collections import defaultdict
+from itertools import chain
 
 import numpy as np
 
-from pennylane.allocation import Allocate, Deallocate, DeallocateAll, DynamicWire
+from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Conditional, Controlled
 
@@ -27,7 +28,7 @@ def wire_extent(layers, wire_map):
     dynamic_wire_layers = defaultdict(list)
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if not isinstance(op, (Allocate, Deallocate, DeallocateAll)):
+            if not isinstance(op, (Allocate, Deallocate)):
                 for w in op.wires:
                     if isinstance(w, DynamicWire):
                         dynamic_wire_layers[w].append(layer_idx)
@@ -50,12 +51,19 @@ def default_wire_map(tape):
     """
 
     # Use dictionary to preserve ordering, sets break order
-    used_wires = {wire: None for op in tape for wire in op.wires}
-    used_wire_map = {wire: ind for ind, wire in enumerate(used_wires)}
-    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
-    used_and_work_wires = used_wires | {
-        wire: None for op in tape for wire in getattr(op, "work_wires", [])
+    used_wires = {
+        wire: None for op in tape for wire in op.wires if not isinstance(wire, DynamicWire)
     }
+    dynamic_wires = {
+        wire: None for op in tape for wire in op.wires if isinstance(wire, DynamicWire)
+    }
+    used_wire_map = {wire: ind for ind, wire in enumerate(chain(used_wires, dynamic_wires))}
+    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
+    used_and_work_wires = (
+        used_wires
+        | dynamic_wires
+        | {wire: None for op in tape for wire in getattr(op, "work_wires", [])}
+    )
     full_wire_map = {wire: ind for ind, wire in enumerate(used_and_work_wires)}
     return full_wire_map, used_wire_map
 
@@ -129,7 +137,6 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     # Create consecutive integer mapping from ordered list
     full_wire_map = {wire: ind for ind, wire in enumerate(full_wire_order)}
     used_wire_map = {wire: ind for ind, wire in enumerate(used_wire_order)}
-
     return full_wire_map, used_wire_map
 
 

@@ -31,7 +31,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 from functools import singledispatch
 from typing import Union
 
-from pennylane.allocation import Allocate, Deallocate, DeallocateAll
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -128,7 +128,6 @@ def _add_obj(
 
 @_add_obj.register(Allocate)
 @_add_obj.register(Deallocate)
-@_add_obj.register(DeallocateAll)
 def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     return layer_str
 

@@ -226,7 +226,6 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
             totals.bit_totals[b] += "═╡"
         else:
             totals.bit_totals[b] += "  "
-
     return totals
 
 
