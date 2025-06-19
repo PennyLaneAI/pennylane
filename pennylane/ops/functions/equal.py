@@ -673,9 +673,9 @@ def _equal_measurements(
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             mv_equal = qml.equal(op1.mv, op2.mv)
-            if isinstance(mv_equal, str):
-                return mv_equal
-            return mv_equal
+            if not mv_equal:
+                return "op1 and op2 are not equal because they have different measurement values"
+            return True
 
         if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
             if op1.mv is op2.mv:
@@ -683,11 +683,11 @@ def _equal_measurements(
             return "Abstract MeasurementValue objects are not the same instance"
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
-            if len(op1.mv) == len(op2.mv):
-                    if all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv)):
-                        return True
-                    return "One or more MeasurementValue objects differ in their .measurements"
-            return f"MeasurementValue lists differ in length: {len(op1.mv)} vs {len(op2.mv)}"
+            if len(op1.mv) != len(op2.mv):
+                return f"MeasurementValue lists differ in length: {len(op1.mv)} vs {len(op2.mv)}"
+            if any(mv1.measurements != mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv)):
+                return "One or more MeasurementValue objects differ in their .measurements"
+            return True
         return "MeasurementValue attributes are not iterable or not compatible"
 
     if op1.wires != op2.wires:
