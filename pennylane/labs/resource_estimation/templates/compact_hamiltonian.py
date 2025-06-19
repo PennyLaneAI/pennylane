@@ -63,7 +63,6 @@ class CompactHamiltonian:
     def __init__(self, method_name: str, **params: Dict[str, Any]):
         self.method_name = method_name
         self.params = params
-        print(f"CompactHamiltonian instance created via {method_name} with params: {params}")
 
     @classmethod
     def from_cdf(cls, num_orbitals: int, num_fragments: int):
