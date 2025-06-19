@@ -25,6 +25,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.wires import Wires
@@ -677,6 +678,31 @@ class TestDecompositions:
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.unit
+    @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
+    def test_pcphase_decomposition_new(self, dim, wires):
+        """Tests the PCPhase decomposition rules."""
+
+        op = qml.PCPhase(np.random.random(), dim, wires=wires)
+        for rule in qml.list_decomps(qml.PCPhase):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pcphase_decomposition_graph(self):
+        """Tests that the PCPhase can be decomposed all the way down."""
+
+        tape = qml.tape.QuantumScript(
+            [qml.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], []
+        )
+        expected_matrix = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        [decomp], _ = qml.transforms.decompose(
+            tape, gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.X, qml.Toffoli, qml.GlobalPhase}
+        )
+        mat = qml.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+        assert qml.math.allclose(mat, expected_matrix)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize(
         "cphase_op,lam_pos",
@@ -696,6 +722,19 @@ class TestDecompositions:
         exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
+    def test_controlled_phase_shift_decomp_new(self, work_wire_type):
+        """tests the new controlled phase shift decomposition"""
+
+        op = qml.ctrl(
+            qml.PhaseShift(0.123, wires=0),
+            control=[1, 2, 3],
+            work_wires=[4, 5],
+            work_wire_type=work_wire_type,
+        )
+        for rule in qml.list_decomps("C(PhaseShift)"):
+            _test_decomposition_rule(op, rule)
 
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]

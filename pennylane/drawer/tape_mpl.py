@@ -71,13 +71,15 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
-    op_control_wires, control_values = unwrap_controls(op)
-
-    target_wires = (
-        [w for w in op.wires if w not in op_control_wires]
-        if len(op.wires) != 0
-        else list(range(drawer.n_wires))
-    )
+    op_control_wires, control_values, base = unwrap_controls(op)
+    is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
+    if len(op.wires) == 0 or is_global_op:
+        op_wires = list(range(drawer.n_wires))
+    else:
+        op_wires = op.wires
+    target_wires = [w for w in op_wires if w not in op_control_wires]
+    if is_global_op and len(target_wires) == 0:
+        raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
 
     if control_values is None:
         control_values = [True for _ in op_control_wires]
@@ -287,9 +289,11 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
         When max_length is None: tuple(Figure, Axes) for the complete circuit
         Otherwise: list[tuple(Figure, Axes)] with one pair per circuit segment
     """
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    full_wire_map, used_wire_map = convert_wire_order(
+        tape, wire_order=wire_order, show_all_wires=show_all_wires
+    )
     tape = transform_deferred_measurements_tape(tape)
-    tape = ops.functions.map_wires(tape, wire_map=wire_map)[0][0]
+    tape = ops.functions.map_wires(tape, wire_map=full_wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
     layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
@@ -309,7 +313,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     )
 
     if max_length is None:
-        return _draw_layers(layers, tape.measurements, config=config, wire_map=wire_map, **kwargs)
+        return _draw_layers(
+            layers, tape.measurements, config=config, wire_map=used_wire_map, **kwargs
+        )
 
     layer_count = len(layers)
     return [
@@ -317,7 +323,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
             layers=layers[i : i + max_length],
             measurements=tape.measurements if i + max_length >= layer_count else "dots",
             config=config,
-            wire_map=wire_map,
+            wire_map=used_wire_map,
             starting_dots=i > 0,
             **kwargs,
         )
