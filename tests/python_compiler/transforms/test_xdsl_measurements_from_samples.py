@@ -41,10 +41,30 @@ catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 
+@pytest.fixture(scope="function")
+def context_and_pipeline():
+    """A fixture that prepares the context and pipeline for unit tests of the
+    measurements-from-samples pass.
+    """
+    ctx = xdsl.context.Context(allow_unregistered=True)
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(func.Func)
+    ctx.load_dialect(tensor.Tensor)
+    ctx.load_dialect(arith.Arith)
+    ctx.load_dialect(quantum.QuantumDialect)
+
+    pipeline = xdsl.passes.PipelinePass((MeasurementsFromSamplesPass(),))
+
+    yield ctx, pipeline
+
+
 class TestMeasurementsFromSamplesPass:
     """Unit tests for the measurements-from-samples pass."""
 
-    def test_1_wire_expval(run_filecheck):
+    def test_1_wire_expval(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit terminating with an expval(Z)
+        measurement.
+        """
         program = """
         builtin.module @module_circuit {
             // CHECK-LABEL: circuit
@@ -52,10 +72,13 @@ class TestMeasurementsFromSamplesPass:
                 %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
+
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
+
                 // CHECK-NOT: quantum.namedobs
                 %3 = quantum.namedobs %2[PauliZ] : !quantum.obs
+
                 // CHECK: [[obs:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
                 // CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<1x1xf64>
                 // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
@@ -63,21 +86,91 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK-NOT: quantum.expval
                 %4 = quantum.expval %3 : f64
                 %5 = "tensor.from_elements"(%4) : (f64) -> tensor<f64>
+
                 // CHECK: func.return [[res]] : tensor<f64>
                 func.return %5 : tensor<f64>
             }
             // CHECK-LABEL: func.func public @expval_from_samples.tensor.1x1xf64
         }
         """
-        ctx = xdsl.context.Context(allow_unregistered=True)
-        ctx.load_dialect(builtin.Builtin)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(tensor.Tensor)
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(quantum.QuantumDialect)
 
+        ctx, pipeline = context_and_pipeline
         module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MeasurementsFromSamplesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_1_wire_var(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit terminating with a var(Z)
+        measurement.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %2 = "test.op"() : () -> !quantum.bit
+
+                // CHECK-NOT: quantum.namedobs
+                %3 = quantum.namedobs %2[PauliZ] : !quantum.obs
+
+                // CHECK: [[obs:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
+                // CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<1x1xf64>
+                // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[res:%.+]] = func.call @var_from_samples.tensor.1x1xf64([[samples]], [[c0]]) : (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK-NOT: quantum.var
+                %4 = quantum.var %3 : f64
+                %5 = "tensor.from_elements"(%4) : (f64) -> tensor<f64>
+
+                // CHECK: func.return [[res]] : tensor<f64>
+                func.return %5 : tensor<f64>
+            }
+            // CHECK-LABEL: func.func public @var_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_1_wire_probs(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit terminating with a probs
+        measurement.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.reg
+                %2 = "test.op"() : () -> !quantum.reg
+
+                // CHECK-NOT: quantum.namedobs
+                %3 = quantum.compbasis qreg %2 : !quantum.obs
+
+                // CHECK: [[samples:%.+]] = quantum.sample %3 : tensor<1x1xf64>
+                // CHECK: [[res:%.+]] = func.call @probs_from_samples.tensor.1x1xf64([[samples]]) : (tensor<1x1xf64>) -> tensor<2xf64>
+                // CHECK-NOT: quantum.probs
+                %4 = quantum.probs %3 : tensor<2xf64>
+
+                // CHECK: func.return [[res]] : tensor<2xf64>
+                func.return %4 : tensor<2xf64>
+            }
+            // CHECK-LABEL: func.func public @probs_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
