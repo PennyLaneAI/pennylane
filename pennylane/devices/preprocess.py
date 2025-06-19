@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.allocation import DynamicWire
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
-from pennylane.measurements import SampleMeasurement, StateMeasurement
+from pennylane.measurements import SampleMeasurement, StateMeasurement, StateMP
 from pennylane.operation import StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -155,6 +155,14 @@ def validate_device_wires(
         raise WireError(
             f"Cannot run circuit(s) on {name} as they contain wires "
             f"not found on the device: {extra_wires}"
+        )
+
+    if any(isinstance(w, DynamicWire) for w in tape.wires) and any(
+        isinstance(mp, StateMP) for mp in tape.measurements
+    ):
+        raise DeviceError(
+            "returning the state is currently not supported with dynamic wires. "
+            " Consider using the density_matrix or probabilities instead."
         )
 
     modified = False
@@ -770,13 +778,10 @@ def _get_diagonalized_tape_and_wires(tape):
 def device_resolve_dynamic_wires(
     tape: QuantumScript, wires: Optional[Wires]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    print(wires)
     if wires:
         zeroed = set(wires) - set(tape.wires)
         print("IM HERE: ", zeroed, set(wires), set(tape.wires))
     else:
         zeroed = ()
-    print(zeroed)
-    wires = wires or ()
-    min_int = max((i for i in tape.wires + wires if isinstance(i, int)), default=0) + 1
+    min_int = max((i for i in tape.wires + (wires or ()) if isinstance(i, int)), default=0) + 1
     return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
