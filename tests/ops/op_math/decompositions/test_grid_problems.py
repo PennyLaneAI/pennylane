@@ -151,7 +151,7 @@ class TestGridIterator:
     def test_grid_iterator(self, theta, epsilon):
         """Test that the two dimensional grid problem is solved correctly."""
         grid_sols = GridIterator(theta=theta, epsilon=epsilon)
-        assert repr(grid_sols) == f"GridIterator(theta={theta}, epsilon={epsilon}, max_trials=100)"
+        assert repr(grid_sols) == f"GridIterator(theta={theta}, epsilon={epsilon}, max_trials=20)"
         assert hasattr(grid_sols, "__iter__")
         u_sol, k_sol = next(iter(grid_sols))
         assert u_sol is not None
