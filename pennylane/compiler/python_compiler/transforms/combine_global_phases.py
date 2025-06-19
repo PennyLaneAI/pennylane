@@ -19,11 +19,54 @@ from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func
+from xdsl.dialects.func import ReturnOp
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
-from xdsl.dialects.scf import WhileOp, IfOp, ForOp
 
 from ..quantum_dialect import GlobalPhaseOp
 from .utils import xdsl_transform
+
+
+def _recursive_combine_region(region, rewriter: pattern_rewriter.PatternRewriter):
+    phi = None
+    # Break down the region into multiple regions
+    sub_regions = []
+    sub_region = []
+    for op in region.walk():
+        # Note ReturnOp should be used as a seperator as well
+        if isinstance(op, (IfOp, WhileOp, ForOp, ReturnOp)):
+            sub_regions.append(sub_region)
+            sub_regions.append([op])
+            sub_region = []
+        else:
+            sub_region.append(op)
+
+    for sub_region in sub_regions:
+        if isinstance(sub_region[0], (IfOp, WhileOp, ForOp)):
+            if len(sub_region) != 1:
+                raise ValueError("The implementation is wrong")
+            _recursive_combine_region(sub_region[0].regions[0], rewriter)
+            if isinstance(sub_region[0], IfOp):
+                _recursive_combine_region(sub_region[0].regions[1], rewriter)
+        else:
+            phi = None
+            global_phases = [op for op in sub_region if isinstance(op, GlobalPhaseOp)]
+            if len(global_phases) < 2:
+                return
+            prev = global_phases[0]
+            phi_sum = prev.operands[0]
+            for current in global_phases[1:]:
+                phi = current.operands[0]
+                addOp = arith.AddfOp(phi, phi_sum)
+                rewriter.insert_op(addOp, InsertPoint.before(current))
+                phi_sum = addOp.result
+
+                rewriter.erase_op(prev)
+                prev = current
+
+            prev.operands[0] = phi_sum
+            rewriter.notify_op_modified(prev)
+            return
 
 
 class CombineGlobalPhasesPattern(
@@ -40,36 +83,11 @@ class CombineGlobalPhasesPattern(
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         GlobalPhase oprations."""
-        phi = None
-        global_phases = [op for op in funcOp.body.walk() if isinstance(op, GlobalPhaseOp)]
-        if_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, IfOp)]
-        while_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, WhileOp)]
-        for_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, WhileOp)]
 
-        for whileop in while_control_flow_op:
-            # Walk through the while loop region
-            region = [op for op in whileop.body.walk()]
-
-        for forop in for_control_flow_op:
-            # Walk through the ture region
-            region = [op for op in forop.body.walk()]
-
-        if len(global_phases) < 2:
-            return
-
-        prev = global_phases[0]
-        phi_sum = prev.operands[0]
-        for current in global_phases[1:]:
-            phi = current.operands[0]
-            addOp = arith.AddfOp(phi, phi_sum)
-            rewriter.insert_op(addOp, InsertPoint.before(current))
-            phi_sum = addOp.result
-
-            rewriter.erase_op(prev)
-            prev = current
-
-        prev.operands[0] = phi_sum
-        rewriter.notify_op_modified(prev)
+        # Note whether we are going to support nested control flows?
+        # If yes, we have to parse the funcOp in a recursive manner.
+        # Otherwise, it should be fine
+        _recursive_combine_region(funcOp.body, rewriter)
 
 
 @dataclass(frozen=True)
