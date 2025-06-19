@@ -25,7 +25,9 @@ from pennylane.allocation import (
     DynamicRegister,
     DynamicWire,
     allocate,
+    allocate_prim,
     deallocate,
+    deallocate_prim,
 )
 
 
@@ -193,3 +195,84 @@ def test_allocate_context_manager():
     qml.assert_equal(q.queue[0], Allocate(wires, require_zeros=False, restored=True))
     qml.assert_equal(q.queue[1], qml.I(wires))
     qml.assert_equal(q.queue[2], Deallocate(wires))
+
+
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestCaptureIntegration:
+
+    @pytest.mark.parametrize("use_context", (True, False))
+    def test_capturing_allocate_and_deallocate(self, use_context):
+        """Test that allocate and deallcoate can be captured."""
+
+        import jax
+
+        def f():
+            if use_context:
+                with allocate(2, require_zeros=True, restored=True) as wires:
+                    qml.H(wires[0])
+                    qml.Z(wires[1])
+            else:
+                w, w2 = allocate(2, require_zeros=True, restored=True)
+                qml.H(w)
+                qml.Z(w2)
+                deallocate((w, w2))
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == allocate_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"num_wires": 2, "require_zeros": True, "restored": True}
+        assert len(jaxpr.eqns[0].outvars) == 2
+        assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
+        for v in jaxpr.eqns[0].outvars:
+            assert v.aval.dtype == jax.numpy.int64
+
+        assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
+        assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
+
+        assert jaxpr.eqns[3].primitive == deallocate_prim
+        assert jaxpr.eqns[3].params == {}
+        assert jaxpr.eqns[3].invars == jaxpr.eqns[0].outvars
+
+        with pytest.raises(NotImplementedError):
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    def test_deallocate_single_wire(self):
+        """Test deallocate can accept a single wire."""
+
+        import jax
+
+        def f():
+            [w] = allocate(1)
+            qml.X(w)
+            deallocate(w)
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == allocate_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"num_wires": 1, "require_zeros": True, "restored": False}
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
+        for v in jaxpr.eqns[0].outvars:
+            assert v.aval.dtype == jax.numpy.int64
+
+        assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
+
+        assert jaxpr.eqns[2].primitive == deallocate_prim
+        assert jaxpr.eqns[2].params == {}
+        assert jaxpr.eqns[2].invars == jaxpr.eqns[0].outvars
+
+    def test_no_implementation(self):
+        """Test that (de)allocation has no concrete implementation."""
+        with pytest.raises(NotImplementedError):
+            allocate(2)
+
+        with pytest.raises(NotImplementedError):
+            with allocate(2) as wires:
+                qml.X(wires)
+
+        with pytest.raises(NotImplementedError):
+            deallocate(2)
