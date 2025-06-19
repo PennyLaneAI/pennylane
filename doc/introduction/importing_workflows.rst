@@ -14,8 +14,8 @@ constructed using another framework. This includes circuits defined using `Qiski
 .. note::
 
     To import a quantum circuit defined using a particular framework, you will need to install the
-    corresponding PennyLane plugin for that framework. More information about PennyLane plugins is
-    available on the `plugins <https://pennylane.ai/plugins>`_ page.
+    corresponding PennyLane plugin for that framework. More information about PennyLane devices is
+    available on the `devices <https://pennylane.ai/devices>`_ page.
 
 Importing quantum circuits
 --------------------------
