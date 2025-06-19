@@ -38,7 +38,9 @@ class CompactHamiltonian:
             def circ():
                 plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
                 return
+        
         The resources can then be extracted as usual:
+        
         >>> res = re.estimate_resources(circ)()
         >>> print(res)
         --- Resources: ---
