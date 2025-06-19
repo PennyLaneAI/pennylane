@@ -4,6 +4,51 @@
 
 <h3>New features since last release</h3>
 
+* The `qchem` module is upgraded with new functions to construct a vibrational Hamiltonian in 
+  the Christiansen representation. 
+  [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
+
+  The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
+  be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
+  functions need input parameters that can be easily obtained by using the
+  :func:`christiansen_integrals` and :func:`vibrational_pes` functions. Similarly, a Christiansen
+  dipole operator can be created by using the :func:`christiansen_dipole` and
+  :func:`christiansen_integrals_dipole` functions.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  symbols  = ['H', 'F']
+  geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
+  mol = qml.qchem.Molecule(symbols, geometry)
+  pes = qml.qchem.vibrational_pes(mol, optimize=False)
+  ham = qml.qchem.vibrational.christiansen_hamiltonian(pes, n_states = 4)
+  ```
+
+  ```pycon
+  >>> ham
+  (
+      0.08527499987546708 * I(0)
+    + -0.0051774006335491545 * Z(0)
+    + 0.0009697024705108074 * (X(0) @ X(1))
+    + 0.0009697024705108074 * (Y(0) @ Y(1))
+    + 0.0002321787923591865 * (X(0) @ X(2))
+    + 0.0002321787923591865 * (Y(0) @ Y(2))
+    + 0.0008190498635406456 * (X(0) @ X(3))
+    + 0.0008190498635406456 * (Y(0) @ Y(3))
+    + -0.015699890427524253 * Z(1)
+    + 0.002790002362847834 * (X(1) @ X(2))
+    + 0.002790002362847834 * (Y(1) @ Y(2))
+    + 0.000687929225764568 * (X(1) @ X(3))
+    + 0.000687929225764568 * (Y(1) @ Y(3))
+    + -0.026572392417060237 * Z(2)
+    + 0.005239546276220405 * (X(2) @ X(3))
+    + 0.005239546276220405 * (Y(2) @ Y(3))
+    + -0.037825316397333435 * Z(3)
+  )
+  ```  
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
