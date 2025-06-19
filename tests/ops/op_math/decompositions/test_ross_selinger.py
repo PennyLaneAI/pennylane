@@ -78,6 +78,14 @@ def test_epsilon_value_effect():
     assert len(decomp_with_error) > len(decomp_less_error)
 
 
+def test_warm_start():
+    """Test that warm start is working."""
+    op = qml.RZ(math.pi / 8, 0)
+    decomp_with_error = rs_decomposition(op, 1e-10, max_trials=100)
+    decomp_less_error = rs_decomposition(op, 1e-3, max_trials=100)
+    assert len(decomp_with_error) == len(decomp_less_error)
+
+
 def test_exception():
     """Test operation wire exception in Ross-Selinger"""
     op = qml.SingleExcitation(1.0, wires=[1, 2])
