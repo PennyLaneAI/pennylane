@@ -770,9 +770,13 @@ def _get_diagonalized_tape_and_wires(tape):
 def device_resolve_dynamic_wires(
     tape: QuantumScript, wires: Optional[Wires]
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    print(wires)
     if wires:
         zeroed = set(wires) - set(tape.wires)
+        print("IM HERE: ", zeroed, set(wires), set(tape.wires))
     else:
         zeroed = ()
-    min_int = max(i for i in tape.wires if isinstance(i, int)) + 1
+    print(zeroed)
+    wires = wires or ()
+    min_int = max((i for i in tape.wires + wires if isinstance(i, int)), default=0) + 1
     return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
