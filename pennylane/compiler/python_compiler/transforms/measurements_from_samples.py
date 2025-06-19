@@ -28,7 +28,7 @@ from xdsl.rewriter import InsertPoint
 from pennylane.compiler.compiler import CompileError
 from pennylane.compiler.python_compiler import quantum_dialect as quantum
 from pennylane.compiler.python_compiler.jax_utils import xdsl_module
-from pennylane.compiler.python_compiler.transforms.api import xdsl_transform
+from pennylane.compiler.python_compiler.transforms.api import compiler_transform
 
 
 @dataclass(frozen=True)
@@ -57,7 +57,7 @@ class MeasurementsFromSamplesPass(passes.ModulePass):
         walker.rewrite_module(module)
 
 
-measurements_from_samples_pass = xdsl_transform(MeasurementsFromSamplesPass)
+measurements_from_samples_pass = compiler_transform(MeasurementsFromSamplesPass)
 
 
 # pylint: disable=too-few-public-methods
