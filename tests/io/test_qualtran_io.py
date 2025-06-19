@@ -36,7 +36,7 @@ def test_to_bloq_error():
         with pytest.raises(ImportError, match="Optional dependency"):
             qml.ToBloq(qml.H(0))
 
-        with pytest.raises(ImportError, match="The `to_bloq`function requires Qualtran "):
+        with pytest.raises(ImportError, match="The `to_bloq` function requires Qualtran "):
             qml.to_bloq(qml.H(0))
 
 
