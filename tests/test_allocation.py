@@ -26,7 +26,6 @@ from pennylane.allocation import (
     DynamicWire,
     allocate,
     deallocate,
-    safe_allocate,
 )
 
 
@@ -170,6 +169,7 @@ class TestDeallocate:
         assert len(q.queue) == 1
         assert op is q.queue[0]
         assert isinstance(op, Deallocate)
+
 
 def test_dynamic_register_repr():
     """Test the repr for the DynamicRegister."""
