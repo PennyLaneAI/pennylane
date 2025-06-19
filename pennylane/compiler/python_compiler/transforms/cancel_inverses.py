@@ -21,7 +21,7 @@ from xdsl.dialects import builtin, func
 from xdsl.ir import Operation
 
 from ..quantum_dialect import CustomOp
-from .api import xdsl_transform
+from .api import compiler_transform
 
 self_inverses = [
     "Identity",
@@ -99,4 +99,4 @@ class IterativeCancelInversesPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-iterative_cancel_inverses_pass = xdsl_transform(IterativeCancelInversesPass)
+iterative_cancel_inverses_pass = compiler_transform(IterativeCancelInversesPass)
