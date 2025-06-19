@@ -534,10 +534,13 @@ def clifford_t_decomposition(
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
+        _CLIFFORD_T_CACHE = None
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
             method, epsilon, cache_size, **method_kwargs
         ):
             _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, cache_size, **method_kwargs)
+
+        is_qjit = qml.compiler.active_compiler() == "catalyst"
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
@@ -546,8 +549,9 @@ def clifford_t_decomposition(
                 # If simplifies to Identity, skip it
                 if not (op_param := op.simplify().data):
                     continue
+                wire = op.wires[0] if is_qjit else 0
                 # Decompose the RZ operation with a default wire
-                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [0]))
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
                 # Extract the global phase from the last operation
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
