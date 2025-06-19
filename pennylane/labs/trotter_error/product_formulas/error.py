@@ -127,11 +127,9 @@ def perturbation_error(
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
         parallel_mode (str): the mode of parallelization to use.
-            Options are "state", "commutator" or "nested_commutator".
+            Options are "state" or "commutator".
             "state" parallelizes the computation of expectation values per state,
             while "commutator" parallelizes the application of commutators to each state.
-            As a finer-grained option to "commutator", the mode "nested_commutator" parallelizes
-            the application of commutators to each state using a task-based executor.
             Default value is set to "state".
 
     Returns:
@@ -165,7 +163,7 @@ def perturbation_error(
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=4, backend="mp_pool", parallel_mode="state")
+    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=4, backend="mp_pool", parallel_mode="commutator")
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     """
@@ -179,7 +177,6 @@ def perturbation_error(
     }
 
     # A serial implementation of the perturbation error computation
-    # TODO: this can be removed once the exploration of parallel modes is complete.
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
@@ -187,7 +184,6 @@ def perturbation_error(
             new_state = _AdditiveIdentity()
             for commutator, coeff in commutators.items():
                 new_state += coeff * _apply_commutator(commutator, fragments, state)
-
             expectations.append(state.dot(new_state))
 
         return expectations
@@ -225,24 +221,7 @@ def perturbation_error(
 
         return expectations
 
-    # Parallelize the application of commutators to each state
-    # Note this mode isn't optimized for performance, but allows
-    # for a finer-grained parallelization of the commutators themselves.
-    # It could be useful for cases where the commutators are expensive to compute.
-    if parallel_mode == "nested_commutator":
-        expectations = []
-        for state in states:
-            new_state = _AdditiveIdentity()
-            for commutator, coeff in commutators.items():
-                new_state += coeff * _apply_parallel_commutator(
-                    commutator, fragments, state, backend=backend, num_workers=num_workers
-                )
-
-            expectations.append(state.dot(new_state))
-
-        return expectations
-
-    raise ValueError("Invalid parallel mode. Choose 'state', 'commutator' or 'nested_commutator'.")
+    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
 def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
@@ -272,40 +251,6 @@ def _apply_commutator(
     return new_state
 
 
-def _apply_parallel_commutator(
-    commutator: Tuple[Hashable],
-    fragments: Dict[Hashable, Fragment],
-    state: AbstractState,
-    backend="serial",
-    num_workers=1,
-) -> AbstractState:
-    """Returns the state obtained from applying ``commutator`` to ``state``.
-    In this function, we use a task-based executor to parallelize the application
-    of fragments."""
-
-    executor = concurrency.backends.get_executor(backend)
-    with executor(max_workers=num_workers) as ex:
-        applied_frags = ex.starmap(
-            _apply_fragments,
-            [(term, coeff, state, fragments) for term, coeff in _op_list(commutator).items()],
-        )
-
-    new_state = _AdditiveIdentity()
-    for applied_state in applied_frags:
-        new_state += applied_state
-
-    return new_state
-
-
-def _apply_fragments(term, coeff, state, fragments):
-
-    tmp_state = copy.copy(state)
-    for frag in reversed([fragments[x] for x in term]):
-        tmp_state = frag.apply(tmp_state)
-
-    return coeff * tmp_state
-
-
 def _apply_commutator_coeff(
     commutator: Tuple[Hashable], coeff, fragments: Dict[Hashable, Fragment], state: AbstractState
 ) -> AbstractState:
@@ -314,10 +259,9 @@ def _apply_commutator_coeff(
     new_state = _AdditiveIdentity()
 
     for term, co in _op_list(commutator).items():
-        tmp_state = copy.copy(state)
+        tmp_state = None
         for frag in reversed([fragments[x] for x in term]):
-            tmp_state = frag.apply(tmp_state)
-
+            tmp_state = frag.apply(tmp_state) if tmp_state is not None else frag.apply(state)
         new_state += co * tmp_state
 
     return coeff * new_state

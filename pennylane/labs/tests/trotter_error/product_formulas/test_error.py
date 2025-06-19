@@ -27,7 +27,7 @@ from pennylane.labs.trotter_error import (
 @pytest.mark.parametrize(
     "backend", ["serial", "mp_pool", "cf_procpool", "mpi4py_pool", "mpi4py_comm"]
 )
-@pytest.mark.parametrize("parallel_mode", ["state", "commutator", "nested_commutator"])
+@pytest.mark.parametrize("parallel_mode", ["state", "commutator"])
 def test_perturbation_error(backend, parallel_mode):
     """Test that perturbation error function runs without errors for different backends."""
 
