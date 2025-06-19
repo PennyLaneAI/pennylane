@@ -266,7 +266,7 @@ class TestCaptureIntegration:
         assert jaxpr.eqns[2].invars == jaxpr.eqns[0].outvars
 
     def test_no_implementation(self):
-        """Test that deallocation has no concrete implementation."""
+        """Test that (de)allocation has no concrete implementation."""
         with pytest.raises(NotImplementedError):
             allocate(2)
 
