@@ -24,10 +24,10 @@ from pennylane.allocation import (
     Deallocate,
     DynamicRegister,
     DynamicWire,
-    _get_allocate_prim,
-    _get_deallocate_prim,
     allocate,
+    allocate_prim,
     deallocate,
+    deallocate_prim,
 )
 
 
@@ -220,7 +220,7 @@ class TestCaptureIntegration:
 
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 4
-        assert jaxpr.eqns[0].primitive == _get_allocate_prim()
+        assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
         assert jaxpr.eqns[0].params == {"num_wires": 2, "require_zeros": True, "restored": True}
         assert len(jaxpr.eqns[0].outvars) == 2
@@ -231,7 +231,7 @@ class TestCaptureIntegration:
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
         assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
 
-        assert jaxpr.eqns[3].primitive == _get_deallocate_prim()
+        assert jaxpr.eqns[3].primitive == deallocate_prim
         assert jaxpr.eqns[3].params == {}
         assert jaxpr.eqns[3].invars == jaxpr.eqns[0].outvars
 
@@ -251,7 +251,7 @@ class TestCaptureIntegration:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 3
-        assert jaxpr.eqns[0].primitive == _get_allocate_prim()
+        assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
         assert jaxpr.eqns[0].params == {"num_wires": 1, "require_zeros": True, "restored": False}
         assert len(jaxpr.eqns[0].outvars) == 1
@@ -261,7 +261,7 @@ class TestCaptureIntegration:
 
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
 
-        assert jaxpr.eqns[2].primitive == _get_deallocate_prim()
+        assert jaxpr.eqns[2].primitive == deallocate_prim
         assert jaxpr.eqns[2].params == {}
         assert jaxpr.eqns[2].invars == jaxpr.eqns[0].outvars
 
