@@ -578,10 +578,10 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the compressed double factorized Hamiltonian
-            n (int): an integer representing the number of Trotter steps to perform
-            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                Hamiltonian we will be approximately exponentiating.
+            n (int): the number of Trotter steps to perform
+            order (int): the order of the approximation (must be 1 or even)
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
