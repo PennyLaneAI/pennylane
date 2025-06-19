@@ -328,10 +328,11 @@ class ResourceControlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): the class type of the base operator to be controlled
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
-                * num_ctrl_wires (int): the number of qubits the operation is controlled on
-                * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            * base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            operator to be controlled.
+            * num_ctrl_wires (int): the number of qubits the operation is controlled on
+            * num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            :math:`|0\rangle` state
         """
 
         return {
@@ -351,11 +352,11 @@ class ResourceControlled(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): the class type of the base operator to be controlled
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+                operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the
+                :math:`|0\rangle` state
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -470,7 +471,7 @@ class ResourceControlled(ResourceOperator):
         base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
-    ) -> list[GateCount]:
+    ) -> Dict[CompressedResourceOp, int]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -880,6 +881,7 @@ class ResourceProd(ResourceOperator):
 
         >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
         >>> prod_x2z3 = plre.ResourceProd(factors)
+        >>>
         >>> print(plre.estimate_resources(prod_x2z3))
         --- Resources: ---
         Total qubits: 1

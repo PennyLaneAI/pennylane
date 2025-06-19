@@ -1182,21 +1182,17 @@ class ResourceMultiControlledX(ResourceOperator):
         wires (Sequence[int], optional): the wires this operation acts on
 
     Resources:
-        The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
-        <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+        The resources are obtained based on the unary iteration technique described in
+        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
         resources are defined as the following rules:
 
-        * If there is only one control qubit, treat the resources as a :class:`~.ResourceCNOT` gate.
+        * If there are no control qubits, treat the operation as a :class:`~.labs.resource_estimation.ResourceX` gate.
 
-        * If there are two control qubits, treat the resources as a :class:`~.ResourceToffoli` gate.
+        * If there is only one control qubit, treat the resources as a :class:`~.labs.resource_estimation.ResourceCNOT` gate.
 
-        * If there are three control qubits, the resources are two :class:`~.ResourceCNOT` gates and one :class:`~.ResourceToffoli` gate.
+        * If there are two control qubits, treat the resources as a :class:`~.labs.resource_estimation.ResourceToffoli` gate.
 
-        * If there are more than three control qubits (:math:`n`), the resources are defined as :math:`36n - 111` :class:`~.ResourceCNOT` gates.
-
-    Resources:
-        The resources are obtained based on the unary iteration technique described in
-        `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
+        * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.labs.resource_estimation.ResourceToffoli`.
 
     .. seealso:: :class:`~.MultiControlledX`
 
@@ -1267,8 +1263,8 @@ class ResourceMultiControlledX(ResourceOperator):
             num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Resources:
-            The resources are obtained from Table 3 of `Claudon, B., Zylberman, J., Feniou, C. et al.
-            <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+            The resources are obtained based on the unary iteration technique described in
+            `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
             resources are defined as the following rules:
 
             * If there are no control qubits, treat the operation as a :class:`~.labs.resource_estimation.ResourceX` gate.
@@ -1279,9 +1275,6 @@ class ResourceMultiControlledX(ResourceOperator):
 
             * If there are three or more control qubits (:math:`n`), the resources obtained based on the unary iteration technique described in `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_. Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` elbow gates and a single :class:`~.labs.resource_estimation.ResourceToffoli`.
 
-        Resources:
-            The resources are obtained based on the unary iteration technique described in
-            `Babbush 2018 <https://arxiv.org/pdf/1805.03662>`_.
         """
         gate_lst = []
 
