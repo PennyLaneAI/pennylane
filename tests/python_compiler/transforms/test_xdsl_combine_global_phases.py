@@ -128,7 +128,6 @@ class TestCombineGlobalPhasesPass:
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
         pipeline.apply(ctx, module)
-        breakpoint()
         run_filecheck(program, module)
 
 
