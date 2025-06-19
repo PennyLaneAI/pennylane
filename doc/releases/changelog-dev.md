@@ -181,9 +181,9 @@
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It 
   requires one input and takes in two optional inputs:
-  * `circuit`: an initialized PennyLane operator or a QNode
-  * `map_ops`: whether or not if operators are mapped to a Qualtran Bloq or wrapped as a `ToBloq`
-  * `custom_mapping`: dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq
+  * op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
+  * map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped as a ``ToBloq``. Default is True.
+  * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
   
   The following example converts a PennyLane Operator into a Qualtran Bloq:
 
