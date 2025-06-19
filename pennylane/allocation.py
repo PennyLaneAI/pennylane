@@ -103,6 +103,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
+
     .. seealso:: :func:`~.allocate`
 
     Using :func:`~.allocate` as a context manager is the recommended syntax, as it will automatically
