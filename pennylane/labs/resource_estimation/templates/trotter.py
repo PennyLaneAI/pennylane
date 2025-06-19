@@ -513,11 +513,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
-    Resource Parameters:
-        * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-          that stores information about the compressed double factorized Hamiltonian
-        * n (int): an integer representing the number of Trotter steps to perform
-        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
