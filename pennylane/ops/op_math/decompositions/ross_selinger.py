@@ -34,16 +34,23 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     """
     pi_vals = [(2 * i + 1) * math.pi / 4 for i in range(4)]  # pi/4, 3pi/4, 5pi/4, 7pi/4
 
-    if pi_vals[0] <= theta < pi_vals[1]:  # pi/4 <= theta < 3pi/4
-        return -math.pi / 2, ZOmega(b=1)
+    sign = 1
+    theta %= 4 * math.pi
+    if theta > 2 * math.pi:
+        sign = -1
+        theta -= math.pi * 4
+    abs_theta = abs(theta)
 
-    if pi_vals[1] <= theta < pi_vals[2]:  # 3pi/4 <= theta < 5pi/4
-        return -math.pi, ZOmega(d=-1)
+    if pi_vals[0] <= abs_theta < pi_vals[1]:  # pi/4 <= |theta| < 3pi/4
+        return -sign * math.pi / 2, ZOmega(b=sign)
 
-    if pi_vals[2] <= theta < pi_vals[3]:  # 5pi/4 <= theta < 7pi/4
-        return -3 * math.pi / 2, ZOmega(b=-1)
+    if pi_vals[1] <= abs_theta < pi_vals[2]:  # 3pi/4 <= |theta| < 5pi/4
+        return -sign * math.pi, ZOmega(d=-1)
 
-    return 0.0, ZOmega(d=1)  # -pi/4 <= theta < pi/4
+    if pi_vals[2] <= abs_theta < pi_vals[3]:  # 5pi/4 <= |theta| < 7pi/4
+        return -sign * 3 * math.pi / 2, ZOmega(b=-sign)
+
+    return 0.0, ZOmega(d=1)  # -pi/4 <= |theta| < pi/4 / 7pi/4 <= |theta| < 8pi/4
 
 
 def rs_decomposition(op, epsilon, *, max_trials=20):
