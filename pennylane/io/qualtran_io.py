@@ -656,7 +656,7 @@ def _ensure_in_reg_exists(
         ] = bb.allocate(n_alloc)
 
     # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
-    assert in_reg in qreg_to_qvar
+    assert in_reg in qreg_to_qvar, f"Input register {in_reg} not found, suggesting a bug"
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
