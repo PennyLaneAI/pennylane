@@ -66,8 +66,8 @@ class QNGOptimizerQJIT:
             qml.RY(params[1], wires=1)
             return qml.expval(qml.Z(0) + qml.X(1))
 
-    To make the optimization loop faster, the :meth:`~.step` (or :meth:`~.step_and_cost`) method can be
-    just-in-time compiled using ``qml.qjit`` (or ``jax.jit``, much more efficient for the ``default.qubit`` device):
+    To make the optimization loop faster, the `step` (or `step_and_cost`) method can be just-in-time 
+    compiled using ``qml.qjit`` (or ``jax.jit``, much more efficient for the ``default.qubit`` device):
 
     .. code-block:: python
 
