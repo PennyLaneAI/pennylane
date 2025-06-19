@@ -27,7 +27,14 @@ from ..quantum_dialect import GlobalPhaseOp
 from .utils import xdsl_transform
 
 
-def _recursive_combine_region(region, rewriter: pattern_rewriter.PatternRewriter):
+def _recursive_combine_global_phases(region, rewriter: pattern_rewriter.PatternRewriter):
+    """Recursive merge all the :class:~pennylane.GlobalPhase operations in the region
+    to the last :class:~pennylane.GlobalPhase operation.
+
+       Args:
+           region: A Region object to be apply.
+           rewriter: A PatternRewriter object.
+    """
     phi = None
     # Break down the region into multiple regions
     sub_regions = []
@@ -45,9 +52,9 @@ def _recursive_combine_region(region, rewriter: pattern_rewriter.PatternRewriter
         if isinstance(sub_region[0], (IfOp, WhileOp, ForOp)):
             if len(sub_region) != 1:
                 raise ValueError("The implementation is wrong")
-            _recursive_combine_region(sub_region[0].regions[0], rewriter)
+            _recursive_combine_global_phases(sub_region[0].regions[0], rewriter)
             if isinstance(sub_region[0], IfOp):
-                _recursive_combine_region(sub_region[0].regions[1], rewriter)
+                _recursive_combine_global_phases(sub_region[0].regions[1], rewriter)
         else:
             phi = None
             global_phases = [op for op in sub_region if isinstance(op, GlobalPhaseOp)]
@@ -87,7 +94,7 @@ class CombineGlobalPhasesPattern(
         # Note whether we are going to support nested control flows?
         # If yes, we have to parse the funcOp in a recursive manner.
         # Otherwise, it should be fine
-        _recursive_combine_region(funcOp.body, rewriter)
+        _recursive_combine_global_phases(funcOp.body, rewriter)
 
 
 @dataclass(frozen=True)
