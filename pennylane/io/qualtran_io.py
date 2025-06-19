@@ -82,6 +82,21 @@ def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
     return ToBloq(op, map_ops=map_ops, **kwargs)
 
 
+# Helper function to handle common guard clauses
+def _handle_custom_map(op, custom_mapping, map_ops, **kwargs):
+    """
+    Handles the custom mapping and wrapping logic
+    """
+
+    if not map_ops:
+        return ToBloq(op, **kwargs)
+
+    if custom_mapping is not None and op in custom_mapping:
+        return custom_mapping[op]
+
+    return None
+
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
@@ -93,11 +108,9 @@ def _(
     from qualtran.bloqs.phase_estimation import RectangularWindowState
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-    if not map_ops:
-        return ToBloq(op, **kwargs)
-
-    if custom_mapping is not None:
-        return custom_mapping[op]
+    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
 
     return TextbookQPE(
         unitary=_map_to_bloq(op.hyperparameters["unitary"]),
@@ -110,11 +123,9 @@ def _(
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.qft import QFTTextBook
 
-    if not map_ops:
-        return ToBloq(op, **kwargs)
-
-    if custom_mapping is not None:
-        return custom_mapping[op]
+    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
 
     return QFTTextBook(len(op.wires))
 
@@ -125,11 +136,9 @@ def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
-    if not map_ops:
-        return ToBloq(op, **kwargs)
-
-    if custom_mapping is not None:
-        return custom_mapping[op]
+    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
 
     data = np.array([int(b, 2) for b in op.bitstrings])
     if op.clean:
@@ -143,11 +152,9 @@ def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
 def _(op: qtemps.subroutines.ModExp, custom_mapping=None, map_ops=True, **kwargs):
     from qualtran.bloqs.cryptography.rsa import ModExp
 
-    if not map_ops:
-        return ToBloq(op, **kwargs)
-
-    if custom_mapping is not None:
-        return custom_mapping[op]
+    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
 
     return ModExp(
         base=op.hyperparameters["base"],
