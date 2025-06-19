@@ -18,6 +18,7 @@
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
+  [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
 
   ```python
   import pennylane as qml
@@ -44,6 +45,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -410,6 +412,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
+  experimental and not integrated.
+  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
+  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
+
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
@@ -475,6 +482,7 @@
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
   [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
   [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
+  [(#7706)](https://github.com/PennyLaneAI/pennylane/pull/7706)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -609,6 +617,11 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
+  :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
+  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
+  [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
+
 <h3>Breaking changes 💔</h3>
 
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
@@ -699,7 +712,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
 
 * Move program capture code closer to where it is used.
-  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+  [(#7608)](https://github.com/PennyLaneAI/pennylane/pull/7608)
 
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
