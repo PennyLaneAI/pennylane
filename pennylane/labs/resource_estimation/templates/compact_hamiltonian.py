@@ -89,3 +89,34 @@ class CompactHamiltonian:
 
         """
         return cls("from_thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+
+    @classmethod
+    def from_vibrational(cls, num_modes: int, grid_size: int, taylor_degree: int):
+        """Constructs a vibrational Hamiltonian instance
+
+        Args:
+            num_modes (int): number of vibrational modes
+            grid_size (int): number of grid points used to discretize each mode
+            taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+
+        Returns:
+            CompactHamiltonian: An instance of CompactHamiltonian initialized with vibrational Hamiltonian parameters.
+
+        """
+        return cls("from_vibrational", num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree)
+    
+    @classmethod
+    def from_vibronic(cls, num_modes: int, num_states: int, grid_size: int, taylor_degree: int):
+        """Constructs a vibronic Hamiltonian instance
+
+        Args:
+            num_modes (int): number of vibronic modes
+            num_states (int): number of vibronic states
+            grid_size (int): number of grid points used to discretize each mode
+            taylor_degree (int): degree of the Taylor expansion used in the vibronic representation
+
+        Returns:
+            CompactHamiltonian: An instance of CompactHamiltonian initialized with vibronic Hamiltonian parameters.
+
+        """
+        return cls("from_vibronic", num_modes=num_modes, num_states=num_states, grid_size=grid_size, taylor_degree=taylor_degree)
