@@ -1025,7 +1025,7 @@ def _ensure_in_reg_exists(
         ] = bb.allocate(n_alloc)
 
     # if in_reg not in qreg_to_qvar: splits & joins needed, which shouldn't be the case
-    assert in_reg in qreg_to_qvar
+    assert in_reg in qreg_to_qvar, f"Input register {in_reg} not found, suggesting a bug"
 
 
 def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
@@ -1094,14 +1094,12 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
-    _error_message = (
-        "Optional dependency 'qualtran' is required "
-        "for ToBloq functionality but is not installed. Try `pip install qualtran`."
-    )
-
     def __init__(self, op, map_ops=False, **kwargs):
         if not qualtran:
-            raise ImportError(self._error_message)
+            raise ImportError(
+                "Optional dependency 'qualtran' is required "
+                "for ToBloq functionality but is not installed. Try `pip install qualtran`."
+            )
 
         if not isinstance(op, Operator) and not isinstance(op, QNode) and not callable(op):
             raise TypeError(
@@ -1266,9 +1264,9 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             pip install qualtran
 
     Args:
-        circuit (QNode | Operation): A QNode or an initialized PennyLane operator to be converted to a Qualtran Bloq.
+        circuit (QNode | Operation): A :class:`~pennylane.QNode` or an initialized PennyLane operator to be converted to a Qualtran Bloq.
         map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
-            as a ``ToBloq``. Default is True.
+            as a ``ToBloq``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
@@ -1340,7 +1338,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     if not qualtran:
         raise ImportError(
-            "The `to_bloq`function requires Qualtran to be installed. You can install"
+            "The `to_bloq` function requires Qualtran to be installed. You can install"
             "qualtran via: pip install qualtran."
         )
 
