@@ -133,10 +133,10 @@ class QNGOptimizerQJIT:
             qnode (QNode): QNode objective function to be optimized
             params (array): QNode parameters to be updated
             state: current state of the optimizer
-            **kwargs : variable length keyword arguments for the QNode
+            **kwargs : variable-length keyword arguments for the QNode
 
         Returns:
-            tuple: (new paramaters values, new optimizer's state)
+            tuple: (new parameters values, new optimizer's state)
 
         .. note::
 
@@ -158,10 +158,10 @@ class QNGOptimizerQJIT:
             qnode (QNode): QNode objective function to be optimized
             params (array): QNode parameters to be updated
             state: current state of the optimizer
-            **kwargs : variable length keyword arguments for the QNode
+            **kwargs : variable-length keyword arguments for the QNode
 
         Returns:
-            tuple: (new paramaters values, new optimizer's state, objective function value)
+            tuple: (new parameters values, new optimizer's state, objective function value)
 
         .. note::
 
