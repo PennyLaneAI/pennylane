@@ -341,7 +341,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
         .. math::
 
-            V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(3)}_j q_j^n,
+            V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(n)}_j q_j^n,
 
         where the largest power :math:`n` is determined by ``max_deg``. Similarly, the two-mode and
         three-mode Taylor coefficients are computed if the two-mode and three-mode potential energy
@@ -669,10 +669,9 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
 		\nonumber \vdots
 
-    These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
-    ``min_deg`` and ``max_deg`` to get :math:`n`-mode Taylor coefficients. For instance, the
-    one-mode Taylor coefficient :math:`\Phi` is related to the one-mode potential energy surface
-    data as:
+    These terms are then used in a multi-dimensional polynomial fit to get :math:`n`-mode Taylor
+    coefficients. For instance, the one-mode Taylor coefficient :math:`\Phi` is related to the
+    one-mode potential energy surface data as:
 
     .. math::
 
@@ -696,12 +695,6 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     Args:
         coeffs (list(tensorlike(float))): the coefficients of a Taylor vibrational Hamiltonian
         freqs (array(float)): the harmonic vibrational frequencies in atomic units
-        one_mode (array(float)): one-mode coefficients of the Taylor Hamiltonian with shape
-            ``(m, l)`` where ``m = len(freqs)`` and ``l > 0``
-        two_mode (array(float)): two-mode coefficients of the Taylor Hamiltonian with shape
-            ``(m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
-        three_mode (array(float)): three-mode coefficients of the Taylor Hamiltonian with shape
-            ``(m, m, m, l)`` where ``m = len(freqs)`` and ``l > 0``
         is_local (bool): Whether the vibrational modes are localized. Default is ``True``.
         uloc (tensorlike(float)): normal mode localization matrix with shape ``(m, m)`` where
             ``m = len(freqs)``
