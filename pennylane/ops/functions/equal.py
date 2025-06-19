@@ -690,9 +690,8 @@ def _equal_measurements(
             return f"MeasurementValue lists differ in length: {len(op1.mv)} vs {len(op2.mv)}"
         return "MeasurementValue attributes are not iterable or not compatible"
 
-    if op1.wires == op2.wires:
-        return True
-    return f"Measurement wires differ: {op1.wires} vs {op2.wires}"
+    if op1.wires != op2.wires:
+        return f"Measurement wires differ: {op1.wires} vs {op2.wires}"
 
 
     if op1.obs is None and op2.obs is None:
