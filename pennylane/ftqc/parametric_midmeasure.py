@@ -391,7 +391,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        if is_abstract(self.angle):
+        if is_abstract(self.angle):  # pragma: no cover
             # no unique value from tracer to values, hash based on object string
             param_hash = hashlib.sha256(str(self).encode()).digest()
         elif isscalar(self.angle) or ndim(self.angle) == 0:
