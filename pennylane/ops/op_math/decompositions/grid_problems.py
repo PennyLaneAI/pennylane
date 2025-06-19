@@ -330,6 +330,8 @@ class GridOp:
         b (tuple[int, int]): The b-coefficient of the grid operation.
         c (tuple[int, int]): The c-coefficient of the grid operation.
         d (tuple[int, int]): The d-coefficient of the grid operation.
+        check_valid (bool): If ``True``, the grid operation will be checked to be a valid
+            grid operation. Default is ``True``.
 
     .. note::
         The coefficients are given as tuples of the form (a_0, a_1), which corresponds
