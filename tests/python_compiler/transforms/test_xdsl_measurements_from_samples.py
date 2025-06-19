@@ -18,7 +18,6 @@
 
 from functools import partial
 
-import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -457,6 +456,7 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
@@ -472,6 +472,7 @@ class TestMeasurementsFromSamplesExecution:
 
         In this case, the measurements_from_samples pass should effectively be a no-op.
         """
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         dev = qml.device("lightning.qubit", wires=1, shots=shots)
 
