@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -225,8 +225,8 @@ class State:
         # Uses Definition A.1 of arXiv:1403.2975
         return self.e2.z - self.e1.z
 
-    def grid_op(self) -> GridOp:
-        """Calculate the grid operation of the state."""
+    def skew_grid_op(self) -> GridOp:
+        """Calculate the special grid operation for the state for reducing the skew."""
         # Uses Lemma A.5 (Step Lemma) of arXiv:1403.2975 for obtaining special grid op.
         grid_op = GridOp.from_string("I")
         state = State(self.e1, self.e2)
@@ -587,7 +587,7 @@ class GridIterator:
         e1 = Ellipse.from_region(self.epsilon, self.theta, k)  # Ellipse for the epsilon-region.
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
-        grid_op = State(en, e2).grid_op()  # Grid operation for the epsilon-region.
+        grid_op = State(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
 
         for _ in range(self.max_iter):
             # Update the radius of the unit disk.
