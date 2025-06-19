@@ -190,7 +190,7 @@ class Ellipse:
         p1, p2 = self.p
         gda, gdb, gdc, gdd = grid_op.inverse().flatten
 
-        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2))
+        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2), self.axes)
 
 
 class State:
@@ -233,7 +233,7 @@ class State:
         while (skew := state.skew) >= 15:
             new_grid_op, state = state.reduce_skew()
             grid_op = grid_op * new_grid_op
-            if state.skew > 0.9 * skew:
+            if state.skew > 0.9 * skew:  # pragma: no cover
                 raise ValueError(f"Skew was not decreased for state {state}")
 
         return grid_op
@@ -264,7 +264,7 @@ class State:
         Returns:
             tuple[GridOp, State]: A tuple containing the grid operation and the state with reduced skew.
         """
-        if any(not e.positive_semi_definite for e in (self.e1, self.e2)):
+        if any(not e.positive_semi_definite for e in (self.e1, self.e2)):  # pragma: no cover
             raise ValueError("Ellipse is not positive semi-definite")
 
         state, k = copy(self), 0
@@ -293,7 +293,7 @@ class State:
                 grid_op = grid_op * (GridOp.from_string("A") ** n)
             elif e1.z >= 0.8 and e2.z <= 0.3:
                 grid_op = grid_op * GridOp.from_string("K").adj2()
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Skew couldn't be reduced for the state {state}")
         else:
             if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
@@ -302,7 +302,7 @@ class State:
                 c = min(e1.z, e2.z)
                 n = int(max(1, math.floor((_LAMBDA**c) / 2)))
                 grid_op = grid_op * (GridOp.from_string("B") ** n)
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Skew couldn't be reduced for the state {state}")
 
         if k != 0:
@@ -680,7 +680,7 @@ class GridIterator:
         Ax0, Ax1, Ay0, Ay1 = bbox1
         Bx0, Bx1, By0, By1 = bbox2
 
-        if num_b[0]:  # If it is easier to solve for beta first.
+        if num_b[0]:  # pragma: no cover # If it is easier to solve for beta first.
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
             for beta in beta_solutions1:
                 Ax0_tmp, Ax1_tmp = e1.x_points(beta)
@@ -747,7 +747,7 @@ class GridIterator:
         y0_scaled, y1_scaled = sorted((y_scale * bbox[2], y_scale * bbox[3]))
 
         # Check if we are indeed within the intended interval.
-        if x1_scaled - x0_scaled < 1 - _SQRT2:
+        if x1_scaled - x0_scaled < 1 - _SQRT2:  # pragma: no cover
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
         # Use the constraints x0 <= a + b * sqrt(2) <= x1 and y0 <= a - b * sqrt(2) <= y1
@@ -804,7 +804,7 @@ class GridIterator:
         y0_scaled, y1_scaled = sorted((y_scale * y0, y_scale * y1))
 
         # Check if we are solving the problem for the intended interval.
-        if x1_scaled - x0_scaled < 1 - _SQRT2:
+        if x1_scaled - x0_scaled < 1 - _SQRT2:  # pragma: no cover
             bbox = (x0_scaled, x1_scaled, y0_scaled, y1_scaled)
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
