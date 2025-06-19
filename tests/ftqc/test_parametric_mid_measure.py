@@ -931,7 +931,7 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1])
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    @pytest.mark.parametrize("angle", [0.1234, -0.789])
+    @pytest.mark.parametrize("angle", [0.1234, -0.789, np.array([0.4321])])
     @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
@@ -965,14 +965,14 @@ class TestWorkflows:
         @jit_wrapper
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
-        def circ():
+        def circ(angle):
             m0 = measure_x(0)
             m1 = measure_y(1)
             m2 = measure_arbitrary_basis(2, angle=angle, plane="XY")
 
             return qml.expval(m0), qml.expval(m1), qml.expval(m2)
 
-        circ()
+        circ(angle)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_diagonalize_mcms_returns_cond_measure_result(self, mcm_method, shots):
