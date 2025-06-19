@@ -150,19 +150,27 @@ def resolve_dynamic_wires(
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
         def multiple_allocations():
             with qml.allocation.allocate(1) as wires:
                 qml.X(wires)
             with qml.allocation.allocate(3) as wires:
                 qml.Toffoli(wires)
-            return qml.state()
 
     >>> circuit_integers2 = qml.transforms.resolve_dynamic_wires(multiple_allocations, min_int=0)
     >>> print(qml.draw(circuit_integers2)())
-    0: ──X──┤↗│  │0⟩─╭●─┤  State
-    1: ──────────────├●─┤  State
-    2: ──────────────╰X─┤  State
+    0: ──X──┤↗│  │0⟩─╭●─┤
+    1: ──────────────├●─┤
+    2: ──────────────╰X─┤
+
+    If both an explicit register and ``min_int`` are specified, ``min_int`` will be used once all available
+    explicit wires are loaned out. Below ``"a"`` is extracted and used first, but then later wires
+    are extracted starting from ``0``.
+
+    >>> zeroed_and_min_int = qml.transforms.resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
+    >>> print(qml.draw(zeroed_and_min_int)())
+    a: ──X──┤↗│  │0⟩─╭●─┤
+    0: ──────────────├●─┤
+    1: ──────────────╰X─┤
 
     """
     manager = _WireManager(zeroed=zeroed, any_state=any_state, min_int=min_int)
