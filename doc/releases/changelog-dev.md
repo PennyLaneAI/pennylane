@@ -458,7 +458,13 @@
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
- 
+
+* An xDSL `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass` pass has been
+  added for the experimental xDSL Python compiler integration. This pass replaces all terminal
+  measurements in a program with a single :func:`pennylane.sample` measurement, and adds
+  postprocessing instructions to recover the original measurement.
+  [(#7620)](https://github.com/PennyLaneAI/pennylane/pull/7620)
+
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
   This is similar to [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
   but it is coded in Python instead of C++.
