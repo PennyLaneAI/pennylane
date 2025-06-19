@@ -70,14 +70,15 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     """Call graph for Quantum Phase Estimation"""
 
     # From ResourceQFT
-    return {
-        qt_gates.Hadamard(): len(op.estimation_wires),
-        _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1])): (
-            2 ** len(op.estimation_wires)
-        )
-        - 1,
-        _map_to_bloq((qtemps.QFT(wires=op.estimation_wires)), map_ops=False).adjoint(): 1,
-    }
+    gate_counts = defaultdict(int, {})
+
+    gate_counts[qt_gates.Hadamard()] = len(op.estimation_wires)
+    controlled_unitary = _map_to_bloq(op.hyperparameters["unitary"]).controlled(CtrlSpec(cvs=[1]))
+    gate_counts[controlled_unitary] = (2 ** len(op.estimation_wires)) - 1
+    adjoint_qft = _map_to_bloq(qtemps.QFT(wires=op.estimation_wires), map_ops=False).adjoint()
+    gate_counts[adjoint_qft] = 1
+
+    return gate_counts
 
 
 @_get_op_call_graph.register
@@ -225,7 +226,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
 @_get_op_call_graph.register
 def _(op: qops.BasisState):
     """Call graph for Basis State"""
-    gate_types = {}
+    gate_types = defaultdict(int, {})
     gate_types[qt_gates.XGate()] = sum(op.parameters[0])
 
     return gate_types
@@ -236,7 +237,7 @@ def _(op: qtemps.subroutines.QROM):
     """Call graph for QROM"""
 
     # From ResourceQROM
-    gate_types = defaultdict(int)
+    gate_types = defaultdict(int, {})
     bitstrings = op.hyperparameters["bitstrings"]
     num_bitstrings = len(bitstrings)
 
@@ -418,7 +419,7 @@ def _(op: qtemps.subroutines.ModExp):
     mult_resources[sequence_dag] = 1
     mult_resources[cnot] = min(num_x_wires, num_aux_swap)
 
-    gate_types = {}
+    gate_types = defaultdict(int, {})
     ctrl_spec = CtrlSpec(cvs=[1])
     for comp_rep in mult_resources:
         new_rep = comp_rep.controlled(ctrl_spec)
