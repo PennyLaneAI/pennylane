@@ -82,7 +82,8 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK: [[obs:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
                 // CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<1x1xf64>
                 // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
-                // CHECK: [[res:%.+]] = func.call @expval_from_samples.tensor.1x1xf64([[samples]], [[c0]]) : (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK: [[res:%.+]] = func.call @expval_from_samples.tensor.1x1xf64([[samples]], [[c0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
                 // CHECK-NOT: quantum.expval
                 %4 = quantum.expval %3 : f64
                 %5 = "tensor.from_elements"(%4) : (f64) -> tensor<f64>
@@ -121,7 +122,8 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK: [[obs:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
                 // CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<1x1xf64>
                 // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
-                // CHECK: [[res:%.+]] = func.call @var_from_samples.tensor.1x1xf64([[samples]], [[c0]]) : (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK: [[res:%.+]] = func.call @var_from_samples.tensor.1x1xf64([[samples]], [[c0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
                 // CHECK-NOT: quantum.var
                 %4 = quantum.var %3 : f64
                 %5 = "tensor.from_elements"(%4) : (f64) -> tensor<f64>
@@ -154,11 +156,12 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.reg
                 %2 = "test.op"() : () -> !quantum.reg
 
-                // CHECK-NOT: quantum.namedobs
+                // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[q0]] : !quantum.obs
                 %3 = quantum.compbasis qreg %2 : !quantum.obs
 
-                // CHECK: [[samples:%.+]] = quantum.sample %3 : tensor<1x1xf64>
-                // CHECK: [[res:%.+]] = func.call @probs_from_samples.tensor.1x1xf64([[samples]]) : (tensor<1x1xf64>) -> tensor<2xf64>
+                // CHECK: [[samples:%.+]] = quantum.sample [[compbasis]] : tensor<1x1xf64>
+                // CHECK: [[res:%.+]] = func.call @probs_from_samples.tensor.1x1xf64([[samples]]) :
+                // CHECK-SAME: (tensor<1x1xf64>) -> tensor<2xf64>
                 // CHECK-NOT: quantum.probs
                 %4 = quantum.probs %3 : tensor<2xf64>
 
@@ -166,6 +169,83 @@ class TestMeasurementsFromSamplesPass:
                 func.return %4 : tensor<2xf64>
             }
             // CHECK-LABEL: func.func public @probs_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_1_wire_sample(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit terminating with a sample
+        measurement.
+
+        This pass should be a no-op.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.reg
+                %2 = "test.op"() : () -> !quantum.reg
+
+                // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[q0]] : !quantum.obs
+                %3 = quantum.compbasis qreg %2 : !quantum.obs
+
+                // CHECK: [[samples:%.+]] = quantum.sample [[compbasis]] : tensor<1x1xf64>
+                %4 = quantum.sample %3 : tensor<1x1xf64>
+
+                // CHECK: func.return [[samples]] : tensor<1x1xf64>
+                func.return %4 : tensor<1x1xf64>
+            }
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    @pytest.mark.xfail(reason="Counts not supported", strict=True, raises=NotImplementedError)
+    def test_1_wire_counts(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 1-wire circuit terminating with a counts
+        measurement.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.reg
+                %2 = "test.op"() : () -> !quantum.reg
+
+                // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[q0]] : !quantum.obs
+                %3 = quantum.compbasis qreg %2 : !quantum.obs
+
+                // CHECK: [[samples:%.+]] = quantum.sample %3 : tensor<1x1xf64>
+                // CHECK: [[eigvals:%.+]], [[counts:%.+]] = func.call @counts_from_samples.tensor.1x1xf64([[samples]]) :
+                // CHECK-SAME: (tensor<1x1xf64>) -> tensor<2xf64>, tensor<2xi64>
+                // CHECK-NOT: quantum.counts
+                %eigvals, %counts = quantum.counts %3 : tensor<2xf64>, tensor<2xi64>
+
+                // CHECK: [[eigvals_converted:%.+]] = {{.*}}stablehlo.convert{{.+}}[[eigvals]] :
+                // CHECK-SAME: (tensor<2xf64>) -> tensor<2xi64>
+                %4 = "stablehlo.convert"(%eigvals) : (tensor<2xf64>) -> tensor<2xi64>
+
+                // CHECK: func.return [[eigvals_converted]], [[counts]] : tensor<1x1xf64>
+                func.return %4, %counts : tensor<2xi64>, tensor<2xi64>
+            }
+            // CHECK-LABEL: func.func public @counts_from_samples.tensor.1x1xf64
         }
         """
 
