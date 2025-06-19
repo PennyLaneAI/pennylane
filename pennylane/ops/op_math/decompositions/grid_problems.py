@@ -322,7 +322,8 @@ class GridOp:
         G = \begin{pmatrix} a & b \\ c & d \end{pmatrix}.
 
     Each entry :math:`m` of the matrix is of the form :math:`m = m_0 + m_1 / \sqrt{2}`,
-    where :math:`m_0, m_1 \in \mathbb{Z}` and :math:`a+b+c+d \equiv 0 \mod 2`.
+    where :math:`m_0, m_1 \in \mathbb{Z}`. They satisfy :math:`a_0+b_0+c_0+d_0 \equiv 0 (\mod 2)`
+    and :math:`a_1 \equiv b_1 \equiv c_1 \equiv d_1 (\mod 2)`.
 
     Args:
         a (tuple[int, int]): The a-coefficient of the grid operation.
@@ -335,18 +336,25 @@ class GridOp:
         to an element being :math:`a = a_0 + a_1 / \sqrt{2}`.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         a: tuple[int, int],
         b: tuple[int, int],
         c: tuple[int, int],
         d: tuple[int, int],
+        check_valid: bool = True,
     ) -> None:
         """Initialize the grid operation."""
         self.a = a
         self.b = b
         self.c = c
         self.d = d
+        if check_valid:
+            assert (a[0] + b[0] + c[0] + d[0]) % 2 == 0, "sum of a_0, b_0, c_0, d_0 must be even"
+            assert (
+                a[1] % 2 == b[1] % 2 == c[1] % 2 == d[1] % 2
+            ), "a_1, b_1, c_1, d_1 must have same parity"
 
     def __repr__(self) -> str:
         """Return a string representation of the grid operation."""

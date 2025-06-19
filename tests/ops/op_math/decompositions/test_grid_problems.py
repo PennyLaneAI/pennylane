@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for the grid problems for Clifford+T decomposition."""
 
-# pylint: disable = too-few-public-methods, unused-variable, unused-import
+# pylint: disable = too-few-public-methods
 
 import inspect
 import math
@@ -22,7 +22,7 @@ import pytest
 
 from pennylane import math as pmath
 from pennylane.ops.op_math.decompositions.grid_problems import Ellipse, GridIterator, GridOp, State
-from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
+from pennylane.ops.op_math.decompositions.rings import ZOmega
 
 
 class TestEllipse:
@@ -96,7 +96,7 @@ class TestGridOp:
             _ = GridOp.from_string("B") * 3
 
         with pytest.raises(ValueError, match="Grid operator needs to be special"):
-            _ = GridOp(a=(1, 1), b=(-2, -1), c=(1, 1), d=(-1, 4)).inverse()
+            _ = GridOp(a=(1, 1), b=(-2, -1), c=(1, 1), d=(-1, 4), check_valid=False).inverse()
 
 
 class TestGridIterator:
