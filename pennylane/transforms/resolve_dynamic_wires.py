@@ -100,6 +100,22 @@ def resolve_dynamic_wires(
 
         This approach also means we pop wires from the *end* of the stack first.
 
+    For a dynamic wire requested to be in the zero state (``require_zeros=True``), we try three things before erroring:
+
+    1) If wires exist in the ``zeroed`` register, we take one from that register
+    2) If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
+    3) If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_integer`` and
+        add a new wire
+
+    For a dynamic wire with ``require_zeros=False``, we try:
+
+    1) If wires exist in the ``any_state``, we take one from that register
+    2) If no wires exist in ``any_state``, we pull one from ``zeroed``
+    3) If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_integer`` and
+        add a new wire
+
+    This approach minimizes the width of the circuit at the cost of more reset operations.
+
     .. code-block:: python
 
         def circuit(require_zeros=True):
