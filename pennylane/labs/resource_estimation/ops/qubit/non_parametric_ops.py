@@ -807,12 +807,10 @@ class ResourceY(ResourceOperator):
             \begin{align}
                 \hat{Y} &= \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}, \\
                 \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
-                \hat{Z} &= \hat{S}^{2}, \\
-                \hat{S}^{\dagger} &= 3 \hat{S}.
             \end{align}
 
-        Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
-        two :class:`~.ResourceHadamard` gates.
+        Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate, one Z-gate
+        and two Hadamard gates.
 
     .. seealso:: :class:`~.Y`
 
@@ -821,7 +819,7 @@ class ResourceY(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> plre.ResourceY.resource_decomp()
-    [(6 x S), (2 x Hadamard)]
+    [(1 x S), (1 x Z), (1 x Adjoint(S)), (2 x Hadamard)]
     """
 
     num_wires = 1
@@ -841,8 +839,8 @@ class ResourceY(ResourceOperator):
                     \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
                 \end{align}
 
-            Thus the resources for a Y-gate are six :class:`~.ResourceS` gates and
-            two :class:`~.ResourceHadamard` gates.
+            Thus the resources for a Y-gate are one S-gate, one Adjoint(S)-gate, one Z-gate
+            and two Hadamard gates.
         """
         z = resource_rep(ResourceZ)
         s = resource_rep(ResourceS)

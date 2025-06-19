@@ -668,7 +668,7 @@ class ResourceCCZ(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(re.ResourceZ),
                 "num_ctrl_wires": ctrl_num_ctrl_wires + 2,
-                "ctrl_num_ctrl_values": ctrl_num_ctrl_values,
+                "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
 

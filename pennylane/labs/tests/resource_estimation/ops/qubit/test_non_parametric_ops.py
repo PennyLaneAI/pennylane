@@ -122,7 +122,7 @@ class TestSWAP:
             [1, 1],
             [
                 plre.GateCount(plre.ResourceCNOT.resource_rep(), 2),
-                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 0), 1),
             ],
         ),
         (
@@ -130,7 +130,7 @@ class TestSWAP:
             [1, 0, 0],
             [
                 plre.GateCount(plre.ResourceCNOT.resource_rep(), 2),
-                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(4, 2), 1),
             ],
         ),
     )
@@ -353,7 +353,9 @@ class TestY:
     def test_resources(self):
         """Test that ResourceT does not implement a decomposition"""
         expected = [
-            plre.GateCount(plre.ResourceS.resource_rep(), 6),
+            plre.GateCount(plre.ResourceS.resource_rep(), 1),
+            plre.GateCount(plre.ResourceZ.resource_rep(), 1),
+            plre.GateCount(plre.ResourceAdjoint.resource_rep(plre.ResourceS.resource_rep()), 1),
             plre.GateCount(plre.ResourceHadamard.resource_rep(), 2),
         ]
         assert plre.ResourceY.resource_decomp() == expected
