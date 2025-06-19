@@ -551,8 +551,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = Wires(range(2 * compact_ham.params["num_orbitals"]))
-            self.num_wires = len(self.wires)
+            self.wires = None
+            self.num_wires = 2 * compact_ham.params["num_orbitals"]
         super().__init__(wires=wires)
 
     @property
