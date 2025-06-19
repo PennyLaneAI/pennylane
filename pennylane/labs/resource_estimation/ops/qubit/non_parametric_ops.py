@@ -90,30 +90,30 @@ class ResourceHadamard(ResourceOperator):
         ctrl_num_ctrl_values: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-        
+
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-        
+
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCH`.
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
             it is zero-controlled.
             In the case where multiple controlled wires are provided, the resources are derived from
             the following identities (as presented in this `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
-        
+
             .. math::
-            
+
                 \begin{align}
                     \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
                     \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
                 \end{align}
-        
+
             Specifically, the resources are given by two :class:`~.ResourceRY` gates, two
             :class:`~.ResourceHadamard` gates and a :class:`~.ResourceX` gate. By replacing the
             :class:`~.ResourceX` gate with :class:`~.ResourceMultiControlledX` gate, we obtain a
             controlled-version of this identity.
-        
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears

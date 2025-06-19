@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from functools import singledispatch
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, Tuple, Union
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
 
 
 class ResourceAdjoint(ResourceOperator):

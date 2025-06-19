@@ -819,12 +819,12 @@ class ResourceRot(ResourceOperator):
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, eps=None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
-        
+
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             eps (float): error threshold for clifford plus T decomposition of this operation
-        
+
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRot`.
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if
@@ -833,25 +833,25 @@ class ResourceRot(ResourceOperator):
             from Figure 1b of the paper `T-count and T-depth of any multi-qubit unitary
             <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following
             identities:
-            
+
             .. math::
 
                 \begin{align}
                     \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}, \\
                     \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
                 \end{align}
-            
+
             This identity is applied along with some clever choices for the angle values to combine
             rotations; the final circuit takes the form:
-            
+
             .. code-block:: bash
 
                 ctrl: ─────╭●─────────╭●─────────┤
                 trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
-            
+
             The :code:`CNOT` gates are replaced with multi-controlled X-gates to generalize to the
             multi-controlled case.
-        
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears

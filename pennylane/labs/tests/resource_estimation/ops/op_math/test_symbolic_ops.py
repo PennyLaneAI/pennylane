@@ -17,7 +17,6 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.labs.resource_estimation as plre
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import GateCount
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
