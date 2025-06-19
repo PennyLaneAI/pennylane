@@ -755,7 +755,7 @@ def vibrational_pes(
             value is ``1``.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
-            Available options : ``"mp_pool"``, ``"cf_procpool"``, ``"cf_threadpool"``,
+            Available options: ``"mp_pool"``, ``"cf_procpool"``, ``"cf_threadpool"``,
             ``"serial"``, ``"mpi4py_pool"``, ``"mpi4py_comm"``. Default value is set to
             ``"serial"``.
 
