@@ -332,7 +332,6 @@ class ResourceControlled(ResourceOperator):
                 * base_params (dict): the resource parameters required to extract the cost of the base operator
                 * num_ctrl_wires (int): the number of qubits the operation is controlled on
                 * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-                * num_work_wires (int): the number of additional qubits that can be used for decomposition
         """
 
         return {
@@ -471,7 +470,7 @@ class ResourceControlled(ResourceOperator):
         base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -881,7 +880,6 @@ class ResourceProd(ResourceOperator):
 
         >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
         >>> prod_x2z3 = plre.ResourceProd(factors)
-        >>>
         >>> print(plre.estimate_resources(prod_x2z3))
         --- Resources: ---
         Total qubits: 1

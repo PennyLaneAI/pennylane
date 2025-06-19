@@ -263,8 +263,8 @@ class ResourceCY(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         ctrl_y = resource_rep(
             re.ResourceControlled,
@@ -392,8 +392,8 @@ class ResourceCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1 and ctrl_num_ctrl_values == 0:
             return [GateCount(resource_rep(re.ResourceCCZ))]
@@ -509,7 +509,6 @@ class ResourceCSWAP(ResourceOperator):
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
-
         """
         return [GateCount(cls.resource_rep())]
 
@@ -660,8 +659,8 @@ class ResourceCCZ(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         ctrl_z = resource_rep(
             re.ResourceControlled,
@@ -967,7 +966,7 @@ class ResourceToffoli(ResourceOperator):
             elbow (str, optional): One of "left" or "right". Defaults to "left".
 
         Returns:
-            List[GateCount]: The resources of decomposing the elbow gates.
+            list[GateCount]: The resources of decomposing the elbow gates.
         """
         gate_types = []
         t = resource_rep(re.ResourceT)
@@ -2131,8 +2130,8 @@ class ResourceControlledPhaseShift(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         ctrl_ps = resource_rep(
             re.ResourceControlled,
