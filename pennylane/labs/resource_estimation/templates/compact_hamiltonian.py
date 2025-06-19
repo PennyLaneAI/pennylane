@@ -54,6 +54,7 @@ class CompactHamiltonian:
         Note that the specific parameters required for each method will depend on the
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:
+
         - :meth:`from_cdf`: Saves the data for compressed double factorized Hamiltonian
         - :meth:`from_thc`: Saves the data for tensor hypercontracted Hamiltonian
 
