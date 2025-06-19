@@ -126,5 +126,5 @@ class TestNormalForms:
 
         decomposition = _ma_normal_form(so3mat, compressed=False)
         assert qml.equal(
-            decomposition, qml.prod(*so3rep[not a :])
+            qml.prod(*decomposition), qml.prod(*so3rep[not a :])
         ), "Decomposition does not match expected operator"

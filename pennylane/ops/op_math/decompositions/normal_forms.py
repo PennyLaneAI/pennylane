@@ -106,8 +106,9 @@ def _ma_normal_form(
 
     Args:
         op (SO3Matrix): The SO(3) matrix to decompose.
-        compressed (bool): If True, the output will be a single operator that is the product of all gates in the decomposition.
-            If False, the output will be a tuple containing information about the decomposition in terms of bits and indices.
+        compressed (bool): If ``True``, the output will be a tuple containing information about the decomposition
+            in terms of bits and indices. If ``False``, the output will be a list of all gates in the decomposition.
+            Default is ``False``.
 
     Returns:
         Tuple[qml.operation.Operator] | tuple[int, tuple[int, ...], int]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms.
@@ -133,9 +134,7 @@ def _ma_normal_form(
             break
 
     if not compressed:
-        if len(decomposition) == 1:
-            return decomposition
-        return qml.prod(*decomposition)
+        return decomposition
 
     t_bit = int(decomposition[0] == qml.T(0))
     c_bit = max(0, cl_index)
