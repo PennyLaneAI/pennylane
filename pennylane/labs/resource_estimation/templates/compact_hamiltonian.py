@@ -23,7 +23,7 @@ class CompactHamiltonian:
 
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian
-            (e.g., "from_cdf", "from_thc", "from_vibrational").
+            (e.g., "cdf", "thc").
         **params (Any): Keyword arguments specific to the chosen construction method,
             such as ``num_orbitals``, ``num_fragments``, ``tensor_rank``, or ``num_modals``.
 
@@ -38,9 +38,9 @@ class CompactHamiltonian:
             def circ():
                 plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
                 return
-        
+
         The resources can then be extracted as usual:
-        
+
         >>> res = re.estimate_resources(circ)()
         >>> print(res)
         --- Resources: ---
@@ -55,8 +55,8 @@ class CompactHamiltonian:
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:
 
-        - :meth:`from_cdf`: Saves the data for compressed double factorized Hamiltonian
-        - :meth:`from_thc`: Saves the data for tensor hypercontracted Hamiltonian
+        - :meth:`cdf`: Saves the data for compressed double factorized Hamiltonian
+        - :meth:`thc`: Saves the data for tensor hypercontracted Hamiltonian
 
     """
 
@@ -65,7 +65,7 @@ class CompactHamiltonian:
         self.params = params
 
     @classmethod
-    def from_cdf(cls, num_orbitals: int, num_fragments: int):
+    def cdf(cls, num_orbitals: int, num_fragments: int):
         """Constructs a compressed double factorized Hamiltonian instance
 
         Args:
@@ -76,10 +76,10 @@ class CompactHamiltonian:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with CDF parameters.
 
         """
-        return cls("from_cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
+        return cls("cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
 
     @classmethod
-    def from_thc(cls, num_orbitals: int, tensor_rank: int):
+    def thc(cls, num_orbitals: int, tensor_rank: int):
         """Constructs a tensor hypercontracted Hamiltonian instance
 
         Args:
@@ -90,4 +90,4 @@ class CompactHamiltonian:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with THC parameters.
 
         """
-        return cls("from_thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+        return cls("thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
