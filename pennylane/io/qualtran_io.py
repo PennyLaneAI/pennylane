@@ -725,14 +725,12 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
-    _error_message = (
-        "Optional dependency 'qualtran' is required "
-        "for ToBloq functionality but is not installed. Try `pip install qualtran`."
-    )
-
     def __init__(self, op, map_ops=False, **kwargs):
         if not qualtran:
-            raise ImportError(self._error_message)
+            raise ImportError(
+                "Optional dependency 'qualtran' is required "
+                "for ToBloq functionality but is not installed. Try `pip install qualtran`."
+            )
 
         if not isinstance(op, Operator) and not isinstance(op, QNode) and not callable(op):
             raise TypeError(
