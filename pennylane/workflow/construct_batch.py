@@ -124,6 +124,7 @@ def _interpret_level_inner(
     level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
     num_user_transforms: int,
     has_gradient_expand: bool,
+    has_final_transform: bool = False,
 ) -> slice:
     """Interpret the level specification for the inner transform slice.
 
@@ -138,13 +139,13 @@ def _interpret_level_inner(
     Returns:
         slice: The slice to apply to the remaining transform program
     """
-    start = max(0, num_user_transforms)
+    start = max(0, num_user_transforms) - int(has_final_transform)
     if level in ("top", "user"):
         return slice(start, 0)  # No additional transforms needed
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
-        return slice(start, num_user_transforms + end_idx)
+        return slice(start, num_user_transforms + end_idx - int(has_final_transform)) # if it has final, then in the end we will see an extra user transform, e.g. param_shift
 
     if level == "device":
         return slice(start, None)  # Include all remaining transforms
@@ -481,7 +482,12 @@ def construct_batch(
         has_gradient_expand = bool(
             getattr(gradient_fn, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        level_slice_inner = _interpret_level_inner(level, num_user_transforms, has_gradient_expand)
+        level_slice_inner = _interpret_level_inner(
+            level,
+            num_user_transforms,
+            has_gradient_expand,
+            qnode.transform_program.has_final_transform,
+        )
         resolved_program = full_transform_program[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(
