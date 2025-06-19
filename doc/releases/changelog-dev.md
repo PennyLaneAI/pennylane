@@ -818,6 +818,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 * The links pointing to pennylane.ai/plugins have now been updated to pennylane.ai/devices.
+  [(#7719)](https://github.com/PennyLaneAI/pennylane/pull/7719)
 
 <h3>Bug fixes 🐛</h3>
 
