@@ -247,7 +247,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+        cubic(bool): Whether to include three-mode couplings. Default is ``False``.
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
             wires. If ``None``, integers used to label the bosonic states will be used as wire
             labels. Defaults to ``None``.
@@ -299,7 +299,7 @@ def christiansen_dipole(pes, n_states=16):
     r"""Returns Christiansen dipole operator.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
-    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`. The dipole
+    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_. The dipole
     operator is defined as
 
     .. math::
