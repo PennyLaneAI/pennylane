@@ -667,7 +667,7 @@ def _equal_measurements(
             atol=atol,
         )
         if isinstance(dispatch_result, str):
-            return dispatch_result
+            return f"op1 and op2 have different observables because {dispatch_result}"
         return dispatch_result
 
     if op1.mv is not None and op2.mv is not None:
