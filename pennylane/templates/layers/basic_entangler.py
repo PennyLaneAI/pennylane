@@ -15,8 +15,6 @@ r"""
 Contains the BasicEntanglerLayers template.
 """
 from pennylane import math
-
-# pylint: disable=consider-using-enumerate,too-many-arguments
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX
 

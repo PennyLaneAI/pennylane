@@ -33,11 +33,11 @@ import pennylane.operation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
+    register_condition,
     add_decomps,
     list_decomps,
     resource_rep,
 )
-import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
@@ -86,6 +86,7 @@ from pennylane.io import (
     from_quil_file,
     FromBloq,
     bloq_registers,
+    from_qasm3,
 )
 from pennylane.measurements import (
     counts,
@@ -129,6 +130,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
+    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
@@ -181,6 +183,7 @@ import pennylane.spin
 
 import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -192,12 +195,13 @@ def __getattr__(name):
         "PennyLaneDeprecationWarning",
         "QuantumFunctionError",
         "ExperimentalWarning",
-    }:
-        # TODO: Uncomment this after eco-system (Catalyst and Lightning) are updated so we don't break CI
-        # warnings.warn(
-        #     f"pennylane.{name} is no longer accessible at top-level and must be imported as pennylane.exceptions.{name}. Support for top-level access will be removed in v0.42.",
-        #     pennylane.exceptions.PennyLaneDeprecationWarning,
-        # )
+    }:  # pragma: no cover
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible at top-level \
+                and must be imported as pennylane.exceptions.{name}. \
+                    Support for top-level access will be removed in v0.43.",
+            pennylane.exceptions.PennyLaneDeprecationWarning,
+        )
         return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":

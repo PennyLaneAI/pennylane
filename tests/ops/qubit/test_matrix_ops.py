@@ -26,6 +26,8 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.wires import Wires
 
@@ -190,6 +192,32 @@ class TestQubitUnitaryCSR:
         assert len(decomp) == 4
         mat2 = qml.matrix(op.decomposition, wire_order=[0])()
         assert qml.math.allclose(mat2, mat.todense())
+
+    def test_csr_matrix_decomposition_new(self):
+        """Tests that the QubitUnitary's decomposition works with csr_matrix."""
+
+        U = csr_matrix(unitary_group.rvs(2))
+        op = qml.QubitUnitary(U, wires=[0])
+        rule = qml.list_decomps(qml.QubitUnitary)[0]
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        actual_mat = qml.matrix(tape)
+        assert qml.math.allclose(actual_mat, U.todense())
+
+    def test_csr_matrix_pow_new(self):
+        """Tests the pow decomposition of a QubitUnitary works with csr_matrix."""
+
+        U = csr_matrix(unitary_group.rvs(2))
+        op = qml.pow(qml.QubitUnitary(U, wires=[0]), 2)
+        rule = qml.list_decomps("Pow(QubitUnitary)")[0]
+        with qml.queuing.AnnotatedQueue() as q:
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        actual_mat = qml.matrix(tape)
+        assert qml.math.allclose(actual_mat, (U @ U).todense())
 
 
 class TestQubitUnitary:
@@ -404,7 +432,13 @@ class TestQubitUnitary:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+        "U,num_wires",
+        [
+            (H, 1),
+            (np.kron(H, H), 2),
+            (np.kron(np.kron(np.kron(H, H), H), H), 4),
+            (np.tensordot([1j, -1, 1], H, axes=0), 1),
+        ],
     )
     def test_qubit_unitary_jax_jit(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
@@ -419,6 +453,27 @@ class TestQubitUnitary:
 
         out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
+
+    @pytest.mark.jax
+    def test_qubit_unitary_jax_jit_decomposition(self):
+        """Tests that QubitUnitary works with jitting when decomposing the operator."""
+
+        import jax
+        from jax import numpy as jnp
+
+        matrix = jnp.array(qml.matrix(qml.QFT(wires=[0, 1, 2])))
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(matrix):
+            qml.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
+            return qml.state()
+
+        state_expected = circuit(matrix)
+        state_jit = jax.jit(circuit)(matrix)
+
+        assert qml.math.allclose(state_expected, state_jit)
 
     @pytest.mark.parametrize(
         "U, expected_params",
@@ -540,12 +595,55 @@ class TestQubitUnitary:
         with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
             qml.QubitUnitary(U, wires=[0, 1]).decomposition()
 
-    def test_qubit_unitary_decomposition_multiqubit_invalid(self):
-        """Test that QubitUnitary is not decomposed for more than two qubits."""
-        U = qml.Toffoli(wires=[0, 1, 2]).matrix()
+    @pytest.mark.parametrize(
+        "U, wires",
+        [
+            (qml.matrix(qml.CRX(2, wires=[1, 0])), [0, 1]),
+            (qml.matrix(qml.QFT(wires=[0, 1, 2, 3, 4])), [0, 1, 2, 3, 4]),
+            (qml.matrix(qml.CRX(1, [0, 2]) @ qml.CRY(2, [1, 3])), [0, 1, 2, 3]),
+            (qml.matrix(qml.GroverOperator([0, 1, 2, 3, 4, 5])), [0, 1, 2, 3, 4, 5]),
+        ],
+    )
+    def test_correctness_decomposition(self, U, wires):
+        """Tests that the decomposition is correct"""
 
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.QubitUnitary.compute_decomposition(U, wires=[0, 1, 2])
+        ops_decompostion = qml.QubitUnitary.compute_decomposition(U, wires=wires)
+
+        assert qml.math.allclose(
+            U, qml.matrix(qml.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
+        )
+
+    @pytest.mark.parametrize(
+        "a, b, size",
+        [
+            (qml.matrix(qml.RY(1, 0) @ qml.RY(2, 1)), qml.matrix(qml.RX(2, 0) @ qml.RZ(4, 1)), 4),
+            (qml.matrix(qml.RY(1, 0)), qml.matrix(qml.RX(2, 0)), 2),
+            (qml.matrix(qml.GroverOperator([0, 1, 2])), qml.matrix(qml.QFT([0, 1, 2])), 8),
+        ],
+    )
+    def test_compute_udv(self, a, b, size):
+        """Test the helper function `_compute_udv` used in the QubitUnitary decomposition."""
+
+        u, d, v = _compute_udv(a, b)
+        d = np.diag(d)
+
+        initial = np.block(
+            [[a, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), b]]
+        )
+        u_block = np.block(
+            [[u, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), u]]
+        )
+        v_block = np.block(
+            [[v, np.zeros((size, size), dtype=complex)], [np.zeros((size, size), dtype=complex), v]]
+        )
+        d_block = np.block(
+            [
+                [d, np.zeros((size, size), dtype=complex)],
+                [np.zeros((size, size), dtype=complex), np.conj(d)],
+            ]
+        )
+
+        assert np.allclose(initial, u_block @ d_block @ v_block)
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
@@ -631,7 +729,7 @@ class TestWalshHadamardTransform:
         assert qml.math.allclose(output, exp)
 
 
-class TestDiagonalQubitUnitary:
+class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     """Test the DiagonalQubitUnitary operation."""
 
     def test_decomposition_single_qubit(self):
@@ -775,6 +873,63 @@ class TestDiagonalQubitUnitary:
         assert decomp2[0].data[0].dtype == c_dtype
         assert decomp1[1].data[0].dtype == r_dtype
         assert decomp2[1].data[0].dtype == r_dtype
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.DiagonalQubitUnitary(np.array([1j, -1]), wires=[0]),
+            qml.DiagonalQubitUnitary(np.exp(1j * np.array([1, -1, 0.5, 1])), wires=[0, 1]),
+            qml.DiagonalQubitUnitary(
+                np.exp(1j * np.array([1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3])), wires=[0, 1, 2]
+            ),
+        ],
+    )
+    def test_decomposition_rule_new(self, op):
+        """Tests the decomposition rule compatible with the graph-based interface."""
+        for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            pytest.param(qml.DiagonalQubitUnitary(np.ones(4), wires=[0, 1]), id="Identity-2Q"),
+            pytest.param(
+                qml.DiagonalQubitUnitary(np.array([1j, 1j, 1j, 1j]), wires=[0, 1]),
+                id="GlobalPhase-2Q",
+            ),
+            pytest.param(
+                qml.DiagonalQubitUnitary(np.array([1, 1, 1, -1]), wires=[0, 1]),
+                id="CZ-Gate",
+            ),
+            pytest.param(
+                qml.DiagonalQubitUnitary(np.array([1, 1, 1, 1, 1, 1, 1, -1]), wires=[0, 1, 2]),
+                id="CCZ-Gate",
+            ),
+            pytest.param(
+                # angles are [pi, -pi]. diff is -2pi (equiv to 0), mean is 0.
+                # Should decompose to a GlobalPhase and an Identity RZ.
+                qml.DiagonalQubitUnitary(np.exp(1j * np.array([np.pi, -np.pi])), wires=[0]),
+                id="Phase-Wrap-Around",
+            ),
+            pytest.param(
+                qml.DiagonalQubitUnitary(np.exp(1j * np.array([1e-12, 2e-12])), wires=[0]),
+                id="Small-Angle-Difference",
+            ),
+            pytest.param(
+                qml.DiagonalQubitUnitary(
+                    # d0 is just below the negative real axis, d1 is on it.
+                    # Normalizing to ensure they remain unitary.
+                    np.array([(-1 - 1e-9j) / np.abs(-1 - 1e-9j), -1 + 0j]),
+                    wires=[0],
+                ),
+                id="Angle-Branch-Cut-Boundary",
+            ),
+        ],
+    )
+    def test_decomposition_rule_edge_cases(self, op):
+        """Tests the decomposition rule for various edge cases."""
+        for rule in qml.list_decomps(qml.DiagonalQubitUnitary):
+            _test_decomposition_rule(op, rule)
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""

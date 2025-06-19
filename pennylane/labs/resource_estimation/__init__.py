@@ -22,9 +22,86 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
+
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~ResourceOperator
+    ~CompressedResourceOp
+    ~GateCount
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate_resources
+    ~resource_rep
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
+
+Qubit Management Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QubitManager
+    ~AllocWires
+    ~FreeWires
+
+Operators:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
+    ~ResourceSWAP
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
+    ~ResourceMultiRZ,
+    ~ResourcePauliRot
+    ~ResourceIsingXX
+    ~ResourceIsingYY
+    ~ResourceIsingXY
+    ~ResourceIsingZZ
+    ~ResourcePSWAP
+
 """
 
-from .qubit_manager import QubitManager, GrabWires, FreeWires
+from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
 from .resource_operator import (
     CompressedResourceOp,
@@ -44,7 +121,6 @@ from .resource_tracking import (
     resource_config,
     estimate_resources,
 )
-
 from .ops import (
     ResourceHadamard,
     ResourceS,
@@ -59,6 +135,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceRot,
     ResourceIdentity,
+    ResourceSWAP,
     ResourceCH,
     ResourceCY,
     ResourceCZ,
@@ -79,4 +156,10 @@ from .ops import (
     ResourceIsingXY,
     ResourceIsingZZ,
     ResourcePSWAP,
+    ResourceTempAND,
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourceProd,
+    ResourceChangeBasisOp,
+    ResourcePow,
 )

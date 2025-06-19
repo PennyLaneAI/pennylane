@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Resource operators for identity operations."""
+r"""Resource operators for identity and global phase operations."""
 
+from pennylane.labs import resource_estimation as plre
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    resource_rep,
 )
 
 # pylint: disable=arguments-differ,no-self-use,too-many-ancestors
@@ -26,9 +28,7 @@ class ResourceIdentity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        wires (Iterable[Any], optional): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate is treated as a free gate and thus it cannot be decomposed
@@ -36,10 +36,15 @@ class ResourceIdentity(ResourceOperator):
 
     .. seealso:: :class:`~.Identity`
 
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceIdentity.resource_decomp()
+    []
     """
 
-    def __init__(self, wires=None):
-        super().__init__(wires=wires)
+    num_wires = 1
 
     @property
     def resource_params(self) -> dict:
@@ -53,13 +58,13 @@ class ResourceIdentity(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The Identity gate is treated as a free gate and thus it cannot be decomposed
@@ -75,12 +80,12 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Resources:
-            This operation is self-adjoint, so the resources of the adjoint operation is also an empty list.
+            This operation is self-adjoint, so the resources of the adjoint operation is the base operation.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -95,7 +100,6 @@ class ResourceIdentity(ResourceOperator):
         Args:
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_ctrl_values (int): The number of control qubits, that are triggered when in the :math:`|0\rangle` state.
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
 
         Resources:
             The Identity gate acts trivially when controlled. The resources of this operation are
@@ -103,8 +107,8 @@ class ResourceIdentity(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -113,7 +117,7 @@ class ResourceIdentity(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             The Identity gate acts trivially when raised to a power. The resources of this
@@ -121,8 +125,8 @@ class ResourceIdentity(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -131,10 +135,7 @@ class ResourceGlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        phi (TensorLike): the global phase
-        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        wires (Iterable[Any], optional): the wires the operator acts on
 
     Resources:
         The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
@@ -142,10 +143,14 @@ class ResourceGlobalPhase(ResourceOperator):
 
     .. seealso:: :class:`~.GlobalPhase`
 
-    """
+    **Example**
 
-    def __init__(self, wires=None):
-        super().__init__(wires=wires)
+    The resources for this operation are computed using:
+
+    >>> plre.ResourceGlobalPhase.resource_decomp()
+    []
+
+    """
 
     @property
     def resource_params(self) -> dict:
@@ -159,13 +164,13 @@ class ResourceGlobalPhase(ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation."""
+        the Operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, {})
 
     @classmethod
     def default_resource_decomp(cls, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition.
 
         Resources:
             The GlobalPhase gate is treated as a free gate and thus it cannot be decomposed
@@ -186,8 +191,8 @@ class ResourceGlobalPhase(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
 
@@ -196,7 +201,7 @@ class ResourceGlobalPhase(ResourceOperator):
         r"""Returns a list representing the resources for an operator raised to a power.
 
         Args:
-            z (int): the power that the operator is being raised to
+            pow_z (int): the power that the operator is being raised to
 
         Resources:
             Taking arbitrary powers of a global phase produces a sum of global phases.
@@ -204,7 +209,51 @@ class ResourceGlobalPhase(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         return [GateCount(cls.resource_rep())]
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): The number of control qubits, that are controlled when
+                in the :math:`|0\rangle` state.
+
+        Resources:
+            The resources are generated from the fact that a global phase controlled on a
+            single qubit is equivalent to a local phase shift on that control qubit.
+            This idea can be generalized to a multi-qubit global phase by introducing one
+            'clean' auxilliary qubit which gets reset at the end of the computation. In this
+            case, we sandwich the phase shift operation with two multi-controlled X gates.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        if ctrl_num_ctrl_wires == 1:
+            gate_types = [GateCount(resource_rep(plre.ResourcePhaseShift))]
+
+            if ctrl_num_ctrl_values:
+                gate_types.append(GateCount(resource_rep(plre.ResourceX), 2))
+
+            return gate_types
+
+        ps = resource_rep(plre.ResourcePhaseShift)
+        mcx = resource_rep(
+            plre.ResourceMultiControlledX,
+            {
+                "num_ctrl_wires": ctrl_num_ctrl_wires,
+                "num_ctrl_values": ctrl_num_ctrl_values,
+            },
+        )
+
+        return [GateCount(ps), GateCount(mcx, 2)]

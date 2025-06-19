@@ -36,7 +36,7 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):
@@ -265,8 +265,10 @@ def spsa_grad(
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
+        >>> from functools import partial
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", shots=shots)
+        >>> dev = qml.device("default.qubit")
+        >>> @partial(qml.set_shots, shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
