@@ -18,62 +18,13 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func
+from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.func import ReturnOp
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import GlobalPhaseOp
 from .utils import xdsl_transform
-
-
-def _recursive_combine_global_phases(region, rewriter: pattern_rewriter.PatternRewriter):
-    """Recursive merge all the :class:~pennylane.GlobalPhase operations in the region
-    to the last :class:~pennylane.GlobalPhase operation.
-
-       Args:
-           region: A Region object to be apply.
-           rewriter: A PatternRewriter object.
-    """
-    phi = None
-    # Break down the region into multiple regions
-    sub_regions = []
-    sub_region = []
-    for op in region.walk():
-        # Note ReturnOp should be used as a seperator as well
-        if isinstance(op, (IfOp, WhileOp, ForOp, ReturnOp)):
-            sub_regions.append(sub_region)
-            sub_regions.append([op])
-            sub_region = []
-        else:
-            sub_region.append(op)
-
-    for sub_region in sub_regions:
-        if isinstance(sub_region[0], (IfOp, WhileOp, ForOp)):
-            if len(sub_region) != 1:
-                raise ValueError("The implementation is wrong")
-            _recursive_combine_global_phases(sub_region[0].regions[0], rewriter)
-            if isinstance(sub_region[0], IfOp):
-                _recursive_combine_global_phases(sub_region[0].regions[1], rewriter)
-        else:
-            phi = None
-            global_phases = [op for op in sub_region if isinstance(op, GlobalPhaseOp)]
-            if len(global_phases) < 2:
-                return
-            prev = global_phases[0]
-            phi_sum = prev.operands[0]
-            for current in global_phases[1:]:
-                phi = current.operands[0]
-                addOp = arith.AddfOp(phi, phi_sum)
-                rewriter.insert_op(addOp, InsertPoint.before(current))
-                phi_sum = addOp.result
-
-                rewriter.erase_op(prev)
-                prev = current
-
-            prev.operands[0] = phi_sum
-            rewriter.notify_op_modified(prev)
-            return
 
 
 class CombineGlobalPhasesPattern(
@@ -86,15 +37,36 @@ class CombineGlobalPhasesPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+        self, root: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         GlobalPhase oprations."""
+        phi = None
+        global_phases = []
+        for region in root.regions:
+            for op in region.ops:
+                if isinstance(op, GlobalPhaseOp):
+                    global_phases.append(op)
+                elif isinstance(op, (IfOp, ForOp, WhileOp)):
+                    continue
 
-        # Note whether we are going to support nested control flows?
-        # If yes, we have to parse the funcOp in a recursive manner.
-        # Otherwise, it should be fine
-        _recursive_combine_global_phases(funcOp.body, rewriter)
+        if len(global_phases) < 2:
+            return
+
+        prev = global_phases[0]
+        phi_sum = prev.operands[0]
+        for current in global_phases[1:]:
+            phi = current.operands[0]
+            addOp = arith.AddfOp(phi, phi_sum)
+            rewriter.insert_op(addOp, InsertPoint.before(current))
+            phi_sum = addOp.result
+
+            rewriter.erase_op(prev)
+            prev = current
+
+        prev.operands[0] = phi_sum
+        rewriter.notify_op_modified(prev)
+        return
 
 
 @dataclass(frozen=True)
@@ -107,7 +79,8 @@ class CombineGlobalPhasesPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the combination of global phase gates pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([CombineGlobalPhasesPattern()])
+            pattern_rewriter.GreedyRewritePatternApplier([CombineGlobalPhasesPattern()]),
+            apply_recursively=False,
         ).rewrite_module(module)
 
 
