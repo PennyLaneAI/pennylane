@@ -84,8 +84,9 @@ class QFT(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", shots=1)
+            dev = qml.device("default.qubit")
 
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(dev)
             def qft_add(m, k, n_wires):
                 qml.BasisEmbedding(m, wires=range(n_wires))
@@ -131,9 +132,7 @@ class QFT(Operation):
     """
 
     grad_method = None
-    resource_keys = {
-        "num_wires",
-    }
+    resource_keys = {"num_wires"}
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)

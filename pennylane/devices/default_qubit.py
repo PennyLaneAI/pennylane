@@ -41,7 +41,6 @@ from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
-    device_resolve_dynamic_wires,
     mid_circuit_measurements,
     no_sampling,
     validate_adjoint_trainable_params,
@@ -64,7 +63,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    if op.name in {"Snapshot", "Allocate", "Deallocate", "DeallocateAll"}:
+    if op.name == "Snapshot":
         return True
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
         return False
@@ -561,15 +560,14 @@ class DefaultQubit(Device):
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
         )
+        # validate_device_wires needs to be after defer_measurement has added more wires.
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
-        # validate_device_wires needs to be after defer_measurement has added more wires.
-        transform_program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             validate_measurements,
             analytic_measurements=accepted_analytic_measurement,
@@ -660,15 +658,7 @@ class DefaultQubit(Device):
         if qml.capture.enabled():
             mcm_config = config.mcm_config
             mcm_updated_values = {}
-            if (mcm_method := mcm_config.mcm_method) not in (
-                "deferred",
-                "single-branch-statistics",
-                None,
-            ):
-                raise DeviceError(
-                    f"mcm_method='{mcm_method}' is not supported with default.qubit "
-                    "when program capture is enabled."
-                )
+            mcm_method = mcm_config.mcm_method
 
             if mcm_method == "single-branch-statistics" and mcm_config.postselect_mode is not None:
                 warnings.warn(
@@ -986,6 +976,17 @@ class DefaultQubit(Device):
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
+        execution_config = execution_config or ExecutionConfig()
+        if (mcm_method := execution_config.mcm_config.mcm_method) not in (
+            "deferred",
+            "single-branch-statistics",
+            None,
+        ):
+            raise qml.DeviceError(
+                f"mcm_method='{mcm_method}' is not supported with default.qubit "
+                "when program capture is enabled."
+            )
+
         if self.wires is None:
             raise DeviceError("Device wires are required for jaxpr execution.")
         if self.shots.has_partitioned_shots:
@@ -1003,6 +1004,7 @@ class DefaultQubit(Device):
             key=key,
             execution_config=execution_config,
         )
+
         return interpreter.eval(jaxpr, consts, *args)
 
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):

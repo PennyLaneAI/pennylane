@@ -18,27 +18,18 @@ that they are supported for execution by a device."""
 
 import os
 import warnings
-from collections import deque
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from functools import lru_cache, partial
-from itertools import chain
 from typing import Optional, Type
 
 import pennylane as qml
-from pennylane import Snapshot, transform
-from pennylane.allocation import (
-    Allocate,
-    Deallocate,
-    DeallocateAll,
-    _get_allocate_prim,
-    _get_deallocate_prim,
-)
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.math import requires_grad
-from pennylane.measurements import SampleMeasurement, StateMeasurement, measure
+from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
+from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
 
@@ -768,135 +759,3 @@ def _get_diagonalized_tape_and_wires(tape):
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires
-
-
-class WireManager:
-
-    def __init__(self, zeroed=(), dirty=(), min_integer=None, style="stack"):
-        self.style = style
-        reg_class = deque if style == "queue" else list
-        self._zeroed = reg_class(zeroed)
-        self._dirty = reg_class(dirty)
-        self._loaned = {}  # wire to final register type
-        self.min_integer = min_integer
-
-    def get_wire(self, require_zeros, reset_to_original):
-        if not self._zeroed and not self._dirty:
-            if self.min_integer is None:
-                raise ValueError("no wires left to allocate.")
-            self.min_integer += 1
-            self._zeroed.append(self.min_integer)
-        if require_zeros:
-            if self._zeroed:
-                w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
-                self._loaned[w] = "zeroed" if reset_to_original else "dirty"
-                return w, []
-            w = self._dirty.popleft() if self.style == "queue" else self._dirty.pop()
-            self._loaned[w] = "dirty"
-            m = measure(w, reset=True)
-            return w, m.measurements
-
-        if self._dirty:
-            w = self._dirty.popleft() if self.style == "queue" else self._dirty.pop()
-            self._loaned[w] = "dirty"
-            return w, []
-        w = self._zeroed.popleft() if self.style == "queue" else self._zeroed.pop()
-        self._loaned[w] = "zeroed" if reset_to_original else "dirty"
-        return w, []
-
-    def return_wire(self, wire):
-        reg_type = self._loaned.pop(wire)
-        if reg_type == "dirty":
-            self._dirty.append(wire)
-        else:
-            self._zeroed.append(wire)
-
-    def return_all(self):
-        return list(chain(self.return_wire(w) for w in self._loaned))
-
-
-def null_postprocessing(results):
-    return results[0]
-
-
-@lru_cache
-def _get_plxpr_resolve_dynamic_wires():  # pylint: disable=missing-docstring
-    try:
-        # pylint: disable=import-outside-toplevel
-        from jax import make_jaxpr
-
-        from pennylane.capture.base_interpreter import PlxprInterpreter
-    except ImportError:  # pragma: no cover
-        return None
-
-    class ResolveDynamicWires(PlxprInterpreter):
-
-        def __init__(self, manager) -> None:
-            """Initialize the interpreter."""
-            super().__init__()
-            self.manager = manager
-
-    @ResolveDynamicWires.register_primitive(_get_allocate_prim())
-    def _(self, num_wires, **kwargs):
-        return [self.manager.get_wire(**kwargs)[1] for _ in range(num_wires)]
-
-    @ResolveDynamicWires.register_primitive(_get_deallocate_prim())
-    def _(self, *wires):
-        _ = [self.manager.return_wire(w) for w in wires]
-        return []
-
-    def resolve_dynamic_wires_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
-        """Function for applying the ``map_wires`` transform on plxpr."""
-
-        manager = WireManager(**tkwargs)
-
-        interpreter = ResolveDynamicWires(manager)
-
-        def wrapper(*inner_args):
-            return interpreter.eval(jaxpr, consts, *inner_args)
-
-        return make_jaxpr(wrapper)(*args)
-
-    return resolve_dynamic_wires_plxpr_to_plxpr
-
-
-resolve_dynamic_wires_plxpr_to_plxpr = _get_plxpr_resolve_dynamic_wires()
-
-
-@partial(transform, plxpr_transform=resolve_dynamic_wires_plxpr_to_plxpr)
-def resolve_dynamic_wires(tape, zeroed=(), dirty=(), min_integer=None, style="stack"):
-    manager = WireManager(zeroed=zeroed, dirty=dirty, min_integer=min_integer, style=style)
-
-    wire_map = {}
-    deallocated = set()
-
-    new_ops = []
-    for op in tape.operations:
-        if isinstance(op, Allocate):
-            for w in op.wires:
-                wire, ops = manager.get_wire(**op.hyperparameters)
-                new_ops += ops
-                wire_map[w] = wire
-        elif isinstance(op, Deallocate):
-            for w in op.wires:
-                deallocated.add(w)
-                manager.return_wire(wire_map.pop(w))
-        elif isinstance(op, DeallocateAll):
-            new_ops += manager.return_all()
-        else:
-            op = op.map_wires(wire_map)
-            if intersection := deallocated.intersection(set(op.wires)):
-                raise ValueError(f"using deallocated wires {intersection}")
-            new_ops.append(op.map_wires(wire_map))
-
-    mps = [mp.map_wires(wire_map) for mp in tape.measurements]
-    return (tape.copy(ops=new_ops, measurements=mps),), null_postprocessing
-
-
-@transform
-def device_resolve_dynamic_wires(tape, device_wires):
-    if not device_wires:
-        max_wire_int = max([0, *(w for w in tape.wires if isinstance(w, int))])
-        return resolve_dynamic_wires(tape, min_integer=max_wire_int)
-    zeroed = set(device_wires) - set(tape.wires)
-    return resolve_dynamic_wires(tape, zeroed=zeroed)

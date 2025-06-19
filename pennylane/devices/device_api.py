@@ -37,7 +37,6 @@ from .capabilities import (
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     decompose,
-    device_resolve_dynamic_wires,
     validate_device_wires,
     validate_measurements,
     validate_observables,
@@ -561,7 +560,6 @@ class Device(abc.ABC):
         program.add_transform(qml.transforms.broadcast_expand)
 
         # Handle validations
-        program.add_transform(device_resolve_dynamic_wires, device_wires=self.wires)
         program.add_transform(validate_device_wires, self.wires, name=self.name)
         program.add_transform(
             validate_measurements,
