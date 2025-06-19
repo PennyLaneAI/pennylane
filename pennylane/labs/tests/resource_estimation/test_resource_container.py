@@ -319,6 +319,8 @@ class TestResources:
         """Test that the ipython display prints the string representation of a Resources instance."""
         r._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
+        print("rep: ", rep)
+        print("captured: ", captured.out)
         assert rep in captured.out
 
     gate_names = ("RX", "RZ")
