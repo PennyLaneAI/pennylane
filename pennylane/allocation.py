@@ -59,6 +59,7 @@ else:
     def _(*wires):
         return []
 
+
 class DynamicWire:
     """A wire whose concrete value will be determined later during a compilation step or execution.
 
