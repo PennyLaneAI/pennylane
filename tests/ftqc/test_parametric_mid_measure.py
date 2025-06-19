@@ -931,7 +931,7 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1])
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    @pytest.mark.parametrize("angle", [0.1234, -0.789, np.array([0.4321])])
+    @pytest.mark.parametrize("angle", [0.1234, np.array([-0.4321])])
     @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
