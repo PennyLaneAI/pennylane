@@ -25,10 +25,10 @@ import pytest
 pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
-
-# pylint: disable=wrong-import-position
-
 from xdsl.dialects import arith, builtin, func, tensor
+
+catalyst = pytest.importorskip("catalyst")
+from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
 from pennylane.compiler.python_compiler import quantum_dialect as quantum
@@ -37,12 +37,9 @@ from pennylane.compiler.python_compiler.transforms import (
     measurements_from_samples_pass,
 )
 
-catalyst = pytest.importorskip("catalyst")
-from catalyst.passes import xdsl_plugin
 
-
-@pytest.fixture(scope="function")
-def context_and_pipeline():
+@pytest.fixture(name="context_and_pipeline", scope="function")
+def fixture_context_and_pipeline():
     """A fixture that prepares the context and pipeline for unit tests of the
     measurements-from-samples pass.
     """
@@ -363,6 +360,7 @@ class TestMeasurementsFromSamplesExecution:
             ),
         ],
     )
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def test_1_wire_mp_with_obs(self, shots, initial_op, mp, obs, expected_res):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         measurements that require an observable (i.e. expval and var).
@@ -375,7 +373,7 @@ class TestMeasurementsFromSamplesExecution:
             initial_op(wires=0)
             return mp(obs(wires=0))
 
-        assert expected_res == circuit_ref(), f"Sanity check failed, is expected_res correct?"
+        assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
@@ -409,7 +407,7 @@ class TestMeasurementsFromSamplesExecution:
 
         assert np.array_equal(
             expected_res, circuit_ref()
-        ), f"Sanity check failed, is expected_res correct?"
+        ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
@@ -448,14 +446,14 @@ class TestMeasurementsFromSamplesExecution:
 
         assert np.array_equal(
             expected_res, circuit_ref()
-        ), f"Sanity check failed, is expected_res correct?"
+        ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
-        assert np.array_equal(expected_res, _counts_catalyst_to_pl(circuit_compiled()))
+        assert np.array_equal(expected_res, _counts_catalyst_to_pl(*circuit_compiled()))
 
     # -------------------------------------------------------------------------------------------- #
 
@@ -508,6 +506,7 @@ class TestMeasurementsFromSamplesExecution:
             ((qml.X, qml.X), qml.var, qml.Z, (0.0, 0.0)),
         ],
     )
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def test_2_wires_with_obs_separate(self, shots, initial_ops, mp, obs, expected_res):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         measurements that require an observable (i.e. expval and var).
@@ -523,7 +522,7 @@ class TestMeasurementsFromSamplesExecution:
             initial_ops[1](wires=1)
             return mp(obs(wires=0)), mp(obs(wires=1))
 
-        assert expected_res == circuit_ref(), f"Sanity check failed, is expected_res correct?"
+        assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
@@ -567,20 +566,24 @@ class TestMeasurementsFromSamplesExecution:
             initial_ops[1](wires=1)
             return mp(qml.Z(wires=0) @ qml.Z(wires=1))
 
-        assert expected_res == circuit_ref(), f"Sanity check failed, is expected_res correct?"
+        assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
-        assert np.array_equal(expected_res, _counts_catalyst_to_pl(circuit_compiled()))
+        assert np.array_equal(expected_res, circuit_compiled())
 
         assert expected_res == circuit_compiled()
 
     @pytest.mark.xfail(reason="Dynamic shots not supported")
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_expval_dynamic_shots(self):
+        """Test the measurements_from_samples transform where the number of shots is dynamic.
+
+        This use case is not currently supported.
+        """
 
         @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         def workload(shots):
