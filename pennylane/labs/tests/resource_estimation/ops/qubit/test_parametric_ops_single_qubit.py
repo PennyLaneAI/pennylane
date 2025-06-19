@@ -14,6 +14,8 @@
 """
 Tests for parametric single qubit resource operators.
 """
+import copy
+
 import pytest
 
 import pennylane.labs.resource_estimation as plre
@@ -39,6 +41,18 @@ class TestPauliRotation:
 
     params_classes = [plre.ResourceRX, plre.ResourceRY, plre.ResourceRZ]
     params_errors = [10e-3, 10e-4, 10e-5]
+    params_ctrl_res = [
+        [
+            plre.GateCount(plre.ResourceHadamard.resource_rep(), 2),
+            plre.GateCount(plre.ResourceRZ.resource_rep(), 2),
+        ],
+        [
+            plre.GateCount(plre.ResourceRY.resource_rep(), 2),
+        ],
+        [
+            plre.GateCount(plre.ResourceRZ.resource_rep(), 2),
+        ],
+    ]
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
@@ -103,6 +117,75 @@ class TestPauliRotation:
         ]
         assert resource_class(epsilon).pow_resource_decomp(z) == expected
 
+    params_ctrl_classes = (
+        (plre.ResourceRX, plre.ResourceCRX),
+        (plre.ResourceRY, plre.ResourceCRY),
+        (plre.ResourceRZ, plre.ResourceCRZ),
+    )
+
+    @pytest.mark.parametrize("resource_class, controlled_class", params_ctrl_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_controlled_decomposition_single_control(
+        self, resource_class, controlled_class, epsilon
+    ):
+        """Test that the controlled decompositions are correct."""
+        expected = [plre.GateCount(controlled_class.resource_rep(), 1)]
+        assert resource_class.controlled_resource_decomp(1, 0) == expected
+
+        expected = [
+            plre.GateCount(controlled_class.resource_rep(), 1),
+            plre.GateCount(plre.ResourceX.resource_rep(), 2),
+        ]
+        assert resource_class.controlled_resource_decomp(1, 1) == expected
+
+        op = resource_class(wires=0)
+        c_op = plre.ResourceControlled(op, 1, 0)
+
+        c = controlled_class(wires=[0, 1])
+
+        config = {"error_rx": epsilon, "error_ry": epsilon, "error_rz": epsilon}
+
+        r1 = plre.estimate_resources(c, config=config)
+        r2 = plre.estimate_resources(c_op, config=config)
+
+        assert r1 == r2
+
+    ctrl_res_data = (
+        (
+            [1, 2],
+            [1, 1],
+            [plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 2)],
+        ),
+        (
+            [1, 2],
+            [1, 0],
+            [plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 1), 2)],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 2)],
+        ),
+    )
+
+    @pytest.mark.parametrize("resource_class, local_res", zip(params_classes, params_ctrl_res))
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, general_res", ctrl_res_data)
+    def test_controlled_decomposition_multi_controlled(
+        self, resource_class, local_res, ctrl_wires, ctrl_values, general_res
+    ):
+        """Test that the controlled docomposition is correct when controlled on multiple wires."""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = resource_class(wires=0)
+        op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
+
+        expected_resources = copy.copy(local_res)
+        expected_resources.extend(general_res)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_resources
+        assert op2.resource_decomp(**op2.resource_params) == expected_resources
+
 
 class TestRot:
     """Test ResourceRot"""
@@ -144,6 +227,48 @@ class TestRot:
 
         expected = [plre.GateCount(plre.ResourceRot.resource_rep(), 1)]
         assert plre.ResourceRot.adjoint_resource_decomp() == expected
+
+    ctrl_data = (
+        ([1], [1], [plre.GateCount(plre.ResourceCRot.resource_rep(), 1)]),
+        (
+            [1],
+            [0],
+            [
+                plre.GateCount(plre.ResourceCRot.resource_rep(), 1),
+                plre.GateCount(plre.ResourceX.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 2),
+                plre.GateCount(plre.ResourceRZ.resource_rep(), 3),
+                plre.GateCount(plre.ResourceRY.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 2),
+                plre.GateCount(plre.ResourceRZ.resource_rep(), 3),
+                plre.GateCount(plre.ResourceRY.resource_rep(), 2),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourceRot(wires=0)
+        op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourceRot.resource_rep(), 1)]),
@@ -199,6 +324,52 @@ class TestPhaseShift:
 
         expected = [plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1)]
         assert plre.ResourcePhaseShift.adjoint_resource_decomp() == expected
+
+    ctrl_data = (
+        ([1], [1], [plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1)]),
+        (
+            [1],
+            [0],
+            [
+                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.ResourceX.resource_rep(), 2),
+            ],
+        ),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                plre.AllocWires(1),
+                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 2),
+                plre.FreeWires(1),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                plre.AllocWires(1),
+                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 2),
+                plre.FreeWires(1),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourcePhaseShift(wires=0)
+        op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
+
+        assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
+            expected_res
+        )
+        assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
 
     pow_data = (
         (1, [plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1)]),
