@@ -312,7 +312,7 @@ class ResourceControlled(ResourceOperator):
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = None or base_op.wires
+            self.wires = None
             num_base_wires = base_op.num_wires
             self.num_wires = num_ctrl_wires + num_base_wires
 
@@ -454,7 +454,7 @@ class ResourceControlled(ResourceOperator):
                 c_gate = cls.resource_rep(
                     gate,
                     num_ctrl_wires,
-                    num_ctrl_values,
+                    num_ctrl_values=0,  # we flipped already and added the X gates above
                 )
                 gate_lst.append(GateCount(c_gate, action.count))
 
