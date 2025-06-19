@@ -817,6 +817,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* The links pointing to pennylane.ai/plugins have now been updated to pennylane.ai/devices.
+
 <h3>Bug fixes 🐛</h3>
 
 * A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
@@ -952,6 +954,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 This release contains contributions from (in alphabetical order):
 
+Catalina Albornoz Anzola,
 Guillermo Alonso-Linaje,
 Utkarsh Azad,
 Astral Cai,
