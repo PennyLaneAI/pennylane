@@ -21,6 +21,8 @@ import pytest
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import QubitManager
 
+# pylint: disable=too-many-arguments
+
 # Expected resources were obtained from the XAS notebook
 hamiltonian_data = [
     (
@@ -185,7 +187,23 @@ hamiltonian_data = [
         3,
         100,
         2,
-        {'qubit_manager': QubitManager(work_wires={'clean': 95.0, 'dirty': 0.0}, algo_wires=32, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 2, "S": 2, "T": 7116.0, "X": 384064.0, "Toffoli": 10069400, "CNOT": 14300800.0, "Hadamard": 30040800.0})}
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=32, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 2,
+                    "S": 2,
+                    "T": 7116.0,
+                    "X": 384064.0,
+                    "Toffoli": 10069400,
+                    "CNOT": 14300800.0,
+                    "Hadamard": 30040800.0,
+                },
+            ),
+        },
     ),
     (
         4,
@@ -193,7 +211,23 @@ hamiltonian_data = [
         4,
         10,
         1,
-        {'qubit_manager': QubitManager(work_wires={'clean': 127.0, 'dirty': 0.0}, algo_wires=24, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 3, "S": 3, "T": 1154.0, "X": 7548.0, "Toffoli": 398770, "CNOT": 489540.0, "Hadamard": 1159650.0})}
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=24, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 3,
+                    "S": 3,
+                    "T": 1154.0,
+                    "X": 7548.0,
+                    "Toffoli": 398770,
+                    "CNOT": 489540.0,
+                    "Hadamard": 1159650.0,
+                },
+            ),
+        },
     ),
     (
         4,
@@ -201,7 +235,23 @@ hamiltonian_data = [
         2,
         20,
         1,
-        {'qubit_manager': QubitManager(work_wires={'clean': 67.0, 'dirty': 0.0}, algo_wires=8, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 1, "S": 1, "T": 518.0, "X": 4016.0, "Toffoli": 37320, "CNOT": 82000.0, "Hadamard": 111120.0})}
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 1,
+                    "S": 1,
+                    "T": 518.0,
+                    "X": 4016.0,
+                    "Toffoli": 37320,
+                    "CNOT": 82000.0,
+                    "Hadamard": 111120.0,
+                },
+            ),
+        },
     ),
 ]
 
@@ -209,7 +259,9 @@ hamiltonian_data = [
 @pytest.mark.parametrize(
     "num_modes, grid_size, taylor_degree, num_steps, order, expected_res", hamiltonian_data
 )
-def test_resource_trotter_vibrational(num_modes, grid_size, taylor_degree, num_steps, order, expected_res):
+def test_resource_trotter_vibrational(
+    num_modes, grid_size, taylor_degree, num_steps, order, expected_res
+):
     """Test the ResourceTrotterCDF class for compressed double factorization"""
     compact_ham = plre.CompactHamiltonian.from_vibrational(
         num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree
@@ -233,7 +285,23 @@ hamiltonian_data = [
         3,
         100,
         2,
-        {'qubit_manager': QubitManager(work_wires={'clean': 95.0, 'dirty': 0.0}, algo_wires=33, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 2, "S": 2, "T": 7116.0, "X": 153664, "Hadamard": 30271202, "Toffoli": 10146200, "CNOT": 15222400})}
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=33, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 2,
+                    "S": 2,
+                    "T": 7116.0,
+                    "X": 153664,
+                    "Hadamard": 30271202,
+                    "Toffoli": 10146200,
+                    "CNOT": 15222400,
+                },
+            ),
+        },
     ),
     (
         4,
@@ -242,7 +310,23 @@ hamiltonian_data = [
         4,
         10,
         1,
-        {'qubit_manager': QubitManager(work_wires={'clean': 127.0, 'dirty': 0.0}, algo_wires=26, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 3, "S": 3, "T": 1154.0, "X": 6048, "Hadamard": 1168654, "Toffoli": 401770, "CNOT": 518040})}  
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=26, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 3,
+                    "S": 3,
+                    "T": 1154.0,
+                    "X": 6048,
+                    "Hadamard": 1168654,
+                    "Toffoli": 401770,
+                    "CNOT": 518040,
+                },
+            ),
+        },
     ),
     (
         4,
@@ -251,15 +335,34 @@ hamiltonian_data = [
         2,
         20,
         1,
-        {'qubit_manager': QubitManager(work_wires={'clean': 67.0, 'dirty': 0.0}, algo_wires=8, tight_budget=False), 'gate_types': defaultdict(int, {"Z": 1, "S": 1, "T": 518.0, "X": 16, "Hadamard": 111120, "Toffoli": 37320, "CNOT": 86000})}
+        {
+            "qubit_manager": QubitManager(
+                work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
+            ),
+            "gate_types": defaultdict(
+                int,
+                {
+                    "Z": 1,
+                    "S": 1,
+                    "T": 518.0,
+                    "X": 16,
+                    "Hadamard": 111120,
+                    "Toffoli": 37320,
+                    "CNOT": 86000,
+                },
+            ),
+        },
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res", hamiltonian_data
+    "num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res",
+    hamiltonian_data,
 )
-def test_resource_trotter_vibronic(num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res):
+def test_resource_trotter_vibronic(
+    num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
+):
     """Test the ResourceTrotterCDF class for compressed double factorization"""
     compact_ham = plre.CompactHamiltonian.from_vibronic(
         num_modes=num_modes, num_states=num_states, grid_size=grid_size, taylor_degree=taylor_degree
@@ -272,4 +375,3 @@ def test_resource_trotter_vibronic(num_modes, num_states, grid_size, taylor_degr
 
     assert res.qubit_manager == expected_res["qubit_manager"]
     assert res.clean_gate_counts == expected_res["gate_types"]
-

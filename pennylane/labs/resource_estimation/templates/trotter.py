@@ -14,25 +14,22 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
-from collections import defaultdict
-from functools import wraps
 from typing import Dict
 
-import pennylane as qml
+import numpy as np
+
 from pennylane.labs import resource_estimation as plre
-from pennylane.labs.resource_estimation import ResourcesNotDefined
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-import numpy as np
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, too-many-arguments
 
 
 class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors
@@ -1064,9 +1061,10 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         return gate_list
 
+
 class ResourceTrotterVibrational(ResourceOperator):
     """Resource operator for Trotterizing Vibrational Hamiltonians.
-    
+
     Args:
         compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
             that stores information about the vibrational Hamiltonian in real-space.
@@ -1090,7 +1088,7 @@ class ResourceTrotterVibrational(ResourceOperator):
         `arXiv:2504.10602 <https://arxiv.org/pdf/2504.10602>`_
 
     The resources can be computed as:
-     
+
     **Example**
     >>> compact_ham = plre.CompactHamiltonian.from_vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
@@ -1100,9 +1098,17 @@ class ResourceTrotterVibrational(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision","coeff_precision"}
+    resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
 
-    def __init__(self, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3, wires=None):
+    def __init__(
+        self,
+        compact_ham,
+        num_steps,
+        order,
+        phase_grad_precision=1e-6,
+        coeff_precision=1e-3,
+        wires=None,
+    ):
 
         self.num_steps = num_steps
         self.order = order
@@ -1114,7 +1120,7 @@ class ResourceTrotterVibrational(ResourceOperator):
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.num_wires = compact_ham.params["num_modes"]*compact_ham.params["grid_size"]
+            self.num_wires = compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
             self.wires = None
 
         super().__init__(wires=wires)
@@ -1139,7 +1145,9 @@ class ResourceTrotterVibrational(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3) -> CompressedResourceOp:
+    def resource_rep(
+        cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3
+    ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1160,28 +1168,32 @@ class ResourceTrotterVibrational(ResourceOperator):
             "coeff_precision": coeff_precision,
         }
         return CompressedResourceOp(cls, params)
-    
+
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
 
-        cur_path, len_path = tuple(path), len(path), 
+        cur_path, len_path = tuple(path), len(path)
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
         gate_cache = []
-    
+
         x = plre.ResourceX.resource_rep()
-        if len_path > 1 and len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
-            
-            if (len_cached := len(cached_tree[len_path])):
+        if 1 < len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
+
+            if len(cached_tree[len_path]):
                 prev_state = cached_tree[len_path][-1]
 
                 if len_path == 2 and prev_state[0] == prev_state[1]:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size= grid_size)
+                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
                     gate_cache.append(plre.GateCount(out_square, 1))
                 elif len_path == 4 and len(set(prev_state)) == 1:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size*2)
+                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(
+                        register_size=grid_size * 2
+                    )
                     gate_cache.append(plre.GateCount(out_square, 1))
                 else:
-                    multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size*(len_path - 1))
+                    multiplier = plre.ResourceOutMultiplier.resource_rep(
+                        grid_size, grid_size * (len_path - 1)
+                    )
                     gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the Square / Multiplier for current state
@@ -1189,46 +1201,53 @@ class ResourceTrotterVibrational(ResourceOperator):
                 out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
                 gate_cache.append(plre.GateCount(out_square, 1))
             elif len_path == 4 and len(set(cur_path)) == 1:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size*2)
+                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
                 gate_cache.append(plre.GateCount(out_square, 1))
             else:
-                multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size*(len_path - 1))
+                multiplier = plre.ResourceOutMultiplier.resource_rep(
+                    grid_size, grid_size * (len_path - 1)
+                )
                 gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(x, coeff_wires/2))
+            gate_cache.append(plre.GateCount(x, coeff_wires / 2))
 
             # Add the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size*len_path, coeff_wires)
+            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
             gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the Adder for Resource state
-            adder = plre.ResourceSemiAdder.resource_rep(max_register_size=2 * max(coeff_wires, 2 * grid_size))
+            adder = plre.ResourceSemiAdder.resource_rep(
+                max_register_size=2 * max(coeff_wires, 2 * grid_size)
+            )
             gate_cache.append(plre.GateCount(adder, 1))
 
             # Adjoint the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size*len_path, coeff_wires)
+            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
             gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Adjoint the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(x, coeff_wires/2))
-            
+            gate_cache.append(plre.GateCount(x, coeff_wires / 2))
+
             cached_tree[len_path].append(cur_path)
-     
+
         if len_path < taylor_degree and index + 1:
-            gate_cache_curr, cached_tree = ResourceTrotterVibrational._cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path + [index], index) # DFS with current element
-            gate_cache+= gate_cache_curr
-            gate_cache_next, cached_tree = ResourceTrotterVibrational._cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1)       # DFS with next element
-            gate_cache+= gate_cache_next
+            gate_cache_curr, cached_tree = ResourceTrotterVibrational._cached_terms(
+                grid_size, taylor_degree, coeff_precision, cached_tree, path + [index], index
+            )  # DFS with current element
+            gate_cache += gate_cache_curr
+            gate_cache_next, cached_tree = ResourceTrotterVibrational._cached_terms(
+                grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1
+            )  # DFS with next element
+            gate_cache += gate_cache_next
 
         return gate_cache, cached_tree
 
-
     @staticmethod
     def _rep_circuit(compact_ham, coeff_precision, num_rep):
-        r"""Returns the expansion of the circuit with given number of repetitions. """
+        r"""Returns the expansion of the circuit with given number of repetitions."""
 
         num_modes = compact_ham.params["num_modes"]
         grid_size = compact_ham.params["grid_size"]
@@ -1242,22 +1261,40 @@ class ResourceTrotterVibrational(ResourceOperator):
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(grid_size, kinetic_deg, coeff_precision, cached_tree, path=[], index=num_modes - 1)
+        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(
+            grid_size, kinetic_deg, coeff_precision, cached_tree, path=[], index=num_modes - 1
+        )
         gate_lst += gate_cache * num_rep
 
         cached_tree = {index: [] for index in range(1, taylor_degree + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path=[], index=num_modes - 1)
+        gate_cache, cached_tree = ResourceTrotterVibrational._cached_terms(
+            grid_size, taylor_degree, coeff_precision, cached_tree, path=[], index=num_modes - 1
+        )
         gate_lst += gate_cache * num_rep
 
         # Adjoints for the last Squares / Multipliers
         for idx in range(2, taylor_degree):
             last_state = cached_tree[idx][-1]
             if idx == 2 and last_state[-1] == last_state[-2]:
-                gate_lst.append(plre.GateCount(plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep))
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep
+                    )
+                )
             elif idx == 4 and len(set(last_state)) == 1:
-                gate_lst.append(plre.GateCount(plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2), num_rep))
-            else:    
-                gate_lst.append(plre.GateCount(plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)), num_rep))
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
+                        num_rep,
+                    )
+                )
+            else:
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
+                        num_rep,
+                    )
+                )
 
         # Shifted QFT Adjoint
         gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
@@ -1265,10 +1302,12 @@ class ResourceTrotterVibrational(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(
+        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts."""
-        
+
         k = order // 2
         gate_list = []
         num_modes = compact_ham.params["num_modes"]
@@ -1279,38 +1318,39 @@ class ResourceTrotterVibrational(ResourceOperator):
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
         print("coeff_wires:", coeff_wires, "phase_grad_wires:", phase_grad_wires)
         x = plre.ResourceX.resource_rep()
-    
+
         phase_grad = plre.ResourcePhaseGradient.resource_rep(phase_grad_wires)
-    
 
         # Allocate the phase gradient registers
-        gate_list.append(AllocWires(phase_grad_wires*(taylor_degree - 1)))
-        #Resource Registers
-        gate_list.append(GateCount(phase_grad, taylor_degree-1))
+        gate_list.append(AllocWires(phase_grad_wires * (taylor_degree - 1)))
+        # Resource Registers
+        gate_list.append(GateCount(phase_grad, taylor_degree - 1))
 
         # Allocate auxiliary registers for the coefficients
-        gate_list.append(AllocWires(4*grid_size+2*coeff_wires))
+        gate_list.append(AllocWires(4 * grid_size + 2 * coeff_wires))
 
-        #Basis state prep per mode, implemented only for the first step
+        # Basis state prep per mode, implemented only for the first step
         gate_list.append(plre.GateCount(x, num_modes * grid_size))
 
         if order == 1:
-            gate_list += ResourceTrotterVibrational._rep_circuit(compact_ham, coeff_precision, num_steps)
+            gate_list += ResourceTrotterVibrational._rep_circuit(
+                compact_ham, coeff_precision, num_steps
+            )
         else:
-            gate_list += ResourceTrotterVibrational._rep_circuit(compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1)))
+            gate_list += ResourceTrotterVibrational._rep_circuit(
+                compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1))
+            )
 
-        #Adjoint of Basis state prep, implemented only for the last step
+        # Adjoint of Basis state prep, implemented only for the last step
         gate_list.append(plre.GateCount(x, num_modes * grid_size))
 
         # Free auxiliary registers for the coefficients
-        gate_list.append(FreeWires(4*grid_size+2*coeff_wires))
+        gate_list.append(FreeWires(4 * grid_size + 2 * coeff_wires))
 
         # Deallocate the phase gradient registers
-        gate_list.append(FreeWires(phase_grad_wires*(taylor_degree - 1)))
-
+        gate_list.append(FreeWires(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list
-
 
 
 class ResourceTrotterVibronic(ResourceOperator):
@@ -1323,7 +1363,7 @@ class ResourceTrotterVibronic(ResourceOperator):
         phase_grad_precision (float): precision for the phase gradient calculation
         coeff_precision (float): precision for the loading of coefficients
         wires (list[int] or optional): the wires on which the operator acts.
-    
+
     Resource Parameters:
         * compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
             that stores information about the vibronic Hamiltonian in real-space.
@@ -1331,14 +1371,14 @@ class ResourceTrotterVibronic(ResourceOperator):
         * order (int): order of the approximation (must be 1 or even)
         * phase_grad_precision (float): precision for the phase gradient calculation
         * coeff_precision (float): precision for the loading of coefficients
-        
+
     Resources:
         The resources are defined according to Trotter-Suzuki product formula.
         Each operator in the single step Trotter circuit is defined based on
         `arXiv:2411.13669 <https://arxiv.org/pdf/2411.13669>`_
-        
+
     The resources can be computed as:
-    
+
     **Example**
     >>> compact_ham = plre.CompactHamiltonian.from_vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
@@ -1348,9 +1388,17 @@ class ResourceTrotterVibronic(ResourceOperator):
 
     """
 
-    resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision","coeff_precision"}
+    resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
 
-    def __init__(self, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3, wires=None):
+    def __init__(
+        self,
+        compact_ham,
+        num_steps,
+        order,
+        phase_grad_precision=1e-6,
+        coeff_precision=1e-3,
+        wires=None,
+    ):
 
         self.num_steps = num_steps
         self.order = order
@@ -1362,7 +1410,10 @@ class ResourceTrotterVibronic(ResourceOperator):
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.num_wires = int(np.ceil(np.log2(compact_ham.params["num_states"]))) + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+            self.num_wires = (
+                int(np.ceil(np.log2(compact_ham.params["num_states"])))
+                + compact_ham.params["num_modes"] * compact_ham.params["grid_size"]
+            )
             self.wires = Wires(range(self.num_wires))
         super().__init__(wires=wires)
 
@@ -1386,7 +1437,9 @@ class ResourceTrotterVibronic(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3) -> CompressedResourceOp:
+    def resource_rep(
+        cls, compact_ham, num_steps, order, phase_grad_precision=1e-6, coeff_precision=1e-3
+    ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1407,27 +1460,33 @@ class ResourceTrotterVibronic(ResourceOperator):
             "coeff_precision": coeff_precision,
         }
         return CompressedResourceOp(cls, params)
-    
-    @staticmethod
-    def _cached_terms(num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
 
-        cur_path, len_path = tuple(path), len(path), 
+    @staticmethod
+    def _cached_terms(
+        num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index
+    ):
+
+        cur_path, len_path = tuple(path), len(path)
         coeff_wires = abs(int(np.floor(np.log2(coeff_precision))))
         gate_cache = []
-    
-        if len_path > 1 and len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
-            
-            if (len_cached := len(cached_tree[len_path])):
+
+        if 1 < len_path <= taylor_degree and cur_path not in cached_tree[len_path]:
+
+            if len(cached_tree[len_path]):
                 prev_state = cached_tree[len_path][-1]
 
                 if len_path == 2 and prev_state[0] == prev_state[1]:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size= grid_size)
+                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
                     gate_cache.append(plre.GateCount(out_square, 1))
                 elif len_path == 4 and len(set(prev_state)) == 1:
-                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size*2)
+                    out_square = plre.ResourceOutOfPlaceSquare.resource_rep(
+                        register_size=grid_size * 2
+                    )
                     gate_cache.append(plre.GateCount(out_square, 1))
                 else:
-                    multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size*(len_path - 1))
+                    multiplier = plre.ResourceOutMultiplier.resource_rep(
+                        grid_size, grid_size * (len_path - 1)
+                    )
                     gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the Square / Multiplier for current state
@@ -1435,52 +1494,72 @@ class ResourceTrotterVibronic(ResourceOperator):
                 out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size)
                 gate_cache.append(plre.GateCount(out_square, 1))
             elif len_path == 4 and len(set(cur_path)) == 1:
-                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size*2)
+                out_square = plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2)
                 gate_cache.append(plre.GateCount(out_square, 1))
             else:
-                multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size*(len_path - 1))
+                multiplier = plre.ResourceOutMultiplier.resource_rep(
+                    grid_size, grid_size * (len_path - 1)
+                )
                 gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            coeff_unitaries = (resource_rep(plre.ResourceProd,
-                                {'cmpr_factors': tuple(plre.ResourceX.resource_rep()
-                                    for i in range(int(coeff_wires/2)))}), )*num_states
-            
-            select_op= resource_rep(plre.ResourceSelect, {"cmpr_ops": coeff_unitaries})
-            gate_cache.append(plre.GateCount(select_op,1))
+            coeff_unitaries = (
+                resource_rep(
+                    plre.ResourceProd,
+                    {
+                        "cmpr_factors": tuple(
+                            plre.ResourceX.resource_rep() for i in range(int(coeff_wires / 2))
+                        )
+                    },
+                ),
+            ) * num_states
 
+            select_op = resource_rep(plre.ResourceSelect, {"cmpr_ops": coeff_unitaries})
+            gate_cache.append(plre.GateCount(select_op, 1))
 
             # Add the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size*len_path, coeff_wires)
+            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
             gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Add the Adder for Resource state
-            adder = plre.ResourceSemiAdder.resource_rep(max_register_size=2 * max(coeff_wires, 2 * grid_size))
+            adder = plre.ResourceSemiAdder.resource_rep(
+                max_register_size=2 * max(coeff_wires, 2 * grid_size)
+            )
             gate_cache.append(plre.GateCount(adder, 1))
 
             # Adjoint the Multiplier for current coefficient
-            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size*len_path, coeff_wires)
+            multiplier = plre.ResourceOutMultiplier.resource_rep(grid_size * len_path, coeff_wires)
             gate_cache.append(plre.GateCount(multiplier, 1))
 
             # Adjoint the coefficient Initializer for current state
             # assuming that half the bits in the coefficient are 1
-            gate_cache.append(plre.GateCount(select_op,1))
-            
+            gate_cache.append(plre.GateCount(select_op, 1))
+
             cached_tree[len_path].append(cur_path)
-     
+
         if len_path < taylor_degree and index + 1:
-            gate_cache_curr, cached_tree = ResourceTrotterVibronic._cached_terms(num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path + [index], index) # DFS with current element
-            gate_cache+= gate_cache_curr
-            gate_cache_next, cached_tree = ResourceTrotterVibronic._cached_terms(num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1)       # DFS with next element
-            gate_cache+= gate_cache_next
+            gate_cache_curr, cached_tree = ResourceTrotterVibronic._cached_terms(
+                num_states,
+                grid_size,
+                taylor_degree,
+                coeff_precision,
+                cached_tree,
+                path + [index],
+                index,
+            )  # DFS with current element
+            gate_cache += gate_cache_curr
+            gate_cache_next, cached_tree = ResourceTrotterVibronic._cached_terms(
+                num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index - 1
+            )  # DFS with next element
+            gate_cache += gate_cache_next
 
         return gate_cache, cached_tree
 
     @staticmethod
     def _rep_circuit(compact_ham, coeff_precision, num_rep):
-        r"""Returns the expansion of the circuit with given number of repetitions. """
-        
+        r"""Returns the expansion of the circuit with given number of repetitions."""
+
         num_modes = compact_ham.params["num_modes"]
         num_states = compact_ham.params["num_states"]
         grid_size = compact_ham.params["grid_size"]
@@ -1493,33 +1572,65 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(num_states, grid_size, kinetic_deg, coeff_precision, cached_tree, path=[], index=num_modes - 1)
+        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(
+            num_states,
+            grid_size,
+            kinetic_deg,
+            coeff_precision,
+            cached_tree,
+            path=[],
+            index=num_modes - 1,
+        )
         gate_lst += gate_cache * num_rep
 
         cached_tree = {index: [] for index in range(1, taylor_degree + 1)}
-        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path=[], index=num_modes - 1)
+        gate_cache, cached_tree = ResourceTrotterVibronic._cached_terms(
+            num_states,
+            grid_size,
+            taylor_degree,
+            coeff_precision,
+            cached_tree,
+            path=[],
+            index=num_modes - 1,
+        )
         gate_lst += gate_cache * num_rep
 
         # Adjoints for the last Squares / Multipliers
         for idx in range(2, taylor_degree):
             last_state = cached_tree[idx][-1]
             if idx == 2 and last_state[-1] == last_state[-2]:
-                gate_lst.append(plre.GateCount(plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep))
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size), num_rep
+                    )
+                )
             elif idx == 4 and len(set(last_state)) == 1:
-                gate_lst.append(plre.GateCount(plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2), num_rep))
-            else:    
-                gate_lst.append(plre.GateCount(plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)), num_rep))
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutOfPlaceSquare.resource_rep(register_size=grid_size * 2),
+                        num_rep,
+                    )
+                )
+            else:
+                gate_lst.append(
+                    plre.GateCount(
+                        plre.ResourceOutMultiplier.resource_rep(grid_size, grid_size * (idx - 1)),
+                        num_rep,
+                    )
+                )
 
         # Shifted QFT Adjoint
         gate_lst.append(plre.GateCount(t, num_rep * (num_modes * np.ceil(np.log2(num_modes) - 1))))
-    
+
         return gate_lst
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(
+        cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
+    ) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts."""
-        
+
         k = order // 2
         gate_list = []
         num_modes = compact_ham.params["num_modes"]
@@ -1532,39 +1643,46 @@ class ResourceTrotterVibronic(ResourceOperator):
         print("coeff_wires:", coeff_wires, "phase_grad_wires:", phase_grad_wires)
 
         x = plre.ResourceX.resource_rep()
-    
+
         phase_grad = plre.ResourcePhaseGradient.resource_rep(phase_grad_wires)
-    
 
         # Allocate the phase gradient registers
-        gate_list.append(AllocWires(phase_grad_wires*(taylor_degree - 1)))
-        #Resource Registers
-        gate_list.append(GateCount(phase_grad, taylor_degree-1))
+        gate_list.append(AllocWires(phase_grad_wires * (taylor_degree - 1)))
+        # Resource Registers
+        gate_list.append(GateCount(phase_grad, taylor_degree - 1))
 
         # Allocate auxiliary registers for the coefficients
-        gate_list.append(AllocWires(4*grid_size+2*coeff_wires))
+        gate_list.append(AllocWires(4 * grid_size + 2 * coeff_wires))
 
-        #Basis state prep per mode, implemented only for the first step
+        # Basis state prep per mode, implemented only for the first step
         gate_list.append(plre.GateCount(x, num_modes * grid_size))
 
         # electronic state
-        gate_list.append(plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states)))))
+        gate_list.append(
+            plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states))))
+        )
 
         if order == 1:
-            gate_list += ResourceTrotterVibronic._rep_circuit(compact_ham, coeff_precision, num_steps)
+            gate_list += ResourceTrotterVibronic._rep_circuit(
+                compact_ham, coeff_precision, num_steps
+            )
         else:
-            gate_list += ResourceTrotterVibronic._rep_circuit(compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1)))
+            gate_list += ResourceTrotterVibronic._rep_circuit(
+                compact_ham, coeff_precision, 2 * num_steps * (5 ** (k - 1))
+            )
 
         # Adjoint for electronic state
-        gate_list.append(plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states)))))
+        gate_list.append(
+            plre.GateCount(resource_rep(plre.ResourceHadamard), int(np.ceil(np.log2(num_states))))
+        )
 
-        #Adjoint of Basis state prep, implemented only for the first step
+        # Adjoint of Basis state prep, implemented only for the first step
         gate_list.append(plre.GateCount(x, num_modes * grid_size))
 
         # Free auxiliary registers for the coefficients
-        gate_list.append(FreeWires(4*grid_size+2*coeff_wires))
+        gate_list.append(FreeWires(4 * grid_size + 2 * coeff_wires))
 
         # Deallocate the phase gradient registers
-        gate_list.append(FreeWires(phase_grad_wires*(taylor_degree - 1)))            
+        gate_list.append(FreeWires(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list

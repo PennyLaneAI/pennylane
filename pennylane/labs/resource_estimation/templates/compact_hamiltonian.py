@@ -103,8 +103,13 @@ class CompactHamiltonian:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with vibrational Hamiltonian parameters.
 
         """
-        return cls("from_vibrational", num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree)
-    
+        return cls(
+            "from_vibrational",
+            num_modes=num_modes,
+            grid_size=grid_size,
+            taylor_degree=taylor_degree,
+        )
+
     @classmethod
     def from_vibronic(cls, num_modes: int, num_states: int, grid_size: int, taylor_degree: int):
         """Constructs a vibronic Hamiltonian instance
@@ -119,4 +124,10 @@ class CompactHamiltonian:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with vibronic Hamiltonian parameters.
 
         """
-        return cls("from_vibronic", num_modes=num_modes, num_states=num_states, grid_size=grid_size, taylor_degree=taylor_degree)
+        return cls(
+            "from_vibronic",
+            num_modes=num_modes,
+            num_states=num_states,
+            grid_size=grid_size,
+            taylor_degree=taylor_degree,
+        )
