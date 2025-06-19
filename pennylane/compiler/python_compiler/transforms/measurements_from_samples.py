@@ -40,7 +40,7 @@ class MeasurementsFromSamplesPass(passes.ModulePass):
 
     name = "measurements-from-samples"
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the measurements-from-samples pass."""
         shots = _get_static_shots_value_from_first_device_op(module)
@@ -120,8 +120,9 @@ class MeasurementsFromSamplesPattern(RewritePattern):
                 f"PauliZ observable is permitted"
             )
 
+    @staticmethod
     def insert_compbasis_op(
-        self, in_qubit: ir.SSAValue, ref_op: ir.Operation, rewriter: PatternRewriter
+        in_qubit: ir.SSAValue, ref_op: ir.Operation, rewriter: PatternRewriter
     ) -> quantum.ComputationalBasisOp:
         """Create and insert a computational-basis op (quantum.ComputationalBasisOp).
 
