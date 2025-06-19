@@ -55,7 +55,9 @@ def test_highly_nested_min_int():
     ops = [qml.X(op.wires) for op in allocations]
     tape = qml.tape.QuantumScript(allocations + ops)
 
-    [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, min_int=5)
+    [new_tape], fn = qml.transforms.resolve_dynamic_wires(tape, min_int=5)
+
+    assert fn(("a",)) == "a"
     for op, wire in zip(new_tape.operations, range(5, 15)):
         qml.assert_equal(op, qml.X(wire))
 
@@ -66,7 +68,8 @@ def test_map_measurement_on_dynamic_wires():
     alloc_op = qml.allocation.Allocate.from_num_wires(1, require_zeros=True)
     tape = qml.tape.QuantumScript([alloc_op], [qml.probs(wires=alloc_op.wires)])
 
-    [new_tape], _ = qml.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+    [new_tape], fn = qml.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+    assert fn(("a",)) == "a"
 
     expected = qml.tape.QuantumScript([], [qml.probs(wires="a")])
     qml.assert_equal(new_tape, expected)

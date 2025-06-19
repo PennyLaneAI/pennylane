@@ -26,6 +26,7 @@ from .core import transform
 
 
 class _WireManager:
+    """Handles converting dynamic wires into concrete values."""
 
     def __init__(self, zeroed=(), any_state=(), min_int=None):
         self._zeroed = list(zeroed)
@@ -100,9 +101,9 @@ def resolve_dynamic_wires(
     .. code-block:: python
 
         def circuit(require_zeros=True):
-            with qml.allocation.safe_allocate(1, require_zeros=require_zeros) as wires:
+            with qml.allocation.allocate(1, require_zeros=require_zeros) as wires:
                 qml.X(wires)
-            with qml.allocation.safe_allocate(1, require_zeros=require_zeros) as wires:
+            with qml.allocation.allocate(1, require_zeros=require_zeros) as wires:
                 qml.Y(wires)
 
     >>> print(qml.draw(circuit)())
@@ -149,9 +150,9 @@ def resolve_dynamic_wires(
 
         @qml.qnode(qml.device('default.qubit'))
         def multiple_allocations():
-            with qml.allocation.safe_allocate(1) as wires:
+            with qml.allocation.allocate(1) as wires:
                 qml.X(wires)
-            with qml.allocation.safe_allocate(3) as wires:
+            with qml.allocation.allocate(3) as wires:
                 qml.Toffoli(wires)
             return qml.state()
 
