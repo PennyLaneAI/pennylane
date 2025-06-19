@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func
 from xdsl.rewriter import InsertPoint
+from xdsl.dialects.scf import WhileOp, IfOp, ForOp
 
 from ..quantum_dialect import GlobalPhaseOp
 from .utils import xdsl_transform
@@ -41,6 +42,18 @@ class CombineGlobalPhasesPattern(
         GlobalPhase oprations."""
         phi = None
         global_phases = [op for op in funcOp.body.walk() if isinstance(op, GlobalPhaseOp)]
+        if_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, IfOp)]
+        while_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, WhileOp)]
+        for_control_flow_op = [op for op in funcOp.body.walk() if isinstance(op, WhileOp)]
+
+        for whileop in while_control_flow_op:
+            # Walk through the while loop region
+            region = [op for op in whileop.body.walk()]
+
+        for forop in for_control_flow_op:
+            # Walk through the ture region
+            region = [op for op in forop.body.walk()]
+
         if len(global_phases) < 2:
             return
 
