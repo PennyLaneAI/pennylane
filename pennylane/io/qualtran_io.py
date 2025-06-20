@@ -77,7 +77,7 @@ def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
     if not isinstance(op, Operator):
         return ToBloq(op, map_ops=map_ops, **kwargs)
-    
+
     if custom_mapping is not None:
         return custom_mapping[op]
 
