@@ -36,19 +36,19 @@ class QNGOptimizerQJIT:
     a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
     the optimization space based on the Fubini-Study metric tensor.
 
-    For more details, see the :class:`~.QNGOptimizer` documentation.
+    For more theoretical details, see the :class:`~.QNGOptimizer` documentation.
 
     .. note::
 
-        A few limitations of the current implementation:
+        Please be aware of the following:
 
-            - It supports a single QNode only to encode the objective function (as for the ``QNGOptimizer``).
+            - As with ``QNGOptimizer``, ``QNGOptimizerQJIT`` supports a single QNode to encode the objective function.
 
-            - It does not support any QNode with multiple arguments. A potential workaround
+            - ``QNGOptimizerQJIT`` does not support any QNode with multiple arguments. A potential workaround
               would be to combine all parameters into a single objective function argument.
 
-            - It does not work correctly if there is any classical processing in the QNode circuit
-              (e.g. something like ``2 * theta`` as a gate parameter).
+            - ``QNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
+              (e.g., ``2 * theta`` as a gate parameter).
 
     **Example:**
 
