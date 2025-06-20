@@ -185,6 +185,71 @@
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
+<h4>Qualtran Integration 🔗</h4>
+
+* It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
+  [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
+  [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
+  [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
+  * circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
+  * map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when False. Default is True.
+  * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
+  The following example converts a PennyLane Operator into a Qualtran Bloq:
+
+  ```python
+  import pennylane as qml
+  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+  control_wires = [2, 3]
+  estimation_wires = [4, 5, 6, 7, 8, 9]
+
+  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+  op = qml.QuantumPhaseEstimation(
+      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+  )
+
+  cbloq = qml.to_bloq(op).decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Let's define a custom mapping instead.
+
+  ```python
+  from qualtran.bloqs.phase_estimation import LPResourceState
+  from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+  custom_map = {
+    op: TextbookQPE(
+        unitary=qml.to_bloq(qml.Qubitization(H, control_wires)), 
+        ctrl_state_prep=LPResourceState(len(estimation_wires))
+    )
+  }
+
+  cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
+  PennyLane decomposition by setting `map_ops` to False.
+
+  ```python
+  op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
+  cbloq = op_wrapped_as_bloq.decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # We can also leverage Qualtran features to get resource counts and call graphs, among other things
+  from qualtran.drawing import show_call_graph, show_counts_sigma  
+
+  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(graph)
+  show_counts_sigma(sigma)
+  ```
+
 * A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
   This operator performs the plain addition of two integers in the computational basis.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
@@ -875,6 +940,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
+  when specifying the angle, due to the given hashing policy. The implementation was updated to ensure
+  correct hashing behavior for `float`, `numpy.array`, and `jax.numpy.array` inputs.
+  [(#7693)](https://github.com/PennyLaneAI/pennylane/pull/7693)
+
 * A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
   inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
   drawing.
@@ -1024,6 +1094,7 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
+Austin Huang,
 Anton Naim Ibrahim,
 William Maxwell
 Luis Alfredo Nuñez Meneses
