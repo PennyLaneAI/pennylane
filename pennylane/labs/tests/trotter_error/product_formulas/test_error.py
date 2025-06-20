@@ -28,8 +28,11 @@ from pennylane.labs.trotter_error import (
     "backend", ["serial", "mp_pool", "cf_procpool", "mpi4py_pool", "mpi4py_comm"]
 )
 @pytest.mark.parametrize("parallel_mode", ["state", "commutator"])
-def test_perturbation_error(backend, parallel_mode):
+def test_perturbation_error(backend, parallel_mode, mpi4py_support):
     """Test that perturbation error function runs without errors for different backends."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
     frag_labels = [0, 1, 1, 0]
     frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
