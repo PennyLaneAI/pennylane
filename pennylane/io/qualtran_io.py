@@ -545,6 +545,8 @@ def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs
         exp_bitsize=len(op.hyperparameters["x_wires"]),
         x_bitsize=len(op.hyperparameters["output_wires"]),
     )
+
+
 def _disable_custom_mapping(func):
     """Decorator to disable custom mapping and raise error for atomic gates."""
 
