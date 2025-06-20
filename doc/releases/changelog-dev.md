@@ -928,6 +928,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* Adjust workflow helper function `construct_batch` to be consistent with `set_shots` and other user transforms, following similar logic as `execute`.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs

@@ -388,7 +388,8 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
@@ -432,10 +433,11 @@ class TestConstructBatch:
     def test_qfunc_with_shots_arg(self):
         """Test that the tape uses device shots only when qfunc has a shots kwarg"""
 
-        dev = qml.device("default.qubit", shots=100)
+        dev = qml.device("default.qubit")
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):
