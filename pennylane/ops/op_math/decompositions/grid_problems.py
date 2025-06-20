@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class Ellipse:
             b & d
         \end{bmatrix}
 
-    The matrix is related to the equation of the ellipse :math:`ax^2 + 2bxy + cy^2 = 1` by:
+    The matrix is related to the equation of the ellipse :math:`ax^2 + 2bxy + dy^2 = 1` by:
 
     .. math::
         a = \frac{\sin^2(\theta)}{m^2} + \frac{\cos^2(\theta)}{n^2}
@@ -103,8 +103,8 @@ class Ellipse:
         )
 
     @property
-    def descriminant(self) -> float:
-        """Calculate the descriminant of the ellipse."""
+    def discriminant(self) -> float:
+        """Calculate the discriminant of the characteristic polynomial associated with the ellipse."""
         return (self.a + self.d) ** 2 - 4 * (self.a * self.d - self.b**2)
 
     @property
@@ -115,12 +115,12 @@ class Ellipse:
     @property
     def positive_semi_definite(self) -> bool:
         """Check if the ellipse is positive semi-definite."""
-        return self.descriminant >= 0
+        return (self.a + self.d) + math.sqrt(self.discriminant) >= 0
 
     @property
     def uprightness(self) -> float:
         """Calculate the uprightness of the ellipse (Eq. 32, arXiv:1403.2975)."""
-        return math.pi / (4 * self.e)
+        return math.pi / (2 * self.e) ** 2
 
     @staticmethod
     def b_from_uprightness(uprightness: float) -> float:
@@ -146,11 +146,11 @@ class Ellipse:
     def x_points(self, y: float) -> tuple[float, float]:
         """Compute the x-points of the ellipse for a given y-value."""
         y = float(y) - self.p[1]  # shift y to the origin
-        descriminant = y**2 * (self.b**2 - self.a * self.d) + self.a
-        if descriminant < 0:
+        discriminant = y**2 * (self.b**2 - self.a * self.d) + self.a
+        if discriminant < 0:
             raise ValueError(f"Point y={y} is outside the ellipse")
 
-        x0, d0 = self.p[0], math.sqrt(descriminant)
+        x0, d0 = self.p[0], math.sqrt(discriminant)
         x1 = (-self.b * y - d0) / self.a
         x2 = (-self.b * y + d0) / self.a
         return x0 + x1, x0 + x2
@@ -158,11 +158,11 @@ class Ellipse:
     def y_points(self, x: float) -> tuple[float, float] | None:
         """Compute the y-points of the ellipse for a given x-value."""
         x = float(x) - self.p[0]  # shift x to the origin
-        descriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
-        if descriminant < 0:
+        discriminant = (self.b * x) ** 2 - self.d * (self.a * x**2 - 1)
+        if discriminant < 0:
             raise ValueError(f"Point x={x} is outside the ellipse")
 
-        y0, d0 = self.p[1], math.sqrt(descriminant)
+        y0, d0 = self.p[1], math.sqrt(discriminant)
         y1 = (-self.b * x - d0) / self.d
         y2 = (-self.b * x + d0) / self.d
         return y0 + y1, y0 + y2
@@ -191,7 +191,7 @@ class Ellipse:
         p1, p2 = self.p
         gda, gdb, gdc, gdd = grid_op.inverse().flatten
 
-        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2))
+        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2), self.axes)
 
 
 class State:
@@ -226,15 +226,15 @@ class State:
         # Uses Definition A.1 of arXiv:1403.2975
         return self.e2.z - self.e1.z
 
-    def grid_op(self) -> GridOp:
-        """Calculate the grid operation of the state."""
+    def skew_grid_op(self) -> GridOp:
+        """Calculate the special grid operation for the state for reducing the skew."""
         # Uses Lemma A.5 (Step Lemma) of arXiv:1403.2975 for obtaining special grid op.
         grid_op = GridOp.from_string("I")
         state = State(self.e1, self.e2)
         while (skew := state.skew) >= 15:
             new_grid_op, state = state.reduce_skew()
             grid_op = grid_op * new_grid_op
-            if state.skew > 0.9 * skew:
+            if state.skew > 0.9 * skew:  # pragma: no cover
                 raise ValueError(f"Skew was not decreased for state {state}")
 
         return grid_op
@@ -246,7 +246,7 @@ class State:
 
     def apply_shift_op(self, k: int) -> tuple[State, int]:
         """Apply a shift operator to the state."""
-        # Uses Definition A.6 of arXiv:1403.2975
+        # Uses Definition A.6 and Lemma A.8 of arXiv:1403.2975
         k = int(math.floor((1 - self.bias) / 2))
         pk_pow, nk_pow = _LAMBDA**k, _LAMBDA**-k
         e1, e2 = copy(self.e1), copy(self.e2)
@@ -265,7 +265,7 @@ class State:
         Returns:
             tuple[GridOp, State]: A tuple containing the grid operation and the state with reduced skew.
         """
-        if any(not e.positive_semi_definite for e in (self.e1, self.e2)):
+        if any(not e.positive_semi_definite for e in (self.e1, self.e2)):  # pragma: no cover
             raise ValueError("Ellipse is not positive semi-definite")
 
         state, k = copy(self), 0
@@ -294,7 +294,7 @@ class State:
                 grid_op = grid_op * (GridOp.from_string("A") ** n)
             elif e1.z >= 0.8 and e2.z <= 0.3:
                 grid_op = grid_op * GridOp.from_string("K").adj2()
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Skew couldn't be reduced for the state {state}")
         else:
             if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
@@ -303,7 +303,7 @@ class State:
                 c = min(e1.z, e2.z)
                 n = int(max(1, math.floor((_LAMBDA**c) / 2)))
                 grid_op = grid_op * (GridOp.from_string("B") ** n)
-            else:
+            else:  # pragma: no cover
                 raise ValueError(f"Skew couldn't be reduced for the state {state}")
 
         if k != 0:
@@ -323,27 +323,41 @@ class GridOp:
         G = \begin{pmatrix} a & b \\ c & d \end{pmatrix}.
 
     Each entry :math:`m` of the matrix is of the form :math:`m = m_0 + m_1 / \sqrt{2}`,
-    where :math:`m_0, m_1 \in \mathbb{Z}` and :math:`a+b+c+d \equiv 0 \mod 2`.
+    where :math:`m_0, m_1 \in \mathbb{Z}`. They satisfy :math:`a_0+b_0+c_0+d_0 \equiv 0 (\mod 2)`
+    and :math:`a_1 \equiv b_1 \equiv c_1 \equiv d_1 (\mod 2)`.
 
     Args:
         a (tuple[int, int]): The a-coefficient of the grid operation.
         b (tuple[int, int]): The b-coefficient of the grid operation.
         c (tuple[int, int]): The c-coefficient of the grid operation.
         d (tuple[int, int]): The d-coefficient of the grid operation.
+        check_valid (bool): If ``True``, the grid operation will be checked to be a valid
+            grid operation. Default is ``True``.
+
+    .. note::
+        The coefficients are given as tuples of the form (a_0, a_1), which corresponds
+        to an element being :math:`a = a_0 + a_1 / \sqrt{2}`.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         a: tuple[int, int],
         b: tuple[int, int],
         c: tuple[int, int],
         d: tuple[int, int],
+        check_valid: bool = True,
     ) -> None:
         """Initialize the grid operation."""
         self.a = a
         self.b = b
         self.c = c
         self.d = d
+        if check_valid:
+            assert (a[0] + b[0] + c[0] + d[0]) % 2 == 0, "sum of a_0, b_0, c_0, d_0 must be even"
+            assert (
+                a[1] % 2 == b[1] % 2 == c[1] % 2 == d[1] % 2
+            ), "a_1, b_1, c_1, d_1 must have same parity"
 
     def __repr__(self) -> str:
         """Return a string representation of the grid operation."""
@@ -442,7 +456,10 @@ class GridOp:
 
     @property
     def determinant(self) -> tuple[float, float]:
-        """Calculate the determinant of the grid operation."""
+        r"""Calculate the determinant of the grid operation.
+
+        The determinant will be of form :math:`a + b / \sqrt{2}` and is given as tuple(a, b).
+        """
         return (
             self.a[0] * self.d[0]
             - self.b[0] * self.c[0]
@@ -573,7 +590,7 @@ class GridIterator:
         e1 = Ellipse.from_region(self.theta, e_, k)  # Ellipse for the epsilon-region.
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
-        grid_op = State(en, e2).grid_op()  # Grid operation for the epsilon-region.
+        grid_op = State(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
 
         if k == self.kmin:
             g_ = grid_op
@@ -684,7 +701,7 @@ class GridIterator:
         state: State,
         bbox1: tuple[float],
         bbox2: tuple[float],
-        num_b: bool,
+        num_b: list[bool],
         shift: ZOmega,
     ) -> Iterable[ZOmega]:
         r"""Iterates over the solutions to the grid problem for two upright rectangles.
@@ -695,11 +712,11 @@ class GridIterator:
         :math:`\mathbb{R}^2` of the form :math:`[x0, x1] \times [y0, y1]`.
 
         Args:
-            state: The state of the grid problem.
-            bbox1: The bounding box of the first rectangle.
-            bbox2: The bounding box of the second rectangle.
-            num_b: Whether the second rectangle is wider than the first.
-            shift: The shift operator.
+            state (State): The state of the grid problem.
+            bbox1 (tuple[float]): The bounding box of the first rectangle.
+            bbox2 (tuple[float]): The bounding box of the second rectangle.
+            num_b (list[bool]): Whether the second rectangle is wider than the first.
+            shift (ZOmega): The shift operator.
 
         Returns:
             Iterable[ZOmega]: The list of solutions to the upright grid problem for two rectangles.
@@ -708,7 +725,7 @@ class GridIterator:
         Ax0, Ax1, Ay0, Ay1 = bbox1
         Bx0, Bx1, By0, By1 = bbox2
 
-        if num_b[0]:  # If it is easier to solve for beta first.
+        if num_b[0]:  # pragma: no cover # If it is easier to solve for beta first.
             beta_solutions1 = self.solve_one_dim_problem(Ay0, Ay1, By0, By1)
             for beta in beta_solutions1:
                 Ax0_tmp, Ax1_tmp = e1.x_points(beta)
@@ -775,7 +792,7 @@ class GridIterator:
         y0_scaled, y1_scaled = sorted((y_scale * bbox[2], y_scale * bbox[3]))
 
         # Check if we are indeed within the intended interval.
-        if x1_scaled - x0_scaled < 1 - _SQRT2:
+        if x1_scaled - x0_scaled < 1 - _SQRT2:  # pragma: no cover
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
         # Use the constraints x0 <= a + b * sqrt(2) <= x1 and y0 <= a - b * sqrt(2) <= y1
@@ -832,7 +849,7 @@ class GridIterator:
         y0_scaled, y1_scaled = sorted((y_scale * y0, y_scale * y1))
 
         # Check if we are solving the problem for the intended interval.
-        if x1_scaled - x0_scaled < 1 - _SQRT2:
+        if x1_scaled - x0_scaled < 1 - _SQRT2:  # pragma: no cover
             bbox = (x0_scaled, x1_scaled, y0_scaled, y1_scaled)
             raise ValueError(f"Value should be larger than 1 - sqrt(2) for bbox {bbox}")
 
