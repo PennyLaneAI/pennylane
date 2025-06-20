@@ -81,6 +81,11 @@ class ResourceMultiRZ(ResourceOperator):
             Specifically, the resources are given by one :class:`~.ResourceRZ` gate and a cascade of
             :math:`2 * (n - 1)` :class:`~.ResourceCNOT` gates where :math:`n` is the number of qubits
             the gate acts on.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep(eps=eps)
