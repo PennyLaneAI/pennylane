@@ -592,6 +592,314 @@ class TestToBloq:
                     (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
                 },
             ),
+            (
+                qml.Superposition(
+                    coeffs=np.sqrt(np.array([1 / 3, 1 / 3, 1 / 3])),
+                    bases=np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]]),
+                    wires=[0, 1, 2],
+                    work_wire=3,
+                ),
+                # Inspired by Resource Superposition
+                {
+                    (
+                        qml.StatePrep(
+                            np.array([0.57735027, 0.57735027, 0.57735027]), wires=[2, 3], pad_with=0
+                        ),
+                        False,
+                    ): 1,
+                    (qml.CNOT([0, 1]), True): 2,
+                    (qml.MultiControlledX(wires=range(4), control_values=[1, 0, 0]), True): 4,
+                },
+            ),
+            (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
+            (
+                qml.QFT(wires=range(5)),
+                # From ResourceQFT
+                {
+                    (qml.H(0), True): 5,
+                    (qml.ControlledPhaseShift(1, [0, 1]), True): 10,
+                    (qml.SWAP([0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(
+                    np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
+                ),
+                {
+                    (
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                # From ResourceQROM
+                {
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        ),
+                        True,
+                    ): 4,
+                    (qml.X(0), True): 4,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["001"],
+                    control_wires=[],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=False,
+                ),
+                # From ResourceQROM
+                {
+                    (qml.X(0), True): 1,
+                },
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["000", "001"],
+                    control_wires=[4],
+                    target_wires=[1, 2, 3],
+                    work_wires=[0],
+                    clean=True,
+                ),
+                # From ResourceQROM
+                {
+                    (qml.Hadamard(0), True): 6,
+                    (qml.CNOT([0, 1]), True): 1,
+                    (
+                        qml.MultiControlledX(
+                            wires=[0, 1], control_values=[True], work_wires=range(2, 3)
+                        ),
+                        True,
+                    ): 8,
+                    (qml.X(0), True): 8,
+                    (qml.CSWAP([0, 1, 2]), True): 0.0,
+                },
+            ),
+            (
+                qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
+                {
+                    (
+                        qml.QROM(
+                            bitstrings=["001"],
+                            control_wires=[],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["001"],
+                                control_wires=[],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "001"],
+                            control_wires=[4],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "001"],
+                                control_wires=[4],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.QROM(
+                            bitstrings=["000", "000", "001", "001"],
+                            control_wires=[4, 5],
+                            target_wires=[1, 2, 3],
+                            work_wires=[0],
+                            clean=False,
+                        ),
+                        True,
+                    ): 1,
+                    (
+                        qml.adjoint(
+                            qml.QROM(
+                                bitstrings=["000", "000", "001", "001"],
+                                control_wires=[4, 5],
+                                target_wires=[1, 2, 3],
+                                work_wires=[0],
+                                clean=False,
+                            )
+                        ),
+                        True,
+                    ): 1,
+                    (qml.CRY(0.0, wires=[0, 1]), True): 6,
+                    (
+                        qml.ctrl(
+                            qml.GlobalPhase((2 * np.pi), wires=[1]),
+                            control=0,
+                        ),
+                        True,
+                    ): 3,
+                },
+            ),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                {
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), True): 1,
+                    (qml.ctrl(qml.QFT(range(4)), control=[4]), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 6,
+                },
+            ),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1, 2],
+                    output_wires=[3, 4, 5],
+                    base=3,
+                    mod=8,
+                    work_wires=[6, 7, 8, 9, 10],
+                ),
+                {
+                    (qml.ctrl(qml.QFT(range(3)), control=[4]), True): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), True): 1,
+                    (qml.Toffoli([0, 1, 2]), True): 21,
+                },
+            ),
+            (
+                qml.QSVT(
+                    UA=qml.H(0),
+                    projectors=[qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, -0.3)],
+                ),
+                {
+                    (qml.RZ(phi=-2.46, wires=0), True): 1,
+                    (qml.RZ(phi=1.0, wires=0), True): 1,
+                    (qml.Hadamard(0), True): 2,
+                    (qml.RZ(phi=0.6, wires=0), True): 1,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=2,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.RX(phi=0.012, wires=[0]), True): 2,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 2,
+                    (qml.CNOT(wires=[0, 1]), True): 2,
+                },
+            ),
+            (
+                qml.TrotterizedQfunc(
+                    0.1,
+                    *(0.12, -3.45),
+                    qfunc=lambda time, theta, phi, wires, flip: (
+                        qml.RX(time * theta, wires[0]),
+                        qml.RY(time * phi, wires[1]),
+                        qml.CNOT(wires=wires[:2]) if flip else None,
+                    ),
+                    n=1,
+                    order=1,
+                    wires=["a", "b"],
+                    flip=True,
+                ),
+                {
+                    (qml.RX(phi=0.012, wires=[0]), True): 1,
+                    (qml.RY(phi=-0.34500000000000003, wires=[0]), True): 1,
+                    (qml.CNOT(wires=[0, 1]), True): 1,
+                },
+            ),
+            (
+                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                {
+                    (qml.X(wires=[2]), True): 2,
+                    (qml.ctrl(qml.X(2), control=[0]), True): 1,
+                    (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
+                },
+            ),
+            (
+                qml.StatePrep(state=[0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25], wires=range(3)),
+                {(qml.RZ(0, wires=[0]), True): 27, (qml.CNOT([0, 1]), True): 16},
+            ),
         ],
     )
     def test_build_call_graph(self, op, qml_call_graph):
