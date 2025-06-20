@@ -695,6 +695,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* The `qml.measurements.Shots` class can now handle abstract numbers of shots.
+
 * Update `jax` and `tensorflow` dependencies for `doc` builds.
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
