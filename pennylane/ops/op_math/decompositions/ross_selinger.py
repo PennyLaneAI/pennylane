@@ -128,7 +128,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         # Get the normal form of the decomposition.
         dyd_mat = DyadicMatrix(u, -t.conj(), t, u.conj(), k=k)
         so3_mat = SO3Matrix(dyd_mat)
-        decomposition = _ma_normal_form(so3_mat)
+        decomposition, g_phase = _ma_normal_form(so3_mat)
 
         # Remove inverses if any in the decomposition and handle trivial case
         new_tape = qml.tape.QuantumScript(decomposition)
@@ -145,7 +145,8 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
 
     # TODO: Add the global phase information to the decomposition.
     interface = qml.math.get_interface(angle)
-    phase = 0.0 if isinstance(op, qml.RZ) else -math.pi / 2
+    phase = 0.0 if isinstance(op, qml.RZ) else angle
+    phase += qml.math.mod(g_phase, 2) * math.pi
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
