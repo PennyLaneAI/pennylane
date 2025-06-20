@@ -116,8 +116,8 @@ class ResourceAdjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
-                that we want the adjoint of.
+            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            that we want the adjoint of.
 
         """
         return {"base_cmpr_op": self.base_op}
