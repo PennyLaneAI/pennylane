@@ -22,7 +22,8 @@ from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, 
 
 @lru_cache
 def _clifford_group_to_SO3() -> dict:
-    """Return a dictionary mapping Clifford group elements to their corresponding SO(3) matrices."""
+    r"""Return a dictionary mapping Clifford group elements to their corresponding SO(3) matrices
+    and global phase scaled by :math:`\pi^{-1}`."""
     I, X, Y, Z = qml.I(0), qml.X(0), qml.Y(0), qml.Z(0)
     H, S, Sd = qml.H(0), qml.S(0), qml.adjoint(qml.S(0))
     # These are the Clifford group elements with :math:`\{−1, 0, 1\}` as their matrix entries.
@@ -57,12 +58,13 @@ def _clifford_group_to_SO3() -> dict:
 
 @lru_cache
 def _parity_transforms() -> dict:
-    """Returns information required to perform the parity transforms used in the _ma_normal_form.
+    r"""Returns information required to perform the parity transforms used in the _ma_normal_form.
 
     Returns:
         dict: A dictionary mapping parity vectors to tuples containing:
             - The SO(3) matrix representation of its inverse.
             - The PennyLane gate representation of the transformation.
+            - The global phase scaled by :math:`\pi^{-1}` of the transformation.
     """
     # The following dictionary maps the keys in the Matsumoto-Amano normal form to their:
     # 1. SO(3) matrix representation (useful for obtaining the parity vector)
