@@ -1819,7 +1819,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         hashable_hyperparameters = tuple(
             (key, value) for key, value in self.hyperparameters.items()
         )
-        print(f"here! {self.data}")
         return self.data, (self.wires, hashable_hyperparameters)
 
     @classmethod
