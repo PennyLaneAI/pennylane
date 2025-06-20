@@ -555,7 +555,7 @@ def _disable_custom_mapping(func):
         if kwargs.get("custom_mapping") and op in kwargs.get("custom_mapping", {}):
             raise ValueError(
                 "Custom mappings are not possible for basic operations. We suggest replacing basic operations "
-                "before or after mapping to Qualtran."
+                "such as X, Y, or other gates with direct Qualtran equivalents, before or after mapping to Qualtran."
             )
         return func(op, **kwargs)
 
