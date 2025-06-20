@@ -210,7 +210,7 @@ def _basis_state_decomp(state, wires, **__):
     def _loop(i):
         qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
 
-    _loop()
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(BasisState, _basis_state_decomp)
