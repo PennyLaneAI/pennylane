@@ -256,14 +256,10 @@ class PyDotGraphBuilder:
         """Adds a classical node to a cluster."""
         raise NotImplementedError("Classical nodes are not yet implemented in PyDotGraphBuilder.")
 
-    def render_graph(self, output_filename: str, view: bool = False) -> None:
+    def render_graph(self, output_filename: str) -> None:
         """Renders the graph to a file."""
+        shade_pydot_clusters_by_depth(self.graph)
         self.graph.write(output_filename, format="png")
-        if view:
-            from PIL import Image
-
-            img = Image.open(output_filename)
-            img.show()
 
     def add_edge(self, from_node: pydot.Node, to_node: pydot.Node, **attrs) -> None:
         """Adds an edge between two nodes in the graph."""
@@ -337,3 +333,109 @@ class PyDotGraphBuilder:
 
                 if isinstance(node, OperatorNode):
                     self.wires_to_nodes[wire] = [node]
+
+
+# --- Color Helper Functions (ensure these are defined as in previous examples) ---
+def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        raise ValueError("Invalid HEX color format. Expected #RRGGBB or RRGGBB.")
+    return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def _rgb_to_hex(rgb_tuple: tuple[float, float, float]) -> str:
+    return "#{:02x}{:02x}{:02x}".format(
+        max(0, min(255, int(rgb_tuple[0]))),
+        max(0, min(255, int(rgb_tuple[1]))),
+        max(0, min(255, int(rgb_tuple[2]))),
+    )
+
+
+def _get_color_shade_for_depth(
+    base_color_hex: str,
+    current_depth: int,
+    max_overall_depth: int,
+    start_factor: float = 1.0,
+    end_factor: float = 0.5,
+) -> str:
+    if max_overall_depth == 0:
+        current_shade_factor = start_factor
+    else:
+        current_shade_factor = start_factor - (
+            (start_factor - end_factor) * (current_depth / max_overall_depth)
+        )
+
+    lower_bound = min(start_factor, end_factor)
+    upper_bound = max(start_factor, end_factor)
+    current_shade_factor = max(lower_bound, min(upper_bound, current_shade_factor))
+
+    r_base, g_base, b_base = _hex_to_rgb(base_color_hex)
+    new_r = r_base * current_shade_factor
+    new_g = g_base * current_shade_factor
+    new_b = b_base * current_shade_factor
+    return _rgb_to_hex((new_r, new_g, new_b))
+
+
+def _collect_clusters_recursive(
+    graph_element, current_host_cluster_depth: int, collected_cluster_info: list
+):
+    subgraphs = graph_element.get_subgraphs()
+
+    for sg in subgraphs:
+        if "cluster_" in sg.get_name():
+
+            collected_cluster_info.append({"obj": sg, "depth": current_host_cluster_depth})
+            _collect_clusters_recursive(sg, current_host_cluster_depth + 1, collected_cluster_info)
+        else:
+            _collect_clusters_recursive(sg, current_host_cluster_depth, collected_cluster_info)
+
+
+# --- Main Shading Function ---
+def shade_pydot_clusters_by_depth(
+    graph: pydot.Graph,
+    base_bg_color_hex: str = "#ECF3ED",
+    start_factor: float = 1.0,
+    end_factor: float = 0.6,
+    default_cluster_border_color: str = "#000000",
+) -> None:
+    if not isinstance(graph, pydot.Graph):
+        raise TypeError("Input must be a pydot.Graph object.")
+
+    all_clusters_with_depths = []
+    _collect_clusters_recursive(graph, 0, all_clusters_with_depths)
+
+    if not all_clusters_with_depths:
+        return
+
+    max_depth = 0
+    if len(all_clusters_with_depths) > 0:
+        max_depth = max(item["depth"] for item in all_clusters_with_depths)
+
+    for item in all_clusters_with_depths:
+        cluster_obj = item["obj"]
+        depth = item["depth"]
+        if "ctrl" in cluster_obj.get_name():
+            base_bg_color_hex = "#F9F1A7"  # Khaki for control clusters
+        elif "adjoint" in cluster_obj.get_name():
+            base_bg_color_hex = "#FFB6C1"
+        else:
+            base_bg_color_hex = "#ECF3ED"
+        shaded_color = _get_color_shade_for_depth(
+            base_bg_color_hex, depth, max_depth, start_factor, end_factor
+        )
+        cluster_obj.set("style", "filled")
+        cluster_obj.set("fillcolor", shaded_color)
+        cluster_obj.set("bgcolor", shaded_color)
+        if default_cluster_border_color:
+            cluster_obj.set("color", default_cluster_border_color)
+        try:
+            r_f, g_f, b_f = _hex_to_rgb(shaded_color)
+            brightness = (r_f * 299 + g_f * 587 + b_f * 114) / 1000
+            current_fontcolor = cluster_obj.get_fontcolor()
+            if current_fontcolor is None:
+                if brightness < 128:
+                    cluster_obj.set("fontcolor", "white")
+                else:
+                    cluster_obj.set("fontcolor", "black")
+        except (ValueError, TypeError):
+            pass
