@@ -20,7 +20,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import pytest
 
-import pennylane as qml
+from pennylane import qchem
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import pes_generator
 from pennylane.qchem.vibrational.vibrational_class import _single_point
@@ -181,7 +181,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -241,7 +241,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
 def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -311,7 +311,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
 def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -349,7 +349,7 @@ def test_quad_order_error():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     with pytest.raises(ValueError, match="Number of sample points cannot be less than 1."):
         vibrational.vibrational_pes(mol, n_points=-1)
@@ -360,7 +360,7 @@ def test_dipole_order_error():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     with pytest.raises(
         ValueError,
@@ -388,7 +388,7 @@ def test_vibrational_pes(
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     vib_obj = vibrational.vibrational_pes(
         mol, dipole_level=dipole_level, cubic=True, num_workers=max_workers, backend=backend
@@ -431,3 +431,14 @@ def test_vibrational_pes(
                     )
                 else:
                     assert vib_obj.dipole_threemode is None
+
+
+def test_optimize_false():
+    r"""Test that VibrationalPES is constructed when geometry optimization is not requested."""
+
+    symbols = ["H", "F"]
+    geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
+    mol = qchem.Molecule(symbols, geometry)
+    pes = qchem.vibrational_pes(mol, optimize=False)
+
+    assert len(pes.freqs) == 1
