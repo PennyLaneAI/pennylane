@@ -554,7 +554,7 @@ def _disable_custom_mapping(func):
     def wrapper(op, **kwargs):
         if kwargs.get("custom_mapping") and op in kwargs.get("custom_mapping", {}):
             raise ValueError(
-                f"Custom mappings are not possible for basic operations. You may map basic operations "
+                "Custom mappings are not possible for basic operations. You may map basic operations "
                 "pre or post processing."
             )
         return func(op, **kwargs)
