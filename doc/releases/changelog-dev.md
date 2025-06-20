@@ -948,6 +948,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
+* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
