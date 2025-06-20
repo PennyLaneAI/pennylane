@@ -551,18 +551,18 @@ def _(op: qops.CZ, **kwargs):
 
 
 @_map_to_bloq.register
-def _(op: qops.Adjoint, custom_mapping=None, map_ops=True, **kwargs):
+def _(op: qops.Adjoint, map_ops=True, custom_mapping=None, **kwargs):
     return _map_to_bloq(op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs).adjoint()
 
 
 @_map_to_bloq.register
-def _(op: qops.Controlled, custom_mapping=None, map_ops=True, **kwargs):
+def _(op: qops.Controlled, map_ops=True, custom_mapping=None, **kwargs):
     if isinstance(op, qops.CNOT):
         return qt_gates.CNOT()
 
     ctrl_spec = CtrlSpec(cvs=[int(v) for v in op.control_values])
     return _map_to_bloq(
-        op.base, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+        op.base, map_ops=map_ops, custom_mapping=custom_mapping, **kwargs
     ).controlled(ctrl_spec)
 
 
