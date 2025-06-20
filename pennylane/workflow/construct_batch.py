@@ -546,7 +546,7 @@ def _is_within_user_bounds(level, num_user: int) -> bool:
 
     # Case 4: level is int - check if it's within user bounds
     if isinstance(level, int):
-        return level >= 0 and level <= num_user
+        return 0 <= level <= num_user
 
     # Case 5: level is slice - check if slice is fully contained within user bounds
     if isinstance(level, slice):
