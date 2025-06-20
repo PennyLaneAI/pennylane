@@ -1357,7 +1357,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
 
         Alternatively, users can provide a custom mapping that maps a PennyLane operator to a
-        specific Qualtran Bloq.
+        specific Qualtran Bloq. It is recommended to map operators at the high level, rather than
+        attempt to map operators that appear in the operator's decomposition.
 
         >>> from qualtran.bloqs.phase_estimation import TextbookQPE
         >>> from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
