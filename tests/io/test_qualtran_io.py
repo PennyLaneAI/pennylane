@@ -827,8 +827,8 @@ class TestToBloq:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), True): 1,
-                    (qml.ctrl(qml.QFT(range(4)), control=[4]), True): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), False): 1,
+                    (qml.ctrl(qml.QFT(range(4)), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
@@ -841,8 +841,8 @@ class TestToBloq:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.ctrl(qml.QFT(range(3)), control=[4]), True): 1,
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), True): 1,
+                    (qml.ctrl(qml.QFT(range(3)), control=[4]), False): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 21,
                 },
             ),
