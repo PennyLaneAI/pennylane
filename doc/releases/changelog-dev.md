@@ -519,6 +519,7 @@
 * Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
   experimental and not integrated.
   [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
+  [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678/)
   [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
 
 * Caching with finite shots now always warns about the lack of expected noise.
