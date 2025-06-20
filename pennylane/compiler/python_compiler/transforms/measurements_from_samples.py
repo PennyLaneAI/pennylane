@@ -387,6 +387,9 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
     """A rewrite pattern for the ``measurements_from_samples`` transform that matches and rewrites
     ``qml.probs()`` operations.
 
+    ..
+        TODO: This pattern assumes probs only acts on a single wire, which is too restrictive.
+
     Args:
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
@@ -412,7 +415,7 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
             # Same goes for the column/wire indices (the second argument).
             postprocessing_module = _postprocessing_probs(
                 jax.core.ShapedArray([self._shots, 1], float)
-            )  # , 0)
+            )
 
             postprocessing_func_op = self.get_postprocessing_func_from_module_and_insert(
                 postprocessing_module, postprocessing_func_name, probs_op
@@ -523,26 +526,61 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
 
 @xdsl_module
 @jax.jit
-def _postprocessing_expval(samples, wire):
-    """Post-processing to recover the expectation value from the given `samples` array."""
-    return jnp.mean(1.0 - 2.0 * samples[:, wire])
+def _postprocessing_expval(samples, column):
+    """Post-processing to recover the expectation value from the given `samples` array for each
+    requested `column` in the array.
+
+    This function assumes that the samples are in the computational basis (0s and 1s) and that the
+    observable operand of the expectation value has eigenvalues +1 and -1.
+
+    Args:
+        samples (jax.core.ShapedArray): Array of samples, with shape (shots, wires).
+        column (int, jax.core.ShapedArray): Column index (or indices) of the `samples` array over
+            which the expectation value is computed.
+
+    Returns:
+        jax.core.ShapedArray: The expectation value for each requested column.
+    """
+    return jnp.mean(1.0 - 2.0 * samples[:, column], axis=0)
 
 
 @xdsl_module
 @jax.jit
-def _postprocessing_var(samples, wire):
-    """Post-processing to recover the variance from the given `samples` array."""
+def _postprocessing_var(samples, column):
+    """Post-processing to recover the variance from the given `samples` array for each requested
+    `column` in the array.
+
+    This function assumes that the samples are in the computational basis (0s and 1s) and that the
+    observable operand of the variance has eigenvalues +1 and -1.
+
+    Args:
+        samples (jax.core.ShapedArray): Array of samples, with shape (shots, wires).
+        column (int, jax.core.ShapedArray): Column index (or indices) of the `samples` array over
+            which the variance is computed.
+
+    Returns:
+        jax.core.ShapedArray: The variance for each requested column.
+    """
     # We have to compute the variance manually here, rather than using jnp.var.
     # The reason is that jnp.var does not get lowered (for some reason) and is left as a call to an
     # undefined `_var` function in the generated module.
-    a = 1.0 - 2.0 * samples[:, wire]
-    return jnp.sum((a - jnp.mean(a)) ** 2) / a.size
+    a = 1.0 - 2.0 * samples[:, column]
+    return jnp.sum((a - jnp.mean(a)) ** 2, axis=0) / a.shape[0]
 
 
 @xdsl_module
 @jax.jit
 def _postprocessing_probs(samples):
-    """Post-processing to recover the probability values from the given `samples` array."""
+    """Post-processing to recover the probability values from the given `samples` array.
+
+    This function assumes that the samples are in the computational basis (0s and 1s).
+
+    ..
+        TODO: This function assumes probs is only acting on one wire!
+
+    Args:
+        samples (jax.core.ShapedArray): Array of samples, with shape (shots, wires).
+    """
     n_samples = samples.size
     probs_0 = jnp.sum(samples == 0) / n_samples
     probs_1 = jnp.sum(samples == 1) / n_samples
