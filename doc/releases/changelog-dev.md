@@ -618,7 +618,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The `Device` API now defaults `execution_config : Optional[ExecutionConfig] = None` instead of defaulting
+* The `Device` API now defaults `execution_config=None` instead of defaulting
   to `qml.devices.DefaultExecutionConfig`.  This prevents accidental mutation of a global variable that
   would alter the default behaviour on later executions.
   
