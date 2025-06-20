@@ -1079,16 +1079,17 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
     Similarly, the three-mode integrals can be obtained
     following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
 
-    These integrals can be computed efficiently by using the 
-    `Gauss-Hermite quadrature <https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature>`_, which
-    expresses the integral as
+    This function computes the coefficients :math:`C` efficiently by using the
+    `Gauss-Hermite quadrature <https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature>`_,
+    which expresses the integral as
 
     .. math::
 
         \sum_{p=1}^{P} w_p f(x_p),
 
     where :math:`P` is the degree of the quadrature with associated weights :math:`w` and quadrature
-    points :math:`x` obtained from the potential energy data along the normal modes.
+    points :math:`x` obtained from the potential energy data along the normal modes. The function
+    :math:`f(x)` represents the potential energy surface here.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
