@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 import pytest
+from pandas.conftest import ordered
 
 from pennylane.bose.bosonic import BoseWord
 from pennylane.qchem.vibrational.christiansen_ham import (
@@ -90,9 +91,16 @@ with h5py.File(cform_file, "r") as f:
     D3 = f["D3"][()]
 
 
-def test_christiansen_bosonic():
+@pytest.mark.parametrize(
+    ("ordered"),
+    [
+        True,
+        False,
+    ],
+)
+def test_christiansen_bosonic(ordered):
     """Test that christiansen_bosonic produces the correct bosonic operator."""
-    christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3)
+    christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3, ordered=ordered)
     christiansen_bos_op.simplify()
 
     ops, coeffs = zip(*list(christiansen_bos_op.items()))
