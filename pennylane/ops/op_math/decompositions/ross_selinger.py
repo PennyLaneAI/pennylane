@@ -14,10 +14,15 @@
 """Ross-Selinger (arXiv:1403.2975v3) implementation for approximate Pauli-Z rotation gate decomposition."""
 import math
 
+import jax.numpy as jnp
+
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine
-from pennylane.ops.op_math.decompositions.normal_forms import _ma_normal_form
+from pennylane.ops.op_math.decompositions.normal_forms import (
+    _clifford_group_to_SO3,
+    _ma_normal_form,
+)
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
@@ -52,7 +57,58 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     return 0.0, ZOmega(d=1)  # -pi/4 <= |theta| < pi/4 / 7pi/4 <= |theta| < 8pi/4
 
 
-def rs_decomposition(op, epsilon, *, max_trials=20):
+def _jit_rs_decomposition(wire, decomposition_info):
+    """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
+
+    Matsumoto-Amano normal form: (T|ε)(HT|SHT)*C
+    - (T|ε): Optional leading T gate
+    - (HT|SHT): Middle sequence of HT or SHT syllables
+    - C: Right most Clifford operator
+
+    Args:
+        wire (int): The wire to apply the decomposition to.
+        decomposition_info (tuple): The decomposition information.
+
+    Returns:
+        list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
+    """
+    ops = []
+    has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
+    syllable_sequence = jnp.array(syllable_sequence)
+
+    # Optional leading T gate
+    if has_leading_t:
+        ops.append(qml.T(wire))
+
+    # Middle sequence of HT or SHT syllables.
+    if syllable_sequence.shape[0] > 0:
+
+        @qml.for_loop(start=0, stop=syllable_sequence.shape[0])
+        def syllable_sequence_loop(i):
+            is_HT = syllable_sequence[i]
+
+            def compose_HT():
+                qml.H(wire)
+                qml.T(wire)
+
+            def compose_SHT():
+                qml.S(wire)
+                qml.H(wire)
+                qml.T(wire)
+
+            qml.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT)()
+
+        syllable_sequence_loop()
+        ops.append(syllable_sequence_loop.operation)
+
+    # Rightmost Clifford operator
+    clifford_ops = list(_clifford_group_to_SO3().keys())
+    ops += list(clifford_ops[clifford_op_idx])
+
+    return ops
+
+
+def rs_decomposition(op, epsilon, is_qjit=False, *, max_trials=20):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
     This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
@@ -69,6 +125,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
     Args:
         op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
         epsilon (float): The maximum permissible error.
+        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
 
     Keyword Args:
         max_trials (int): The maximum number of attempts to find a solution while performing the grid search according to the the Algorithm 7.6,
@@ -127,7 +184,13 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         # Get the normal form of the decomposition.
         dyd_mat = DyadicMatrix(u, -t.conj(), t, u.conj(), k=k)
         so3_mat = SO3Matrix(dyd_mat)
-        decomposition, g_phase = _ma_normal_form(so3_mat)
+
+        # If QJIT is active, use the compressed normal form.
+        if is_qjit:
+            decomposition_info, g_phase = _ma_normal_form(so3_mat, compressed=True)
+            decomposition = _jit_rs_decomposition(op.wires[0], decomposition_info)
+        else:
+            decomposition, g_phase = _ma_normal_form(so3_mat)
 
         # Remove inverses if any in the decomposition and handle trivial case
         new_tape = qml.tape.QuantumScript(decomposition)
