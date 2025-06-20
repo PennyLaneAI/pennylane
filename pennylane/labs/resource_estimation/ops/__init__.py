@@ -16,9 +16,12 @@ r"""This module contains resource operators for PennyLane Operators"""
 from .identity import ResourceGlobalPhase, ResourceIdentity
 
 from .op_math import (
+    ResourceAdjoint,
     ResourceCCZ,
     ResourceCH,
+    ResourceChangeBasisOp,
     ResourceCNOT,
+    ResourceControlled,
     ResourceControlledPhaseShift,
     ResourceCRot,
     ResourceCRX,
@@ -28,6 +31,8 @@ from .op_math import (
     ResourceCY,
     ResourceCZ,
     ResourceMultiControlledX,
+    ResourcePow,
+    ResourceProd,
     ResourceTempAND,
     ResourceToffoli,
 )

@@ -217,7 +217,7 @@ class TestEstimateResources:
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(ResourceTestT): round(1 / 1e-2) + round(1 / 1e-5),
+                resource_rep(ResourceTestT): round(1 / 1e-2) + round(1 / 1e-9),
                 resource_rep(ResourceTestCNOT): 7,
                 resource_rep(ResourceTestHadamard): 10,
             },

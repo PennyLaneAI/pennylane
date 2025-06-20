@@ -57,6 +57,18 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
+Arithmetic Operators:
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceAdjoint
+    ~ResourceChangeBasisOp
+    ~ResourceControlled
+    ~ResourcePow
+    ~ResourceProd
+
 Operators:
 ~~~~~~~~~~
 
@@ -143,4 +155,9 @@ from .ops import (
     ResourceCRot,
     ResourceControlledPhaseShift,
     ResourceTempAND,
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourceProd,
+    ResourceChangeBasisOp,
+    ResourcePow,
 )

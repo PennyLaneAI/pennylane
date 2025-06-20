@@ -65,11 +65,11 @@ DefaultGateSet = {
 
 # parameters for further configuration of the decompositions
 resource_config = {
-    "error_rx": 1e-5,
-    "error_ry": 1e-5,
-    "error_rz": 1e-5,
-    "precision_multiplexer": 1e-3,
-    "precision_qrom_state_prep": 1e-3,
+    "error_rx": 1e-9,
+    "error_ry": 1e-9,
+    "error_rz": 1e-9,
+    "precision_multiplexer": 1e-9,
+    "precision_qrom_state_prep": 1e-9,
 }
 
 

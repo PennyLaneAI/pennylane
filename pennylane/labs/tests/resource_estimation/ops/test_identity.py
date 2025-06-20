@@ -69,7 +69,10 @@ class TestIdentity:
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
         op = plre.ResourceIdentity(0)
+        op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
+
         assert op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values) == expected_res
+        assert op2.resource_decomp(**op2.resource_params) == expected_res
 
     identity_pow_data = (
         (1, [plre.GateCount(plre.ResourceIdentity.resource_rep(), 1)]),
@@ -118,6 +121,42 @@ class TestGlobalPhase:
         assert op.adjoint_resource_decomp() == [
             plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)
         ]
+
+    globalphase_ctrl_data = (
+        ([1], [1], [plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1)]),
+        (
+            [1, 2],
+            [1, 1],
+            [
+                plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 2),
+            ],
+        ),
+        (
+            [1, 2, 3],
+            [1, 0, 0],
+            [
+                plre.GateCount(plre.ResourcePhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 2),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("ctrl_wires, ctrl_values, expected_res", globalphase_ctrl_data)
+    def test_resource_controlled(self, ctrl_wires, ctrl_values, expected_res):
+        """Test that the controlled resources are as expected"""
+        num_ctrl_wires = len(ctrl_wires)
+        num_ctrl_values = len([v for v in ctrl_values if not v])
+
+        op = plre.ResourceGlobalPhase(wires=0)
+        op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
+        print(
+            "oper: ", expected_res, op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
+        )
+        assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
+            expected_res
+        )
+        assert repr(op2.resource_decomp(**op2.resource_params)) == repr(expected_res)
 
     globalphase_pow_data = (
         (1, [plre.GateCount(plre.ResourceGlobalPhase.resource_rep(), 1)]),

@@ -79,7 +79,6 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
         )
 
     def __repr__(self) -> str:
-
         class_name = self.__class__.__qualname__
         op_type_name = self.op_type.__name__
 
