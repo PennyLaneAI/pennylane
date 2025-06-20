@@ -20,19 +20,16 @@ from typing import Any, Dict
 
 class CompactHamiltonian:
     r"""A compact representation for the Hamiltonian of a quantum system.
-
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian
-            (e.g., "from_cdf", "from_thc", "from_vibrational").
+            (e.g., "cdf", "thc").
         **params (Any): Keyword arguments specific to the chosen construction method,
             such as ``num_orbitals``, ``num_fragments``, ``tensor_rank``, or ``num_modals``.
-
     .. details::
         :title: Usage Details
         The :code:`CompactHamiltonian` class is designed to be an alternative input to using the full
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.
-
         .. code-block:: python
             compact_ham = plre.CompactHamiltonian.from_cdf(num_orbitals=8, num_fragments=4)
             def circ():
@@ -48,70 +45,58 @@ class CompactHamiltonian:
           clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
          Gate breakdown:
           {'T': 3.684E+6, 'Adjoint(T)': 6.731E+4, 'Hadamard': 1.346E+5, 'S': 6.731E+4, 'Adjoint(S)': 6.731E+4, 'CNOT': 1.873E+5}
-
         Note that the specific parameters required for each method will depend on the
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:
-        - :meth:`from_cdf`: Saves the data for compressed double factorized Hamiltonian
-        - :meth:`from_thc`: Saves the data for tensor hypercontracted Hamiltonian
-
+        - :meth:`cdf`: Saves the data for compressed double factorized Hamiltonian
+        - :meth:`thc`: Saves the data for tensor hypercontracted Hamiltonian
     """
 
     def __init__(self, method_name: str, **params: Dict[str, Any]):
         self.method_name = method_name
         self.params = params
-        print(f"CompactHamiltonian instance created via {method_name} with params: {params}")
 
     @classmethod
-    def from_cdf(cls, num_orbitals: int, num_fragments: int):
+    def cdf(cls, num_orbitals: int, num_fragments: int):
         """Constructs a compressed double factorized Hamiltonian instance
-
         Args:
             num_orbitals (int): number of spatial orbitals
             num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
-
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with CDF parameters.
-
         """
-        return cls("from_cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
+        return cls("cdf", num_orbitals=num_orbitals, num_fragments=num_fragments)
 
     @classmethod
-    def from_thc(cls, num_orbitals: int, tensor_rank: int):
+    def thc(cls, num_orbitals: int, tensor_rank: int):
         """Constructs a tensor hypercontracted Hamiltonian instance
-
         Args:
             num_orbitals (int): number of spatial orbitals
             tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
-
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with THC parameters.
-
         """
-        return cls("from_thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
+        return cls("thc", num_orbitals=num_orbitals, tensor_rank=tensor_rank)
 
     @classmethod
-    def from_vibrational(cls, num_modes: int, grid_size: int, taylor_degree: int):
+    def vibrational(cls, num_modes: int, grid_size: int, taylor_degree: int):
         """Constructs a vibrational Hamiltonian instance
-
         Args:
             num_modes (int): number of vibrational modes
             grid_size (int): number of grid points used to discretize each mode
             taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
-
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with vibrational Hamiltonian parameters.
-
         """
         return cls(
-            "from_vibrational",
+            "vibrational",
             num_modes=num_modes,
             grid_size=grid_size,
             taylor_degree=taylor_degree,
         )
 
     @classmethod
-    def from_vibronic(cls, num_modes: int, num_states: int, grid_size: int, taylor_degree: int):
+    def vibronic(cls, num_modes: int, num_states: int, grid_size: int, taylor_degree: int):
         """Constructs a vibronic Hamiltonian instance
 
         Args:
@@ -122,10 +107,9 @@ class CompactHamiltonian:
 
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with vibronic Hamiltonian parameters.
-
         """
         return cls(
-            "from_vibronic",
+            "vibronic",
             num_modes=num_modes,
             num_states=num_states,
             grid_size=grid_size,

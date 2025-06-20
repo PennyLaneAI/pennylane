@@ -682,7 +682,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            print("Basis rot: ", num_frags * num_steps)
             gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
 
             gate_list.append(plre.GateCount(op_onebody, num_steps))
@@ -800,12 +799,6 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
-    Resource Parameters:
-        * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-          that stores information about the tensor hypercontracted Hamiltonian
-        * n (int): an integer representing the number of Trotter steps to perform
-        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
         operator in the :code:`first_order_expansion` is called a number of times given by the formula:
@@ -823,6 +816,14 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             \end{align}
 
     .. seealso:: :class:`~.TrotterProduct`
+
+        **Example**
+
+        The resources can be computed as:
+
+        >>> n, order = (1, 2)
+        >>> compact_ham = plre.CompactHamiltonian.from_thc(num_orbitals = 4, tensor_rank = 4)
+        >>> plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, n, order)
 
     """
 
@@ -912,33 +913,6 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                 that stores information about the tensor hypercontracted Hamiltonian
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-
-        Resources:
-            The resources are defined according to the recurrsive formula presented above. Specifically, each
-            operator in the single step trotter circuit is called a number of times given by the formula:
-
-            .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
-
-            Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
-            of the recurrsive formula. Those counts are further simplified by grouping like terms as:
-
-            .. math::
-
-                \begin{align}
-                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
-                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
-                \end{align}
-
-            The resources for single step trotter circuit are implemented based on Figure `4a` in
-            `Luo 2024 <https://arxiv.org/abs/2407.04432>`_.
-
-        **Example**
-
-        The resources can be computed as:
-
-        >>> n, order = (1, 2)
-        >>> compact_ham = plre.CompactHamiltonian.from_thc(num_orbitals = 4, tensor_rank = 4)
-        >>> plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, n, order)
 
         """
         k = order // 2
@@ -1066,21 +1040,13 @@ class ResourceTrotterVibrational(ResourceOperator):
     """Resource operator for Trotterizing Vibrational Hamiltonians.
 
     Args:
-        compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the vibrational Hamiltonian in real-space.
+        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real space vibrational
+            Hamiltonian we will be approximately exponentiating.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
         phase_grad_precision (float): precision for the phase gradient calculation
         coeff_precision (float): precision for the loading of coefficients
-        wires (list[int] or optional): the wires on which the operator acts.
-
-    Resource Parameters:
-        * compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the vibrational Hamiltonian in real-space.
-        * num_steps (int): number of Trotter steps to perform
-        * order (int): order of the approximation (must be 1 or even)
-        * phase_grad_precision (float): precision for the phase gradient calculation
-        * coeff_precision (float): precision for the loading of coefficients
+        wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
         The resources are defined according to Trotter-Suzuki product formula.
@@ -1090,12 +1056,18 @@ class ResourceTrotterVibrational(ResourceOperator):
     The resources can be computed as:
 
     **Example**
-    >>> compact_ham = plre.CompactHamiltonian.from_vibrational(num_modes=2, grid_size=4, taylor_degree=2)
+    >>> compact_ham = plre.CompactHamiltonian.vibrational(num_modes=2, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
     >>> res = plre.estimate_resources(plre.ResourceTrotterVibrational(compact_ham, num_steps, order))
     >>> print(res)
-
+    --- Resources: ---
+     Total qubits: 83.0
+     Total gates : 1.235E+5
+     Qubit breakdown:
+      clean qubits: 75.0, dirty qubits: 0.0, algorithmic qubits: 8
+     Gate breakdown:
+      {'Z': 1, 'S': 1, 'T': 358.0, 'X': 1.216E+3, 'Toffoli': 2.248E+4, 'CNOT': 3.520E+4, 'Hadamard': 6.420E+4}
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -1131,8 +1103,8 @@ class ResourceTrotterVibrational(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                  that stores information about the vibrational Hamiltonian in real-space
+                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real space vibrational
+                  Hamiltonian we will be approximately exponentiating.
                 * n (int): an integer representing the number of Trotter steps to perform
                 * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         """
@@ -1152,8 +1124,8 @@ class ResourceTrotterVibrational(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the vibrational Hamiltonian in real-space
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real space vibrational
+                Hamiltonian we will be approximately exponentiating.
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
@@ -1171,6 +1143,8 @@ class ResourceTrotterVibrational(ResourceOperator):
 
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
+        r"""Recursive function to compute the resources for the trotterization of vibrational Hamiltonian
+        while caching the coefficients."""
 
         cur_path, len_path = tuple(path), len(path)
         coeff_wires = abs(np.floor(np.log2(coeff_precision)))
@@ -1305,8 +1279,8 @@ class ResourceTrotterVibrational(ResourceOperator):
     def default_resource_decomp(
         cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
     ) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts."""
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition."""
 
         k = order // 2
         gate_list = []
@@ -1356,21 +1330,13 @@ class ResourceTrotterVibrational(ResourceOperator):
 class ResourceTrotterVibronic(ResourceOperator):
     """Resource operator for Trotterizing Vibrational Hamiltonians.
     Args:
-        compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the vibronic Hamiltonian in real-space.
+        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real-space vibronic
+            Hamiltonian we will be approximately exponentiating.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
         phase_grad_precision (float): precision for the phase gradient calculation
         coeff_precision (float): precision for the loading of coefficients
         wires (list[int] or optional): the wires on which the operator acts.
-
-    Resource Parameters:
-        * compact_ham (CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the vibronic Hamiltonian in real-space.
-        * num_steps (int): number of Trotter steps to perform
-        * order (int): order of the approximation (must be 1 or even)
-        * phase_grad_precision (float): precision for the phase gradient calculation
-        * coeff_precision (float): precision for the loading of coefficients
 
     Resources:
         The resources are defined according to Trotter-Suzuki product formula.
@@ -1380,12 +1346,18 @@ class ResourceTrotterVibronic(ResourceOperator):
     The resources can be computed as:
 
     **Example**
-    >>> compact_ham = plre.CompactHamiltonian.from_vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
+    >>> compact_ham = plre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
     >>> res = plre.estimate_resources(plre.ResourceTrotterVibronic(compact_ham, num_steps, order))
     >>> print(res)
-
+    --- Resources: ---
+     Total qubits: 85.0
+     Total gates : 1.328E+5
+     Qubit breakdown:
+      clean qubits: 75.0, dirty qubits: 0.0, algorithmic qubits: 10
+     Gate breakdown:
+      {'Z': 1, 'S': 1, 'T': 358.0, 'X': 1.456E+3, 'Hadamard': 6.636E+4, 'Toffoli': 2.320E+4, 'CNOT': 4.144E+4}
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -1423,8 +1395,8 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                  that stores information about the vibronic Hamiltonian in real-space
+                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real-space vibronic
+            Hamiltonian we will be approximately exponentiating.
                 * n (int): an integer representing the number of Trotter steps to perform
                 * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         """
@@ -1444,8 +1416,8 @@ class ResourceTrotterVibronic(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the vibronic Hamiltonian in real-space
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                Hamiltonian we will be approximately exponentiating.
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
@@ -1465,6 +1437,8 @@ class ResourceTrotterVibronic(ResourceOperator):
     def _cached_terms(
         num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index
     ):
+        r"""Recursive function to compute the resources for the trotterization of vibronic Hamiltonian
+        while caching the coefficients."""
 
         cur_path, len_path = tuple(path), len(path)
         coeff_wires = abs(int(np.floor(np.log2(coeff_precision))))
@@ -1628,8 +1602,8 @@ class ResourceTrotterVibronic(ResourceOperator):
     def default_resource_decomp(
         cls, compact_ham, num_steps, order, phase_grad_precision, coeff_precision, **kwargs
     ) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts."""
+        r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
+        and the number of times it occurs in the decomposition."""
 
         k = order // 2
         gate_list = []
