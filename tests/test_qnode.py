@@ -1395,16 +1395,6 @@ class TestShots:
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
-    def test_shots_initialization(self):
-        """Test that _shots is correctly initialized from the device."""
-        dev = qml.device("default.qubit", wires=1, shots=42)
-        qn = qml.QNode(dummyfunc, dev)
-        assert qn._shots == qml.measurements.Shots(42)
-
-        dev_analytic = qml.device("default.qubit", wires=1)
-        qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
-        assert qnode_analytic._shots is None or qnode_analytic._shots.total_shots is None
-
     def test_shots_update_with_device(self):
         """Test that _shots is updated when updating the QNode with a new device."""
         dev1 = qml.device("default.qubit", wires=1, shots=100)
@@ -2206,6 +2196,41 @@ class TestPrivateFunctions:
 class TestSetShots:
     """Tests for the set_shots decorator functionality."""
 
+    def test_shots_initialization(self):
+        """Test that _shots is correctly initialized from the device."""
+        dev = qml.device("default.qubit", wires=1, shots=42)
+        qn = qml.QNode(dummyfunc, dev)
+        assert qn._shots == qml.measurements.Shots(42)
+
+        dev_analytic = qml.device("default.qubit", wires=1)
+        qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
+        assert qnode_analytic._shots.total_shots is None
+
+    def test_shots_override_warning(self):
+        """Test that a warning is raised when both set_shots transform and shots parameter are used."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # First apply set_shots to override device shots
+        modified_circuit = qml.set_shots(circuit, shots=50)
+        assert modified_circuit._shots == qml.measurements.Shots(50)
+        assert modified_circuit._shots_override_device is True
+
+        # Then try to pass shots parameter when calling the QNode
+        with pytest.warns(
+            UserWarning,
+            match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+            "The transform will take precedence over",
+        ):
+            result = modified_circuit(shots=25)
+
+        # Verify that the set_shots value (50) was used, not the parameter value (25)
+        assert len(result) == 50
+
     def test_set_shots_partial_decorator(self):
         """Test set_shots with partial decorator syntax."""
         dev = qml.device("default.qubit", wires=1, shots=10)
@@ -2268,6 +2293,7 @@ class TestSetShots:
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
+        assert qml.math.allclose(result, np.cos(1.0))
 
     def test_set_shots_preserves_original_qnode(self):
         """Test that set_shots creates a new QNode without modifying the original."""

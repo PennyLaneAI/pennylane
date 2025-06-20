@@ -718,13 +718,13 @@ class QNode:
             if old_shots != kwargs["device"].shots:
                 warnings.warn(
                     "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `update_shots` to update the QNode's shots.",
+                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
                     UserWarning,
                 )
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        updated_qn = updated_qn.update_shots(old_shots)
+        updated_qn._set_shots(old_shots)  # pylint: disable=protected-access
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
@@ -757,7 +757,7 @@ class QNode:
         """
 
         self._shots = Shots(shots)
-        self._shots_override_device = bool(self._shots != self.device.shots)
+        self._shots_override_device = True
 
     # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
@@ -841,11 +841,19 @@ class QNode:
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
+        if "shots" in kwargs and self._shots_override_device:
+            _kwargs_shots = kwargs.pop("shots")
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                f"The transform will take precedence over 'shots={_kwargs_shots}.'",
+                UserWarning,
+                stacklevel=2,
+            )
 
-        if self._qfunc_uses_shots_arg:
-            shots = self.device.shots
+        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
+            shots = self._shots
         else:
-            shots = kwargs.pop("shots", self.device.shots)
+            shots = kwargs.pop("shots", self._shots)
 
         # QNode._shots precedency: 
         if self._shots_override_device:
@@ -900,14 +908,7 @@ class QNode:
 
         return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        if "shots" in kwargs and self._shots_override_device:
-            warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                "The transform will take precedence over 'shots='",
-                UserWarning,
-                stacklevel=2,
-            )
+    def __call__(self, *args, **kwargs) -> Result:
         if qml.capture.enabled():
             from ._capture_qnode import capture_qnode  # pylint: disable=import-outside-toplevel
 

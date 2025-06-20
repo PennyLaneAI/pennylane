@@ -15,8 +15,10 @@
 
 from .compiler import Compiler
 from .quantum_dialect import QuantumDialect as Quantum
+from .transforms.api import compiler_transform
 
 __all__ = [
     "Compiler",
+    "compiler_transform",
     "Quantum",
 ]
