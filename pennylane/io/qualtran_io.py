@@ -501,7 +501,7 @@ def _(
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
-    """Mapping for QFT maps to qt.QFTTextBook by default"""
+    """Mapping for QFT which maps to qt.QFTTextBook by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
