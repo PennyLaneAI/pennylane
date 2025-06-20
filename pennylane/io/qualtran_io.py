@@ -71,7 +71,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
 
 
 @singledispatch
-def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
+def _map_to_bloq(op, map_ops=True, custom_mapping=None,  **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
@@ -88,8 +88,8 @@ def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
 @_map_to_bloq.register
 def _(
     op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
-    custom_mapping=None,
     map_ops=True,
+    custom_mapping=None,
     **kwargs,
 ):
     from qualtran.bloqs.phase_estimation import RectangularWindowState
