@@ -29,3 +29,12 @@ from .parametric_ops_single_qubit import (
     ResourceRY,
     ResourceRZ,
 )
+from .parametric_ops_multi_qubit import (
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
+)

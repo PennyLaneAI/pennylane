@@ -103,6 +103,13 @@ Operators:
     ~ResourceCRot
     ~ResourceControlledPhaseShift
     ~ResourceTempAND
+    ~ResourceMultiRZ
+    ~ResourcePauliRot
+    ~ResourceIsingXX
+    ~ResourceIsingYY
+    ~ResourceIsingXY
+    ~ResourceIsingZZ
+    ~ResourcePSWAP
 
 """
 
@@ -154,6 +161,13 @@ from .ops import (
     ResourceCRZ,
     ResourceCRot,
     ResourceControlledPhaseShift,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
     ResourceTempAND,
     ResourceAdjoint,
     ResourceControlled,
