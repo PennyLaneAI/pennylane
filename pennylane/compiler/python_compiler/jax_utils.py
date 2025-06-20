@@ -130,15 +130,26 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  #
     return wrapper
 
 
+def inline_module(
+    from_mod: xbuiltin.ModuleOp, to_mod: xbuiltin.ModuleOp, change_main_to: str = None
+) -> None:
+    """Inline the contents of one xDSL module into another xDSL module. The inlined body is appended
+    to the end of ``to_mod``."""
+    if change_main_to:
+        main = xSymbolTable.lookup_symbol(from_mod, "main")
+        if main is not None:
+            assert isinstance(main, xfunc.FuncOp)
+            main.properties["sym_name"] = xbuiltin.StringAttr(change_main_to)
+
+    for op in from_mod.body.ops:
+        xSymbolTable.insert_or_update(to_mod, op.clone())
+
+
 def inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
     """Inline a ``jax.jit``-ed Python function to an xDSL module. The inlined body is appended
     to the end of ``mod``."""
     func_mod = _xdsl_module_inline(func, *args, **kwargs)
-    main_func = xSymbolTable.lookup_symbol(func_mod, "main")
-    main_func.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
-
-    for fn in func_mod.body.ops:
-        xSymbolTable.insert_or_update(mod, fn.clone())
+    inline_module(func_mod, mod, change_main_to=func.__name__)
 
 
 def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
