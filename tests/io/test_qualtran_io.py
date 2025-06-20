@@ -445,6 +445,11 @@ class TestToBloq:
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
         assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
+        with pytest.raises(
+            ValueError, match="Custom mappings are not possible for basic operations"
+        ):
+            qml.to_bloq(qml.X(0), custom_mapping={qml.X(0): qml.Y(0)})
+
     def test_to_bloq_circuits(self):
         """Tests that to_bloq functions as intended for complex circuits"""
 

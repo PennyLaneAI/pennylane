@@ -19,7 +19,7 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 # pylint: disable=unused-argument
 
 from collections import defaultdict
-from functools import cached_property, singledispatch
+from functools import cached_property, singledispatch, wraps
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -545,79 +545,107 @@ def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs
         exp_bitsize=len(op.hyperparameters["x_wires"]),
         x_bitsize=len(op.hyperparameters["output_wires"]),
     )
+def _disable_custom_mapping(func):
+    """Decorator to disable custom mapping and raise error for atomic gates."""
+
+    @wraps(func)
+    def wrapper(op, **kwargs):
+        if kwargs.get("custom_mapping") and op in kwargs.get("custom_mapping", {}):
+            raise ValueError(
+                f"Custom mappings are not possible for basic operations. You may map basic operations "
+                "pre or post processing."
+            )
+        return func(op, **kwargs)
+
+    return wrapper
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.GlobalPhase, **kwargs):
     return qt_gates.GlobalPhase(exponent=op.data[0] / np.pi)
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.Hadamard, **kwargs):
     return qt_gates.Hadamard()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.Identity, **kwargs):
     return qt_gates.Identity()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.RX, **kwargs):
     return qt_gates.Rx(angle=float(op.data[0]))
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.RY, **kwargs):
     return qt_gates.Ry(angle=float(op.data[0]))
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.RZ, **kwargs):
     return qt_gates.Rz(angle=float(op.data[0]))
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.S, **kwargs):
     return qt_gates.SGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.SWAP, **kwargs):
     return qt_gates.TwoBitSwap()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.CSWAP, **kwargs):
     return qt_gates.TwoBitCSwap()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.T, **kwargs):
     return qt_gates.TGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.X, **kwargs):
     return qt_gates.XGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.Y, **kwargs):
     return qt_gates.YGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.CY, **kwargs):
     return qt_gates.CYGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.Z, **kwargs):
     return qt_gates.ZGate()
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qops.CZ, **kwargs):
     return qt_gates.CZ()
 
@@ -639,6 +667,7 @@ def _(op: qops.Controlled, map_ops=True, custom_mapping=None, **kwargs):
 
 
 @_map_to_bloq.register
+@_disable_custom_mapping
 def _(op: qmeas.MeasurementProcess, **kwargs):
     return None
 
@@ -1398,7 +1427,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
 
         Alternatively, users can provide a custom mapping that maps a PennyLane operator to a
-        specific Qualtran Bloq.
+        specific Qualtran Bloq. It is recommended to map operators at the high level, rather than
+        attempt to map operators that appear in the operator's decomposition.
 
         >>> from qualtran.bloqs.phase_estimation import TextbookQPE
         >>> from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
