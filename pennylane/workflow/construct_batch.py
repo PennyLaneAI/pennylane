@@ -426,7 +426,7 @@ def construct_batch(
 
     """
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
-    has_shots_param = "shots" in inspect.signature(qnode.func).parameters
+    has_shots_param = qnode._shots_override_device  # pylint:disable=protected-access
     default_shots = qnode._shots  # pylint:disable=protected-access
 
     user_program = qnode.transform_program
