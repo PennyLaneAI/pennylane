@@ -11,15 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality."""
+"""
+Tests for Trotterization resource operators.
+"""
+import pytest
+import pennylane.labs.resource_estimation as plre
 
-from .trotter import ResourceTrotterProduct
-from .subroutines import (
-    ResourceOutOfPlaceSquare,
-    ResourcePhaseGradient,
-    ResourceOutMultiplier,
-    ResourceSemiAdder,
-    ResourceBasisRotation,
-    ResourceSelect,
-    ResourceQROM,
-)
+

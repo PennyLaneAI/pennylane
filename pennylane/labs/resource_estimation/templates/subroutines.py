@@ -33,6 +33,7 @@ from pennylane.wires import Wires
 
 
 class ResourceOutOfPlaceSquare(ResourceOperator):
+    # reference: Appendix G, Lemma 7 https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332
     resource_keys = {"register_size"}
 
     def __init__(self, register_size: int, wires=None):
@@ -75,7 +76,7 @@ class ResourcePhaseGradient(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, num_wires, **kwargs):
-        gate_counts = []
+        gate_counts = [GateCount(resource_rep(re.ResourceHadamard), num_wires)]
         if num_wires > 0:
             gate_counts.append(GateCount(resource_rep(re.ResourceZ)))
 
@@ -91,114 +92,9 @@ class ResourcePhaseGradient(ResourceOperator):
         return gate_counts
 
 
-class ResourceQFT(ResourceOperator):
-    r"""Resource class for QFT.
-
-    Args:
-        num_wires (int): the number of qubits the operation acts upon
-        wires (Iterable[Number, str], optional]): the wire(s) the operation acts on
-
-    Resources:
-        The resources are obtained from the standard decomposition of QFT as presented
-        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
-        <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
-
-    .. seealso:: :class:`~.QFT`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceQFT.resources(num_wires=3)
-    {Hadamard: 3, SWAP: 1, ControlledPhaseShift: 3}
-    """
-
-    resource_keys = {"num_wires"}
-
-    def __init__(self, num_wires, wires=None) -> None:
-        self.num_wires = num_wires
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of qubits the operation acts upon
-        """
-        return {"num_wires": self.num_wires}
-
-    @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            num_wires (int): the number of qubits the operation acts upon
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        params = {"num_wires": num_wires}
-        return CompressedResourceOp(cls, params)
-
-    @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Args:
-            num_wires (int): the number of qubits the operation acts upon
-
-        Resources:
-            The resources are obtained from the standard decomposition of QFT as presented
-            in (Chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
-            <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
-
-        """
-        hadamard = resource_rep(re.ResourceHadamard)
-        swap = resource_rep(re.ResourceSWAP)
-        ctrl_phase_shift = resource_rep(re.ResourceControlledPhaseShift)
-
-        return [
-            GateCount(hadamard, num_wires),
-            GateCount(swap, num_wires // 2),
-            GateCount(ctrl_phase_shift, num_wires * (num_wires - 1) // 2),
-        ]
-
-    @classmethod
-    def resources_via_phase_gradient(cls, num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-        The number of wires used is 2 * num_wires.
-
-        Args:
-            num_wires (int): the number of qubits the operation acts upon
-
-        Resources:
-            The resources are obtained from the `Efficient Controlled Phase Gradients post
-            <https://algassert.com/post/1708>`_.
-
-        """
-        t = resource_rep(re.ResourceT)
-        t_counter = 0
-
-        for k in range(1, num_wires):
-            # SemiAdder T-cost estimation. Deduce based in image 1 and non-simetrics cnots: https://arxiv.org/pdf/1709.06648
-            # TODO: Update once we have qml.SemiAdder
-            t_counter += 2 * (2 * (k - 1)) + 4 * (2 * k - 1)
-
-        hadamard = resource_rep(re.ResourceHadamard)
-        return [GateCount(hadamard, num_wires), GateCount(t, t_counter)]
-
-    @staticmethod
-    def tracking_name(num_wires) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        return f"QFT({num_wires})"
-
-
 class ResourceOutMultiplier(ResourceOperator):
+    # reference: Appendix G, Lemma 10 https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332
+
     resource_keys = {"a_num_qubits", "b_num_qubits"}
 
     def __init__(self, a_num_qubits, b_num_qubits, wires=None) -> None:
@@ -308,191 +204,6 @@ class ResourceSemiAdder(ResourceOperator):
         raise re.ResourcesNotDefined
 
 
-class ResourceQuantumPhaseEstimation(ResourceOperator):
-    r"""Resource class for QuantumPhaseEstimation (QPE).
-
-    Args:
-        unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
-            :class:`~.Operator`
-        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
-            If the unitary is specified as an operator, the target wires should already have been
-            defined as part of the operator. In this case, target_wires should not be specified.
-        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
-            estimation
-
-    Resource Parameters:
-        * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
-        * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
-        * num_estimation_wires (int): the number of wires used for measuring out the phase
-
-    Resources:
-        The resources are obtained from the standard decomposition of QPE as presented
-        in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
-        Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
-
-    .. seealso:: :class:`~.QuantumPhaseEstimation`
-
-    **Example**
-
-    The resources for this operation are computed using:
-
-    >>> re.ResourceQuantumPhaseEstimation.resources(
-    ...     base_class=re.ResourceQFT,
-    ...     base_params={"num_wires": 3},
-    ...     num_estimation_wires=3,
-    ... )
-    {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
-    """
-
-    resource_keys = {"base_cmpr_op", "num_estimation_wires"}
-
-    def __init__(self, U: ResourceOperator, precision, wires=None):
-        self.queue(remove_op=U)
-        base_op = U.resource_rep_from_op()
-
-        self.base_op = base_op
-        self.estimation_wires = abs(math.floor(math.log2(precision)))
-
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = None
-            self.num_wires = self.estimation_wires + U.num_wires
-
-    def queue(self, remove_op=None, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        if remove_op:
-            context.remove(remove_op)
-        context.append(self)
-        return self
-
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * base_class (Type(ResourceOperator)): The type of the operation corresponding to the phase estimation unitary.
-                * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
-                * num_estimation_wires (int): the number of wires used for measuring out the phase
-        """
-
-        return {
-            "base_cmpr_op": self.base_op,
-            "num_estimation_wires": self.estimation_wires,
-        }
-
-    @classmethod
-    def resource_rep(
-        cls,
-        base_cmpr_op,
-        num_estimation_wires,
-    ) -> CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
-            num_estimation_wires (int): the number of wires used for measuring out the phase
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        params = {
-            "base_cmpr_op": base_cmpr_op,
-            "num_estimation_wires": num_estimation_wires,
-        }
-        return CompressedResourceOp(cls, params)
-
-    @classmethod
-    def default_resource_decomp(
-        cls, base_cmpr_op, num_estimation_wires, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Args:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
-            num_estimation_wires (int): the number of wires used for measuring out the phase
-
-        Resources:
-            The resources are obtained from the standard decomposition of QPE as presented
-            in (section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
-            Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
-        """
-        hadamard = resource_rep(re.ResourceHadamard)
-        adj_qft = resource_rep(
-            re.ResourceAdjoint,
-            {
-                "base_cmpr_op": resource_rep(ResourceQFT, {"num_wires": num_estimation_wires}),
-            },
-        )
-        ctrl_op = resource_rep(
-            re.ResourceControlled,
-            {
-                "base_cmpr_op": base_cmpr_op,
-                "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
-            },
-        )
-
-        return [
-            GateCount(hadamard, num_estimation_wires),
-            GateCount(ctrl_op, (2**num_estimation_wires) - 1),
-            GateCount(adj_qft, 1),
-        ]
-
-    @staticmethod
-    def tracking_name(base_cmpr_op, num_estimation_wires) -> str:
-        r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_cmpr_op.name
-        return f"QPE({base_name}, {num_estimation_wires})"
-
-
-ResourceQPE = ResourceQuantumPhaseEstimation  # Alias for ease of typing
-r"""Resource class for QuantumPhaseEstimation (QPE).
-
-Args:
-    unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
-        :class:`~.Operator`
-    target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
-        If the unitary is specified as an operator, the target wires should already have been
-        defined as part of the operator. In this case, target_wires should not be specified.
-    estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
-        estimation
-
-Resource Parameters:
-    * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
-    * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
-    * num_estimation_wires (int): the number of wires used for measuring out the phase
-
-Resources:
-    The resources are obtained from the standard decomposition of QPE as presented
-    in (Section 5.2) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum
-    Information <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
-
-.. seealso:: :class:`~.QuantumPhaseEstimation`
-
-**Example**
-
-The resources for this operation are computed using:
-
->>> re.ResourceQuantumPhaseEstimation.resources(
-...     base_class=re.ResourceQFT,
-...     base_params={"num_wires": 3},
-...     num_estimation_wires=3,
-... )
-{Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
-"""
-
-
 class ResourceBasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
@@ -514,8 +225,15 @@ class ResourceBasisRotation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceBasisRotation.resources(dim_N=3)
-    {PhaseShift: 6.0, SingleExcitation: 3.0}
+    >>> basis_rot = plre.ResourceBasisRotation(dim_N = 5)
+    >>> print(plre.estimate_resources(basis_rot))
+    --- Resources: ---
+    Total qubits: 5
+    Total gates : 1.740E+3
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 5
+    Gate breakdown:
+     {'T': 1.580E+3, 'S': 60, 'Z': 40, 'Hadamard': 40, 'CNOT': 20}
     """
 
     resource_keys = {"dim_N"}
@@ -525,7 +243,7 @@ class ResourceBasisRotation(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def default_resource_decomp(cls, dim_N, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, dim_N, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -539,11 +257,16 @@ class ResourceBasisRotation(ResourceOperator):
             the resources are given as :math:`dim_N * (dim_N - 1) / 2` instances of the
             :class:`~.ResourceSingleExcitation` gate, and :math:`dim_N * (1 + (dim_N - 1) / 2)` instances
             of the :class:`~.ResourcePhaseShift` gate.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         phase_shift = resource_rep(re.ResourcePhaseShift)
         single_excitation = resource_rep(re.ResourceSingleExcitation)
 
-        se_count = dim_N * (dim_N - 1) / 2
+        se_count = dim_N * (dim_N - 1) // 2
         ps_count = dim_N + se_count
 
         return [GateCount(phase_shift, ps_count), GateCount(single_excitation, se_count)]
@@ -689,7 +412,7 @@ class ResourceSelect(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def textbook_resources(cmpr_ops, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def textbook_resources(cmpr_ops, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -757,27 +480,22 @@ class ResourceQROM(ResourceOperator):
     """Resource class for the QROM template.
 
     Args:
-        bitstrings (list[str]): the bitstrings to be encoded
-        control_wires (Sequence[int]): the wires where the indexes are specified
-        target_wires (Sequence[int]): the wires where the bitstring is loaded
-        work_wires (Sequence[int]): the auxiliary wires used for the computation
-        clean (bool): if True, the work wires are not altered by operator, default is ``True``
-
-    Resource Parameters:
-        * num_bitstrings (int): the number of bitstrings that are to be encoded
-        * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-        * num_control_wires (int): the number of control wires where in the indexes are specified
-        * num_work_wires (int): the number of auxiliary wires used for QROM computation
-        * size_bitstring (int): the length of each bitstring
-        * clean (bool): if True, the work wires are not altered by the QROM operator
+        num_bitstrings (int): the number of bitstrings that are to be encoded
+        size_bitstring (int): the length of each bitstring
+        num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+            :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+        clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+            (at the cost of higher gate counts). Defaults to :code`True`.
+        select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+            will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+            Defaults to :code:`None`, which internally determines the optimal depth.
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources for QROM are taken from the following two papers:
-        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
-        `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
-
-        We use the one-auxillary qubit version of select, instead of the built-in select
-        resources.
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
+        :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
+        (Figure 4) for :code:`clean = True`.
 
     .. seealso:: :class:`~.QROM`
 
@@ -785,15 +503,19 @@ class ResourceQROM(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceQROM.resources(
-    ...     num_bitstrings=3,
-    ...     num_bit_flips=7,
-    ...     num_control_wires=5,
-    ...     num_work_wires=5,
-    ...     size_bitstring=3,
-    ...     clean=True
+    >>> qrom = plre.ResourceQROM(
+    ...     num_bitstrings=10,
+    ...     size_bitstring=4,
     ... )
-    {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
+    >>> print(plre.estimate_resources(qrom))
+    --- Resources: ---
+    Total qubits: 11
+    Total gates : 178.0
+    Qubit breakdown:
+     clean qubits: 3, dirty qubits: 0, algorithmic qubits: 8
+    Gate breakdown:
+     {'Hadamard': 56, 'X': 34, 'CNOT': 72.0, 'Toffoli': 16}
+
     """
 
     resource_keys = {
@@ -829,8 +551,8 @@ class ResourceQROM(ResourceOperator):
         size_bitstring,
         num_bit_flips=None,
         clean=True,
-        wires=None,
         select_swap_depth=None,
+        wires=None,
     ) -> None:
         self.clean = clean
         self.num_bitstrings = num_bitstrings
@@ -859,15 +581,31 @@ class ResourceQROM(ResourceOperator):
         select_swap_depth=None,
         clean=True,
         **kwargs,
-    ) -> Dict[CompressedResourceOp, int]:
-        r"""The resources for QROM are taken from the following two papers:
-        (https://arxiv.org/pdf/1812.00954, figure 1.c) and
-        (https://arxiv.org/pdf/1902.02134, figure 4).
+    ) -> list[GateCount]:
+        r"""Returns a list of GateCount objects representing the operator's resources.
 
-        Note: we use the unary iterator trick to implement the Select. This
-        implementation assumes we have access to :math:`S + 1` additional
-        work qubits, where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is
-        the number of batches of unitaries to select.
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+                (at the cost of higher gate counts). Defaults to :code`True`.
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                Defaults to :code:`None`, which internally determines the optimal depth.
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            The resources for QROM are taken from the following two papers:
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
+            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
+            (Figure 4) for :code:`clean = True`.        
+
+            Note: we use the unary iterator trick to implement the Select. This
+            implementation assumes we have access to :math:`n - 1` additional
+            work qubits, where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is
+            the number of batches of unitaries to select.
         """
 
         if select_swap_depth:
@@ -996,6 +734,37 @@ class ResourceQROM(ResourceOperator):
         clean=True,
         **kwargs,
     ):
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            size_bitstring (int): the length of each bitstring
+            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+                (at the cost of higher gate counts). Defaults to :code`True`.
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                Defaults to :code:`None`, which internally determines the optimal depth.
+
+        Resources:
+            The resources for QROM are taken from the following two papers:
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
+            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
+            (Figure 4) for :code:`clean = True`.        
+
+            Note: we use the single-controlled unary iterator trick to implement the Select. This
+            implementation assumes we have access to :math:`n - 1` additional work qubits, 
+            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of 
+            unitaries to select.
+                
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.        
+        """
         gate_cost = []
         if ctrl_num_ctrl_values:
             x = re.ResourceX.resource_rep()
@@ -1034,11 +803,14 @@ class ResourceQROM(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
-                * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-                * num_control_wires (int): the number of control wires where in the indexes are specified
-                * num_work_wires (int): the number of auxiliary wires used for QROM computation
                 * size_bitstring (int): the length of each bitstring
-                * clean (bool): if True, the work wires are not altered by the QROM operator
+                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+                * clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+                (at the cost of higher gate counts). Defaults to :code`True`.
+                * select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                Defaults to :code:`None`, which internally determines the optimal depth.
         """
 
         return {
@@ -1055,19 +827,22 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings,
         size_bitstring,
         num_bit_flips=None,
-        select_swap_depth=None,
         clean=True,
+        select_swap_depth=None,
     ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             num_bitstrings (int): the number of bitstrings that are to be encoded
-            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
-            num_control_wires (int): the number of control wires where in the indexes are specified
-            num_work_wires (int): the number of auxiliary wires used for QROM computation
             size_bitstring (int): the length of each bitstring
-            clean (bool): if True, the work wires are not altered by the QROM operator
+            num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
+                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+                (at the cost of higher gate counts). Defaults to :code`True`.
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation

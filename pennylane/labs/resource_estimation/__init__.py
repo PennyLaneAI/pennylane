@@ -121,11 +121,8 @@ Templates:
     ~ResourceTrotterProduct
     ~ResourceOutOfPlaceSquare
     ~ResourcePhaseGradient
-    ~ResourceQFT
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
-    ~ResourceQuantumPhaseEstimation
-    ~ResourceQPE
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
@@ -200,11 +197,8 @@ from .templates import (
     ResourceTrotterProduct,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
-    ResourceQFT,
     ResourceOutMultiplier,
     ResourceSemiAdder,
-    ResourceQuantumPhaseEstimation,
-    ResourceQPE,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
