@@ -91,7 +91,7 @@ def device(name, *args, **kwargs):
       operations associated with numerical computations.
 
     Additional devices are supported through plugins — see
-    the  `available plugins <https://pennylane.ai/plugins>`_ for more
+    the  `available plugins <https://pennylane.ai/devices>`_ for more
     details. To list all currently installed devices, run
     :func:`qml.about <pennylane.about>`.
 
