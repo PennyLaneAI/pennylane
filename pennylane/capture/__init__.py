@@ -161,7 +161,6 @@ If needed, developers can also override the implementation method of the primiti
 from typing import Callable, Type
 
 from .switches import disable, enable, enabled, pause
-from .promote_consts import promote_consts
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph
