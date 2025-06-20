@@ -188,7 +188,7 @@ class BasisState(StatePrepBase):
 def _basis_state_decomp_resources(num_wires):
     # Represent one of the X gates as an RX and a GlobalPhase because RX is
     # used when jax-jit is enabled without capture/qjit.
-    return {qml.X: num_wires - 1, qml.RX: 1, qml.GlobalPhase: 1}
+    return {qml.X: num_wires, qml.RX: 1, qml.GlobalPhase: 1}
 
 
 @register_resources(_basis_state_decomp_resources)
