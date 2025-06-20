@@ -534,7 +534,6 @@ def clifford_t_decomposition(
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
-        _CLIFFORD_T_CACHE = None
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
             method, epsilon, cache_size, **method_kwargs
         ):

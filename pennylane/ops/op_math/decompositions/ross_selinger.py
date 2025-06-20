@@ -54,7 +54,7 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     return 0.0, ZOmega(d=1)  # -pi/4 <= |theta| < pi/4 / 7pi/4 <= |theta| < 8pi/4
 
 
-def _jit_rs_decomposition(op, decomposition_info):
+def _jit_rs_decomposition(wire, decomposition_info):
     """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
 
     Matsumoto-Amano normal form: (T|ε)(HT|SHT)*C
@@ -63,14 +63,13 @@ def _jit_rs_decomposition(op, decomposition_info):
     - C: Right most Clifford operator
 
     Args:
-        op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
+        wire (int): The wire to apply the decomposition to.
         decomposition_info (tuple): The decomposition information.
 
     Returns:
         list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
     """
     ops = []
-    wire = op.wires[0]
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
     has_leading_t = jnp.bool(has_leading_t)
     syllable_sequence = jnp.array(syllable_sequence)
@@ -81,23 +80,25 @@ def _jit_rs_decomposition(op, decomposition_info):
     ops.append(leading_t_cond.operation)
 
     # Middle sequence of HT or SHT syllables.
-    @qml.for_loop(start=0, stop=syllable_sequence.shape[0])
-    def syllable_sequence_loop(i):
-        is_HT = syllable_sequence[i]
+    if syllable_sequence.shape[0] > 0:
 
-        def compose_HT():
-            qml.H(wire)
-            qml.T(wire)
+        @qml.for_loop(start=0, stop=syllable_sequence.shape[0])
+        def syllable_sequence_loop(i):
+            is_HT = syllable_sequence[i]
 
-        def compose_SHT():
-            qml.S(wire)
-            qml.H(wire)
-            qml.T(wire)
+            def compose_HT():
+                qml.H(wire)
+                qml.T(wire)
 
-        qml.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT)()
+            def compose_SHT():
+                qml.S(wire)
+                qml.H(wire)
+                qml.T(wire)
 
-    syllable_sequence_loop()
-    ops.append(syllable_sequence_loop.operation)
+            qml.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT)()
+
+        syllable_sequence_loop()
+        ops.append(syllable_sequence_loop.operation)
 
     # Rightmost Clifford operator
     clifford_ops = list(_clifford_group_to_SO3().keys())
@@ -188,7 +189,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         # If QJIT is active, use the compressed normal form.
         if qml.compiler.active_compiler() == "catalyst":
             decomposition_info = _ma_normal_form(so3_mat, compressed=True)
-            decomposition = _jit_rs_decomposition(op, decomposition_info)
+            decomposition = _jit_rs_decomposition(op.wires[0], decomposition_info)
         else:
             decomposition = _ma_normal_form(so3_mat)
 >>>>>>> bf4323d48 (Enable back caching for map_wire)
