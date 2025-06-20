@@ -191,13 +191,11 @@
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
-
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It 
   requires one input and takes in two optional inputs:
   * circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
   * map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when False. Default is True.
   * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
-
   The following example converts a PennyLane Operator into a Qualtran Bloq:
 
   ```python
@@ -1034,6 +1032,7 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
+Austin Huang,
 Anton Naim Ibrahim,
 Oumarou Oumarou,
 Lee J. O'Riordan,

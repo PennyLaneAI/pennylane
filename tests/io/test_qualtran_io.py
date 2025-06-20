@@ -547,7 +547,7 @@ class TestToBloq:
         assert cg == {
             qml.to_bloq(qml.Hadamard(0), True): 4,
             qml.to_bloq(qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+            qml.to_bloq(qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
         }
 
     def test_map_to_bloq(self):
@@ -604,7 +604,7 @@ class TestToBloq:
                 {
                     (qml.Hadamard(0), True): 4,
                     (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-                    (qml.adjoint(qml.QFT(wires=range(1, 5))), True): 1,
+                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
                 },
             ),
             (
@@ -832,8 +832,8 @@ class TestToBloq:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), True): 1,
-                    (qml.ctrl(qml.QFT(range(4)), control=[4]), True): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), False): 1,
+                    (qml.ctrl(qml.QFT(range(4)), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
@@ -846,8 +846,8 @@ class TestToBloq:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.ctrl(qml.QFT(range(3)), control=[4]), True): 1,
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), True): 1,
+                    (qml.ctrl(qml.QFT(range(3)), control=[4]), False): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 21,
                 },
             ),
@@ -922,10 +922,7 @@ class TestToBloq:
         bloq_call_graph = {}
 
         for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
-            if k[1]:  # bool decides whether or not to use map
-                bloq_call_graph[qml.to_bloq(k[0])] = v
-            else:
-                bloq_call_graph[qml.ToBloq(k[0])] = v
+            bloq_call_graph[qml.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph(op)
         assert dict(call_graph) == bloq_call_graph
@@ -942,6 +939,36 @@ class TestToBloq:
                 ),
                 "qpe_bloq",
             ),
+            (qml.QFT(wires=range(4)), "qft_bloq"),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                "modexp_bloq",
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_bloq_clean",
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                    clean=False,
+                ),
+                "qrom_bloq_dirty",
+            ),
         ],
     )
     def test_default_mapping(self, op, qt_bloq):
@@ -949,14 +976,22 @@ class TestToBloq:
 
         def _build_expected_qualtran_bloq(qt_bloq):
             """Factory function inside for parametrization of test cases"""
+            from qualtran.bloqs.cryptography.rsa import ModExp
+            from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+            from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+            from qualtran.bloqs.qft import QFTTextBook
 
             qualtran_bloqs = {
                 "qpe_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=RectangularWindowState(4),
                 ),
+                "qft_bloq": QFTTextBook(4),
+                "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
+                "qrom_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
+                "qrom_bloq_dirty": SelectSwapQROM.build_from_data([2, 7, 6, 0]),
             }
 
             return qualtran_bloqs[qt_bloq]
@@ -984,6 +1019,28 @@ class TestToBloq:
                 "qsvt_custom_mapping",
                 "qsvt_custom_bloq",
             ),
+            (qml.QFT(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                "modexp_custom_mapping",
+                "modexp_custom_bloq",
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_custom_mapping",
+                "qrom_custom_bloq",
+            ),
         ],
     )
     def test_custom_mapping(self, op, custom_map, qt_bloq):
@@ -1000,6 +1057,18 @@ class TestToBloq:
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "qsvt_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "qft_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "modexp_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "qrom_custom_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
@@ -1024,6 +1093,35 @@ class TestToBloq:
                 "qsvt_custom_mapping": {
                     qml.QSVT(
                         qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "qft_custom_mapping": {
+                    qml.QFT(wires=range(4)): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "modexp_custom_mapping": {
+                    qml.ModExp(
+                        x_wires=[0, 1],
+                        output_wires=[2, 3, 4],
+                        base=2,
+                        mod=7,
+                        work_wires=[5, 6, 7, 8, 9],
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "qrom_custom_mapping": {
+                    qml.QROM(
+                        bitstrings=["010", "111", "110", "000"],
+                        control_wires=[0, 1],
+                        target_wires=[2, 3, 4],
+                        work_wires=[5, 6, 7],
                     ): TextbookQPE(
                         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),

@@ -400,7 +400,7 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_wires = num_work_wires - 1
         num_aux_swap = num_aux_wires - 1
 
-    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)))
+    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)), map_ops=False)
     qft_dag = qft.adjoint()
 
     sequence = _map_to_bloq(
@@ -452,6 +452,31 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, **kwargs):
     return ToBloq(op, map_ops=map_ops, **kwargs)
 
 
+def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
+    """
+    Handles the custom mapping and wrapping logic
+
+    Args:
+        op (Operation): a PennyLane operator to be converted to a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
+            as a ``ToBloq`` when False. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. Default is None.
+
+    Returns:
+        Optional[`Bloq`]: A ``ToBloq`` or the ``Bloq`` defined in the custom mapping. ``None`` if
+            map_ops is True but no custom mapping is found.
+    """
+
+    if not map_ops:
+        return ToBloq(op, **kwargs)
+
+    if custom_mapping is not None and op in custom_mapping:
+        return custom_mapping[op]
+
+    return None
+
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
@@ -463,15 +488,62 @@ def _(
     from qualtran.bloqs.phase_estimation import RectangularWindowState
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-    if not map_ops:
-        return ToBloq(op, **kwargs)
-
-    if custom_mapping is not None:
-        return custom_mapping[op]
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
 
     return TextbookQPE(
         unitary=_map_to_bloq(op.hyperparameters["unitary"]),
         ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+    )
+
+
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
+    """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
+    from qualtran.bloqs.qft import QFTTextBook
+
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
+
+    return QFTTextBook(len(op.wires))
+
+
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
+    """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
+    from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+    from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
+
+    data = np.array([int(b, 2) for b in op.bitstrings])
+    if op.clean:
+        return QROAMClean.build_from_data(data)
+
+    return SelectSwapQROM.build_from_data(data)
+
+
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs):
+    """Mapping for ``ModExp``"""
+    from qualtran.bloqs.cryptography.rsa import ModExp
+
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
+
+    return ModExp(
+        base=op.hyperparameters["base"],
+        mod=op.hyperparameters["mod"],
+        exp_bitsize=len(op.hyperparameters["x_wires"]),
+        x_bitsize=len(op.hyperparameters["output_wires"]),
     )
 
 
