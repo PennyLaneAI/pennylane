@@ -539,7 +539,6 @@ def clifford_t_decomposition(
 
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
-        _CLIFFORD_T_CACHE = None
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
             method, epsilon, cache_size, is_qjit, **method_kwargs
         ):
@@ -561,7 +560,10 @@ def clifford_t_decomposition(
                 phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                 # Map the operations to the original wires
                 op_wire = op.wires[0]
-                decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
+                if is_qjit:
+                    decomp_ops.extend(clifford_ops[:-1])
+                else:
+                    decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
 

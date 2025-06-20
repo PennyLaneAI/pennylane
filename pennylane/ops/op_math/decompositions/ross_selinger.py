@@ -19,7 +19,10 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine
-from pennylane.ops.op_math.decompositions.normal_forms import _ma_normal_form
+from pennylane.ops.op_math.decompositions.normal_forms import (
+    _clifford_group_to_SO3,
+    _ma_normal_form,
+)
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
@@ -105,7 +108,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
     return ops
 
 
-def rs_decomposition(op, epsilon, is_qjit, *, max_trials=20):
+def rs_decomposition(op, epsilon, is_qjit=False, *, max_trials=20):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
     This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
@@ -181,9 +184,6 @@ def rs_decomposition(op, epsilon, is_qjit, *, max_trials=20):
         # Get the normal form of the decomposition.
         dyd_mat = DyadicMatrix(u, -t.conj(), t, u.conj(), k=k)
         so3_mat = SO3Matrix(dyd_mat)
-<<<<<<< HEAD
-        decomposition, g_phase = _ma_normal_form(so3_mat)
-=======
 
         # If QJIT is active, use the compressed normal form.
         if is_qjit:
@@ -191,7 +191,6 @@ def rs_decomposition(op, epsilon, is_qjit, *, max_trials=20):
             decomposition = _jit_rs_decomposition(op.wires[0], decomposition_info)
         else:
             decomposition = _ma_normal_form(so3_mat)
->>>>>>> bf4323d48 (Enable back caching for map_wire)
 
         # Remove inverses if any in the decomposition and handle trivial case
         new_tape = qml.tape.QuantumScript(decomposition)
