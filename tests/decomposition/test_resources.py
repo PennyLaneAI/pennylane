@@ -172,6 +172,20 @@ class TestCompressedResourceOp:
         )
         assert isinstance(hash(op), int)
 
+    def test_hash_list_params(self):
+        """Tests when the resource params contains a list."""
+
+        class CustomOp(qml.operation.Operator):
+
+            resource_keys = {"foo", "bar"}
+
+            @property
+            def resource_params(self) -> dict:
+                return {"foo": [1, 2, 3], "bar": 4}
+
+        op = CompressedResourceOp(CustomOp, {"foo": [1, 2, 3], "bar": 4})
+        assert isinstance(hash(op), int)
+
     def test_same_params_same_hash(self):
         """Tests that two ops with the same params have the same hash."""
 

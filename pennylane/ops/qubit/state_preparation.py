@@ -75,11 +75,11 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    resource_keys = {"state", "wires"}
+    resource_keys = {"num_wires"}
 
     @property
     def resource_params(self) -> dict:
-        return {"state": self.parameters[0], "wires": self.wires}
+        return {"num_wires": len(self.wires)}
 
     def __init__(self, state, wires: WiresLike, id=None):
 
@@ -185,23 +185,21 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(state, wires):
-    if not qml.math.is_abstract(state):
-        return {qml.X: len([wire for wire, basis in zip(wires, state, strict=True) if basis == 1])}
-    return {qml.PhaseShift: 2 * len(wires), qml.RX: len(wires)}
+def _basis_state_decomp_resources(num_wires):
+    return {qml.X: num_wires}
 
 
 @register_resources(_basis_state_decomp_resources)
 def _basis_state_decomp(state, wires, **__):
-    if not qml.math.is_abstract(state):
-        for wire, basis in zip(wires, state, strict=True):
-            if basis == 1:
-                qml.X(wire)
-    else:
-        for wire, basis in zip(wires, state):
-            qml.PhaseShift(basis * np.pi / 2, wire)
-            qml.RX(basis * np.pi, wire)
-            qml.PhaseShift(basis * np.pi / 2, wire)
+
+    def _X(w):
+        qml.X(w)
+
+    @qml.for_loop(0, len(wires), 1)
+    def _loop(i):
+        qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
+
+    _loop()
 
 
 add_decomps(BasisState, _basis_state_decomp)
