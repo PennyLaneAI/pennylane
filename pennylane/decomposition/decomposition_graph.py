@@ -109,6 +109,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
+        from pennylane.decomposition import DecompositionGraph
+
         op = qml.CRX(0.5, wires=[0, 1])
         graph = DecompositionGraph(
             operations=[op],
@@ -126,7 +128,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
-    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
     """
 
@@ -137,12 +139,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
-        if isinstance(gate_set, set):
-            # The names of the gates in the target gate set.
-            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
-        else:
+        if isinstance(gate_set, dict):
             # the gate_set is a dict
             self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
+        else:
+            # The names of the gates in the target gate set.
+            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
@@ -381,7 +383,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
         >>> graph.resource_estimate(op)
-        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
+        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
         if not self.is_solved_for(op):
@@ -407,7 +409,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            op = qml.CRX(0.5, wires=[0, 1])
+            op = qml.CRY(0.2, wires=[0, 2])
             graph = DecompositionGraph(
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
@@ -418,12 +420,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [RZ(1.5707963267948966, wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-1.5707963267948966, wires=[1])]
+        [RY(0.1, wires=[2]),
+         CNOT(wires=[0, 2]),
+         RY(-0.1, wires=[2]),
+         CNOT(wires=[0, 2])]
 
         """
         if not self.is_solved_for(op):
