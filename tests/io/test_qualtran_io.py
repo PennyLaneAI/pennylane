@@ -459,11 +459,21 @@ class TestToBloq:
 
         mapped_circuit = qml.to_bloq(circuit)
         mapped_circuit_cg = mapped_circuit.call_graph()[1]
+        custom_mapped_circuit = qml.to_bloq(
+            circuit,
+            custom_mapping={
+                qml.QuantumPhaseEstimation(
+                    unitary=qml.RX(0.1, wires=5), estimation_wires=range(5)
+                ): Hadamard()
+            },
+        )
+        custom_mapped_circuit_cg = custom_mapped_circuit.call_graph()[1]
         wrapped_circuit = qml.to_bloq(circuit, map_ops=False)
         wrapped_circuit_cg = wrapped_circuit.call_graph()[1]
 
         assert mapped_circuit_cg[Hadamard()] == 11
         assert wrapped_circuit_cg[Hadamard()] == 11
+        assert custom_mapped_circuit_cg[Hadamard()] == 2
         assert CNOT() not in mapped_circuit_cg
         assert wrapped_circuit_cg[CNOT()] == 20
 

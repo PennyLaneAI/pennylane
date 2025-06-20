@@ -444,7 +444,7 @@ def _map_to_bloq(op, map_ops=True, custom_mapping=None, **kwargs):
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
     if not isinstance(op, Operator):
-        return ToBloq(op, map_ops=map_ops, **kwargs)
+        return ToBloq(op, map_ops=map_ops, custom_mapping=custom_mapping, **kwargs)
 
     if custom_mapping is not None:
         return custom_mapping[op]
@@ -1096,7 +1096,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     ZPowGate(exponent=\phi, eps=1e-11): 1}
     """
 
-    def __init__(self, op, map_ops=False, **kwargs):
+    def __init__(self, op, map_ops=False, custom_mapping=None, **kwargs):
         if not qualtran:
             raise ImportError(
                 "Optional dependency 'qualtran' is required "
@@ -1110,6 +1110,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
         self.op = op
         self.map_ops = map_ops
+        self.custom_mapping = custom_mapping
         self._kwargs = kwargs
         super().__init__()
 
@@ -1172,7 +1173,10 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
             # Add each operation to the composite Bloq.
             for op in ops:
-                bloq = _map_to_bloq(op, map_ops=self.map_ops)
+                print(self.custom_mapping)
+                bloq = _map_to_bloq(
+                    op, map_ops=self.map_ops, custom_mapping=self.custom_mapping, **self._kwargs
+                )
                 if bloq is None:
                     continue
 
