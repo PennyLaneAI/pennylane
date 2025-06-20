@@ -439,10 +439,12 @@ def _(op: qtemps.subroutines.ModExp):
 
 
 @singledispatch
-def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
+def _map_to_bloq(op, map_ops=True, custom_mapping=None, **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
+    if not isinstance(op, Operator):
+        return ToBloq(op, map_ops=map_ops, **kwargs)
 
     if custom_mapping is not None:
         return custom_mapping[op]
@@ -454,8 +456,8 @@ def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
 @_map_to_bloq.register
 def _(
     op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
-    custom_mapping=None,
     map_ops=True,
+    custom_mapping=None,
     **kwargs,
 ):
     from qualtran.bloqs.phase_estimation import RectangularWindowState
@@ -1051,7 +1053,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
 
 class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
     r"""
-    An adapter for using a PennyLane :class:`~.Operation` as a
+    An adapter to convert a PennyLane :class:`~.QNode`, ``Qfunc, or :class:`~.Operation` to a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
     .. note::
@@ -1063,9 +1065,10 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             pip install qualtran
 
     Args:
-        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
-        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
-            as a ``ToBloq``. Default is True.
+        op (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
+            as a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
+            as a ``ToBloq`` when False. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
@@ -1078,7 +1081,6 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     This example shows how to use ``qml.ToBloq``:
 
-    >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
@@ -1253,7 +1255,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
-    Converts a PennyLane circuit or :class:`~.Operation` to the representing `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
+    Converts a PennyLane circuit or :class:`~.Operation` to the corresponding `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the latest
@@ -1264,9 +1266,10 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             pip install qualtran
 
     Args:
-        circuit (QNode | Operation): A :class:`~pennylane.QNode` or an initialized PennyLane operator to be converted to a Qualtran Bloq.
-        map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped
-            as a ``ToBloq``. Default is ``True``.
+        circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
+            as a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
+            as a ``ToBloq`` when False. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
@@ -1280,7 +1283,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     This example shows how to use ``qml.to_bloq``:
 
-    >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
@@ -1300,8 +1302,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         :title: Usage Details
 
         Some PennyLane operators don't have a direct equivalent in Qualtran. For example, in Qualtran, there
-        exists many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
-        Quantum Phase Estimation, a smart default is chosen.
+        are many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
+        :class:`~pennylane.QuantumPhaseEstimation`, a smart default is chosen.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
@@ -1310,8 +1312,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
         Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
         equivalent is needed, we recommend setting ``map_ops`` to False.
-        This will wrap the input PennyLane operator as a Qualtran Bloq, allowing to use Qualtran functions
-        such as ``decompose_bloq`` or ``call_graph``.
+        This will wrap the input PennyLane operator as a Qualtran Bloq, enabling Qualtran functions
+        such as ``decompose_bloq`` or ``call_graph``, but maintaining the PennyLane decomposition definition of the operator.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
@@ -1322,6 +1324,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         Alternatively, users can provide a custom mapping that maps a PennyLane operator to a
         specific Qualtran Bloq.
 
+        >>> from qualtran.bloqs.phase_estimation import TextbookQPE
+        >>> from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
         >>> op = qml.QuantumPhaseEstimation(
         ...         unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
         ...     )

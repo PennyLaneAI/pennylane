@@ -4,12 +4,21 @@
 
 <h3>New features since last release</h3>
 
+* A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
+  This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
+  auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
+  Unary iteration leverages these auxiliary wires to store intermediate values for reuse
+  among the different multi-controlled operators, avoiding unnecessary recomputation.
+  Check out the documentation for a thorough explanation.
+  [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
+
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
+  [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
 
   ```python
   import pennylane as qml
@@ -36,6 +45,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -140,6 +150,7 @@
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+
 * A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
   operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
   that leverages extra information about the target wire to enable more efficient circuit decompositions.
@@ -182,8 +193,8 @@
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It 
   requires one input and takes in two optional inputs:
-  * op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
-  * map_ops (bool): Whether or not if the operations are mapped to a Qualtran Bloq or wrapped as a ``ToBloq``. Default is True.
+  * circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
+  * map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when False. Default is True.
   * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
   
   The following example converts a PennyLane Operator into a Qualtran Bloq:
@@ -241,6 +252,30 @@
   show_counts_sigma(sigma)
   ```
 
+* A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
+  This operator performs the plain addition of two integers in the computational basis.
+  [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
+
+  ```python
+  x = 3
+  y = 4
+
+  wires = qml.registers({"x":3, "y":6, "work":5})
+
+  dev = qml.device("default.qubit", shots=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisEmbedding(x, wires=wires["x"])
+      qml.BasisEmbedding(y, wires=wires["y"])
+      qml.SemiAdder(wires["x"], wires["y"], wires["work"])
+      return qml.sample(wires=wires["y"])
+  ```
+  
+  ```pycon
+  >>> print(circuit())
+  [0 0 0 1 1 1]
+  ```
 
 <h4>Resource-efficient Decompositions 🔎</h4>
 
@@ -324,6 +359,15 @@
 
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
+
+  * :class:`~.QuantumPhaseEstimation`
+    [(#7637)](https://github.com/PennyLaneAI/pennylane/pull/7637)
+
+  * :class:`~.BasisRotation`
+    [(#7074)](https://github.com/PennyLaneAI/pennylane/pull/7074)
+
+  * :class:`~.PhaseAdder`
+    [(#7070)](https://github.com/PennyLaneAI/pennylane/pull/7070)
 
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
@@ -435,6 +479,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
+  experimental and not integrated.
+  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
+  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
+
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
@@ -476,6 +525,7 @@
   xDSL module has been added for the experimental xDSL Python compiler integration.
   [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
+  [(#7664)](https://github.com/PennyLaneAI/pennylane/pull/7664)
 
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
@@ -493,6 +543,7 @@
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
   [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
   [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
+  [(#7706)](https://github.com/PennyLaneAI/pennylane/pull/7706)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -594,7 +645,7 @@
   these dependencies only have to be installed for the functions that use them, not to use
   ``labs`` functionalities in general. This decouples the various submodules, and even functions
   within the same submodule, from each other.
-  [(#7xxx)](https://github.com/PennyLaneAI/pennylane/pull/7xxx)
+  [(#7650)](https://github.com/PennyLaneAI/pennylane/pull/7650)
 
 * A new module :mod:`pennylane.labs.intermediate_reps <pennylane.labs.intermediate_reps>`
   provides functionality to compute intermediate representations for particular circuits.
@@ -612,7 +663,6 @@
   to perform multiprocess and multithreaded execution of workloads. 
   [(#7401)](https://github.com/PennyLaneAI/pennylane/pull/7401)
 
-
 * A `rowcol` function is now available in `pennylane.labs.intermediate_reps`.
   Given the parity matrix of a CNOT circuit and a qubit connectivity graph, it synthesizes a
   possible implementation of the parity matrix that respects the connectivity.
@@ -628,7 +678,16 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
+  :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
+  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
+  [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
+
 <h3>Breaking changes 💔</h3>
+
+* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
+  new `gradient_kwargs` keyword argument accordingly.
+  [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
 
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
   when `max_diff > 1`.
@@ -703,8 +762,18 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `jax` and `tensorflow` dependencies for `doc` builds.
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
+
+* `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
+  to match the expected binary distribution format naming conventions.
+  [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
+
+* The `qml.compiler.python_compiler` submodule has been restructured.
+  [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
+
 * Move program capture code closer to where it is used.
-  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+  [(#7608)](https://github.com/PennyLaneAI/pennylane/pull/7608)
 
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
@@ -722,6 +791,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7504)](https://github.com/PennyLaneAI/pennylane/pull/7504)
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
   [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
+  [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
@@ -786,6 +856,13 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
+  [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
+
+* The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
+  additional supported lightning devices: `lightning.kokkos` and `lightning.gpu`.
+  [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
+
 * Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
   Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
   [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)
@@ -808,6 +885,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
+  inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
+  drawing.
+  [(#7668)](https://github.com/PennyLaneAI/pennylane/pull/7668)
 
 * A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
   in special cases. Concretely, this problem occurs when Pauli factors combine into the identity
