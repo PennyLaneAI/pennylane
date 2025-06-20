@@ -4,6 +4,40 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+  from functools import partial
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RY(params[1], wires=1)
+      return qml.expval(qml.Z(0) + qml.X(1))
+
+  opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  step = qml.qjit(partial(opt.step, circuit))
+
+  params = jnp.array([0.1, 0.2])
+  state = opt.init(params)
+  for _ in range(100):
+      params, state = step(params, state)
+  ```
+
+  ```pycon
+  >>> params
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
