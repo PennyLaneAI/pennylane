@@ -22,7 +22,15 @@ from importlib import metadata
 from sys import version_info
 from typing import Any, Optional
 
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
+
+has_openqasm = True
+try:
+    import openqasm3
+
+    from pennylane.io.qasm_interpreter import QasmInterpreter
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_openqasm = False  # pragma: no cover
 
 # Error message to show when the PennyLane-Qiskit plugin is required but missing.
 _MISSING_QISKIT_PLUGIN_MESSAGE = (
@@ -37,7 +45,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 __plugin_devices = (
     defaultdict(tuple, metadata.entry_points())["pennylane.io"]
     if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
+    else metadata.entry_points(group="pennylane.io")
 )
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
@@ -651,8 +659,10 @@ def to_openqasm(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -680,8 +690,10 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2, shots=100)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=2)
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
@@ -702,8 +714,10 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2, shots=100)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=2)
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
@@ -827,3 +841,51 @@ def from_quil_file(quil_filename: str):
     """
     plugin_converter = plugin_converters["quil_file"].load()
     return plugin_converter(quil_filename)
+
+
+def from_qasm3(quantum_circuit: str, wire_map: dict = None):
+    """
+    Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
+
+    .. note::
+        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Control flow, measurements,
+        built-in mathematical functions and constants, custom gates, and pulses are not yet supported.
+        The remaining standard library gates, subroutines, variables and end statements are all supported.
+
+        In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
+        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
+        for directions.
+
+    Args:
+        quantum_circuit (str): a QASM 3.0 string containing a simple quantum circuit.
+        qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
+
+    Returns:
+        dict: the context resulting from the execution.
+
+    >>> import pennylane as qml
+    >>> dev = qml.device("default.qubit", wires=[0, 1])
+    >>> @qml.qnode(dev)
+    >>> def my_circuit():
+    ...     qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+    ...     return qml.expval(qml.Z(0))
+    >>> print(qml.draw(my_circuit)())
+    0: ──RY(0.20)──X²─┤  <Z>
+    1: ──RX(1.00)─────┤
+    """
+    if not has_openqasm:  # pragma: no cover
+        raise ImportWarning(
+            "from_qasm3 requires openqasm3 and 'openqasm3[parser]' to be installed in your environment. "
+            "Please consult the OpenQASM 3.0 installation instructions for more information:"
+            " https://pypi.org/project/openqasm3/."
+        )  # pragma: no cover
+    # parse the QASM program
+    try:
+        ast = openqasm3.parser.parse(quantum_circuit, permissive=True)
+    except AttributeError as e:  # pragma: no cover
+        raise ImportError(
+            "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
+        ) from e  # pragma: no cover
+    context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+
+    return context

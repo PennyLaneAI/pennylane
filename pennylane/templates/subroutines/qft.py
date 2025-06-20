@@ -14,7 +14,7 @@
 """
 This submodule contains the template for QFT.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+
 
 import functools
 
@@ -84,8 +84,9 @@ class QFT(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", shots=1)
+            dev = qml.device("default.qubit")
 
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(dev)
             def qft_add(m, k, n_wires):
                 qml.BasisEmbedding(m, wires=range(n_wires))
@@ -131,9 +132,7 @@ class QFT(Operation):
     """
 
     grad_method = None
-    resource_keys = {
-        "num_wires",
-    }
+    resource_keys = {"num_wires"}
 
     def __init__(self, wires: WiresLike, id=None):
         wires = Wires(wires)
@@ -156,7 +155,7 @@ class QFT(Operation):
         return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

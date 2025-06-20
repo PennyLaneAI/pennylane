@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
-# pylint: disable=too-many-branches
-from functools import lru_cache, partial
 
+from functools import lru_cache, partial
+from typing import Union
+
+from pennylane.math import is_abstract
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -23,23 +26,36 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, TensorLike
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
 
 
-def _ops_equal(op1, op2):
+def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, Wires]) -> bool:
+    """Checks if two data objects are equal, considering abstractness."""
+
+    for d1, d2 in zip(items1, items2, strict=True):
+        if is_abstract(d1) or is_abstract(d2):
+            if d1 is not d2:
+                return False
+        elif d1 != d2:
+            return False
+
+    return True
+
+
+def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
-        and (op1.data == op2.data)
+        and _check_equality(op1.data, op2.data)
+        and _check_equality(op1.wires, op2.wires)
         and (op1.hyperparameters == op2.hyperparameters)
-        and (op1.wires == op2.wires)
     )
 
 
-def _are_inverses(op1, op2):
+def _are_inverses(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are inverses of each other
 
     Args:
@@ -65,14 +81,13 @@ def _are_inverses(op1, op2):
 
 
 @lru_cache
-def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
-        from pennylane.operation import Operator
 
     except ImportError:  # pragma: no cover
         return None, None
@@ -120,7 +135,17 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 return super().interpret_operation(op)
 
             prev_op = self.previous_ops.get(op.wires[0], None)
-            if prev_op is None:
+            dyn_wires = {w for w in op.wires if is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+
+            if prev_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't cancel. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to cancel, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (prev_op is None or other_saved_wires):
+                    self.interpret_all_previous_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return []
@@ -186,7 +211,7 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=missing-function-docstring,
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

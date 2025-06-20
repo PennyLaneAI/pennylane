@@ -18,6 +18,12 @@ Contains the PhaseAdder template.
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -62,10 +68,11 @@ class PhaseAdder(Operation):
         x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
             for a binary representation of the value being targeted, :math:`x`. In some cases an additional
             wire is needed, see usage details below. The number of wires also limits the maximum
-            value for `mod`.
+            value for ``mod``.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty tuple.
+            when ``mod`` is :math:`2^{\text{len(x_wires)}}`. Defaults to empty tuple. The work wire must
+            be in the :math:`|0\rangle` state.
 
     **Example**
 
@@ -80,7 +87,8 @@ class PhaseAdder(Operation):
         x_wires =[0,1,2,3]
         work_wire=[5]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -123,9 +131,10 @@ class PhaseAdder(Operation):
 
     grad_method = None
 
-    def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
-    ):  # pylint: disable=too-many-arguments
+    resource_keys = {"num_x_wires", "mod"}
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None):
 
         work_wire = Wires(() if work_wire is None else work_wire)
         x_wires = Wires(x_wires)
@@ -152,13 +161,18 @@ class PhaseAdder(Operation):
                         "None of the wires in work_wire should be included in x_wires."
                     )
 
-        all_wires = x_wires + work_wire
-
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["x_wires"] = x_wires
-        super().__init__(wires=all_wires, id=id)
+        super().__init__(wires=x_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "mod": self.hyperparameters["mod"],
+        }
 
     @property
     def num_params(self):
@@ -186,7 +200,7 @@ class PhaseAdder(Operation):
             new_dict["work_wire"],
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
@@ -243,3 +257,53 @@ class PhaseAdder(Operation):
             op_list.extend(_add_k_fourier(k, x_wires))
 
         return op_list
+
+
+def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
+
+    if mod == 2**num_x_wires:
+        return {qml.PhaseShift: num_x_wires}
+
+    return {
+        qml.PhaseShift: 2 * num_x_wires,
+        adjoint_resource_rep(qml.PhaseShift, {}): 2 * num_x_wires,
+        resource_rep(qml.QFT, num_wires=num_x_wires): 2,
+        adjoint_resource_rep(qml.QFT, {"num_wires": num_x_wires}): 2,
+        qml.CNOT: 2,
+        qml.X: 2,
+        qml.ControlledPhaseShift: num_x_wires,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_phase_adder_decomposition_resources)
+def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
+
+    n_wires = len(x_wires)
+
+    @qml.for_loop(n_wires)
+    def _add_k_fourier_loop(i, _k):
+        qml.PhaseShift(_k * np.pi / (2**i), wires=x_wires[i])
+        return _k
+
+    if mod == 2**n_wires:
+        _add_k_fourier_loop(k)
+        return
+
+    aux_k = x_wires[0]
+    _add_k_fourier_loop(k)
+    qml.adjoint(_add_k_fourier_loop)(mod)
+    qml.adjoint(qml.QFT)(wires=x_wires)
+    qml.CNOT(wires=[aux_k, work_wire[0]])
+    qml.QFT(wires=x_wires)
+    qml.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
+    qml.adjoint(_add_k_fourier_loop)(k)
+    qml.adjoint(qml.QFT)(wires=x_wires)
+    qml.X(aux_k)
+    qml.CNOT(wires=[aux_k, work_wire[0]])
+    qml.X(aux_k)
+    qml.QFT(wires=x_wires)
+    _add_k_fourier_loop(k)
+
+
+add_decomps(PhaseAdder, _phase_adder_decomposition)

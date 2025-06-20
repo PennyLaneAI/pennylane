@@ -54,7 +54,6 @@ class SymbolicOp(Operator):
         # has no wires, so doesn't need any wires processing
         return cls._primitive.bind(*args, **kwargs)
 
-    # pylint: disable=attribute-defined-outside-init
     @handle_recursion_error
     def __copy__(self):
         # this method needs to be overwritten because the base must be copied too.

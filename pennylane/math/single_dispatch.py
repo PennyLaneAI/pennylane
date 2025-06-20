@@ -13,7 +13,7 @@
 # limitations under the License.
 """Autoray registrations"""
 
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
+# pylint: disable=protected-access,import-outside-toplevel,disable=unnecessary-lambda
 from importlib import import_module
 
 # pylint: disable=wrong-import-order
@@ -163,7 +163,7 @@ def _scatter_numpy(indices, array, shape):
     return new_array
 
 
-def _scatter_element_add_numpy(tensor, index, value):
+def _scatter_element_add_numpy(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     new_tensor = tensor.copy()
@@ -262,7 +262,7 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-def _scatter_element_add_autograd(tensor, index, value):
+def _scatter_element_add_autograd(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
     assignment, we have to be clever and use ravel_multi_index."""
@@ -526,7 +526,7 @@ def _scatter_tf(indices, array, new_dims):
     return tf.scatter_nd(indices, array, new_dims)
 
 
-def _scatter_element_add_tf(tensor, index, value):
+def _scatter_element_add_tf(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
     import tensorflow as tf
@@ -798,7 +798,7 @@ def _scatter_torch(indices, tensor, new_dimensions):
     return new_tensor
 
 
-def _scatter_element_add_torch(tensor, index, value):
+def _scatter_element_add_torch(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Note that Torch only supports index assignments
     on non-leaf nodes; if the node is a leaf, we must clone it first."""
@@ -924,7 +924,7 @@ ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: x.at[tuple(index)].add(value),
+    lambda x, index, value, **kwargs: x.at[tuple(index)].add(value, **kwargs),
 )
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda

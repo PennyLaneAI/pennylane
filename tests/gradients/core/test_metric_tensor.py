@@ -23,6 +23,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients.metric_tensor import _get_aux_wire
 
 
@@ -682,7 +683,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.torch
@@ -700,7 +701,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.tf
@@ -718,7 +719,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.jax
@@ -736,7 +737,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
@@ -972,6 +973,33 @@ def autodiff_metric_tensor(ansatz, num_wires):
 class TestFullMetricTensor:
     num_wires = 3
 
+    @pytest.mark.external
+    def test_catalyst_compatibility(self):
+        """Test that the metric tensor can be executed with catalyst."""
+
+        pytest.importorskip("catalyst")
+        jax = pytest.importorskip("jax")
+
+        def ansatz(params, wires=None):  # pylint: disable=unused-argument
+            qml.RX(params[0], 0)
+            qml.RX(params[1], 1)
+            qml.CNOT((0, 1))
+            qml.RX(params[2], 0)
+            qml.RY(params[3], 1)
+
+        @qml.qnode(qml.device("lightning.qubit", wires=4))
+        def circuit(params):
+            ansatz(params)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        x = jax.numpy.array([1.0, 2.0, 3.0, 4.0])
+
+        qjit_res = qml.qjit(qml.metric_tensor(circuit))(x)
+
+        cost_autograd = autodiff_metric_tensor(ansatz, num_wires=3)(qml.numpy.array(x))
+
+        assert qml.math.allclose(qjit_res, cost_autograd)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
@@ -1051,7 +1079,7 @@ class TestFullMetricTensor:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
@@ -1438,7 +1466,7 @@ def test_generator_no_expval(monkeypatch):
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
+        with pytest.raises(QuantumFunctionError, match="is not hermitian"):
             qml.metric_tensor(tape, approx="block-diag")
 
 
@@ -1560,7 +1588,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
+    with pytest.raises(qml.wires.WireError, match=r"no free wire"):
         qml.metric_tensor(circuit)(x)
 
 

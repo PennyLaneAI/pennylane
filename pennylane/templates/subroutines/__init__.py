@@ -54,3 +54,5 @@ from .mod_exp import ModExp
 from .out_poly import OutPoly
 from .gqsp import GQSP
 from .select_pauli_rot import SelectPauliRot
+from .semi_adder import SemiAdder
+from .temporary_and import TemporaryAND, Elbow

@@ -82,7 +82,8 @@ should be taken together. A "Combination measurement process" higher order primi
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
->>> @qml.qnode(qml.device('default.qubit', wires=1, shots=5))
+>>> @partial(qml.set_shots, shots=5)
+... @qml.qnode(qml.device('default.qubit', wires=1))
 ... def circuit():
 ...     qml.H(0)
 ...     return qml.sample(wires=0), qml.sample(wires=0)
@@ -115,8 +116,8 @@ import jax
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
-from pennylane.capture import CaptureError, FlatFn
-from pennylane.capture.custom_primitives import QmlPrimitive
+from pennylane.capture import FlatFn, QmlPrimitive
+from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
 from pennylane.typing import TensorLike
 
@@ -158,7 +159,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     """Calculate the abstract output shapes for the given measurements."""
 
-    if jax.config.jax_enable_x64:  # pylint: disable=no-member
+    if jax.config.jax_enable_x64:
         dtype_map = {
             float: jax.numpy.float64,
             int: jax.numpy.int64,
@@ -188,7 +189,7 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=too-many-arguments, unused-argument
+# pylint: disable=too-many-arguments
 @debug_logger
 @qnode_prim.def_impl
 def _(*args, qnode, shots, device, execution_config, qfunc_jaxpr, n_consts, batch_dims=None):
@@ -567,7 +568,6 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_dynamic_args)
     cache_key = _get_jaxpr_cache_key(flat_dynamic_args, flat_static_args, kwargs, abstracted_axes)
 
-    # pylint: disable=protected-access
     if cached_value := qnode.capture_cache.get(cache_key, None):
         qfunc_jaxpr, config, out_tree = cached_value
     else:

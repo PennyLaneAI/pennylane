@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint: disable=arguments-differ
 import functools
 from typing import Optional, Union
 
@@ -24,6 +24,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -288,7 +289,7 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-def _single_excit_resources():
+def _single_excitation_resources():
     return {
         qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
         qml.decomposition.adjoint_resource_rep(qml.S, {}): 2,
@@ -301,8 +302,8 @@ def _single_excit_resources():
     }
 
 
-@register_resources(_single_excit_resources)
-def _single_excit(phi, wires, **__):
+@register_resources(_single_excitation_resources)
+def _single_excitation_decomp(phi, wires, **__):
     qml.adjoint(qml.T)(wires=wires[0])
     qml.Hadamard(wires=wires[0])
     qml.S(wires=wires[0])
@@ -321,7 +322,9 @@ def _single_excit(phi, wires, **__):
     qml.T(wires=wires[1])
 
 
-add_decomps(SingleExcitation, _single_excit)
+add_decomps(SingleExcitation, _single_excitation_decomp)
+add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
+add_decomps("Pow(SingleExcitation)", pow_rotation)
 
 
 class SingleExcitationMinus(Operation):
@@ -481,6 +484,8 @@ def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
+add_decomps("Adjoint(SingleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationMinus)", pow_rotation)
 
 
 class SingleExcitationPlus(Operation):
@@ -640,6 +645,8 @@ def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
+add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
 
 
 class DoubleExcitation(Operation):
@@ -893,6 +900,8 @@ def _doublexcit(phi, wires, **__):
 
 
 add_decomps(DoubleExcitation, _doublexcit)
+add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
 
 class DoubleExcitationPlus(Operation):
@@ -988,6 +997,10 @@ class DoubleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
+add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationPlus)", pow_rotation)
+
+
 class DoubleExcitationMinus(Operation):
     r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
@@ -1077,6 +1090,10 @@ class DoubleExcitationMinus(Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
+
+
+add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
 class OrbitalRotation(Operation):
@@ -1291,6 +1308,8 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
+add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
 class FermionicSWAP(Operation):
@@ -1524,3 +1543,5 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation)
+add_decomps("Pow(FermionicSWAP)", pow_rotation)

@@ -21,7 +21,7 @@ from itertools import product
 import pytest
 
 import pennylane as qml
-from pennylane.capture import CaptureError
+from pennylane.exceptions import CaptureError, QuantumFunctionError
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -641,7 +641,7 @@ class TestDifferentiation:
             def execute(self, *_, **__):
                 return 0
 
-        with pytest.raises(qml.QuantumFunctionError, match="does not support backprop"):
+        with pytest.raises(QuantumFunctionError, match="does not support backprop"):
 
             @qml.qnode(DummyDev(wires=2), diff_method="backprop")
             def _(x):

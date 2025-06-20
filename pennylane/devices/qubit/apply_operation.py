@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
@@ -454,7 +454,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     params = math.cast(op.parameters[0], dtype=complex)
     state0 = state[sl_0]
     state1 = state[sl_1]
-    if op.batch_size is not None and len(params) > 1:
+    if op.batch_size is not None:
         interface = math.get_interface(state)
         if interface == "torch":
             params = math.array(params, like=interface)
@@ -467,8 +467,6 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
             state1 = math.expand_dims(state1, 0)
     state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
     state = math.stack([state0, state1], axis=axis)
-    if not is_state_batched and op.batch_size == 1:
-        state = math.stack([state], axis=0)
     return state
 
 

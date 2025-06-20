@@ -17,6 +17,7 @@ Operator class is correctly defined.
 """
 
 import copy
+import itertools
 import pickle
 from collections import defaultdict
 from string import ascii_lowercase
@@ -25,7 +26,7 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.decomposition import DecompositionNotApplicable, DecompositionRule
+from pennylane.decomposition import DecompositionRule
 from pennylane.operation import EigvalsUndefinedError
 
 
@@ -112,16 +113,34 @@ def _check_decomposition_new(op, heuristic_resources=False):
     for rule in qml.list_decomps(type(op)):
         _test_decomposition_rule(op, rule, heuristic_resources=heuristic_resources)
 
+    for rule in qml.list_decomps(f"Adjoint({type(op).__name__})"):
+        adj_op = qml.ops.Adjoint(op)
+        _test_decomposition_rule(adj_op, rule, heuristic_resources=heuristic_resources)
+
+    for rule in qml.list_decomps(f"Pow({type(op).__name__})"):
+        for z in [2, 3, 4, 8, 9]:
+            pow_op = qml.ops.Pow(op, z)
+            _test_decomposition_rule(pow_op, rule, heuristic_resources=heuristic_resources)
+
+    for rule in qml.list_decomps(f"C({type(op).__name__})"):
+        for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
+            ctrl_op = qml.ops.Controlled(
+                op,
+                control_wires=[i + len(op.wires) for i in range(n_ctrl_wires)],
+                control_values=[c_value] * n_ctrl_wires,
+                work_wires=[i + len(op.wires) + n_ctrl_wires for i in range(n_workers)],
+            )
+            _test_decomposition_rule(ctrl_op, rule, heuristic_resources=heuristic_resources)
+
 
 def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    # Test that the resource function is correct
-    try:
-        resources = rule.compute_resources(**op.resource_params)
-    except DecompositionNotApplicable:
+    if not rule.is_applicable(**op.resource_params):
         return
 
+    # Test that the resource function is correct
+    resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -140,12 +159,20 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts
 
+    # Add projector to the additional wires (work wires) on the tape
+    work_wires = tape.wires - op.wires
+    all_wires = op.wires + work_wires
+    if work_wires:
+        op = op @ qml.Projector([0] * len(work_wires), wires=work_wires)
+        tape.operations.insert(0, qml.Projector([0] * len(work_wires), wires=work_wires))
+
     # Tests that the decomposition produces the same matrix
-    op_matrix = qml.matrix(op)
-    decomp_matrix = qml.matrix(tape, wire_order=op.wires)
-    assert qml.math.allclose(
-        op_matrix, decomp_matrix
-    ), "decomposition must produce the same matrix as the operator."
+    if op.has_matrix:
+        op_matrix = op.matrix(wire_order=all_wires)
+        decomp_matrix = qml.matrix(tape, wire_order=all_wires)
+        assert qml.math.allclose(
+            op_matrix, decomp_matrix
+        ), "decomposition must produce the same matrix as the operator."
 
 
 def _check_matrix(op):
@@ -355,7 +382,6 @@ def _check_pickle(op):
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
 
-# pylint: disable=no-member
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]
