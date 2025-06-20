@@ -45,7 +45,7 @@ class PassDispatcher(TransformDispatcher):
         super().__init__(tape_transform)
 
 
-def xdsl_transform(module_pass: ModulePass) -> PassDispatcher:
+def compiler_transform(module_pass: ModulePass) -> PassDispatcher:
     """Wrapper function to register xDSL passes to use with QJIT-ed workflows."""
     dispatcher = PassDispatcher(module_pass)
 
