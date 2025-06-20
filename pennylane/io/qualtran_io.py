@@ -514,7 +514,7 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
-    """Mapping for QROM that smartly defaults to either QROAMClean or SelectSwapQROM"""
+    """Mapping for QROM that defaults to either QROAMClean or SelectSwapQROM"""
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
