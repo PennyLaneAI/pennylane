@@ -128,6 +128,7 @@ Templates:
     ~ResourceQPE
     ~ResourceBasisRotation
     ~ResourceSelect
+    ~ResourceQROM
 
 """
 
@@ -206,4 +207,5 @@ from .templates import (
     ResourceQPE,
     ResourceBasisRotation,
     ResourceSelect,
+    ResourceQROM,
 )

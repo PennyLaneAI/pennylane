@@ -24,4 +24,5 @@ from .subroutines import (
     ResourceQPE,
     ResourceBasisRotation,
     ResourceSelect,
+    ResourceQROM,
 )
