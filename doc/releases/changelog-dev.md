@@ -572,6 +572,10 @@
   default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
   [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
 
+* The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
+  Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The imports of dependencies introduced by ``labs`` functionalities have been modified such that
