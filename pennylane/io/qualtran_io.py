@@ -709,7 +709,6 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
     This example shows how to use ``qml.ToBloq``:
 
-    >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
@@ -911,7 +910,6 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
     This example shows how to use ``qml.to_bloq``:
 
-    >>> from qualtran.drawing import show_call_graph
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
     >>> op = qml.QuantumPhaseEstimation(
     ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
@@ -931,8 +929,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         :title: Usage Details
 
         Some PennyLane operators don't have a direct equivalent in Qualtran. For example, in Qualtran, there
-        exists many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
-        Quantum Phase Estimation, a smart default is chosen.
+        are many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
+        :class:`~pennylane.QuantumPhaseEstimation`, a smart default is chosen.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
@@ -941,8 +939,8 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
 
         Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
         equivalent is needed, we recommend setting ``map_ops`` to False.
-        This will wrap the input PennyLane operator as a Qualtran Bloq, allowing to use Qualtran functions
-        such as ``decompose_bloq`` or ``call_graph``.
+        This will wrap the input PennyLane operator as a Qualtran Bloq, enabling Qualtran functions
+        such as ``decompose_bloq`` or ``call_graph``, but maintaining the PennyLane decomposition definition of the operator.
 
         >>> qml.to_bloq(qml.QuantumPhaseEstimation(
         ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
