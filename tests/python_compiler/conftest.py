@@ -17,14 +17,7 @@ import io
 
 import pytest
 
-catalyst_available = True
 filecheck_available = True
-xdsl_available = True
-
-try:
-    from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
-except ImportError:
-    catalyst_available = False
 
 try:
     from filecheck.finput import FInput
@@ -33,15 +26,6 @@ try:
     from filecheck.parser import Parser, pattern_for_opts
 except ImportError:
     filecheck_available = False
-
-try:
-    from xdsl.context import Context
-    from xdsl.dialects import arith, builtin, func, linalg, scf, stablehlo, tensor, transform
-    from xdsl.parser import Parser
-
-    from pennylane.compiler.python_compiler import Quantum
-except ImportError:
-    xdsl_available = False
 
 
 def _run_filecheck_impl(program_str, xdsl_module):
@@ -66,43 +50,3 @@ def run_filecheck():
         pytest.skip("Cannot run lit tests without filecheck.")
 
     yield _run_filecheck_impl
-
-
-def _from_qjit_impl(qjit_fn):
-    """Create a wrapper around a QJIT-ed function that returns an xDSL module."""
-
-    def wrapper(*args, **kwargs):
-        _ = qjit_fn(*args, **kwargs)
-        mod = qjit_fn.mlir
-        mod_generic = _quantum_opt(
-            _quantum_opt(
-                ("--pass-pipeline", "builtin.module(canonicalize)"),
-                "-mlir-print-op-generic",
-                stdin=mod,
-            )
-        )
-
-        ctx = Context(allow_unregistered=True)
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(builtin.Builtin)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(linalg.Linalg)
-        ctx.load_dialect(scf.Scf)
-        ctx.load_dialect(stablehlo.StableHLO)
-        ctx.load_dialect(tensor.Tensor)
-        ctx.load_dialect(transform.Transform)
-        ctx.load_dialect(Quantum)
-
-        xmod = Parser(ctx, mod_generic).parse_module()
-        return xmod
-
-    return wrapper
-
-
-@pytest.fixture(scope="function")
-def from_qjit():
-    """Fixture to create an xDSL module from a QJIT-ed function"""
-    if not catalyst_available or xdsl_available:
-        pytest.skip("Cannot use the 'from_catalyst' fixture without Catalyst and xDSL installed.")
-
-    yield _from_qjit_impl

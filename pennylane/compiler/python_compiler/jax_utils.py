@@ -18,6 +18,7 @@ from functools import wraps
 from typing import Callable, TypeAlias
 
 import jaxlib
+from catalyst import QJIT
 from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
@@ -128,16 +129,29 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  #
     return wrapper
 
 
-def xdsl_function(func: JaxJittedFunction) -> Callable[..., xfunc.FuncOp]:
-    """Decorator to convert a Python function into an xDSL func.FuncOp."""
+def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs):
+    """Add a Python function to an xDSL module."""
+    func_mod = _xdsl_module_inline(func, *args, **kwargs)
+
+    for op in func_mod.body.ops:
+        if isinstance(op, xfunc.FuncOp) and op.sym_name.data == "main":
+            op.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
+            break
+
+    cloned_ops = tuple(op.clone() for op in func_mod.body.ops)
+    mod.body.blocks[0].add_ops(cloned_ops)
+
+
+def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
+    """Decorator to convert QJIT-ed functions into xDSL modules."""
 
     @wraps(func)
-    def wrapper(*args, **kwargs) -> xfunc.FuncOp:
-        xmod = _xdsl_module_inline(func, *args, **kwargs)
-        funcOp = xmod.regions[0].blocks[0].first_op
-        # We create a clone because the original FuncOp is attached to xmod's region
-        funcOp = funcOp.clone()
-        funcOp.properties["sym_name"] = xbuiltin.StringAttr(f"{func.__name__}")
-        return funcOp
+    def wrapper(*args, **kwargs):
+        func.jaxpr, *_ = func.capture(args, **kwargs)
+        mlir_module = func.generate_ir()
+        generic_str = mlir_module.operation.get_asm(
+            binary=False, print_generic_op_form=True, assume_verified=True
+        )
+        return parse_generic_to_xdsl_module(generic_str)
 
     return wrapper
