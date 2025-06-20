@@ -682,7 +682,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
 
 class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
     r"""
-    An adapter for using a PennyLane :class:`~.Operation` as a
+    An adapter to convert a PennyLane :class:`~.QNode`, ``Qfunc, or :class:`~.Operation` to a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
     .. note::
@@ -694,8 +694,9 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             pip install qualtran
 
     Args:
-        op (Operation): an initialized PennyLane operator to be wrapped as a Qualtran Bloq.
-        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped 
+        op (QNode |Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
+            as a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
             as a ``ToBloq`` when False. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
@@ -894,8 +895,9 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
             pip install qualtran
 
     Args:
-        circuit (QNode | Operation): A :class:`~pennylane.QNode` or an initialized PennyLane operator to be converted to a Qualtran Bloq.
-        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped 
+        circuit (QNode |Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
+            as a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
             as a ``ToBloq`` when False. Default is True.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
