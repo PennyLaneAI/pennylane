@@ -91,7 +91,7 @@ Operators:
     ~ResourceCRot
     ~ResourceControlledPhaseShift
     ~ResourceTempAND
-    ~ResourceMultiRZ,
+    ~ResourceMultiRZ
     ~ResourcePauliRot
     ~ResourceIsingXX
     ~ResourceIsingYY

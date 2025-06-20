@@ -110,7 +110,7 @@ class ResourceMultiRZ(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_wires": num_wires})
+        return CompressedResourceOp(cls, {"num_wires": num_wires, "eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, num_wires, eps=None) -> list[GateCount]:
@@ -129,7 +129,7 @@ class ResourceMultiRZ(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(num_wires=num_wires, eps=None))]
+        return [GateCount(cls.resource_rep(num_wires=num_wires, eps=eps))]
 
     @classmethod
     def default_controlled_resource_decomp(
@@ -193,7 +193,7 @@ class ResourceMultiRZ(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return [GateCount(cls.resource_rep(num_wires=num_wires, eps=None))]
+        return [GateCount(cls.resource_rep(num_wires=num_wires, eps=eps))]
 
 
 class ResourcePauliRot(ResourceOperator):
@@ -280,7 +280,7 @@ class ResourcePauliRot(ResourceOperator):
             the gate acts on. Additionally, for each :code:`X` gate in the Pauli word we conjugate by
             a pair of :class:`~.ResourceHadamard` gates, and for each :code:`Y` gate in the Pauli word we
             conjugate by a pair of :class:`~.ResourceHadamard` and a pair of :class:`~.ResourceS` gates.
-        
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
@@ -1299,8 +1299,17 @@ class ResourcePSWAP(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourcePSWAP.resource_decomp()
-    {SWAP: 1, CNOT: 2, PhaseShift: 1}
+    >>> pswap = plre.ResourcePSWAP()
+    >>> gate_set = {"CNOT", "SWAP", "PhaseShift"}
+    >>> print(plre.estimate_resources(pswap, gate_set))
+    --- Resources: ---
+    Total qubits: 2
+    Total gates : 4
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
+    Gate breakdown:
+     {'SWAP': 1, 'PhaseShift': 1, 'CNOT': 2}
+
     """
 
     num_wires = 2
