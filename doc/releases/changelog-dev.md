@@ -412,27 +412,29 @@
 
 * A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
   (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
-  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases.
+  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
+  via :func:`~.ops.rs_decomposition` function.
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
-  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases. Consider this simple circuit:
+  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
+  Consider this simple circuit:
 
   ```python
   @qml.qnode(qml.device("lightning.qubit", wires=2))
   def circuit(x, y):
-  
+
       qml.RX(x, 0)
       qml.CNOT([0, 1])
       qml.RY(y, 0)
-          
+
       return qml.expval(qml.Z(0))
-      
+
   rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
-  
+
   rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
   sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
   ```
