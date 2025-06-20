@@ -86,7 +86,7 @@ def resolve_dynamic_wires(
         tape (QuantumScript): A circuit that may contain dynamic wire allocations and deallocations
         zeroed (Sequence[Hashable]): a register of wires known to be the zero state
         any_state (Sequence[Hashable]): a register of wires with any state
-        min_integer (Optional[int]): If not ``None``, new wire labels can be created starting at this
+        min_int (Optional[int]): If not ``None``, new wire labels can be created starting at this
             integer and incrementing whenever a new wire is needed.
 
     Returns:
@@ -102,16 +102,16 @@ def resolve_dynamic_wires(
 
     For a dynamic wire requested to be in the zero state (``require_zeros=True``), we try three things before erroring:
 
-    1) If wires exist in the ``zeroed`` register, we take one from that register
-    2) If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
-    3) If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_integer`` and
+    #. If wires exist in the ``zeroed`` register, we take one from that register
+    #. If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
+    #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
         add a new wire
 
     For a dynamic wire with ``require_zeros=False``, we try:
 
-    1) If wires exist in the ``any_state``, we take one from that register
-    2) If no wires exist in ``any_state``, we pull one from ``zeroed``
-    3) If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_integer`` and
+    #. If wires exist in the ``any_state``, we take one from that register
+    #. If no wires exist in ``any_state``, we pull one from ``zeroed``
+    #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
         add a new wire
 
     This approach minimizes the width of the circuit at the cost of more reset operations.
