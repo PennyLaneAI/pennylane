@@ -141,7 +141,8 @@ class TestFactorization:
     @pytest.mark.parametrize(
         "num, expected",
         [
-            (ZSqrtTwo(0, 0), None),
+            (ZSqrtTwo(0, 0), ZOmega()),
+            (ZSqrtTwo(0, 1), None),
             (ZSqrtTwo(2, 1), ZOmega(a=0, b=0, c=1, d=1)),
             (ZSqrtTwo(2, -1), ZOmega(a=1, b=-1, c=0, d=0)),
             (ZSqrtTwo(7, 0), None),

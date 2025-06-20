@@ -69,13 +69,14 @@ class Ellipse:
     @classmethod
     def from_axes(cls, p: tuple[float, float], theta: float, axes: tuple[float, float]):
         """Create an ellipse from its axes and center point."""
+        axes = tuple(ax + 1e-20 for ax in axes)  # Avoid division by zero.
         a = (math.sin(theta) / axes[1]) ** 2 + (math.cos(theta) / axes[0]) ** 2
         b = math.cos(theta) * math.sin(theta) * (1 / (axes[0]) ** 2 - 1 / (axes[1]) ** 2)
         c = (math.sin(theta) / axes[0]) ** 2 + (math.cos(theta) / axes[1]) ** 2
         return cls([a, b, c], p, axes)
 
     @classmethod
-    def from_region(cls, epsilon: float, theta: float, k: int = 0):
+    def from_region(cls, theta: float, epsilon: float, k: int = 0):
         r"""Create an ellipse that bounds the region :math:`u | u \bullet z \geq 1 - \epsilon^2 / 2`,
         with :math:`u \in \frac{1}{\sqrt{2}^k} \mathbb{Z}[\omega]` and :math`z = \exp{-i\theta / 2}`.
         """
@@ -566,55 +567,88 @@ class GridIterator:
     Args:
         theta (float): The angle of the grid problem.
         epsilon (float): The epsilon of the grid problem.
-        max_iter (int): The maximum number of iterations.
+        max_trials (int): The maximum number of iterations.
     """
 
-    def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_iter: int = 100):
+    def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_trials: int = 20):
         self.theta = theta
         self.epsilon = epsilon
         self.zval = math.cos(theta), math.sin(theta)
         self.kmin = int(3 * math.log2(1 / epsilon) // 2)
-        self.max_iter = max_iter
+        self.max_trials = max_trials
         self.target = 1 - self.epsilon**2 / 2
 
     def __repr__(self) -> str:
         """Return a string representation of the grid iterator."""
-        return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_iter={self.max_iter})"
+        return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_trials={self.max_trials})"
 
     def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
         """Iterate over the solutions to the scaled grid problem."""
+        # Warm start for an initial guess, where 14 is kmin for 1e-3.
+        k, i_ = min(self.kmin, 14), 6  # Give 6 trials for warm start.
+        e_, t_ = max(self.epsilon, 1e-3), min(self.target, 0.9999995)
 
-        k = self.kmin  # Start with the lower-bound on k.
-        e1 = Ellipse.from_region(self.epsilon, self.theta, k)  # Ellipse for the epsilon-region.
+        e1 = Ellipse.from_region(self.theta, e_, k)  # Ellipse for the epsilon-region.
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
         grid_op = EllipseState(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
 
-        for _ in range(self.max_iter):
+        if k == self.kmin:
+            g_ = grid_op
+        else:
+            en_, _ = Ellipse.from_region(self.theta, self.epsilon, k).normalize()
+            g_ = EllipseState(en_, e2).skew_grid_op()
+
+        int_s, init_k = [ZOmega(d=1)], [k]  # Fallback solution.
+        guess_solutions = (  # Solutions for the trivial cases.
+            ZOmega(a=-1),
+            ZOmega(b=-1),
+            ZOmega(b=1),
+            ZOmega(c=1),
+            ZOmega(d=1),
+            ZOmega(d=-1),
+        )
+
+        for ix in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
             e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
             # Apply the grid operation to the state and solve the two-dimensional grid problem.
             state = EllipseState(e1, e2).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
+            try:
+                for solution in chain(guess_solutions, potential_solutions):
+                    # Normalize the solution and obtain the scaling exponent of sqrt(2).
+                    scaled_sol, kf = (grid_op * solution).normalize()
 
-            for solution in potential_solutions:
-                # Normalize the solution and obtain the scaling exponent of sqrt(2).
-                scaled_sol, kf = (grid_op * solution).normalize()
+                    complx_sol = complex(scaled_sol)
+                    sol_real, sol_imag = complx_sol.real, complx_sol.imag
+                    norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
 
-                complx_sol = complex(scaled_sol)
-                sol_real, sol_imag = complx_sol.real, complx_sol.imag
-                norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
+                    k_ = k - kf  # Update the scaling exponent of sqrt(2).
+                    dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
+                        2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
+                    )
+                    # Check if the solution is follows the constraints of the target-region.
+                    if abs(norm_zsqrt_two) <= 2**k_:
+                        if dot_prod >= self.target:
+                            yield scaled_sol, k_
+                        elif dot_prod >= t_:
+                            int_s.append(scaled_sol)
+                            init_k.append(k_)
 
-                k_ = k - kf  # Update the scaling exponent of sqrt(2).
-                dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
-                    2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
-                )
-                # Check if the solution is follows the constraints of the target-region.
-                if abs(norm_zsqrt_two) <= 2**k_ and dot_prod >= self.target:
-                    yield scaled_sol, k_
+                if ix == i_:
+                    k, e_, grid_op, t_ = max(self.kmin, k + 1), self.epsilon, g_, t_ / 10
+                else:
+                    k = k + 1
 
-            e1 = Ellipse.from_region(self.epsilon, self.theta, (k := k + 1))
+                e1 = Ellipse.from_region(self.theta, e_, k)
+
+            except ValueError:  # pragma: no cover
+                break
+
+        for s, k in zip(int_s, init_k):
+            yield s, k
 
     def solve_two_dim_problem(
         self, state: EllipseState, num_points: int = 1000
@@ -656,6 +690,7 @@ class GridIterator:
         # Solve the problem for the two cosets of ZOmega ring and add non-zero offset to odd one.
         potential_sols1 = self.solve_upright_problem(state, bbox11, bbox21, num_b1, ZOmega())
         potential_sols2 = self.solve_upright_problem(state2, bbox12, bbox22, num_b2, ZOmega(c=1))
+
         for solution in chain(potential_sols1, potential_sols2):
             sol1, sol2 = complex(solution), complex(solution.adj2())
             x1, y1 = sol1.real, sol1.imag
@@ -747,7 +782,7 @@ class GridIterator:
 
         # Find the integer scaling factor for the x and y intervals, such that
         # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
-        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
+        k1, k2 = (int(math.floor(math.log2(d + 1e-20) / d_ + 1)) for d in (d1, d2))
         if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             bbox, k1, k2 = (bbox[2], bbox[3], bbox[0], bbox[1]), k2, k1
 
@@ -801,7 +836,7 @@ class GridIterator:
         f_adj2 = False  # Check if we need to apply the sqrt(2) conjugation.
         # Find the integer scaling factor for the x and y intervals, such that
         # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
-        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
+        k1, k2 = (int(math.floor(math.log2(d + 1e-20) / d_ + 1)) for d in (d1, d2))
         if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             f_adj2, k1, k2 = True, k2, k1
             x0, x1, y0, y1 = y0, y1, x0, x1

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the normal forms for Clifford+T decomposition."""
 
+import math
 
 import pytest
 
@@ -38,10 +39,11 @@ class TestNormalForms:
         assert isinstance(clifford_matrices, dict)
         assert len(clifford_matrices) == 24
 
-        for gates, so3mat in clifford_matrices.items():
+        for gates, (so3mat, phase) in clifford_matrices.items():
             # Check that the SO(3) matrix is orthogonal and has determinant 1
             assert isinstance(so3mat, SO3Matrix), "All gates should be SO3Matrix instances"
             assert so3mat.k == 0, f"Gate {gates} should have k=0"
+            assert isinstance(phase, float), "Phase should be a float."
 
             su2mat = _SU2_transform(qml.matrix(qml.prod(*gates)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
@@ -63,12 +65,14 @@ class TestNormalForms:
         assert len(parity_transforms) == 4
 
         parity_vecs = [(1, 1, 1), (2, 2, 0), (0, 2, 2), (2, 0, 2)]
-        for ix, (parity_vec, (so3mat, gates)) in enumerate(parity_transforms.items()):
+        for ix, (parity_vec, (so3mat, gates, phase)) in enumerate(parity_transforms.items()):
             gate = qml.prod(*gates)
             assert isinstance(so3mat, SO3Matrix), "All transform should have SO3Matrix instances"
             assert isinstance(
                 gate, (qml.ops.Operation, qml.ops.op_math.Prod)
             ), "Each transform should have a gate"
+            assert isinstance(phase, float)
+            assert qml.math.allclose(phase * math.pi, _SU2_transform(qml.matrix(gate))[1])
 
             su2mat = _SU2_transform(qml.matrix(qml.adjoint(gate)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
@@ -114,17 +118,18 @@ class TestNormalForms:
                     so3rep @= op_
 
         cl_list = list(clifford_elements.keys())
-        so3mat @= clifford_elements[cl_list[c]]
+        so3mat @= clifford_elements[cl_list[c]][0]
         for op_ in cl_list[c]:
             so3rep @= op_
 
-        (t_bit, rep_bits, c_bit) = _ma_normal_form(so3mat, compressed=True)
-        print(t_bit, rep_bits, c_bit)
+        (t_bit, rep_bits, c_bit, phase) = _ma_normal_form(so3mat, compressed=True)
+
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"
         assert c_bit == c, "Clifford bit does not match expected value"
+        assert isinstance(phase, float), "Phase should be a float"
 
-        decomposition = _ma_normal_form(so3mat, compressed=False)
+        decomposition, phase = _ma_normal_form(so3mat, compressed=False)
         assert qml.equal(
             qml.prod(*decomposition), qml.prod(*so3rep[not a :])
         ), "Decomposition does not match expected operator"
