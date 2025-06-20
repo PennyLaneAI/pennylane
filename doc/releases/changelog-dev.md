@@ -430,6 +430,10 @@
 
   This can be now used with the :func:`~.transform.clifford_t_decomposition` transform by using
   the keyword argument ``method="rs"``.
+  [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
+  [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
+  [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
 <h3>Improvements 🛠</h3>
 
