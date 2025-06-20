@@ -81,7 +81,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
     def match_and_rewrite(self, op: ir.Operation, rewriter: PatternRewriter, /):
         """Abstract method for measurements-from-samples match-and-rewrite patterns."""
 
-    def get_observable_op(self, op: quantum.ExpvalOp | quantum.VarianceOp) -> quantum.NamedObsOp:
+    @classmethod
+    def get_observable_op(cls, op: quantum.ExpvalOp | quantum.VarianceOp) -> quantum.NamedObsOp:
         """Return the observable op (quantum.NamedObsOp) given as an input operand to `op`.
 
         We assume that `op` is either a quantum.ExpvalOp or quantum.VarianceOp, but this is not
@@ -94,7 +95,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
             quantum.NamedObsOp: The observable
         """
         observable_op = op.operands[0].owner
-        self._validate_observable_op(observable_op)
+        cls._validate_observable_op(observable_op)
 
         return observable_op
 
@@ -151,8 +152,9 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
         return compbasis_op
 
+    @staticmethod
     def insert_sample_op(
-        self, compbasis_op: quantum.ComputationalBasisOp, rewriter: PatternRewriter
+        compbasis_op: quantum.ComputationalBasisOp, shots: int, rewriter: PatternRewriter
     ) -> quantum.SampleOp:
         """Create and insert a sample op (quantum.SampleOp).
 
@@ -177,7 +179,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         # TODO: this assumes MP acts on 1 wire, what if there are more?
         sample_op = quantum.SampleOp(
             operands=[compbasis_op.results[0], None, None],
-            result_types=[builtin.TensorType(builtin.Float64Type(), [self._shots, 1])],
+            result_types=[builtin.TensorType(builtin.Float64Type(), [shots, 1])],
         )
         rewriter.insert_op(sample_op, insertion_point=InsertPoint.after(compbasis_op))
 
@@ -322,7 +324,7 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
         observable_op = self.get_observable_op(matched_op)
         in_qubit = observable_op.operands[0]
         compbasis_op = self.insert_compbasis_op(in_qubit, observable_op, rewriter)
-        sample_op = self.insert_sample_op(compbasis_op, rewriter)
+        sample_op = self.insert_sample_op(compbasis_op, self._shots, rewriter)
 
         # Insert the post-processing function into current module or get handle to it if already
         # inserted
@@ -399,7 +401,7 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
     def match_and_rewrite(self, probs_op: quantum.ProbsOp, rewriter: PatternRewriter, /):
         """Match and rewrite for quantum.ProbsOp."""
         compbasis_op = probs_op.operands[0].owner
-        sample_op = self.insert_sample_op(compbasis_op, rewriter)
+        sample_op = self.insert_sample_op(compbasis_op, self._shots, rewriter)
 
         # Insert the post-processing function into current module or
         # get handle to it if already inserted
