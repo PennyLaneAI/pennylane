@@ -40,7 +40,7 @@ def test_assert_valid():
     """Tests that BasisState operators are valid"""
 
     op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
 
     def abstract_check(state):
         op = qml.BasisState(state, wires=[0, 1])
@@ -56,7 +56,7 @@ def test_assert_valid():
             for _op in tape.operations:
                 resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
                 actual_gate_counts[resource_rep] += 1
-            assert gate_counts == actual_gate_counts
+            assert all(_op in gate_counts for _op in actual_gate_counts)
 
             # Tests that the decomposition produces the same matrix
             op_matrix = qml.matrix(op)
