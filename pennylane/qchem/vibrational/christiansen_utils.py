@@ -1043,8 +1043,8 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order, path):
 def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend="serial"):
     r"""Computes Christiansen vibrational Hamiltonian integrals.
 
-    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. D4-D7 of
+    `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_ as:
 
     .. math::
 
@@ -1074,10 +1074,10 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
 
     .. math::
 
-        V({Q}) = \sum_i V_1(Q_i) + \sum_{ij} V_2(Q_i,Q_j) + ....
+        V({Q}) = \sum_i V_1(Q_i) + \sum_{i>j} V_2(Q_i,Q_j) + ....
 
     Similarly, the three-mode integrals can be obtained
-    following `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    following Eq, D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     This function computes the coefficients :math:`C` efficiently by using the
     `Gauss-Hermite quadrature <https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature>`_,
@@ -1183,7 +1183,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     r"""Computes Christiansen vibrational dipole integrals.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
-    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_. The dipole
+    defined in Eqs. D4-D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_. The dipole
     operator is defined as
 
     .. math::
@@ -1213,9 +1213,10 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
 
     .. math::
 
-        D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
+        D({Q}) = \sum_i D_1(Q_i) + \sum_{i>j} D_2(Q_i,Q_j) + ....
 
-    The three-mode integrals can be obtained in a similar way.
+    Similarly, the three-mode integrals can be obtained
+    following Eq, D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data

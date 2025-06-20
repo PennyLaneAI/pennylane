@@ -25,8 +25,8 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 def christiansen_bosonic(one, two=None, three=None, ordered=True):
     r"""Generates a Christiansen bosonic vibrational Hamiltonian.
 
-    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. D4-D7
+    of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_ as:
 
     .. math::
 
@@ -54,7 +54,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents the kinetic energy operator and :math:`V` represents the potential energy operator.
     Similarly, the three-mode integrals can be obtained following
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    Eq. D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     Args:
         one (TensorLike[float]): one-body integrals with shape ``(m, n, n)`` where ``m`` and ``n``
@@ -197,8 +197,8 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
     r"""Generates a Christiansen vibrational Hamiltonian.
 
-    The Christiansen vibrational Hamiltonian is defined based on Eqs. 21-23 of
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_ as:
+    The Christiansen vibrational Hamiltonian is defined based on Eqs. D4-D7
+    of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_ as:
 
     .. math::
 
@@ -226,7 +226,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
     where :math:`\phi` represents a modal, :math:`Q` represents a normal coordinate, :math:`T`
     represents the kinetic energy operator and :math:`V` represents the potential energy operator.
     Similarly, the three-mode integrals can be obtained following
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    Eq. D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
@@ -299,7 +299,7 @@ def christiansen_dipole(pes, n_states=16):
     r"""Returns Christiansen dipole operator.
 
     The Christiansen dipole operator is constructed similar to the vibrational Hamiltonian operator
-    defined in Eqs. 21-23 of `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_. The dipole
+    defined in Eqs. D4-D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_. The dipole
     operator is defined as
 
     .. math::
@@ -328,10 +328,10 @@ def christiansen_dipole(pes, n_states=16):
 
     .. math::
 
-        D({Q}) = \sum_i D_1(Q_i) + \sum_{ij} D_2(Q_i,Q_j) + ....
+        D({Q}) = \sum_i D_1(Q_i) + \sum_{i>j} D_2(Q_i,Q_j) + ....
 
     Similarly, the three-mode integrals can be obtained following
-    `arXiv:2308.08703 <https://arxiv.org/abs/2308.08703>`_.
+    Eq. D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     The bosonic creation and annihilation operators are then mapped to the Pauli operators as
 
