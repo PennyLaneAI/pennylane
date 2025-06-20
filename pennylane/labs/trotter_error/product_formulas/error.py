@@ -176,7 +176,6 @@ def perturbation_error(
         commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
     }
 
-    # A serial implementation of the perturbation error computation
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
@@ -188,7 +187,6 @@ def perturbation_error(
 
         return expectations
 
-    # Parallelize the computation of expval per state
     if parallel_mode == "state":
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
@@ -199,7 +197,6 @@ def perturbation_error(
 
         return expectations
 
-    # Apply the commutators to each state in parallel
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
@@ -254,7 +251,7 @@ def _apply_commutator(
 def _apply_commutator_coeff(
     commutator: Tuple[Hashable], coeff, fragments: Dict[Hashable, Fragment], state: AbstractState
 ) -> AbstractState:
-    """Returns the state obtained from applying ``commutator`` to ``state``."""
+    """Returns the state obtained from applying ``commutator`` to ``state`` and multiplying by the scalar ``coeff``."""
 
     new_state = _AdditiveIdentity()
 
@@ -278,14 +275,11 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     if not tail:
         return Counter({(head,): 1})
 
-    # Recursively get operations for the tail
     tail_ops_coeffs = _op_list(tuple(tail))
 
-    # Create operations for the head and tail
     ops1 = Counter({(head, *ops): coeff for ops, coeff in tail_ops_coeffs.items()})
     ops2 = Counter({(*ops, head): -coeff for ops, coeff in tail_ops_coeffs.items()})
 
-    # Combine the two Counters efficiently!
     ops1.update(ops2)
 
     return ops1
