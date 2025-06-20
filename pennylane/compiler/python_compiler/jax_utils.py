@@ -129,7 +129,7 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  #
     return wrapper
 
 
-def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs):
+def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
     """Inline a ``jax.jit``-ed Python function to an xDSL module."""
     func_mod = _xdsl_module_inline(func, *args, **kwargs)
 
