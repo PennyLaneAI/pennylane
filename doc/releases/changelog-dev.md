@@ -611,6 +611,12 @@
   default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
   [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
 
+<h4>Community contributions 🥳</h4>
+
+* New operation `qml.QutritDensityMatix` added used to initialize density matrix states for the device
+  `qml.devices.DefaultQutritMixed`.
+  [(#7682)](https://github.com/PennyLaneAI/pennylane/pull/7682)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The imports of dependencies introduced by ``labs`` functionalities have been modified such that
