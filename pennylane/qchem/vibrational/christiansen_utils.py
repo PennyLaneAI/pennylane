@@ -1077,7 +1077,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
         V({Q}) = \sum_i V_1(Q_i) + \sum_{i>j} V_2(Q_i,Q_j) + ....
 
     Similarly, the three-mode integrals can be obtained
-    following Eq, D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
+    following Eq. D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     This function computes the coefficients :math:`C` efficiently by using the
     `Gauss-Hermite quadrature <https://en.wikipedia.org/wiki/Gauss%E2%80%93Hermite_quadrature>`_,
@@ -1216,7 +1216,7 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
         D({Q}) = \sum_i D_1(Q_i) + \sum_{i>j} D_2(Q_i,Q_j) + ....
 
     Similarly, the three-mode integrals can be obtained
-    following Eq, D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
+    following Eq. D7 of `arXiv:2504.10602 <https://arxiv.org/abs/2504.10602>`_.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
@@ -1225,7 +1225,8 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
             set to 1.
         backend (string): the executor backend from the list of supported backends. Available
             options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
-            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``. See Usage Details
+            for more information.
 
     Returns:
         List[TensorLike[float]]: the integrals for the Christiansen dipole operator

@@ -751,7 +751,10 @@ def vibrational_pes(
         optimize (bool): if ``True`` perform geometry optimization. Default is ``True``.
         localize (bool): if ``True`` perform normal mode localization. Default is ``False``.
         bins (List[float]): grid of frequencies for grouping normal modes.
-            Default is ``None`` which means all frequencies will be grouped in one bin.
+            Default is ``None`` which means all frequencies will be grouped in one bin. For
+            instance, ``bins = [1300, 2600]`` allows to separately group and localize modes in three
+            groups that have frequencies below :math:`1300`, between :math:`1300-2600` and
+            above :math:`2600`.
         cubic (bool)): if ``True`` include three-mode couplings. Default is ``False``.
         dipole_level (int): The level up to which dipole moment data are to be calculated. Input
             values can be ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and
@@ -760,7 +763,8 @@ def vibrational_pes(
             set to 1.
         backend (string): the executor backend from the list of supported backends. Available
             options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
-            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``. See Usage Details
+            for more information.
 
     Returns:
        VibrationalPES: the VibrationalPES object
@@ -773,6 +777,32 @@ def vibrational_pes(
     >>> pes = qml.qchem.vibrational_pes(mol, optimize=False)
     >>> print(pes.freqs)
     [0.02038828]
+
+    .. details::
+        :title: Usage Details
+
+        The ``backend`` options allow to run calculations using multiple threads or multiple
+        processes.
+
+        - ``serial``: This executor wraps Python standard library calls without support for
+            multithreaded or multiprocess execution. Any calls to external libraries that utilize
+            threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
+
+        - ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
+            interface, and provides support for execution using multiple threads. The threading
+            executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
+
+        - ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
+
+        - ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
     """
     with TemporaryDirectory() as tmpdir:
         path = Path(tmpdir)
