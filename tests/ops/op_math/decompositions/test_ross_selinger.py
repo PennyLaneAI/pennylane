@@ -19,7 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import ZOmega
-from pennylane.ops.op_math.decompositions.ross_selinger import _domain_correction, rs_decomposition
+from pennylane.ops.op_math.decompositions.ross_selinger import (
+    _domain_correction,
+    _jit_rs_decomposition,
+    rs_decomposition,
+)
 
 
 @pytest.mark.parametrize(
@@ -95,3 +99,34 @@ def test_exception():
         match=r"Operator must be a RZ or PhaseShift gate",
     ):
         rs_decomposition(op, epsilon=1e-4, max_trials=1)
+
+
+@pytest.mark.parametrize(
+    ("decomposition_info", "expected_ops"),
+    [
+        (
+            (1, (1, 0, 1, 1, 1, 0), 0),
+            "[T(0), ForLoop(tapes=[[Cond(tapes=[[S(0), H(0), T(0)], [H(0), T(0)]])]]), I(0)]",
+        ),
+        (
+            (0, (1, 0, 1, 1, 1, 0), 12),
+            "[ForLoop(tapes=[[Cond(tapes=[[S(0), H(0), T(0)], [H(0), T(0)]])]]), S(0), Y(0)]",
+        ),
+        (
+            (0, (), 9),
+            "[H(0), Adjoint(S(0))]",
+        ),
+    ],
+)
+@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+def test_jit_rs_decomposition(decomposition_info, expected_ops):
+    """Test that the qjit rs decomposition is working."""
+
+    # @qml.qjit
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def circuit():
+        ops = _jit_rs_decomposition(0, decomposition_info)
+        assert str(ops) == expected_ops
+        return None
+
+    qml.qjit(circuit)
