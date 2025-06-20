@@ -43,7 +43,7 @@ from pennylane.compiler.python_compiler.transforms.api import (
     TransformFunctionsExt,
     TransformInterpreterPass,
     available_passes,
-    xdsl_transform,
+    compiler_transform,
 )
 
 
@@ -166,7 +166,7 @@ def test_decorator():
         def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
             print("hello")
 
-    xdsl_transform(PrintModule)
+    compiler_transform(PrintModule)
     assert "print-module" in available_passes
     assert available_passes["print-module"]() == PrintModule
 
@@ -174,7 +174,7 @@ def test_decorator():
 def test_integration_for_transform_interpreter(capsys):
     """Test that a pass is run via the transform interpreter"""
 
-    @xdsl_transform
+    @compiler_transform
     @dataclass(frozen=True)
     class _HelloWorld(passes.ModulePass):
         name = "hello-world"
