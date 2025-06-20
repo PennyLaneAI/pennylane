@@ -30,6 +30,7 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.allocation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -114,7 +115,7 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -130,7 +131,6 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
-    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
