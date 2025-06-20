@@ -1059,7 +1059,7 @@ class ResourceIsingXY(ResourceOperator):
             num_ctrl_values=ctrl_num_ctrl_values,
         )
 
-        return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_rx), GateCount(ctrl_ry)]
+        return [GateCount(h, 2), GateCount(cy, 2), GateCount(ctrl_ry), GateCount(ctrl_rx)]
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z, eps=None) -> list[GateCount]:
