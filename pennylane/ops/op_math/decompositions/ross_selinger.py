@@ -187,10 +187,10 @@ def rs_decomposition(op, epsilon, is_qjit=False, *, max_trials=20):
 
         # If QJIT is active, use the compressed normal form.
         if is_qjit:
-            decomposition_info = _ma_normal_form(so3_mat, compressed=True)
+            decomposition_info, g_phase = _ma_normal_form(so3_mat, compressed=True)
             decomposition = _jit_rs_decomposition(op.wires[0], decomposition_info)
         else:
-            decomposition = _ma_normal_form(so3_mat)
+            decomposition, g_phase = _ma_normal_form(so3_mat)
 
         # Remove inverses if any in the decomposition and handle trivial case
         new_tape = qml.tape.QuantumScript(decomposition)
