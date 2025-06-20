@@ -538,7 +538,7 @@ class TestMeasureFunctions:
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
-    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
     def test_arbitrary_basis_with_program_capture(
         self, angle, plane, wire, reset, postselect, angle_type
     ):
@@ -546,11 +546,10 @@ class TestMeasureFunctions:
         import jax
         import networkx as nx
 
-        if not angle_type == "float":
-            import importlib
-
-            np_type = importlib.import_module(angle_type)
-            angle = np_type.array(angle)
+        if angle_type == "numpy":
+            angle = np.array(angle)
+        elif angle_type == "jax":
+            angle = jax.numpy.array(angle)
 
         def circ():
             m = measure_arbitrary_basis(
@@ -932,7 +931,7 @@ class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     @pytest.mark.parametrize("angle", [0.1234, np.array([-0.4321])])
-    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax.numpy"])
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_diagonalize_mcms_returns_parametrized_mcms(
         self, mcm_method, shots, angle, angle_type, use_jit
@@ -941,7 +940,7 @@ class TestWorkflows:
         by the QNode"""
 
         if "jax" in angle_type or use_jit:
-            pytest.importorskip("jax")
+            jax = pytest.importorskip("jax")
 
         if mcm_method == "tree-traversal" and use_jit:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
@@ -949,11 +948,10 @@ class TestWorkflows:
 
         dev = qml.device("default.qubit", shots=shots)
 
-        if not angle_type == "float":
-            import importlib
-
-            np_type = importlib.import_module(angle_type)
-            angle = np_type.array(angle)
+        if angle_type == "numpy":
+            angle = np.array(angle)
+        elif angle_type == "jax":
+            angle = jax.numpy.array(angle)
 
         def jit_wrapper(func):
             if use_jit:
