@@ -82,10 +82,20 @@ def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
     return ToBloq(op, map_ops=map_ops, **kwargs)
 
 
-# Helper function to handle common guard clauses
-def _handle_custom_map(op, custom_mapping, map_ops, **kwargs):
+def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
     """
     Handles the custom mapping and wrapping logic
+
+    Args:
+        op (Operation): a PennyLane operator to be converted to a Qualtran Bloq.
+        map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
+            as a ``ToBloq`` when False. Default is True.
+        custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
+            Qualtran Bloq. Default is None.
+
+    Returns:
+        Optional[`Bloq`]: A ``ToBloq`` or the ``Bloq`` defined in the custom mapping. ``None`` if
+            map_ops is True but no custom mapping is found.
     """
 
     if not map_ops:
