@@ -68,16 +68,15 @@ class TestGradients:
         import jax.numpy as jnp
 
         device = qml.device(dev_name, wires=2)
-        qml_qnode = qml.QNode(circuit, device=device)
+        qnode = qml.QNode(circuit, device=device)
 
         opt = qml.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
-
         params_jax = jnp.array(params)
-        grad_jax = opt._get_grad(qml_qnode, params_jax)
-        
-        grad_exact = -jnp.sin(params_jax[0])
+        grad_jax = opt._get_grad(qnode, params_jax)
+
+        grad_exact = jnp.array([-np.sin(params[0]), 0.0])
 
         assert np.allclose(grad_exact, grad_jax)
 
@@ -89,20 +88,19 @@ class TestGradients:
         import jax.numpy as jnp
 
         device = qml.device(dev_name, wires=2)
-        qml_qnode = qml.QNode(circuit, device=device)
+        qnode = qml.QNode(circuit, device=device)
 
         opt = qml.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
-        params_qml = qml.numpy.array(params)
-        cost_qml = qml_qnode(params_qml)
-        grad_qml = qml.grad(qml_qnode)(params_qml)
-
         params_jax = jnp.array(params)
-        cost_jax, grad_jax = opt._get_value_and_grad(qml_qnode, params_jax)
+        cost_jax, grad_jax = opt._get_value_and_grad(qnode, params_jax)
 
-        assert np.allclose(cost_qml, cost_jax)
-        assert np.allclose(grad_qml, grad_jax)
+        cost_exact = qnode(params)
+        grad_exact = jnp.array([-np.sin(params[0]), 0.0])
+
+        assert np.allclose(cost_exact, cost_jax)
+        assert np.allclose(grad_exact, grad_jax)
 
 
 class TestMetricTensor:
