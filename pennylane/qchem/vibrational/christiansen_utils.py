@@ -1099,7 +1099,8 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
             set to 1.
         backend (string): the executor backend from the list of supported backends. Available
             options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
-            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``.
+            ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``. See Usage Details
+            for more information.
 
     Returns:
         List[TensorLike[float]]: the one-mode and two-mode integrals for the Christiansen Hamiltonian
@@ -1121,6 +1122,32 @@ def christiansen_integrals(pes, n_states=16, cubic=False, num_workers=1, backend
       [0.0019394  0.03139978 0.00558    0.00137586]
       [0.00046436 0.00558    0.05314478 0.01047909]
       [0.0016381  0.00137586 0.01047909 0.07565063]]]
+
+    .. details::
+        :title: Usage Details
+
+        The ``backend`` options allow to run calculations using multiple threads or multiple
+        processes.
+
+        - ``serial``: This executor wraps Python standard library calls without support for
+            multithreaded or multiprocess execution. Any calls to external libraries that utilize
+            threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
+
+        - ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
+            interface, and provides support for execution using multiple threads. The threading
+            executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
+
+        - ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
+
+        - ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
     """
     if not has_h5py:  # pragma: no cover
         raise ImportError(
@@ -1217,6 +1244,32 @@ def christiansen_integrals_dipole(pes, n_states=16, num_workers=1, backend="seri
     >>> print(integrals[0][2])
     [[[-0.00074107 -0.02287269]
     [-0.02287269 -0.00216419]]]
+
+    .. details::
+        :title: Usage Details
+
+        The ``backend`` options allow to run calculations using multiple threads or multiple
+        processes.
+
+        - ``serial``: This executor wraps Python standard library calls without support for
+            multithreaded or multiprocess execution. Any calls to external libraries that utilize
+            threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
+
+        - ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
+            interface, and provides support for execution using multiple processes.
+
+        - ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
+            interface, and provides support for execution using multiple threads. The threading
+            executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
+
+        - ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
+
+        - ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
+            class, and provides support for execution using multiple processes launched using MPI.
     """
     if not has_h5py:  # pragma: no cover
         raise ImportError(
