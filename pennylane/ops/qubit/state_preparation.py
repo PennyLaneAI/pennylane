@@ -186,11 +186,22 @@ class BasisState(StatePrepBase):
 
 
 def _basis_state_decomp_resources(num_wires):
-    return {qml.X: num_wires}
+    # Represent one of the X gates as an RX and a GlobalPhase because RX is
+    # used when jax-jit is enabled without capture/qjit.
+    return {qml.X: num_wires, qml.RX: 1, qml.GlobalPhase: 1}
 
 
 @register_resources(_basis_state_decomp_resources)
 def _basis_state_decomp(state, wires, **__):
+
+    if qml.math.is_abstract(state) and not (qml.capture.enabled() or qml.compiler.active()):
+        # This branch is for supporting jax-jit without capture/qjit.
+        global_phase = 0.0
+        for wire, basis in zip(wires, state):
+            qml.RX(basis * np.pi, wires=wire)
+            global_phase += basis * np.pi / 2
+        qml.GlobalPhase(-global_phase)
+        return
 
     def _X(w):
         qml.X(w)
