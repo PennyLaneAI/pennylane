@@ -678,7 +678,7 @@ class ResourceRZ(ResourceOperator):
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            eps (float): error threshold for clifford plus T decomposition of this operation
+            eps (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Resources:
             For a single control wire, the cost is a single instance of :class:`~.ResourceCRY`.

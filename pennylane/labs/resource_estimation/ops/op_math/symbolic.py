@@ -116,8 +116,8 @@ class ResourceAdjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
-                that we want the adjoint of.
+            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            that we want the adjoint of.
 
         """
         return {"base_cmpr_op": self.base_op}
@@ -373,7 +373,7 @@ class ResourceControlled(ResourceOperator):
     @classmethod
     def default_resource_decomp(
         cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -471,7 +471,7 @@ class ResourceControlled(ResourceOperator):
         base_cmpr_op,
         num_ctrl_wires,
         num_ctrl_values,
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -619,7 +619,7 @@ class ResourcePow(ResourceOperator):
         return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "z": z})
 
     @classmethod
-    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -1018,7 +1018,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to estimate the resources.
 
         Args:
             cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding

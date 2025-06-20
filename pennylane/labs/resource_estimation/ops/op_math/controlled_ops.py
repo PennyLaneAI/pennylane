@@ -529,8 +529,8 @@ class ResourceCSWAP(ResourceOperator):
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
-                represents a specific quantum gate and the number of times it appears
-                in the decomposition.
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         ctrl_swap = resource_rep(
             re.ResourceControlled,

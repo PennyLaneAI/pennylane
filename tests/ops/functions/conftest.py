@@ -175,6 +175,8 @@ _ABSTRACT_OR_META_TYPES = {
     PowObs,
     qml.StatePrep,
     qml.FromBloq,
+    qml.allocation.Allocate,  # no integer wires
+    qml.allocation.Deallocate,  # no integer wires
 }
 """Types that should not have actual instances created."""
 
