@@ -180,10 +180,19 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
     for s in shots:
         for m in measurements:
+            print(s)
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            t = jax.core.ShapedArray if isinstance(s, int) or s is None else jax.core.DShapedArray
+            print(shape)
+            if all(isinstance(si, int) for si in shape):
+                aval_type = jax.core.ShapedArray
+            else:
+                aval_type = jax.core.DShapedArray
+                if not jax.config.jax_dynamic_shapes:
+                    raise ValueError(
+                        "Returning arrays with a dynamic shape requires setting jax.config.update('jax_dynamic_shapes', True)"
+                    )
             dtype = jax.numpy.dtype(dtype_map.get(dtype, dtype))
-            shapes.append(t(batch_shape + shape, dtype))
+            shapes.append(aval_type(batch_shape + shape, dtype))
     return shapes
 
 
@@ -268,6 +277,7 @@ def custom_staging_rule(
 
     if not jax.config.jax_dynamic_shapes:
         # fallback to normal behavior
+        print(tracers)
         return jaxpr_trace.default_process_primitive(qnode_prim, tracers, params)
 
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
@@ -311,9 +321,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     shapes = _get_shapes_for(
         *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
     )
-    if shots_len == 0:
-        return shapes
-    return shapes * shots_len
+    return shapes
 
 
 # pylint: disable=too-many-arguments

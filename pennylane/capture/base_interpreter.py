@@ -400,6 +400,7 @@ class PlxprInterpreter:
             with qml.QueuingManager.stop_recording():
                 jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
 
+            print(jaxpr)
             flat_args = jax.tree_util.tree_leaves(args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
             assert flat_f.out_tree
@@ -594,8 +595,10 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
+    f = partial(copy(self).eval, qfunc_jaxpr, consts)
+    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
 
+    print("shots: ", shots)
     return qnode_prim.bind(
         *shots,
         *new_qfunc_jaxpr.consts,
