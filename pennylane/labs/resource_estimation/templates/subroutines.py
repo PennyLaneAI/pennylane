@@ -751,3 +751,335 @@ class ResourceSelect(ResourceOperator):
         """
         params = {"cmpr_ops": cmpr_ops}
         return CompressedResourceOp(cls, params)
+
+
+class ResourceQROM(ResourceOperator):
+    """Resource class for the QROM template.
+
+    Args:
+        bitstrings (list[str]): the bitstrings to be encoded
+        control_wires (Sequence[int]): the wires where the indexes are specified
+        target_wires (Sequence[int]): the wires where the bitstring is loaded
+        work_wires (Sequence[int]): the auxiliary wires used for the computation
+        clean (bool): if True, the work wires are not altered by operator, default is ``True``
+
+    Resource Parameters:
+        * num_bitstrings (int): the number of bitstrings that are to be encoded
+        * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+        * num_control_wires (int): the number of control wires where in the indexes are specified
+        * num_work_wires (int): the number of auxiliary wires used for QROM computation
+        * size_bitstring (int): the length of each bitstring
+        * clean (bool): if True, the work wires are not altered by the QROM operator
+
+    Resources:
+        The resources for QROM are taken from the following two papers:
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) and
+        `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ (Figure 4)
+
+        We use the one-auxillary qubit version of select, instead of the built-in select
+        resources.
+
+    .. seealso:: :class:`~.QROM`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> re.ResourceQROM.resources(
+    ...     num_bitstrings=3,
+    ...     num_bit_flips=7,
+    ...     num_control_wires=5,
+    ...     num_work_wires=5,
+    ...     size_bitstring=3,
+    ...     clean=True
+    ... )
+    {Hadamard: 6, CNOT: 7, MultiControlledX: 8, X: 8, CSWAP: 12}
+    """
+
+    resource_keys = {
+        "num_bitstrings",
+        "size_bitstring",
+        "num_bit_flips",
+        "select_swap_depth",
+        "clean",
+    }
+
+    @staticmethod
+    def _t_optimized_select_swap_width(num_bitstrings, size_bitstring):
+        opt_width_continuous = math.sqrt((2 / 3) * (num_bitstrings / size_bitstring))
+        w1 = 2 ** math.floor(math.log2(opt_width_continuous))
+        w2 = 2 ** math.ceil(math.log2(opt_width_continuous))
+
+        if w1 < 1 and w2 < 1:
+            return 1
+
+        def t_cost_func(w):
+            return 4 * (math.ceil(num_bitstrings / w) - 2) + 6 * (w - 1) * size_bitstring
+
+        if t_cost_func(w2) < t_cost_func(w1) and w2 >= 1:
+            return w2
+        elif t_cost_func(w2) >= t_cost_func(w1) and w1 >= 1:
+            return w1
+        else:
+            return 1
+
+    def __init__(
+        self,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips=None,
+        clean=True,
+        wires=None,
+        select_swap_depth=None,
+    ) -> None:
+        self.clean = clean
+        self.num_bitstrings = num_bitstrings
+        self.size_bitstring = size_bitstring
+        self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring / 2)
+
+        if wires is not None:
+            self.num_wires = len(wires)
+            assert self.num_wires > size_bitstring
+            self.num_control_wires = self.num_wires - size_bitstring
+            assert self.num_control_wires >= math.ceil(math.log2(num_bitstrings))
+
+        else:
+            self.num_control_wires = math.ceil(math.log2(num_bitstrings))
+            self.num_wires = size_bitstring + self.num_control_wires
+
+        self.select_swap_depth = select_swap_depth
+        super().__init__(wires=wires)
+
+    @classmethod
+    def default_resource_decomp(
+        cls,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips,
+        select_swap_depth=None,
+        clean=True,
+        **kwargs,
+    ) -> Dict[CompressedResourceOp, int]:
+        r"""The resources for QROM are taken from the following two papers:
+        (https://arxiv.org/pdf/1812.00954, figure 1.c) and
+        (https://arxiv.org/pdf/1902.02134, figure 4).
+
+        Note: we use the unary iterator trick to implement the Select. This
+        implementation assumes we have access to :math:`S + 1` additional
+        work qubits, where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is
+        the number of batches of unitaries to select.
+        """
+
+        if select_swap_depth:
+            select_swap_depth = 2 ** math.floor(math.log2(select_swap_depth))
+        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
+            num_bitstrings, size_bitstring
+        )
+        L_opt = math.ceil(num_bitstrings / W_opt)
+        l = math.ceil(math.log2(L_opt))
+
+        gate_cost = []
+        gate_cost.append(
+            AllocWires((W_opt - 1) * size_bitstring + (l - 1))
+        )  # Swap registers + work_wires for UI trick
+
+        x = resource_rep(re.ResourceX)
+        cnot = resource_rep(re.ResourceCNOT)
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+        hadamard = resource_rep(re.ResourceHadamard)
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        gate_cost.append(
+            GateCount(x, select_clean_prefactor * (2 * (L_opt - 2) + 1))
+        )  # conjugate 0 controlled toffolis + 1 extra X gate from un-controlled unary iterator decomp
+        gate_cost.append(
+            GateCount(
+                cnot, select_clean_prefactor * (L_opt - 2) + select_clean_prefactor * num_bit_flips
+            )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+        )
+        gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 2)))
+        gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 2)))
+
+        gate_cost.append(FreeWires(l - 1))  # release UI trick work wires
+
+        # # SWAP cost:
+        ctrl_swap = resource_rep(re.ResourceCSWAP)
+        gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
+
+        if clean:
+            gate_cost.append(FreeWires((W_opt - 1) * size_bitstring))  # release Swap registers
+
+        return gate_cost
+
+    @classmethod
+    def single_controlled_res_decomp(
+        cls,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips,
+        select_swap_depth,
+        clean,
+    ):
+        W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
+            num_bitstrings, size_bitstring
+        )
+        L_opt = math.ceil(num_bitstrings / W_opt)
+        l = math.ceil(math.log2(L_opt))
+
+        gate_cost = []
+        gate_cost.append(
+            FreeWires((W_opt - 1) * size_bitstring + l)
+        )  # Swap registers + work_wires for UI trick
+
+        x = resource_rep(re.ResourceX)
+        cnot = resource_rep(re.ResourceCNOT)
+        l_elbow = resource_rep(re.ResourceTempAND)
+        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+        hadamard = resource_rep(re.ResourceHadamard)
+
+        swap_clean_prefactor = 1
+        select_clean_prefactor = 1
+
+        if clean:
+            gate_cost.append(GateCount(hadamard, 2 * size_bitstring))
+            swap_clean_prefactor = 4
+            select_clean_prefactor = 2
+
+        # SELECT cost:
+        gate_cost.append(
+            GateCount(x, select_clean_prefactor * (2 * (L_opt - 1)))
+        )  # conjugate 0 controlled toffolis
+        gate_cost.append(
+            GateCount(
+                cnot, select_clean_prefactor * (L_opt - 1) + select_clean_prefactor * num_bit_flips
+            )  # num CNOTs in unary iterator trick   +   each unitary in the select is just a CNOT
+        )
+        gate_cost.append(GateCount(l_elbow, select_clean_prefactor * (L_opt - 1)))
+        gate_cost.append(GateCount(r_elbow, select_clean_prefactor * (L_opt - 1)))
+
+        gate_cost.append(FreeWires(l))  # release UI trick work wires
+
+        # SWAP cost:
+        w = math.ceil(math.log2(W_opt))
+        ctrl_swap = re.ResourceCSWAP.resource_rep()
+        gate_cost.append(AllocWires(1))  # need one temporary qubit for l/r-elbow to control SWAP
+
+        gate_cost.append(GateCount(l_elbow, w))
+        gate_cost.append(GateCount(ctrl_swap, swap_clean_prefactor * (W_opt - 1) * size_bitstring))
+        gate_cost.append(GateCount(r_elbow, w))
+
+        gate_cost.append(FreeWires(1))  # temp wires
+        if clean:
+            gate_cost.append(
+                FreeWires((W_opt - 1) * size_bitstring)
+            )  # release Swap registers + temp wires
+        return gate_cost
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires: int,
+        ctrl_num_ctrl_values: int,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips=None,
+        select_swap_depth=None,
+        clean=True,
+        **kwargs,
+    ):
+        gate_cost = []
+        if ctrl_num_ctrl_values:
+            x = re.ResourceX.resource_rep()
+            gate_cost.append(GateCount(x, 2 * ctrl_num_ctrl_values))
+
+        if num_bit_flips is None:
+            num_bit_flips = (num_bitstrings * size_bitstring) // 2
+
+        single_ctrl_cost = cls.single_controlled_res_decomp(
+            num_bitstrings,
+            size_bitstring,
+            num_bit_flips,
+            select_swap_depth,
+            clean,
+        )
+
+        if ctrl_num_ctrl_wires == 1:
+            gate_cost.extend(single_ctrl_cost)
+            return gate_cost
+
+        gate_cost.append(AllocWires(1))
+        gate_cost.append(
+            GateCount(re.ResourceMultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
+        )
+        gate_cost.extend(single_ctrl_cost)
+        gate_cost.append(
+            GateCount(re.ResourceMultiControlledX.resource_rep(ctrl_num_ctrl_wires, 0))
+        )
+        gate_cost.append(FreeWires(1))
+        return gate_cost
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_bitstrings (int): the number of bitstrings that are to be encoded
+                * num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+                * num_control_wires (int): the number of control wires where in the indexes are specified
+                * num_work_wires (int): the number of auxiliary wires used for QROM computation
+                * size_bitstring (int): the length of each bitstring
+                * clean (bool): if True, the work wires are not altered by the QROM operator
+        """
+
+        return {
+            "num_bitstrings": self.num_bitstrings,
+            "size_bitstring": self.size_bitstring,
+            "num_bit_flips": self.num_bit_flips,
+            "select_swap_depth": self.select_swap_depth,
+            "clean": self.clean,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips=None,
+        select_swap_depth=None,
+        clean=True,
+    ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_bitstrings (int): the number of bitstrings that are to be encoded
+            num_bit_flips (int): the number of bit flips needed for the list of bitstrings
+            num_control_wires (int): the number of control wires where in the indexes are specified
+            num_work_wires (int): the number of auxiliary wires used for QROM computation
+            size_bitstring (int): the length of each bitstring
+            clean (bool): if True, the work wires are not altered by the QROM operator
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        if num_bit_flips is None:
+            num_bit_flips = num_bitstrings * size_bitstring // 2
+
+        params = {
+            "num_bitstrings": num_bitstrings,
+            "num_bit_flips": num_bit_flips,
+            "size_bitstring": size_bitstring,
+            "select_swap_depth": select_swap_depth,
+            "clean": clean,
+        }
+        return CompressedResourceOp(cls, params)
