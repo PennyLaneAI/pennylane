@@ -23,7 +23,7 @@ from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import CustomOp
-from .api import xdsl_transform
+from .api import compiler_transform
 
 # Can handle all composible rotations except Rot... for now
 composable_rotations = [
@@ -122,4 +122,4 @@ class MergeRotationsPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-merge_rotations_pass = xdsl_transform(MergeRotationsPass)
+merge_rotations_pass = compiler_transform(MergeRotationsPass)
