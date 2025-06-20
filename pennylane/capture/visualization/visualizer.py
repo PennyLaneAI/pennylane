@@ -1,14 +1,16 @@
 from copy import copy
-from functools import partial
-from typing import Sequence
+from functools import partial, wraps
+from typing import Callable, Sequence
 
 import jax
 from jax.extend import core
 
+from pennylane.capture.flatfn import FlatFn
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from ..base_interpreter import PlxprInterpreter
+from ..expand_transforms import expand_plxpr_transforms
 from ..primitives import (
     adjoint_transform_prim,
     cond_prim,
@@ -92,7 +94,6 @@ class PlxprVisualizer(PlxprInterpreter):
         return ascii
 
     def eval(self, jaxpr: core.Jaxpr, consts: Sequence, *args, ascii_context: dict = None) -> list:
-        print(self.plxpr_graph.current_cluster.get_name())
 
         self._env = {}
         if ascii_context:
@@ -125,7 +126,20 @@ class PlxprVisualizer(PlxprInterpreter):
 
             if custom_handler:
                 invals = [self.read(invar) for invar in eqn.invars]
-                outvals = custom_handler(self, *invals, **eqn.params, eqn=eqn)
+                if primitive in (
+                    qnode_prim,
+                    for_loop_prim,
+                    while_loop_prim,
+                    cond_prim,
+                    ctrl_transform_prim,
+                    adjoint_transform_prim,
+                ):
+                    print(primitive, "eqn one")
+                    outvals = custom_handler(self, *invals, **eqn.params, eqn=eqn)
+                else:
+                    print(primitive)
+                    outvals = custom_handler(self, *invals, **eqn.params)
+
             elif getattr(primitive, "prim_type", "") == "operator":
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = self.interpret_operation_eqn(eqn)
@@ -249,6 +263,26 @@ class PlxprVisualizer(PlxprInterpreter):
         )
 
         return self.interpret_measurement(mp)
+
+    def __call__(self, f: Callable) -> Callable:
+
+        flat_f = FlatFn(f)
+
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            with QueuingManager.stop_recording():
+                flattened_func = partial(flat_f, **kwargs)
+                jaxpr = jax.make_jaxpr(expand_plxpr_transforms(flattened_func))(*args)
+
+            print(jaxpr)
+            flat_args = jax.tree_util.tree_leaves(args)
+            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
+            assert flat_f.out_tree
+            # slice out any dynamic shape variables
+            results = results[-flat_f.out_tree.num_leaves :]
+            return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
+
+        return wrapper
 
 
 @PlxprVisualizer.register_primitive(qnode_prim)
