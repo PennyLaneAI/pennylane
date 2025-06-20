@@ -206,6 +206,8 @@ def resolve_dynamic_wires(
                 deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
         else:
+            print(op)
+            print(wire_map)
             op = op.map_wires(wire_map)
             if intersection := deallocated.intersection(set(op.wires)):
                 raise ValueError(
