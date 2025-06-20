@@ -31,6 +31,7 @@ from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, Quant
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow.set_shots import set_shots
 
 
 def dummyfunc():
@@ -1394,6 +1395,40 @@ class TestShots:
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
+    def test_shots_update_with_device(self):
+        """Test that _shots is updated when updating the QNode with a new device."""
+        dev1 = qml.device("default.qubit", wires=1, shots=100)
+        qn = qml.QNode(dummyfunc, dev1)
+        assert qn._shots == qml.measurements.Shots(100)
+
+        # _shots should take precedence over device shots
+        with pytest.warns(
+            UserWarning, match="The device's shots value does not match the QNode's shots value."
+        ):
+            dev2 = qml.device("default.qubit", wires=1, shots=200)
+            updated_qnode = qn.update(device=dev2)
+        assert updated_qnode._shots == qml.measurements.Shots(100)
+
+    def test_shots_preserved_in_other_updates(self):
+        """Test that _shots is preserved when updating other QNode parameters."""
+        dev = qml.device("default.qubit", wires=1, shots=50)
+        qn = qml.QNode(dummyfunc, dev)
+        assert qn._shots == qml.measurements.Shots(50)
+
+        # Update something unrelated to shots or device
+        updated_qnode = qn.update(diff_method="parameter-shift")
+        assert updated_qnode._shots == qml.measurements.Shots(50)
+
+    def test_shots_direct_update(self):
+        """Test that _shots can be updated via the shots parameter in update()."""
+        dev = qml.device("default.qubit", wires=1, shots=30)
+        qn = qml.QNode(dummyfunc, dev)
+        assert qn._shots == qml.measurements.Shots(30)
+
+        # Update shots directly
+        updated_qnode = qn.update_shots(shots=75)
+        assert updated_qnode._shots == qml.measurements.Shots(75)
+
 
 class TestTransformProgramIntegration:
     """Tests for the integration of the transform program with the qnode."""
@@ -2156,3 +2191,264 @@ class TestPrivateFunctions:
         )
 
         assert config == expected_config
+
+
+class TestSetShots:
+    """Tests for the set_shots decorator functionality."""
+
+    def test_shots_initialization(self):
+        """Test that _shots is correctly initialized from the device."""
+        dev = qml.device("default.qubit", wires=1, shots=42)
+        qn = qml.QNode(dummyfunc, dev)
+        assert qn._shots == qml.measurements.Shots(42)
+
+        dev_analytic = qml.device("default.qubit", wires=1)
+        qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
+        assert qnode_analytic._shots.total_shots is None
+
+    def test_shots_override_warning(self):
+        """Test that a warning is raised when both set_shots transform and shots parameter are used."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # First apply set_shots to override device shots
+        modified_circuit = qml.set_shots(circuit, shots=50)
+        assert modified_circuit._shots == qml.measurements.Shots(50)
+        assert modified_circuit._shots_override_device is True
+
+        # Then try to pass shots parameter when calling the QNode
+        with pytest.warns(
+            UserWarning,
+            match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+            "The transform will take precedence over",
+        ):
+            result = modified_circuit(shots=25)
+
+        # Verify that the set_shots value (50) was used, not the parameter value (25)
+        assert len(result) == 50
+
+    def test_set_shots_partial_decorator(self):
+        """Test set_shots with partial decorator syntax."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @partial(set_shots, shots=50)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(50)
+        result = circuit()
+        assert len(result) == 50
+
+    def test_set_shots_direct_application(self):
+        """Test applying set_shots directly to an existing QNode."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Apply set_shots directly
+        new_circuit = set_shots(original_circuit, shots=75)
+
+        assert original_circuit._shots == qml.measurements.Shots(10)
+        assert new_circuit._shots == qml.measurements.Shots(75)
+
+        result = new_circuit()
+        assert len(result) == 75
+
+    def test_set_shots_with_shot_vector(self):
+        """Test set_shots with shot vectors."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        shot_vector = [(10, 3), (5, 2)]  # 10 shots × 3 times, 5 shots × 2 times
+        new_circuit = set_shots(circuit, shots=shot_vector)
+
+        assert new_circuit._shots.total_shots == 40  # 10*3 + 5*2
+        result = new_circuit()
+        assert isinstance(result, tuple)
+        assert len(result) == 5  # 3 + 2 groups
+
+    def test_set_shots_analytic_mode(self):
+        """Test set_shots with None for analytic mode."""
+        dev = qml.device("default.qubit", wires=1, shots=100)
+
+        @partial(set_shots, shots=None)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit._shots is None or circuit._shots.total_shots is None
+        result = circuit()
+        assert isinstance(result, (float, np.floating))
+        assert qml.math.allclose(result, np.cos(1.0))
+
+    def test_set_shots_preserves_original_qnode(self):
+        """Test that set_shots creates a new QNode without modifying the original."""
+        dev = qml.device("default.qubit", wires=1, shots=20)
+
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        new_circuit = set_shots(original_circuit, shots=100)
+
+        # Original should be unchanged
+        assert original_circuit._shots == qml.measurements.Shots(20)
+        # New circuit should have updated shots
+        assert new_circuit._shots == qml.measurements.Shots(100)
+
+        # Both should be different objects
+        assert original_circuit is not new_circuit
+
+    @pytest.mark.parametrize(
+        "invalid_input,expected_error",
+        [
+            ("not a function", "set_shots can only be applied to QNodes"),
+            (42, "set_shots can only be applied to QNodes"),
+            (lambda: 42, "set_shots can only be applied to QNodes"),
+            (None, "set_shots can only be applied to QNodes"),
+        ],
+    )
+    def test_set_shots_error_on_invalid_input(self, invalid_input, expected_error):
+        """Test that set_shots raises appropriate errors for invalid inputs."""
+        with pytest.raises(ValueError, match=expected_error):
+            set_shots(invalid_input, shots=100)
+
+    def test_set_shots_with_measurements_requiring_shots(self):
+        """Test set_shots works correctly with measurements that require shots."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(set_shots, shots=1000)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.counts()
+
+        result = circuit()
+        assert isinstance(result, dict)
+        assert sum(result.values()) == 1000
+
+    def test_set_shots_preserves_qnode_properties(self):
+        """Test that set_shots preserves other QNode properties."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="parameter-shift", interface="autograd")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        new_circuit = set_shots(circuit, shots=100)
+
+        # Check that other properties are preserved
+        assert new_circuit.diff_method == circuit.diff_method
+        assert new_circuit.interface == circuit.interface
+        assert new_circuit.device is circuit.device
+
+    @pytest.mark.parametrize(
+        "original_shots,override_shots,expected_tracking",
+        [
+            (10, None, "no_tracking"),  # finite -> analytic
+            (None, 20, "shots_tracked"),  # analytic -> finite
+        ],
+    )
+    def test_device_shots_override_tracking(
+        self, original_shots, override_shots, expected_tracking
+    ):
+        """Test that QNode shots properly override device shots during execution."""
+        dev = qml.device("default.qubit", wires=1, shots=original_shots)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            return qml.probs(wires=0)
+
+        # Test override behavior
+        modified_circuit = set_shots(circuit, shots=override_shots)
+        with qml.Tracker(dev) as tracker:
+            modified_circuit()
+
+        if expected_tracking == "no_tracking":
+            assert "shots" not in tracker.history
+        else:
+            assert tracker.history["shots"][-1] == override_shots
+
+    @pytest.mark.parametrize(
+        "device_shots,override_shots,expected_executions",
+        [
+            (100, None, (3, 1)),  # shots -> analytic: param-shift to backprop
+            (None, 100, (1, 3)),  # analytic -> shots: backprop to param-shift
+        ],
+    )
+    def test_diff_method_adaptation(self, device_shots, override_shots, expected_executions):
+        """Test that diff_method adapts when shots change."""
+        dev = qml.device("default.qubit", wires=1, shots=device_shots)
+
+        @qml.qnode(dev, diff_method="best")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        param = qml.numpy.array(0.5, requires_grad=True)
+
+        # Test original execution count
+        with qml.Tracker(dev) as tracker:
+            qml.grad(circuit)(param)
+        assert len(tracker.history["executions"]) == expected_executions[0]
+
+        # Test modified execution count
+        modified_circuit = set_shots(circuit, shots=override_shots)
+        with qml.Tracker(dev) as tracker:
+            qml.grad(modified_circuit)(param)
+        assert len(tracker.history["executions"]) == expected_executions[1]
+
+    def test_set_shots_integer_to_shot_vector(self):
+        """Test converting from integer shots to shot vector."""
+        dev = qml.device("default.qubit", wires=1, shots=50)  # Start with integer shots
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Verify original has integer shots
+        assert circuit._shots == qml.measurements.Shots(50)
+        original_result = circuit()
+        assert len(original_result) == 50
+        assert not isinstance(original_result, tuple)  # Single array, not tuple of arrays
+
+        # Convert to shot vector
+        shot_vector = [(20, 2), (15, 3)]  # 20 shots × 2 times, 15 shots × 3 times = 85 total
+        vector_circuit = set_shots(circuit, shots=shot_vector)
+
+        # Verify shot vector conversion
+        assert vector_circuit._shots.total_shots == 85  # 20*2 + 15*3
+        assert vector_circuit._shots.shot_vector == ((20, 2), (15, 3))
+
+        vector_result = vector_circuit()
+        assert isinstance(vector_result, tuple)  # Now returns tuple of arrays
+        assert len(vector_result) == 5  # 2 + 3 groups
+
+        # Verify group sizes
+        assert len(vector_result[0]) == 20  # First group: 20 shots
+        assert len(vector_result[1]) == 20  # Second group: 20 shots
+        assert len(vector_result[2]) == 15  # Third group: 15 shots
+        assert len(vector_result[3]) == 15  # Fourth group: 15 shots
+        assert len(vector_result[4]) == 15  # Fifth group: 15 shots
+
+        # Original circuit should be unchanged
+        assert circuit._shots == qml.measurements.Shots(50)
