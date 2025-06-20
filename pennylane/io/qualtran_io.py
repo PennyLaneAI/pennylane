@@ -400,7 +400,7 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_wires = num_work_wires - 1
         num_aux_swap = num_aux_wires - 1
 
-    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)))
+    qft = _map_to_bloq(qtemps.QFT(wires=range(num_aux_wires)), map_ops=False)
     qft_dag = qft.adjoint()
 
     sequence = _map_to_bloq(
