@@ -71,13 +71,11 @@ def _jit_rs_decomposition(wire, decomposition_info):
     """
     ops = []
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
-    has_leading_t = jnp.bool(has_leading_t)
     syllable_sequence = jnp.array(syllable_sequence)
 
     # Optional leading T gate
-    leading_t_cond = qml.cond(has_leading_t, qml.T)
-    leading_t_cond(wire)
-    ops.append(leading_t_cond.operation)
+    if has_leading_t:
+        ops.append(qml.T(wire))
 
     # Middle sequence of HT or SHT syllables.
     if syllable_sequence.shape[0] > 0:
@@ -107,7 +105,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
     return ops
 
 
-def rs_decomposition(op, epsilon, *, max_trials=20):
+def rs_decomposition(op, epsilon, is_qjit, *, max_trials=20):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
     This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
@@ -124,6 +122,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
     Args:
         op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
         epsilon (float): The maximum permissible error.
+        is_qjit (bool): Whether the decomposition is being performed with QJIT enabled.
 
     Keyword Args:
         max_trials (int): The maximum number of attempts to find a solution while performing the grid search according to the the Algorithm 7.6,
@@ -187,7 +186,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
 =======
 
         # If QJIT is active, use the compressed normal form.
-        if qml.compiler.active_compiler() == "catalyst":
+        if is_qjit:
             decomposition_info = _ma_normal_form(so3_mat, compressed=True)
             decomposition = _jit_rs_decomposition(op.wires[0], decomposition_info)
         else:
