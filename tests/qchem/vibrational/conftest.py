@@ -78,3 +78,24 @@ def skip_if_no_sklearn_support(sklearn_support):
     """Fixture to skip a test if sklearn is not installed."""
     if not sklearn_support:
         pytest.skip("Skipped, sklearn support")
+
+
+@pytest.fixture(scope="session", name="mpi4py_support")
+def fixture_mpi4py_support():
+    """Fixture to determine whether mpi4py is installed."""
+    # pylint: disable=unused-import, import-outside-toplevel
+    try:
+        import mpi4py
+
+        mpi4py_support = True
+    except ModuleNotFoundError:
+        mpi4py_support = False
+
+    return mpi4py_support
+
+
+@pytest.fixture()
+def skip_if_no_mpi4py_support(mpi4py_support):
+    """Fixture to skip a test if mpi4py is not installed."""
+    if not mpi4py_support:
+        pytest.skip("Skipped, mpi4py support")
