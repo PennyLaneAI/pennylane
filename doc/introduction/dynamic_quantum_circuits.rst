@@ -393,9 +393,9 @@ Since the counts of many nodes come out to be zero for shot-based simulations,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 cost.
 
-.. warning::
+.. note::
 
-    The tree-traversal algorithm is currently supported by the following devices only:
+    The tree-traversal algorithm is supported by the following devices:
 
     * :class:`~.pennylane.devices.DefaultQubit`,
     
