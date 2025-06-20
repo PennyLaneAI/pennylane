@@ -15,6 +15,7 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
+
 import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
@@ -100,3 +101,26 @@ def test_invalid_gradient_method():
         ValueError, match=r"Differentiation method 123 must be a str, TransformDispatcher, or None"
     ):
         ExecutionConfig(gradient_method=123)
+
+
+def test_str_representation():
+    """Tests that str(config) matches the pprint-style format."""
+    config = ExecutionConfig(
+        gradient_method="backprop", interface="autograd", device_options={"shots": None}
+    )
+    expected = (
+        "ExecutionConfig(\n"
+        "    grad_on_execution=None,\n"
+        "    use_device_gradient=None,\n"
+        "    use_device_jacobian_product=None,\n"
+        "    gradient_method='backprop',\n"
+        "    gradient_keyword_arguments={},\n"
+        "    device_options={'shots': None},\n"
+        "    interface=<Interface.AUTOGRAD: 'autograd'>,\n"
+        "    derivative_order=1,\n"
+        "    mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),\n"
+        "    convert_to_numpy=True,\n"
+        "    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>,\n"
+        ")"
+    )
+    assert str(config) == expected
