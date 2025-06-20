@@ -130,15 +130,15 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  #
     return wrapper
 
 
-def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
+def inline_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
     """Inline a ``jax.jit``-ed Python function to an xDSL module. The inlined body is appended
     to the end of ``mod``."""
     func_mod = _xdsl_module_inline(func, *args, **kwargs)
     main_func = xSymbolTable.lookup_symbol(func_mod, "main")
     main_func.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
 
-    for func in func_mod:
-        xSymbolTable.insert_or_update(mod, func)
+    for fn in func_mod.body.ops:
+        xSymbolTable.insert_or_update(mod, fn.clone())
 
 
 def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
