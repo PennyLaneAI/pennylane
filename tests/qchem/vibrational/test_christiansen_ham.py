@@ -17,7 +17,6 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 import pytest
-from pandas.conftest import ordered
 
 from pennylane.bose.bosonic import BoseWord
 from pennylane.qchem.vibrational.christiansen_ham import (
@@ -92,7 +91,7 @@ with h5py.File(cform_file, "r") as f:
 
 
 @pytest.mark.parametrize(
-    ("ordered"),
+    "ordered",
     [
         True,
         False,
