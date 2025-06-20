@@ -194,7 +194,7 @@ def _(
 ):  # pylint: disable=too-many-arguments
     invals = invals[shots_len:]
     consts = invals[shots_len:n_consts]
-    args = invals[n_consts:]
+    args = invals[shots_len+n_consts:]
 
     child = CollectOpsandMeas()
     out = child.eval(qfunc_jaxpr, consts, *args)
