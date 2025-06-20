@@ -597,7 +597,7 @@ class GridIterator:
             g_ = grid_op
         else:
             en_, _ = Ellipse.from_region(self.theta, self.epsilon, k).normalize()
-            g_ = State(en_, e2).skew_grid_op()
+            g_ = EllipseState(en_, e2).skew_grid_op()
 
         int_s, init_k = [ZOmega(d=1)], [k]  # Fallback solution.
         guess_solutions = (  # Solutions for the trivial cases.
