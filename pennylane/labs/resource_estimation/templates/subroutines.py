@@ -58,110 +58,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         return gate_lst
 
 
-class ResourceMultiplexer(ResourceOperator):
-    resource_keys = {"num_ctrl_wires", "rotation_axis", "precision"}
-
-    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=None, wires=None) -> None:
-        self.num_ctrl_wires = num_ctrl_wires
-        self.rotation_axis = rotation_axis
-        self.precision = precision
-
-        self.num_wires = num_ctrl_wires + 1
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self):
-        return {
-            "num_ctrl_wires": self.num_ctrl_wires,
-            "rotation_axis": self.rotation_axis,
-            "precision": self.precision,
-        }
-
-    @classmethod
-    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision=None):
-        return CompressedResourceOp(
-            cls,
-            {
-                "num_ctrl_wires": num_ctrl_wires,
-                "rotation_axis": rotation_axis,
-                "precision": precision,
-            },
-        )
-
-    @classmethod
-    def default_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
-        precision = precision or kwargs["config"]["precision_multiplexer"]
-        gate = resource_rep(re.ResourceRZ, {"eps": precision})
-        cnot = resource_rep(re.ResourceCNOT)
-
-        gate_lst = [
-            GateCount(gate, 2**num_ctrl_wires),
-            GateCount(cnot, 2**num_ctrl_wires),
-        ]
-
-        h = resource_rep(re.ResourceHadamard)
-        s = resource_rep(re.ResourceS)
-        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
-
-        if rotation_axis == "X":
-            gate_lst.append(GateCount(h, 2))
-        if rotation_axis == "Y":
-            gate_lst.append(GateCount(h, 2))
-            gate_lst.append(GateCount(s))
-            gate_lst.append(GateCount(s_dagg))
-
-        return gate_lst
-
-    @classmethod
-    def phase_grad_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
-        precision = precision or kwargs["config"]["precision_multiplexer"]
-        num_prec_wires = abs(math.floor(math.log2(precision)))
-        gate_lst = []
-
-        qrom = resource_rep(
-            re.ResourceQROM,
-            {
-                "num_bitstrings": 2**num_ctrl_wires,
-                "num_bit_flips": 2**num_ctrl_wires * num_prec_wires / 2,
-                "size_bitstring": num_prec_wires,
-                "clean": False,
-            },
-        )
-
-        gate_lst.append(AllocWires(num_prec_wires))
-        gate_lst.append(GateCount(qrom))
-        gate_lst.append(
-            GateCount(
-                resource_rep(
-                    re.ResourceControlled,
-                    {
-                        "base_cmpr_op": resource_rep(
-                            re.ResourceSemiAdder,
-                            {"max_register_size": num_prec_wires},
-                        ),
-                        "num_ctrl_wires": 1,
-                        "num_ctrl_values": 0,
-                    },
-                )
-            )
-        )
-        gate_lst.append(GateCount(resource_rep(re.ResourceAdjoint, {"base_cmpr_op": qrom})))
-        gate_lst.append(FreeWires(num_prec_wires))
-
-        h = resource_rep(re.ResourceHadamard)
-        s = resource_rep(re.ResourceS)
-        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
-
-        if rotation_axis == "X":
-            gate_lst.append(GateCount(h, 2))
-        if rotation_axis == "Y":
-            gate_lst.append(GateCount(h, 2))
-            gate_lst.append(GateCount(s))
-            gate_lst.append(GateCount(s_dagg))
-
-        return gate_lst
-
-
 class ResourcePhaseGradient(ResourceOperator):
     resource_keys = {"num_wires"}
 
@@ -199,10 +95,8 @@ class ResourceQFT(ResourceOperator):
     r"""Resource class for QFT.
 
     Args:
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
-
-    Resource Parameters:
-        * num_wires (int): the number of qubits the operation acts upon
+        num_wires (int): the number of qubits the operation acts upon
+        wires (Iterable[Number, str], optional]): the wire(s) the operation acts on
 
     Resources:
         The resources are obtained from the standard decomposition of QFT as presented
@@ -603,12 +497,9 @@ class ResourceBasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        wires (Iterable[Any]): wires that the operator acts on
-        unitary_matrix (array): matrix specifying the basis transformation
-        check (bool): test unitarity of the provided `unitary_matrix`
-
-    Resource Parameters:
-        * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
+        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the 
+            number of columns of the matrix.
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
@@ -692,17 +583,16 @@ class ResourceSelect(ResourceOperator):
     r"""Resource class for the Select gate.
 
     Args:
-        ops (list[Operator]): operations to apply
-        control (Sequence[int]): the wires controlling which operation is applied
-        id (str or None): String representing the operation (optional)
-
-    Resource Parameters:
-        * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
+        select_ops (list[~.ResourceOperator]): the set of operations to select over
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources correspond directly to the definition of the operation. Specifically,
-        for each operator in :code:`cmpr_ops`, the cost is given as a controlled version of the operator
-        controlled on the associated bitstring.
+        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
+
+        Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+        where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
+        to select.
 
     .. seealso:: :class:`~.Select`
 
@@ -710,10 +600,18 @@ class ResourceSelect(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> ops_lst = [re.ResourceX.resource_rep(), re.ResourceQFT.resource_rep(num_wires=3)]
-    >>> re.ResourceSelect.resources(cmpr_ops=ops_lst)
-    defaultdict(<class 'int'>, {X: 2, C(X,1,0,0): 1, C(QFT(3),1,0,0): 1})
+    >>> ops = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
+    >>> select_op = plre.ResourceSelect(select_ops=ops)
+    >>> print(plre.estimate_resources(select_op))
+    --- Resources: ---
+    Total qubits: 4
+    Total gates : 24
+    Qubit breakdown:
+     clean qubits: 1, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+     {'CNOT': 7, 'S': 2, 'Z': 1, 'Hadamard': 8, 'X': 4, 'Toffoli': 2}
     """
+    resource_keys = {"cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
         self.queue(select_ops)
@@ -725,7 +623,7 @@ class ResourceSelect(ResourceOperator):
             self.cmpr_ops = cmpr_ops
         except AttributeError as error:
             raise ValueError(
-                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
+                "All factors of the Select must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
         if wires is not None:
@@ -751,12 +649,22 @@ class ResourceSelect(ResourceOperator):
     def default_resource_decomp(cls, cmpr_ops, **kwargs):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
-        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
-        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
+        Args:
+            cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
+                representation, to be applied according to the selected qubits. 
+        
+        Resources:
+            The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
+            'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
-        Note: This implementation assumes we have access to :math:`S - 1` additional work qubits,
-        where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
-        to select.
+            Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
+            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
+            to select.
+        
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         gate_types = []
         x = re.ResourceX.resource_rep()
@@ -793,6 +701,11 @@ class ResourceSelect(ResourceOperator):
             The resources correspond directly to the definition of the operation. Specifically,
             for each operator in :code:`cmpr_ops`, the cost is given as a controlled version of the operator
             controlled on the associated bitstring.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
         gate_types = defaultdict(int)
         x = re.ResourceX.resource_rep()
@@ -811,34 +724,6 @@ class ResourceSelect(ResourceOperator):
                 0,
             )
             gate_types[ctrl_op] += 1
-
-        return gate_types
-
-    @staticmethod
-    def resources_for_ui(cmpr_ops, **kwargs):  # pylint: disable=unused-argument
-        r"""The resources for a select implementation taking advantage of the unary iterator trick.
-
-        The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
-        'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
-
-        Note: This implementation assumes we have access to :math:`S + 1` additional work qubits,
-        where :math:`S = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
-        to select.
-        """
-        gate_types = defaultdict(int)
-        x = re.ResourceX.resource_rep()
-        cnot = re.ResourceCNOT.resource_rep()
-        toffoli = re.ResourceToffoli.resource_rep()
-
-        num_ops = len(cmpr_ops)
-
-        for cmp_rep in cmpr_ops:
-            ctrl_op = re.ResourceControlled.resource_rep(cmp_rep, 1, 0)
-            gate_types[ctrl_op] += 1
-
-        gate_types[x] = 2 * (num_ops - 1)  # conjugate 0 controlled toffolis
-        gate_types[cnot] = num_ops - 1
-        gate_types[toffoli] = 2 * (num_ops - 1)
 
         return gate_types
 

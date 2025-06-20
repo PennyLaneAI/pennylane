@@ -120,7 +120,6 @@ Templates:
 
     ~ResourceTrotterProduct
     ~ResourceOutOfPlaceSquare
-    ~ResourceMultiplexer
     ~ResourcePhaseGradient
     ~ResourceQFT
     ~ResourceOutMultiplier
@@ -199,7 +198,6 @@ from .ops import (
 from .templates import (
     ResourceTrotterProduct,
     ResourceOutOfPlaceSquare,
-    ResourceMultiplexer,
     ResourcePhaseGradient,
     ResourceQFT,
     ResourceOutMultiplier,
