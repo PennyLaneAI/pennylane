@@ -501,7 +501,7 @@ def _(
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
-    """Mapping for QFT which maps to qt.QFTTextBook by default"""
+    """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -514,7 +514,7 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
-    """Mapping for QROM that defaults to either QROAMClean or SelectSwapQROM"""
+    """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
@@ -532,7 +532,7 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs):
-    """Mapping for ModExp"""
+    """Mapping for ``ModExp``"""
     from qualtran.bloqs.cryptography.rsa import ModExp
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
