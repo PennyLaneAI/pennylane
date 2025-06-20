@@ -98,6 +98,25 @@ Operators:
     ~ResourceIsingXY
     ~ResourceIsingZZ
     ~ResourcePSWAP
+    ~ResourceSingleExcitation
+
+Templates:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceTrotterProduct
+    ~ResourceOutOfPlaceSquare
+    ~ResourceMultiplexer
+    ~ResourcePhaseGradient
+    ~ResourceQFT
+    ~ResourceOutMultiplier
+    ~ResourceSemiAdder
+    ~ResourceQuantumPhaseEstimation
+    ~ResourceQPE
+    ~ResourceBasisRotation
+    ~ResourceSelect
 
 """
 
@@ -157,9 +176,24 @@ from .ops import (
     ResourceIsingZZ,
     ResourcePSWAP,
     ResourceTempAND,
+    ResourceSingleExcitation,
     ResourceAdjoint,
     ResourceControlled,
     ResourceProd,
     ResourceChangeBasisOp,
     ResourcePow,
+)
+
+from .templates import (
+    ResourceTrotterProduct,
+    ResourceOutOfPlaceSquare,
+    ResourceMultiplexer,
+    ResourcePhaseGradient,
+    ResourceQFT,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
+    ResourceQuantumPhaseEstimation,
+    ResourceQPE,
+    ResourceBasisRotation,
+    ResourceSelect,
 )

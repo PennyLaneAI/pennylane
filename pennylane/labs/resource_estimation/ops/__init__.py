@@ -57,4 +57,5 @@ from .qubit import (
     ResourceIsingXY,
     ResourceIsingZZ,
     ResourcePSWAP,
+    ResourceSingleExcitation,
 )
