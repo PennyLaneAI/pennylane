@@ -453,8 +453,12 @@ def construct_batch(
             level, num_user_transforms
         )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
         program = user_program[level_slice_initial]
-        user_transformed_tapes, user_post_processing = program((initial_tape,))
+        if _is_within_user_bounds(level, num_user_transforms):
+            # If the level slice is fully contained within user transforms, we can return early
+            return program((initial_tape,))
 
+        user_transformed_tapes, user_post_processing = program((initial_tape,))
+        #### User transforms finished #####
         # The new config process we would like to use.
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
@@ -478,7 +482,7 @@ def construct_batch(
             cache=qnode.execute_kwargs["cache"],
             cachesize=qnode.execute_kwargs["cachesize"],
         )
-        full_transform_program = user_program + outer_transform_program + inner_transform_program
+        full_transform_program = outer_transform_program + inner_transform_program
 
         gradient_fn = execution_config.gradient_method
         has_gradient_expand = bool(
@@ -490,6 +494,15 @@ def construct_batch(
             has_gradient_expand,
             qnode.transform_program.has_final_transform,
         )
+        shift_len = num_user_transforms - int(qnode.transform_program.has_final_transform)
+
+        def _shift(i):
+            return i - shift_len if i else i
+
+        new_start = _shift(level_slice_inner.start)
+        new_stop = _shift(level_slice_inner.stop)
+
+        level_slice_inner = slice(new_start, new_stop, level_slice_inner.step)
         resolved_program = full_transform_program[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(
@@ -504,3 +517,46 @@ def construct_batch(
         return batch, combined_post_processing
 
     return batch_constructor
+
+
+def _is_within_user_bounds(level, num_user: int) -> bool:
+    """Check if the original level specification only requires user transforms.
+
+    This determines whether we can return early after applying user transforms,
+    or if we need to continue with gradient/device transforms.
+
+    Args:
+        level: The original level specification from user input
+        num_user: Number of user transforms
+
+    Returns:
+        bool: True if we can return early (only user transforms needed)
+    """
+    # Case 1: level is "user" - only user transforms needed
+    if level == "user":
+        return True
+
+    # Case 2: level is "device", "gradient", or None - need more than user transforms
+    if level in ("device", "gradient") or level is None:
+        return False
+
+    # Case 3: level is "top" or 0 - only need empty/minimal transforms
+    if level in ("top", 0):
+        return True
+
+    # Case 4: level is int - check if it's within user bounds
+    if isinstance(level, int):
+        return level >= 0 and level <= num_user
+
+    # Case 5: level is slice - check if slice is fully contained within user bounds
+    if isinstance(level, slice):
+        if level.stop is None or level.stop < 0:
+            # similar as level is None; negative means we need more information from gradients
+            return False
+        if level.start > level.stop:
+            # If start is greater than stop, it's an empty slice
+            return True
+        return level.stop <= num_user and level.start >= 0
+
+    # Default case - if we don't recognize the level type, assume we need more
+    return False
