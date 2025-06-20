@@ -14,6 +14,6 @@
 r"""This module contains experimental resource estimation functionality."""
 
 from .trotter import *
-from .stateprep import *
+from .qubitize import *
 from .subroutines import *
 from .compact_hamiltonian import CompactHamiltonian
