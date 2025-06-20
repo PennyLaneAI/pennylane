@@ -783,7 +783,7 @@ def bloq_registers(bloq: "qt.Bloq"):
 
     Returns:
         dict: A dictionary mapping the names of the Bloq's registers to :class:`~.Wires`
-            objects with the same lengths as the bitsizes of their respective registers.
+        objects with the same lengths as the bitsizes of their respective registers.
 
     Raises:
         TypeError: bloq must be an instance of ``Bloq``.
@@ -1171,7 +1171,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         op (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
             as a Qualtran Bloq.
         map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
-            as a ``ToBloq`` when False. Default is True.
+            as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
@@ -1276,7 +1276,6 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
             # Add each operation to the composite Bloq.
             for op in ops:
-                print(self.custom_mapping)
                 bloq = _map_to_bloq(
                     op, map_ops=self.map_ops, custom_mapping=self.custom_mapping, **self._kwargs
                 )
@@ -1362,7 +1361,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
 
 def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs):
     """
-    Converts a PennyLane circuit or :class:`~.Operation` to the corresponding `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
+    Converts a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to the corresponding `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
 
     .. note::
         This class requires the latest version of Qualtran. We recommend installing the latest
@@ -1376,13 +1375,13 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped
             as a Qualtran Bloq.
         map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped
-            as a ``ToBloq`` when False. Default is True.
+            as a ``ToBloq`` when ``False``. Default is ``True``.
         custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a
             Qualtran Bloq. A default mapping is used if not defined.
 
     Returns:
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
-            options.
+        options.
 
     .. seealso:: :class:`~.ToBloq`
 
@@ -1418,7 +1417,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
 
         Note that the chosen Qualtran Bloq may not be an exact equivalent. If an exact
-        equivalent is needed, we recommend setting ``map_ops`` to False.
+        equivalent is needed, we recommend setting ``map_ops`` to ``False``.
         This will wrap the input PennyLane operator as a Qualtran Bloq, enabling Qualtran functions
         such as ``decompose_bloq`` or ``call_graph``, but maintaining the PennyLane decomposition definition of the operator.
 
