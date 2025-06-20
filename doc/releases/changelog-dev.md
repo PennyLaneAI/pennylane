@@ -927,6 +927,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
+  when specifying the angle, due to the given hashing policy. The implementation was updated to ensure
+  correct hashing behavior for `float`, `numpy.array`, and `jax.numpy.array` inputs.
+  [(#7693)](https://github.com/PennyLaneAI/pennylane/pull/7693)
+
 * A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
   inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
   drawing.
