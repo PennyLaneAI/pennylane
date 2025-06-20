@@ -57,7 +57,7 @@ class Resources:
 
         The :class:`Resources` object supports arithmetic operations which allow for quick addition
         and multiplication of resources. When combining resources, we can make a simplifying
-        assumption about they are applied in a quantum circuit (in series or in parallel).
+        assumption about how they are applied in a quantum circuit (in series or in parallel).
 
         When assuming the circuits were executed in series, the number of algorithmic qubits add
         together. When assuming the circuits were executed in parallel, the maximum of each set of
@@ -77,7 +77,6 @@ class Resources:
 
             # state of qubits:
             qm1 = re.QubitManager(work_wires={"clean":2, "dirty":1}, algo_wires=3)
-
             qm2 = re.QubitManager(work_wires={"clean":1, "dirty":2}, algo_wires=4)
 
             # state of gates:

@@ -15,6 +15,7 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 from pennylane.labs import resource_estimation as plre
+
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -492,8 +493,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             list[GateCount]: a list of GateCount objects representing the controlled resource decomposition
 
         Resources:
-            The original resources are controlled only on the Z rotation gates.
-
+            The original resources are controlled only on the Z rotation gates
         """
         k = order // 2
         gate_list = []

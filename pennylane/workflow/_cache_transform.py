@@ -43,7 +43,7 @@ def _cache_transform(tape: QuantumScript, cache: MutableMapping):
     def cache_hit_postprocessing(_results: ResultBatch) -> Result:
         result = cache[tape.hash]
         if result is not None:
-            if tape.shots and getattr(cache, "_persistent_cache", True):
+            if tape.shots:
                 warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
             return result
 
