@@ -21,7 +21,12 @@ import math
 import pytest
 
 from pennylane import math as pmath
-from pennylane.ops.op_math.decompositions.grid_problems import Ellipse, GridIterator, GridOp, State
+from pennylane.ops.op_math.decompositions.grid_problems import (
+    Ellipse,
+    EllipseState,
+    GridIterator,
+    GridOp,
+)
 from pennylane.ops.op_math.decompositions.rings import ZOmega
 
 
@@ -53,17 +58,17 @@ class TestEllipse:
             ellipse.y_points(24)
 
 
-class TestState:
-    """Tests for the State class."""
+class TestEllipseState:
+    """Tests for the EllipseState class."""
 
     def test_init_and_repr(self):
-        """Test that State initializes correctly and has correct representations."""
+        """Test that EllipseState initializes correctly and has correct representations."""
         e1 = Ellipse((1, 0, 1), (4, 5), (6, 7))
         e2 = Ellipse((2, 1, 2), (2, 3), (4, 5))
-        state = State(e1, e2)
+        state = EllipseState(e1, e2)
         assert state.e1 == e1
         assert state.e2 == e2
-        assert repr(state) == f"State(e1={e1}, e2={e2})"
+        assert repr(state) == f"EllipseState(e1={e1}, e2={e2})"
         assert state.skew == 1.0 and state.bias == 0.0
 
 
@@ -84,7 +89,7 @@ class TestGridOp:
         grid_op = GridOp.from_string("B")
         e1 = Ellipse((1, 0, 1), (4, 5), (6, 7))
         e2 = Ellipse((2, 1, 2), (2, 3), (4, 5))
-        state = State(e1, e2)
+        state = EllipseState(e1, e2)
         state1 = grid_op.apply_to_state(state)
         state2 = grid_op.inverse().apply_to_state(state1)
         assert state.e1 == state2.e1 and state.e2 == state2.e2
@@ -137,7 +142,7 @@ class TestGridIterator:
         D, num_b, shifts = (1, 0, 1), [0, 0], [ZOmega(), ZOmega(c=1)]
         bbox3 = tuple(bb_ - 1 / math.sqrt(2) for bb_ in bbox1)
         bbox4 = tuple(bb_ + 1 / math.sqrt(2) for bb_ in bbox2)
-        state = State(Ellipse(D), Ellipse(D))
+        state = EllipseState(Ellipse(D), Ellipse(D))
 
         gitr = GridIterator()
         sols1 = gitr.solve_upright_problem(state, bbox1, bbox2, num_b, shifts[0])
@@ -162,7 +167,7 @@ class TestGridIterator:
     )
     def test_two_dim_problem(self, e1, e2, res):
         """Test that the two dimensional grid problem is solved correctly."""
-        state = State(e1, e2)
+        state = EllipseState(e1, e2)
         gitr = GridIterator()
         sols = gitr.solve_two_dim_problem(state)
         assert inspect.isgenerator(sols)

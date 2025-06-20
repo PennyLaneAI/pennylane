@@ -193,16 +193,16 @@ class Ellipse:
         return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2), self.axes)
 
 
-class State:
-    """A class representing pair of normalized ellipses.
+class EllipseState:
+    """A class representing a state as a pair of normalized ellipses.
 
     This is based on the Definition A.1 of arXiv:1403.2975,
     where the pair of ellipses are represented by real symmetric
-    positive semi-definite matrices of determinant 1.
+    positive semi-definite matrices of determinant :math:`1`.
 
     Args:
-        e1: The first ellipse.
-        e2: The second ellipse.
+        e1 (Ellipse): The first ellipse.
+        e2 (Ellipse): The second ellipse.
     """
 
     def __init__(self, e1: Ellipse, e2: Ellipse):
@@ -211,7 +211,7 @@ class State:
 
     def __repr__(self) -> str:
         """Return a string representation of the state."""
-        return f"State(e1={self.e1}, e2={self.e2})"
+        return f"EllipseState(e1={self.e1}, e2={self.e2})"
 
     @property
     def skew(self) -> float:
@@ -229,7 +229,7 @@ class State:
         """Calculate the special grid operation for the state for reducing the skew."""
         # Uses Lemma A.5 (Step Lemma) of arXiv:1403.2975 for obtaining special grid op.
         grid_op = GridOp.from_string("I")
-        state = State(self.e1, self.e2)
+        state = EllipseState(self.e1, self.e2)
         while (skew := state.skew) >= 15:
             new_grid_op, state = state.reduce_skew()
             grid_op = grid_op * new_grid_op
@@ -238,12 +238,12 @@ class State:
 
         return grid_op
 
-    def apply_grid_op(self, grid_op: GridOp) -> State:
+    def apply_grid_op(self, grid_op: GridOp) -> EllipseState:
         """Apply a grid operation :math:`G` to the state."""
         # Uses Definition A.3 of arXiv:1403.2975
-        return State(self.e1.apply_grid_op(grid_op), self.e2.apply_grid_op(grid_op.adj2()))
+        return EllipseState(self.e1.apply_grid_op(grid_op), self.e2.apply_grid_op(grid_op.adj2()))
 
-    def apply_shift_op(self, k: int) -> tuple[State, int]:
+    def apply_shift_op(self, k: int) -> tuple[EllipseState, int]:
         """Apply a shift operator to the state."""
         # Uses Definition A.6 and Lemma A.8 of arXiv:1403.2975
         k = int(math.floor((1 - self.bias) / 2))
@@ -253,16 +253,17 @@ class State:
         e2.a, e2.d, e2.z = e2.a * nk_pow, e2.d * pk_pow, e2.z + k
         e2.b *= (-1) ** k
         e1.e, e2.e = math.sqrt(e1.a * e1.d), math.sqrt(e2.a * e2.d)
-        return State(e1, e2), k
+        return EllipseState(e1, e2), k
 
     # pylint: disable=too-many-branches
-    def reduce_skew(self) -> tuple[GridOp, State]:
+    def reduce_skew(self) -> tuple[GridOp, EllipseState]:
         """Reduce the skew of the state.
 
         This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.
 
         Returns:
-            tuple[GridOp, State]: A tuple containing the grid operation and the state with reduced skew.
+            tuple[GridOp, EllipseState]: A tuple containing the grid operation
+                and the state with reduced skew.
         """
         if any(not e.positive_semi_definite for e in (self.e1, self.e2)):  # pragma: no cover
             raise ValueError("Ellipse is not positive semi-definite")
@@ -519,7 +520,7 @@ class GridOp:
         """Apply the grid operator to an ellipse based on Lemma A.4's proof in arXiv:1403.2975."""
         return ellipse.apply_grid_op(self)
 
-    def apply_to_state(self, state: State) -> tuple[Ellipse, Ellipse]:
+    def apply_to_state(self, state: EllipseState) -> tuple[Ellipse, Ellipse]:
         """Apply the grid operator to a state based on Definition A.3 of arXiv:1403.2975."""
         return state.apply_grid_op(self)
 
@@ -587,14 +588,14 @@ class GridIterator:
         e1 = Ellipse.from_region(self.epsilon, self.theta, k)  # Ellipse for the epsilon-region.
         e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
-        grid_op = State(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
+        grid_op = EllipseState(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
 
         for _ in range(self.max_iter):
             # Update the radius of the unit disk.
             radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
             e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
             # Apply the grid operation to the state and solve the two-dimensional grid problem.
-            state = State(e1, e2).apply_grid_op(grid_op)
+            state = EllipseState(e1, e2).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
 
             for solution in potential_solutions:
@@ -615,7 +616,9 @@ class GridIterator:
 
             e1 = Ellipse.from_region(self.epsilon, self.theta, (k := k + 1))
 
-    def solve_two_dim_problem(self, state: State, num_points: int = 1000) -> Iterable[ZOmega]:
+    def solve_two_dim_problem(
+        self, state: EllipseState, num_points: int = 1000
+    ) -> Iterable[ZOmega]:
         r"""Solve the grid problem for the state(E1, E2).
 
         The solutions :math:`u \in Z[\omega]` are such that :math:`u \in E1` and
@@ -631,7 +634,7 @@ class GridIterator:
             Iterable[ZOmega]: The list of solutions to the two dimensional grid problem.
         """
         e1, e2 = state.e1, state.e2
-        state2 = State(e1.offset(-1 / _SQRT2), e2.offset(1 / _SQRT2))
+        state2 = EllipseState(e1.offset(-1 / _SQRT2), e2.offset(1 / _SQRT2))
 
         bbox1 = e1.bounding_box()
         bbox11 = tuple(bb_ + e1.p[ix_ // 2] for ix_, bb_ in enumerate(bbox1))
@@ -663,7 +666,7 @@ class GridIterator:
     # pylint:disable = too-many-arguments, too-many-branches
     def solve_upright_problem(
         self,
-        state: State,
+        state: EllipseState,
         bbox1: tuple[float],
         bbox2: tuple[float],
         num_b: list[bool],
