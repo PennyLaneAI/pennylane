@@ -449,6 +449,9 @@
   104 8507
   ```
 
+  Circuits decomposed with `method="rs"` are also compatible with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
 <h3>Improvements 🛠</h3>
 
 * Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
@@ -1008,6 +1011,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
