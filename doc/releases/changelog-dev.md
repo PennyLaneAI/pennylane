@@ -927,6 +927,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
+  some arguments are trainable and an intermediate transform does not preserve trainability information.
+  [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
+
 * A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
   inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
   drawing.

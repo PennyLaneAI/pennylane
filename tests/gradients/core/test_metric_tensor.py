@@ -669,6 +669,7 @@ class TestMetricTensor:
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     def test_no_trainable_params_qnode_autograd(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -705,6 +706,7 @@ class TestMetricTensor:
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.tf
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "tf"])
     def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -723,6 +725,7 @@ class TestMetricTensor:
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.jax
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_no_trainable_params_qnode_jax(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
