@@ -411,7 +411,7 @@
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
 * A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
-  (the [Ross-Selinger algorithm](<https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
+  (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
   less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases.
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
