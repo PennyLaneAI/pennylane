@@ -175,7 +175,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qml.operation.Operator):
+        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = {"foo", "bar"}
 
