@@ -475,6 +475,45 @@
   See the documentation for more details.
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
+* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
+  (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
+  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
+  via :func:`~.ops.rs_decomposition` function.
+  [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
+  [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
+  [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
+  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
+  Consider this simple circuit:
+
+  ```python
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit(x, y):
+
+      qml.RX(x, 0)
+      qml.CNOT([0, 1])
+      qml.RY(y, 0)
+
+      return qml.expval(qml.Z(0))
+
+  rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
+  sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
+
+  rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
+  sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
+  ```
+
+  Decomposing with `method="rs"` instead of `method="sk"` gives a significant reduction in overall 
+  gate counts, specifically the `qml.T` count:
+
+  ```pycon
+  >>> print(rs_specs.num_gates, sk_specs.num_gates)
+  267 48637
+  >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
+  104 8507
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
