@@ -14,6 +14,8 @@
 from collections.abc import Sequence
 from typing import NamedTuple, Union
 
+from pennylane import math
+
 
 class ShotCopies(NamedTuple):
     """A namedtuple that represents a shot quantity being repeated some number of times.
@@ -34,7 +36,7 @@ class ShotCopies(NamedTuple):
 
 def valid_int(s):
     """Returns True if s is a positive integer."""
-    return isinstance(s, int) and s > 0
+    return isinstance(s, int) and s > 0 or math.is_abstract(s) and s.shape == ()
 
 
 def valid_tuple(s):
@@ -175,6 +177,9 @@ class Shots:
             self.__all_tuple_init__([s if isinstance(s, Sequence) else (s, 1) for s in shots])
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
+        elif math.is_abstract(shots) and shots.shape == ():
+            self.total_shots = shots
+            self.shot_vector = (ShotCopies(shots, 1),)
         else:
             raise self._SHOT_ERROR
 
@@ -221,12 +226,12 @@ class Shots:
         total_shots = 0
         current_shots, current_copies = shots[0]
         for s in shots[1:]:
-            if s[0] == current_shots:
-                current_copies += s[1]
-            else:
+            if math.is_abstract(s[0]) or math.is_abstract(current_shots) or s[0] != current_shots:
                 res.append(ShotCopies(current_shots, current_copies))
                 total_shots += current_shots * current_copies
                 current_shots, current_copies = s
+            else:
+                current_copies += s[1]
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
 
