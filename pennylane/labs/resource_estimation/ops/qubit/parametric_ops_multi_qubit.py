@@ -28,7 +28,7 @@ class ResourceMultiRZ(ResourceOperator):
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        eps (float, optional): error threshold for Clifford+T decomposition of this operation
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -524,7 +524,7 @@ class ResourceIsingXX(ResourceOperator):
     r"""Resource class for the IsingXX gate.
 
     Args:
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        eps (float, optional): error threshold for Clifford+T decomposition of this operation
         wires (Sequence[int], optional): the wire the operation acts on
 
     Resources:
@@ -897,7 +897,7 @@ class ResourceIsingXY(ResourceOperator):
     r"""Resource class for the IsingXY gate.
 
     Args:
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        eps (float, optional): error threshold for Clifford+T decomposition of this operation
         wires (Sequence[int], optional): the wire the operation acts on
 
     Resources:
@@ -1090,7 +1090,7 @@ class ResourceIsingZZ(ResourceOperator):
     r"""Resource class for the IsingZZ gate.
 
     Args:
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        eps (float, optional): error threshold for Clifford+T decomposition of this operation
         wires (Sequence[int], optional): the wire the operation acts on
 
     Resources:
@@ -1278,7 +1278,7 @@ class ResourcePSWAP(ResourceOperator):
     r"""Resource class for the PSWAP gate.
 
     Args:
-        eps (float, optional): error threshold for clifford plus T decomposition of this operation
+        eps (float, optional): error threshold for Clifford+T decomposition of this operation
         wires (Sequence[int], optional): the wire the operation acts on
 
     Resources:
