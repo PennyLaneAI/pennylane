@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 from itertools import product
 from typing import Dict, Sequence, Tuple, Union
 
@@ -280,15 +279,35 @@ class RealspaceSum(Fragment):
         self._is_zero = len(ops) == 0
 
         self.modes = modes
-        self._lookup = defaultdict(lambda: RealspaceOperator.zero(self.modes))
+
+        # Note defaultdict with custom types cannot be used with mp_pool or cf_procpool
+        # https://stackoverflow.com/questions/9256687/using-defaultdict-with-multiprocessing
+        self._lookup = {}
 
         for op in ops:
-            self._lookup[op.ops] += op
+            if op.ops in self._lookup:
+                self._lookup[op.ops] += op
+            else:
+                self._lookup[op.ops] = op
 
         for op in ops:
-            assert self._lookup[op.ops].coeffs is not None
+            assert self._get_op_lookup(op.ops).coeffs is not None
 
-        self.ops = tuple(self._lookup.values())
+        self.ops = tuple(self._lookup.values()) if self._lookup else tuple()
+
+    def _get_op_lookup(self, op):
+        """Returns the operator lookup for a given operator.
+
+        Args:
+            op (str): the operator string to look up
+
+        Returns:
+            RealspaceOperator: the corresponding RealspaceOperator object
+        """
+        if op not in self._lookup:
+            return RealspaceOperator.zero(self.modes)
+
+        return self._lookup[op]
 
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
@@ -302,7 +321,7 @@ class RealspaceSum(Fragment):
         new_ops = []
 
         for op in l_ops.union(r_ops):
-            new_ops.append(self._lookup[op] + other._lookup[op])
+            new_ops.append(self._get_op_lookup(op) + other._get_op_lookup(op))
 
         return RealspaceSum(self.modes, new_ops)
 
@@ -318,7 +337,7 @@ class RealspaceSum(Fragment):
         new_terms = []
 
         for op in l_ops.union(r_ops):
-            new_terms.append(self._lookup[op] - other._lookup[op])
+            new_terms.append(self._get_op_lookup(op) - other._get_op_lookup(op))
 
         return RealspaceSum(self.modes, new_terms)
 
