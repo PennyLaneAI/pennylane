@@ -1082,6 +1082,12 @@ class ResourceTrotterVibrational(ResourceOperator):
         wires=None,
     ):
 
+        if compact_ham.method_name != "vibrational":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceTrotterVibrational."
+                f"This method works with vibrational Hamiltonian, {compact_ham.method_name} provided"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.compact_ham = compact_ham
@@ -1371,6 +1377,12 @@ class ResourceTrotterVibronic(ResourceOperator):
         coeff_precision=1e-3,
         wires=None,
     ):
+
+        if compact_ham.method_name != "vibronic":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceTrotterVibronic."
+                f"This method works with vibronic Hamiltonian, {compact_ham.method_name} provided"
+            )
 
         self.num_steps = num_steps
         self.order = order
