@@ -23,8 +23,7 @@ from pennylane.queuing import QueuingManager
 
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
-    r"""Return shifts for the angle :math:`\theta` for it to be in the interval
-    :math:`[-\pi/4, \pi/4]` and the corresponding scaling factor for the matrix elements.
+    r"""Return shifts for the angle :math:`\theta` for it to be in the interval :math:`[-\pi/4, \pi/4]` and the corresponding scaling factor for the matrix elements.
 
     Args:
         theta (float): The angle to shift.
@@ -56,53 +55,53 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
 def rs_decomposition(op, epsilon, *, max_trials=20):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
-        This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
-        phase shift rotation gate with :math:`\epsilon > 0` error. The procedure exits when the approximation error
-        becomes less than :math:`\epsilon`, or when ``max_trials`` attempts have been made for solution search.
-        In the latter case, the approximation error could be :math:`\geq \epsilon`.
+    This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
+    phase shift rotation gate with :math:`\epsilon > 0` error. The procedure exits when the approximation error
+    becomes less than :math:`\epsilon`, or when ``max_trials`` attempts have been made for solution search.
+    In the latter case, the approximation error could be :math:`\geq \epsilon`.
 
-        This algorithm produces a decomposition with :math:`O(3\text{log}_2(1/\epsilon)) + O(\text{log}_2(\text{log}_2(1/\epsilon)))` operations.
+    This algorithm produces a decomposition with :math:`O(3\text{log}_2(1/\epsilon)) + O(\text{log}_2(\text{log}_2(1/\epsilon)))` operations.
 
-        .. note::
-            Currently, the global phase :math:`\theta` returned by the decomposition might differ from the
-            true global phase :math:`\theta^{*}` by an additive factor of :math:`\pi`.
+    .. note::
+        Currently, the global phase :math:`\theta` returned by the decomposition might differ from the
+        true global phase :math:`\theta^{*}` by an additive factor of :math:`\pi`.
 
-        Args:
-            op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
-            epsilon (float): The maximum permissible error.
+    Args:
+        op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
+        epsilon (float): The maximum permissible error.
 
-        Keyword Args:
-            max_trials (int): The maximum number of attempts to find a solution while performing the grid search according to the the Algorithm 7.6,
-                in the `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
+    Keyword Args:
+        max_trials (int): The maximum number of attempts to find a solution while performing the grid search according to the the Algorithm 7.6,
+            in the `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
 
-        Returns:
-            list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
-            operation along with a final global phase operation. The operations are in the circuit-order.
-    m
-        Raises:
-            ValueError: If the given operator is not a :class:`~.RZ` or :class:`~.PhaseShift` gate.
+    Returns:
+        list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
+        operation along with a final global phase operation. The operations are in the circuit-order.
 
-        **Example**
+    Raises:
+        ValueError: If the given operator is not a :class:`~.RZ` or :class:`~.PhaseShift` gate.
 
-        Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
+    **Example**
 
-        .. code-block:: python3
+    Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
-            import numpy as np
-            import pennylane as qml
+    .. code-block:: python3
 
-            op  = qml.RZ(np.pi/3, wires=0)
-            ops = qml.ops.rs_decomposition(op, epsilon=1e-3)
+        import numpy as np
+        import pennylane as qml
 
-            # Get the approximate matrix from the ops
-            matrix_rs = qml.prod(*reversed(ops)).matrix()
+        op  = qml.RZ(np.pi/3, wires=0)
+        ops = qml.ops.rs_decomposition(op, epsilon=1e-3)
 
-        When the function is run for a sufficient ``max_trials``, the output gate sequence
-        should implement the same operation approximately, up to a global phase.
+        # Get the approximate matrix from the ops
+        matrix_rs = qml.prod(*reversed(ops)).matrix()
 
-        >>> global_phase = np.exp(5j * np.pi / 4)
-        >>> qml.math.allclose(op.matrix(), matrix_rs * global_phase, atol=1e-3)
-        True
+    When the function is run for a sufficient ``max_trials``, the output gate sequence
+    should implement the same operation approximately, up to a global phase.
+
+    >>> global_phase = np.exp(5j * np.pi / 4)
+    >>> qml.math.allclose(op.matrix(), matrix_rs * global_phase, atol=1e-3)
+    True
 
     """
 
