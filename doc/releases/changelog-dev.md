@@ -1004,6 +1004,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
+* Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
+  to reflect supported devices and usage in analytic simulations,
+  in the :doc:`/introduction/dynamic_quantum_circuits` page.
+  [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1021,6 +1026,7 @@ Korbinian Kottmann,
 Christina Lee,
 Anton Naim Ibrahim,
 William Maxwell
+Luis Alfredo Nuñez Meneses
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
