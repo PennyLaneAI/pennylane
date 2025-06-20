@@ -31,6 +31,7 @@ from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
 from xdsl.dialects import transform as xtransform
 from xdsl.parser import Parser as xParser
+from xdsl.traits import SymbolTable as xSymbolTable
 
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
@@ -130,13 +131,11 @@ def xdsl_module(func: JaxJittedFunction) -> Callable[..., xbuiltin.ModuleOp]:  #
 
 
 def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, **kwargs) -> None:
-    """Inline a ``jax.jit``-ed Python function to an xDSL module."""
+    """Inline a ``jax.jit``-ed Python function to an xDSL module. The inlined body is appended
+    to the end of ``mod``."""
     func_mod = _xdsl_module_inline(func, *args, **kwargs)
-
-    for op in func_mod.body.ops:
-        if isinstance(op, xfunc.FuncOp) and op.sym_name.data == "main":
-            op.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
-            break
+    main_func = xSymbolTable.lookup_symbol(func_mod, "main")
+    main_func.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
 
     cloned_ops = tuple(op.clone() for op in func_mod.body.ops)
     mod.body.blocks[0].add_ops(cloned_ops)
