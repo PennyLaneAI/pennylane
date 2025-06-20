@@ -173,23 +173,21 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         op_onebody = resource_rep(
             plre.ResourceProd,
-            {"cmpr_factors": tuple(plre.ResourceRZ.resource_rep() for i in range(2 * num_orb))},
+            {"cmpr_factors_and_counts":((plre.ResourceRZ.resource_rep(), 2*num_orb))},
         )
 
         op_twobody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
-                    plre.ResourceMultiRZ.resource_rep(num_wires=2)
-                    for i in range((2 * num_orb - 1) * num_orb)
-                )
+                "cmpr_factors_and_counts": ((
+                    plre.ResourceMultiRZ.resource_rep(num_wires=2),
+                    (2 * num_orb - 1) * num_orb))
             },
         )
 
         basis_rot = resource_rep(plre.ResourceBasisRotation, {"dim_N": num_orb})
 
         if order == 1:
-            print("Basis rot: ", num_frags * num_steps)
             gate_list.append(plre.GateCount(basis_rot, 2 * num_frags * num_steps))
 
             gate_list.append(plre.GateCount(op_onebody, num_steps))
@@ -240,7 +238,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         op_onebody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
+                "cmpr_factors_and_counts": tuple(
                     resource_rep(
                         plre.ResourceControlled,
                         {
@@ -249,7 +247,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
                     )
-                    for i in range(2 * num_orb)
+                    ,(2 * num_orb)
                 )
             },
         )

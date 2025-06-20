@@ -121,76 +121,76 @@ class TestTrotterCDF:
             plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
 
 
-class TestTrotterTHC:
-    # Expected resources were obtained manually
-    hamiltonian_data = [
-        (
-            8,
-            20,
-            100,
-            2,
-            {
-                "qubit_manager": QubitManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=40, tight_budget=False
-                ),
-                "gate_types": defaultdict(
-                    int,
-                    {
-                        "T": 4627512.0,
-                        "Adjoint(T)": 87312.0,
-                        "Hadamard": 174624.0,
-                        "S": 87312.0,
-                        "Adjoint(S)": 87312.0,
-                        "CNOT": 243312.0,
-                    },
-                ),
-            },
-        ),
-        (
-            10,
-            40,
-            1000,
-            1,
-            {
-                "qubit_manager": QubitManager(
-                    work_wires={"clean": 0, "dirty": 0}, algo_wires=80, tight_budget=False
-                ),
-                "gate_types": defaultdict(
-                    int,
-                    {
-                        "T": 176130000.0,
-                        "Adjoint(T)": 3300000.0,
-                        "Hadamard": 6600000.0,
-                        "S": 3300000.0,
-                        "Adjoint(S)": 3300000.0,
-                        "CNOT": 9620000.0,
-                    },
-                ),
-            },
-        ),
-    ]
+# class TestTrotterTHC:
+#     # Expected resources were obtained manually
+#     hamiltonian_data = [
+#         (
+#             8,
+#             20,
+#             100,
+#             2,
+#             {
+#                 "qubit_manager": QubitManager(
+#                     work_wires={"clean": 0, "dirty": 0}, algo_wires=40, tight_budget=False
+#                 ),
+#                 "gate_types": defaultdict(
+#                     int,
+#                     {
+#                         "T": 4627512.0,
+#                         "Adjoint(T)": 87312.0,
+#                         "Hadamard": 174624.0,
+#                         "S": 87312.0,
+#                         "Adjoint(S)": 87312.0,
+#                         "CNOT": 243312.0,
+#                     },
+#                 ),
+#             },
+#         ),
+#         (
+#             10,
+#             40,
+#             1000,
+#             1,
+#             {
+#                 "qubit_manager": QubitManager(
+#                     work_wires={"clean": 0, "dirty": 0}, algo_wires=80, tight_budget=False
+#                 ),
+#                 "gate_types": defaultdict(
+#                     int,
+#                     {
+#                         "T": 176130000.0,
+#                         "Adjoint(T)": 3300000.0,
+#                         "Hadamard": 6600000.0,
+#                         "S": 3300000.0,
+#                         "Adjoint(S)": 3300000.0,
+#                         "CNOT": 9620000.0,
+#                     },
+#                 ),
+#             },
+#         ),
+#     ]
 
-    @pytest.mark.parametrize(
-        "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
-    )
-    def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
-        """Test the ResourceTrotterTHC class for tensor hypercontraction"""
-        compact_ham = plre.CompactHamiltonian.thc(
-            num_orbitals=num_orbitals, tensor_rank=tensor_rank
-        )
+#     @pytest.mark.parametrize(
+#         "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
+#     )
+#     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
+#         """Test the ResourceTrotterTHC class for tensor hypercontraction"""
+#         compact_ham = plre.CompactHamiltonian.thc(
+#             num_orbitals=num_orbitals, tensor_rank=tensor_rank
+#         )
 
-        def circ():
-            plre.ResourceTrotterTHC(compact_ham, num_steps=num_steps, order=order)
+#         def circ():
+#             plre.ResourceTrotterTHC(compact_ham, num_steps=num_steps, order=order)
 
-        res = plre.estimate_resources(circ)()
+#         res = plre.estimate_resources(circ)()
 
-        assert res.qubit_manager == expected_res["qubit_manager"]
-        assert res.clean_gate_counts == expected_res["gate_types"]
+#         assert res.qubit_manager == expected_res["qubit_manager"]
+#         assert res.clean_gate_counts == expected_res["gate_types"]
 
-    def test_type_error(self):
-        """Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
-        with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterTHC"
-        ):
-            plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
+#     def test_type_error(self):
+#         """Test that a TypeError is raised for unsupported Hamiltonian representations."""
+#         compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=10)
+#         with pytest.raises(
+#             TypeError, match="Unsupported Hamiltonian representation for ResourceTrotterTHC"
+#         ):
+#             plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)

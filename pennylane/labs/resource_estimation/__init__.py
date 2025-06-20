@@ -118,7 +118,8 @@ Templates:
 .. autosummary::
     :toctree: api
 
-    ~ResourceTrotterProduct
+    ~ResourceTrotterCDF
+    ~ResourceTrotterTHC
     ~ResourceOutOfPlaceSquare
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
@@ -194,7 +195,8 @@ from .ops import (
 )
 
 from .templates import (
-    ResourceTrotterProduct,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
     ResourceOutMultiplier,
@@ -202,4 +204,5 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    CompactHamiltonian
 )
