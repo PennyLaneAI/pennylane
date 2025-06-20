@@ -345,14 +345,14 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
 
 
 def test_quad_order_error():
-    r"""Test that an error is raised if invalid value of quad_order is provided."""
+    r"""Test that an error is raised if invalid value of n_points is provided."""
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
     with pytest.raises(ValueError, match="Number of sample points cannot be less than 1."):
-        vibrational.vibrational_pes(mol, quad_order=-1)
+        vibrational.vibrational_pes(mol, n_points=-1)
 
 
 def test_dipole_order_error():
