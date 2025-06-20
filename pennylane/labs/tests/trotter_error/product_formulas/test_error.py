@@ -31,6 +31,8 @@ from pennylane.labs.trotter_error import (
 def test_perturbation_error(backend, parallel_mode, mpi4py_support):
     """Test that perturbation error function runs without errors for different backends."""
 
+    print(f"{backend}, {mpi4py_support}")
+
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 

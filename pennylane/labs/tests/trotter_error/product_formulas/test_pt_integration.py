@@ -108,9 +108,13 @@ params = [
 
 
 @pytest.mark.parametrize("backend, num_workers, parallel_mode, n_states", params)
-def test_perturbation_error(backend, num_workers, parallel_mode, n_states):
+def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4py_support):
     """Test that perturbation_error returns the correct result. This is a precomputed example
     of perturbation theory on a CDF Hamiltonian."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     pf = ProductFormula(frag_labels, coeffs=frag_coeffs)(h)
     states = [state] * n_states
     actual = perturbation_error(
