@@ -696,7 +696,7 @@ class TestToBloq:
                 "qsvt_custom_mapping",
                 "qsvt_custom_bloq",
             ),
-            (qml.QFT(wires=range(4)), "qft_custom_mapping","qft_custom_bloq"),
+            (qml.QFT(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
             (
                 qml.ModExp(
                     x_wires=[0, 1],
@@ -705,7 +705,7 @@ class TestToBloq:
                     mod=7,
                     work_wires=[5, 6, 7, 8, 9],
                 ),
-                "modexp_custom_mapping"
+                "modexp_custom_mapping",
                 "modexp_custom_bloq",
             ),
             (
@@ -715,7 +715,7 @@ class TestToBloq:
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
                 ),
-                "qrom_custom_mapping"
+                "qrom_custom_mapping",
                 "qrom_custom_bloq",
             ),
         ],
@@ -734,6 +734,18 @@ class TestToBloq:
                     ctrl_state_prep=LPResourceState(4),
                 ),
                 "qsvt_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "qft_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "modexp_custom_bloq": TextbookQPE(
+                    unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                    ctrl_state_prep=LPResourceState(4),
+                ),
+                "qrom_custom_bloq": TextbookQPE(
                     unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                     ctrl_state_prep=LPResourceState(4),
                 ),
@@ -758,6 +770,35 @@ class TestToBloq:
                 "qsvt_custom_mapping": {
                     qml.QSVT(
                         qml.H(0), [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "qft_custom_mapping": {
+                    qml.QFT(wires=range(4)): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "modexp_custom_mapping": {
+                    qml.ModExp(
+                        x_wires=[0, 1],
+                        output_wires=[2, 3, 4],
+                        base=2,
+                        mod=7,
+                        work_wires=[5, 6, 7, 8, 9],
+                    ): TextbookQPE(
+                        unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "qrom_custom_mapping": {
+                    qml.QROM(
+                        bitstrings=["010", "111", "110", "000"],
+                        control_wires=[0, 1],
+                        target_wires=[2, 3, 4],
+                        work_wires=[5, 6, 7],
                     ): TextbookQPE(
                         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),

@@ -71,7 +71,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
 
 
 @singledispatch
-def _map_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
+def _map_to_bloq(op, map_ops=True, custom_mapping=None, **kwargs):
     """Map PennyLane operators to Qualtran Bloqs. Operators with direct equivalents are directly
     mapped to their Qualtran equivalent even if ``map_ops`` is set to ``False``. Other operators are
     given a smart default mapping. When given a ``custom_mapping``, the custom mapping is used."""
@@ -113,14 +113,14 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
 @_map_to_bloq.register
 def _(
     op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
-    custom_mapping=None,
     map_ops=True,
+    custom_mapping=None,
     **kwargs,
 ):
     from qualtran.bloqs.phase_estimation import RectangularWindowState
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
-    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
         return mapped_op
 
@@ -136,7 +136,7 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT maps to qt.QFTTextBook by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
-    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
         return mapped_op
 
@@ -145,12 +145,12 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
 
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
-def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
+def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for QROM that smartly defaults to either QROAMClean or SelectSwapQROM"""
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
-    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
         return mapped_op
 
@@ -163,11 +163,11 @@ def _(op: qtemps.subroutines.QROM, custom_mapping=None, map_ops=True, **kwargs):
 
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
-def _(op: qtemps.subroutines.ModExp, custom_mapping=None, map_ops=True, **kwargs):
+def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for ModExp"""
     from qualtran.bloqs.cryptography.rsa import ModExp
 
-    mapped_op = _handle_custom_map(op, custom_mapping, map_ops, **kwargs)
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
         return mapped_op
 
