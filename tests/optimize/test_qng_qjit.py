@@ -73,13 +73,13 @@ class TestGradients:
         opt = qml.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
-        params_qml = qml.numpy.array(params)
-        grad_qml = qml.grad(qml_qnode)(params_qml)
 
         params_jax = jnp.array(params)
         grad_jax = opt._get_grad(qml_qnode, params_jax)
+        
+        grad_exact = -jnp.sin(params_jax[0])
 
-        assert np.allclose(grad_qml, grad_jax)
+        assert np.allclose(grad_exact, grad_jax)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
