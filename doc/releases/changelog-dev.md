@@ -410,6 +410,27 @@
   See the documentation for more details.
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
+* New :func:`~.ops.rs_decomposition` function has been added, which approximates a phase shift or
+  Pauli-Z rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_, up to global phase factor of `±1`. 
+
+  ```python
+  import numpy as np
+  import pennylane as qml
+
+  op  = qml.RZ(np.pi/3, wires=0)
+  ops = qml.ops.rs_decomposition(op, epsilon=1e-3)
+
+  matrix_rs = qml.prod(*reversed(ops)).matrix()
+  ```
+
+  ```pycon
+  >>> np.allclose(op.matrix(), matrix_rs, atol=1e-3)
+  True
+  ```
+
+  This can be now used with the :func:`~.transform.clifford_t_decomposition` transform by using
+  the keyword argument ``method="rs"``.
+
 <h3>Improvements 🛠</h3>
 
 * Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently

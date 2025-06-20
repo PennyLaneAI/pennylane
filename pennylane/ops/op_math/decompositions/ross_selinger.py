@@ -99,8 +99,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
     When the function is run for a sufficient ``max_trials``, the output gate sequence
     should implement the same operation approximately, up to a global phase.
 
-    >>> global_phase = np.exp(5j * np.pi / 4)
-    >>> qml.math.allclose(op.matrix(), matrix_rs * global_phase, atol=1e-3)
+    >>> qml.math.allclose(op.matrix(), matrix_rs, atol=1e-3)
     True
 
     """
