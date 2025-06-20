@@ -137,8 +137,8 @@ def copy_jit_to_module(func: JaxJittedFunction, mod: xbuiltin.ModuleOp, *args, *
     main_func = xSymbolTable.lookup_symbol(func_mod, "main")
     main_func.properties["sym_name"] = xbuiltin.StringAttr(func.__name__)
 
-    cloned_ops = tuple(op.clone() for op in func_mod.body.ops)
-    mod.body.blocks[0].add_ops(cloned_ops)
+    for func in func_mod:
+        xSymbolTable.insert_or_update(mod, func)
 
 
 def xdsl_from_qjit(func: QJIT) -> Callable[..., xbuiltin.ModuleOp]:
