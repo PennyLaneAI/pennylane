@@ -4,10 +4,12 @@
 
 <h3>New features since last release</h3>
 
-* A new Jax-based :class:`~.QNGOptimizerQJIT` has been added to provide a `jax.jit`/`qml.qjit`-compatible
-  implementation of the :class:`~.QNGOptimizer` algorithm. It's now possible to just-in-time compile the `step`
-  or `step_and_cost` method of the optimizer to make the optimization loop significantly faster.
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
 
   ```python
   import pennylane as qml
