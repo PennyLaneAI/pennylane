@@ -21,7 +21,7 @@ from scipy.special import factorial
 
 from pennylane import concurrency
 
-# pylint: disable = redefined-outer-name
+# pylint: disable = redefined-outer-name, too-many-positional-arguments
 
 try:
     import h5py
