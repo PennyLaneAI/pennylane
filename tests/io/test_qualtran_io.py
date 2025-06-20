@@ -696,6 +696,28 @@ class TestToBloq:
                 "qsvt_custom_mapping",
                 "qsvt_custom_bloq",
             ),
+            (qml.QFT(wires=range(4)), "qft_custom_mapping","qft_custom_bloq"),
+            (
+                qml.ModExp(
+                    x_wires=[0, 1],
+                    output_wires=[2, 3, 4],
+                    base=2,
+                    mod=7,
+                    work_wires=[5, 6, 7, 8, 9],
+                ),
+                "modexp_custom_mapping"
+                "modexp_custom_bloq",
+            ),
+            (
+                qml.QROM(
+                    bitstrings=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_custom_mapping"
+                "qrom_custom_bloq",
+            ),
         ],
     )
     def test_custom_mapping(self, op, custom_map, qt_bloq):
