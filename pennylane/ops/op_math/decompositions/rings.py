@@ -288,6 +288,12 @@ class ZOmega:
         n = self * other.conj() * ((other * other.conj()).adj2())
         return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
 
+    @classmethod
+    def from_sqrt_pair(cls, alpha: ZSqrtTwo, beta: ZSqrtTwo, shift: ZOmega) -> ZOmega:
+        """Return ``ZOmega`` element as :math:`A + 1j * B + shift`, where :math:`A` and
+        :math:`B` are ``ZSqrtTwo`` elements and ``shift`` is ``ZOmega`` element."""
+        return cls(beta.b - alpha.b, beta.a, beta.b + alpha.b, alpha.a) + shift
+
     @property
     def flatten(self: ZOmega) -> List[int]:
         """Flatten to a list."""
@@ -326,6 +332,18 @@ class ZOmega:
         if (self.c + self.a) == 0 and self.b == 0:
             return ZSqrtTwo(self.d, (self.c - self.a) // 2)
         raise ValueError("Cannot convert ZOmega to ZSqrtTwo.")
+
+    def normalize(self: ZOmega) -> tuple[ZOmega, int]:
+        """Normalize the ZOmega element and return the number of times 2 was factored out."""
+        res, ix = self, 0
+        while (res.a + res.c) % 2 == 0 and (res.b + res.d) % 2 == 0:
+            a = (res.b - res.d) // 2
+            b = (res.a + res.c) // 2
+            c = (res.b + res.d) // 2
+            d = (res.c - res.a) // 2
+            res = ZOmega(a, b, c, d)
+            ix += 1
+        return res, ix
 
 
 class DyadicMatrix:
