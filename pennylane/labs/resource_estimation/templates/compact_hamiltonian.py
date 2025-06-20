@@ -35,7 +35,9 @@ class CompactHamiltonian:
             def circ():
                 plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
                 return
+
         The resources can then be extracted as usual:
+
         >>> res = re.estimate_resources(circ)()
         >>> print(res)
         --- Resources: ---
@@ -48,8 +50,10 @@ class CompactHamiltonian:
         Note that the specific parameters required for each method will depend on the
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:
+
         - :meth:`cdf`: Saves the data for compressed double factorized Hamiltonian
         - :meth:`thc`: Saves the data for tensor hypercontracted Hamiltonian
+
     """
 
     def __init__(self, method_name: str, **params: Dict[str, Any]):

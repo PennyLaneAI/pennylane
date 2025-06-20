@@ -20,7 +20,6 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import QubitManager
-
 # pylint: disable=too-many-arguments
 
 from collections import defaultdict

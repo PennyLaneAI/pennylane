@@ -507,16 +507,11 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     exponential of compressed double factorized Hamiltonian.
 
     Args:
-        compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the compressed double factorized Hamiltonian
+        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+            Hamiltonian we will be approximately exponentiating.
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
-    Resource Parameters:
-        * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-          that stores information about the compressed double factorized Hamiltonian
-        * n (int): an integer representing the number of Trotter steps to perform
-        * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
@@ -536,12 +531,32 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     .. seealso:: :class:`~.TrotterProduct`
 
+    The resources can be computed as:
+
+    **Example**
+    >>> n, order = (1, 2)
+    >>> compact_ham = plre.CompactHamiltonian.from_cdf(num_orbitals = 4, num_fragments = 4)
+    >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, n, order))
+    >>> print(res)
+    --- Resources: ---
+     Total qubits: 4
+     Total gates : 1.120E+4
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 4
+     Gate breakdown:
+      {'T': 9.912E+3, 'Adjoint(T)': 168.0, 'Hadamard': 336.0, 'S': 168.0, 'Adjoint(S)': 168.0, 'CNOT': 448.0}
+
     """
 
     resource_keys = {"compact_ham", "num_steps", "order"}
 
     def __init__(self, compact_ham, num_steps, order, wires=None):
 
+        if compact_ham.method_name != "cdf":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceTrotterCDF."
+                f"This method works with cdf Hamiltonian, {compact_ham.method_name} provided"
+            )
         self.num_steps = num_steps
         self.order = order
         self.compact_ham = compact_ham
@@ -550,8 +565,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = Wires(range(2 * compact_ham.params["num_orbitals"]))
-            self.num_wires = len(self.wires)
+            self.wires = None
+            self.num_wires = 2 * compact_ham.params["num_orbitals"]
         super().__init__(wires=wires)
 
     @property
@@ -560,8 +575,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                  that stores information about the compressed double factorized Hamiltonian
+                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                      Hamiltonian we will be approximately exponentiating.
                 * n (int): an integer representing the number of Trotter steps to perform
                 * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         """
@@ -577,10 +592,10 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the compressed double factorized Hamiltonian
-            n (int): an integer representing the number of Trotter steps to perform
-            order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                Hamiltonian we will be approximately exponentiating.
+            n (int): the number of Trotter steps to perform
+            order (int): the order of the approximation (must be 1 or even)
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -620,43 +635,10 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the compressed double factorized Hamiltonian
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                Hamiltonian we will be approximately exponentiating.
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-
-        Resources:
-            The resources are defined according to the recurrsive formula presented above. Specifically, each
-            operator in the single step trotter circuit is called a number of times given by the formula:
-
-            .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
-
-            Furthermore, the first and last terms of the hamiltonian appear in pairs due to the symmetric form
-            of the recurrsive formula. Those counts are further simplified by grouping like terms as:
-
-            .. math::
-
-                \begin{align}
-                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
-                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
-                \end{align}
-
-        **Example**
-
-        The resources can be computed as:
-
-        >>> n, order = (1, 2)
-        >>> compact_ham = plre.CompactHamiltonian.from_cdf(num_orbitals = 4, num_fragments = 4)
-        >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, n, order))
-        >>> print(res)
-        --- Resources: ---
-         Total qubits: 4
-         Total gates : 1.120E+4
-         Qubit breakdown:
-          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 4
-         Gate breakdown:
-          {'T': 9.912E+3, 'Adjoint(T)': 168.0, 'Hadamard': 336.0, 'S': 168.0, 'Adjoint(S)': 168.0, 'CNOT': 448.0}
-
 
         """
         k = order // 2
@@ -709,12 +691,9 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     ):
         """Returns the controlled resource decomposition.
 
-        Resources:
-            The original resources are controlled only on the Z rotation gates.
-
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the compressed double factorized Hamiltonian
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The compressed double factorized
+                Hamiltonian we will be approximately exponentiating.
             num_steps (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
             ctrl_num_ctrl_wires (int): the number of control wires for the controlled operations
@@ -722,6 +701,9 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             list[GateCount]: a list of GateCount objects representing the controlled resource decomposition
+
+        Resources:
+            The original resources are controlled only on the Z rotation gates.
 
         """
         k = order // 2
@@ -794,8 +776,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     exponential of tensor hypercontracted Hamiltonian.
 
     Args:
-        compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-            that stores information about the tensor hypercontracted Hamiltonian
+        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The tensor hypercontracted
+                Hamiltonian we will be approximately exponentiating.
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
@@ -817,13 +799,20 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     .. seealso:: :class:`~.TrotterProduct`
 
-        **Example**
+    The resources can be computed as:
 
-        The resources can be computed as:
-
-        >>> n, order = (1, 2)
-        >>> compact_ham = plre.CompactHamiltonian.from_thc(num_orbitals = 4, tensor_rank = 4)
-        >>> plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, n, order)
+    **Example**
+    >>> n, order = (1, 2)
+    >>> compact_ham = plre.CompactHamiltonian.thc(tensor_rank=4, num_fragments=4)
+    >>> res = plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, n, order))
+    >>> print(res)
+    --- Resources: ---
+     Total qubits: 8
+     Total gates : 4.256E+3
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
+     Gate breakdown:
+      {'T': 3.768E+3, 'Adjoint(T)': 72.0, 'Hadamard': 144.0, 'S': 72.0, 'Adjoint(S)': 72.0, 'CNOT': 128.0}
 
     """
 
@@ -831,6 +820,11 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     def __init__(self, compact_ham, num_steps, order, wires=None):
 
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceTrotterTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
         self.num_steps = num_steps
         self.order = order
         self.compact_ham = compact_ham
@@ -839,8 +833,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = Wires(range(compact_ham.params["tensor_rank"]))
-            self.num_wires = len(self.wires)
+            self.wires = None
+            self.num_wires = compact_ham.params["tensor_rank"] * 2
         super().__init__(wires=wires)
 
     @property
@@ -849,8 +843,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                  that stores information about the compressed double factorized Hamiltonian
+                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The tensor hypercontracted
+                  Hamiltonian we will be approximately exponentiating.
                 * n (int): an integer representing the number of Trotter steps to perform
                 * order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         """
@@ -866,8 +860,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the tensor hypercontracted Hamiltonian
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The tensor hypercontracted
+                Hamiltonian we will be approximately exponentiating.
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
@@ -909,8 +903,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the tensor hypercontracted Hamiltonian
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The tensor hypercontracted
+                Hamiltonian we will be approximately exponentiating.
             n (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
@@ -961,12 +955,9 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     ):
         """Returns the controlled resource decomposition.
 
-        Resources:
-            The original resources are controlled only on the Z rotation gates.
-
         Args:
-            compact_ham(CompactHamiltonian): :class:`~pennylane.resource_estimation.CompactHamiltonian` object
-                that stores information about the compressed double factorized Hamiltonian
+            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The tensor hypercontracted
+                Hamiltonian we will be approximately exponentiating.
             num_steps (int): an integer representing the number of Trotter steps to perform
             order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
             ctrl_num_ctrl_wires (int): the number of control wires for the controlled operations
@@ -974,6 +965,9 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             list[GateCount]: a list of GateCount objects representing the controlled resource decomposition
+
+        Resources:
+            The original resources are controlled only on the Z rotation gates.
 
         """
         k = order // 2
