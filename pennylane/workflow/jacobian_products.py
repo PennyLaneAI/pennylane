@@ -422,7 +422,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
         if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
+            execution_config = qml.devices.ExecutionConfig()
 
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(

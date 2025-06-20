@@ -37,7 +37,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from . import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -677,8 +677,10 @@ class DefaultQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
@@ -745,8 +747,10 @@ class DefaultQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
@@ -766,8 +770,10 @@ class DefaultQubit(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -810,8 +816,10 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
@@ -830,8 +838,10 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
@@ -878,7 +888,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
         adjoint differentiation method to compute the VJP.
@@ -919,6 +929,8 @@ class DefaultQubit(Device):
           then the shape must be ``(batch_size,)``.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
 
@@ -946,8 +958,10 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         self.reset_prng_key()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
