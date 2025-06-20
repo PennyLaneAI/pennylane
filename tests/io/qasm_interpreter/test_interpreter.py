@@ -53,6 +53,122 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestSubroutine:
+
+    def test_scoping_const(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "nested-subroutines", "wire_map": None}
+        )
+
+        assert context.vars["a"].val == 0.5
+        assert context.vars["c"].val == 2
+        assert context.vars["d"].val == 2.5
+
+    def test_nested_renaming(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_renaming.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [PauliY("q0"), PauliX("q0"), Hadamard("q0")]
+
+    def test_repeated_calls(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "repeated-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(11, "q0"),
+            RY(0.5, "q0"),
+        ]
+
+    def test_subroutine_not_defined(self):
+        ast = parse(
+            """
+            undefined_subroutine();
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NameError,
+            match="Reference to subroutine undefined_subroutine not "
+            "available in calling namespace on line 2.",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "undefined-subroutine", "wire_map": None}
+            )
+
+    def test_stand_alone_call_of_subroutine(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "standalone-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0"), Hadamard("q0"), RX(0.1, "q0")]
+        assert context.vars["c"].val == 0
+
+    def test_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
+
+        assert q.queue == [Hadamard("q0")]
+
+
+@pytest.mark.external
 class TestExpressions:
 
     def test_different_unary_exprs(self):
