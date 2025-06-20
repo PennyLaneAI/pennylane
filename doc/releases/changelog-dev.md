@@ -412,10 +412,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
-  experimental and not integrated.
+* A new experimental `allocation` module has been added, which contains functionality for dynamically 
+  allocating wires with :func:`~.allocate` and manually deallocating them with :func:`~.deallocate`. 
   [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
   [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
+  [(#7726)](https://github.com/PennyLaneAI/pennylane/pull/7726)
 
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
