@@ -162,6 +162,7 @@ class PlxprVisualizer(PlxprInterpreter):
                 outvals = [outvals]
             for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval
+                self._env_ascii[outvar] = self._convert_var_to_ascii(outvar)
 
         # Read the final result of the Jaxpr from the environment
         outvals = []
