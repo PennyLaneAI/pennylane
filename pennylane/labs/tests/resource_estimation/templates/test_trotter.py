@@ -21,8 +21,10 @@ import pytest
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import QubitManager
 
+# pylint: disable=no-self-use, too-many-arguments
 
 class TestTrotterCDF:
+    """Tests for ResourceTrotterCDF class"""
     # Expected resources were obtained from the XAS notebook
     hamiltonian_data = [
         (
@@ -120,6 +122,7 @@ class TestTrotterCDF:
 
 
 class TestTrotterTHC:
+    """Tests for ResourceTrotterCDF class"""
     # Expected resources were obtained manually
     hamiltonian_data = [
         (

@@ -36,7 +36,6 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
 
-
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
         operator in the :code:`first_order_expansion` is called a number of times given by the formula:
