@@ -120,6 +120,8 @@ Templates:
 
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
+    ~ResourceTrotterVibrational
+    ~ResourceTrotterVibronic
     ~ResourceOutOfPlaceSquare
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
@@ -197,6 +199,8 @@ from .ops import (
 from .templates import (
     ResourceTrotterCDF,
     ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
     ResourceOutMultiplier,
@@ -204,5 +208,5 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
-    CompactHamiltonian
+    CompactHamiltonian,
 )

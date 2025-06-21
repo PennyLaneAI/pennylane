@@ -13,7 +13,12 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .trotter import ResourceTrotterCDF, ResourceTrotterTHC
+from .trotter import (
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+)
 from .subroutines import (
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
