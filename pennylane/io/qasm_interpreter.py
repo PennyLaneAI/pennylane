@@ -511,9 +511,7 @@ class QasmInterpreter:
         if isinstance(loop_params, slice):
             start = loop_params.start
             stop = loop_params.stop
-            step = loop_params.step
-            if step is None:
-                step = 1
+            step = loop_params.step or 1
         elif isinstance(loop_params, Iterable):
             start = 0
             stop = len(loop_params)
