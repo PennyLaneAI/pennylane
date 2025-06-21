@@ -31,7 +31,7 @@ class CompactHamiltonian:
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.
         .. code-block:: python
-            compact_ham = plre.CompactHamiltonian.from_cdf(num_orbitals=8, num_fragments=4)
+            compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=8, num_fragments=4)
             def circ():
                 plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
                 return
@@ -41,12 +41,13 @@ class CompactHamiltonian:
         >>> res = re.estimate_resources(circ)()
         >>> print(res)
         --- Resources: ---
-         Total qubits: 8
-         Total gates : 4.207E+6
+         Total qubits: 16
+         Total gates : 8.370E+6
          Qubit breakdown:
-          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
+          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 16
          Gate breakdown:
-          {'T': 3.684E+6, 'Adjoint(T)': 6.731E+4, 'Hadamard': 1.346E+5, 'S': 6.731E+4, 'Adjoint(S)': 6.731E+4, 'CNOT': 1.873E+5}
+          {'T': 7.711E+6, 'S': 2.019E+5, 'Z': 1.346E+5, 'Hadamard': 1.346E+5, 'CNOT': 1.873E+5}
+
         Note that the specific parameters required for each method will depend on the
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:

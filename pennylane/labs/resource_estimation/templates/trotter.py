@@ -67,13 +67,12 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, n, order))
     >>> print(res)
     --- Resources: ---
-     Total qubits: 4
-     Total gates : 1.120E+4
+     Total qubits: 8
+     Total gates : 2.238E+4
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 4
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
      Gate breakdown:
-      {'T': 9.912E+3, 'Adjoint(T)': 168.0, 'Hadamard': 336.0, 'S': 168.0, 'Adjoint(S)': 168.0, 'CNOT': 448.0}
-
+      {'T': 2.075E+4, 'S': 504.0, 'Z': 336.0, 'Hadamard': 336.0, 'CNOT': 448.0}
     """
 
     resource_keys = {"compact_ham", "num_steps", "order"}
@@ -335,11 +334,11 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     >>> print(res)
     --- Resources: ---
      Total qubits: 8
-     Total gates : 4.256E+3
+     Total gates : 8.520E+3
      Qubit breakdown:
       clean qubits: 0, dirty qubits: 0, algorithmic qubits: 8
      Gate breakdown:
-      {'T': 3.768E+3, 'Adjoint(T)': 72.0, 'Hadamard': 144.0, 'S': 72.0, 'Adjoint(S)': 72.0, 'CNOT': 128.0}
+      {'T': 7.888E+3, 'S': 216.0, 'Z': 144.0, 'Hadamard': 144.0, 'CNOT': 128.0}
 
     """
 
