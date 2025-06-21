@@ -585,11 +585,11 @@ class ResourceTrotterVibrational(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total qubits: 83.0
-     Total gates : 1.235E+5
+     Total gates : 1.238E+5
      Qubit breakdown:
       clean qubits: 75.0, dirty qubits: 0.0, algorithmic qubits: 8
      Gate breakdown:
-      {'Z': 1, 'S': 1, 'T': 358.0, 'X': 1.216E+3, 'Toffoli': 2.248E+4, 'CNOT': 3.520E+4, 'Hadamard': 6.420E+4}
+      {'Z': 1, 'S': 1, 'T': 749.0, 'X': 1.216E+3, 'Toffoli': 2.248E+4, 'CNOT': 3.520E+4, 'Hadamard': 6.420E+4}
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -881,11 +881,11 @@ class ResourceTrotterVibronic(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total qubits: 85.0
-     Total gates : 1.328E+5
+     Total gates : 1.332E+5
      Qubit breakdown:
       clean qubits: 75.0, dirty qubits: 0.0, algorithmic qubits: 10
      Gate breakdown:
-      {'Z': 1, 'S': 1, 'T': 358.0, 'X': 1.456E+3, 'Hadamard': 6.636E+4, 'Toffoli': 2.320E+4, 'CNOT': 4.144E+4}
+      {'Z': 1, 'S': 1, 'T': 749.0, 'X': 1.456E+3, 'Hadamard': 6.636E+4, 'Toffoli': 2.320E+4, 'CNOT': 4.144E+4}
     """
 
     resource_keys = {"compact_ham", "num_steps", "order", "phase_grad_precision", "coeff_precision"}
@@ -1016,8 +1016,8 @@ class ResourceTrotterVibronic(ResourceOperator):
                 resource_rep(
                     plre.ResourceProd,
                     {
-                        "cmpr_factors": tuple(
-                            plre.ResourceX.resource_rep() for i in range(int(coeff_wires / 2))
+                        "cmpr_factors_and_counts": (
+                            (plre.ResourceX.resource_rep(), int(coeff_wires / 2)),
                         )
                     },
                 ),
