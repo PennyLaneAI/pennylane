@@ -176,15 +176,14 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         op_onebody = resource_rep(
             plre.ResourceProd,
-            {"cmpr_factors": tuple(plre.ResourceRZ.resource_rep() for i in range(2 * num_orb))},
+            {"cmpr_factors_and_counts": ((plre.ResourceRZ.resource_rep(), 2 * num_orb),)},
         )
 
         op_twobody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
-                    plre.ResourceMultiRZ.resource_rep(num_wires=2)
-                    for i in range((2 * num_orb - 1) * num_orb)
+                "cmpr_factors_and_counts": (
+                    (plre.ResourceMultiRZ.resource_rep(num_wires=2), (2 * num_orb - 1) * num_orb),
                 )
             },
         )
@@ -242,7 +241,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         op_onebody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
+                "cmpr_factors_and_counts": tuple(
                     resource_rep(
                         plre.ResourceControlled,
                         {
@@ -250,8 +249,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
-                    )
-                    for i in range(2 * num_orb)
+                    ),
+                    (2 * num_orb),
                 )
             },
         )
@@ -331,7 +330,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
     **Example**
     >>> n, order = (1, 2)
-    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbital=4, tensor_rank=4)
+    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=4, tensor_rank=4)
     >>> res = plre.estimate_resources(plre.ResourceTrotterTHC(compact_ham, n, order))
     >>> print(res)
     --- Resources: ---
@@ -444,15 +443,17 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         op_onebody = resource_rep(
             plre.ResourceProd,
-            {"cmpr_factors": tuple(plre.ResourceRZ.resource_rep() for i in range(2 * num_orb))},
+            {"cmpr_factors_and_counts": ((plre.ResourceRZ.resource_rep(), 2 * num_orb),)},
         )
 
         op_twobody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
-                    plre.ResourceMultiRZ.resource_rep(num_wires=2)
-                    for i in range((2 * tensor_rank - 1) * tensor_rank)
+                "cmpr_factors_and_counts": (
+                    (
+                        plre.ResourceMultiRZ.resource_rep(num_wires=2),
+                        (2 * tensor_rank - 1) * tensor_rank,
+                    ),
                 )
             },
         )
@@ -495,8 +496,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             list[GateCount]: a list of GateCount objects representing the controlled resource decomposition
 
         Resources:
-            The original resources are controlled only on the Z rotation gates.
-
+            The original resources are controlled only on the Z rotation gates
         """
         k = order // 2
         gate_list = []
@@ -506,7 +506,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         op_onebody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
+                "cmpr_factors_and_counts": tuple(
                     resource_rep(
                         plre.ResourceControlled,
                         {
@@ -514,8 +514,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
-                    )
-                    for i in range(2 * num_orb)
+                    ),
+                    (2 * num_orb),
                 )
             },
         )

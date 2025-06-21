@@ -45,11 +45,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 3683512.0,
-                        "Adjoint(T)": 67312.0,
+                        "T": 7711424.0,
+                        "S": 201936.0,
+                        "Z": 134624.0,
                         "Hadamard": 134624.0,
-                        "S": 67312.0,
-                        "Adjoint(S)": 67312.0,
                         "CNOT": 187312.0,
                     },
                 ),
@@ -67,11 +66,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 47730000.0,
-                        "Adjoint(T)": 900000.0,
+                        "T": 99920000.0,
+                        "S": 2700000.0,
+                        "Z": 1800000.0,
                         "Hadamard": 1800000.0,
-                        "S": 900000.0,
-                        "Adjoint(S)": 900000.0,
                         "CNOT": 2420000.0,
                     },
                 ),
@@ -89,11 +87,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 761364588.0,
-                        "Adjoint(T)": 13860264.0,
+                        "T": 1593920064.0,
+                        "S": 41580792.0,
+                        "Z": 27720528.0,
                         "Hadamard": 27720528.0,
-                        "S": 13860264.0,
-                        "Adjoint(S)": 13860264.0,
                         "CNOT": 40770264.0,
                     },
                 ),
@@ -108,6 +105,7 @@ class TestTrotterCDF:
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
         """Test the ResourceTrotterCDF class for compressed double factorization"""
+
         compact_ham = plre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
         )
@@ -116,7 +114,7 @@ class TestTrotterCDF:
             plre.ResourceTrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = plre.estimate_resources(circ)()
-
+        print(res, expected_res)
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
@@ -144,11 +142,10 @@ class TestTrotterTHC:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 4627512.0,
-                        "Adjoint(T)": 87312.0,
+                        "T": 9687424.0,
+                        "S": 261936.0,
+                        "Z": 174624.0,
                         "Hadamard": 174624.0,
-                        "S": 87312.0,
-                        "Adjoint(S)": 87312.0,
                         "CNOT": 243312.0,
                     },
                 ),
@@ -166,11 +163,10 @@ class TestTrotterTHC:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 176130000.0,
-                        "Adjoint(T)": 3300000.0,
+                        "T": 368720000.0,
+                        "S": 9900000.0,
+                        "Z": 6600000.0,
                         "Hadamard": 6600000.0,
-                        "S": 3300000.0,
-                        "Adjoint(S)": 3300000.0,
                         "CNOT": 9620000.0,
                     },
                 ),

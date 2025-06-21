@@ -82,7 +82,8 @@ should be taken together. A "Combination measurement process" higher order primi
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
->>> @qml.qnode(qml.device('default.qubit', wires=1, shots=5))
+>>> @partial(qml.set_shots, shots=5)
+... @qml.qnode(qml.device('default.qubit', wires=1))
 ... def circuit():
 ...     qml.H(0)
 ...     return qml.sample(wires=0), qml.sample(wires=0)
@@ -115,8 +116,8 @@ import jax
 from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
-from pennylane.capture import CaptureError, FlatFn
-from pennylane.capture.custom_primitives import QmlPrimitive
+from pennylane.capture import FlatFn, QmlPrimitive
+from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
 from pennylane.typing import TensorLike
 

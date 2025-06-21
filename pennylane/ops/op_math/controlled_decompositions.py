@@ -20,10 +20,17 @@ from typing import Literal
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation, Operator
+from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
+# pylint: disable=protected-access
+from .decompositions.controlled_decompositions import (
+    _decompose_mcx_with_many_workers,
+    _decompose_mcx_with_one_worker,
+    _decompose_mcx_with_two_workers,
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
+)
 
 
 def _is_single_qubit_special_unitary(op):
@@ -33,7 +40,7 @@ def _is_single_qubit_special_unitary(op):
 
 
 def decompose_mcx(
-    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "clean"
+    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "dirty"
 ):
     """Decomposes the multi-controlled PauliX"""
 
@@ -45,9 +52,11 @@ def decompose_mcx(
 
     if n_work_wires >= n_ctrl_wires - 2:
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
-        return _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires)
+        return _decompose_mcx_with_many_workers_old(
+            control_wires, target_wire, work_wires, work_wire_type
+        )
     if n_work_wires >= 2:
-        return _decompose_mcx_with_two_workers(
+        return _decompose_mcx_with_two_workers_old(
             control_wires, target_wire, work_wires[0:2], work_wire_type
         )
     if n_work_wires == 1:
@@ -127,47 +136,22 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
     return decomposition
 
 
-def _decompose_mcx_with_many_workers(control_wires, target_wire, work_wires):
+def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires, work_wire_type):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
-    num_work_wires_needed = len(control_wires) - 2
-    work_wires = work_wires[:num_work_wires_needed]
 
-    work_wires_reversed = list(reversed(work_wires))
-    control_wires_reversed = list(reversed(control_wires))
+    with qml.queuing.AnnotatedQueue() as q:
+        wires = list(control_wires) + [target_wire]
+        _decompose_mcx_with_many_workers(
+            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
+        )
 
-    gates = []
+    if qml.QueuingManager.recording():
+        for op in q.queue:  # pragma: no cover
+            qml.apply(op)
 
-    for i in range(len(work_wires)):
-        ctrl1 = control_wires_reversed[i]
-        ctrl2 = work_wires_reversed[i]
-        t = target_wire if i == 0 else work_wires_reversed[i - 1]
-        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
-
-    for i in reversed(range(len(work_wires))):
-        ctrl1 = control_wires_reversed[i]
-        ctrl2 = work_wires_reversed[i]
-        t = target_wire if i == 0 else work_wires_reversed[i - 1]
-        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-    for i in range(len(work_wires) - 1):
-        ctrl1 = control_wires_reversed[i + 1]
-        ctrl2 = work_wires_reversed[i + 1]
-        t = work_wires_reversed[i]
-        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-    gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
-
-    for i in reversed(range(len(work_wires) - 1)):
-        ctrl1 = control_wires_reversed[i + 1]
-        ctrl2 = work_wires_reversed[i + 1]
-        t = work_wires_reversed[i]
-        gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
-
-    return gates
+    return q.queue
 
 
 def _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wire):
@@ -192,60 +176,11 @@ def _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wire):
     return gates
 
 
-def _linear_depth_ladder_ops(wires: WiresLike) -> tuple[list[Operator], int]:
-    r"""
-    Helper function to create linear-depth ladder operations used in Khattar and Gidney's MCX synthesis.
-    In particular, this implements Step-1 and Step-2 on Fig. 3 of [1] except for the first and last
-    CCX gates.
-
-    Preconditions:
-        - The number of wires must be greater than 2.
-
-    Args:
-        wires (Wires): Wires to apply the ladder operations on.
-
-    Returns:
-        tuple[list[Operator], int]: Linear-depth ladder circuit and the index of control qubit to
-        apply the final CCX gate.
-
-    References:
-        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
-        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
-    """
-
-    n = len(wires)
-    assert n > 2, "n_ctrls > 2 to use MCX ladder. Otherwise, use CCX"
-
-    gates = []
-    # up-ladder
-    for i in range(1, n - 2, 2):
-        gates.append(qml.Toffoli(wires=[wires[i + 1], wires[i + 2], wires[i]]))
-        gates.append(qml.PauliX(wires=wires[i]))
-
-    # down-ladder
-    if n % 2 == 0:
-        ctrl_1, ctrl_2, target = n - 3, n - 5, n - 6
-    else:
-        ctrl_1, ctrl_2, target = n - 1, n - 4, n - 5
-
-    if target >= 0:
-        gates.append(qml.Toffoli(wires=[wires[ctrl_1], wires[ctrl_2], wires[target]]))
-        gates.append(qml.PauliX(wires=wires[target]))
-
-    for i in range(target, 1, -2):
-        gates.append(qml.Toffoli(wires=[wires[i], wires[i - 1], wires[i - 2]]))
-        gates.append(qml.PauliX(wires=wires[i - 2]))
-
-    final_ctrl = max(0, 5 - n)
-
-    return gates, final_ctrl
-
-
 def _decompose_mcx_with_one_worker_kg24(
     control_wires: WiresLike,
     target_wire: int,
     work_wire: int,
-    work_wire_type: Literal["clean", "dirty"] = "clean",
+    work_wire_type: Literal["clean", "dirty"] = "dirty",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
@@ -257,7 +192,7 @@ def _decompose_mcx_with_one_worker_kg24(
         control_wires (Wires): the control wires
         target_wire (int): the target wire
         work_wires (Wires): the work wires used to decompose the gate
-        work_wire_type (string): If "dirty", perform un-computation. Default is "clean".
+        work_wire_type (string): If "dirty", perform un-computation. Default is "dirty".
 
     Returns:
         list[Operator]: the synthesized quantum circuit
@@ -267,113 +202,24 @@ def _decompose_mcx_with_one_worker_kg24(
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
-    gates = []
-    gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wire]))
-    ladder_ops, final_ctrl = _linear_depth_ladder_ops(control_wires)
-    gates += ladder_ops
-    gates.append(qml.Toffoli(wires=[work_wire, control_wires[final_ctrl], target_wire]))
-    gates += ladder_ops[::-1]
-    gates.append(qml.Toffoli(wires=[control_wires[0], control_wires[1], work_wire]))
+    with qml.queuing.AnnotatedQueue() as q:
+        wires = list(control_wires) + [target_wire]
+        _decompose_mcx_with_one_worker(
+            wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type
+        )
 
-    if work_wire_type == "dirty":
-        # perform toggle-detection if ancilla is dirty
-        gates += ladder_ops
-        gates.append(qml.Toffoli(wires=[work_wire, control_wires[final_ctrl], target_wire]))
-        gates += ladder_ops[::-1]
+    if qml.QueuingManager.recording():
+        for op in q.queue:  # pragma: no cover
+            qml.apply(op)
 
-    return gates
+    return q.queue
 
 
-def _n_parallel_ccx_x(
-    control_wires_x: WiresLike, control_wires_y: WiresLike, target_wires: WiresLike
-) -> list[Operation]:
-    r"""
-    Construct a quantum circuit for creating n-condionally clean ancillae using 3n qubits. This
-    implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
-
-    Args:
-        control_wires_x (Wires): The control wires for register 1.
-        control_wires_y (Wires): The control wires for register 2.
-        target_wires (Wires): The wires for target register.
-
-    Returns:
-        list[Operation]: The quantum circuit for creating n-condionally clean ancillae.
-
-    References:
-        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
-        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
-    """
-
-    assert (
-        len(control_wires_x) == len(control_wires_y) == len(target_wires)
-    ), "The number of wires must be the same for x, y, and target."
-
-    gates = []
-    for i, ctrl_x in enumerate(control_wires_x):
-        gates.append(qml.X(wires=target_wires[i]))
-        gates.append(qml.Toffoli(wires=[ctrl_x, control_wires_y[i], target_wires[i]]))
-
-    return gates
-
-
-def _build_logn_depth_ccx_ladder(
-    work_wire: int, control_wires: WiresLike
-) -> tuple[list[Operator], list[Operator]]:
-    r"""
-    Helper function to build a log-depth ladder compose of CCX and X gates as shown in Fig. 4b of [1].
-
-    Args:
-        work_wire (int): The work wire.
-        control_wires (list[Wire]): The control wires.
-
-    Returns:
-        tuple[list[Operator], WiresLike: log-depth ladder circuit of cond. clean ancillae and
-        control_wires to apply the linear-depth MCX gate on.
-
-    References:
-        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
-        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
-    """
-
-    gates = []
-    anc = [work_wire]
-    final_ctrls = []
-
-    while len(control_wires) > 1:
-        next_batch_len = min(len(anc) + 1, len(control_wires))
-        control_wires, nxt_batch = control_wires[next_batch_len:], control_wires[:next_batch_len]
-        new_anc = []
-        while len(nxt_batch) > 1:
-            ccx_n = len(nxt_batch) // 2
-            st = int(len(nxt_batch) % 2)
-            ccx_x, ccx_y, ccx_t = (
-                nxt_batch[st : st + ccx_n],
-                nxt_batch[st + ccx_n :],
-                anc[-ccx_n:],
-            )
-            assert len(ccx_x) == len(ccx_y) == len(ccx_t) == ccx_n >= 1
-            if ccx_t != [work_wire]:
-                gates += _n_parallel_ccx_x(ccx_x, ccx_y, ccx_t)
-            else:
-                gates.append(qml.Toffoli(wires=[ccx_x[0], ccx_y[0], ccx_t[0]]))
-            new_anc += nxt_batch[st:]  # newly created cond. clean ancilla
-            nxt_batch = ccx_t + nxt_batch[:st]
-            anc = anc[:-ccx_n]
-
-        anc = sorted(anc + new_anc)
-        final_ctrls += nxt_batch
-
-    final_ctrls += control_wires
-    final_ctrls = sorted(final_ctrls)
-    final_ctrls.remove(work_wire)  #                        # exclude ancilla
-    return gates, final_ctrls
-
-
-def _decompose_mcx_with_two_workers(
+def _decompose_mcx_with_two_workers_old(
     control_wires: WiresLike,
     target_wire: int,
     work_wires: WiresLike,
-    work_wire_type: Literal["clean", "dirty"] = "clean",
+    work_wire_type: Literal["clean", "dirty"] = "dirty",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
@@ -385,7 +231,7 @@ def _decompose_mcx_with_two_workers(
         control_wires (Wires): The control wires.
         target_wire (int): The target wire.
         work_wires (Wires): The work wires.
-        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "clean".
+        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "dirty".
 
     Returns:
         list[Operator]: The synthesized quantum circuit.
@@ -398,25 +244,14 @@ def _decompose_mcx_with_two_workers(
     if len(work_wires) < 2:
         raise ValueError("At least 2 work wires are needed for this decomposition.")
 
-    gates = []
-    ladder_ops, final_ctrls = _build_logn_depth_ccx_ladder(work_wires[0], control_wires)
-    gates += ladder_ops
-    if len(final_ctrls) == 1:  # Already a toffoli
-        gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire]))
-    else:
-        mid_mcx = _decompose_mcx_with_one_worker_kg24(
-            work_wires[0:1] + final_ctrls, target_wire, work_wires[1], work_wire_type="clean"
+    with qml.queuing.AnnotatedQueue() as q:
+        wires = list(control_wires) + [target_wire]
+        _decompose_mcx_with_two_workers(
+            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
         )
-        gates += mid_mcx
-    gates += ladder_ops[::-1]
 
-    if work_wire_type == "dirty":
-        # perform toggle-detection if ancilla is dirty
-        gates += ladder_ops[1:]
-        if len(final_ctrls) == 1:
-            gates.append(qml.Toffoli(wires=[work_wires[0], final_ctrls[0], target_wire]))
-        else:
-            gates += mid_mcx
-        gates += ladder_ops[1:][::-1]
+    if qml.QueuingManager.recording():
+        for op in q.queue:  # pragma: no cover
+            qml.apply(op)
 
-    return gates
+    return q.queue

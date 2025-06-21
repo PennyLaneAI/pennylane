@@ -11,8 +11,51 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality."""
+r"""This module contains resource operators for PennyLane Operators"""
 
-from .identity import *
-from .qubit import *
-from .op_math import *
+from .identity import ResourceGlobalPhase, ResourceIdentity
+
+from .op_math import (
+    ResourceAdjoint,
+    ResourceCCZ,
+    ResourceCH,
+    ResourceChangeBasisOp,
+    ResourceCNOT,
+    ResourceControlled,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceMultiControlledX,
+    ResourcePow,
+    ResourceProd,
+    ResourceTempAND,
+    ResourceToffoli,
+)
+
+from .qubit import (
+    ResourceHadamard,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
+    ResourceSWAP,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
+    ResourceSingleExcitation,
+)
