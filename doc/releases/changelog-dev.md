@@ -761,6 +761,19 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* New functionality is added to create and manipulate product formulas in the `trotter_error` module.
+  [(#7224)](https://github.com/PennyLaneAI/pennylane/pull/7224)
+ 
+    * :class:`ProductFormula <pennylane.labs.trotter_error.ProductFormula` allows users to create custom product formulas.
+    * :func:`bch_expansion <pennylane.labs.trotter_error.bch_expansion` computes the Baker-Campbell-Hausdorff  expansion of a product formula.
+    * :func:`effective_hamiltonian <pennylane.labs.trotter_error.effective_hamiltonian` computes the effective Hamiltonian of a product formula.
+
+* Optimized the :func:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>`
+  module for better performance by using a task-based executor to parallelize the computationally heavy
+  parts of the algorithm.
+
+  [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
+
 * Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
   and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
@@ -1120,6 +1133,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
@@ -1131,6 +1145,7 @@ Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
 Anton Naim Ibrahim,
+William Maxwell
 Luis Alfredo Nuñez Meneses
 Oumarou Oumarou,
 Lee J. O'Riordan,
