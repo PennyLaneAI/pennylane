@@ -24,12 +24,8 @@ from typing import TYPE_CHECKING, Callable, Literal, Optional
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.concurrency.executors import ExecBackends
-from pennylane.math import Interface, InterfaceLike
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.typing import ResultBatch
-from pennylane.workflow.resolution import SupportedDiffMethods
+from pennylane.math.interface_utils import Interface
+from pennylane.transforms.core import TransformProgram
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -40,7 +36,13 @@ logger.addHandler(logging.NullHandler())
 
 
 if TYPE_CHECKING:
+    from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
+    from pennylane.math import InterfaceLike
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformDispatcher
+    from pennylane.typing import ResultBatch
+    from pennylane.workflow.resolution import SupportedDiffMethods
 
     SupportedDeviceAPIs = LegacyDevice | Device
 

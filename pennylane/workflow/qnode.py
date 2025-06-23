@@ -28,24 +28,27 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane import math, pytrees
-from pennylane.concurrency.executors.backends import ExecBackends
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
+from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
-from pennylane.typing import Result, TensorLike
+from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.typing import TensorLike
 
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-
 if TYPE_CHECKING:
+    from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
+    from pennylane.math import SupportedInterfaceUserInput
+    from pennylane.transforms.core import TransformContainer
+    from pennylane.typing import Result
+    from pennylane.workflow.resolution import SupportedDiffMethods
 
     SupportedDeviceAPIs = LegacyDevice | Device
 
