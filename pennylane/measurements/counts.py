@@ -24,6 +24,7 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
+from .capture_measurements import _get_abstract_measurement
 from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 
@@ -228,9 +229,8 @@ class CountsMP(SampleMeasurement):
         shots: Optional[int] = None,
         num_device_wires: int = 0,
     ) -> tuple:
-        raise NotImplementedError(
-            "CountsMP returns a dictionary, which is not compatible with capture."
-        )
+        n_wires = n_wires or 1
+        return (2, 2**n_wires), int
 
     @property
     def hash(self):
@@ -452,3 +452,10 @@ def _remove_unobserved_outcomes(outcome_counts: dict):
     for outcome in list(outcome_counts.keys()):
         if outcome_counts[outcome] == 0:
             del outcome_counts[outcome]
+
+
+@CountsMP._wires_primitive.def_abstract_eval
+def _(*args, has_eigvals=False, **__):
+    abstract_eval = CountsMP._abstract_eval  # pylint: disable=protected-access
+    n_wires = len(args) - 1 if has_eigvals else len(args)
+    return _get_abstract_measurement()(abstract_eval, n_wires=n_wires, is_counts=True)
