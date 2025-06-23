@@ -18,13 +18,14 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Optional
 
 import pennylane as qml
 
 from .qnode import _make_execution_config
 
 if TYPE_CHECKING:
+    from pennylane.qnn.torch import TorchLayer
     from pennylane.tape import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
@@ -57,7 +58,7 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     def wrapped_expand_fn(tape, *args, **kwargs):
         return (expand_fn(tape, *args, **kwargs),), null_postprocessing
 
-    return qml.transform(wrapped_expand_fn)
+    return qml.transforms.transform(wrapped_expand_fn)
 
 
 def _get_full_transform_program(
@@ -81,7 +82,7 @@ def _get_full_transform_program(
 
 
 def get_transform_program(
-    qnode: "QNode", level=None, gradient_fn="unset"
+    qnode: QNode, level=None, gradient_fn="unset"
 ) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
@@ -235,8 +236,8 @@ def get_transform_program(
 
 
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.TorchLayer"],
-    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
+    qnode: QNode | TorchLayer,
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 

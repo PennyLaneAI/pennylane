@@ -20,7 +20,7 @@ from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -96,7 +96,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
