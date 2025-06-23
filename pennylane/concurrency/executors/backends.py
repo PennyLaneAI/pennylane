@@ -16,6 +16,7 @@ Contains concurrent executor abstractions for task-based workloads.
 """
 
 from enum import Enum
+from typing import Union
 
 from .external import DaskExec, MPICommExec, MPIPoolExec
 from .native import MPPoolExec, ProcPoolExec, SerialExec, ThreadPoolExec
@@ -61,7 +62,7 @@ def get_supported_backends():
     return _ExecBackendsMap
 
 
-def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
+def get_executor(backend: Union[ExecBackends, str] = ExecBackends.MP_Pool):
     """
     Return the associated class type from the provided enumerated backends.
     """
@@ -70,7 +71,7 @@ def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
     return _ExecBackendsMap[backend]
 
 
-def create_executor(backend: ExecBackends | str = ExecBackends.MP_Pool, **kwargs):
+def create_executor(backend: Union[ExecBackends, str] = ExecBackends.MP_Pool, **kwargs):
     """
     Create an instance of the specified executor backend with forwarded keyword arguments
     """
