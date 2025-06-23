@@ -891,7 +891,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
   [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
-  [(#)]()
+  [(#7743)](https://github.com/PennyLaneAI/pennylane/pull/7743)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
