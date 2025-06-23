@@ -12,16 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
+
+from __future__ import annotations
+
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import PostprocessingFn
 
-from .qnode import QNode, _make_execution_config
+from .qnode import _make_execution_config
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    from .qnode import QNode
 
 
 def null_postprocessing(results):

@@ -14,11 +14,14 @@
 """
 This module contains the set_shots decorator.
 """
-from typing import Sequence, Tuple, Union
+from __future__ import annotations
 
-from pennylane.measurements import Shots
+from typing import TYPE_CHECKING, Sequence, Tuple, Union
 
-from .qnode import QNode
+if TYPE_CHECKING:
+    from pennylane.measurements import Shots
+
+    from .qnode import QNode
 
 
 def set_shots(
