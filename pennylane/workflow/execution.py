@@ -65,7 +65,7 @@ def execute(
         device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        diff_method (None, str, TransformDispatcher): The gradient transform function to use
+        diff_method (Optional[str | TransformDispatcher]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
@@ -91,17 +91,17 @@ def execute(
             (classical) computational overhead during the backward pass.
         device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+        postselect_mode (Optional[str]): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. Default is ``None``.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+        mcm_method (Optional[str]): Strategy to use when executing circuits with mid-circuit measurements.
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+        gradient_kwargs (Optional[dict]): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        executor_backend (ExecBackends, str, None): concurrent task-based executor for function dispatch.
+        executor_backend (Optional[str | ExecBackends]): concurrent task-based executor for function dispatch.
             If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
 
 
