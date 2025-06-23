@@ -23,7 +23,7 @@ from typing import Callable, Literal, Optional, Union
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.concurrency.executors import RemoteExec
+from pennylane.concurrency.executors import ExecBackends
 from pennylane.math import Interface, InterfaceLike
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -54,7 +54,7 @@ def execute(
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: dict = None,
-    executor_backend: Optional[RemoteExec] = None,
+    executor_backend: Optional[ExecBackends | str] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -99,7 +99,7 @@ def execute(
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        executor_backend (RemoteExec, None): concurrent task-based executor for function dispatch.
+        executor_backend (ExecBackends, str, None): concurrent task-based executor for function dispatch.
             If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
 
 
