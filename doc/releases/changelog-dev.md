@@ -858,6 +858,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Unpin `mitiq` in CI.
+  [(#7742)](https://github.com/PennyLaneAI/pennylane/pull/7742)
+
 * The `qml.measurements.Shots` class can now handle abstract numbers of shots.
   [(#7729)](https://github.com/PennyLaneAI/pennylane/pull/7729)
 
