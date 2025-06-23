@@ -45,6 +45,7 @@
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
+  [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
   The :func:`~.transforms.set_shots` transform can be used as a decorator:
 
@@ -183,6 +184,71 @@
   relevant gate-set with the `convert_to_mbqc_gateset` transform.
   [(#7355)](https://github.com/PennyLaneAI/pennylane/pull/7355)
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
+
+<h4>Qualtran Integration 🔗</h4>
+
+* It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
+  [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
+  [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
+  [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
+  * circuit (QNode| Qfunc | Operation): a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
+  * map_ops (bool): Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when False. Default is True.
+  * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
+  The following example converts a PennyLane Operator into a Qualtran Bloq:
+
+  ```python
+  import pennylane as qml
+  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+
+  control_wires = [2, 3]
+  estimation_wires = [4, 5, 6, 7, 8, 9]
+
+  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+  op = qml.QuantumPhaseEstimation(
+      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+  )
+
+  cbloq = qml.to_bloq(op).decompose_bloq()
+  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Let's define a custom mapping instead.
+
+  ```python
+  from qualtran.bloqs.phase_estimation import LPResourceState
+  from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+
+  custom_map = {
+    op: TextbookQPE(
+        unitary=qml.to_bloq(qml.Qubitization(H, control_wires)), 
+        ctrl_state_prep=LPResourceState(len(estimation_wires))
+    )
+  }
+
+  cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+  ```
+
+  Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
+  PennyLane decomposition by setting `map_ops` to False.
+
+  ```python
+  op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
+  cbloq = op_wrapped_as_bloq.decompose_bloq()
+  draw_musical_score(get_musical_score_data(cbloq))
+  show_bloq(cbloq)
+
+  # We can also leverage Qualtran features to get resource counts and call graphs, among other things
+  from qualtran.drawing import show_call_graph, show_counts_sigma  
+
+  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
+  show_call_graph(graph)
+  show_counts_sigma(sigma)
+  ```
 
 * A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
   This operator performs the plain addition of two integers in the computational basis.
@@ -409,7 +475,51 @@
   See the documentation for more details.
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
+* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
+  (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
+  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
+  via :func:`~.ops.rs_decomposition` function.
+  [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
+  [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
+  [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
+  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
+  Consider this simple circuit:
+
+  ```python
+  @qml.qnode(qml.device("lightning.qubit", wires=2))
+  def circuit(x, y):
+
+      qml.RX(x, 0)
+      qml.CNOT([0, 1])
+      qml.RY(y, 0)
+
+      return qml.expval(qml.Z(0))
+
+  rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
+  sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
+
+  rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
+  sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
+  ```
+
+  Decomposing with `method="rs"` instead of `method="sk"` gives a significant reduction in overall 
+  gate counts, specifically the `qml.T` count:
+
+  ```pycon
+  >>> print(rs_specs.num_gates, sk_specs.num_gates)
+  267 48637
+  >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
+  104 8507
+  ```
+
 <h3>Improvements 🛠</h3>
+
+* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
+  experimental and not integrated.
+  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
+  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
 
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
@@ -470,6 +580,7 @@
   [(#7470)](https://github.com/PennyLaneAI/pennylane/pull/7470)
   [(#7510)](https://github.com/PennyLaneAI/pennylane/pull/7510)
   [(#7590)](https://github.com/PennyLaneAI/pennylane/pull/7590)
+  [(#7706)](https://github.com/PennyLaneAI/pennylane/pull/7706)
 
 * PennyLane supports `JAX` version 0.6.0.
   [(#7299)](https://github.com/PennyLaneAI/pennylane/pull/7299)
@@ -604,6 +715,11 @@
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
 
+* Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
+  :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
+  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
+  [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
+
 <h3>Breaking changes 💔</h3>
 
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
@@ -683,6 +799,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* The `qml.measurements.Shots` class can now handle abstract numbers of shots.
+  [(#7729)](https://github.com/PennyLaneAI/pennylane/pull/7729)
+
 * Update `jax` and `tensorflow` dependencies for `doc` builds.
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
@@ -694,7 +813,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
 
 * Move program capture code closer to where it is used.
-  [(#7608)][https://github.com/PennyLaneAI/pennylane/pull/7608]
+  [(#7608)](https://github.com/PennyLaneAI/pennylane/pull/7608)
 
 * Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
@@ -777,6 +896,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The functions in `qml.qchem.vibrational` are updated to include additional information about the 
+  theory and input arguments.
+  [(#6918)](https://github.com/PennyLaneAI/pennylane/pull/6918)
+
 * The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
   [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
 
@@ -806,6 +929,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
+  when specifying the angle, due to the given hashing policy. The implementation was updated to ensure
+  correct hashing behavior for `float`, `numpy.array`, and `jax.numpy.array` inputs.
+  [(#7693)](https://github.com/PennyLaneAI/pennylane/pull/7693)
 
 * A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
   inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
@@ -936,6 +1064,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
+* Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
+  to reflect supported devices and usage in analytic simulations,
+  in the :doc:`/introduction/dynamic_quantum_circuits` page.
+  [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -950,7 +1083,9 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 Korbinian Kottmann,
 Christina Lee,
+Austin Huang,
 Anton Naim Ibrahim,
+Luis Alfredo Nuñez Meneses
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
