@@ -57,6 +57,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     The resources can be computed as:
 
     **Example**
+ 
     >>> n, order = (1, 2)
     >>> compact_ham = plre.CompactHamiltonian.from_cdf(num_orbitals = 4, num_fragments = 4)
     >>> res = plre.estimate_resources(plre.ResourceTrotterCDF(compact_ham, n, order))
