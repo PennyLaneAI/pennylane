@@ -15,10 +15,11 @@
 Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
+from __future__ import annotations
 
 import inspect
 import logging
-from typing import Callable, Literal, Optional
+from typing import TYPE_CHECKING, Callable, Literal, Optional
 
 from cachetools import Cache
 
@@ -37,7 +38,11 @@ from .run import run
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Literal["qml.devices.LegacyDevice"] | Literal["qml.devices.Device"]
+
+if TYPE_CHECKING:
+    from pennylane.devices import Device, LegacyDevice
+
+    SupportedDeviceAPIs = LegacyDevice | Device
 
 
 def execute(

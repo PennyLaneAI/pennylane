@@ -14,13 +14,15 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+from __future__ import annotations
+
 import copy
 import functools
 import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import Literal, Optional, get_args
+from typing import TYPE_CHECKING, Literal, Optional, get_args
 
 from cachetools import Cache, LRUCache
 
@@ -41,7 +43,11 @@ from .resolution import SupportedDiffMethods, _validate_jax_version
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Literal["qml.devices.LegacyDevice"] | Literal["qml.devices.Device"]
+
+if TYPE_CHECKING:
+    from pennylane.devices import Device, LegacyDevice
+
+    SupportedDeviceAPIs = LegacyDevice | Device
 
 
 def _convert_to_interface(result, interface: Interface):
