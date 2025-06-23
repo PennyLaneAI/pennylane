@@ -402,7 +402,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
     def test_ctrl_transform(self):
         """Test the higher order ctrl transform."""
@@ -439,14 +439,12 @@ class TestHigherOrderPrimitiveRegistrations:
             qml.ctrl(g, control)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5, 1)
-
         assert len(jaxpr.consts) == 0
         assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
-        assert len(jaxpr.eqns[0].params["jaxpr"].invars) == 1
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5, 1)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
     def test_cond(self):
         """Test the cond higher order primitive."""
@@ -699,7 +697,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))()
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 0
+        assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
 
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):

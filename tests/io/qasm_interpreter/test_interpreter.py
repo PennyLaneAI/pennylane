@@ -198,6 +198,43 @@ class TestMeasurementReset:
 @pytest.mark.external
 class TestControlFlow:
 
+    def test_nested_control_flow(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_control_flow.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-control-flow", "wire_map": None}
+            )
+
+        assert q.queue == [
+            # first we have PauliX 5 times in the first loop within the first nested if
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            # next we have PauliZ from the while loop within the first case of the switch
+            PauliZ("q0"),
+            # finally we have the repeated pattern XYY four times from the nested for loops at the bottom
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+        ]
+
     def test_nested_end(self):
         # parse the QASM
         ast = parse(
