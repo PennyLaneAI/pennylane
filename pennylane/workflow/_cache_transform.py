@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains the transform for caching the result of a ``tape``."""
-from __future__ import annotations
 
 import warnings
 from collections.abc import MutableMapping
-from typing import TYPE_CHECKING
 
+from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
-
-if TYPE_CHECKING:
-    from pennylane.tape import QuantumScript
-    from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch
 
 _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
     "Cached execution with finite shots detected!\n"
