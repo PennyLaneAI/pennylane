@@ -440,7 +440,7 @@ class QasmInterpreter:
         )()
 
     @staticmethod
-    def _handle_break(loop: Callable, execution_context: Context):
+    def execute_loop(loop: Callable, execution_context: Context):
         """
         Handles when a break is encountered in the loop.
 
@@ -480,7 +480,7 @@ class QasmInterpreter:
 
             return context
 
-        self._handle_break(loop, context)
+        self.execute_loop(loop, context)
 
     @visit.register(ast.ForInLoop)
     def visit_for_in_loop(self, node: ast.ForInLoop, context: Context):
@@ -511,9 +511,7 @@ class QasmInterpreter:
         if isinstance(loop_params, slice):
             start = loop_params.start
             stop = loop_params.stop
-            step = loop_params.step
-            if step is None:
-                step = 1
+            step = loop_params.step or 1
         elif isinstance(loop_params, Iterable):
             start = 0
             stop = len(loop_params)
@@ -551,7 +549,7 @@ class QasmInterpreter:
 
             return execution_context
 
-        self._handle_break(loop, context)
+        self.execute_loop(loop, context)
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
