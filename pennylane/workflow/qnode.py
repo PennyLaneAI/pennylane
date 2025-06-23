@@ -37,6 +37,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 from pennylane.typing import TensorLike
 
+from .execution import execute
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
 logger = logging.getLogger(__name__)
@@ -891,7 +892,7 @@ class QNode:
         # Calculate the classical jacobians if necessary
         self._transform_program.set_classical_component(self, args, kwargs)
 
-        res = qml.execute(
+        res = execute(
             (tape,),
             device=self.device,
             diff_method=self.diff_method,
