@@ -20,13 +20,13 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import Literal, Optional, Union, get_args
+from typing import Literal, Optional, get_args
 
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane import math, pytrees
-from pennylane.concurrency.executors.base import RemoteExec
+from pennylane.concurrency.executors.backends import ExecBackends
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
@@ -41,7 +41,7 @@ from .resolution import SupportedDiffMethods, _validate_jax_version
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
+SupportedDeviceAPIs = Literal["qml.devices.LegacyDevice"] | Literal["qml.devices.Device"]
 
 
 def _convert_to_interface(result, interface: Interface):
@@ -150,7 +150,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
 
 def _validate_diff_method(
-    device: SupportedDeviceAPIs, diff_method: Union[str, TransformDispatcher]
+    device: SupportedDeviceAPIs, diff_method: str | TransformDispatcher
 ) -> None:
     if diff_method is None:
         return
@@ -290,12 +290,12 @@ class QNode:
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
-        static_argnums (Union[int, Sequence[int]]): *Only applicable when the experimental capture mode is enabled.*
+        static_argnums (int | Sequence[int]): *Only applicable when the experimental capture mode is enabled.*
             An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
         autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
             convert Python control flow to native PennyLane control flow. For more information, refer to
             :doc:`Autograph </development/autograph>`. Defaults to ``True``.
-        executor_backend (Union[RemoteExec, str]): The backend executor for concurrent function execution. This argument
+        executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
             :func:`~qml.concurrency.executors.get_supported_backends.
@@ -507,19 +507,19 @@ class QNode:
         func: Callable,
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = Interface.AUTO,
-        diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
+        diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         grad_on_execution: Literal[True, False, "best"] = "best",
-        cache: Union[Cache, Literal["auto", True, False]] = "auto",
+        cache: Cache | Literal["auto", True, False] = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
-        device_vjp: Union[None, bool] = False,
+        device_vjp: Optional[bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         gradient_kwargs: Optional[dict] = None,
-        static_argnums: Union[int, Iterable[int]] = (),
+        static_argnums: int | Iterable[int] = (),
         autograph: bool = True,
-        executor_backend: Optional[Union[RemoteExec, str]] = None,
+        executor_backend: Optional[ExecBackends | str] = None,
     ):
         self._init_args = locals()
         del self._init_args["self"]
@@ -730,7 +730,7 @@ class QNode:
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
 
-    def update_shots(self, shots: Union[int, Shots]) -> "QNode":
+    def update_shots(self, shots: int | Shots) -> "QNode":
         """Update the number of shots used by the QNode.
 
         Args:
@@ -749,7 +749,7 @@ class QNode:
 
         return updated_qn
 
-    def _set_shots(self, shots: Union[int, Shots]) -> None:
+    def _set_shots(self, shots: int | Shots) -> None:
         """Set the number of shots used by the QNode.
 
         Args:
@@ -765,7 +765,7 @@ class QNode:
     def get_gradient_fn(
         device: SupportedDeviceAPIs,
         interface,
-        diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
+        diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
     ):
         """Determine the best differentiation method, interface, and device
