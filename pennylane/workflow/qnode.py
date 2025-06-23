@@ -520,7 +520,7 @@ class QNode:
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
         grad_on_execution: bool | Literal["best"] = "best",
-        cache: Cache | Literal["auto"] | bool = "auto",
+        cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
         device_vjp: Optional[bool] = False,
