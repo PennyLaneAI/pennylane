@@ -71,7 +71,7 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: Optional["QNode"], diff_method=None, mcm_config=None
+    circuit: Optional[QNode], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
@@ -609,7 +609,7 @@ class QNode:
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
 
-    def __copy__(self) -> "QNode":
+    def __copy__(self) -> QNode:
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
             if attr not in {"execute_kwargs", "_transform_program", "gradient_kwargs"}:
@@ -657,7 +657,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    def update(self, **kwargs) -> "QNode":
+    def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
         .. note::
@@ -739,7 +739,7 @@ class QNode:
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         return updated_qn
 
-    def update_shots(self, shots: int | Shots) -> "QNode":
+    def update_shots(self, shots: int | Shots) -> QNode:
         """Update the number of shots used by the QNode.
 
         Args:
@@ -773,7 +773,7 @@ class QNode:
     @debug_logger
     def get_gradient_fn(
         device: SupportedDeviceAPIs,
-        interface,
+        interface: str,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
     ):
