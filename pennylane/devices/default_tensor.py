@@ -26,7 +26,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices import Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.preprocess import (
     decompose,
@@ -586,13 +586,13 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def _setup_execution_config(
-        self, config: Optional[ExecutionConfig] = DefaultExecutionConfig
-    ) -> ExecutionConfig:
+    def _setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
+        if config is None:
+            config = ExecutionConfig()
         updated_values = {}
 
         new_device_options = dict(config.device_options)
@@ -609,7 +609,7 @@ class DefaultTensor(Device):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -628,7 +628,8 @@ class DefaultTensor(Device):
         * Does not support derivatives.
         * Does not support vector-Jacobian products.
         """
-
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
 
         program = TransformProgram()
@@ -650,7 +651,7 @@ class DefaultTensor(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
 
@@ -661,7 +662,8 @@ class DefaultTensor(Device):
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
-
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = []
         for circuit in circuits:
             if self.wires is not None and not self.wires.contains_wires(circuit.wires):
@@ -862,7 +864,7 @@ class DefaultTensor(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Calculate the Jacobian of either a single or a batch of circuits on the device.
 
@@ -880,7 +882,7 @@ class DefaultTensor(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Compute the results and Jacobians of circuits at the same time.
 
@@ -915,7 +917,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         r"""The vector-Jacobian product used in reverse-mode differentiation.
 
@@ -937,7 +939,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ):
         """Calculate both the results and the vector-Jacobian product used in reverse-mode differentiation.
 

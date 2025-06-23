@@ -126,7 +126,7 @@ class TestBasics:
 
         jpc = DeviceDerivatives(device)
 
-        assert jpc._execution_config == qml.devices.DefaultExecutionConfig
+        assert jpc._execution_config == qml.devices.ExecutionConfig()
 
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""

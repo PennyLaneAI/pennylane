@@ -722,6 +722,20 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `Device` API now defaults `execution_config=None` instead of defaulting
+  to `qml.devices.DefaultExecutionConfig`.  This prevents accidental mutation of a global variable that
+  would alter the default behaviour on later executions.
+  
+  This change applies to all methods that accept an `execution_config`. The new call signature for `execute`
+  is:
+  ```python
+  def execute(self, circuits: QuantumScriptOrBatch, execution_config: Optional[ExecutionConfig] = None):
+    ...
+  ```
+
+  Furthermore, `ExecutionConfig` and `MCMConfig` are now frozen dataclasses. This means that their properties cannot be modified in place and instead need to be updated with `dataclasses.replace`.
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
   new `gradient_kwargs` keyword argument accordingly.
   [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
