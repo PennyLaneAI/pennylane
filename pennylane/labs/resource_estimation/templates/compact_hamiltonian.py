@@ -41,7 +41,7 @@ class CompactHamiltonian:
 
         The resources can then be extracted as usual:
 
-        >>> res = re.estimate_resources(circ)()
+        >>> res = plre.estimate_resources(circ)()
         >>> print(res)
         --- Resources: ---
          Total qubits: 16
