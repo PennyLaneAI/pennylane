@@ -86,7 +86,7 @@ Features
 
 - *Device-independent*.
   The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins>`_ to access even more
+  `plugins <https://pennylane.ai/devices>`_ to access even more
   devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
@@ -112,7 +112,7 @@ the available :doc:`optimization tools <introduction/interfaces>` provided by Pe
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
-Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins>`_
+Finally, play around with the numerous `devices and plugins <https://pennylane.ai/devices>`_
 available for running your hybrid optimizations—these include
 IBM Q, provided by the `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/stable/>`__
 plugin, as well as the Rigetti Aspen QPU provided by `PennyLane-Rigetti
