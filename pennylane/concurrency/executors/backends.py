@@ -67,12 +67,7 @@ def get_executor(backend: ExecBackends | str = ExecBackends.MP_Pool):
     """
     if isinstance(backend, ExecBackends):
         return backend.value
-    try:
-        return _ExecBackendsMap[backend]
-    except KeyError as e:
-        raise ValueError(
-            f"Invalid backend name '{backend}'. Valid backend names: {', '.join(list(get_supported_backends().keys()))}"
-        ) from e
+    return _ExecBackendsMap[backend]
 
 
 def create_executor(backend: ExecBackends | str = ExecBackends.MP_Pool, **kwargs):
