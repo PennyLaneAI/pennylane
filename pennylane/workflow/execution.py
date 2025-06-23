@@ -47,7 +47,6 @@ def execute(
     diff_method: Optional[Callable | SupportedDiffMethods | TransformDispatcher] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
-    transform_program: Optional[TransformProgram] = None,
     grad_on_execution: Literal[True, False, "best"] = "best",
     cache: Optional[bool | dict | Cache | Literal["auto"]] = "auto",
     cachesize: int = 10000,
@@ -56,6 +55,7 @@ def execute(
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
     gradient_kwargs: Optional[dict] = None,
+    transform_program: Optional[TransformProgram] = None,
     executor_backend: Optional[ExecBackends | str] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
