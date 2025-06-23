@@ -40,7 +40,6 @@ logger.addHandler(logging.NullHandler())
 SupportedDeviceAPIs = Literal["qml.devices.LegacyDevice"] | Literal["qml.devices.Device"]
 
 
-# pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
