@@ -18,10 +18,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
+from .qnode import QNode
+
 if TYPE_CHECKING:
     from pennylane.measurements import Shots
-
-    from .qnode import QNode
 
 
 def set_shots(
