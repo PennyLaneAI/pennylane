@@ -145,8 +145,6 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
-        elif isinstance(self.executor_backend, str):
-            self.executor_backend = get_executor(backend=self.executor_backend)
 
 
 DefaultExecutionConfig = ExecutionConfig()
