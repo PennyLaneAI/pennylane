@@ -18,7 +18,7 @@ differentiation support.
 
 import inspect
 import logging
-from typing import Callable, Literal, Optional, Union
+from typing import Callable, Literal, Optional
 
 from cachetools import Cache
 
@@ -37,23 +37,25 @@ from .run import run
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+SupportedDeviceAPIs = Literal["qml.devices.LegacyDevice"] | Literal["qml.devices.Device"]
+
 
 # pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
-    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
+    device: SupportedDeviceAPIs,
+    diff_method: Optional[Callable | SupportedDiffMethods | TransformDispatcher] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
-    transform_program: TransformProgram = None,
+    transform_program: Optional[TransformProgram] = None,
     grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache, Literal["auto"]] = "auto",
+    cache: Optional[bool | dict | Cache | Literal["auto"]] = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: Union[bool, None] = False,
+    device_vjp: Optional[bool] = False,
     postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
     mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-    gradient_kwargs: dict = None,
+    gradient_kwargs: Optional[dict] = None,
     executor_backend: Optional[ExecBackends | str] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
