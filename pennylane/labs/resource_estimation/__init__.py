@@ -175,3 +175,14 @@ from .ops import (
     ResourceChangeBasisOp,
     ResourcePow,
 )
+
+from .templates import (
+    ResourceTrotterProduct,
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
+    ResourceBasisRotation,
+    ResourceSelect,
+    ResourceQROM,
+)
