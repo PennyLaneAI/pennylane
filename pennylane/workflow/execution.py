@@ -42,9 +42,8 @@ if TYPE_CHECKING:
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformDispatcher
     from pennylane.typing import ResultBatch
+    from pennylane.workflow.qnode import SupportedDeviceAPIs
     from pennylane.workflow.resolution import SupportedDiffMethods
-
-    SupportedDeviceAPIs = LegacyDevice | Device
 
 
 def execute(
