@@ -26,6 +26,7 @@ from pennylane import numpy as pnp
 from pennylane.templates.subroutines.select import _unary_select
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
 def test_standard_checks(num_ops):
     """Run standard validity tests."""

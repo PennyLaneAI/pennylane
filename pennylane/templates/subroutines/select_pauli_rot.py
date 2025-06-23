@@ -116,6 +116,12 @@ class SelectPauliRot(Operation):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
         return self.parameters[0], metadata
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, angles, control_wires, target_wire, **kwargs):
+        wires = [*control_wires, target_wire]
+        return super()._primitive_bind_call(*angles, wires=wires, **kwargs)
+
     @classmethod
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
@@ -137,11 +143,6 @@ class SelectPauliRot(Operation):
             new_dict["target_wire"],
             rot_axis=self.hyperparameters["rot_axis"],
         )
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        """Bind arguments to the primitive operation."""
-        return cls._primitive.bind(*args, **kwargs)
 
     def decomposition(self):  # pylint: disable=arguments-differ
         """Return the operator's decomposition using its parameters and hyperparameters."""
@@ -208,3 +209,11 @@ def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+
+# pylint: disable=protected-access
+if SelectPauliRot._primitive is not None:
+
+    @SelectPauliRot._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        angles, (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
+        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)
