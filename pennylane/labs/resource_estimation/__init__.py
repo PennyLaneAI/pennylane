@@ -128,12 +128,64 @@ Templates:
     ~ResourceSelect
     ~ResourceQROM
 
+Compact Hamiltonian Class:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactHamiltonian
+
 """
 
+from .ops import (
+    ResourceAdjoint,
+    ResourceCCZ,
+    ResourceCH,
+    ResourceChangeBasisOp,
+    ResourceCNOT,
+    ResourceControlled,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePhaseShift,
+    ResourcePow,
+    ResourceProd,
+    ResourcePSWAP,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
+    ResourceSingleExcitation,
+    ResourceSWAP,
+    ResourceT,
+    ResourceTempAND,
+    ResourceToffoli,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
 from .qubit_manager import AllocWires, FreeWires, QubitManager
-from .resources_base import Resources
+from .resource_mapping import map_to_resource_op
 from .resource_operator import (
     CompressedResourceOp,
+    GateCount,
     ResourceOperator,
     ResourcesNotDefined,
     resource_rep,
@@ -141,68 +193,18 @@ from .resource_operator import (
     set_ctrl_decomp,
     set_decomp,
     set_pow_decomp,
-    GateCount,
 )
-from .resource_mapping import map_to_resource_op
-from .resource_tracking import (
-    StandardGateSet,
-    DefaultGateSet,
-    resource_config,
-    estimate_resources,
-)
-from .ops import (
-    ResourceHadamard,
-    ResourceS,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourceT,
-    ResourcePhaseShift,
-    ResourceGlobalPhase,
-    ResourceRot,
-    ResourceIdentity,
-    ResourceSWAP,
-    ResourceCH,
-    ResourceCY,
-    ResourceCZ,
-    ResourceCSWAP,
-    ResourceCCZ,
-    ResourceCNOT,
-    ResourceToffoli,
-    ResourceMultiControlledX,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCRot,
-    ResourceControlledPhaseShift,
-    ResourceMultiRZ,
-    ResourcePauliRot,
-    ResourceIsingXX,
-    ResourceIsingYY,
-    ResourceIsingXY,
-    ResourceIsingZZ,
-    ResourcePSWAP,
-    ResourceTempAND,
-    ResourceSingleExcitation,
-    ResourceAdjoint,
-    ResourceControlled,
-    ResourceProd,
-    ResourceChangeBasisOp,
-    ResourcePow,
-)
-
+from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
+from .resources_base import Resources
 from .templates import (
-    ResourceTrotterCDF,
-    ResourceTrotterTHC,
+    CompactHamiltonian,
+    ResourceBasisRotation,
+    ResourceOutMultiplier,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
-    ResourceOutMultiplier,
-    ResourceSemiAdder,
-    ResourceBasisRotation,
-    ResourceSelect,
     ResourceQROM,
-    CompactHamiltonian
+    ResourceSelect,
+    ResourceSemiAdder,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
 )

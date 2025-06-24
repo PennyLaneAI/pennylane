@@ -25,15 +25,19 @@ class CompactHamiltonian:
         method_name (str): The name of the method used to construct the Hamiltonian
             (e.g., "cdf", "thc").
         **params (Any): Keyword arguments specific to the chosen construction method,
-            such as ``num_orbitals``, ``num_fragments``, ``tensor_rank``, or ``num_modals``.
+            For example:
+             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
+             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
+             Refer to the documentation of each specific constructor method for their required parameters.
 
     .. details::
         :title: Usage Details
-        The :code:`CompactHamiltonian` class is designed to be an alternative input to using the full
+        The :class:`CompactHamiltonian` class is designed to be an alternative input to using the full
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.
 
         .. code-block:: python
+            import pennylane.labs.resource_estimation as plre
             compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=8, num_fragments=4)
             def circ():
                 plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
@@ -55,8 +59,8 @@ class CompactHamiltonian:
         underlying Hamiltonian representation and the method used to construct it.
         The methods available for constructing a `CompactHamiltonian` include:
 
-        - :meth:`cdf`: Saves the data for compressed double factorized Hamiltonian
-        - :meth:`thc`: Saves the data for tensor hypercontracted Hamiltonian
+        - :meth:`cdf`: Constructs a Hamiltonian in the compressed double factorized representation
+        - :meth:`thc`: Constructs a Hamiltonian in the  tensor hypercontracted representation
 
     """
 
