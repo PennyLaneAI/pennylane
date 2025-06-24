@@ -210,8 +210,8 @@ def queue_corrections(op, measurements):
     x_corr, z_corr = _single_xz_corrections(op, *measurements)
 
     def corrections_func(wire):
-        cond(z_corr, Z)(wire)
-        cond(x_corr, X)(wire)
+        cond(parity(*z_corr), Z)(wire)
+        cond(parity(*x_corr), X)(wire)
 
     return corrections_func
 
@@ -231,7 +231,7 @@ def _rotation_corrections(op, m1, m2, m3, m4):
     two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively. Note that these corrections also apply in the
     more specific rotation case, RZ = RotXZX(0, Z, 0)"""
-    return m2 ^ m4, m1 ^ m3
+    return [m2, m4], [m1, m3]
 
 
 @_single_xz_corrections.register(H)
@@ -239,7 +239,7 @@ def _hadamard_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
     two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively."""
-    return parity(m1, m3, m4), m2 ^ m3
+    return [m1, m3, m4], [m2, m3]
 
 
 @_single_xz_corrections.register(S)
@@ -247,7 +247,7 @@ def _s_corrections(op, m1, m2, m3, m4):
     """Get the xz corrections based on the measurements. Returns a tuple with
     two boolean elements, indicating the need for PauliX and PauliZ
     corrections respectively."""
-    return m2 ^ m4, parity(m1, m2, m3, 1)
+    return [m2, m4], [m1, m2, m3, 1]
 
 
 def queue_cnot(q_mgr, ctrl_idx, target_idx):
@@ -310,10 +310,10 @@ def cnot_corrections(measurements):
     (x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt) = _cnot_xz_corrections(measurements)
 
     def correction_func(ctrl_wire, target_wire):
-        cond(z_cor_ctrl, Z)(ctrl_wire)
-        cond(x_cor_ctrl, X)(ctrl_wire)
-        cond(z_cor_tgt, Z)(target_wire)
-        cond(x_cor_tgt, X)(target_wire)
+        cond(parity(*z_cor_ctrl), Z)(ctrl_wire)
+        cond(parity(*x_cor_ctrl), X)(ctrl_wire)
+        cond(parity(*z_cor_tgt), Z)(target_wire)
+        cond(parity(*x_cor_tgt), X)(target_wire)
 
     return correction_func
 
@@ -330,12 +330,12 @@ def _cnot_xz_corrections(measurements):
     m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = measurements
 
     # corrections on control
-    x_cor_ctrl = parity(m2, m3, m5, m6)
-    z_cor_ctrl = parity(m1, m3, m4, m5, m8, m9, m11, 1)
+    x_cor_ctrl = [m2, m3, m5, m6]
+    z_cor_ctrl = [m1, m3, m4, m5, m8, m9, m11, 1]
 
     # corrections on target
-    x_cor_tgt = parity(m2, m3, m8, m10, m12, m14)
-    z_cor_tgt = parity(m9, m11, m13)
+    x_cor_tgt = [m2, m3, m8, m10, m12, m14]
+    z_cor_tgt = [m9, m11, m13]
 
     return [(x_cor_ctrl, z_cor_ctrl), (x_cor_tgt, z_cor_tgt)]
 

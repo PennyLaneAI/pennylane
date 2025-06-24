@@ -15,7 +15,6 @@
 r"""
 This module contains Pauli Tracking functions.
 """
-import itertools
 from typing import List, Tuple
 
 import numpy as np
@@ -147,7 +146,7 @@ def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
     return (res_x, res_z)
 
 
-def _commute_h(x: int, z: int):
+def _commute_h(x: List[int], z: List[int]):
     r"""
     Commute/move a Pauli represented by xz through :class:`~pennylane.H`.
 
@@ -161,7 +160,7 @@ def _commute_h(x: int, z: int):
     return [(z, x)]
 
 
-def _commute_s(x: int, z: int):
+def _commute_s(x: List[int], z: List[int]):
     r"""
     Commute/move a Pauli represented by xz through :class:`~pennylane.S`.
 
@@ -172,10 +171,10 @@ def _commute_s(x: int, z: int):
     Return:
         A list of a tuple of xz representing a new Pauli operation that the :class:`~pennylane.S` commutes to.
     """
-    return [(x, x ^ z)]
+    return [(x, x + z)]
 
 
-def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
+def _commute_cnot(xc: List[int], zc: List[int], xt: List[int], zt: List[int]):
     r"""
     Commute/move a Pauli represented by xz through :class:`~pennylane.CNOT`.
 
@@ -188,7 +187,7 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
     Return:
         A list of xz tuples representing new Paulis operation that the :class:`~pennylane.cnot` commutes to.
     """
-    return [(xc, zc ^ zt), (xc ^ xt, zt)]
+    return [(xc, zc + zt), (xc + xt, zt)]
 
 
 def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
@@ -225,11 +224,11 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
         raise ValueError(
             "Please ensure there are 2 elements instead of in each tuple in the xz list."
         )
-
-    xz_flatten = tuple(itertools.chain.from_iterable(xz))
-
-    if not all(element in [0, 1] for element in xz_flatten):
-        raise ValueError("Please ensure xz are either 0 or 1.")
+    #
+    # xz_flatten = tuple(itertools.chain.from_iterable(xz))
+    #
+    # if not all(element in [0, 1] for element in xz_flatten):
+    #     raise ValueError("Please ensure xz are either 0 or 1.")
 
     if isinstance(clifford_op, S):
         _x, _z = xz[0]
@@ -311,36 +310,34 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
 
     num_wires = max(tape.wires) + 1
 
-    x_record = math.zeros(num_wires, dtype=np.uint8)
-    z_record = math.zeros(num_wires, dtype=np.uint8)
+    x_record = [[] for _ in range(num_wires)]
+    z_record = [[] for _ in range(num_wires)]
 
     for op in tape.operations:
-        wires = list(op.wires)
+        if isinstance(op, _CLIFFORD_GATES_SUPPORTED):
+            wires = op.wires
+            xz = [[x_record[wire], z_record[wire]] for wire in op.wires]
 
-        # Get the recorded xz
-        xz = [(x_record[wire], z_record[wire]) for wire in wires]
-
-        # Updated xz
-        new_xz = []
-        if isinstance(op, _NON_CLIFFORD_GATES_SUPPORTED):
-            # Branch for non-Clifford gates
-            new_xz.append(by_ops.pop()[0])
-        elif isinstance(op, _CLIFFORD_GATES_SUPPORTED):
-            # Branch for Clifford gates
             # Step 1: Commutate the recorded xz with the Clifford gate to a new xz.
             xz_commutated = commute_clifford_op(op, xz)
 
-            # Step 2: Merge the new xz with the byproduct by_op
+            # Step 2: Merge the new xz with the byproduct by_op, replace current record
             by_op = by_ops.pop()
-            for _by_op, _xz_comm in zip(by_op, xz_commutated):
-                new_xz.append(math.bitwise_xor(_by_op, _xz_comm))
-        else:  # branch for Paulis
-            # Commutate step is skipped.
-            # Get the new xz by merging the recorded xz with the Pauli ops directly.
-            new_xz.append(math.bitwise_xor(pauli_to_xz(op), xz[0]))
-        # Assign the updated the xz to the x, z record
-        for idx, wire in enumerate(wires):
-            x_record[wire], z_record[wire] = new_xz[idx]
+            for wire, _xz_comm, _by_op in zip(wires, xz_commutated, by_op):
+                x_record[wire] = _xz_comm[0] + _by_op[0]
+                z_record[wire] = _xz_comm[1] + _by_op[1]
+        else:
+            wire = op.wires[0]
+            if isinstance(op, _NON_CLIFFORD_GATES_SUPPORTED):
+                # replace current record (expected to be empty)
+                x, z = by_ops.pop()[0]
+                x_record[wire] = x
+                z_record[wire] = z
+            else:  # branch for Paulis
+                # merge the current records with the Pauli ops directly.
+                x, z = pauli_to_xz(op)
+                x_record[wire].append(x)
+                z_record[wire].append(z)
 
     return x_record, z_record
 
