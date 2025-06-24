@@ -284,7 +284,8 @@ def _find_iX_gates(
         if len(controls) > 0 and second_target is not None:
             if (
                 isinstance(operations[i], ops.Toffoli)
-                and len(indices) == 1 and isinstance(indices[0], int)
+                and len(indices) == 1
+                and isinstance(indices[0], int)
                 and 2
                 == reduce(
                     lambda acc, wire: acc + int(wire in operations[i].control_wires),
@@ -296,23 +297,24 @@ def _find_iX_gates(
                 second_target = operations[i].wires[-1]
                 indices.append(i)
                 return indices, controls, first_target, second_target  # we are done
-            elif reduce(
+            if reduce(
                 lambda acc, wire: acc + int(wire in (controls + [first_target])),
                 operations[i].wires,
                 0,
             ):
                 # we have a gate that breaks the pattern
                 return None, controls, first_target, second_target
-        if isinstance(operations[i], ops.ControlledOp) and isinstance(operations[i].base, ops.S) \
-            and i < len(operations) - 1:
+        if (
+            isinstance(operations[i], ops.ControlledOp)
+            and isinstance(operations[i].base, ops.S)
+            and i < len(operations) - 1
+        ):
             # we initiate a search for each CS in the circuit
-            sub_indices, sub_controls, sub_first_target, sub_second_target = (
-                _find_iX_gates(
-                    operations[i + 1 :],
-                    operations[i].wires[-1],
-                    operations[i].control_wires,
-                    [i],
-                )
+            sub_indices, sub_controls, sub_first_target, sub_second_target = _find_iX_gates(
+                operations[i + 1 :],
+                operations[i].wires[-1],
+                operations[i].control_wires,
+                [i],
             )
             if sub_indices is not None:
                 indices.append(
