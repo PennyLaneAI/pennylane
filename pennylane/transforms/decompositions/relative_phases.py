@@ -89,7 +89,7 @@ def _find_relative_phase_toffolis(
 
     i = 0
     while i < len(operations):
-        if len(controls) > 0 and second_target is not None:
+        if len(controls) > 0 and second_target is not None and isinstance(controls[0], int):
             if isinstance(operations[i], ops.ControlledOp) and isinstance(
                 operations[i].base, ops.S
             ):
