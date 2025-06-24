@@ -19,13 +19,13 @@ from .trotter import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
+from .compact_hamiltonian import CompactHamiltonian
 from .subroutines import (
+    ResourceBasisRotation,
+    ResourceOutMultiplier,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
-    ResourceOutMultiplier,
-    ResourceSemiAdder,
-    ResourceBasisRotation,
-    ResourceSelect,
     ResourceQROM,
+    ResourceSelect,
+    ResourceSemiAdder,
 )
-from .compact_hamiltonian import CompactHamiltonian
