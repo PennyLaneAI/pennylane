@@ -1,8 +1,147 @@
+from itertools import permutations
+
 import pennylane as qml
 from pennylane.transforms.decompositions.relative_phases import replace_relative_phase_toffoli
 
 
 class TestRelativePhases:
+
+    def test_surrounded(self):
+        def qfunc():
+            qml.PauliZ(wires=0)
+            qml.PauliY(wires=2)
+            qml.PauliX(wires=3)
+            qml.CCZ(wires=[0, 1, 3])
+            qml.PauliX(wires=4)
+            qml.ctrl(qml.S(wires=[1]), control=[0])
+            qml.PauliY(wires=5)
+            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
+            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            qml.PauliZ(wires=0)
+            qml.Hadamard(wires=2)
+            qml.PauliX(wires=3)
+            return qml.expval(qml.Z(0))
+
+        transformed_qfunc = replace_relative_phase_toffoli(qfunc)
+
+        tape = qml.tape.make_qscript(transformed_qfunc)()
+        assert len(tape.operations) == 26
+        assert tape.operations == [
+            qml.PauliZ(wires=0),
+            qml.PauliY(wires=2),
+            qml.PauliX(wires=3),
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.PauliX(wires=4),
+            qml.PauliY(wires=5),
+            qml.PauliZ(wires=0),
+            qml.Hadamard(wires=2),
+            qml.PauliX(wires=3),
+        ]
+
+    def test_incomplete_pattern(self):
+        def qfunc():
+            qml.CCZ(wires=[0, 1, 3])
+            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
+            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            return qml.expval(qml.Z(0))
+
+        transformed_qfunc = replace_relative_phase_toffoli(qfunc)
+
+        tape = qml.tape.make_qscript(transformed_qfunc)()
+        assert tape.operations == [
+            qml.CCZ(wires=[0, 1, 3]),
+            qml.ctrl(qml.S(wires=[2]), control=[0, 1]),
+            qml.MultiControlledX(wires=[0, 1, 2, 3]),
+        ]
+
+    def test_wire_permutations(self):
+        for first, second, third, fourth in permutations([0, 1, 2, 3]):
+
+            def qfunc():
+                qml.CCZ(wires=[first, second, fourth])
+                qml.ctrl(qml.S(wires=[second]), control=[first])
+                qml.ctrl(qml.S(wires=[third]), control=[first, second])
+                qml.MultiControlledX(wires=[first, second, third, fourth])
+                return qml.expval(qml.Z(first))
+
+            transformed_qfunc = replace_relative_phase_toffoli(qfunc)
+
+            tape = qml.tape.make_qscript(transformed_qfunc)()
+            assert len(tape.operations) == 18
+            assert tape.operations == [
+                qml.H(fourth),
+                qml.T(fourth),
+                qml.CNOT(wires=[third, fourth]),
+                qml.adjoint(qml.T(fourth)),
+                qml.H(fourth),
+                qml.CNOT(wires=[first, fourth]),
+                qml.T(fourth),
+                qml.CNOT(wires=[second, fourth]),
+                qml.adjoint(qml.T(fourth)),
+                qml.CNOT(wires=[first, fourth]),
+                qml.T(fourth),
+                qml.CNOT(wires=[second, fourth]),
+                qml.adjoint(qml.T(fourth)),
+                qml.H(fourth),
+                qml.T(fourth),
+                qml.CNOT(wires=[third, fourth]),
+                qml.adjoint(qml.T(fourth)),
+                qml.H(fourth),
+            ]
+
+    def test_non_interfering_gates(self):
+        def qfunc():
+            qml.CCZ(wires=[0, 1, 3])
+            qml.PauliX(wires=4)
+            qml.ctrl(qml.S(wires=[1]), control=[0])
+            qml.PauliY(wires=5)
+            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
+            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            return qml.expval(qml.Z(0))
+
+        transformed_qfunc = replace_relative_phase_toffoli(qfunc)
+
+        tape = qml.tape.make_qscript(transformed_qfunc)()
+        assert len(tape.operations) == 20
+        assert tape.operations == [
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.PauliX(wires=4),
+            qml.PauliY(wires=5),
+        ]
 
     def test_gates_interfering(self):
         def qfunc():

@@ -96,6 +96,7 @@ def _find_relative_phase_toffolis(
                 )
             ):
                 indices.append(i)
+                return indices, controls, first_target, second_target  # we are done
             elif reduce(
                 lambda acc, wire: acc + int(wire in (controls + [second_target])),
                 operations[i].wires,
