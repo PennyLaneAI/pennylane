@@ -129,6 +129,7 @@ class TestTrotterTHC:
 
     # Expected resources were obtained manually
     # based on https://arxiv.org/abs/2407.04432
+
     hamiltonian_data = [
         (
             8,
