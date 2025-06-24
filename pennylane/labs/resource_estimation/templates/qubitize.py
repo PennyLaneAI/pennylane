@@ -142,7 +142,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         # Prepare resource state
         phasegrad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rot_prec_wires})
 
-        # loading the angles controlled on tensor indices
+        # Loading the angles controlled on tensor indices
         qrom_angle = resource_rep(plre.ResourceQROM,
             {
                 "num_bitstrings": 2**m_register,
