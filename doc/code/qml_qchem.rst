@@ -12,12 +12,19 @@ number observables. It also includes functionalities to convert to and from Open
 `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ and 
 `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
+.. note::
+
+    The function :func:`~pennylane.math.decomposition.givens_decomposition` has been moved to the
+    :mod:`~pennylane.math` module. The function is still available in the
+    :mod:`~pennylane.qchem` module for backward compatibility, but it is recommended to import it
+    from the new location in future code.
+
 .. currentmodule:: pennylane.qchem
 
 .. automodapi:: pennylane.qchem
     :no-heading:
     :include-all-objects:
-    :skip: taper, symmetry_generators, paulix_ops, import_operator
+    :skip: taper, symmetry_generators, paulix_ops, import_operator, givens_decomposition
 
 Differentiable Hartree-Fock
 ---------------------------

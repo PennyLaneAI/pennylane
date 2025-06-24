@@ -27,12 +27,19 @@ def default_wire_map(tape):
         tape [~.tape.QuantumTape): the QuantumTape containing operations and measurements
 
     Returns:
-        dict: map from wires to sequential positive integers
+        tuple[dict]: A tuple of maps from wires to sequential positive integers. The first map
+        includes work wires whereas the second map excludes work wires.
     """
 
     # Use dictionary to preserve ordering, sets break order
     used_wires = {wire: None for op in tape for wire in op.wires}
-    return {wire: ind for ind, wire in enumerate(used_wires)}
+    used_wire_map = {wire: ind for ind, wire in enumerate(used_wires)}
+    # Will only add wires that are not present in used_wires yet, and to the end of used_wires
+    used_and_work_wires = used_wires | {
+        wire: None for op in tape for wire in getattr(op, "work_wires", [])
+    }
+    full_wire_map = {wire: ind for ind, wire in enumerate(used_and_work_wires)}
+    return full_wire_map, used_wire_map
 
 
 def default_bit_map(tape):
@@ -83,20 +90,29 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
             or only include ones used by operations in ``ops``
 
     Returns:
-        dict: map from wire labels to sequential positive integers
+        tuple[dict]: Two maps from wire labels to sequential positive integers. The first map
+        includes work wires, the second map excludes work wires.
     """
-    default = default_wire_map(tape)
+    full_wire_map, used_wire_map = default_wire_map(tape)
 
     if wire_order is None:
-        return default
+        # If no external wire order is dictated, the tape ordering is all we need to consider
+        return full_wire_map, used_wire_map
 
-    wire_order = list(wire_order) + [wire for wire in default if wire not in wire_order]
+    # Create wire order complemented by all wires in the tape mapping that are not in the order yet
+    full_wire_order = list(wire_order) + [wire for wire in full_wire_map if wire not in wire_order]
+    used_wire_order = list(wire_order) + [wire for wire in used_wire_map if wire not in wire_order]
 
     if not show_all_wires:
-        used_wires = {wire for op in tape for wire in op.wires}
-        wire_order = [wire for wire in wire_order if wire in used_wires]
+        # Filter out wires that are in wire_order but not in full_wire_map/used_wire_map
+        full_wire_order = [wire for wire in full_wire_order if wire in full_wire_map]
+        used_wire_order = [wire for wire in used_wire_order if wire in used_wire_map]
 
-    return {wire: ind for ind, wire in enumerate(wire_order)}
+    # Create consecutive integer mapping from ordered list
+    full_wire_map = {wire: ind for ind, wire in enumerate(full_wire_order)}
+    used_wire_map = {wire: ind for ind, wire in enumerate(used_wire_order)}
+
+    return full_wire_map, used_wire_map
 
 
 def unwrap_controls(op):
@@ -121,8 +137,8 @@ def unwrap_controls(op):
     if isinstance(control_values, list):
         control_values = control_values.copy()
 
+    next_ctrl = op
     if isinstance(op, Controlled):
-        next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
 
@@ -140,7 +156,7 @@ def unwrap_controls(op):
             next_ctrl = next_ctrl.base
 
     control_values = [bool(int(i)) for i in control_values] if control_values else control_values
-    return control_wires, control_values
+    return control_wires, control_values, next_ctrl
 
 
 def cwire_connections(layers, bit_map):

@@ -38,6 +38,7 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
+    controlled_decomp_with_work_wire,
     decompose_to_base,
     flip_control_adjoint,
     flip_pow_adjoint,
@@ -48,6 +49,7 @@ from .symbolic_decomposition import (
     pow_rotation,
     repeat_pow_base,
     self_adjoint,
+    to_controlled_qubit_unitary,
 )
 from .utils import DecompositionError, translate_op_alias
 
@@ -107,6 +109,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
+        from pennylane.decomposition import DecompositionGraph
+
         op = qml.CRX(0.5, wires=[0, 1])
         graph = DecompositionGraph(
             operations=[op],
@@ -124,7 +128,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
     >>> graph.resource_estimate(op)
-    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
+    <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
     """
 
@@ -135,12 +139,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         fixed_decomps: dict = None,
         alt_decomps: dict = None,
     ):
-        if isinstance(gate_set, set):
-            # The names of the gates in the target gate set.
-            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
-        else:
+        if isinstance(gate_set, dict):
             # the gate_set is a dict
             self._weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
+        else:
+            # The names of the gates in the target gate set.
+            self._weights = {_to_name(gate): 1.0 for gate in gate_set}
 
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
@@ -299,7 +303,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
-        return [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+        rules = [make_controlled_decomp(decomp) for decomp in self._get_decompositions(base)]
+
+        # There's always the option of turning the controlled operator into a controlled
+        # qubit unitary if the base operator has a matrix form.
+        rules.append(to_controlled_qubit_unitary)
+
+        # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
+        rules.append(controlled_decomp_with_work_wire)
+
+        return rules
 
     def solve(self, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.
@@ -370,7 +383,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
         >>> graph.resource_estimate(op)
-        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}>
+        <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
         if not self.is_solved_for(op):
@@ -396,7 +409,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            op = qml.CRX(0.5, wires=[0, 1])
+            op = qml.CRY(0.2, wires=[0, 2])
             graph = DecompositionGraph(
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
@@ -407,12 +420,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [RZ(1.5707963267948966, wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-1.5707963267948966, wires=[1])]
+        [RY(0.1, wires=[2]),
+         CNOT(wires=[0, 2]),
+         RY(-0.1, wires=[2]),
+         CNOT(wires=[0, 2])]
 
         """
         if not self.is_solved_for(op):

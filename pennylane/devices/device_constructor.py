@@ -148,8 +148,11 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1, shots=10)
+        from functools import partial
 
+        dev = qml.device('default.qubit', wires=1)
+
+        @partial(qml.set_shots, shots=10)
         @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
@@ -273,11 +276,18 @@ def device(name, *args, **kwargs):
                     custom_decomps, dev
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
+
             else:
-                custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev
+                override_method = (
+                    "preprocess_transforms"
+                    if type(dev).preprocess == qml.devices.Device.preprocess
+                    else "preprocess"
                 )
-                dev.preprocess = custom_decomp_preprocess
+
+                new_method = qml.transforms.tape_expand._create_decomp_preprocessing(
+                    custom_decomps, dev, override_method=override_method
+                )
+                setattr(dev, override_method, new_method)
 
         if isinstance(dev, qml.devices.LegacyDevice):
             dev = qml.devices.LegacyDeviceFacade(dev)

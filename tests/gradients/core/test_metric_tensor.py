@@ -973,6 +973,33 @@ def autodiff_metric_tensor(ansatz, num_wires):
 class TestFullMetricTensor:
     num_wires = 3
 
+    @pytest.mark.external
+    def test_catalyst_compatibility(self):
+        """Test that the metric tensor can be executed with catalyst."""
+
+        pytest.importorskip("catalyst")
+        jax = pytest.importorskip("jax")
+
+        def ansatz(params, wires=None):  # pylint: disable=unused-argument
+            qml.RX(params[0], 0)
+            qml.RX(params[1], 1)
+            qml.CNOT((0, 1))
+            qml.RX(params[2], 0)
+            qml.RY(params[3], 1)
+
+        @qml.qnode(qml.device("lightning.qubit", wires=4))
+        def circuit(params):
+            ansatz(params)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        x = jax.numpy.array([1.0, 2.0, 3.0, 4.0])
+
+        qjit_res = qml.qjit(qml.metric_tensor(circuit))(x)
+
+        cost_autograd = autodiff_metric_tensor(ansatz, num_wires=3)(qml.numpy.array(x))
+
+        assert qml.math.allclose(qjit_res, cost_autograd)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
@@ -1561,7 +1588,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
+    with pytest.raises(qml.wires.WireError, match=r"no free wire"):
         qml.metric_tensor(circuit)(x)
 
 
