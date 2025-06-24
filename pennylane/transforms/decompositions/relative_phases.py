@@ -186,8 +186,10 @@ def replace_relative_phase_toffoli(tape: QuantumScript) -> tuple[QuantumScriptBa
 
     """
     operations = []
+    found = False
 
     for operations_indices, controls, first_target, second_target in zip(*_find_relative_phase_toffolis(tape.operations)):
+        found = True
         for i, gate in enumerate(tape.operations):
             if i not in operations_indices:
                 operations.append(gate)
@@ -214,7 +216,7 @@ def replace_relative_phase_toffoli(tape: QuantumScript) -> tuple[QuantumScriptBa
             ] \
             + operations[operations_indices[0]:]
 
-    new_tape = tape.copy(operations=operations)
+    new_tape = tape.copy(operations=operations) if found else tape
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
