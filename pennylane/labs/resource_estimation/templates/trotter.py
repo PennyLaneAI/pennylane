@@ -561,8 +561,8 @@ class ResourceTrotterVibrational(ResourceOperator):
     """Resource operator for Trotterizing Vibrational Hamiltonians.
 
     Args:
-        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): The real space vibrational
-            Hamiltonian we will be approximately exponentiating.
+        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a real space vibrational
+            Hamiltonian
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation (must be 1 or even)
         phase_grad_precision (float): precision for the phase gradient calculation
