@@ -249,3 +249,189 @@ def replace_relative_phase_toffoli(
         return results[0]  # pragma: no cover
 
     return [new_tape], null_postprocessing
+
+
+def _find_iX_gates(
+    operations: list[Operation],
+    first_target: Wires = None,
+    controls: Wires = None,
+    indices: list[list[Wires]] = None,
+):
+    """
+    Searches for iX gates and finds the CS and Toffoli gates that compose them.
+
+    Args:
+        operations (list[Operation]): list of operations to search within.
+        first_target (Wires): the first target wire.
+        controls (Wires): the control wires.
+        indices (list[list[Wires]]): list of groups of indices.
+
+    Returns:
+        list[list[int]] | list[int] | None: list (of lists for base case) of indices that point
+        to gates that compose the found iXs, or None is there is no match.
+
+        Wires: the control wires in order.
+
+        Wires: the second target wire.
+    """
+    indices = [] if indices is None else indices
+    controls = [] if controls is None else controls
+    first_target = [] if first_target is None else first_target
+    second_target = []
+
+    i = 0
+    while i < len(operations):
+        if len(controls) > 0 and second_target is not None:
+            if (
+                isinstance(operations[i], ops.Toffoli)
+                and len(indices) == 1 and isinstance(indices[0], int)
+                and 2
+                == reduce(
+                    lambda acc, wire: acc + int(wire in operations[i].control_wires),
+                    operations[indices[-1]].wires,
+                    0,
+                )
+            ):
+                controls = operations[i].control_wires
+                second_target = operations[i].wires[-1]
+                indices.append(i)
+                return indices, controls, first_target, second_target  # we are done
+            elif reduce(
+                lambda acc, wire: acc + int(wire in (controls + [first_target])),
+                operations[i].wires,
+                0,
+            ):
+                # we have a gate that breaks the pattern
+                return None, controls, first_target, second_target
+        if isinstance(operations[i], ops.ControlledOp) and isinstance(operations[i].base, ops.S) \
+            and i < len(operations) - 1:
+            # we initiate a search for each CS in the circuit
+            sub_indices, sub_controls, sub_first_target, sub_second_target = (
+                _find_iX_gates(
+                    operations[i + 1 :],
+                    operations[i].wires[-1],
+                    operations[i].control_wires,
+                    [i],
+                )
+            )
+            if sub_indices is not None:
+                indices.append(
+                    [sub_indices[0]] + list(map(lambda index: index + i + 1, sub_indices[1:]))
+                )
+                first_target.append(sub_first_target)
+                second_target.append(sub_second_target)
+                controls.append(sub_controls)
+        i += 1
+
+    return indices, controls, first_target, second_target
+
+
+@transform
+def replace_iX_gate(
+    tape: QuantumScript,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Quantum transform to replace iX gates. An iX gate is a CS and a Toffoli.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Example**
+
+    The transform can be applied on :class:`QNode` directly.
+
+    .. code-block:: python
+
+        @replace_iX_gate
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Barrier(wires=[0,1])
+            qml.X(0)
+
+            # begin iX gate
+
+            qml.ctrl(qml.S(wires=[1]), control=[0])
+            qml.Toffoli(wires=[0, 1, 2])
+
+            # end iX gate
+
+            qml.Hadamard(wires=1)
+            qml.Barrier(wires=[0,1])
+            qml.X(0)
+            return qml.expval(qml.Z(0))
+
+    The relative iX gate (CS, Toffoli) is then replaced before execution.
+
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc(x, y):
+                qml.ctrl(qml.S(wires=[1]), control=[0])
+                qml.Toffoli(wires=[0, 1, 2])
+                return qml.expval(qml.Z(0))
+
+        The circuit before decomposition:
+
+        >>> dev = qml.device('default.qubit', wires=4)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)())
+            0: ─╭●─╭●─┤  <Z>
+            1: ─╰S─├●─┤
+            2: ────╰X─┤
+
+        We can replace the iX gate by running the transform:
+
+        >>> lowered_qfunc = replace_iX_gate(qfunc)
+        >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
+        >>> print(qml.draw(lowered_qnode)())
+
+        0: ──────────────╭●───────────╭●────┤  <Z>
+        1: ────────╭●────│──────╭●────│─────┤
+        2: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
+
+    """
+    operations = []
+    found = False
+
+    for operations_indices, controls, first_target, second_target in zip(
+        *_find_iX_gates(tape.operations)
+    ):
+        found = True
+        for i, gate in enumerate(tape.operations):
+            if i not in operations_indices:
+                operations.append(gate)
+        operations = (
+            operations[: operations_indices[0]]
+            + [
+                ops.Hadamard(wires=second_target),
+                ops.Adjoint(ops.T(wires=second_target)),
+                ops.CNOT(wires=[first_target, second_target]),
+                ops.T(wires=second_target),
+                ops.CNOT(wires=[controls[0], second_target]),
+                ops.Adjoint(ops.T(wires=second_target)),
+                ops.CNOT(wires=[first_target, second_target]),
+                ops.T(wires=second_target),
+                ops.CNOT(wires=[controls[0], second_target]),
+                ops.Hadamard(wires=second_target),
+            ]
+            + operations[operations_indices[0] :]
+        )
+
+    new_tape = tape.copy(operations=operations) if found else tape
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
+
+    return [new_tape], null_postprocessing
