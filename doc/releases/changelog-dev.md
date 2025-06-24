@@ -991,6 +991,10 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* Added a warning to the documentation for `qml.snapshots`, clarifying that compilation transforms 
+may move operations across a `Snapshot`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
