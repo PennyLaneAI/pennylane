@@ -993,7 +993,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 * Added a warning to the documentation for `qml.snapshots`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
 
 <h3>Bug fixes 🐛</h3>
 
