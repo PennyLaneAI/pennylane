@@ -20,9 +20,10 @@ from typing import Any, Dict
 
 class CompactHamiltonian:
     r"""A compact representation for the Hamiltonian of a quantum system.
+
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian
-            (e.g., "cdf", "thc").
+            (e.g., "cdf", "thc", "vibrational", "vibronic").
         **params (Any): Keyword arguments specific to the chosen construction method,
             For example:
 
@@ -35,7 +36,9 @@ class CompactHamiltonian:
         The :class:`CompactHamiltonian` class is designed to be an alternative input to using the full
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.
+
         .. code-block:: python
+
             import pennylane.labs.resource_estimation as plre
             compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=8, num_fragments=4)
             def circ():
@@ -70,6 +73,7 @@ class CompactHamiltonian:
     @classmethod
     def cdf(cls, num_orbitals: int, num_fragments: int):
         """Constructs a compressed double factorized Hamiltonian instance
+
         Args:
             num_orbitals (int): number of spatial orbitals
             num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
@@ -81,6 +85,7 @@ class CompactHamiltonian:
     @classmethod
     def thc(cls, num_orbitals: int, tensor_rank: int):
         """Constructs a tensor hypercontracted Hamiltonian instance
+
         Args:
             num_orbitals (int): number of spatial orbitals
             tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
@@ -92,6 +97,7 @@ class CompactHamiltonian:
     @classmethod
     def vibrational(cls, num_modes: int, grid_size: int, taylor_degree: int):
         """Constructs a vibrational Hamiltonian instance
+
         Args:
             num_modes (int): number of vibrational modes
             grid_size (int): number of grid points used to discretize each mode

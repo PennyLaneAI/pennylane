@@ -391,6 +391,7 @@ class ResourceSelect(ResourceOperator):
         cnot = re.ResourceCNOT.resource_rep()
         l_elbow = resource_rep(re.ResourceTempAND)
         r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
+
         num_ops = len(cmpr_ops)
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
