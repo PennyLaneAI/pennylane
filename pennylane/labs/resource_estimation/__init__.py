@@ -139,7 +139,38 @@ Compact Hamiltonian Class:
     ~CompactHamiltonian
 
 """
-
+from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .resources_base import Resources
+from .resource_operator import (
+    CompressedResourceOp,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+    GateCount,
+)
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
+from .templates import (
+    CompactHamiltonian,
+    ResourceBasisRotation,
+    ResourceOutMultiplier,
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceQROM,
+    ResourceSelect,
+    ResourceSemiAdder,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+)
 from .ops import (
     ResourceAdjoint,
     ResourceCCZ,
@@ -182,33 +213,4 @@ from .ops import (
     ResourceX,
     ResourceY,
     ResourceZ,
-)
-from .qubit_manager import AllocWires, FreeWires, QubitManager
-from .resource_mapping import map_to_resource_op
-from .resource_operator import (
-    CompressedResourceOp,
-    GateCount,
-    ResourceOperator,
-    ResourcesNotDefined,
-    resource_rep,
-    set_adj_decomp,
-    set_ctrl_decomp,
-    set_decomp,
-    set_pow_decomp,
-)
-from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
-from .resources_base import Resources
-from .templates import (
-    ResourceTrotterCDF,
-    ResourceTrotterTHC,
-    ResourceTrotterVibrational,
-    ResourceTrotterVibronic,
-    CompactHamiltonian,
-    ResourceBasisRotation,
-    ResourceOutMultiplier,
-    ResourceOutOfPlaceSquare,
-    ResourcePhaseGradient,
-    ResourceQROM,
-    ResourceSelect,
-    ResourceSemiAdder,
 )

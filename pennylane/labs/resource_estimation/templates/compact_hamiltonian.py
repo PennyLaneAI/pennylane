@@ -25,9 +25,10 @@ class CompactHamiltonian:
             (e.g., "cdf", "thc").
         **params (Any): Keyword arguments specific to the chosen construction method,
             For example:
-             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
-             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
-             Refer to the documentation of each specific constructor method for their required parameters.
+
+            - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
+            - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
+            Refer to the documentation of each specific constructor method for their required parameters.
 
     .. details::
         :title: Usage Details
