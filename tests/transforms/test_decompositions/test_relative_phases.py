@@ -1,10 +1,35 @@
 from itertools import permutations
 
 import pennylane as qml
-from pennylane.transforms.decompositions.relative_phases import replace_relative_phase_toffoli
+from pennylane.transforms.decompositions.relative_phases import replace_relative_phase_toffoli, replace_iX_gate
 
 
-class TestRelativePhases:
+class TestPhaseXGate:
+    
+    def test_basic_transform(self):
+        def qfunc():
+            qml.ctrl(qml.S(wires=[1]), control=[0])
+            qml.Toffoli(wires=[0, 1, 2])
+            return qml.expval(qml.Z(0))
+
+        transformed_qfunc = replace_iX_gate(qfunc)
+
+        tape = qml.tape.make_qscript(transformed_qfunc)()
+        assert len(tape.operations) == 10
+        assert tape.operations == [
+            qml.Hadamard(wires=2),
+            qml.adjoint(qml.T(wires=2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.CNOT(wires=[0, 2]),
+            qml.adjoint(qml.T(wires=2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.CNOT(wires=[0, 2]),
+            qml.Hadamard(wires=2),
+        ]
+
+class TestRelativePhaseToffoli:
 
     def test_surrounded(self):
         def qfunc():
