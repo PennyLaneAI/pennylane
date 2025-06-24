@@ -171,7 +171,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         cswap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(plre.GateCount(cswap, 4*num_orb*(num_orb)))
 
-        #Phase gradient technique for rotation
+        # Phase gradient technique for rotation
         semiadder = resource_rep(
                     plre.ResourceControlled,
                     {
