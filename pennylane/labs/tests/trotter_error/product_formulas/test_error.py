@@ -31,8 +31,6 @@ from pennylane.labs.trotter_error import (
 def test_perturbation_error(backend, parallel_mode, mpi4py_support):
     """Test that perturbation error function runs without errors for different backends."""
 
-    print(f"{backend}, {mpi4py_support}")
-
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
@@ -49,7 +47,7 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
         r_state.random(size=(n_modes, n_modes, n_modes)),
     ]
     frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    gridpoints = 5
+    gridpoints = 10
     state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
 

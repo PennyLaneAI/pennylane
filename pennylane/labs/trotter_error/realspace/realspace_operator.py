@@ -240,7 +240,7 @@ class RealspaceOperator:
 
         for index in self.coeffs.nonzero():
             new_state = copy.copy(state)
-            for i, op in zip(index, self.ops):
+            for i, op in zip(reversed(index), reversed(self.ops)):
                 for char in op:
                     if char == "P":
                         new_state = new_state.apply_momentum(i)
@@ -249,7 +249,7 @@ class RealspaceOperator:
                     else:
                         raise RuntimeError
 
-                ret += self.coeffs[index] * new_state
+            ret += self.coeffs[index] * new_state
 
         return ret
 

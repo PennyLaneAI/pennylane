@@ -129,9 +129,6 @@ class TestHarmonic:
             for j, state2 in enumerate(states):
                 actual[i, j] = ham.expectation(state1, state2)
 
-        print(actual)
-        print(expected)
-
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize(
