@@ -15,9 +15,10 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
     if not has_pyzx:
         raise ModuleNotFoundError("pyzx is required.")
 
-    zx_graph = qml.transforms.to_zx(tape, expand_measurements=False)
+    zx_graph = qml.transforms.to_zx(tape)
     pyzx.full_reduce(zx_graph)
-    qscript = qml.transforms.from_zx(zx_graph, decompose_phases=False)
+    zx_graph = pyzx.extract_circuit(zx_graph).to_graph()
+    qscript = qml.transforms.from_zx(zx_graph)
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
