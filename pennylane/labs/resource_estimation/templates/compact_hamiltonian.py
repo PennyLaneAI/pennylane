@@ -77,6 +77,7 @@ class CompactHamiltonian:
         Args:
             num_orbitals (int): number of spatial orbitals
             num_fragments (int): number of fragments in the compressed double factorization (CDF) representation
+
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with CDF parameters.
         """
@@ -89,6 +90,7 @@ class CompactHamiltonian:
         Args:
             num_orbitals (int): number of spatial orbitals
             tensor_rank (int):  tensor rank of two-body integrals in the tensor hypercontracted (THC) representation
+
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with THC parameters.
         """
@@ -102,6 +104,7 @@ class CompactHamiltonian:
             num_modes (int): number of vibrational modes
             grid_size (int): number of grid points used to discretize each mode
             taylor_degree (int): degree of the Taylor expansion used in the vibrational representation
+
         Returns:
             CompactHamiltonian: An instance of CompactHamiltonian initialized with vibrational Hamiltonian parameters.
         """
