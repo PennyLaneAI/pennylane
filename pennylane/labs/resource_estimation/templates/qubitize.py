@@ -135,7 +135,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # Select Circuit Fig. 5 in arXiv:2011.03494
         # 1 register of rotation precision for loading the angles,
-        # 2 for Resource state, 2 wires for spin registers
+        # 2 for resource state, 2 wires for spin registers
 
         gate_list.append(AllocWires(3*rot_prec_wires + 4))
 
