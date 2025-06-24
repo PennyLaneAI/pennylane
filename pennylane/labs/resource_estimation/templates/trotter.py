@@ -131,7 +131,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         Returns:
             dict: A dictionary containing the resource parameters:
                 * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
-                      Hamiltonian to be approximately exponentiated
+                  Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
         """
@@ -341,6 +341,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                 Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
+        wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
@@ -456,7 +457,6 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
-
 
         """
         k = order // 2
