@@ -29,6 +29,33 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
+def _check_for_interfering_gates(
+    indices: list[int], operations: list[Operation], used_wires: Wires
+):
+    """
+    Searches for any interfering gates that make our pattern matching invalid.
+
+    Args:
+        indices (list[int]): indices of gates in our pattern.
+        operations (list[Operation]): operations we are searching in.
+
+    Return
+        bool: Whether any interfering gates were found.
+    """
+    j = 0
+    while j < indices[-1]:
+        op = operations[j]
+        if j not in indices[1:] and reduce(
+            lambda acc, wire: acc + int(wire in used_wires),
+            op.wires,
+            0,
+        ):
+            # we have a gate that breaks the pattern
+            return True
+        j += 1
+    return False
+
+
 def _find_relative_phase_toffolis(
     operations: list[Operation],
     second_target: Wires = None,
@@ -96,6 +123,11 @@ def _find_relative_phase_toffolis(
                 )
             ):
                 indices.append(i)
+
+                if _check_for_interfering_gates(
+                    indices, operations, controls + [first_target, second_target]
+                ):
+                    return None, controls, first_target, second_target
                 return indices, controls, first_target, second_target  # we are done
             elif reduce(
                 lambda acc, wire: acc + int(wire in (controls + [second_target])),
@@ -289,13 +321,18 @@ def _find_iX_gates(
                 and 2
                 == reduce(
                     lambda acc, wire: acc + int(wire in operations[i].control_wires),
-                    operations[indices[-1]].wires,
+                    controls + [first_target],
                     0,
                 )
             ):
                 controls = operations[i].control_wires
                 second_target = operations[i].wires[-1]
                 indices.append(i)
+
+                if _check_for_interfering_gates(
+                    indices, operations, controls + [first_target, second_target]
+                ):
+                    return None, controls, first_target, second_target
                 return indices, controls, first_target, second_target  # we are done
             if reduce(
                 lambda acc, wire: acc + int(wire in (controls + [first_target])),
