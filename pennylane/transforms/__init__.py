@@ -45,6 +45,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~compile
     ~transforms.cancel_inverses
     ~transforms.commute_controlled
+    ~transforms.disentangle_swap
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion
     ~transforms.unitary_to_rot
@@ -317,6 +318,7 @@ from .mitigate import (
 )
 from .optimization import (
     cancel_inverses,
+    disentangle_swap,
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
