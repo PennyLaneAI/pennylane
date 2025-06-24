@@ -239,17 +239,23 @@ def replace_relative_phase_toffoli(
 
     """
     operations = []
-    found = False
+    found = 0
+
+    all_operations_indices, all_controls, all_first_target, all_second_target = (
+        _find_relative_phase_toffolis(tape.operations)
+    )
+
+    flat_indices = [index for group in all_operations_indices for index in group]
+
+    for i, gate in enumerate(tape.operations):
+        if i not in flat_indices:
+            operations.append(gate)
 
     for operations_indices, controls, first_target, second_target in zip(
-        *_find_relative_phase_toffolis(tape.operations)
+        all_operations_indices, all_controls, all_first_target, all_second_target
     ):
-        found = True
-        for i, gate in enumerate(tape.operations):
-            if i not in operations_indices:
-                operations.append(gate)
         operations = (
-            operations[: operations_indices[0]]
+            operations[: found * 18 + operations_indices[0]]
             + [
                 ops.Hadamard(wires=second_target),
                 ops.T(wires=second_target),
@@ -270,8 +276,9 @@ def replace_relative_phase_toffoli(
                 ops.Adjoint(ops.T(wires=second_target)),
                 ops.Hadamard(wires=second_target),
             ]
-            + operations[operations_indices[0] :]
+            + operations[found * 18 + operations_indices[0] :]
         )
+        found += 1
 
     new_tape = tape.copy(operations=operations) if found else tape
 
@@ -440,17 +447,23 @@ def replace_iX_gate(
 
     """
     operations = []
-    found = False
+    found = 0
+
+    all_operations_indices, all_controls, all_first_target, all_second_target = _find_iX_gates(
+        tape.operations
+    )
+
+    flat_indices = [index for group in all_operations_indices for index in group]
+
+    for i, gate in enumerate(tape.operations):
+        if i not in flat_indices:
+            operations.append(gate)
 
     for operations_indices, controls, first_target, second_target in zip(
-        *_find_iX_gates(tape.operations)
+        all_operations_indices, all_controls, all_first_target, all_second_target
     ):
-        found = True
-        for i, gate in enumerate(tape.operations):
-            if i not in operations_indices:
-                operations.append(gate)
         operations = (
-            operations[: operations_indices[0]]
+            operations[: found * 10 + operations_indices[0]]
             + [
                 ops.Hadamard(wires=second_target),
                 ops.Adjoint(ops.T(wires=second_target)),
@@ -463,10 +476,11 @@ def replace_iX_gate(
                 ops.CNOT(wires=[controls[0], second_target]),
                 ops.Hadamard(wires=second_target),
             ]
-            + operations[operations_indices[0] :]
+            + operations[found * 10 + operations_indices[0] :]
         )
+        found += 1
 
-    new_tape = tape.copy(operations=operations) if found else tape
+    new_tape = tape.copy(operations=operations) if found > 0 else tape
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -642,17 +656,23 @@ def replace_multi_controlled_iX_gate(
 
     """
     operations = []
-    found = False
+    found = 0
+
+    all_operations_indices, all_first_controls, all_second_controls, all_targets = (
+        _find_multi_controlled_iX_gates(tape.operations)
+    )
+
+    flat_indices = [index for group in all_operations_indices for index in group]
+
+    for i, gate in enumerate(tape.operations):
+        if i not in flat_indices:
+            operations.append(gate)
 
     for operations_indices, first_controls, second_controls, target in zip(
-        *_find_multi_controlled_iX_gates(tape.operations)
+        all_operations_indices, all_first_controls, all_second_controls, all_targets
     ):
-        found = True
-        for i, gate in enumerate(tape.operations):
-            if i not in operations_indices:
-                operations.append(gate)
         operations = (
-            operations[: operations_indices[0]]
+            operations[: found * 10 + operations_indices[0]]
             + [
                 ops.Hadamard(wires=target),
                 ops.Adjoint(ops.T(wires=target)),
@@ -665,10 +685,11 @@ def replace_multi_controlled_iX_gate(
                 ops.MultiControlledX(wires=first_controls + [target]),
                 ops.Hadamard(wires=target),
             ]
-            + operations[operations_indices[0] :]
+            + operations[found * 10 + operations_indices[0] :]
         )
+        found += 1
 
-    new_tape = tape.copy(operations=operations) if found else tape
+    new_tape = tape.copy(operations=operations) if found > 0 else tape
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
