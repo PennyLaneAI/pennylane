@@ -170,6 +170,8 @@ from .templates import (
     ResourceSemiAdder,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
 )
 from .ops import (
     ResourceAdjoint,

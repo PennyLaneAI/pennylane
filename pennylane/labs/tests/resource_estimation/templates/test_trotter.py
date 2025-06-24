@@ -28,7 +28,7 @@ class TestTrotterCDF:
     """Tests for ResourceTrotterCDF class"""
 
     # Expected resources were obtained manually based on
-    # the xas paper: https://arxiv.org/abs/2506.15784
+    # https://arxiv.org/abs/2506.15784
     hamiltonian_data = [
         (
             8,
@@ -101,7 +101,7 @@ class TestTrotterCDF:
     def test_resource_trotter_cdf(
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterCDF class for correct resources"""
 
         compact_ham = plre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
@@ -128,6 +128,7 @@ class TestTrotterTHC:
     """Tests for ResourceTrotterCDF class"""
 
     # Expected resources were obtained manually
+    # based on https://arxiv.org/abs/2407.04432
     hamiltonian_data = [
         (
             8,
@@ -177,7 +178,7 @@ class TestTrotterTHC:
         "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
     )
     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
-        """Test the ResourceTrotterTHC class for tensor hypercontraction"""
+        """Test the ResourceTrotterTHC class for correct resources"""
         compact_ham = plre.CompactHamiltonian.thc(
             num_orbitals=num_orbitals, tensor_rank=tensor_rank
         )
@@ -202,7 +203,8 @@ class TestTrotterTHC:
 class TestTrotterVibrational:
     """Test the ResourceTrotterVibrational class"""
 
-    # Expected resources were obtained from the Vibrational notebook with some modifications
+    # Expected resources were obtained manually based on
+    # https://arxiv.org/pdf/2504.10602
     hamiltonian_data = [
         (
             8,
@@ -284,7 +286,7 @@ class TestTrotterVibrational:
     def test_resource_trotter_vibrational(
         self, num_modes, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterVibrational class for correct resources"""
         compact_ham = plre.CompactHamiltonian.vibrational(
             num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree
         )
@@ -310,7 +312,8 @@ class TestTrotterVibrational:
 class TestResourceTrotterVibronic:
     """Test the ResourceTrotterVibronic class"""
 
-    "Expected resources were obtained from the Vibronic notebook with some modifications"
+    # Expected resources were obtained manually based on
+    # https://arxiv.org/abs/2411.13669
     hamiltonian_data = [
         (
             8,
@@ -396,7 +399,7 @@ class TestResourceTrotterVibronic:
     def test_resource_trotter_vibronic(
         self, num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterVibronic class for correct resources"""
         compact_ham = plre.CompactHamiltonian.vibronic(
             num_modes=num_modes,
             num_states=num_states,
