@@ -68,6 +68,11 @@ class ResourceQubitizeTHC(ResourceOperator):
         compare_precision=1e-3,
         wires=None,
     ):
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
         self.compact_ham = compact_ham
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision

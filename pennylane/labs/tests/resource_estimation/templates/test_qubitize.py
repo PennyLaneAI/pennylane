@@ -17,23 +17,17 @@ Test the Resource classes for Qubitization
 import pytest
 
 import pennylane.labs.resource_estimation as plre
-# pylint: disable=too-many-arguments
 
-import pytest
+# pylint: disable=too-many-arguments, no-self-use
+
 
 class TestQubitizeTHC:
+    """Class for testing ResourceTestQubitize"""
+
     # Expected resources were obtained from Pablo's code
-    hamiltonian_data = [
-        (
-            76,
-            145,
-            285,
-            202695
-        )
-    ]
-    @pytest.mark.parametrize(
-        "num_orbitals, tensor_rank, qubits, toffoli_count", hamiltonian_data
-    )
+    hamiltonian_data = [(76, 145, 285, 202695)]
+
+    @pytest.mark.parametrize("num_orbitals, tensor_rank, qubits, toffoli_count", hamiltonian_data)
     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, qubits, toffoli_count):
         """Test the ResourceTrotterTHC class for tensor hypercontraction"""
         compact_ham = plre.CompactHamiltonian.thc(
@@ -41,9 +35,19 @@ class TestQubitizeTHC:
         )
 
         def circ():
-            plre.ResourceQubitizeTHC(compact_ham, coeff_precision=2e-5, rotation_precision=2e-5, compare_precision=1e-2)
+            plre.ResourceQubitizeTHC(
+                compact_ham, coeff_precision=2e-5, rotation_precision=2e-5, compare_precision=1e-2
+            )
 
         res = plre.estimate_resources(circ)()
 
         assert res.qubit_manager.total_qubits == qubits
         assert res.clean_gate_counts["Toffoli"] == toffoli_count
+
+    def test_type_error(self):
+        r"""Test that a TypeError is raised for unsupported Hamiltonian representations."""
+        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=4)
+        with pytest.raises(
+            TypeError, match="Unsupported Hamiltonian representation for ResourceQubitizeTHC"
+        ):
+            plre.ResourceQubitizeTHC(compact_ham)

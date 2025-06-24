@@ -647,6 +647,9 @@
   estimation for trotterization of CDF and THC Hamiltonians.
   [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
 
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for qubitization of THC Hamiltonian.
+  [(#7730)](https://github.com/PennyLaneAI/pennylane/pull/7730)
 
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
