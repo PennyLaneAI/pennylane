@@ -23,17 +23,6 @@ resource estimation.
 .. currentmodule:: pennylane.labs.resource_estimation
 
 
-Resource Estimation Functions:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~set_decomp
-    ~set_adj_decomp
-    ~set_ctrl_decomp
-    ~set_pow_decomp
-
 Resource Estimation Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,6 +32,20 @@ Resource Estimation Base Classes:
     ~Resources
     ~ResourceOperator
     ~CompressedResourceOp
+    ~GateCount
+
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~estimate_resources
+    ~resource_rep
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,14 +57,93 @@ Qubit Management Classes:
     ~AllocWires
     ~FreeWires
 
+Arithmetic Operators:
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceAdjoint
+    ~ResourceChangeBasisOp
+    ~ResourceControlled
+    ~ResourcePow
+    ~ResourceProd
+
+Operators:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
+    ~ResourceSWAP
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
+    ~ResourceMultiRZ
+    ~ResourcePauliRot
+    ~ResourceIsingXX
+    ~ResourceIsingYY
+    ~ResourceIsingXY
+    ~ResourceIsingZZ
+    ~ResourcePSWAP
+    ~ResourceSingleExcitation
+
+Templates:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceTrotterCDF
+    ~ResourceTrotterTHC
+    ~ResourceTrotterVibrational
+    ~ResourceTrotterVibronic
+    ~ResourceQubitizeTHC
+    ~ResourceOutOfPlaceSquare
+    ~ResourcePhaseGradient
+    ~ResourceOutMultiplier
+    ~ResourceSemiAdder
+    ~ResourceBasisRotation
+    ~ResourceSelect
+    ~ResourceQROM
+
+Compact Hamiltonian Class:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactHamiltonian
+
 """
-
-
 from .qubit_manager import AllocWires, FreeWires, QubitManager
-from .resource_mapping import map_to_resource_op
+from .resources_base import Resources
 from .resource_operator import (
     CompressedResourceOp,
-    GateCount,
     ResourceOperator,
     ResourcesNotDefined,
     resource_rep,
@@ -69,8 +151,70 @@ from .resource_operator import (
     set_ctrl_decomp,
     set_decomp,
     set_pow_decomp,
+    GateCount,
 )
-from .resource_tracking import DefaultGateSet, StandardGateSet, estimate_resources, resource_config
-from .resources_base import Resources
-from .ops import *
-from .templates import *
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
+from .templates import (
+    CompactHamiltonian,
+    ResourceBasisRotation,
+    ResourceOutMultiplier,
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceQROM,
+    ResourceSelect,
+    ResourceSemiAdder,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+    ResourceQubitizeTHC,
+)
+from .ops import (
+    ResourceAdjoint,
+    ResourceCCZ,
+    ResourceCH,
+    ResourceChangeBasisOp,
+    ResourceCNOT,
+    ResourceControlled,
+    ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePhaseShift,
+    ResourcePow,
+    ResourceProd,
+    ResourcePSWAP,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
+    ResourceSingleExcitation,
+    ResourceSWAP,
+    ResourceT,
+    ResourceTempAND,
+    ResourceToffoli,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
