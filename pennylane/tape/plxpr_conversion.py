@@ -190,10 +190,11 @@ def _(self, *invals, jaxpr, n_consts, **params):
 
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
-    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
+    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
 ):  # pylint: disable=too-many-arguments
-    consts = invals[:n_consts]
-    args = invals[n_consts:]
+    invals = invals[shots_len:]
+    consts = invals[shots_len:shots_len+n_consts]
+    args = invals[shots_len+n_consts:]
 
     child = CollectOpsandMeas()
     out = child.eval(qfunc_jaxpr, consts, *args)
