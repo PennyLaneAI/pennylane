@@ -19,7 +19,6 @@ Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
 Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. doi:10.1103/PhysRevA.104.052602.
 
 """
-import copy
 from functools import reduce
 
 from pennylane.wires import Wires
@@ -64,7 +63,7 @@ def _find_relative_phase_toffolis(
 
     i = 0
     while i < len(operations):
-        if len(controls) and second_target is not None:
+        if len(controls) > 0 and second_target is not None:
             if isinstance(operations[i], ops.ControlledOp) and isinstance(operations[i].base, ops.S):
                 if len(operations[i].control_wires) == 1 and operations[i].control_wires[0] in controls \
                         and operations[i].wires[-1] in controls:
@@ -74,8 +73,7 @@ def _find_relative_phase_toffolis(
                 elif len(operations[i].control_wires) == 2 and len(indices) == 2 \
                         and (operations[i].control_wires == Wires(controls)
                         or operations[i].control_wires[::-1] == Wires(controls)) \
-                        and operations[i].wires[-1] not in controls \
-                        and operations[i].wires[-1] != second_target:
+                        and operations[i].wires[-1] not in controls + [second_target]:
                     first_target = operations[i].wires[-1]
                     indices.append(i)
             elif isinstance(operations[i], ops.MultiControlledX) and len(indices) == 3 \
