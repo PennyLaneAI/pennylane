@@ -143,7 +143,7 @@ class HOState:
                 f"Dimension mismatch. Attempting to dot product vectors of dimension {self.dim} and {other.dim}."
             )
 
-        return ((self.vector).dot(other.vector.T))[0, 0]
+        return ((self.vector.conj()).dot(other.vector.T))[0, 0]
 
     def __repr__(self):
         return f"HOState(modes={self.modes}, gridpoints={self.gridpoints}, {_dict_from_vector(self.modes, self.gridpoints, self.vector)})"
@@ -361,7 +361,7 @@ class VibronicHO:
         4
         """
 
-        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
+        return sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states))
 
 
 def _vector_from_dict(modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]) -> csr_array:
