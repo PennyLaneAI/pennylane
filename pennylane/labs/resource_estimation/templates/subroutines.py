@@ -105,7 +105,6 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         r"""Returns the tracking name built with the operator's parameters."""
         return f"QFT({num_wires})"
 
-
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     r"""Resource class for the PhaseAdder template.
 
