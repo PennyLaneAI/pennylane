@@ -23,7 +23,7 @@ class TestRelativePhases:
             qml.ctrl(qml.S(wires=[1]), control=[0]),
             qml.PauliX(wires=3),
             qml.ctrl(qml.S(wires=[2]), control=[0, 1]),
-            qml.MultiControlledX(wires=[0, 1, 2, 3])
+            qml.MultiControlledX(wires=[0, 1, 2, 3]),
         ]
 
     def test_basic_transform(self):
@@ -56,5 +56,5 @@ class TestRelativePhases:
             qml.T(3),
             qml.CNOT(wires=[2, 3]),
             qml.adjoint(qml.T(3)),
-            qml.H(3)
+            qml.H(3),
         ]
