@@ -20,11 +20,15 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import QubitManager
-# pylint: disable=too-many-arguments
+
+# pylint: disable=no-self-use, too-many-arguments
 
 
 class TestTrotterCDF:
-    # Expected resources were obtained from the XAS notebook
+    """Tests for ResourceTrotterCDF class"""
+
+    # Expected resources were obtained manually based on
+    # https://arxiv.org/abs/2506.15784
     hamiltonian_data = [
         (
             8,
@@ -38,11 +42,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 3683512.0,
-                        "Adjoint(T)": 67312.0,
+                        "T": 7711424.0,
+                        "S": 201936.0,
+                        "Z": 134624.0,
                         "Hadamard": 134624.0,
-                        "S": 67312.0,
-                        "Adjoint(S)": 67312.0,
                         "CNOT": 187312.0,
                     },
                 ),
@@ -60,11 +63,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 47730000.0,
-                        "Adjoint(T)": 900000.0,
+                        "T": 99920000.0,
+                        "S": 2700000.0,
+                        "Z": 1800000.0,
                         "Hadamard": 1800000.0,
-                        "S": 900000.0,
-                        "Adjoint(S)": 900000.0,
                         "CNOT": 2420000.0,
                     },
                 ),
@@ -82,11 +84,10 @@ class TestTrotterCDF:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 761364588.0,
-                        "Adjoint(T)": 13860264.0,
+                        "T": 1593920064.0,
+                        "S": 41580792.0,
+                        "Z": 27720528.0,
                         "Hadamard": 27720528.0,
-                        "S": 13860264.0,
-                        "Adjoint(S)": 13860264.0,
                         "CNOT": 40770264.0,
                     },
                 ),
@@ -100,7 +101,8 @@ class TestTrotterCDF:
     def test_resource_trotter_cdf(
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterCDF class for correct resources"""
+
         compact_ham = plre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
         )
@@ -109,7 +111,7 @@ class TestTrotterCDF:
             plre.ResourceTrotterCDF(compact_ham, num_steps=num_steps, order=order)
 
         res = plre.estimate_resources(circ)()
-
+        print(res, expected_res)
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
@@ -123,7 +125,11 @@ class TestTrotterCDF:
 
 
 class TestTrotterTHC:
+    """Tests for ResourceTrotterCDF class"""
+
     # Expected resources were obtained manually
+    # based on https://arxiv.org/abs/2407.04432
+
     hamiltonian_data = [
         (
             8,
@@ -137,11 +143,10 @@ class TestTrotterTHC:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 4627512.0,
-                        "Adjoint(T)": 87312.0,
+                        "T": 9687424.0,
+                        "S": 261936.0,
+                        "Z": 174624.0,
                         "Hadamard": 174624.0,
-                        "S": 87312.0,
-                        "Adjoint(S)": 87312.0,
                         "CNOT": 243312.0,
                     },
                 ),
@@ -159,11 +164,10 @@ class TestTrotterTHC:
                 "gate_types": defaultdict(
                     int,
                     {
-                        "T": 176130000.0,
-                        "Adjoint(T)": 3300000.0,
+                        "T": 368720000.0,
+                        "S": 9900000.0,
+                        "Z": 6600000.0,
                         "Hadamard": 6600000.0,
-                        "S": 3300000.0,
-                        "Adjoint(S)": 3300000.0,
                         "CNOT": 9620000.0,
                     },
                 ),
@@ -175,7 +179,7 @@ class TestTrotterTHC:
         "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
     )
     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
-        """Test the ResourceTrotterTHC class for tensor hypercontraction"""
+        """Test the ResourceTrotterTHC class for correct resources"""
         compact_ham = plre.CompactHamiltonian.thc(
             num_orbitals=num_orbitals, tensor_rank=tensor_rank
         )
@@ -196,85 +200,86 @@ class TestTrotterTHC:
         ):
             plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
 
-class TestTrotterVibrational():
+
+class TestTrotterVibrational:
     """Test the ResourceTrotterVibrational class"""
 
-    # Expected resources were obtained from the Vibrational notebook with some modifications
+    # Expected resources were obtained manually based on
+    # https://arxiv.org/pdf/2504.10602
     hamiltonian_data = [
-    (
-        8,
-        4,
-        3,
-        100,
-        2,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=32, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 2,
-                    "S": 2,
-                    "T": 7116.0,
-                    "X": 384064.0,
-                    "Toffoli": 10069400,
-                    "CNOT": 14300800.0,
-                    "Hadamard": 30040800.0,
-                },
-            ),
-        },
-    ),
-    (
-        4,
-        6,
-        4,
-        10,
-        1,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=24, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 3,
-                    "S": 3,
-                    "T": 1154.0,
-                    "X": 7548.0,
-                    "Toffoli": 398770,
-                    "CNOT": 489540.0,
-                    "Hadamard": 1159650.0,
-                },
-            ),
-        },
-    ),
-    (
-        4,
-        2,
-        2,
-        20,
-        1,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 1,
-                    "S": 1,
-                    "T": 518.0,
-                    "X": 4016.0,
-                    "Toffoli": 37320,
-                    "CNOT": 82000.0,
-                    "Hadamard": 111120.0,
-                },
-            ),
-        },
-    ),
+        (
+            8,
+            4,
+            3,
+            100,
+            2,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=32, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 2,
+                        "S": 2,
+                        "T": 7898.0,
+                        "X": 384064.0,
+                        "Toffoli": 10069400,
+                        "CNOT": 14300800.0,
+                        "Hadamard": 30040840.0,
+                    },
+                ),
+            },
+        ),
+        (
+            4,
+            6,
+            4,
+            10,
+            1,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=24, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 3,
+                        "S": 3,
+                        "T": 2327.0,
+                        "X": 7548.0,
+                        "Toffoli": 398770,
+                        "CNOT": 489540.0,
+                        "Hadamard": 1159710.0,
+                    },
+                ),
+            },
+        ),
+        (
+            4,
+            2,
+            2,
+            20,
+            1,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 1,
+                        "S": 1,
+                        "T": 909.0,
+                        "X": 4016.0,
+                        "Toffoli": 37320,
+                        "CNOT": 82000.0,
+                        "Hadamard": 111140.0,
+                    },
+                ),
+            },
+        ),
     ]
-
 
     @pytest.mark.parametrize(
         "num_modes, grid_size, taylor_degree, num_steps, order, expected_res", hamiltonian_data
@@ -282,7 +287,7 @@ class TestTrotterVibrational():
     def test_resource_trotter_vibrational(
         self, num_modes, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterVibrational class for correct resources"""
         compact_ham = plre.CompactHamiltonian.vibrational(
             num_modes=num_modes, grid_size=grid_size, taylor_degree=taylor_degree
         )
@@ -292,6 +297,7 @@ class TestTrotterVibrational():
 
         res = plre.estimate_resources(circ)()
 
+        print(res, expected_res)
         assert res.qubit_manager == expected_res["qubit_manager"]
         assert res.clean_gate_counts == expected_res["gate_types"]
 
@@ -303,87 +309,89 @@ class TestTrotterVibrational():
         ):
             plre.ResourceTrotterVibrational(compact_ham, num_steps=100, order=2)
 
-class TestResourceTrotterVibronic():
-    """Test the ResourceTrotterVibronic class"""
-    # Expected resources were obtained from the Vibronic notebook with some modifications
-    hamiltonian_data = [
-    (
-        8,
-        2,
-        4,
-        3,
-        100,
-        2,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=33, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 2,
-                    "S": 2,
-                    "T": 7116.0,
-                    "X": 153664,
-                    "Hadamard": 30271202,
-                    "Toffoli": 10146200,
-                    "CNOT": 15222400,
-                },
-            ),
-        },
-    ),
-    (
-        4,
-        3,
-        6,
-        4,
-        10,
-        1,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=26, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 3,
-                    "S": 3,
-                    "T": 1154.0,
-                    "X": 6048,
-                    "Hadamard": 1168654,
-                    "Toffoli": 401770,
-                    "CNOT": 518040,
-                },
-            ),
-        },
-    ),
-    (
-        4,
-        1,
-        2,
-        2,
-        20,
-        1,
-        {
-            "qubit_manager": QubitManager(
-                work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
-            ),
-            "gate_types": defaultdict(
-                int,
-                {
-                    "Z": 1,
-                    "S": 1,
-                    "T": 518.0,
-                    "X": 16,
-                    "Hadamard": 111120,
-                    "Toffoli": 37320,
-                    "CNOT": 86000,
-                },
-            ),
-        },
-    ),
-    ]
 
+class TestResourceTrotterVibronic:
+    """Test the ResourceTrotterVibronic class"""
+
+    # Expected resources were obtained manually based on
+    # https://arxiv.org/abs/2411.13669
+    hamiltonian_data = [
+        (
+            8,
+            2,
+            4,
+            3,
+            100,
+            2,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 95.0, "dirty": 0.0}, algo_wires=33, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 2,
+                        "S": 2,
+                        "T": 7898.0,
+                        "X": 153664,
+                        "Hadamard": 30271242,
+                        "Toffoli": 10146200,
+                        "CNOT": 15222400,
+                    },
+                ),
+            },
+        ),
+        (
+            4,
+            3,
+            6,
+            4,
+            10,
+            1,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 127.0, "dirty": 0.0}, algo_wires=26, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 3,
+                        "S": 3,
+                        "T": 2327.0,
+                        "X": 6048,
+                        "Hadamard": 1168714,
+                        "Toffoli": 401770,
+                        "CNOT": 518040,
+                    },
+                ),
+            },
+        ),
+        (
+            4,
+            1,
+            2,
+            2,
+            20,
+            1,
+            {
+                "qubit_manager": QubitManager(
+                    work_wires={"clean": 67.0, "dirty": 0.0}, algo_wires=8, tight_budget=False
+                ),
+                "gate_types": defaultdict(
+                    int,
+                    {
+                        "Z": 1,
+                        "S": 1,
+                        "T": 909.0,
+                        "X": 16,
+                        "Hadamard": 111140,
+                        "Toffoli": 37320,
+                        "CNOT": 86000,
+                    },
+                ),
+            },
+        ),
+    ]
 
     @pytest.mark.parametrize(
         "num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res",
@@ -392,9 +400,12 @@ class TestResourceTrotterVibronic():
     def test_resource_trotter_vibronic(
         self, num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterVibronic class for correct resources"""
         compact_ham = plre.CompactHamiltonian.vibronic(
-            num_modes=num_modes, num_states=num_states, grid_size=grid_size, taylor_degree=taylor_degree
+            num_modes=num_modes,
+            num_states=num_states,
+            grid_size=grid_size,
+            taylor_degree=taylor_degree,
         )
 
         def circ():

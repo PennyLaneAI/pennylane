@@ -173,6 +173,9 @@ class _WireAction:
         context.append(self)
         return self
 
+    def __eq__(self, other: "_WireAction") -> bool:
+        return self.num_wires == other.num_wires
+
 
 class AllocWires(_WireAction):
     r"""Allows users to allocate clean work wires.

@@ -17,7 +17,6 @@ Unit tests for the ``dipole_of`` function.
 # pylint: disable=too-many-arguments
 import numpy as np
 import pytest
-from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 import pennylane as qml
 
@@ -200,7 +199,6 @@ ops_h2o.append(
 )
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("symbols", "coords", "charge", "core", "active", "mapping", "coeffs", "ops"),
     [
@@ -238,7 +236,6 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
             qml.assert_equal(o1, o2)
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("symbols", "coords", "charge", "hf_state", "exp_dipole"),
     [
