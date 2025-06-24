@@ -45,7 +45,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}` order,
     :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
@@ -53,10 +53,11 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a compressed double factorized
+        compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, ust be 1 or even.
+        wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
@@ -75,7 +76,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
             \end{align}
 
         The resources for a single step expansion of compressed double factorized Hamiltonian are calculated
-        based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_
+        based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
 
 
     .. seealso:: :class:`~.TrotterProduct`
@@ -125,8 +126,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a compressed double factorized
-                      Hamiltonian to be approximately exponentiated
+                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
+                  Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
         """
@@ -142,7 +143,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a compressed double factorized
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -163,10 +164,15 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a compressed double factorized
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition
 
         """
         k = order // 2
@@ -219,7 +225,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a compressed double factorized
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -319,7 +325,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}` order,
     :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
@@ -327,10 +333,11 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+        compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even
+        wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
         The resources are defined according to the recursive formula presented above. Specifically, each
@@ -348,7 +355,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
 
-        The resources for a single step expansion of compressed double factorized Hamiltonian are calculated
+        The resources for a single step expansion of tensor hypercontracted Hamiltonian are calculated
         based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_
 
     .. seealso:: :class:`~.TrotterProduct`
@@ -399,7 +406,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -416,7 +423,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         the Operator that are needed to compute the resources.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -437,10 +444,15 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition
 
         """
         k = order // 2
@@ -492,7 +504,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         """Returns the controlled resource decomposition.
 
         Args:
-            compact_ham (~pennylane.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
