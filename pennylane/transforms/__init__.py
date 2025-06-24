@@ -344,6 +344,6 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
+from .zx import to_zx, from_zx, reduce_zx_calculus
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
