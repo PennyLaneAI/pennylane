@@ -246,7 +246,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit', wires=["a", "b"]))
+        @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
             qml.H("a")
             qml.H("b")
