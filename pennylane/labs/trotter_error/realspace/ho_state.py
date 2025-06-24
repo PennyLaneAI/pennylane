@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Dict, Sequence, Tuple
 
 import numpy as np
-from scipy.sparse import csr_array, identity, kron
+from scipy.sparse import csr_array
 
 
 class HOState:
@@ -62,65 +62,22 @@ class HOState:
     def __init__(self, modes: int, gridpoints: int, state: csr_array):
         if isinstance(state, csr_array):
             if state.shape == (gridpoints**modes,):
-                state = state.reshape((gridpoints**modes, 1))
+                state = csr_array(state.reshape((1, gridpoints**modes)))
 
-            if state.shape != (gridpoints**modes, 1):
+            if state.shape != (1, gridpoints**modes):
                 raise ValueError(
-                    f"Dimension mismatch. Expected vector of shape {(gridpoints ** modes, 1)} but got shape {state.shape}."
+                    f"Dimension mismatch. Expected vector of shape {(1, gridpoints ** modes)} but got shape {state.shape}."
                 )
 
             self.vector = state
         elif isinstance(state, dict):
-            self.vector = self._vector_from_dict(modes, gridpoints, state)
+            self.vector = _vector_from_dict(modes, gridpoints, state)
         else:
-            raise TypeError(f"state must be of type csr_array or dict, got {type(state)}.")
+            raise TypeError(f"State must be of type csr_array or dict, got {type(state)}.")
 
         self.gridpoints = gridpoints
         self.modes = modes
         self.dim = gridpoints**modes
-
-    @classmethod
-    def _vector_from_dict(
-        cls, modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]
-    ) -> csr_array:
-        """Construct an :class:`~.pennylane.labs.trotter_error.HOState` from a dictionary.
-
-        Args:
-            modes (int): the number of vibrational modes
-            gridpoints (int): the number of gridpoints used to discretize the state
-            coeffs (Dict[Tuple[int]]): a dictionary representation of the state
-
-        Returns:
-            HOState: an :class:`~.pennylane.labs.trotter_error.HOState` representation of the state vector
-
-        **Example**
-
-        >>> from pennylane.labs.trotter_error import HOState
-        >>> n_modes = 3
-        >>> gridpoints = 5
-        >>> state_dict = {(1, 2, 3): 1, (0, 3, 2): 1}
-        >>> HOState.from_dict(n_modes, gridpoints, state_dict)
-        HOState(modes=3, gridpoints=5, <Compressed Sparse Row sparse array of dtype 'int64'
-            with 2 stored elements and shape (125, 1)>
-          Coords	Values
-          (17, 0)	1
-          (38, 0)	1)
-        """
-        rows, cols, vals = [], [], []
-        for index, val in coeffs.items():
-            if len(index) != modes:
-                raise ValueError(
-                    f"Number of modes given was {modes}, but {index} contains {len(index)} modes."
-                )
-
-            row = sum(i * (gridpoints**exp) for exp, i in enumerate(reversed(index)))
-            rows.append(row)
-            vals.append(val)
-
-        rows = np.array(rows)
-        cols = np.zeros_like(rows)
-        vals = np.array(vals)
-        return csr_array((vals, (rows, cols)), shape=(gridpoints**modes, 1))
 
     @classmethod
     def zero_state(cls, modes: int, gridpoints: int) -> HOState:
@@ -140,7 +97,7 @@ class HOState:
         HOState(modes=5, gridpoints=10, <Compressed Sparse Row sparse array of dtype 'float64'
             with 0 stored elements and shape (100000, 1)>)
         """
-        return cls(modes, gridpoints, csr_array((gridpoints**modes, 1)))
+        return cls(modes, gridpoints, csr_array((1, gridpoints**modes)))
 
     def __add__(self, other: HOState) -> HOState:
         if not isinstance(other, HOState):
@@ -148,10 +105,19 @@ class HOState:
 
         return HOState(self.modes, self.gridpoints, self.vector + other.vector)
 
-    def __mul__(self, scalar: float) -> HOState:
+    def __mul__(self, scalar: complex) -> HOState:
         return HOState(self.modes, self.gridpoints, scalar * self.vector)
 
     __rmul__ = __mul__
+
+    def __truediv__(self, scalar: complex) -> HOState:
+        return HOState(self.modes, self.gridpoints, self.vector / scalar)
+
+    def __eq__(self, other: HOState) -> bool:
+        raise NotImplementedError
+
+    def __sub__(self, other: HOState) -> HOState:
+        return self + (-1) * other
 
     def dot(self, other: HOState) -> float:
         """Return the dot product of two :class:`~.pennylane.labs.trotter_error.HOState` objects.
@@ -177,10 +143,85 @@ class HOState:
                 f"Dimension mismatch. Attempting to dot product vectors of dimension {self.dim} and {other.dim}."
             )
 
-        return ((self.vector.T).dot(other.vector))[0, 0]
+        return ((self.vector).dot(other.vector.T))[0, 0]
 
     def __repr__(self):
-        return f"HOState(modes={self.modes}, gridpoints={self.gridpoints}, {self.vector})"
+        return f"HOState(modes={self.modes}, gridpoints={self.gridpoints}, {_dict_from_vector(self.modes, self.gridpoints, self.vector)})"
+
+    @property
+    def dic(self) -> Dict[Tuple[int], complex]:
+        """Return a dictionary representation of the state"""
+        return _dict_from_vector(self.modes, self.gridpoints, self.vector)
+
+    def apply_creation(self, mode):
+        """Returns the state obtained by applying the creation operator on mode ``mode``."""
+        data = self.vector.data
+        cols = self.vector.indices
+
+        new_data = []
+        new_cols = []
+
+        indices = [_convert_to_base(col, self.gridpoints, self.modes) for col in cols]
+        for coeff, index in zip(data, indices):
+            index[mode] += 1
+
+            if index[mode] == self.gridpoints:
+                raise RuntimeError(
+                    "Attempted to increase a mode that was at the maximum allowed value."
+                )
+
+            new_coeff = coeff * np.sqrt(index[mode])
+            new_data.append(new_coeff)
+
+            new_col = sum(i * (self.gridpoints**exp) for exp, i in enumerate(reversed(index)))
+            new_cols.append(new_col)
+
+        return HOState(
+            self.modes,
+            self.gridpoints,
+            csr_array(
+                (new_data, (np.zeros_like(new_cols), np.array(new_cols))),
+                shape=(1, self.gridpoints**self.modes),
+            ),
+        )
+
+    def apply_annihilation(self, mode):
+        """Returns the state obtained by applying the annihilation operator on mode ``mode``."""
+        data = self.vector.data
+        cols = self.vector.indices
+
+        new_data = []
+        new_cols = []
+
+        indices = [_convert_to_base(col, self.gridpoints, self.modes) for col in cols]
+        for coeff, index in zip(data, indices):
+            index[mode] -= 1
+
+            if index[mode] == -1:
+                continue
+
+            new_coeff = coeff * np.sqrt(index[mode] + 1)
+            new_data.append(new_coeff)
+
+            new_col = sum(i * (self.gridpoints**exp) for exp, i in enumerate(reversed(index)))
+            new_cols.append(new_col)
+
+        return HOState(
+            self.modes,
+            self.gridpoints,
+            csr_array(
+                (new_data, (np.zeros_like(new_cols), np.array(new_cols))),
+                shape=(1, self.gridpoints**self.modes),
+            ),
+        )
+
+    def apply_position(self, mode):
+        """Returns the state obtained by applying the position operator on mode ``mode``."""
+        return (self.apply_creation(mode) + self.apply_annihilation(mode)) / np.sqrt(2)
+
+    def apply_momentum(self, mode):
+        """Returns the state obtained by applying the momentum operator on mode ``mode``."""
+        return 1j * (self.apply_creation(mode) - self.apply_annihilation(mode)) / np.sqrt(2)
 
 
 class VibronicHO:
@@ -323,15 +364,42 @@ class VibronicHO:
         return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
 
 
-def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:
-    """Return the tensor product of ``op`` with the ``gridpoints**mode`` dimensional identity matrix on the left, and the ``gridpoints ** (n_modes - mode - 1)`` dimensional identity matrix on the right."""
-    if mode == 0:
-        return kron(op, identity(gridpoints ** (n_modes - 1)))
+def _vector_from_dict(modes: int, gridpoints: int, coeffs: Dict[Tuple[int], float]) -> csr_array:
+    """Convert dictionary representation to csr_array representation"""
+    rows, cols, vals = [], [], []
+    for index, val in coeffs.items():
+        if len(index) != modes:
+            raise ValueError(
+                f"Number of modes given was {modes}, but {index} contains {len(index)} modes."
+            )
 
-    if mode == n_modes - 1:
-        return kron(identity(gridpoints ** (n_modes - 1)), op)
+        col = sum(i * (gridpoints**exp) for exp, i in enumerate(reversed(index)))
+        cols.append(col)
+        vals.append(val)
 
-    id_left = identity(gridpoints**mode)
-    id_right = identity(gridpoints ** (n_modes - mode - 1))
+    cols = np.array(cols)
+    rows = np.zeros_like(cols)
+    vals = np.array(vals)
+    return csr_array((vals, (rows, cols)), shape=(1, gridpoints**modes))
 
-    return kron(id_left, kron(op, id_right))
+
+def _dict_from_vector(modes: int, gridpoints: int, state: csr_array):
+    ret = {}
+    for coeff, index in zip(state.data, state.indices):
+        mode_rep = tuple(_convert_to_base(index, gridpoints, modes))
+        ret[mode_rep] = coeff
+
+    return ret
+
+
+def _convert_to_base(n: int, b: int, k: int):
+    digits = [0] * k
+    if n == 0:
+        return digits
+
+    k -= 1
+    while n:
+        digits[k] = int(n % b)
+        n //= b
+        k -= 1
+    return digits

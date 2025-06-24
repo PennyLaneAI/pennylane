@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 from itertools import product
 from typing import Dict, Sequence, Tuple, Union
@@ -230,6 +231,28 @@ class RealspaceOperator:
         """
         return self.coeffs.nonzero(threshold)
 
+    def apply(self, state: HOState) -> HOState:
+        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
+        if not isinstance(state, HOState):
+            raise TypeError(f"State must be of type HOState, got {type(state)} instead.")
+
+        ret = HOState.zero_state(state.modes, state.gridpoints)
+
+        for index in self.coeffs.nonzero():
+            new_state = copy.copy(state)
+            for i, op in zip(index, self.ops):
+                for char in op:
+                    if char == "P":
+                        new_state = new_state.apply_momentum(i)
+                    elif char == "Q":
+                        new_state = new_state.apply_position(i)
+                    else:
+                        raise RuntimeError
+
+                ret += self.coeffs[index] * new_state
+
+        return ret
+
 
 class RealspaceSum(Fragment):
     r"""Represents a linear combination of :class:`~.pennylane.labs.trotter_error.RealspaceOperator` objects.
@@ -280,8 +303,6 @@ class RealspaceSum(Fragment):
 
         self.modes = modes
 
-        # Note defaultdict with custom types cannot be used with mp_pool or cf_procpool
-        # https://stackoverflow.com/questions/9256687/using-defaultdict-with-multiprocessing
         self._lookup = {}
 
         for op in ops:
@@ -421,6 +442,10 @@ class RealspaceSum(Fragment):
 
         return final_matrix
 
+    def apply(self, state: HOState) -> HOState:
+        new_states = [op.apply(state) for op in self.ops]
+        return sum(new_states, HOState.zero_state(state.modes, state.gridpoints))
+
     def norm(self, params: Dict) -> float:
         """Returns an upper bound on the spectral norm of the operator.
 
@@ -467,19 +492,6 @@ class RealspaceSum(Fragment):
             norm += coeff_sum * term_op_norm
 
         return norm
-
-    def apply(self, state: HOState) -> HOState:
-        """Apply the :class:`~.pennylane.labs.trotter_error.RealspaceSum` to an input :class:`~.pennylane.labs.trotter_error.HOState` object."""
-        if not isinstance(state, HOState):
-            raise TypeError
-
-        mat = self.matrix(state.gridpoints, basis="harmonic", sparse=True)
-
-        return HOState(
-            state.modes,
-            state.gridpoints,
-            mat @ state.vector,
-        )
 
     def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
         """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.

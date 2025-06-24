@@ -57,7 +57,7 @@ class TestHarmonic1Mode:
     n_states = 5
     omegas = np.array([freq])
     ham = _vibrational_hamiltonian(1, omegas, [])
-    states = [HOState(1, 10, {(i,): 1}) for i in range(n_states)]
+    states = [HOState(1, 100, {(i,): 1}) for i in range(n_states)]
 
     @pytest.mark.parametrize("n_states, freq, ham, states", [(n_states, freq, ham, states)])
     def test_expectation_1_mode(self, n_states, freq, ham, states):
@@ -87,7 +87,9 @@ class TestHarmonic1Mode:
 
         comb_states = []
         for i in range(n_states):
-            state = sum((states[j] * rot[j, i] for j in range(n_states)), HOState.zero_state(1, 10))
+            state = sum(
+                (states[j] * rot[j, i] for j in range(n_states)), HOState.zero_state(1, 100)
+            )
             comb_states.append(state)
 
         expected = rot.T @ (np.diag(np.arange(n_states) + 0.5) * freq) @ rot
@@ -314,5 +316,5 @@ class TestExpectation:
 
         for i, eigval in enumerate(eigvals):
             eigvec = eigvecs[:, i]
-            ho_state = HOState(n_modes, 2, csr_array(eigvec.reshape(2**n_modes, 1)))
+            ho_state = HOState(n_modes, 2, csr_array(eigvec))
             assert np.isclose(ham.expectation(ho_state, ho_state), eigval)
