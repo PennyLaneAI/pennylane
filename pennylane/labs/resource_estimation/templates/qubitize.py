@@ -211,7 +211,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         gate_list.append(plre.GateCount(toffoli, num_toffoli))
 
-        #reflection
+        # Reflection
         mcx = resource_rep(plre.ResourceMultiControlledX,
                            {"num_ctrl_wires":nd,
                             "num_ctrl_values":nd})
