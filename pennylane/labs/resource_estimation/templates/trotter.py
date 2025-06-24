@@ -874,6 +874,7 @@ class ResourceTrotterVibronic(ResourceOperator):
     The resources can be computed as:
 
     **Example**
+
     >>> compact_ham = plre.CompactHamiltonian.vibronic(num_modes=2, num_states=4, grid_size=4, taylor_degree=2)
     >>> num_steps = 10
     >>> order = 2
