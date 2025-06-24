@@ -991,7 +991,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
-* Added a warning to the documentation for `qml.snapshots`, clarifying that compilation transforms 
+* Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
 

@@ -179,6 +179,12 @@ class Snapshot(Operation):
         shots (Literal["workflow"], None, int, Sequence[int]): shots to use for the snapshot.
             ``"workflow"`` indicates the same number of shots as for the final measurement.
 
+    .. warning::
+
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms 
+        (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
+        As a result, the captured state may differ from the original intent.
+
     **Example**
 
     .. code-block:: python3
