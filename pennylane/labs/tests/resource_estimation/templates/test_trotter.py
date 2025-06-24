@@ -28,7 +28,7 @@ class TestTrotterCDF:
     """Tests for ResourceTrotterCDF class"""
 
     # Expected resources were obtained manually based on
-    # the xas paper: https://arxiv.org/abs/2506.15784
+    # https://arxiv.org/abs/2506.15784
     hamiltonian_data = [
         (
             8,
@@ -101,7 +101,7 @@ class TestTrotterCDF:
     def test_resource_trotter_cdf(
         self, num_orbitals, num_fragments, num_steps, order, expected_res
     ):
-        """Test the ResourceTrotterCDF class for compressed double factorization"""
+        """Test the ResourceTrotterCDF class for correct resources"""
 
         compact_ham = plre.CompactHamiltonian.cdf(
             num_orbitals=num_orbitals, num_fragments=num_fragments
@@ -128,6 +128,8 @@ class TestTrotterTHC:
     """Tests for ResourceTrotterCDF class"""
 
     # Expected resources were obtained manually
+    # based on https://arxiv.org/abs/2407.04432
+
     hamiltonian_data = [
         (
             8,
@@ -177,7 +179,7 @@ class TestTrotterTHC:
         "num_orbitals, tensor_rank, num_steps, order, expected_res", hamiltonian_data
     )
     def test_resource_trotter_thc(self, num_orbitals, tensor_rank, num_steps, order, expected_res):
-        """Test the ResourceTrotterTHC class for tensor hypercontraction"""
+        """Test the ResourceTrotterTHC class for correct resources"""
         compact_ham = plre.CompactHamiltonian.thc(
             num_orbitals=num_orbitals, tensor_rank=tensor_rank
         )
