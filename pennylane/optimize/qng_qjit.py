@@ -52,13 +52,53 @@ class QNGOptimizerQJIT:
 
     **Example:**
 
-    Consider the following QNode encoding a simple objective function as an example:
+    Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
+    To make the optimization faster, the entire workflow can be just-in-time compiled using
+    the ``qml.qjit`` decorator:
 
     .. code-block:: python
 
         import pennylane as qml
+        import jax.numpy as jnp
 
-        dev = qml.device("lightning.qubit", wires=2)
+        @qml.qjit(autograph=True)
+        def workflow():
+            dev = qml.device("lightning.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=1)
+                return qml.expval(qml.Z(0) + qml.X(1))
+
+            opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+
+            params = jnp.array([0.1, 0.2])
+            state = opt.init(params)
+            for _ in range(100):
+                params, state = opt.step(circuit, params, state)
+
+            return params
+
+    >>> workflow()
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+
+    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
+
+    Using the ``jax.jit`` decorator for the entire workflow is not recommended since it
+    may lead to a significative compilation time and no runtime benefits.
+    However, ``jax.jit`` can be used with the ``default.qubit`` device to just-in-time
+    compile the ``step`` (or ``step_and_cost``) method of the optimizer.
+    For example:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import jax.numpy as jnp
+        import jax
+        from functools import partial
+
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(params):
@@ -66,16 +106,8 @@ class QNGOptimizerQJIT:
             qml.RY(params[1], wires=1)
             return qml.expval(qml.Z(0) + qml.X(1))
 
-    To make the optimization loop faster, the ``step`` (or ``step_and_cost``) method can be just-in-time
-    compiled using ``qml.qjit`` (or ``jax.jit``, much more efficient for the ``default.qubit`` device):
-
-    .. code-block:: python
-
-        import jax.numpy as jnp
-        from functools import partial
-
         opt = qml.QNGOptimizerQJIT(stepsize=0.2)
-        step = qml.qjit(partial(opt.step, circuit))
+        step = jax.jit(partial(opt.step, circuit))
 
         params = jnp.array([0.1, 0.2])
         state = opt.init(params)
