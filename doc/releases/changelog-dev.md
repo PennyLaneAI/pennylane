@@ -752,6 +752,50 @@
   possible implementation of the parity matrix that respects the connectivity.
   [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
+* `pennylane.labs.QubitManager`, `pennylane.labs.AllocWires`, and `pennylane.labs.FreeWires` classes have been added to track and manage auxilliary qubits.
+  [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
+* `pennylane.labs.map_to_resource_op` function has been added to map PennyLane Operations to their resource equivalents.
+  [(#7434)](https://github.com/PennyLaneAI/pennylane/pull/7434)
+
+* Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
+  [(#7406)](https://github.com/PennyLaneAI/pennylane/pull/7406)
+  
+* `pennylane.labs.CompressedResourceOp` class has been added to store information about the operator type and parameters.
+  [(#7408)](https://github.com/PennyLaneAI/pennylane/pull/7408)
+
+* Added the base `pennylane.labs.ResourceOperator` class which will be used to implement all quantum 
+  operators for resource estimation.
+  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
+
+* Added the `pennylane.labs.estimate_resources` function which will be used to perform resource
+  estimation on circuits, `pennylane.labs.ResourceOperator` and `pennylane.labs.Resources` objects.
+  [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for non-parametric single qubit gates.
+  [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for parametric single qubit gates.
+  [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for controlled gates.
+  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for symbolic operators of gates.
+  [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for multi-qubit parametic gates.
+  [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
+
+* Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
+  supporting compact hamiltonian development.
+  [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
@@ -1163,6 +1207,7 @@ Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
@@ -1179,6 +1224,7 @@ Mudit Pandey,
 Andrija Paurevic,
 Justin Pickering,
 Shuli Shu,
+Jay Soni,
 Kalman Szenes,
 Marc Vandelle,
 David Wierichs,
