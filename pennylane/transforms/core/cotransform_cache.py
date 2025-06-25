@@ -18,7 +18,7 @@ from functools import partial
 from typing import Optional
 
 from pennylane import math
-from pennylane._grad import jacobian as pl_jacobian
+from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -34,7 +34,7 @@ def _numpy_jac(*_, **__) -> TensorLike:
 def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args) and argnums is None:
         raise QuantumFunctionError("No trainable parameters.")
-    return pl_jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+    return autograd_jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
