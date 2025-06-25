@@ -2,9 +2,8 @@ from itertools import permutations
 
 import pennylane as qml
 from pennylane.transforms.decompositions.relative_phases import (
-    replace_iX_gate,
-    replace_multi_controlled_iX_gate,
     replace_relative_phase_toffoli,
+    replace_controlled_iX_gate,
 )
 
 
@@ -18,7 +17,7 @@ class TestMultiControlledPhaseXGate:
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 20
@@ -60,7 +59,7 @@ class TestMultiControlledPhaseXGate:
             qml.PauliX(wires=3)
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 17
@@ -89,7 +88,7 @@ class TestMultiControlledPhaseXGate:
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 11
@@ -115,7 +114,7 @@ class TestMultiControlledPhaseXGate:
                 qml.MultiControlledX(wires=[first, second, third, fourth])
                 return qml.expval(qml.Z(first))
 
-            transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+            transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
             tape = qml.tape.make_qscript(transformed_qfunc)()
             assert len(tape.operations) == 10
@@ -139,7 +138,7 @@ class TestMultiControlledPhaseXGate:
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 11
@@ -163,7 +162,7 @@ class TestMultiControlledPhaseXGate:
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 10
@@ -191,7 +190,7 @@ class TestPhaseXGate:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 20
@@ -233,7 +232,7 @@ class TestPhaseXGate:
             qml.PauliX(wires=3)
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 15
@@ -260,7 +259,7 @@ class TestPhaseXGate:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 11
@@ -286,7 +285,7 @@ class TestPhaseXGate:
                 qml.Toffoli(wires=[first, second, third])
                 return qml.expval(qml.Z(first))
 
-            transformed_qfunc = replace_iX_gate(qfunc)
+            transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
             tape = qml.tape.make_qscript(transformed_qfunc)()
             assert len(tape.operations) == 10
@@ -310,7 +309,7 @@ class TestPhaseXGate:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 11
@@ -334,7 +333,7 @@ class TestPhaseXGate:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.Z(0))
 
-        transformed_qfunc = replace_iX_gate(qfunc)
+        transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 10

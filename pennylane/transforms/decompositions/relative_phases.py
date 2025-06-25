@@ -50,36 +50,6 @@ relative_phases_patterns = [
         qml.adjoint(qml.T(3)),
         qml.Hadamard(3),
     ],
-    [
-        qml.ctrl(qml.S(1), control=0),
-        qml.Toffoli([0, 1, 2]),
-        # ------------
-        qml.Hadamard(2),
-        qml.CNOT([0, 2]),
-        qml.adjoint(qml.T(2)),
-        qml.CNOT([1, 2]),
-        qml.T(2),
-        qml.CNOT([0, 2]),
-        qml.adjoint(qml.T(2)),
-        qml.CNOT([1, 2]),
-        qml.T(2),
-        qml.Hadamard(2),
-    ],
-    [
-        qml.ctrl(qml.S(2), control=[0, 1]),
-        qml.MultiControlledX([0, 1, 2, 3]),
-        # ------------
-        qml.Hadamard(3),
-        qml.MultiControlledX([0, 1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([2, 3]),
-        qml.T(3),
-        qml.MultiControlledX([0, 1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([2, 3]),
-        qml.T(3),
-        qml.Hadamard(3),
-    ],
 ]
 
 
@@ -168,88 +138,10 @@ def replace_relative_phase_toffoli(
 
 
 @transform
-def replace_iX_gate(
-    tape: QuantumScript,
+def replace_controlled_iX_gate(
+    tape: QuantumScript, num_controls = 1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace iX gates. An iX gate is a CS and a Toffoli.
-
-    Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
-
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-
-    **Example**
-
-    The transform can be applied on :class:`QNode` directly.
-
-    .. code-block:: python
-
-        @replace_iX_gate
-        @qml.qnode(device=dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
-
-            # begin iX gate
-
-            qml.ctrl(qml.S(wires=[1]), control=[0])
-            qml.Toffoli(wires=[0, 1, 2])
-
-            # end iX gate
-
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
-            return qml.expval(qml.Z(0))
-
-    The relative iX gate (CS, Toffoli) is then replaced before execution.
-
-    .. details::
-        :title: Usage Details
-
-        Consider the following quantum function:
-
-        .. code-block:: python
-
-            def qfunc(x, y):
-                qml.ctrl(qml.S(wires=[1]), control=[0])
-                qml.Toffoli(wires=[0, 1, 2])
-                return qml.expval(qml.Z(0))
-
-        The circuit before decomposition:
-
-        >>> dev = qml.device('default.qubit', wires=4)
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)())
-            0: ─╭●─╭●─┤  <Z>
-            1: ─╰S─├●─┤
-            2: ────╰X─┤
-
-        We can replace the iX gate by running the transform:
-
-        >>> lowered_qfunc = replace_iX_gate(qfunc)
-        >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
-        >>> print(qml.draw(lowered_qnode)())
-
-        0: ──────────────╭●───────────╭●────┤  <Z>
-        1: ────────╭●────│──────╭●────│─────┤
-        2: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
-
-    """
-    pattern_ops = relative_phases_patterns[1]
-    pattern = QuantumTape(pattern_ops)
-    return pattern_matching_optimization(tape, pattern_tapes=[pattern])
-
-
-@transform
-def replace_multi_controlled_iX_gate(
-    tape: QuantumScript,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace multi-controlled iX gates. An iX gate is a CS and a Toffoli.
+    """Quantum transform to replace controlled iX gates. An iX gate is a CS and a Toffoli.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -320,6 +212,22 @@ def replace_multi_controlled_iX_gate(
         3: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
 
     """
-    pattern_ops = relative_phases_patterns[2]
+    if num_controls < 1:
+        raise ValueError("There must be at least one control wire for the controlled iX gate decomposition.")
+    pattern_ops = [
+        qml.ctrl(qml.S(num_controls), control=list(range(num_controls))),
+        qml.MultiControlledX(list(range(num_controls + 2))),
+        # ------------
+        qml.Hadamard(num_controls + 1),
+        qml.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qml.adjoint(qml.T(num_controls + 1)),
+        qml.CNOT([num_controls, num_controls + 1]),
+        qml.T(num_controls + 1),
+        qml.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qml.adjoint(qml.T(num_controls + 1)),
+        qml.CNOT([num_controls, num_controls + 1]),
+        qml.T(num_controls + 1),
+        qml.Hadamard(num_controls + 1),
+    ]
     pattern = QuantumTape(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
