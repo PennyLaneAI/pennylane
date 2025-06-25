@@ -31,6 +31,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 from functools import singledispatch
 from typing import Union
 
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -123,6 +124,12 @@ def _add_obj(
     obj, layer_str: list[str], config, tape_cache=None, skip_grouping_symbols=False
 ) -> list[str]:
     raise NotImplementedError(f"unable to draw object {obj}")
+
+
+@_add_obj.register(Allocate)
+@_add_obj.register(Deallocate)
+def _(obj, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    return layer_str
 
 
 @_add_obj.register
