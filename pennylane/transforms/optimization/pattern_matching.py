@@ -1559,7 +1559,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "SWAP": 6,
                 "CSWAP": 63,
                 "Toffoli": 21,
-                "C(S)": 4
+                "C(S)": 4,
             }
 
     def _pred_block(self, circuit_sublist, index):

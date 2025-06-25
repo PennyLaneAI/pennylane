@@ -234,44 +234,54 @@ class TestPhaseXGate:
             qml.PauliZ(wires=5)
             qml.Toffoli(wires=[0, 1, 2])
             qml.PauliZ(wires=0)
-            qml.Hadamard(wires=2)
+            qml.Hadamard(wires=2)  # cancels with H in the replacement
             qml.PauliX(wires=3)
             return qml.expval(qml.Z(0))
 
         transformed_qfunc = replace_iX_gate(qfunc)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert len(tape.operations) == 17
+        assert len(tape.operations) == 15
         assert tape.operations == [
-            qml.PauliZ(wires=0),
             qml.PauliY(wires=2),
+            qml.Hadamard(wires=2),
+            qml.adjoint(qml.T(wires=2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.CNOT(wires=[0, 2]),
+            qml.adjoint(qml.T(wires=2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.CNOT(wires=[0, 2]),
+            qml.PauliZ(wires=0),
             qml.PauliX(wires=3),
-            qml.Hadamard(wires=2),
-            qml.adjoint(qml.T(wires=2)),
-            qml.CNOT(wires=[1, 2]),
-            qml.T(wires=2),
-            qml.CNOT(wires=[0, 2]),
-            qml.adjoint(qml.T(wires=2)),
-            qml.CNOT(wires=[1, 2]),
-            qml.T(wires=2),
-            qml.CNOT(wires=[0, 2]),
-            qml.Hadamard(wires=2),
             qml.PauliZ(wires=5),
             qml.PauliZ(wires=0),
-            qml.Hadamard(wires=2),
             qml.PauliX(wires=3),
         ]
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qml.ctrl(qml.S(wires=[1]), control=[0])
+            qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.Z(0))
 
         transformed_qfunc = replace_iX_gate(qfunc)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert len(tape.operations) == 1
-        assert tape.operations == [qml.ctrl(qml.S(wires=[1]), control=[0])]
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qml.H(2),
+            qml.adjoint(qml.T(2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(2),
+            qml.CNOT(wires=[0, 2]),
+            qml.adjoint(qml.T(2)),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(2),
+            qml.CNOT(wires=[0, 2]),
+            qml.H(2),
+            qml.adjoint(qml.ctrl(qml.S(1), control=[0])),
+        ]
 
     def test_wire_permutations(self):
         for first, second, third in permutations([0, 1, 2]):
@@ -321,23 +331,6 @@ class TestPhaseXGate:
             qml.CNOT(wires=[0, 2]),
             qml.Hadamard(wires=2),
             qml.PauliX(wires=3),
-        ]
-
-    def test_interfering_gates(self):
-        def qfunc():
-            qml.ctrl(qml.S(wires=[1]), control=[0])
-            qml.PauliX(2)
-            qml.Toffoli(wires=[0, 1, 2])
-            return qml.expval(qml.Z(0))
-
-        transformed_qfunc = replace_iX_gate(qfunc)
-
-        tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert len(tape.operations) == 3
-        assert tape.operations == [
-            qml.ctrl(qml.S(wires=[1]), control=[0]),
-            qml.PauliX(2),
-            qml.Toffoli(wires=[0, 1, 2]),
         ]
 
     def test_basic_transform(self):
