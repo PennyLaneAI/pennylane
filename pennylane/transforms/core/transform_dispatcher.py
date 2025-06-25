@@ -23,12 +23,9 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import capture, math
+from pennylane.exceptions import TransformError
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
-
-
-class TransformError(Exception):
-    """Raised when there is an error with the transform logic."""
 
 
 def _create_plxpr_fallback_transform(tape_transform):

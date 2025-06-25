@@ -18,11 +18,12 @@ from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union, overload
 
+from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
+from .transform_dispatcher import TransformContainer, TransformDispatcher
 
 
 def _batch_postprocessing(
