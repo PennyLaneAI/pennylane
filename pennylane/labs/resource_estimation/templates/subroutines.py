@@ -261,7 +261,6 @@ class ResourceOutMultiplier(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * a_num_qubits (int): the size of the first input register
                 * b_num_qubits (int): the size of the second input register
-
         """
         return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
 
