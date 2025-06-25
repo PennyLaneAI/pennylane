@@ -859,7 +859,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Moves private code in the `TransformProgram` onto the `CotransformCache` class.
+* Move private code in the `TransformProgram` onto the `CotransformCache` class.
   [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
 
 * Improve type hinting in the `workflow` module.
