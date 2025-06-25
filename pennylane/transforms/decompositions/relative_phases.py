@@ -17,10 +17,6 @@ Transformations fist published in:
 
 Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
 Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. doi:10.1103/PhysRevA.104.052602.
-
-
-TODO: refactor to pattern library that uses pattern matching to implement a compiler pass that lowers all
-these phase gates
 """
 
 import pennylane as qml

@@ -644,6 +644,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
     control_base = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
+        "CCZ": "PauliZ",
         "CY": "PauliY",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
@@ -652,6 +653,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         "CRY": "RY",
         "CRZ": "RZ",
         "CRot": "Rot",
+        "C(S)": "S",
         "MultiControlledX": "PauliX",
         "ControlledOperation": "ControlledOperation",
     }
