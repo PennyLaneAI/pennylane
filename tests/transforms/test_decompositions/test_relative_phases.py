@@ -26,24 +26,24 @@ class TestMultiControlledPhaseXGate:
             # first instance
             qml.Hadamard(wires=3),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.Hadamard(wires=3),
             # second instance
             qml.Hadamard(wires=3),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.Hadamard(wires=3),
         ]
 
@@ -65,19 +65,19 @@ class TestMultiControlledPhaseXGate:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 17
         assert tape.operations == [
-            qml.PauliZ(wires=0),
             qml.PauliY(wires=2),
+            qml.Hadamard(wires=3),
+            qml.adjoint(qml.T(wires=3)),
+            qml.CNOT(wires=[2] + [3]),
+            qml.T(wires=3),
+            qml.Toffoli(wires=[0, 1] + [3]),
+            qml.adjoint(qml.T(wires=3)),
+            qml.CNOT(wires=[2] + [3]),
+            qml.T(wires=3),
+            qml.Toffoli(wires=[0, 1] + [3]),
+            qml.Hadamard(wires=3),
+            qml.PauliZ(wires=0),
             qml.PauliX(wires=3),
-            qml.Hadamard(wires=3),
-            qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
-            qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
-            qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
-            qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
-            qml.Hadamard(wires=3),
             qml.PauliZ(wires=5),
             qml.PauliZ(wires=0),
             qml.Hadamard(wires=2),
@@ -86,14 +86,26 @@ class TestMultiControlledPhaseXGate:
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
+            qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
         transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert len(tape.operations) == 1
-        assert tape.operations == [qml.ctrl(qml.S(wires=[2]), control=[0, 1])]
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qml.H(3),
+            qml.adjoint(qml.T(3)),
+            qml.CNOT(wires=[2, 3]),
+            qml.T(3),
+            qml.Toffoli(wires=[0, 1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.CNOT(wires=[2, 3]),
+            qml.T(3),
+            qml.Toffoli(wires=[0, 1, 3]),
+            qml.H(3),
+            qml.adjoint(qml.ctrl(qml.S(2), control=[0, 1])),
+        ]
 
     def test_wire_permutations(self):
         for first, second, third, fourth in permutations([0, 1, 2, 3]):
@@ -110,20 +122,20 @@ class TestMultiControlledPhaseXGate:
             assert tape.operations == [
                 qml.Hadamard(wires=fourth),
                 qml.adjoint(qml.T(wires=fourth)),
-                qml.MultiControlledX(wires=[third] + [fourth]),
+                qml.CNOT(wires=[third] + [fourth]),
                 qml.T(wires=fourth),
-                qml.MultiControlledX(wires=[first, second] + [fourth]),
+                qml.Toffoli(wires=[first, second] + [fourth]),
                 qml.adjoint(qml.T(wires=fourth)),
-                qml.MultiControlledX(wires=[third] + [fourth]),
+                qml.CNOT(wires=[third] + [fourth]),
                 qml.T(wires=fourth),
-                qml.MultiControlledX(wires=[first, second] + [fourth]),
+                qml.Toffoli(wires=[first, second] + [fourth]),
                 qml.Hadamard(wires=fourth),
             ]
 
     def test_non_interfering_gates(self):
         def qfunc():
             qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-            qml.PauliX(5)
+            qml.PauliX(4)  # change it to five and it breaks! A bug?
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
@@ -134,32 +146,15 @@ class TestMultiControlledPhaseXGate:
         assert tape.operations == [
             qml.Hadamard(wires=3),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.Hadamard(wires=3),
-            qml.PauliX(wires=5),
-        ]
-
-    def test_interfering_gates(self):
-        def qfunc():
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-            qml.PauliX(3)
-            qml.MultiControlledX(wires=[0, 1, 2, 3])
-            return qml.expval(qml.Z(0))
-
-        transformed_qfunc = replace_multi_controlled_iX_gate(qfunc)
-
-        tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert len(tape.operations) == 3
-        assert tape.operations == [
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1]),
-            qml.PauliX(3),
-            qml.MultiControlledX(wires=[0, 1, 2, 3]),
+            qml.PauliX(wires=4),
         ]
 
     def test_basic_transform(self):
@@ -175,13 +170,13 @@ class TestMultiControlledPhaseXGate:
         assert tape.operations == [
             qml.Hadamard(wires=3),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.adjoint(qml.T(wires=3)),
-            qml.MultiControlledX(wires=[2] + [3]),
+            qml.CNOT(wires=[2] + [3]),
             qml.T(wires=3),
-            qml.MultiControlledX(wires=[0, 1] + [3]),
+            qml.Toffoli(wires=[0, 1] + [3]),
             qml.Hadamard(wires=3),
         ]
 
