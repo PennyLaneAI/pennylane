@@ -125,6 +125,7 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+<<<<<<< HEAD
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
 
@@ -135,6 +136,8 @@ Compact Hamiltonian Class:
     :toctree: api
 
     ~CompactHamiltonian
+=======
+>>>>>>> origin/re_new_feature_branch
 
 """
 
@@ -210,7 +213,10 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+<<<<<<< HEAD
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
+=======
+>>>>>>> origin/re_new_feature_branch
 )
