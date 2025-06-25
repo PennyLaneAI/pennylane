@@ -1,3 +1,4 @@
+from functools import partial
 from itertools import permutations
 
 import pennylane as qml
@@ -109,12 +110,14 @@ class TestMultiControlledPhaseXGate:
     def test_wire_permutations(self):
         for first, second, third, fourth in permutations([0, 1, 2, 3]):
 
-            def qfunc():
-                qml.ctrl(qml.S(wires=[third]), control=[first, second])
-                qml.MultiControlledX(wires=[first, second, third, fourth])
-                return qml.expval(qml.Z(first))
+            def qfunc(one, two, three, four):
+                qml.ctrl(qml.S(wires=[three]), control=[one, two])
+                qml.MultiControlledX(wires=[one, two, three, four])
+                return qml.expval(qml.Z(one))
 
-            transformed_qfunc = replace_controlled_iX_gate(qfunc, 2)
+            func = partial(qfunc, first, second, third, fourth)
+
+            transformed_qfunc = replace_controlled_iX_gate(func, 2)
 
             tape = qml.tape.make_qscript(transformed_qfunc)()
             assert len(tape.operations) == 10
@@ -280,12 +283,14 @@ class TestPhaseXGate:
     def test_wire_permutations(self):
         for first, second, third in permutations([0, 1, 2]):
 
-            def qfunc():
-                qml.ctrl(qml.S(wires=[second]), control=[first])
-                qml.Toffoli(wires=[first, second, third])
-                return qml.expval(qml.Z(first))
+            def qfunc(one, two, three):
+                qml.ctrl(qml.S(wires=[two]), control=[one])
+                qml.Toffoli(wires=[one, two, three])
+                return qml.expval(qml.Z(one))
 
-            transformed_qfunc = replace_controlled_iX_gate(qfunc, 1)
+            func = partial(qfunc, one=first, two=second, three=third)
+
+            transformed_qfunc = replace_controlled_iX_gate(func, 1)
 
             tape = qml.tape.make_qscript(transformed_qfunc)()
             assert len(tape.operations) == 10
@@ -494,14 +499,16 @@ class TestRelativePhaseToffoli:
     def test_wire_permutations(self):
         for first, second, third, fourth in permutations([0, 1, 2, 3]):
 
-            def qfunc():
-                qml.CCZ(wires=[first, second, fourth])
-                qml.ctrl(qml.S(wires=[second]), control=[first])
-                qml.ctrl(qml.S(wires=[third]), control=[first, second])
-                qml.MultiControlledX(wires=[first, second, third, fourth])
-                return qml.expval(qml.Z(first))
+            def qfunc(one, two, three, four):
+                qml.CCZ(wires=[one, two, four])
+                qml.ctrl(qml.S(wires=[two]), control=[one])
+                qml.ctrl(qml.S(wires=[three]), control=[one, two])
+                qml.MultiControlledX(wires=[one, two, three, four])
+                return qml.expval(qml.Z(one))
 
-            transformed_qfunc = replace_relative_phase_toffoli(qfunc)
+            func = partial(qfunc, first, second, third, fourth)
+
+            transformed_qfunc = replace_relative_phase_toffoli(func)
 
             tape = qml.tape.make_qscript(transformed_qfunc)()
             assert len(tape.operations) == 18
