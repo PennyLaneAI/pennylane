@@ -17,11 +17,14 @@ per normal modes on a grid."""
 import numpy as np
 import scipy as sp
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import pyscf
 from pyscf import scf, gto
 from pyscf.hessian import thermo
 
-from posym import SymmetryNormalModes
+# from posym import SymmetryNormalModes
 
 from scipy.spatial.transform import Rotation
 
@@ -37,6 +40,16 @@ from pennylane.qchem.vibrational.vibrational_class import (
     VibrationalPES,
     optimize_geometry,
 )
+
+
+def _import_posym():
+    """Import sklearn."""
+    try:
+        import posym
+    except ImportError as Error:
+        raise ImportError("This feature requires posym.") from Error
+
+    return posym
 
 
 # constants
@@ -115,33 +128,34 @@ def _calculate_normal_modes(mol, method="RHF", functional=None):
     if np.any(frequencies.imag != 0):
         raise ValueError(f"Found imaginary frequencies.")
 
-    if mol.topgroup == "Coov":  # use maximal abelian subgroup
-        mol.topgroup = "C2v"
-        warnings.warn(
-            f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-        )
+    # if mol.topgroup == "Coov":  # use maximal abelian subgroup
+    #     mol.topgroup = "C2v"
+    #     warnings.warn(
+    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
+    #     )
+    #
+    # elif mol.topgroup == "Dooh":  # use maximal abelian subgroup
+    #     mol.topgroup = "d2h"
+    #     warnings.warn(
+    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
+    #     )
 
-    elif mol.topgroup == "Dooh":  # use maximal abelian subgroup
-        mol.topgroup = "d2h"
-        warnings.warn(
-            f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-        )
-
-    # Analyze symmetry of normal modes
-    sym_modes_gs = SymmetryNormalModes(
-        group=mol.topgroup,
-        coordinates=[atom[1] for atom in mol._atom],
-        modes=vib_results["norm_mode"],
-        symbols=[atom[0] for atom in mol._atom],
-    )
-    mode_irreps = []
-    for i in range(len(frequencies)):
-        mode_vals = sym_modes_gs.get_state_mode(i).get_ir_representation().values
-        irrep_idx = np.argmax(mode_vals)
-        mode_irrep = sym_modes_gs.get_state_mode(i).get_ir_representation().index[irrep_idx]
-        mode_irreps.append(mode_irrep)
-
-    vib_results["irreps"] = mode_irreps
+    # # Analyze symmetry of normal modes
+    # sym_modes_gs = posym.SymmetryNormalModes(
+    #     group=mol.topgroup,
+    #     coordinates=[atom[1] for atom in mol._atom],
+    #     modes=vib_results["norm_mode"],
+    #     symbols=[atom[0] for atom in mol._atom],
+    # )
+    # mode_irreps = []
+    # for i in range(len(frequencies)):
+    #     mode_vals = sym_modes_gs.get_state_mode(i).get_ir_representation().values
+    #     irrep_idx = np.argmax(mode_vals)
+    #     mode_irrep = sym_modes_gs.get_state_mode(i).get_ir_representation().index[irrep_idx]
+    #     mode_irreps.append(mode_irrep)
+    #
+    # vib_results["irreps"] = mode_irreps
+    vib_results["irreps"] = []
 
     return vib_results
 
@@ -521,8 +535,6 @@ def vibronic_pes(
         else:
             mol_eq = molecule
 
-        scf_result = _single_point(mol_eq, method)
-
         geom = [
             [symbol, tuple(np.array(mol_eq.coordinates)[i])]
             for i, symbol in enumerate(mol_eq.symbols)
@@ -540,29 +552,29 @@ def vibronic_pes(
 
         geometry_1d = _generate_1d_grid(freqs, vectors, eq_geometry, grid)
 
-        geometry_2d = _generate_2d_grid(freqs, vectors, eq_geometry, grid)
-
-        geometry_3d = _generate_3d_grid(freqs, vectors, eq_geometry, grid)
+        # geometry_2d = _generate_2d_grid(freqs, vectors, eq_geometry, grid)
+        #
+        # geometry_3d = _generate_3d_grid(freqs, vectors, eq_geometry, grid)
 
         energy_1 = []
         for geometry_point in geometry_1d:
             new_coords = geometry_point["coordinates"]
             energy_1.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
 
-        energy_2 = []
-        for geometry_point in geometry_2d:
-            new_coords = geometry_point["coordinates"]
-            energy_2.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
-
-        energy_3 = []
-        for geometry_point in geometry_3d:
-            new_coords = geometry_point["coordinates"]
-            energy_3.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
+        # energy_2 = []
+        # for geometry_point in geometry_2d:
+        #     new_coords = geometry_point["coordinates"]
+        #     energy_2.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
+        #
+        # energy_3 = []
+        # for geometry_point in geometry_3d:
+        #     new_coords = geometry_point["coordinates"]
+        #     energy_3.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
 
         freqs = freqs * CM_TO_AU
 
         return VibrationalPES(
             freqs,
             grid,
-            pes_data=[energy_1, energy_2, energy_3],
+            pes_data=[energy_1],
         )
