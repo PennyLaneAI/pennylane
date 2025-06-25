@@ -14,7 +14,6 @@
   ```python
   import pennylane as qml
   import jax.numpy as jnp
-  from functools import partial
 
   @qml.qjit(autograph=True)
   def workflow():
@@ -33,12 +32,12 @@
       for _ in range(100):
           params, state = opt.step(circuit, params, state)
   
-      return circuit(params)
+      return params
   ```
 
   ```pycon
   >>> workflow()
-  Array(-2., dtype=float64)
+  Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
