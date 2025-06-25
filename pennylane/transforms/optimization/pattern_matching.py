@@ -1595,6 +1595,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
             else:
                 # cost depends on number of controls, the CNOT cost scales as 4n^2
+                # see exercise 4.29 in Nielsen and Chuang
                 cost_left += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
 
         cost_right = 0
