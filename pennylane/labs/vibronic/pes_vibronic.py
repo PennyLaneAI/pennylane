@@ -21,10 +21,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pyscf
-from pyscf import scf, gto
 from pyscf.hessian import thermo
-
-# from posym import SymmetryNormalModes
 
 from scipy.spatial.transform import Rotation
 
@@ -233,16 +230,10 @@ def _harmonic_analysis(mol_eq, rotate=True):
     if rotate:
         mol_eq = _rotate_molecule(mol_eq)
 
-    # Calculate normal modes
     vib_results = _calculate_normal_modes(mol_eq)
 
-    # Extract results
     frequencies = vib_results["freq_wavenumber"]
     normal_modes = vib_results["norm_mode"]
-
-    # TODO: remove if not needed
-    reduced_masses = vib_results["reduced_mass"]
-    irreps = vib_results["irreps"]
 
     return frequencies, normal_modes
 
