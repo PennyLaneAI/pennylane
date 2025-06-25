@@ -16,26 +16,29 @@
   import jax.numpy as jnp
   from functools import partial
 
-  dev = qml.device("lightning.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(params):
-      qml.RX(params[0], wires=0)
-      qml.RY(params[1], wires=1)
-      return qml.expval(qml.Z(0) + qml.X(1))
-
-  opt = qml.QNGOptimizerQJIT(stepsize=0.2)
-  step = qml.qjit(partial(opt.step, circuit))
-
-  params = jnp.array([0.1, 0.2])
-  state = opt.init(params)
-  for _ in range(100):
-      params, state = step(params, state)
+  @qml.qjit(autograph=True)
+  def workflow():
+      dev = qml.device("lightning.qubit", wires=2)
+  
+      @qml.qnode(dev)
+      def circuit(params):
+          qml.RX(params[0], wires=0)
+          qml.RY(params[1], wires=1)
+          return qml.expval(qml.Z(0) + qml.X(1))
+  
+      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  
+      params = jnp.array([0.1, 0.2])
+      state = opt.init(params)
+      for _ in range(100):
+          params, state = opt.step(circuit, params, state)
+  
+      return circuit(params)
   ```
 
   ```pycon
-  >>> params
-    Array([ 3.14159265, -1.57079633], dtype=float64)
+  >>> workflow()
+  Array(-2., dtype=float64)
   ```
 
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
