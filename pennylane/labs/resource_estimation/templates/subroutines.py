@@ -16,7 +16,6 @@ import math
 from collections import defaultdict
 from typing import Dict
 
-import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import (AllocWires,
@@ -259,6 +258,7 @@ class ResourceOutMultiplier(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * a_num_qubits (int): the size of the first input register
                 * b_num_qubits (int): the size of the second input register
+
         """
         return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
 
@@ -359,6 +359,7 @@ class ResourceSemiAdder(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * max_register_size (int): the size of the larger of the two registers being added together
+
         """
         return {"max_register_size": self.max_register_size}
 
@@ -532,6 +533,7 @@ class ResourceBasisRotation(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the number of columns of the matrix.
+
         """
         return {"dim_N": self.num_wires}
 
@@ -712,6 +714,7 @@ class ResourceSelect(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
+
         """
         return {"cmpr_ops": self.cmpr_ops}
 
@@ -1066,6 +1069,7 @@ class ResourceQROM(ResourceOperator):
                 * select_swap_depth (Union[int, None], optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
+
         """
 
         return {
