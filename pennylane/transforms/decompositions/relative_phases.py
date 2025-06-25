@@ -76,7 +76,7 @@ def replace_relative_phase_toffoli(
 
         .. code-block:: python
 
-            def qfunc(x, y):
+            def qfunc():
                 qml.CCZ(wires=[0, 1, 3])
                 qml.ctrl(qml.S(wires=[1]), control=[0])
                 qml.ctrl(qml.S(wires=[2]), control=[0, 1])
@@ -184,7 +184,7 @@ def replace_controlled_iX_gate(
 
         .. code-block:: python
 
-            def qfunc(x, y):
+            def qfunc():
                 qml.ctrl(qml.S(wires=[2]), control=[0, 1])
                 qml.MultiControlledX(wires=[0, 1, 2, 3])
                 return qml.expval(qml.Z(0))
