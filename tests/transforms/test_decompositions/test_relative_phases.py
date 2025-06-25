@@ -1,6 +1,8 @@
 from functools import partial
 from itertools import permutations
 
+import pytest
+
 import pennylane as qml
 from pennylane.transforms.decompositions.relative_phases import (
     replace_controlled_iX_gate,
@@ -9,6 +11,16 @@ from pennylane.transforms.decompositions.relative_phases import (
 
 
 class TestMultiControlledPhaseXGate:
+
+    def test_no_controls(self):
+        def qfunc():
+            qml.S(wires=[0])
+            qml.PauliX(wires=[0])
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(ValueError, match="There must be at least one control wire"):
+            transformed_qfunc = replace_controlled_iX_gate(qfunc, 0)
+            qml.tape.make_qscript(transformed_qfunc)()
 
     def test_multiple_matches(self):
         def qfunc():
