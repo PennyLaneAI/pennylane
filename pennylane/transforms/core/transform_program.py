@@ -426,7 +426,9 @@ class TransformProgram:
             classical_jacobians = []
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
-                    tape.trainable_params = argnums[tape_idx]
+                    tape.trainable_params = argnums[
+                        tape_idx
+                    ]  # pylint: disable=unsubscriptable-object
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
