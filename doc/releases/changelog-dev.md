@@ -57,6 +57,7 @@
   among the different multi-controlled operators, avoiding unnecessary recomputation.
   Check out the documentation for a thorough explanation.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
+  [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
 
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
