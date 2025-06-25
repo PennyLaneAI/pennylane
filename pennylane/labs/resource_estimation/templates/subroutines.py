@@ -16,7 +16,6 @@ import math
 from collections import defaultdict
 from typing import Dict
 
-import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
@@ -29,7 +28,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, protected-access
+# pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
 
 
 class ResourceOutOfPlaceSquare(ResourceOperator):
@@ -819,10 +818,7 @@ class ResourceQROM(ResourceOperator):
 
         if t_cost_func(w2) < t_cost_func(w1) and w2 >= 1:
             return w2
-        elif t_cost_func(w2) >= t_cost_func(w1) and w1 >= 1:
-            return w1
-        else:
-            return 1
+        return w1
 
     def __init__(
         self,
@@ -946,6 +942,7 @@ class ResourceQROM(ResourceOperator):
         select_swap_depth,
         clean,
     ):
+        r"""The resource decomposition for QROM controlled on a single wire."""
         W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
