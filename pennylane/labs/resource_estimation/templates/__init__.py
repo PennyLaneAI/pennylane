@@ -24,4 +24,3 @@ from .subroutines import (
 )
 from .compact_hamiltonian import CompactHamiltonian
 from .trotter import ResourceTrotterCDF, ResourceTrotterTHC
-
