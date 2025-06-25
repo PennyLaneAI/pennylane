@@ -439,7 +439,8 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return (node_1.op.name == node_2.op.name) and (node_1.op.data == node_2.op.data)
+    return ((node_1.op.name == node_2.op.name) and (node_1.op.data == node_2.op.data)
+            and len(node_1.wires) == len(node_2.wires))
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
@@ -503,9 +504,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                 for q in node_p.wires:
                     node_circuit_perm = control_permuted + circuit_target
                     index = node_p.wires.index(q)
-                    first_match_qubits_sub[q] = (
-                        node_circuit_perm[index] if index < len(node_circuit_perm) else -1
-                    )
+                    first_match_qubits_sub[q] = node_circuit_perm[index]
                 first_match_qubits.append(first_match_qubits_sub)
         # Symmetric target gate (target wires can be permuted) (For example CSWAP)
         else:
@@ -553,7 +552,7 @@ def _merge_first_match_and_permutation(list_first_match, permutation):
     counter = 0
 
     for elem in list_first_match:
-        if elem == -1 and counter < len(permutation):
+        if elem == -1:
             list_circuit.append(permutation[counter])
             counter = counter + 1
         else:
