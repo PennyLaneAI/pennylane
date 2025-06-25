@@ -1039,6 +1039,17 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+<<<<<<< snapshots-warning
+* Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
+may move operations across a `Snapshot`.
+  [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
+=======
+* In the :doc:`/development/guide/documentation` page, removed references to the outdated Sphinx and unsupported Python 3.8 version. 
+  This helps ensure contributors follow current standards and avoid compatibility issues.
+  [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
+
+>>>>>>> master
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
@@ -1208,6 +1219,7 @@ Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
 Jay Soni,
 Kalman Szenes,
