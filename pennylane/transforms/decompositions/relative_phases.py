@@ -24,34 +24,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms import pattern_matching_optimization, transform
 from pennylane.typing import PostprocessingFn
 
-relative_phases_patterns = [
-    [
-        qml.CCZ([0, 1, 3]),
-        qml.ctrl(qml.S(1), control=[0]),
-        qml.ctrl(qml.S(2), control=[0, 1]),
-        qml.MultiControlledX([0, 1, 2, 3]),
-        # ------------
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([2, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([0, 3]),
-        qml.T(3),
-        qml.CNOT([1, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.CNOT([0, 3]),
-        qml.Hadamard(3),
-        qml.T(3),
-        qml.CNOT([2, 3]),
-        qml.adjoint(qml.T(3)),
-        qml.Hadamard(3),
-    ],
-]
-
 
 @transform
 def replace_relative_phase_toffoli(
@@ -133,7 +105,31 @@ def replace_relative_phase_toffoli(
         3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
 
     """
-    pattern_ops = relative_phases_patterns[0]
+    pattern_ops = [
+        qml.CCZ([0, 1, 3]),
+        qml.ctrl(qml.S(1), control=[0]),
+        qml.ctrl(qml.S(2), control=[0, 1]),
+        qml.MultiControlledX([0, 1, 2, 3]),
+        # ------------
+        qml.Hadamard(3),
+        qml.T(3),
+        qml.CNOT([2, 3]),
+        qml.adjoint(qml.T(3)),
+        qml.Hadamard(3),
+        qml.T(3),
+        qml.CNOT([1, 3]),
+        qml.adjoint(qml.T(3)),
+        qml.CNOT([0, 3]),
+        qml.T(3),
+        qml.CNOT([1, 3]),
+        qml.adjoint(qml.T(3)),
+        qml.CNOT([0, 3]),
+        qml.Hadamard(3),
+        qml.T(3),
+        qml.CNOT([2, 3]),
+        qml.adjoint(qml.T(3)),
+        qml.Hadamard(3),
+    ]
     pattern = QuantumTape(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
 
