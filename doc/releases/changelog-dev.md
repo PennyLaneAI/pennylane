@@ -859,6 +859,8 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Moves private code in the `TransformProgram` onto the `CotransformCache` class.
+
 * Unpin `mitiq` in CI.
   [(#7742)](https://github.com/PennyLaneAI/pennylane/pull/7742)
 

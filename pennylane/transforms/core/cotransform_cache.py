@@ -197,12 +197,33 @@ class CotransformCache:
         classical_jacobian = _jac_map[interface](f, argnums, *self.args, **self.kwargs)
         return classical_jacobian
 
-    def get_argnums(self, transform: TransformContainer) -> Optional[list]:
-        """Calculate the trainable params from specified argnums"""
+    def get_argnums(self, transform: TransformContainer) -> Optional[set[int]]:
+        """Calculate the trainable params from the argnums in the transform.
+
+        .. code-block:: python
+
+            @qml.transforms.split_non_commuting
+            @qml.qnode(qml.device('default.qubit'))
+            def c(x, y):
+                qml.RX(x[0], 0)
+                qml.RX(y, 0)
+                qml.RY(x[1], 0)
+                return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+
+            c = qml.gradients.param_shift(c, argnums=[0])
+
+            ps_container = c.transform_program[-1]
+            x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
+
+            cc = CotransformCache(c, (x, y), {})
+
+        >>> cc.get_argnums(ps_container)
+        [{0, 2}, {0, 2}]
+
+        """
         transform_index = self._get_idx_for_transform(transform)
         interface = _get_interface(self.qnode, self.args, self.kwargs)
         if interface not in ["jax", "jax-jit"]:
-            print("interface: ", interface)
             return None
 
         if "argnum" in self._program[transform_index].kwargs:
@@ -217,13 +238,12 @@ class CotransformCache:
             raise QuantumFunctionError("No trainable parameters.")
 
         argnums = [0] if argnums is None else argnums
+        argnums = [argnums] if isinstance(argnums, int) else argnums
         # pylint: disable=protected-access
-        print(transform._use_argnum, transform.classical_cotransform, argnums)
         if (transform._use_argnum or transform.classical_cotransform) and argnums:
             subprogram = self._program[:transform_index]
             params = _jax_argnums_to_tape_trainable(
                 self.qnode, argnums, subprogram, self.args, self.kwargs
             )
-            print("here?")
             return [math.get_trainable_indices(param) for param in params]
         return None
