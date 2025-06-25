@@ -120,18 +120,18 @@ class ResourcePhaseGradient(ResourceOperator):
     r"""Resource class for the PhaseGradient gate.
 
     This operation prepares the phase gradient state
-    :math:`\frac{1}{\sqrt{2^b}} \cdot \Sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`.
+    :math:`\frac{1}{\sqrt{2^b}} \cdot \sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`.
 
     Args:
         num_wires (int): the number of qubits to prepare in the phase gradient state
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained by construction. The phase gradient state is defined as an
+        The phase gradient state is defined as an
         equal superposition of phaseshifts where each shift is progressively more precise. This
         is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
         qubit with progressively smaller rotation angle. The first three rotations can be compiled to
-        a Z-gate, S-gate nad a T-gate.
+        a Z-gate, S-gate and a T-gate.
 
     **Example**
 
@@ -168,7 +168,7 @@ class ResourcePhaseGradient(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits to prepare in the phase gradient state
@@ -180,8 +180,8 @@ class ResourcePhaseGradient(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, num_wires, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             num_wires (int): the number of qubits to prepare in the phase gradient state
@@ -191,7 +191,7 @@ class ResourcePhaseGradient(ResourceOperator):
             equal superposition of phaseshifts where each shift is progressively more precise. This
             is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
             qubit with progressively smaller rotation angle. The first three rotations can be compiled to
-            a Z-gate, S-gate nad a T-gate.
+            a Z-gate, S-gate and a T-gate.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -367,7 +367,7 @@ class ResourceSemiAdder(ResourceOperator):
     @classmethod
     def resource_rep(cls, max_register_size):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -420,8 +420,8 @@ class ResourceSemiAdder(ResourceOperator):
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, max_register_size, **kwargs
     ):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
@@ -437,7 +437,20 @@ class ResourceSemiAdder(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if (max_register_size > 2) and (ctrl_num_ctrl_wires == 1):
+        if max_register_size > 2:
+            gate_lst = []
+
+            if ctrl_num_ctrl_wires > 1:
+                mcx = resource_rep(
+                    re.ResourceMultiControlledX,
+                    {
+                        "num_ctrl_wires": ctrl_num_ctrl_wires,
+                        "num_ctrl_values": ctrl_num_ctrl_values,
+                    },
+                )
+                gate_lst.append(AllocWires(1))
+                gate_lst.append(GateCount(mcx, 2))
+
             cnot_count = (7 * (max_register_size - 2)) + 3
             elbow_count = 2 * (max_register_size - 1)
 
@@ -445,16 +458,21 @@ class ResourceSemiAdder(ResourceOperator):
             cnot = resource_rep(re.ResourceCNOT)
             l_elbow = resource_rep(re.ResourceTempAND)
             r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
-            gate_lst = [
-                AllocWires(max_register_size - 1),
-                GateCount(cnot, cnot_count),
-                GateCount(l_elbow, elbow_count),
-                GateCount(r_elbow, elbow_count),
-                FreeWires(max_register_size - 1),
-            ]
+            gate_lst.extend(
+                [
+                    AllocWires(max_register_size - 1),
+                    GateCount(cnot, cnot_count),
+                    GateCount(l_elbow, elbow_count),
+                    GateCount(r_elbow, elbow_count),
+                    FreeWires(max_register_size - 1),
+                ],
+            )
 
-            if ctrl_num_ctrl_values:
+            if ctrl_num_ctrl_wires > 1:
+                gate_lst.append(FreeWires(1))
+            elif ctrl_num_ctrl_values > 0:
                 gate_lst.append(GateCount(x, 2 * ctrl_num_ctrl_values))
+
             return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
         raise re.ResourcesNotDefined
@@ -471,8 +489,8 @@ class ResourceBasisRotation(ResourceOperator):
     Resources:
         The resources are obtained from the construction scheme given in `Optica, 3, 1460 (2016)
         <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_. Specifically,
-        the resources are given as :math:`dim_N * (dim_N - 1) / 2` instances of the
-        :class:`~.ResourceSingleExcitation` gate, and :math:`dim_N * (1 + (dim_N - 1) / 2)` instances
+        the resources are given as :math:`dim_N \times (dim_N - 1) / 2` instances of the
+        :class:`~.ResourceSingleExcitation` gate, and :math:`dim_N \times (1 + (dim_N - 1) / 2)` instances
         of the :class:`~.ResourcePhaseShift` gate.
 
     .. seealso:: :class:`~.BasisRotation`
@@ -571,7 +589,7 @@ class ResourceSelect(ResourceOperator):
         'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
         Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
-        where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
+        where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
         to select.
 
     .. seealso:: :class:`~.Select`
@@ -671,8 +689,8 @@ class ResourceSelect(ResourceOperator):
 
     @staticmethod
     def textbook_resources(cmpr_ops, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
@@ -742,7 +760,7 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
         num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-            :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+            :code:`(num_bitstrings \times size_bitstring) // 2`, which is half the dataset.
         clean (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code`True`.
         select_swap_depth (Union[int, None], optional): A natural number that determines if data
@@ -863,7 +881,7 @@ class ResourceQROM(ResourceOperator):
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
-            work qubits, where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is
+            work qubits, where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is
             the number of batches of unitaries to select.
         """
 
