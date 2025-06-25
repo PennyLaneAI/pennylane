@@ -118,8 +118,6 @@ Templates:
 .. autosummary::
     :toctree: api
 
-    ~ResourceTrotterCDF
-    ~ResourceTrotterTHC
     ~ResourceOutOfPlaceSquare
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
@@ -127,6 +125,8 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceTrotterCDF
+    ~ResourceTrotterTHC
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,6 +137,7 @@ Compact Hamiltonian Class:
     ~CompactHamiltonian
 
 """
+
 from .qubit_manager import AllocWires, FreeWires, QubitManager
 from .resources_base import Resources
 from .resource_operator import (
@@ -157,58 +158,59 @@ from .resource_tracking import (
     resource_config,
     estimate_resources,
 )
-from .templates import (
-    CompactHamiltonian,
-    ResourceBasisRotation,
-    ResourceOutMultiplier,
-    ResourceOutOfPlaceSquare,
-    ResourcePhaseGradient,
-    ResourceQROM,
-    ResourceSelect,
-    ResourceSemiAdder,
-    ResourceTrotterCDF,
-    ResourceTrotterTHC,
-)
 from .ops import (
-    ResourceAdjoint,
-    ResourceCCZ,
-    ResourceCH,
-    ResourceChangeBasisOp,
-    ResourceCNOT,
-    ResourceControlled,
-    ResourceControlledPhaseShift,
-    ResourceCRot,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCSWAP,
-    ResourceCY,
-    ResourceCZ,
-    ResourceGlobalPhase,
     ResourceHadamard,
-    ResourceIdentity,
-    ResourceIsingXX,
-    ResourceIsingXY,
-    ResourceIsingYY,
-    ResourceIsingZZ,
-    ResourceMultiControlledX,
-    ResourceMultiRZ,
-    ResourcePauliRot,
-    ResourcePhaseShift,
-    ResourcePow,
-    ResourceProd,
-    ResourcePSWAP,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
     ResourceS,
-    ResourceSingleExcitation,
-    ResourceSWAP,
-    ResourceT,
-    ResourceTempAND,
-    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceT,
+    ResourcePhaseShift,
+    ResourceGlobalPhase,
+    ResourceRot,
+    ResourceIdentity,
+    ResourceSWAP,
+    ResourceCH,
+    ResourceCY,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCNOT,
+    ResourceToffoli,
+    ResourceMultiControlledX,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCRot,
+    ResourceControlledPhaseShift,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
+    ResourceTempAND,
+    ResourceSingleExcitation,
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourceProd,
+    ResourceChangeBasisOp,
+    ResourcePow,
+)
+
+from .templates import (
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
+    ResourceBasisRotation,
+    ResourceSelect,
+    ResourceQROM,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    CompactHamiltonian,
 )
