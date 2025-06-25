@@ -197,7 +197,7 @@ class CotransformCache:
         classical_jacobian = _jac_map[interface](f, argnums, *self.args, **self.kwargs)
         return classical_jacobian
 
-    def get_argnums(self, transform: TransformContainer) -> Optional[set[int]]:
+    def get_argnums(self, transform: TransformContainer) -> Optional[list[set[int]]]:
         """Calculate the trainable params from the argnums in the transform.
 
         .. code-block:: python
