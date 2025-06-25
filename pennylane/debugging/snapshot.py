@@ -92,7 +92,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. warning::
 
-        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms 
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms
         (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
         As a result, the captured state may differ from the original intent.
 
