@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .trotter import ResourceTrotterProduct
 from .subroutines import (
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,

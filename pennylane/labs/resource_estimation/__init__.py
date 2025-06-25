@@ -118,7 +118,6 @@ Templates:
 .. autosummary::
     :toctree: api
 
-    ~ResourceTrotterProduct
     ~ResourceOutOfPlaceSquare
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
@@ -194,7 +193,6 @@ from .ops import (
 )
 
 from .templates import (
-    ResourceTrotterProduct,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
     ResourceOutMultiplier,

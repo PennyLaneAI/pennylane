@@ -33,6 +33,38 @@ from pennylane.wires import Wires
 
 
 class ResourceOutOfPlaceSquare(ResourceOperator):
+    r"""Resource class for the OutofPlaceSquare gate.
+
+    This operation takes two quantum registers. The input register is of size :code:`register_size`
+    and the output register of size :code:`2 * register_size`. The number encoded in the input is
+    squared and returned in the output register.
+
+    Args:
+        register_size (int): the size of the input register
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from appendix G, lemma 7 in `PRX Quantum, 2, 040332 (2021)
+        <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_. Specifically,
+        the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
+
+    .. seealso:: :class:`~.BasisRotation`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> out_square = plre.ResourceOutOfPlaceSquare(register_size=3)
+    >>> print(plre.estimate_resources(out_square))
+    --- Resources: ---
+    Total qubits: 9
+    Total gates : 7
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 9
+    Gate breakdown:
+     {'Toffoli': 4, 'CNOT': 3}
+    """
+
     # reference: Appendix G, Lemma 7 https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332
     resource_keys = {"register_size"}
 
@@ -43,14 +75,47 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
     @property
     def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * register_size (int): the size of the input register
+        """
         return {"register_size": self.register_size}
 
     @classmethod
     def resource_rep(cls, register_size):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            register_size (int): the size of the input register
+
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return CompressedResourceOp(cls, {"register_size": register_size})
 
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            register_size (int): the size of the input register
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            The resources are obtained from appendix G, lemma 7 in `PRX Quantum, 2, 040332 (2021)
+            <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_. Specifically,
+            the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         gate_lst = []
 
         gate_lst.append(GateCount(resource_rep(re.ResourceToffoli), (register_size - 1) ** 2))
