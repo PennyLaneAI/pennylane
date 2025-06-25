@@ -438,7 +438,20 @@ class ResourceSemiAdder(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        if (max_register_size > 2) and (ctrl_num_ctrl_wires == 1):
+        if max_register_size > 2:
+            gate_lst = []
+
+            if ctrl_num_ctrl_wires > 1:
+                mcx = resource_rep(
+                    re.ResourceMultiControlledX,
+                    {
+                        "num_ctrl_wires": ctrl_num_ctrl_wires,
+                        "num_ctrl_values": ctrl_num_ctrl_values,
+                    },
+                )
+                gate_lst.append(AllocWires(1))
+                gate_lst.append(GateCount(mcx, 2))
+
             cnot_count = (7 * (max_register_size - 2)) + 3
             elbow_count = 2 * (max_register_size - 1)
 
@@ -446,16 +459,21 @@ class ResourceSemiAdder(ResourceOperator):
             cnot = resource_rep(re.ResourceCNOT)
             l_elbow = resource_rep(re.ResourceTempAND)
             r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
-            gate_lst = [
-                AllocWires(max_register_size - 1),
-                GateCount(cnot, cnot_count),
-                GateCount(l_elbow, elbow_count),
-                GateCount(r_elbow, elbow_count),
-                FreeWires(max_register_size - 1),
-            ]
+            gate_lst.extend(
+                [
+                    AllocWires(max_register_size - 1),
+                    GateCount(cnot, cnot_count),
+                    GateCount(l_elbow, elbow_count),
+                    GateCount(r_elbow, elbow_count),
+                    FreeWires(max_register_size - 1),
+                ],
+            )
 
-            if ctrl_num_ctrl_values:
+            if ctrl_num_ctrl_wires > 1:
+                gate_lst.append(FreeWires(1))
+            elif ctrl_num_ctrl_values > 0:
                 gate_lst.append(GateCount(x, 2 * ctrl_num_ctrl_values))
+
             return gate_lst  # Obtained resource from Fig 4a https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
         raise re.ResourcesNotDefined
