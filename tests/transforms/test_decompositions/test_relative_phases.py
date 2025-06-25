@@ -20,7 +20,7 @@ from itertools import permutations
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.decompositions.relative_phases import (
+from pennylane.transforms.decompositions.relative_phases import (  # pylint: disable=no-name-in-module
     replace_controlled_iX_gate,
     replace_relative_phase_toffoli,
 )
