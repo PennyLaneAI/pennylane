@@ -87,6 +87,8 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     with AnnotatedQueue() as q:
         qnode.func(*args, **kwargs)
     tape = QuantumScript.from_queue(q)
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = math.get_trainable_indices(params)
     tapes, _ = program((tape,))
     return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
@@ -121,6 +123,8 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
             with AnnotatedQueue() as q:
                 qnode.func(*args_jvp, **kwargs)
             tape = QuantumScript.from_queue(q)
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = math.get_trainable_indices(params)
             tapes, _ = program((tape,))
 
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
