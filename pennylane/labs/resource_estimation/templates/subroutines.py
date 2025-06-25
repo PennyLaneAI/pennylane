@@ -48,8 +48,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_. Specifically,
         the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
 
-    .. seealso:: :class:`~.BasisRotation`
-
     **Example**
 
     The resources for this operation are computed using:
@@ -65,7 +63,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
      {'Toffoli': 4, 'CNOT': 3}
     """
 
-    # reference: Appendix G, Lemma 7 https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332
     resource_keys = {"register_size"}
 
     def __init__(self, register_size: int, wires=None):
@@ -91,7 +88,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         Args:
             register_size (int): the size of the input register
 
-
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
@@ -104,7 +100,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
         Args:
             register_size (int): the size of the input register
-            wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             The resources are obtained from appendix G, lemma 7 in `PRX Quantum, 2, 040332 (2021)
@@ -125,6 +120,38 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
 
 class ResourcePhaseGradient(ResourceOperator):
+    r"""Resource class for the PhaseGradient gate.
+
+    This operation prepares the phase gradient state
+    :math:`\frac{1}{\sqrt{2^b}} \cdot \Sum_{k=0}^{2^b - 1} e^{-i2\pi \frac{k}{2^b}}\ket{k}`.
+
+    Args:
+        num_wires (int): the number of qubits to prepare in the phase gradient state
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained by construction. The phase gradient state is defined as an
+        equal superposition of phaseshifts where each shift is progressively more precise. This
+        is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
+        qubit with progressively smaller rotation angle. The first three rotations can be compiled to
+        a Z-gate, S-gate nad a T-gate.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> phase_grad = plre.ResourcePhaseGradient(num_wires=5)
+    >>> gate_set={"Z", "S", "T", "RZ", "Hadamard"}
+    >>> print(plre.estimate_resources(phase_grad, gate_set))
+    --- Resources: ---
+    Total qubits: 5
+    Total gates : 10
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 5
+    Gate breakdown:
+     {'Hadamard': 5, 'Z': 1, 'S': 1, 'T': 1, 'RZ': 2}
+    """
+
     resource_keys = {"num_wires"}
 
     def __init__(self, num_wires, wires=None):
@@ -133,14 +160,47 @@ class ResourcePhaseGradient(ResourceOperator):
 
     @property
     def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits to prepare in the phase gradient state
+        """
         return {"num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_wires (int): the number of qubits to prepare in the phase gradient state
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return CompressedResourceOp(cls, {"num_wires": num_wires})
 
     @classmethod
     def default_resource_decomp(cls, num_wires, **kwargs):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            num_wires (int): the number of qubits to prepare in the phase gradient state
+
+        Resources:
+            The resources are obtained by construction. The phase gradient state is defined as an
+            equal superposition of phaseshifts where each shift is progressively more precise. This
+            is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
+            qubit with progressively smaller rotation angle. The first three rotations can be compiled to
+            a Z-gate, S-gate nad a T-gate.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         gate_counts = [GateCount(resource_rep(re.ResourceHadamard), num_wires)]
         if num_wires > 0:
             gate_counts.append(GateCount(resource_rep(re.ResourceZ)))
@@ -158,7 +218,33 @@ class ResourcePhaseGradient(ResourceOperator):
 
 
 class ResourceOutMultiplier(ResourceOperator):
-    # reference: Appendix G, Lemma 10 https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332
+    r"""Resource class for the OutMultiplier gate.
+
+    Args:
+        a_num_qubits (int): the size of the first input register
+        b_num_qubits (int): the size of the second input register
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
+        <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
+
+    .. seealso:: :class:`~.OutMultiplier`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> out_mul = plre.ResourceOutMultiplier(4, 4)
+    >>> print(plre.estimate_resources(out_mul))
+    --- Resources: ---
+    Total qubits: 16
+    Total gates : 70
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 16
+    Gate breakdown:
+     {'Toffoli': 14, 'Hadamard': 42, 'CNOT': 14}
+    """
 
     resource_keys = {"a_num_qubits", "b_num_qubits"}
 
@@ -170,18 +256,50 @@ class ResourceOutMultiplier(ResourceOperator):
 
     @property
     def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * a_num_qubits (int): the size of the first input register
+                * b_num_qubits (int): the size of the second input register
+        """
         return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits}
 
     @classmethod
     def resource_rep(cls, a_num_qubits, b_num_qubits) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            a_num_qubits (int): the size of the first input register
+            b_num_qubits (int): the size of the second input register
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return CompressedResourceOp(
             cls, {"a_num_qubits": a_num_qubits, "b_num_qubits": b_num_qubits}
         )
 
     @classmethod
-    def default_resource_decomp(
-        cls, a_num_qubits, b_num_qubits, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
+    def default_resource_decomp(cls, a_num_qubits, b_num_qubits, **kwargs) -> list[GateCount]:
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            a_num_qubits (int): the size of the first input register
+            b_num_qubits (int): the size of the second input register
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            The resources are obtained from appendix G, lemma 10 in `PRX Quantum, 2, 040332 (2021)
+            <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         l = max(a_num_qubits, b_num_qubits)
 
         toff = resource_rep(re.ResourceToffoli)
@@ -203,6 +321,33 @@ class ResourceOutMultiplier(ResourceOperator):
 
 
 class ResourceSemiAdder(ResourceOperator):
+    r"""Resource class for the SemiOutAdder gate.
+
+    Args:
+        max_register_size (int): the size of the larger of the two registers being added together
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from figures 1 and 2 in `Gidney (2018)
+        <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
+
+    .. seealso:: :class:`~.SemiAdder`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> semi_add = plre.ResourceSemiAdder(max_register_size=4)
+    >>> print(plre.estimate_resources(semi_add))
+    --- Resources: ---
+    Total qubits: 11
+    Total gates : 30
+    Qubit breakdown:
+     clean qubits: 3, dirty qubits: 0, algorithmic qubits: 8
+    Gate breakdown:
+     {'CNOT': 18, 'Toffoli': 3, 'Hadamard': 9}
+    """
+
     resource_keys = {"max_register_size"}
 
     def __init__(self, max_register_size, wires=None):
@@ -212,14 +357,44 @@ class ResourceSemiAdder(ResourceOperator):
 
     @property
     def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * max_register_size (int): the size of the larger of the two registers being added together
+        """
         return {"max_register_size": self.max_register_size}
 
     @classmethod
     def resource_rep(cls, max_register_size):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            max_register_size (int): the size of the larger of the two registers being added together
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
         return CompressedResourceOp(cls, {"max_register_size": max_register_size})
 
     @classmethod
     def default_resource_decomp(cls, max_register_size, **kwargs):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            max_register_size (int): the size of the larger of the two registers being added together
+
+        Resources:
+            The resources are obtained from figures 1 and 2 in `Gidney (2018)
+            <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         cnot = resource_rep(re.ResourceCNOT)
         if max_register_size == 1:
             return [GateCount(cnot)]
@@ -246,6 +421,23 @@ class ResourceSemiAdder(ResourceOperator):
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, max_register_size, **kwargs
     ):
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            max_register_size (int): the size of the larger of the two registers being added together
+
+        Resources:
+            The resources are obtained from figure 4a in `Gidney (2018)
+            <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
         if (max_register_size > 2) and (ctrl_num_ctrl_wires == 1):
             cnot_count = (7 * (max_register_size - 2)) + 3
             elbow_count = 2 * (max_register_size - 1)
