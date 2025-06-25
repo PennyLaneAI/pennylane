@@ -73,6 +73,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * register_size (int): the size of the input register
+
         """
         return {"register_size": self.register_size}
 

@@ -56,7 +56,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation, ust be 1 or even.
+        order (int): order of the approximation, must be 1 or even.
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
