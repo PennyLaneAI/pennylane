@@ -155,7 +155,7 @@ class CotransformCache:
 
     def _get_idx_for_transform(self, transform):
         for i, t in enumerate(self._program):
-            if t.transform == transform.transform:
+            if t == transform:
                 return i
         raise ValueError(f"Could not find {transform} in qnode's transform program.")
 

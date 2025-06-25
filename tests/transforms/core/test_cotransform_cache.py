@@ -17,7 +17,42 @@ Tests for the CotransformCache object.
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.core import TransformContainer
 from pennylane.transforms.core.cotransform_cache import CotransformCache
+
+
+def test_classical_jacobian_error_if_not_in_cache():
+    """Test a ValueError is raised if we request the classical jacobian for a transform not in the cotransform cache."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def c(x, y):
+        qml.RX(2 * x, 0)
+        qml.RY(x * y, 0)
+        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+
+    container = TransformContainer(qml.transforms.merge_rotations.transform)
+    x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+
+    cc = CotransformCache(c, (x, y), {})
+    with pytest.raises(ValueError, match=r"Could not find"):
+        cc.get_classical_jacobian(container, 0)
+
+
+def test_no_classical_jacobian_if_no_cotransform():
+    """Test that the classical jacobian is None if the transform does not have a cotransform."""
+
+    @qml.transforms.split_non_commuting
+    @qml.qnode(qml.device("default.qubit"))
+    def c(x, y):
+        qml.RX(2 * x, 0)
+        qml.RY(x * y, 0)
+        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+
+    container = c.transform_program[-1]
+    x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+
+    cc = CotransformCache(c, (x, y), {})
+    assert cc.get_classical_jacobian(container, 0) is None
 
 
 def test_simple_classical_jacobian():
