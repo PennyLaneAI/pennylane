@@ -13,14 +13,14 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .compact_hamiltonian import CompactHamiltonian
 from .subroutines import (
-    ResourceBasisRotation,
-    ResourceOutMultiplier,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
-    ResourceQROM,
-    ResourceSelect,
+    ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceBasisRotation,
+    ResourceSelect,
+    ResourceQROM,
 )
+from .compact_hamiltonian import CompactHamiltonian
 from .trotter import ResourceTrotterCDF, ResourceTrotterTHC
