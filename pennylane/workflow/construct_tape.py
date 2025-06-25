@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to extract a single tape from a QNode"""
+from __future__ import annotations
 
-import pennylane as qml
+from typing import TYPE_CHECKING, Optional
+
+from .construct_batch import construct_batch
+
+if TYPE_CHECKING:
+    from .qnode import QNode
 
 
-def construct_tape(qnode, level="user"):
+def construct_tape(qnode: QNode, level: Optional[str | int | slice] = "user"):
     """Constructs the tape for a designated stage in the transform program.
 
     Args:
@@ -67,7 +73,7 @@ def construct_tape(qnode, level="user"):
 
     def wrapper(*args, **kwargs):
 
-        batch, _ = qml.workflow.construct_batch(qnode, level)(*args, **kwargs)
+        batch, _ = construct_batch(qnode, level)(*args, **kwargs)
 
         if len(batch) > 1:
             raise ValueError(
