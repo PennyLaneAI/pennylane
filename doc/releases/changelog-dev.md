@@ -651,6 +651,9 @@
   estimation for trotterization of vibrational and vibronic Hamiltonians.
   [(#7720)](https://github.com/PennyLaneAI/pennylane/pull/7720)
 
+* Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
+  supporting compact hamiltonian development.
+  [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
 
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
