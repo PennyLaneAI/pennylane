@@ -18,6 +18,8 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 
+# pylint: disable=no-self-use,too-many-arguments
+
 
 class TestResourceOutOfPlaceSquare:
     """Test the OutOfPlaceSquare class."""
@@ -275,38 +277,190 @@ class TestResourceSelect:
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
         expected = plre.CompressedResourceOp(plre.ResourceSelect, {"cmpr_ops": cmpr_ops})
-        assert plre.ResourceSelect.resource_rep(ops) == expected
+        assert plre.ResourceSelect.resource_rep(cmpr_ops) == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
         ops = [plre.ResourceRX(), plre.ResourceZ(), plre.ResourceCNOT()]
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
-        expected = [plre.AllocWires(2)]
-        assert plre.ResourceSelect.resource_decomp(ops) == expected
+        expected = [
+            plre.AllocWires(1),
+            plre.GateCount(
+                plre.ResourceControlled.resource_rep(
+                    plre.ResourceRX.resource_rep(),
+                    1,
+                    0,
+                )
+            ),
+            plre.GateCount(
+                plre.ResourceControlled.resource_rep(
+                    plre.ResourceZ.resource_rep(),
+                    1,
+                    0,
+                )
+            ),
+            plre.GateCount(
+                plre.ResourceControlled.resource_rep(
+                    plre.ResourceCNOT.resource_rep(),
+                    1,
+                    0,
+                )
+            ),
+            plre.GateCount(plre.ResourceX.resource_rep(), 4),
+            plre.GateCount(plre.ResourceCNOT.resource_rep(), 2),
+            plre.GateCount(plre.ResourceTempAND.resource_rep(), 2),
+            plre.GateCount(
+                plre.ResourceAdjoint.resource_rep(
+                    plre.ResourceTempAND.resource_rep(),
+                ),
+                2,
+            ),
+            plre.FreeWires(1),
+        ]
+        assert plre.ResourceSelect.resource_decomp(cmpr_ops) == expected
 
 
-# class TestResourceQROM:
-#     """Test the OutOfPlaceSquare class."""
+class TestResourceQROM:
+    """Test the ResourceQROM class."""
 
-#     @pytest.mark.parametrize("register_size", (1, 2, 3))
-#     def test_resource_params(self, register_size):
-#         """Test that the resource params are correct."""
-#         op = plre.ResourceOutOfPlaceSquare(register_size)
-#         assert op.resource_params == {"register_size": register_size}
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, clean",
+        (
+            (10, 3, 15, None, True),
+            (100, 5, 50, 2, False),
+            (12, 2, 5, 1, True),
+        ),
+    )
+    def test_resource_params(self, num_data_points, size_data_points, num_bit_flips, depth, clean):
+        """Test that the resource params are correct."""
+        if depth is None:
+            op = plre.ResourceQROM(num_data_points, size_data_points)
+        else:
+            op = plre.ResourceQROM(num_data_points, size_data_points, num_bit_flips, clean, depth)
 
-#     @pytest.mark.parametrize("register_size", (1, 2, 3))
-#     def test_resource_rep(self, register_size):
-#         """Test that the compressed representation is correct."""
-#         expected = plre.CompressedResourceOp(plre.ResourceOutOfPlaceSquare, {"register_size": register_size})
-#         assert plre.ResourceOutOfPlaceSquare.resource_rep(register_size=register_size) == expected
+        assert op.resource_params == {
+            "num_bitstrings": num_data_points,
+            "size_bitstring": size_data_points,
+            "num_bit_flips": num_bit_flips,
+            "select_swap_depth": depth,
+            "clean": clean,
+        }
 
-#     @pytest.mark.parametrize("register_size", (1, 2, 3))
-#     def test_resources(self, register_size):
-#         """Test that the resources are correct."""
-#         expected = [
-#             plre.GateCount(plre.resource_rep(plre.ResourceToffoli), (register_size - 1)**2),
-#             plre.GateCount(plre.resource_rep(plre.ResourceCNOT), register_size),
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, clean",
+        (
+            (10, 3, 15, None, True),
+            (100, 5, 50, 2, False),
+            (12, 2, 5, 1, True),
+        ),
+    )
+    def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, clean):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourceQROM,
+            {
+                "num_bitstrings": num_data_points,
+                "size_bitstring": size_data_points,
+                "num_bit_flips": num_bit_flips,
+                "select_swap_depth": depth,
+                "clean": clean,
+            },
+        )
+        assert (
+            plre.ResourceQROM.resource_rep(
+                num_bitstrings=num_data_points,
+                size_bitstring=size_data_points,
+                num_bit_flips=num_bit_flips,
+                clean=clean,
+                select_swap_depth=depth,
+            )
+            == expected
+        )
 
-#         ]
-#         assert plre.ResourceOutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, clean, expected_res",
+        (
+            (
+                10,
+                3,
+                15,
+                None,
+                True,
+                [
+                    plre.AllocWires(5),
+                    plre.GateCount(plre.ResourceHadamard.resource_rep(), 6),
+                    plre.GateCount(plre.ResourceX.resource_rep(), 14),
+                    plre.GateCount(plre.ResourceCNOT.resource_rep(), 36),
+                    plre.GateCount(plre.ResourceTempAND.resource_rep(), 6),
+                    plre.GateCount(
+                        plre.ResourceAdjoint.resource_rep(
+                            plre.ResourceTempAND.resource_rep(),
+                        ),
+                        6,
+                    ),
+                    plre.FreeWires(2),
+                    plre.GateCount(plre.ResourceCSWAP.resource_rep(), 12),
+                    plre.FreeWires(3),
+                ],
+            ),
+            (
+                100,
+                5,
+                50,
+                2,
+                False,
+                [
+                    plre.AllocWires(10),
+                    plre.GateCount(plre.ResourceX.resource_rep(), 97),
+                    plre.GateCount(plre.ResourceCNOT.resource_rep(), 98),
+                    plre.GateCount(plre.ResourceTempAND.resource_rep(), 48),
+                    plre.GateCount(
+                        plre.ResourceAdjoint.resource_rep(
+                            plre.ResourceTempAND.resource_rep(),
+                        ),
+                        48,
+                    ),
+                    plre.FreeWires(5),
+                    plre.GateCount(plre.ResourceCSWAP.resource_rep(), 5),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                1,
+                True,  # AllocWires(3), (4 x Hadamard), (42 x X), (30 x CNOT), (20 x TempAND), (20 x Adjoint(TempAND)), FreeWires(3), (0 x CSWAP), FreeWires(0)
+                [
+                    plre.AllocWires(3),
+                    plre.GateCount(plre.ResourceHadamard.resource_rep(), 4),
+                    plre.GateCount(plre.ResourceX.resource_rep(), 42),
+                    plre.GateCount(plre.ResourceCNOT.resource_rep(), 30),
+                    plre.GateCount(plre.ResourceTempAND.resource_rep(), 20),
+                    plre.GateCount(
+                        plre.ResourceAdjoint.resource_rep(
+                            plre.ResourceTempAND.resource_rep(),
+                        ),
+                        20,
+                    ),
+                    plre.FreeWires(3),
+                    plre.GateCount(plre.ResourceCSWAP.resource_rep(), 0),
+                    plre.FreeWires(0),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self, num_data_points, size_data_points, num_bit_flips, depth, clean, expected_res
+    ):
+        """Test that the resources are correct."""
+        assert (
+            plre.ResourceQROM.resource_decomp(
+                num_bitstrings=num_data_points,
+                size_bitstring=size_data_points,
+                num_bit_flips=num_bit_flips,
+                clean=clean,
+                select_swap_depth=depth,
+            )
+            == expected_res
+        )

@@ -18,6 +18,8 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 
+# pylint: disable=no-self-use,too-many-arguments
+
 
 class TestResourceSingleExcitation:
     """Test the SingleExcitation class."""

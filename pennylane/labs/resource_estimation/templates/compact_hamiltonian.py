@@ -29,10 +29,10 @@ class CompactHamiltonian:
 
             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
+
             Refer to the documentation of each specific constructor method for their required parameters.
 
-    .. details::
-        :title: Usage Details
+    .. details:: Usage Details
         The :class:`CompactHamiltonian` class is designed to be an alternative input to using the full
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.

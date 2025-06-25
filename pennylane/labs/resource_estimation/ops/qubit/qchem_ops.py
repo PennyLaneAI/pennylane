@@ -1,3 +1,5 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -76,7 +78,7 @@ class ResourceSingleExcitation(ResourceOperator):
 
         Args:
             eps (float, optional): error threshold for clifford plus T decomposition of this operation
-        
+
         Resources:
             The resources are obtained by decomposing the following matrix into fundamental gates.
 
@@ -127,6 +129,7 @@ class ResourceSingleExcitation(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * eps (float): error threshold for clifford plus T decomposition of this operation
+
         """
         return {"eps": self.eps}
 
