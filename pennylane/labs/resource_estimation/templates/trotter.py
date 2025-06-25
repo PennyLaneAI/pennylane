@@ -130,6 +130,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
+
         """
         return {
             "compact_ham": self.compact_ham,
@@ -410,6 +411,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
+
         """
         return {
             "compact_ham": self.compact_ham,
