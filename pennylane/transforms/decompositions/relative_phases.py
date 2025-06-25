@@ -57,7 +57,8 @@ relative_phases_patterns = [
 def replace_relative_phase_toffoli(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace 4-qubit relative phase toffoli gates.
+    """Quantum transform to replace 4-qubit relative phase toffoli gates, given in
+    figure three of (Amy, M. and Ross, N. J., 2021).
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -139,9 +140,11 @@ def replace_relative_phase_toffoli(
 
 @transform
 def replace_controlled_iX_gate(
-    tape: QuantumScript, num_controls = 1
+    tape: QuantumScript, num_controls=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace controlled iX gates. An iX gate is a CS and a Toffoli.
+    """Quantum transform to replace controlled iX gates. An iX gate is a CS and a Toffoli. The
+    equivalency used is given in figure two of (Amy, M. and Ross, N. J., 2021) and the simple case
+    of one num_controls=1 in given in figure one.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -213,7 +216,9 @@ def replace_controlled_iX_gate(
 
     """
     if num_controls < 1:
-        raise ValueError("There must be at least one control wire for the controlled iX gate decomposition.")
+        raise ValueError(
+            "There must be at least one control wire for the controlled iX gate decomposition."
+        )
     pattern_ops = [
         qml.ctrl(qml.S(num_controls), control=list(range(num_controls))),
         qml.MultiControlledX(list(range(num_controls + 2))),

@@ -2,8 +2,8 @@ from itertools import permutations
 
 import pennylane as qml
 from pennylane.transforms.decompositions.relative_phases import (
-    replace_relative_phase_toffoli,
     replace_controlled_iX_gate,
+    replace_relative_phase_toffoli,
 )
 
 

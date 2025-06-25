@@ -439,8 +439,11 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return ((node_1.op.name == node_2.op.name) and (node_1.op.data == node_2.op.data)
-            and len(node_1.wires) == len(node_2.wires))
+    return (
+        (node_1.op.name == node_2.op.name)
+        and (node_1.op.data == node_2.op.data)
+        and len(node_1.wires) == len(node_2.wires)
+    )
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
