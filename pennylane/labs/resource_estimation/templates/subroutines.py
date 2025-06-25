@@ -761,7 +761,7 @@ class ResourceQROM(ResourceOperator):
         num_bitstrings (int): the number of bitstrings that are to be encoded
         size_bitstring (int): the length of each bitstring
         num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-            :code:`(num_bitstrings \times size_bitstring) // 2`, which is half the dataset.
+            :math:`(num_bitstrings \times size_bitstring) // 2`, which is half the dataset.
         clean (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code`True`.
         select_swap_depth (Union[int, None], optional): A natural number that determines if data
@@ -863,7 +863,7 @@ class ResourceQROM(ResourceOperator):
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+                :math:`(num_bitstrings \times size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (Union[int, None], optional): A natural number that determines if data
@@ -1018,7 +1018,7 @@ class ResourceQROM(ResourceOperator):
             num_bitstrings (int): the number of bitstrings that are to be encoded
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+                :math:`(num_bitstrings \times size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
             select_swap_depth (Union[int, None], optional): A natural number that determines if data
