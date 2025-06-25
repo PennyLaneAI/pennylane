@@ -859,6 +859,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve type hinting in the `workflow` module.
+  [(#7745)](https://github.com/PennyLaneAI/pennylane/pull/7745)
+
 * Unpin `mitiq` in CI.
   [(#7742)](https://github.com/PennyLaneAI/pennylane/pull/7742)
 
