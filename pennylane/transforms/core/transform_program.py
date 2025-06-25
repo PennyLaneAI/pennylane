@@ -93,7 +93,7 @@ _jac_map = {
 
 
 # pylint: disable=unused-argument
-def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
+def _classical_preprocessing(qnode, program, tape_idx: int, *args, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
@@ -101,7 +101,11 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     """
     tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
-    return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
+    new_tape = tapes[tape_idx]
+    # Recalculate trainable parameters because the program is not obligated to maintain them
+    params = new_tape.get_parameters(trainable_only=False)
+    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    return math.stack(new_tape.get_parameters(trainable_only=True))
 
 
 def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):

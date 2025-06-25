@@ -29,3 +29,4 @@ from .trotter import (
     ResourceTrotterVibronic,
 )
 from .compact_hamiltonian import CompactHamiltonian
+from .trotter import ResourceTrotterCDF, ResourceTrotterTHC
