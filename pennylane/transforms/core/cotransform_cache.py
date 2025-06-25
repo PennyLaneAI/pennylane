@@ -17,11 +17,10 @@ This submodule contains the CotransformCache for handling the classical cotransf
 from functools import partial
 from typing import Optional
 
+import pennylane as qml  # for qml.workflow.construct_tape
 from pennylane import math
 from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.typing import TensorLike
 
 from .transform_dispatcher import TransformContainer
@@ -84,11 +83,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
-    with AnnotatedQueue() as q:
-        qnode.func(*args, **kwargs)
-    tape = QuantumScript.from_queue(q)
-    params = tape.get_parameters(trainable_only=False)
-    tape.trainable_params = math.get_trainable_indices(params)
+    tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
     return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
@@ -120,11 +115,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
             for i, arg in enumerate(args)
         ]
         with jax.core.set_current_trace(trace):
-            with AnnotatedQueue() as q:
-                qnode.func(*args_jvp, **kwargs)
-            tape = QuantumScript.from_queue(q)
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = math.get_trainable_indices(params)
+            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
             tapes, _ = program((tape,))
 
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
