@@ -18,10 +18,13 @@ from typing import Dict
 
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re
-from pennylane.labs.resource_estimation.qubit_manager import (AllocWires,
-                                                              FreeWires)
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
-    CompressedResourceOp, GateCount, ResourceOperator, resource_rep)
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
+)
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
