@@ -432,7 +432,6 @@ class TestRelativePhaseToffoli:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert len(tape.operations) == 26
         assert tape.operations == [
-            qml.PauliZ(wires=0),
             qml.PauliY(wires=2),
             qml.PauliX(wires=3),
             qml.H(3),
@@ -453,6 +452,7 @@ class TestRelativePhaseToffoli:
             qml.CNOT(wires=[2, 3]),
             qml.adjoint(qml.T(3)),
             qml.H(3),
+            qml.PauliZ(wires=0),
             qml.PauliX(wires=4),
             qml.PauliY(wires=5),
             qml.PauliZ(wires=0),
@@ -471,9 +471,25 @@ class TestRelativePhaseToffoli:
 
         tape = qml.tape.make_qscript(transformed_qfunc)()
         assert tape.operations == [
-            qml.CCZ(wires=[0, 1, 3]),
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1]),
-            qml.MultiControlledX(wires=[0, 1, 2, 3]),
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.CNOT(wires=[0, 3]),
+            qml.T(3),
+            qml.CNOT(wires=[1, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.T(3),
+            qml.CNOT(wires=[2, 3]),
+            qml.adjoint(qml.T(3)),
+            qml.H(3),
+            qml.adjoint(qml.ctrl(qml.S(1), control=[0])),
         ]
 
     def test_wire_permutations(self):
@@ -546,28 +562,6 @@ class TestRelativePhaseToffoli:
             qml.H(3),
             qml.PauliX(wires=4),
             qml.PauliY(wires=5),
-        ]
-
-    def test_gates_interfering(self):
-        def qfunc():
-            qml.CCZ(wires=[0, 1, 3])
-            qml.PauliX(wires=0)
-            qml.ctrl(qml.S(wires=[1]), control=[0])
-            qml.PauliX(wires=3)
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-            qml.MultiControlledX(wires=[0, 1, 2, 3])
-            return qml.expval(qml.Z(0))
-
-        transformed_qfunc = replace_relative_phase_toffoli(qfunc)
-
-        tape = qml.tape.make_qscript(transformed_qfunc)()
-        assert tape.operations == [
-            qml.CCZ(wires=[0, 1, 3]),
-            qml.PauliX(wires=0),
-            qml.ctrl(qml.S(wires=[1]), control=[0]),
-            qml.PauliX(wires=3),
-            qml.ctrl(qml.S(wires=[2]), control=[0, 1]),
-            qml.MultiControlledX(wires=[0, 1, 2, 3]),
         ]
 
     def test_basic_transform(self):

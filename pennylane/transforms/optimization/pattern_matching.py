@@ -502,7 +502,10 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                 first_match_qubits_sub = [-1] * n_qubits_p
                 for q in node_p.wires:
                     node_circuit_perm = control_permuted + circuit_target
-                    first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
+                    index = node_p.wires.index(q)
+                    first_match_qubits_sub[q] = (
+                        node_circuit_perm[index] if index < len(node_circuit_perm) else -1
+                    )
                 first_match_qubits.append(first_match_qubits_sub)
         # Symmetric target gate (target wires can be permuted) (For example CSWAP)
         else:
@@ -550,7 +553,7 @@ def _merge_first_match_and_permutation(list_first_match, permutation):
     counter = 0
 
     for elem in list_first_match:
-        if elem == -1:
+        if elem == -1 and counter < len(permutation):
             list_circuit.append(permutation[counter])
             counter = counter + 1
         else:
@@ -1560,6 +1563,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "CSWAP": 63,
                 "Toffoli": 21,
                 "C(S)": 4,
+                "CCZ": 21,
             }
 
     def _pred_block(self, circuit_sublist, index):
