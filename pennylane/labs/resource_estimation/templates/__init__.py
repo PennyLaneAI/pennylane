@@ -13,29 +13,12 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality."""
 
-from .non_parametric_ops import (
-    ResourceHadamard,
-    ResourceS,
-    ResourceT,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-    ResourceSWAP,
+from .subroutines import (
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
+    ResourceBasisRotation,
+    ResourceSelect,
+    ResourceQROM,
 )
-from .parametric_ops_single_qubit import (
-    ResourcePhaseShift,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-)
-from .parametric_ops_multi_qubit import (
-    ResourceMultiRZ,
-    ResourcePauliRot,
-    ResourceIsingXX,
-    ResourceIsingYY,
-    ResourceIsingXY,
-    ResourceIsingZZ,
-    ResourcePSWAP,
-)
-from .qchem_ops import ResourceSingleExcitation

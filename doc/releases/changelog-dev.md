@@ -792,6 +792,10 @@
   estimation for multi-qubit parametic gates.
   [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
 
+* Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
+  supporting compact hamiltonian development.
+  [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
