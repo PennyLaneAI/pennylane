@@ -208,7 +208,7 @@ class ResourceBasisRotation(ResourceOperator):
     r"""Resource class for the BasisRotation gate.
 
     Args:
-        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the 
+        dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed as the
             number of columns of the matrix.
         wires (Sequence[int], optional): the wires the operation acts on
 
@@ -334,6 +334,7 @@ class ResourceSelect(ResourceOperator):
     Gate breakdown:
      {'CNOT': 7, 'S': 2, 'Z': 1, 'Hadamard': 8, 'X': 4, 'Toffoli': 2}
     """
+
     resource_keys = {"cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
@@ -374,8 +375,8 @@ class ResourceSelect(ResourceOperator):
 
         Args:
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
-                representation, to be applied according to the selected qubits. 
-        
+                representation, to be applied according to the selected qubits.
+
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
             'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
@@ -383,7 +384,7 @@ class ResourceSelect(ResourceOperator):
             Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
             where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
             to select.
-        
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
@@ -484,17 +485,17 @@ class ResourceQROM(ResourceOperator):
         size_bitstring (int): the length of each bitstring
         num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-        clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+        clean (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code`True`.
-        select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+        select_swap_depth (Union[int, None], optional): A natural number that determines if data
             will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
             Defaults to :code:`None`, which internally determines the optimal depth.
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources for QROM are taken from the following two papers:
-        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
-        :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
+        `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
+        :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
         (Figure 4) for :code:`clean = True`.
 
     .. seealso:: :class:`~.QROM`
@@ -589,18 +590,18 @@ class ResourceQROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
             wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
             The resources for QROM are taken from the following two papers:
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
-            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
-            (Figure 4) for :code:`clean = True`.        
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
+            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
+            (Figure 4) for :code:`clean = True`.
 
             Note: we use the unary iterator trick to implement the Select. This
             implementation assumes we have access to :math:`n - 1` additional
@@ -743,27 +744,27 @@ class ResourceQROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
             The resources for QROM are taken from the following two papers:
-            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for 
-            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_ 
-            (Figure 4) for :code:`clean = True`.        
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_ (Figure 1.C) for
+            :code:`clean = False` and `Berry et al. (2019) <https://arxiv.org/pdf/1902.02134>`_
+            (Figure 4) for :code:`clean = True`.
 
             Note: we use the single-controlled unary iterator trick to implement the Select. This
-            implementation assumes we have access to :math:`n - 1` additional work qubits, 
-            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of 
+            implementation assumes we have access to :math:`n - 1` additional work qubits,
+            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of
             unitaries to select.
-                
+
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
-            in the decomposition.        
+            in the decomposition.
         """
         gate_cost = []
         if ctrl_num_ctrl_values:
@@ -806,9 +807,9 @@ class ResourceQROM(ResourceOperator):
                 * size_bitstring (int): the length of each bitstring
                 * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-                * clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+                * clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+                * select_swap_depth (Union[int, None], optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
         """
@@ -838,9 +839,9 @@ class ResourceQROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring
             num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-            clean (bool, optional): Determine if allocated qubits should be reset after the computation 
+            clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data 
+            select_swap_depth (Union[int, None], optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
