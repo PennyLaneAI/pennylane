@@ -155,6 +155,27 @@ class TestCliffordCompile:
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
+    @pytest.mark.parametrize("circuit", [circuit_1, circuit_2, circuit_3])
+    def test_decomposition_with_rs(self, circuit):
+        """Test decomposition for the Clifford transform with Ross-Selinger method."""
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="rs")
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program = dev.preprocess_transforms()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
+
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform applied to a QNode."""
 
@@ -453,7 +474,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) decomposition",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('rs'\) decompositions",
         ):
             decomposed_qfunc()
 

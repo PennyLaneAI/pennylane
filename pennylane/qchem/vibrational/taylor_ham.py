@@ -274,51 +274,79 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
+    r"""Computes the coefficients of a Taylor vibrational Hamiltonian.
 
-    The coefficients are defined following Eq. 5 of `arXiv:1703.09313
-    <https://arxiv.org/abs/1703.09313>`_ as:
-
-    .. math::
-
-        \Phi_{ijk} = \frac{k_{ijk}}{\sqrt{\omega_i \omega_j \omega_k}}
-        \quad \text{and} \quad
-        \Phi_{ijkl} = \frac{k_{ijkl}}{\sqrt{\omega_i \omega_j \omega_k \omega_l}},
-
-    where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third- and fourth-order reduced force
-    constants, respectively, defined in terms of the third- and fourth-order partial derivatives
-    of the potential energy surface data.
+    The coefficients are computed from a multi-dimensional polynomial fit over potential energy data
+    computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        pes (VibrationalPES): the vibrational potential energy surface object
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
     Returns:
-        tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
+        List(TensorLike[float]): the coefficients of the Taylor vibrational Hamiltonian
 
     **Example**
 
-    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-    >>> pes_twomode = np.zeros((1, 1, 9, 9))
-    >>> dipole_onemode = np.zeros((1, 9, 3))
-    >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-    ...                           4.33e-01, 7.20e-01, 4.33e-01,
-    ...                           8.85e-02, 4.94e-03, 3.96e-05])
-    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = qml.qchem.VibrationalPES(
-    ...     freqs=np.array([0.025]),
-    ...     grid=grid,
-    ...     uloc=np.array([[1.0]]),
-    ...     gauss_weights=gauss_weights,
-    ...     pes_data=[pes_onemode, pes_twomode],
-    ...     dipole_data=[dipole_onemode],
-    ...     localized=True,
-    ...     dipole_level=1,
-    ... )
-    >>> one, two = qml.qchem.taylor_coeffs(pes_object, 4, 2)
-    >>> print(one)
-    [[-0.00088528 -0.00361425  0.00068143]]
+    >>> freqs = np.array([0.0249722])
+    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
+    >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
+    >>> print(coeffs)
+    [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
+
+    .. details::
+        :title: Theory
+
+        A molecular potential energy surface can be defined as [Eq. 7 of
+        `J. Chem. Phys. 135, 134108 (2011) <https://pubs.aip.org/aip/jcp/article-abstract/135/13/134108/191108/Size-extensive-vibrational-self-consistent-field?redirectedFrom=PDF>`_]:
+
+        .. math::
+
+            V = V_0 + \sum_{i} F_i q_i + \sum_{i,j} F_{ij} q_i q_j +
+                       \sum_{i,j,k} F_{ijk} q_i q_j q_k + \cdots,
+
+        where :math:`q` is a normal coordinate and :math:`F` represents the derivatives of the
+        potential energy surface.
+
+        This function computes these derivatives via Taylor expansion of the potential energy data
+        by performing a multi-dimensional polynomial fit.
+
+        The potential energy surface along the normal coordinate can be defined as
+
+        .. math::
+
+            V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+            V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+        where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+        computed along the normal coordinate. The :math:`V_n` terms are defined as:
+
+        .. math::
+
+            V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+            V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+            V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+            V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
+            \nonumber \vdots
+
+        Note that the terms :math:`V_n` are represented here by an array of energy points computed
+        along the normal coordinates. These energy data are then used in a multi-dimensional
+        polynomial fit where each term :math:`V_n` is expanded in terms of products of :math:`q`
+        with exponents specified by ``min_deg`` and ``max_deg``.
+
+        The one-mode Taylor coefficients, :math:`\Phi`, computed here are related to the potential
+        energy surface as:
+
+        .. math::
+
+            V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ... + \Phi^{(n)}_j q_j^n,
+
+        where the largest power :math:`n` is determined by ``max_deg``. Similarly, the two-mode and
+        three-mode Taylor coefficients are computed if the two-mode and three-mode potential energy
+        surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are
+        provided.
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
@@ -341,47 +369,67 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
-    r"""Compute fitted coefficients for the Taylor dipole operator.
+    r"""Computes the coefficients of a Taylor dipole operator.
+
+    The coefficients are computed from a multi-dimensional polynomial fit over dipole moment data
+    computed along normal coordinates, with a polynomial specified by ``min_deg`` and ``max_deg``.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        pes (VibrationalPES): the vibrational potential energy surface object
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
 
     Returns:
         tuple: a tuple containing:
-            - list(array(floats)): coefficients for x-displacements
-            - list(array(floats)): coefficients for y-displacements
-            - list(array(floats)): coefficients for z-displacements
+            - List(TensorLike[float]): coefficients for x-displacements
+            - List(TensorLike[float]): coefficients for y-displacements
+            - List(TensorLike[float]): coefficients for z-displacements
 
     **Example**
 
-    >>> freqs = np.array([0.01885397])
-    >>> grid, weights = np.polynomial.hermite.hermgauss(9)
-    >>> pes_onebody = np.array([[0.05235573, 0.03093067, 0.01501878, 0.00420778, 0.0,
-    ...                          0.00584504, 0.02881817, 0.08483433, 0.22025702]])
-    >>> pes_twobody = None
-    >>> dipole_onebody = np.array([[[-1.92201700e-16,  1.45397041e-16, -1.40451549e-01],
-    ...                             [-1.51005108e-16,  9.53185441e-17, -1.03377032e-01],
-    ...                             [-1.22793018e-16,  7.22781963e-17, -6.92825934e-02],
-    ...                             [-1.96537436e-16, -5.86686504e-19, -3.52245369e-02],
-    ...                             [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
-    ...                             [ 5.24758835e-17, -1.40650833e-16,  3.69955543e-02],
-    ...                             [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
-    ...                             [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
-    ...                             [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
-    >>> vib_obj = qml.qchem.VibrationalPES(
-    ...     freqs=freqs,
-    ...     grid=grid,
-    ...     gauss_weights=weights,
-    ...     uloc=None,
-    ...     pes_data=[pes_onebody, pes_twobody],
-    ...     dipole_data=[dipole_onebody],
-    ...     localized=False
-    ... )
-    >>> x, y, z = qml.qchem.taylor_dipole_coeffs(vib_obj, 4, 2)
-    >>> print(z)
-    [array([[ 1.64124324e-03,  5.39120159e-03, -4.80053702e-05]])]
+    >>> freqs = np.array([0.0249722])
+    >>> dipole_onemode = np.array([[[-1.24222060e-16, -6.29170686e-17, -7.04678188e-02],
+    ...                             [ 3.83941489e-16, -2.31579327e-18, -3.24444991e-02],
+    ...                             [ 1.67813138e-17, -5.63904474e-17, -5.60662627e-15],
+    ...                             [-7.37584781e-17, -5.51948189e-17,  2.96786374e-02],
+    ...                             [ 1.40526000e-16, -3.67126324e-17,  5.92006212e-02]]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
+    >>> coeffs_x, coeffs_y, coeffs_z = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
+    >>> print(coeffs_z)
+    [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])]
+
+    .. details::
+        :title: Theory
+
+        The dipole :math:`D` along each of the :math:`x, y,` and :math:`z` directions is defined as:
+
+        .. math::
+
+            D(q_1,\cdots,q_M) = D_0 + \sum_{i=1}^M D_1^{(i)}(q_i) + \sum_{i>j}
+            D_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} D_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+        where :math:`q` is a normal coordinate and :math:`D_n` represents the :math:`n`-mode
+        component of the dipole computed along the normal coordinate. The :math:`D_n` terms are
+        defined as:
+
+        .. math::
+
+            D_0 &\equiv D(q_1=0,\cdots,q_M=0) \\
+            D_1^{(i)}(q_i) &\equiv D(0,\cdots,0,q_i,0,\cdots,0) - D_0 \\
+            D_2^{(i,j)}(q_i,q_j) &\equiv D(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+            D_1^{(i)}(q_i) - D_1^{(j)}(q_j) - D_0  \\
+            \nonumber \vdots
+
+        The one-mode Taylor dipole coefficients, :math:`\Phi`, computed here are related to the
+        dipole data as:
+
+        .. math::
+
+            D_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ....
+
+        Similarly, the two-mode and three-mode Taylor dipole coefficients are computed if the
+        two-mode and three-mode dipole data, :math:`D_2^{(j, k)}(q_j, q_k)` and
+        :math:`D_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
     """
     coeffs_x_1D, predicted_x_1D = _fit_onebody(
         pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg
@@ -581,27 +629,85 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
-    """Return Taylor bosonic vibrational Hamiltonian.
+    r"""Returns a Taylor bosonic vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
+    The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
+    :math:`V` components  as:
+
+    .. math::
+
+        H = T + V.
+
+    The kinetic term is defined in terms of momentum :math:`p` operators as
+
+    .. math::
+
+        T = \sum_{i\geq j} K_{ij} p_i  p_j,
+
+    where the :math:`K` matrix is defined in terms of vibrational frequencies, :math:`\omega`, and
+    mode localization unitary matrix, :math:`U`, as:
+
+    .. math::
+
+        K_{ij} = \sum_{k=1}^M \frac{\omega_k}{2} U_{ki} U_{kj}.
+
+    The potential term is defined in terms of normal coordinate operator :math:`q` as:
+
+    .. math::
+
+        V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+        V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+    where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+    computed along the normal coordinate. The :math:`V_n` terms are defined as:
+
+    .. math::
+
+		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
+		\nonumber \vdots
+
+    These terms are then used in a multi-dimensional polynomial fit to get :math:`n`-mode Taylor
+    coefficients. For instance, the one-mode Taylor coefficient :math:`\Phi` is related to the
+    one-mode potential energy surface data as:
+
+    .. math::
+
+        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ...
+
+    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
+    three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
+    :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
+
+    This real-space form of the vibrational Hamiltonian can be represented in the bosonic basis by
+    using equations defined in Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
+
+    .. math::
+
+        \hat q_i = \frac{1}{\sqrt{2}}(b_i^\dagger + b_i), \quad
+        \hat p_i = \frac{1}{\sqrt{2}}(b_i^\dagger - b_i),
+
+    where :math:`b^\dagger` and :math:`b` are bosonic creation and annihilation operators,
+    respectively.
 
     Args:
-        coeffs (list(float)): the coefficients of the Hamiltonian
-        freqs (list(float)): the harmonic frequencies in atomic units
-        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
-        uloc (list(list(float))): localization matrix indicating the relationship between original
-            and localized modes
+        coeffs (list(tensorlike(float))): the coefficients of a Taylor vibrational Hamiltonian
+        freqs (array(float)): the harmonic vibrational frequencies in atomic units
+        is_local (bool): Whether the vibrational modes are localized. Default is ``True``.
+        uloc (tensorlike(float)): normal mode localization matrix with shape ``(m, m)`` where
+            ``m = len(freqs)``
 
     Returns:
-        pennylane.bose.BoseSentence: Taylor bosonic hamiltonian
+        pennylane.bose.BoseSentence: Taylor bosonic Hamiltonian
 
     **Example**
 
-    >>> one_mode = np.array([[-0.00088528, -0.00361425,  0.00068143]])
-    >>> two_mode = np.array([[[0., 0., 0., 0., 0., 0.]]])
     >>> freqs = np.array([0.025])
+    >>> one_mode = np.array([[-0.00088528, -0.00361425,  0.00068143]])
     >>> uloc = np.array([[1.0]])
-    >>> ham = qml.qchem.taylor_bosonic(coeffs=[one_mode, two_mode], freqs=freqs, uloc=uloc)
+    >>> ham = qml.qchem.taylor_bosonic(coeffs=[one_mode], freqs=freqs, uloc=uloc)
     >>> print(ham)
     -0.0012778303419517393 * b⁺(0) b⁺(0) b⁺(0)
     + -0.0038334910258552178 * b⁺(0) b⁺(0) b(0)
@@ -635,51 +741,102 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 def taylor_hamiltonian(
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
-    """Return Taylor vibrational Hamiltonian.
+    r"""Returns Taylor vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
-    The Hamiltonian is then converted to a qubit operator with a selected ``mapping`` method.
+    The Taylor vibrational Hamiltonian is defined in terms of kinetic :math:`T` and potential
+    :math:`V` components  as:
+
+    .. math::
+
+        H = T + V.
+
+    The kinetic term is defined in terms of momentum :math:`p` operator as
+
+    .. math::
+
+        T = \sum_{i\geq j} K_{ij} p_i  p_j,
+
+    where the :math:`K` matrix is defined in terms of vibrational frequencies, :math:`\omega`, and
+    mode localization unitary matrix, :math:`U`, as:
+
+    .. math::
+
+        K_{ij} = \sum_{k=1}^M \frac{\omega_k}{2} U_{ki} U_{kj}.
+
+    The potential term is defined in terms of the normal coordinate operator :math:`q` as:
+
+    .. math::
+
+        V(q_1,\cdots,q_M) = V_0 + \sum_{i=1}^M V_1^{(i)}(q_i) + \sum_{i>j}
+        V_2^{(i,j)}(q_i,q_j) + \sum_{i<j<k} V_3^{(i,j,k)}(q_i,q_j,q_k) + \cdots,
+
+    where :math:`V_n` represents the :math:`n`-mode component of the potential energy surface
+    computed along the normal coordinate. The :math:`V_n` terms are defined as:
+
+    .. math::
+
+		V_0 &\equiv  V(q_1=0,\cdots,q_M=0) \\
+		V_1^{(i)}(q_i) &\equiv  V(0,\cdots,0,q_i,0,\cdots,0) -  V_0 \\
+		V_2^{(i,j)}(q_i,q_j) &\equiv  V(0,\cdots,q_i,\cdots,q_j,\cdots,0) -
+		V_1^{(i)}(q_i) -  V_1^{(j)}(q_j) -  V_0  \\
+		\nonumber \vdots
+
+    These terms are then used in a multi-dimensional polynomial fit with a polynomial specified by
+    ``min_deg`` and ``max_deg`` to get :math:`n`-mode Taylor coefficients. For instance, the
+    one-mode Taylor coefficient :math:`\Phi` is related to the one-mode potential energy surface
+    data as:
+
+    .. math::
+
+        V_1^{(j)}(q_j) \approx \Phi^{(2)}_j q_j^2 + \Phi^{(3)}_j q_j^3 + ...
+
+    Similarly, the two-mode and three-mode Taylor coefficients are computed if the two-mode and
+    three-mode potential energy surface data, :math:`V_2^{(j, k)}(q_j, q_k)` and
+    :math:`V_3^{(j, k, l)}(q_j, q_k, q_l)`, are provided.
+
+    This real space form of the vibrational Hamiltonian can be represented in the bosonic basis by
+    using equations defined in Eqs. 6, 7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_:
+
+    .. math::
+
+        \hat q_i = \frac{1}{\sqrt{2}}(b_i^\dagger + b_i), \quad
+        \hat p_i = \frac{1}{\sqrt{2}}(b_i^\dagger - b_i),
+
+    where :math:`b^\dagger` and :math:`b` are bosonic creation and annihilation operators,
+    respectively.
+
+    The bosonic Hamiltonian is then converted to a qubit operator with a selected ``mapping``
+    method to obtain a linear combination as:
+
+    .. math::
+
+        H = \sum_{i} c_i P_i,
+
+    where :math:`P` is a tensor product of Pauli operators and :math:`c` is a constant.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of Taylor form polynomial
-        min_deg (int): minimum degree of Taylor form polynomial
+        max_deg (int): maximum degree of the polynomial used to compute the coefficients
+        min_deg (int): minimum degree of the polynomial used to compute the coefficients
         mapping (str): Method used to map to qubit basis. Input values can be ``"binary"``
             or ``"unary"``. Default is ``"binary"``.
         n_states(int): maximum number of allowed bosonic states
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
             wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
             Defaults to ``None``.
-        tol (float): tolerance for discarding the imaginary part of the coefficients
+        tol (float): tolerance for discarding the imaginary part of the coefficients during mapping
 
     Returns:
         Operator: the Taylor Hamiltonian
 
     **Example**
 
-    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-    >>> pes_twomode = np.zeros((1, 1, 9, 9))
-    >>> dipole_onemode = np.zeros((1, 9, 3))
-    >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-    ...                           4.33e-01, 7.20e-01, 4.33e-01,
-    ...                           8.85e-02, 4.94e-03, 3.96e-05])
-    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = qml.qchem.VibrationalPES(
-    ...     freqs=np.array([0.025]),
-    ...     grid=grid,
-    ...     uloc=np.array([[1.0]]),
-    ...     gauss_weights=gauss_weights,
-    ...     pes_data=[pes_onemode, pes_twomode],
-    ...     dipole_data=[dipole_onemode],
-    ...     localized=True,
-    ...     dipole_level=1,
-    ... )
-    >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
-    (
-        -0.003833496032473659 * X(0)
-        + (0.0256479442871582+0j) * I(0)
-        + (-0.013079509779221888+0j) * Z(0)
-    )
+    >>> freqs = np.array([0.0249722])
+    >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
+    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode], localized=False)
+    >>> ham = qml.qchem.taylor_hamiltonian(pes_object)
+    >>> print(ham)
+    0.026123120450329353 * I(0) + -0.01325338030021957 * Z(0) + -0.0032539545260859464 * X(0)
     """
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)

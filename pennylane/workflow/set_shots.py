@@ -14,16 +14,19 @@
 """
 This module contains the set_shots decorator.
 """
-from typing import Sequence, Tuple, Union
+from __future__ import annotations
 
-from pennylane.measurements import Shots
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 from .qnode import QNode
+
+if TYPE_CHECKING:
+    from pennylane.measurements import Shots
 
 
 def set_shots(
     qnode: QNode,
-    shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
+    shots: Optional[Shots | int | Sequence[int | Tuple[int, int]]] = None,
 ) -> QNode:
     """Transform used to set or update a circuit's shots.
 
