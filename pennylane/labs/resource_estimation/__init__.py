@@ -125,7 +125,6 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
-<<<<<<< HEAD
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
 
@@ -213,10 +212,7 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
-<<<<<<< HEAD
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
-=======
->>>>>>> origin/re_new_feature_branch
 )

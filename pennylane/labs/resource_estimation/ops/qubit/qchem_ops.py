@@ -129,7 +129,6 @@ class ResourceSingleExcitation(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * eps (float): error threshold for clifford plus T decomposition of this operation
-
         """
         return {"eps": self.eps}
 
