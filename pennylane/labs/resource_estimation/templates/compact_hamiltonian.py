@@ -32,7 +32,9 @@ class CompactHamiltonian:
 
             Refer to the documentation of each specific constructor method for their required parameters.
 
-    .. details:: Usage Details
+    .. details::
+        :title: Usage Details
+
         The :class:`CompactHamiltonian` class is designed to be an alternative input to using the full
         Hamiltonian for resource estimation. It should be used in combination with trotterization and
         qubitization templates for more efficient state resource estimation.
