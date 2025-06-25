@@ -78,7 +78,7 @@ class ResourceSingleExcitation(ResourceOperator):
 
         Args:
             eps (float, optional): error threshold for clifford plus T decomposition of this operation
-        
+
         Resources:
             The resources are obtained by decomposing the following matrix into fundamental gates.
 

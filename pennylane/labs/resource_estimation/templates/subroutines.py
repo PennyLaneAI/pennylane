@@ -25,7 +25,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, protected-access
+# pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
 
 
 class ResourceOutOfPlaceSquare(ResourceOperator):
@@ -817,10 +817,7 @@ class ResourceQROM(ResourceOperator):
 
         if t_cost_func(w2) < t_cost_func(w1) and w2 >= 1:
             return w2
-        elif t_cost_func(w2) >= t_cost_func(w1) and w1 >= 1:
-            return w1
-        else:
-            return 1
+        return w1
 
     def __init__(
         self,
@@ -944,6 +941,7 @@ class ResourceQROM(ResourceOperator):
         select_swap_depth,
         clean,
     ):
+        r"""The resource decomposition for QROM controlled on a single wire."""
         W_opt = select_swap_depth or ResourceQROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -1081,13 +1079,9 @@ class ResourceQROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to
-                :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-                * clean (bool, optional): Determine if allocated qubits should be reset after the computation
-                (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
+                * clean (bool, optional): Determine if allocated qubits should be reset after the computation (at the cost of higher gate counts). Defaults to :code`True`.
+                * select_swap_depth (Union[int, None], optional): A natural number that determines if data will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Defaults to :code:`None`, which internally determines the optimal depth.
 
         """
 
