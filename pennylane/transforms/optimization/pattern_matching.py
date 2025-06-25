@@ -482,6 +482,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
+        "C(S)": "S",
         "CRot": "Rot",
         "MultiControlledX": "PauliX",
         "ControlledOperation": "ControlledOperation",
@@ -1556,6 +1557,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "SWAP": 6,
                 "CSWAP": 63,
                 "Toffoli": 21,
+                "C(S)": 4
             }
 
     def _pred_block(self, circuit_sublist, index):
@@ -1589,11 +1591,18 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
         for i in left:
-            cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            if self.template_dag.get_node(i).op.name != "MultiControlledX":
+                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            else:
+                # cost depends on number of controls, the CNOT cost scales as 4n^2
+                cost_left += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
 
         cost_right = 0
         for j in right:
-            cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
+            if self.template_dag.get_node(j).op.name != "MultiControlledX":
+                cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
+            else:
+                cost_right += 2 * 4 * len(self.template_dag.get_node(j).op.control_wires) ** 2
 
         return cost_left > cost_right
 
