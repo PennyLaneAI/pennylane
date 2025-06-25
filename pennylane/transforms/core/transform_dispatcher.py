@@ -18,6 +18,7 @@ import functools
 import os
 import types
 import warnings
+from collections import namedtuple
 from collections.abc import Callable, Sequence
 from copy import copy
 
@@ -89,6 +90,9 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
         jaxpr = jax.make_jaxpr(wrapper)(*args)
         jaxpr = plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+
+BatchAndPostprocessing = namedtuple("BatchAndPostprocessing", ("Batch", "Postprocessing"))
 
 
 class TransformContainer:  # pylint: disable=too-many-instance-attributes
@@ -187,6 +191,17 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes
         """``True`` if the transform needs to be executed"""
         return self._final_transform
 
+    def __call__(self, arg, cotransform_cache=None):
+        dispatcher = TransformDispatcher(
+            self.transform,
+            classical_cotransform=self.classical_cotransform,
+            is_informative=self.is_informative,
+            final_transform=self.final_transform,
+            plxpr_transform=self.plxpr_transform,
+            skip_registration=True,
+        )
+        return dispatcher(arg, *self.args, cotransform_cache=cotransform_cache, **self.kwargs)
+
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
@@ -231,6 +246,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         final_transform=False,
         use_argnum_in_expand=False,
         plxpr_transform=None,
+        skip_registration=False,
     ):
         self._transform = transform
         self._expand_transform = expand_transform
@@ -244,11 +260,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         functools.update_wrapper(self, transform)
 
         self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(self._transform)
-        self._primitive = _create_transform_primitive(self._transform.__name__)
-        _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
+        if skip_registration:
+            self._primitive = None
+        else:
+            self._primitive = _create_transform_primitive(self._transform.__name__)
+            _register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     @functools.singledispatchmethod
-    def apply(self, obj, *targs, **tkwargs):
+    def apply(self, obj, *targs, cotransform_cache=None, **tkwargs):
 
         if obj.__class__.__name__ == "QJIT":
             raise TransformError(
@@ -270,15 +289,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
         )
 
-    def __call__(self, *targs, **tkwargs):
+    def __call__(self, *targs, cotransform_cache=None, **tkwargs):
         obj = None
 
         if targs:
             # assume the first argument passed to the transform
             # is the object we wish to transform
             obj, *targs = targs
-
-        return self.apply(obj, *targs, **tkwargs)
+        return self.apply(obj, *targs, cotransform_cache=cotransform_cache, **tkwargs)
 
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
@@ -375,8 +393,35 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._qnode_transform = types.MethodType(fn, self)
 
 
+class BatchPostprocessing:
+
+    def __init__(self, batch_fns, slices):
+        self.batch_fns = batch_fns
+        self.slices = slices
+
+    def __call__(self, results: ResultBatch) -> ResultBatch:
+        return tuple(f(results[s]) for f, s in zip(self.batch_fns, self.slices))
+
+    def __repr__(self):
+        return f"<BatchPostprocessing: {self.batch_fns}>"
+
+
+class PostprocessingStack:
+
+    def __init__(self, postprocessing_stack: list[BatchPostprocessing]):
+        self.postprocessing_stack = postprocessing_stack
+
+    def __call__(self, results: ResultBatch) -> ResultBatch:
+        for postprocessing in reversed(self.postprocessing_stack):
+            results = postprocessing(results)
+        return results
+
+    def __repr__(self):
+        return f"<PostprocessingStack: {self.postprocessing_stack}>"
+
+
 @TransformDispatcher.apply.register(Sequence)
-def apply_to_batch(self, original_batch: Sequence, *targs, **tkwargs):
+def apply_to_batch(self, original_batch: Sequence, *targs, cotransform_cache=None, **tkwargs):
     """Apply the transform on a batch of tapes."""
     if not all(isinstance(t, qml.tape.QuantumScript) for t in original_batch):
         raise TransformError(
@@ -389,47 +434,68 @@ def apply_to_batch(self, original_batch: Sequence, *targs, **tkwargs):
 
     execution_tapes = []
     batch_fns = []
-    tape_counts = []
+    slices = []
+    classical_fns = []
+    start = 0
 
-    for t in original_batch:
+    argnums = cotransform_cache.get_argnums(self.transform) if cotransform_cache else None
+
+    classical_jacobians = []
+    for tape_idx, t in enumerate(original_batch):
+        if argnums is not None:
+            t.trainable_params = argnums[tape_idx]
+
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
         new_tapes, fn = self(t, *targs, **tkwargs)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
-        tape_counts.append(len(new_tapes))
 
-    def processing_fn(res: ResultBatch) -> ResultBatch:
-        """Applies a batch of post-processing functions to results.
+        end = start + len(new_tapes)
+        slices.append(slice(start, end))
+        start = end
 
-        Args:
-            res (ResultBatch): the results of executing a batch of circuits.
+        jac = (
+            cotransform_cache.get_classical_jacobian(self.transform, tape_idx)
+            if cotransform_cache
+            else None
+        )
+        classical_jacobians.append(jac)
+        if self.classical_cotransform and classical_jacobians[-1] is not None:
+            classical_fns.append(
+                functools.partial(self.classical_cotransform, cjac=classical_jacobians[-1], tape=t)
+            )
 
-        Returns:
-            ResultBatch: results that have undergone classical post processing.
+    processing_fn = BatchPostprocessing(batch_fns, slices)
+    if self.classical_cotransform and classical_fns:
+        slices_classical = list(range(len(original_batch)))
+        classical_postprocessing = BatchPostprocessing(classical_fns, slices=slices_classical)
+        processing_fn = PostprocessingStack([processing_fn, classical_postprocessing])
 
-        Closure variables:
-            tape_counts: the number of tapes outputted from each application of the transform.
-            batch_fns: the post processing functions to apply to each sub-batch.
+    return BatchAndPostprocessing(tuple(execution_tapes), processing_fn)
 
-        """
-        count = 0
-        final_results = []
 
-        for f, s in zip(batch_fns, tape_counts):
-            # apply any batch transform post-processing
-            new_res = f(res[count : count + s])
-            final_results.append(new_res)
-            count += s
+@TransformDispatcher.apply.register(BatchAndPostprocessing)
+def apply_to_batch_and_postprocessing(
+    self, batch_and_postprocessing, *targs, cotransform_cache=None, **tkwargs
+):
+    batch, previous_postprocessing = batch_and_postprocessing
+    new_batch, new_postprocessing = self(
+        batch, *targs, cotransform_cache=cotransform_cache, **tkwargs
+    )
 
-        return tuple(final_results)
-
-    return tuple(execution_tapes), processing_fn
+    if isinstance(previous_postprocessing, PostprocessingStack):
+        chained_postprocessing = PostprocessingStack(
+            [new_postprocessing, *previous_postprocessing.postprocessing_stack]
+        )
+    else:  # hoping callable
+        chained_postprocessing = PostprocessingStack([new_postprocessing, previous_postprocessing])
+    return BatchAndPostprocessing(new_batch, chained_postprocessing)
 
 
 @TransformDispatcher.apply.register(qml.tape.QuantumScript)
-def apply_to_tape(self, tape: qml.tape.QuantumScript, *targs, **tkwargs):
+def apply_to_tape(self, tape: qml.tape.QuantumScript, *targs, cotransform_cache=None, **tkwargs):
     if self._expand_transform:
         expanded_tapes, expand_processing = self._expand_transform(tape, *targs, **tkwargs)
         transformed_tapes = []
@@ -451,7 +517,7 @@ def apply_to_tape(self, tape: qml.tape.QuantumScript, *targs, **tkwargs):
 
     if self.is_informative:
         return processing_fn(transformed_tapes)
-    return transformed_tapes, processing_fn
+    return BatchAndPostprocessing(transformed_tapes, processing_fn)
 
 
 def _capture_callable_transform(self, qfunc, targs, tkwargs):
@@ -489,7 +555,7 @@ def _capture_callable_transform(self, qfunc, targs, tkwargs):
 
 
 @TransformDispatcher.apply.register(Callable)
-def apply_to_callable(self, qfunc: Callable, *targs, **tkwargs):
+def apply_to_callable(self, qfunc: Callable, *targs, cotransform_cache=None, **tkwargs):
     if qml.capture.enabled():
         return _capture_callable_transform(self, qfunc, targs, tkwargs)
 

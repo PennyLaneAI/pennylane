@@ -912,7 +912,7 @@ qnode.__signature__ = inspect.signature(QNode)
 
 
 @qml.transforms.core.TransformDispatcher.apply.register(QNode)
-def apply_transform_to_qnode(self, qnode: QNode, *targs, **tkwargs):
+def apply_transform_to_qnode(self, qnode: QNode, *targs, cotransform_cache=None, **tkwargs):
     if qml.capture.enabled():
         new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
         return self._capture_callable_transform(new_qnode, targs, tkwargs)

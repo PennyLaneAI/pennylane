@@ -1124,7 +1124,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
 
 
 @qml.transforms.core.TransformDispatcher.apply.register(Device)
-def apply_transform_to_device(self, device, *targs, **tkwargs):
+def apply_transform_to_device(self, device, *targs, cotransform_cache=None, **tkwargs):
     """Apply the transform on a device"""
     if self._expand_transform:
         raise qml.exceptions.TransformError("Device transform does not support expand transforms.")
