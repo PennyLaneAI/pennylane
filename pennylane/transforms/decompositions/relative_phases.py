@@ -236,13 +236,14 @@ def replace_controlled_iX_gate(
 
 @transform
 def replace_4_qubit_multi_controlled_X_gate(
-    tape: QuantumScript,
+    tape: QuantumScript, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace 4-qubit multi controlled X gates, given on
     page six of (Amy, M. and Ross, N. J., 2021).
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
+        additional_controls (int): Additional controls in excess of 4.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
@@ -316,17 +317,36 @@ def replace_4_qubit_multi_controlled_X_gate(
 
     """
     pattern_ops = [
-        qml.MultiControlledX(wires=[0, 1, 2, 3, 6]),
+        qml.MultiControlledX(
+            wires=list(range(additional_controls))
+            + list(range(additional_controls, additional_controls + 4))
+            + [additional_controls + 6]
+        ),
         # ------------
-        qml.Hadamard(4),
-        qml.Hadamard(5),
-        qml.Toffoli([3, 5, 6]),
-        qml.Toffoli([2, 4, 5]),
-        qml.Toffoli([0, 1, 4]),
-        qml.Toffoli([2, 4, 5]),
-        qml.Toffoli([3, 5, 6]),
-        qml.Hadamard(4),
-        qml.Hadamard(5),
+        qml.ctrl(qml.Hadamard(additional_controls + 4), list(range(additional_controls))),
+        qml.Hadamard(additional_controls + 5),
+        qml.Toffoli(
+            list(range(additional_controls))
+            + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
+        ),
+        qml.Toffoli(
+            list(range(additional_controls))
+            + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
+        ),
+        qml.Toffoli(
+            list(range(additional_controls))
+            + [additional_controls + 0, additional_controls + 1, additional_controls + 4]
+        ),
+        qml.Toffoli(
+            list(range(additional_controls))
+            + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
+        ),
+        qml.Toffoli(
+            list(range(additional_controls))
+            + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
+        ),
+        qml.ctrl(qml.Hadamard(additional_controls + 4), list(range(additional_controls))),
+        qml.ctrl(qml.Hadamard(additional_controls + 5), list(range(additional_controls))),
     ]
     pattern = QuantumTape(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern], allow_phase=True)

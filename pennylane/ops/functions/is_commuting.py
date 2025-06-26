@@ -306,7 +306,7 @@ non_commuting_operations = [
     "Snapshot",
     # allocation
     "Allocate",
-    "Deallocate"
+    "Deallocate",
 ]
 
 
