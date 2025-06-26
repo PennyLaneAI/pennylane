@@ -201,7 +201,7 @@ def replace_controlled_iX_gate(
 
         We can replace the multi-controlled iX gate by running the transform:
 
-        >>> lowered_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
         >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
         >>> print(qml.draw(lowered_qnode)())
 
