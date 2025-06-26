@@ -117,3 +117,76 @@ def _run_casscf(
         energies = [mc.kernel()[0]]
 
     return energies
+
+
+def _run_tddft(
+    symbols,
+    coords,
+    basis="6-31g*",
+    functional="cam-b3lyp",
+    nroots=2,
+    conv_tol=1e-7,
+    max_cycle=50,
+    restrict_to_singlet=True,
+    spin=0,
+    point_group=None,
+):
+    """
+    Run TDDFT calculation and return energies.
+
+    Args:
+        mol: PySCF Mole object
+
+    Returns:
+        List of TDDFT energies in Hartree, including ground state
+    """
+
+    coords = [[symbol, tuple(np.array(coords)[i])] for i, symbol in enumerate(symbols)]
+
+    mol = gto.Mole()
+    mol.atom = coords
+    mol.unit = "Angstrom"
+    mol.basis = basis
+    mol.spin = spin
+    if point_group:
+        mol.symmetry = point_group.lower()
+        mol.symmetry_subgroup = point_group.lower()
+
+    mol.build()
+
+    # Run DFT based on spin
+    if mol.spin == 0:
+        mf = scf.RKS(mol)
+    else:
+        mf = scf.UKS(mol)
+    mf.xc = functional
+    mf.kernel()
+
+    # Get ground state energy
+    gs_energy = mf.e_tot
+
+    # Run TDDFT
+    td = tdscf.TDA(mf)
+    td.nstates = nroots - 1
+    td.conv_tol = conv_tol
+    td.max_cycle = max_cycle
+
+    # Set spin restriction if requested
+    if restrict_to_singlet:
+        if mol.spin != 0:
+            raise ValueError("Cannot restrict to singlet for open-shell system")
+        td.singlet = True
+    else:
+        td.singlet = False
+
+    # Run calculation
+    td.kernel()
+    td.analyze(verbose=4)
+
+    # Get excitation energies (in eV) and convert to Hartree
+    excitation_energies = td.e / 27.2114
+
+    # Add ground state energy to get total energies
+    energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
+
+    return energies
