@@ -4,6 +4,52 @@
 
 <h3>New features since last release</h3>
 
+* The `qchem` module is upgraded with new functions to construct a vibrational Hamiltonian in 
+  the Christiansen representation. 
+  [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
+  [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
+
+  The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
+  be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
+  functions need input parameters that can be easily obtained by using the
+  :func:`christiansen_integrals` and :func:`vibrational_pes` functions. Similarly, a Christiansen
+  dipole operator can be created by using the :func:`christiansen_dipole` and
+  :func:`christiansen_integrals_dipole` functions.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  symbols  = ['H', 'F']
+  geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
+  mol = qml.qchem.Molecule(symbols, geometry)
+  pes = qml.qchem.vibrational_pes(mol, optimize=False)
+  ham = qml.qchem.vibrational.christiansen_hamiltonian(pes, n_states = 4)
+  ```
+
+  ```pycon
+  >>> ham
+  (
+      0.08527499987546708 * I(0)
+    + -0.0051774006335491545 * Z(0)
+    + 0.0009697024705108074 * (X(0) @ X(1))
+    + 0.0009697024705108074 * (Y(0) @ Y(1))
+    + 0.0002321787923591865 * (X(0) @ X(2))
+    + 0.0002321787923591865 * (Y(0) @ Y(2))
+    + 0.0008190498635406456 * (X(0) @ X(3))
+    + 0.0008190498635406456 * (Y(0) @ Y(3))
+    + -0.015699890427524253 * Z(1)
+    + 0.002790002362847834 * (X(1) @ X(2))
+    + 0.002790002362847834 * (Y(1) @ Y(2))
+    + 0.000687929225764568 * (X(1) @ X(3))
+    + 0.000687929225764568 * (Y(1) @ Y(3))
+    + -0.026572392417060237 * Z(2)
+    + 0.005239546276220405 * (X(2) @ X(3))
+    + 0.005239546276220405 * (Y(2) @ Y(3))
+    + -0.037825316397333435 * Z(3)
+  )
+  ```  
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
@@ -11,6 +57,7 @@
   among the different multi-controlled operators, avoiding unnecessary recomputation.
   Check out the documentation for a thorough explanation.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
+  [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
 
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
@@ -709,6 +756,50 @@
   possible implementation of the parity matrix that respects the connectivity.
   [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
+* `pennylane.labs.QubitManager`, `pennylane.labs.AllocWires`, and `pennylane.labs.FreeWires` classes have been added to track and manage auxilliary qubits.
+  [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
+
+* `pennylane.labs.map_to_resource_op` function has been added to map PennyLane Operations to their resource equivalents.
+  [(#7434)](https://github.com/PennyLaneAI/pennylane/pull/7434)
+
+* Added a `pennylane.labs.Resources` class to store and track the quantum resources from a circuit.
+  [(#7406)](https://github.com/PennyLaneAI/pennylane/pull/7406)
+  
+* `pennylane.labs.CompressedResourceOp` class has been added to store information about the operator type and parameters.
+  [(#7408)](https://github.com/PennyLaneAI/pennylane/pull/7408)
+
+* Added the base `pennylane.labs.ResourceOperator` class which will be used to implement all quantum 
+  operators for resource estimation.
+  [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
+
+* Added the `pennylane.labs.estimate_resources` function which will be used to perform resource
+  estimation on circuits, `pennylane.labs.ResourceOperator` and `pennylane.labs.Resources` objects.
+  [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for non-parametric single qubit gates.
+  [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for parametric single qubit gates.
+  [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for controlled gates.
+  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for symbolic operators of gates.
+  [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
+
+* Added the `pennylane.labs.ResourceOperator` templates which will be used to perform resource
+  estimation for multi-qubit parametic gates.
+  [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
+
+* Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
+  supporting compact hamiltonian development.
+  [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
@@ -718,6 +809,19 @@
     * :func:`todd <pennylane.labs.zxopt.todd>` performs Third Order Duplicate and Destroy (`TODD <https://arxiv.org/abs/1712.01557>`__) via phase polynomials and reduces T gate counts.
 
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
+
+* New functionality is added to create and manipulate product formulas in the `trotter_error` module.
+  [(#7224)](https://github.com/PennyLaneAI/pennylane/pull/7224)
+ 
+    * :class:`ProductFormula <pennylane.labs.trotter_error.ProductFormula` allows users to create custom product formulas.
+    * :func:`bch_expansion <pennylane.labs.trotter_error.bch_expansion` computes the Baker-Campbell-Hausdorff  expansion of a product formula.
+    * :func:`effective_hamiltonian <pennylane.labs.trotter_error.effective_hamiltonian` computes the effective Hamiltonian of a product formula.
+
+* Optimized the :func:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>`
+  module for better performance by using a task-based executor to parallelize the computationally heavy
+  parts of the algorithm.
+
+  [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
 
 * Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
@@ -803,6 +907,15 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Move private code in the `TransformProgram` onto the `CotransformCache` class.
+  [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
+
+* Improve type hinting in the `workflow` module.
+  [(#7745)](https://github.com/PennyLaneAI/pennylane/pull/7745)
+
+* Unpin `mitiq` in CI.
+  [(#7742)](https://github.com/PennyLaneAI/pennylane/pull/7742)
+
 * The `qml.measurements.Shots` class can now handle abstract numbers of shots.
   [(#7729)](https://github.com/PennyLaneAI/pennylane/pull/7729)
 
@@ -836,6 +949,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7538)](https://github.com/PennyLaneAI/pennylane/pull/7538)
   [(#7542)](https://github.com/PennyLaneAI/pennylane/pull/7542)
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
+  [(#7743)](https://github.com/PennyLaneAI/pennylane/pull/7743)
 
 * With program capture enabled, mcm method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
@@ -932,7 +1046,22 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+<<<<<<< snapshots-warning
+* Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
+may move operations across a `Snapshot`.
+  [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
+=======
+* In the :doc:`/development/guide/documentation` page, removed references to the outdated Sphinx and unsupported Python 3.8 version. 
+  This helps ensure contributors follow current standards and avoid compatibility issues.
+  [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
+
+>>>>>>> master
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
+  some arguments are trainable and an intermediate transform does not preserve trainability information.
+  [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
 
 * The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
   when specifying the angle, due to the given hashing policy. The implementation was updated to ensure
@@ -1081,9 +1210,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
+Ali Asadi,
 Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
@@ -1092,12 +1223,15 @@ Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
 Anton Naim Ibrahim,
+William Maxwell
 Luis Alfredo Nuñez Meneses
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Justin Pickering,
 Shuli Shu,
+Jay Soni,
 Kalman Szenes,
 Marc Vandelle,
 David Wierichs,

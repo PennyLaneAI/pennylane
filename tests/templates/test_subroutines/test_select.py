@@ -254,17 +254,17 @@ class TestErrorMessages:
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
             (
                 [qml.PauliX(wires=0)] * 10,
                 [1, 2, 3],
-                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required.",
+                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires are required.",
             ),
             (
                 [qml.PauliX(wires="a"), qml.PauliY(wires="b"), qml.PauliZ(wires="c")],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
         ],
     )
