@@ -125,112 +125,93 @@ def _rotate_molecule(mol_eq):
     return mol_eq
 
 
-def _harmonic_analysis(mol_eq, rotate=True, method="RHF", functional=None):
-    r"""
+def _harmonic_analysis(
+    molecule,
+    rotate=True,
+    method="rhf",
+    functional="b3lyp",
+):
+    r"""Computes the harmonic vibrational normal modes and frequencies of a molecule.
 
-    mol_eq: PySCF Molecule object
+    Args:
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object at equilibrium geometry
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively or 'dft'. Default is ``'rhf'``.
+        functional (str): The exchange-correlation functional for if DFT method is selected. Default
+            is ``b3lyp``.
+        rotate (bool): If ``True``, the molecule will be rotated such that the normal modes are
+            aligned with symmetry operators. Default is ``True``.
+
+    Returns:
+        tuple[array[float]]: vibrational frequencies and normal modes
+
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0],
+    ...                      [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> eq_geom = qml.qchem.optimize_geometry(mol)
+    >>> eq_geom
+    array([[ 0.        ,  0.        , -0.40277116],
+           [ 0.        ,  0.        ,  1.40277116]])
     """
 
-    if isinstance(mol_eq, qchem.Molecule):
+    if isinstance(molecule, qchem.Molecule):
 
         geom = [
-            [symbol, tuple(np.array(mol_eq.coordinates)[i])]
-            for i, symbol in enumerate(mol_eq.symbols)
+            [symbol, tuple(np.array(molecule.coordinates)[i])]
+            for i, symbol in enumerate(molecule.symbols)
         ]
-        spin = int((mol_eq.mult - 1) / 2)
-        charge = mol_eq.charge
-        basis = mol_eq.basis_name
-        mol_eq = pyscf.gto.Mole(
+        spin = int((molecule.mult - 1) / 2)
+        charge = molecule.charge
+        basis = molecule.basis_name
+        molecule = pyscf.gto.Mole(
             atom=geom, symmetry="C1", spin=spin, charge=charge, unit="Bohr", basis=basis
         )
-        mol_eq.build()
+        molecule.build()
 
     if rotate:
-        mol_eq = _rotate_molecule(mol_eq)
-
-    # Create mean-field object based on method
-    if method == "DFT":
-        if functional is None:
-            raise ValueError("Functional must be specified for DFT calculations")
-        if mol_eq.spin == 0:
-            mf = scf.RKS(mol_eq)
-        else:
-            mf = scf.UKS(mol_eq)
-        mf.xc = functional
-    elif method == "RHF":
-        mf = scf.RHF(mol_eq)
-    elif method == "ROHF":
-        mf = scf.UHF(mol_eq)
-    else:
-        raise ValueError(f"Unsupported method: {method}")
-
-    mf.kernel()
+        molecule = _rotate_molecule(molecule)
 
     # Calculate Hessian
-    if method == "DFT":
-        if mol_eq.spin == 0:
+    if method == "dft":
+        if molecule.spin == 0:
             from pyscf.hessian import rks
 
+            mf = scf.RKS(molecule)
+            mf.kernel()
             hess = rks.Hessian(mf).kernel()
         else:
             from pyscf.hessian import uks
 
+            mf = scf.UKS(molecule)
+            mf.kernel()
             hess = uks.Hessian(mf).kernel()
-    elif method == "RHF":
+    elif method == "rhf":
         from pyscf.hessian import rhf
 
+        mf = scf.RHF(molecule)
+        mf.kernel()
         hess = rhf.Hessian(mf).kernel()
-    elif method == "ROHF":
+    elif method == "uhf":
         from pyscf.hessian import uhf
 
+        mf = scf.UHF(molecule)
+        mf.kernel()
         hess = uhf.Hessian(mf).kernel()
     else:
-        raise ValueError(f"Unsupported method: {method} for Hessian calculation")
+        raise ValueError(f"Unsupported method: {method}.")
 
-    # Calculate normal modes using the Hessian
     vib_results = thermo.harmonic_analysis(
-        mol_eq, hess, exclude_trans=True, exclude_rot=True, imaginary_freq=True
+        molecule, hess, exclude_trans=True, exclude_rot=True, imaginary_freq=True
     )
-
-    # Check for imaginary frequencies
-    frequencies = vib_results["freq_wavenumber"]
-
-    if np.any(frequencies.imag != 0):
-        raise ValueError(f"Found imaginary frequencies.")
-
-    # if mol.topgroup == "Coov":  # use maximal abelian subgroup
-    #     mol.topgroup = "C2v"
-    #     warnings.warn(
-    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-    #     )
-    #
-    # elif mol.topgroup == "Dooh":  # use maximal abelian subgroup
-    #     mol.topgroup = "d2h"
-    #     warnings.warn(
-    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-    #     )
-
-    # # Analyze symmetry of normal modes
-    # sym_modes_gs = posym.SymmetryNormalModes(
-    #     group=mol.topgroup,
-    #     coordinates=[atom[1] for atom in mol._atom],
-    #     modes=vib_results["norm_mode"],
-    #     symbols=[atom[0] for atom in mol._atom],
-    # )
-    # mode_irreps = []
-    # for i in range(len(frequencies)):
-    #     mode_vals = sym_modes_gs.get_state_mode(i).get_ir_representation().values
-    #     irrep_idx = np.argmax(mode_vals)
-    #     mode_irrep = sym_modes_gs.get_state_mode(i).get_ir_representation().index[irrep_idx]
-    #     mode_irreps.append(mode_irrep)
-    #
-    # vib_results["irreps"] = mode_irreps
-    vib_results["irreps"] = []
-
-    # -----------------
 
     frequencies = vib_results["freq_wavenumber"]
     normal_modes = vib_results["norm_mode"]
+
+    if np.any(frequencies.imag != 0):
+        raise ValueError(f"Found imaginary frequencies.")
 
     return frequencies, normal_modes
 
