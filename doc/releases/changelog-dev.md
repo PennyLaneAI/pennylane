@@ -1076,7 +1076,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   in the :doc:`/introduction/dynamic_quantum_circuits` page.
   [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
