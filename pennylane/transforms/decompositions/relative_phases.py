@@ -310,6 +310,10 @@ def replace_4_qubit_multi_controlled_X_gate(
         for relative phases as we do here, the work wires must remain in the same state when matched with a global
         uncomputation later (Amy, M. and Ross, N. J., 2021).
 
+        i.e. if a compiler pass using replace_controlled_iX_gate() yields a circuit with 4-qubit multi controlled X
+        gates in it, a second compiler pass using this transfom would lower these to Toffolis + Hadamards. This yields
+        an improved decomposition in terms of the number of expensive gates.
+
     """
     pattern_ops = [
         qml.MultiControlledX(wires=[0, 1, 2, 3, 6]),
