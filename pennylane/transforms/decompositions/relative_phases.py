@@ -235,10 +235,10 @@ def replace_controlled_iX_gate(
 
 
 @transform
-def replace_4_qubit_multi_controlled_X_gate(
+def replace_gte_4_qubit_multi_controlled_X_gate(
     tape: QuantumScript, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace 4-qubit multi controlled X gates, given on
+    """Quantum transform to replace (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
     page six of (Amy, M. and Ross, N. J., 2021).
 
     Args:
@@ -324,24 +324,24 @@ def replace_4_qubit_multi_controlled_X_gate(
         ),
         # ------------
         qml.ctrl(qml.Hadamard(additional_controls + 4), list(range(additional_controls))),
-        qml.Hadamard(additional_controls + 5),
-        qml.Toffoli(
+        qml.ctrl(qml.Hadamard(additional_controls + 5), list(range(additional_controls))),
+        qml.MultiControlledX(
             list(range(additional_controls))
             + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
         ),
-        qml.Toffoli(
+        qml.MultiControlledX(
             list(range(additional_controls))
             + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
         ),
-        qml.Toffoli(
+        qml.MultiControlledX(
             list(range(additional_controls))
             + [additional_controls + 0, additional_controls + 1, additional_controls + 4]
         ),
-        qml.Toffoli(
+        qml.MultiControlledX(
             list(range(additional_controls))
             + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
         ),
-        qml.Toffoli(
+        qml.MultiControlledX(
             list(range(additional_controls))
             + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
         ),
