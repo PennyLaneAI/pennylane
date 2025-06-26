@@ -70,6 +70,7 @@ resource_config = {
     "error_rz": 1e-9,
     "precision_multiplexer": 1e-9,
     "precision_qrom_state_prep": 1e-9,
+    "select_swap_depth": 1,
 }
 
 
