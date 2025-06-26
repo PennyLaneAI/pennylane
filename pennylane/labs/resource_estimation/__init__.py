@@ -217,5 +217,5 @@ from .templates import (
     CompactHamiltonian,
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
-    ResourceQubitizeTHC
+    ResourceQubitizeTHC,
 )
