@@ -682,3 +682,64 @@ class TestConvertersZX:
         g = circuit()
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)
+
+
+class TestReducer:
+
+    @pytest.mark.parametrize(
+        "gate",
+        (
+            # 1-qubit hermitian gates
+            qml.Identity(wires=0),
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=0),
+            qml.PauliZ(wires=0),
+            qml.Hadamard(wires=0),
+            # 2-qubit hermitian gates
+            qml.CNOT(wires=[0, 1]),
+            qml.CY(wires=[0, 1]),
+            qml.CZ(wires=[0, 1]),
+            qml.CH(wires=[0, 1]),
+            qml.SWAP(wires=[0, 1]),
+        ),
+    )
+    def test_hermitian_gates_cancellation(self, gate):
+        ops = [gate, gate]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == []
+
+    @pytest.mark.parametrize(
+        "num_gates, expected_ops",
+        (
+            (1, [qml.S(0)]),
+            (2, [qml.Z(0)]),
+            (4, []),
+        ),
+    )
+    def test_S_gate_simplification(self, num_gates, expected_ops):
+        ops = [qml.S(0)] * num_gates
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == expected_ops
+
+    @pytest.mark.parametrize(
+        "num_gates, expected_ops",
+        (
+            (1, [qml.T(0)]),
+            (2, [qml.S(0)]),
+            (4, [qml.Z(0)]),
+            (8, []),
+        ),
+    )
+    def test_T_gate_simplification(self, num_gates, expected_ops):
+        ops = [qml.T(0)] * num_gates
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == expected_ops
