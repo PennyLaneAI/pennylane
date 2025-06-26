@@ -191,5 +191,9 @@ from .templates import (
     ResourceComparator,
     ResourceSelectTHC,
     ResourcePrepTHC,
-    CompactHamiltonian
+    CompactHamiltonian,
+    ResourceParallelMultiplexedRotation,
+    ResourcePrepCDF,
+    ResourceAliasSampling,
+    ResourceSelectSparsePauli,
 )
