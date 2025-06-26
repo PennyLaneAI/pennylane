@@ -150,7 +150,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
         def c():
             qml.H(0)
 
@@ -163,9 +162,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             qml.SWAP((0, new_wires[0]))
             qml.deallocate(new_wires)
 
-            return qml.probs(wires=0)
-
-
     >>> print(qml.draw(c, level="user")())
                 0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
@@ -173,7 +169,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     >>> print(qml.draw(c, level="device")())
     0: ──H─╭●─╭●─╭SWAP─┤  Probs
     1: ────╰X─╰X─╰SWAP─┤
-
 
     Here, two dynamic wires are allocated in the circuit originally. When we are determining
     what concrete values to use for dynamic wires, we can see that the first dynamic wire is already
@@ -239,14 +234,11 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     .. see-also::
         :func:`~.deallocate`
 
-    **Examples**:
-
     This function can be used as a context manager with automatic deallocation (preferred) or with manual
     deallocation via :func:`~.deallocate`.
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
             qml.H("a")
             qml.H("b")
@@ -270,52 +262,6 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     >>> print(qml.draw(c, level="device")())
     a: ──H─┤  <Z>
     b: ──H─┤    
-
-    .. details::
-        :title: Usage Details
-
-        **Terminal measurements**
-
-        All terminal measurements are supported when dynamically allocated measurements are present 
-        except for :func:`~.state`- and :func:`~.probs`-based measurements:
-            - TODO: full list of measurements not supported.
-
-        Terminal measurements directly on dynamically allocated wires are supported if they have not
-        already been deallocated with :func:`~.deallocate`.
-
-        **Device wires and dynamically allocated wires**
-        
-        If wires specified in `device(..., wires=...)` are not ever used in the associated QNode, then
-        then ``allocate`` will assume the unused wires are usable. In other words, ``allocate`` will 
-        allocate onto any unused device wires. For example:
-
-        .. code-block:: python
-
-            @qml.qnode(qml.device('default.qubit', wires=["a", "b"]))
-            def c():
-                with qml.allocation.allocate(2, require_zeros=True, restored=False) as wires:
-                    qml.CNOT(wires)
-
-                wires = qml.allocation.allocate(2, require_zeros=True, restored=False)
-                qml.IsingXX(0.5, wires)
-                qml.allocation.deallocate(wires)
-
-                return qml.probs()
-
-        >>> print(qml.draw(c, level="user")())
-        <DynamicWire>: ─╭Allocate─╭●─────────────╭Deallocate─┤  Probs
-        <DynamicWire>: ─╰Allocate─╰X─────────────╰Deallocate─┤  Probs
-        <DynamicWire>: ─╭Allocate─╭IsingXX(0.50)─╭Deallocate─┤  Probs
-        <DynamicWire>: ─╰Allocate─╰IsingXX(0.50)─╰Deallocate─┤  Probs
-        >>> print(qml.draw(c, level="device")())
-        a: ─╭●──┤↗│  │0⟩─╭IsingXX(0.50)─┤ ╭Probs
-        b: ─╰X──┤↗│  │0⟩─╰IsingXX(0.50)─┤ ╰Probs
-
-        At the user level, PennyLane reads the dynamically allocated wires as such, but at the device, 
-        level, those are converted into the device wires ``"a"`` and ``"b"` since they are not 
-        explicitly used or referenced in the circuit. As the dynamic wires are not reset to their original 
-        state (indicated with ``restored=False``), they are reset before being re-used again in the 
-        second block.
     """
     if capture_enabled():
         wires = allocate_prim.bind(
