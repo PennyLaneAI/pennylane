@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 
-
+import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -39,7 +39,13 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
     """
 
-    print(tape.graph)
+    dag = qml.qcut.tape_to_graph(tape)
+    for node in dag.nodes:
+        print(node)
+        print(node.obj)
+        print(node.obj.wires)
+        print(dag.in_degree(node))
+        print(dag.out_degree(node))
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
