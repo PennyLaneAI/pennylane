@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* A new transform :func:`qml.transforms.reduce_zx_calculus` has been added to simplify a given quantum
+  circuit using graph-theoretic rules based on the ZX-calculus. The transform compiles the circuit to the
+  Clifford+T gates set and is designed to optimize the number of T gates.
+  It requires the Python open-source package `pyzx` to be installed.
+  [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
+
 * The `qchem` module is upgraded with new functions to construct a vibrational Hamiltonian in 
   the Christiansen representation. 
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
