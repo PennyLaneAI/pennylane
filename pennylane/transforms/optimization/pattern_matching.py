@@ -1526,7 +1526,9 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
-    def __init__(self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None, allow_phase=False):
+    def __init__(
+        self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None, allow_phase=False
+    ):
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
@@ -1605,7 +1607,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 cost += self.quantum_cost[self.template_dag.get_node(i).op.name]
             elif len(self.template_dag.get_node(i).op.control_wires) == 4 and self.allow_phase:
                 # special case possible due to phase trick
-                cost += 5 * self.quantum_cost["Toffoli"] + 4 * self.quantum_cost["H"]
+                cost += 5 * self.quantum_cost["Toffoli"] + 4 * self.quantum_cost["Hadamard"]
             else:
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
