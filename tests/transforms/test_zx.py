@@ -828,3 +828,30 @@ class TestReducerZX:
         if exp_angle < 0:
             exp_angle += 2 * np.pi
         assert np.isclose(new_angle, exp_angle)
+
+    def test_qnode_state_equivalence(self):
+        num_wires = 3
+        device = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(device)
+        def original_circ(x, y):
+            for i in range(num_wires):
+                qml.Hadamard(wires=i)
+            qml.T(wires=0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(wires=0)
+            qml.RX(x, wires=1)
+            qml.S(wires=2)
+            qml.RX(y, wires=1)
+            qml.CNOT(wires=[1, 2])
+            return qml.state()
+
+        reduced_circ = qml.transforms.reduce_zx_calculus(original_circ)
+
+        params = [3.2, -2.2]
+        state1 = original_circ(*params)
+        state2 = reduced_circ(*params)
+
+        assert np.allclose(state1, state2)
