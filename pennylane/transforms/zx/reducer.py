@@ -90,6 +90,14 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
     >>> qml.math.allclose(circuit(3.2, -2.2), new_circuit(3.2, -2.2))
     True
 
+    .. note::
+
+        This transform is designed to minimize T-count, and is not as effective at reducing the
+        number of two-qubit gates, such as CNOTs. However, its performance varies significantly
+        depending on the type of circuit. For example, you might see a substantial increase in CNOT
+        gates when optimizing a circuit composed primarily of Toffoli gates. Conversely, it tends
+        to perform much better on Trotterized chemistry circuits.
+
     """
 
     if not has_pyzx:
