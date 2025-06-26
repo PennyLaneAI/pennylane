@@ -100,7 +100,7 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
 
     """
 
-    if not has_pyzx:
+    if not has_pyzx:  # pragma: no cover
         raise ModuleNotFoundError(
             "The `pyzx` package is required. You can install it by `pip install pyzx`."
         )
