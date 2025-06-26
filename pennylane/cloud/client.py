@@ -44,7 +44,7 @@ class Job:
             response = requests.get(f"{self.client._base_url}/get-results/{self.job_uuid}")
             response.raise_for_status()
             raw_result = response.json().get("results")
-            match = re.search(r"data\s*=\s*\n?(\[.*?\])", raw_result, re.DOTALL)
+            match = re.search(r"data\s*=\s*\n?(.*)", raw_result, re.DOTALL)
             data_str = match.group(1)
             return ast.literal_eval(data_str)
         except requests.exceptions.RequestException as e:
