@@ -38,10 +38,8 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
 
     """
-    # list_copy = tape.operations.copy()
-    operations = []
 
-    print(operations)
+    print(tape.graph)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -49,6 +47,6 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
         """
         return results[0]  # pragma: no cover
 
-    new_tape = tape.copy(operations=operations)
+    new_tape = tape.copy(operations=[])
 
     return [new_tape], null_postprocessing
