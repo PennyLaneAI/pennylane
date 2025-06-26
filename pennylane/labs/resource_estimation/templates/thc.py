@@ -198,6 +198,94 @@ class ResourcePrepTHC(ResourceOperator):
 
         return gate_list
 
+class ResourceSelectCDF(ResourceOperator):
+
+    def __init__(self, compact_ham, rotation_precision= 2e-5, wires=None):
+
+        self.compact_ham = compact_ham
+        self.rotation_precision = rotation_precision
+        num_orb = compact_ham.params["num_orbitals"]
+        num_fragments = compact_ham.params["num_fragments"]
+
+        num_i_wires = int(math.ceil(math.log2(num_orb)))
+        num_m_wires = int(math.ceil(math.log2(num_fragments)))
+
+        self.num_wires = num_orb*2 + 2 + 2*num_i_wires + num_m_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"compact_ham": self.compact_ham, "rotation_precision": self.rotation_precision}
+
+    @classmethod
+    def resource_rep(cls, compact_ham, rotation_precision=2e-5) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham,"rotation_precision": rotation_precision}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(cls, compact_ham, rotation_precision=2e-5, **kwargs) -> list[GateCount]:
+
+        num_orb = compact_ham.params["num_orbitals"]
+        num_fragments = compact_ham.params["num_fragments"]
+
+        rot_prec_wires = abs(math.floor(math.log2(rotation_precision)))
+
+        # Number of qubits needed for the CDF selects
+        i_register = int(math.ceil(math.log2(num_orb)))
+        j_register = int(math.ceil(math.log2(num_orb)))
+        m_register = int(math.ceil(math.log2(num_fragments)))
+
+        gate_list = []
+        # Resource state, one for checking between one-body and two-body
+
+        gate_list.append(AllocWires(rot_prec_wires + 1))
+
+        # 1) SWAP gate cost (added both for swap and unswap)
+
+        swap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(swap, 2*num_orb))
+
+
+        # 2) Loading angles and rotations
+        # Qubits for loading angles, will change based on parallel rotations
+        mult_rots_mi = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_ctrl_wires": m_register+i_register, "total_rotations":int(num_orb*(num_orb-1)/2)})
+        gate_list.append(plre.GateCount(mult_rots_mi, 2))
+
+        mult_rots_mj = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_ctrl_wires": m_register+j_register, "total_rotations":int(num_orb*(num_orb-1)/2)})
+        gate_list.append(plre.GateCount(mult_rots_mj, 2))
+
+        # 3) Extra QROM cost for unloading the last angle
+
+        qrom_angle = resource_rep(plre.ResourceQROM,
+            {
+                "num_bitstrings": 2**(m_register+i_register),
+                "size_bitstring": rot_prec_wires,
+                "clean": False,
+            }
+        )
+
+        gate_list.append(plre.GateCount(qrom_angle,2))
+
+
+        # 4) Z operation
+        # Z gate in the center of rotations
+        cz = resource_rep(plre.ResourceControlled,
+                    {
+                       "base_cmpr_op": plre.ResourceZ.resource_rep(),
+                        "num_ctrl_wires": 1,
+                        "num_ctrl_values": 0,
+                    })
+        gate_list.append(plre.GateCount(cz, 1))
+
+        ccz = resource_rep(plre.ResourceControlled,
+                    {
+                       "base_cmpr_op": plre.ResourceZ.resource_rep(),
+                        "num_ctrl_wires": 2,
+                        "num_ctrl_values": 1,
+                    })
+        gate_list.append(plre.GateCount(ccz, 1))
+        return gate_list
+
 class ResourcePrepCDF(ResourceOperator):
 
     def __init__(self, compact_ham, coeff_precision= 2e-5, wires=None):
