@@ -60,103 +60,6 @@ BOHR_TO_ANG = (
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
 
-def _calculate_normal_modes(mol, method="RHF", functional=None):
-    """
-    Calculate normal modes and frequencies for a molecule.
-
-    Args:
-        mol: PySCF Mole object
-
-    Returns:
-        Dictionary containing vibrational analysis results
-
-    Raises:
-        AssertionError: If any frequencies are imaginary, indicating the geometry
-                      is not at a minimum
-    """
-
-    # Create mean-field object based on method
-    if method == "DFT":
-        if functional is None:
-            raise ValueError("Functional must be specified for DFT calculations")
-        if mol.spin == 0:
-            mf = scf.RKS(mol)
-        else:
-            mf = scf.UKS(mol)
-        mf.xc = functional
-    elif method == "RHF":
-        mf = scf.RHF(mol)
-    elif method == "ROHF":
-        mf = scf.UHF(mol)
-    else:
-        raise ValueError(f"Unsupported method: {method}")
-
-    mf.kernel()
-
-    # Calculate Hessian
-    if method == "DFT":
-        if mol.spin == 0:
-            from pyscf.hessian import rks
-
-            hess = rks.Hessian(mf).kernel()
-        else:
-            from pyscf.hessian import uks
-
-            hess = uks.Hessian(mf).kernel()
-    elif method == "RHF":
-        from pyscf.hessian import rhf
-
-        hess = rhf.Hessian(mf).kernel()
-    elif method == "ROHF":
-        from pyscf.hessian import uhf
-
-        hess = uhf.Hessian(mf).kernel()
-    else:
-        raise ValueError(f"Unsupported method: {method} for Hessian calculation")
-
-    # Calculate normal modes using the Hessian
-    vib_results = thermo.harmonic_analysis(
-        mol, hess, exclude_trans=True, exclude_rot=True, imaginary_freq=True
-    )
-
-    # Check for imaginary frequencies
-    frequencies = vib_results["freq_wavenumber"]
-
-    if np.any(frequencies.imag != 0):
-        raise ValueError(f"Found imaginary frequencies.")
-
-    # if mol.topgroup == "Coov":  # use maximal abelian subgroup
-    #     mol.topgroup = "C2v"
-    #     warnings.warn(
-    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-    #     )
-    #
-    # elif mol.topgroup == "Dooh":  # use maximal abelian subgroup
-    #     mol.topgroup = "d2h"
-    #     warnings.warn(
-    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
-    #     )
-
-    # # Analyze symmetry of normal modes
-    # sym_modes_gs = posym.SymmetryNormalModes(
-    #     group=mol.topgroup,
-    #     coordinates=[atom[1] for atom in mol._atom],
-    #     modes=vib_results["norm_mode"],
-    #     symbols=[atom[0] for atom in mol._atom],
-    # )
-    # mode_irreps = []
-    # for i in range(len(frequencies)):
-    #     mode_vals = sym_modes_gs.get_state_mode(i).get_ir_representation().values
-    #     irrep_idx = np.argmax(mode_vals)
-    #     mode_irrep = sym_modes_gs.get_state_mode(i).get_ir_representation().index[irrep_idx]
-    #     mode_irreps.append(mode_irrep)
-    #
-    # vib_results["irreps"] = mode_irreps
-    vib_results["irreps"] = []
-
-    return vib_results
-
-
 def _get_rotation_matrix_to_align_with_z(p_current):
     """
     Calculates the rotation matrix to align a given vector p_current with the Z-axis [0,0,1].
@@ -222,15 +125,109 @@ def _rotate_molecule(mol_eq):
     return mol_eq
 
 
-def _harmonic_analysis(mol_eq, rotate=True):
+def _harmonic_analysis(mol_eq, rotate=True, method="RHF", functional=None):
     r"""
 
     mol_eq: PySCF Molecule object
     """
+
+    if isinstance(mol_eq, qchem.Molecule):
+
+        geom = [
+            [symbol, tuple(np.array(mol_eq.coordinates)[i])]
+            for i, symbol in enumerate(mol_eq.symbols)
+        ]
+        spin = int((mol_eq.mult - 1) / 2)
+        charge = mol_eq.charge
+        basis = mol_eq.basis_name
+        mol_eq = pyscf.gto.Mole(
+            atom=geom, symmetry="C1", spin=spin, charge=charge, unit="Bohr", basis=basis
+        )
+        mol_eq.build()
+
     if rotate:
         mol_eq = _rotate_molecule(mol_eq)
 
-    vib_results = _calculate_normal_modes(mol_eq)
+    # Create mean-field object based on method
+    if method == "DFT":
+        if functional is None:
+            raise ValueError("Functional must be specified for DFT calculations")
+        if mol_eq.spin == 0:
+            mf = scf.RKS(mol_eq)
+        else:
+            mf = scf.UKS(mol_eq)
+        mf.xc = functional
+    elif method == "RHF":
+        mf = scf.RHF(mol_eq)
+    elif method == "ROHF":
+        mf = scf.UHF(mol_eq)
+    else:
+        raise ValueError(f"Unsupported method: {method}")
+
+    mf.kernel()
+
+    # Calculate Hessian
+    if method == "DFT":
+        if mol_eq.spin == 0:
+            from pyscf.hessian import rks
+
+            hess = rks.Hessian(mf).kernel()
+        else:
+            from pyscf.hessian import uks
+
+            hess = uks.Hessian(mf).kernel()
+    elif method == "RHF":
+        from pyscf.hessian import rhf
+
+        hess = rhf.Hessian(mf).kernel()
+    elif method == "ROHF":
+        from pyscf.hessian import uhf
+
+        hess = uhf.Hessian(mf).kernel()
+    else:
+        raise ValueError(f"Unsupported method: {method} for Hessian calculation")
+
+    # Calculate normal modes using the Hessian
+    vib_results = thermo.harmonic_analysis(
+        mol_eq, hess, exclude_trans=True, exclude_rot=True, imaginary_freq=True
+    )
+
+    # Check for imaginary frequencies
+    frequencies = vib_results["freq_wavenumber"]
+
+    if np.any(frequencies.imag != 0):
+        raise ValueError(f"Found imaginary frequencies.")
+
+    # if mol.topgroup == "Coov":  # use maximal abelian subgroup
+    #     mol.topgroup = "C2v"
+    #     warnings.warn(
+    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
+    #     )
+    #
+    # elif mol.topgroup == "Dooh":  # use maximal abelian subgroup
+    #     mol.topgroup = "d2h"
+    #     warnings.warn(
+    #         f"Non-abelian point group identified, falling back to abelian subgroup {mol.topgroup}."
+    #     )
+
+    # # Analyze symmetry of normal modes
+    # sym_modes_gs = posym.SymmetryNormalModes(
+    #     group=mol.topgroup,
+    #     coordinates=[atom[1] for atom in mol._atom],
+    #     modes=vib_results["norm_mode"],
+    #     symbols=[atom[0] for atom in mol._atom],
+    # )
+    # mode_irreps = []
+    # for i in range(len(frequencies)):
+    #     mode_vals = sym_modes_gs.get_state_mode(i).get_ir_representation().values
+    #     irrep_idx = np.argmax(mode_vals)
+    #     mode_irrep = sym_modes_gs.get_state_mode(i).get_ir_representation().index[irrep_idx]
+    #     mode_irreps.append(mode_irrep)
+    #
+    # vib_results["irreps"] = mode_irreps
+    vib_results["irreps"] = []
+
+    # -----------------
 
     frequencies = vib_results["freq_wavenumber"]
     normal_modes = vib_results["norm_mode"]
