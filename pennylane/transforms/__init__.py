@@ -288,9 +288,10 @@ for a comprehensive overview of transforms and core functionalities, consult the
 
 # Leave as alias for backwards-compatibility
 from pennylane.tape import make_qscript as make_tape
+from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform, TransformError
+from .core import transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
