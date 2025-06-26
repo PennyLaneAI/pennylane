@@ -73,6 +73,10 @@ class CompactHamiltonian:
         self.params = params
 
     @classmethod
+    def sparsepauli(cls, num_orbitals:int):
+        return cls("sparsepauli", num_orbitals=num_orbitals)
+
+    @classmethod
     def cdf(cls, num_orbitals: int, num_fragments: int):
         """Constructs a compressed double factorized Hamiltonian instance
 

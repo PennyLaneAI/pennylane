@@ -28,6 +28,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+import numpy as np
 
 # pylint: disable=arguments-differ, protected-access
 
@@ -678,7 +679,7 @@ class ResourceSelect(ResourceOperator):
         num_ops = len(cmpr_ops)
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
-        gate_types.append(AllocWires(work_qubits))
+        #gate_types.append(AllocWires(work_qubits))
         for cmp_rep in cmpr_ops:
             ctrl_op = plre.ResourceControlled.resource_rep(cmp_rep, 1, 0)
             gate_types.append(GateCount(ctrl_op))
@@ -886,6 +887,8 @@ class ResourceQROM(ResourceOperator):
             work qubits, where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is
             the number of batches of unitaries to select.
         """
+
+        select_swap_depth = select_swap_depth or kwargs["config"]["select_swap_depth"]
 
         if select_swap_depth:
             select_swap_depth = 2 ** math.floor(math.log2(select_swap_depth))
@@ -1315,15 +1318,13 @@ class ResourceMultiplexedRotation(ResourceOperator):
     Args:
         num_ctrl_wires: number of wires qrom is controlled on
         precision: precision with which angles are being loaded
-        select_swap_depth: number representing the depth of the qrom select-swap circuit
 
     """
 
     resource_keys = {"register_size"}
 
-    def __init__(self, num_ctrl_wires, precision=None, select_swap_depth=None, wires=None):
+    def __init__(self, num_ctrl_wires, precision=None, wires=None):
         self.num_ctrl_wires = num_ctrl_wires
-        self.select_swap_depth = select_swap_depth
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -1335,30 +1336,26 @@ class ResourceMultiplexedRotation(ResourceOperator):
             dict: A dictionary containing the resource parameters:
              * num_ctrl_wires: number of wires to control the qrom on
              * precision: precision for loading angles
-             * select_swap_depth: number to determine whether the qrom will be done in parallel or serial.
-               Defaults to :code:`None`, which internally determines the optimal depth.
 
         """
-        return {"num_ctrl_wires":self.num_ctrl_wires, "precision": self.precision, "select_swap_depth": self.select_swap_depth}
+        return {"num_ctrl_wires":self.num_ctrl_wires, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, precision=None, select_swap_depth=None):
+    def resource_rep(cls, num_ctrl_wires, precision=None):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             num_ctrl_wires: number of wires to control the qrom on
             precision: precision for loading angles
-            select_swap_depth: number to determine whether the qrom will be done in parallel or serial.
-                Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_ctrl_wires":num_ctrl_wires, "precision": precision, "select_swap_depth": select_swap_depth})
+        return CompressedResourceOp(cls, {"num_ctrl_wires":num_ctrl_wires, "precision": precision})
 
     @classmethod
-    def default_resource_decomp(cls, num_ctrl_wires, precision=None, select_swap_depth=None, **kwargs):
+    def default_resource_decomp(cls, num_ctrl_wires, precision=None, **kwargs):
         r"""Returns a list representing the resources of the operator.
 
         Args:
@@ -1370,7 +1367,6 @@ class ResourceMultiplexedRotation(ResourceOperator):
             in the decomposition.
         """
         precision = precision or kwargs["config"]["precision_multiplexer"]
-        depth = select_swap_depth or kwargs["config"]["select_swap_depth"]
         num_prec_wires = abs(math.floor(math.log2(precision)))
         gate_lst = []
 
@@ -1380,7 +1376,6 @@ class ResourceMultiplexedRotation(ResourceOperator):
                 "num_bitstrings": 2**num_ctrl_wires,
                 "size_bitstring": num_prec_wires,
                 "clean": False,
-                "select_swap_depth": depth
             },
         )
 
@@ -1510,7 +1505,7 @@ class ResourceComparator(ResourceOperator):
             dict: A dictionary containing the resource parameters:
 
         """
-        return {"num_wires": num_wires}
+        return {"num_wires": self.num_wires}
 
     @classmethod
     def resource_rep(cls, num_wires):
@@ -1541,3 +1536,121 @@ class ResourceComparator(ResourceOperator):
         gate_lst.append(plre.GateCount(cnot))
         gate_lst.append(FreeWires(1))
         return gate_lst
+
+
+class ResourceParallelMultiplexedRotation(ResourceOperator):
+    r"""Resource class for the MultiplexedRotation
+
+    Args:
+        num_ctrl_wires: number of wires qrom is controlled on
+        precision: precision with which angles are being loaded
+
+    """
+
+
+    def __init__(self, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None, wires=None):
+        self.num_ctrl_wires = num_ctrl_wires
+        self.total_rotations = total_rotations
+        self.parallel_rotations= parallel_rotations
+        self.precision = precision
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+        """
+        return {"num_ctrl_wires":self.num_ctrl_wires, "total_rotations": self.total_rotations, "parallel_rotations": self.parallel_rotations, "precision": self.precision}
+
+    @classmethod
+    def resource_rep(cls, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
+
+        Args:
+            num_ctrl_wires: number of wires to control the qrom on
+            precision: precision for loading angles
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"num_ctrl_wires":num_ctrl_wires, "total_rotations": total_rotations, "parallel_rotations": parallel_rotations, "precision": precision})
+
+    @classmethod
+    def default_resource_decomp(cls, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None, **kwargs):
+        r"""Returns a list representing the resources of the operator.
+
+        Args:
+            register_size (int): the size of the input register
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_lst = []
+        parallel_rotations = parallel_rotations or kwargs["config"]["parallel_rotations"]
+        precision = precision or kwargs["config"]["precision_multiplexer"]
+        num_prec_wires = abs(math.floor(math.log2(precision)))
+        gate_lst = []
+        phasegrad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": num_prec_wires})
+        mult_rot = resource_rep(plre.ResourceMultiplexedRotation, {"num_ctrl_wires": num_ctrl_wires})
+
+        num_full_blocks = total_rotations // parallel_rotations  # Integer division
+        num_leftover_rotations = total_rotations % parallel_rotations # Remainder
+        gate_lst.append(plre.GateCount(phasegrad,1))
+        gate_lst.append(AllocWires(num_prec_wires*parallel_rotations))
+        if num_full_blocks > 0:
+            gate_lst.append(plre.GateCount(mult_rot, num_full_blocks * parallel_rotations))
+
+        if num_leftover_rotations > 0:
+            gate_lst.append(plre.GateCount(mult_rot, num_leftover_rotations))
+
+        gate_lst.append(FreeWires(num_prec_wires * parallel_rotations))
+
+        return gate_lst
+
+
+class ResourceAliasSampling(ResourceOperator):
+    r""" Subprepare circuit in Fig 11 of https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.041015
+
+    """
+
+    def __init__(self, num_coeffs, num_bitstrings, size_bitstring, wires=None):
+        self.num_coeffs = num_coeffs
+        self.num_bitstrings = num_bitstrings
+        self.size_bitstring = size_bitstring
+        self.num_wires = 2 * np.ceil(np.log2(num_bitstrings)) + 2 * size_bitstring + 4
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_coeffs": self.num_coeffs, "num_bitstrings": self.num_bitstrings, "size_bitstring": self.size_bitstring}
+
+    @classmethod
+    def resource_rep(cls, num_coeffs, num_bitstrings, size_bitstring) -> CompressedResourceOp:
+        params = {"num_coeffs": num_coeffs, "num_bitstrings": num_bitstrings, "size_bitstring": size_bitstring}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(cls, num_coeffs, num_bitstrings, size_bitstring, **kwargs) -> list[GateCount]:
+
+        gate_types = []
+        hadamard = resource_rep(plre.ResourceHadamard)
+        uniform = resource_rep(plre.ResourceUniformStatePrep, {"register_size": num_bitstrings}) # Special uniform for THC
+        comparator = resource_rep(plre.ResourceComparator, {"num_wires":size_bitstring}) #todo: define
+        qrom = resource_rep(plre.ResourceQROM, {"num_bitstrings":num_bitstrings, "size_bitstring":size_bitstring})
+        cswap = resource_rep(plre.ResourceCSWAP())
+
+        # Contiguizer resources
+        adder = resource_rep(plre.ResourceSemiAdder, {"max_register_size": num_coeffs})
+        multiplier = resource_rep(plre.ResourceOutMultiplier, {"a_num_qubits": int(np.ceil(np.log2(num_bitstrings))), "b_num_qubits": int(np.ceil(np.log2(num_bitstrings)))})
+
+        gate_types.append(plre.GateCount(hadamard, size_bitstring))
+        gate_types.append(plre.GateCount((uniform), 1)) # Two uniforms, for mu and nu
+        gate_types.append(plre.GateCount(adder, 2))
+        gate_types.append(plre.GateCount(multiplier,1))
+        gate_types.append(plre.GateCount((comparator), 1))
+        gate_types.append(plre.GateCount((qrom), 1))
+        gate_types.append(plre.GateCount((cswap), np.ceil(np.log2(num_bitstrings))))
+
+        return gate_types
