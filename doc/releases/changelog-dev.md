@@ -477,6 +477,17 @@
   See the documentation for more details.
   [(#7531)](https://github.com/PennyLaneAI/pennylane/pull/7531)
 
+* Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
+  decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
+  further decompose single-qubit unitary gates more flexibly using different rotations.
+  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
+  `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
+  aliases are also recognized as part of symbolic operators. For example, `"Adjoint(H)"` is now 
+  accepted as an alias for `"Adjoint(Hadamard)"`.
+  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
+
 <h4>Setting shots 🔁</h4>
 
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
@@ -695,17 +706,6 @@
   {'sample': array([-1., -1., -1., -1., -1.]),
    'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
   ```
-
-* Two-qubit `QubitUnitary` gates no longer decompose into fundamental rotation gates; it now 
-  decomposes into single-qubit `QubitUnitary` gates. This allows the decomposition system to
-  further decompose single-qubit unitary gates more flexibly using different rotations.
-  [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
-
-* The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
-  `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
-  aliases are also recognized as part of symbolic operators. For example, `"Adjoint(H)"` is now 
-  accepted as an alias for `"Adjoint(Hadamard)"`.
-  [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
 
 * PennyLane no longer validates that an operation has at least one wire, as having this check required the abstract
   interface to maintain a list of special implementations.
