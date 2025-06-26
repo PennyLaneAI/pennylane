@@ -89,6 +89,7 @@ Decompositions
     ~two_qubit_decomposition
     ~multi_qubit_decomposition
     ~sk_decomposition
+    ~rs_decomposition
 
 Control Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -127,6 +128,7 @@ from .controlled_ops import (
 from .decompositions import (
     one_qubit_decomposition,
     sk_decomposition,
+    rs_decomposition,
     two_qubit_decomposition,
     multi_qubit_decomposition,
     ctrl_decomp_bisect,
