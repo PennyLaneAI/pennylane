@@ -304,6 +304,9 @@ non_commuting_operations = [
     "Barrier",
     "WireCut",
     "Snapshot",
+    # allocation
+    "Allocate",
+    "Deallocate"
 ]
 
 

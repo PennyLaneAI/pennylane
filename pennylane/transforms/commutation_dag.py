@@ -223,13 +223,13 @@ class CommutationDAG:
         Args:
             operation (qml.operation): PennyLane quantum operation to add to the DAG.
         """
-        target_wires = [w for w in operation.wires if w not in operation.control_wires]
+        target_wires = [w for w in operation.wires if w not in getattr(operation, "control_wires", ())]
 
         new_node = CommutationDAGNode(
             op=operation,
             wires=operation.wires.tolist(),
             target_wires=target_wires,
-            control_wires=operation.control_wires.tolist(),
+            control_wires=list(getattr(operation, "control_wires", ())),
             successors=[],
             predecessors=[],
         )
