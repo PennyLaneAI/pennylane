@@ -23,6 +23,7 @@ Functions
     ~from_qiskit_op
     ~from_quil
     ~from_quil_file
+    ~to_bloq
 
 Classes
 ^^^^^^^
@@ -31,3 +32,4 @@ Classes
     :toctree: api
 
     ~FromBloq
+    ~ToBloq

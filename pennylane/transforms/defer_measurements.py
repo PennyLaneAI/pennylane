@@ -19,6 +19,7 @@ from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
+from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
     MeasurementValue,
@@ -30,7 +31,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
