@@ -38,7 +38,8 @@ from pennylane.qchem.vibrational.vibrational_class import (
     optimize_geometry,
 )
 
-from .pes_vibronic_utils import _harmonic_analysis, _grid_points, _generate_1d_grid, _run_casscf
+from .pes_vibronic_utils import _harmonic_analysis, _grid_points, _generate_1d_grid
+from .pes_solver import _run_casscf
 
 
 # constants
