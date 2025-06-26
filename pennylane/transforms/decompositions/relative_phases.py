@@ -279,7 +279,7 @@ def replace_4_qubit_multi_controlled_X_gate(
 
         The circuit before decomposition:
 
-        >>> dev = qml.device('default.qubit', wires=4)
+        >>> dev = qml.device('default.qubit', wires=7)
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)())
             0: ────╭●─┤  <Z>
