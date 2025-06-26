@@ -1,4 +1,5 @@
 """The PL cloud client."""
+
 import ast
 import re
 
@@ -17,7 +18,11 @@ class Client:
         data = cloudpickle.dumps(qnode)
 
         try:
-            response = requests.post(self._base_url + "/start-job", data=data, headers={"Content-Type": "application/octet-stream"})
+            response = requests.post(
+                self._base_url + "/start-job",
+                data=data,
+                headers={"Content-Type": "application/octet-stream"},
+            )
             response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
             return response.json().get("job_uuid")
 
