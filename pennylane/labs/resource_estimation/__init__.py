@@ -138,8 +138,6 @@ Compact Hamiltonian Class:
     :toctree: api
 
     ~CompactHamiltonian
-=======
->>>>>>> origin/re_new_feature_branch
 
 """
 
@@ -206,7 +204,6 @@ from .ops import (
     ResourceChangeBasisOp,
     ResourcePow,
 )
-
 from .templates import (
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
