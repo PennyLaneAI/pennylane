@@ -174,18 +174,19 @@ def _harmonic_analysis(
     if rotate:
         molecule = _rotate_molecule(molecule)
 
-    # Calculate Hessian
     if method == "dft":
         if molecule.spin == 0:
             from pyscf.hessian import rks
 
             mf = scf.RKS(molecule)
+            mf.xc = functional
             mf.kernel()
             hess = rks.Hessian(mf).kernel()
         else:
             from pyscf.hessian import uks
 
             mf = scf.UKS(molecule)
+            mf.xc = functional
             mf.kernel()
             hess = uks.Hessian(mf).kernel()
     elif method == "rhf":
@@ -217,7 +218,21 @@ def _harmonic_analysis(
 
 
 def _grid_points(grid_type, grid_range, n_points):
-    r"""Generate grid points in one dimension"""
+    r"""Generate grid points in one dimension.
+
+    Args:
+        grid_type (str): method for generating grid points. The currently supported types are
+            'uniform', 'gaussian', 'chebyshev'.
+        grid_range (float): the range of the generating grid points
+        n_points (int): the number of the generating grid points
+
+    Returns:
+        array[float]: array of the grid points
+
+    **Example**
+
+    >>>
+    """
 
     if grid_type == "uniform":
         return np.linspace(-grid_range / 2, grid_range / 2, n_points)
@@ -237,7 +252,22 @@ def _grid_points(grid_type, grid_range, n_points):
 
 
 def _displace_geometry(eq_geometry, normal_modes, frequencies, mode_indices, displacements):
-    """Displace geometry along one or more normal modes."""
+    """Displace geometry along one or more normal modes.
+
+     Args:
+        eq_geometry (tensorlike[float]): the equilibrium geometry
+        normal_modes (tensorlike[float]): the vibrational normal modes
+        frequencies (array[float]): the vibrational frequencies
+        mode_indices (list(int)): the indices of the normal modes used for displacement
+        displacements (array(float)): the grid points
+
+    Returns:
+        tensorlike[float]: the displaced coordinates
+
+    **Example**
+
+    >>>
+    """
     n_atoms = len(eq_geometry)
 
     displaced_coords = np.array([atom[0:] for atom in eq_geometry]).reshape(n_atoms, 3)
@@ -255,7 +285,21 @@ def _displace_geometry(eq_geometry, normal_modes, frequencies, mode_indices, dis
 
 
 def _generate_1d_grid(frequencies, normal_modes, eq_geometry, displacements):
-    """Generate 1D grid points (d=1)"""
+    r"""Generates one-mode displaced coordinates.
+
+     Args:
+        frequencies (array[float]): the vibrational frequencies
+        normal_modes (tensorlike[float]): the vibrational normal modes
+        eq_geometry (tensorlike[float]): the equilibrium geometry
+        displacements (array(float)): the grid points
+
+    Returns:
+        tensorlike[float]: the mode indices, grid points, and displaced coordinates
+
+    **Example**
+
+    >>>
+    """
     grid_points = []
     n_modes = len(frequencies)
 
@@ -281,7 +325,21 @@ def _generate_1d_grid(frequencies, normal_modes, eq_geometry, displacements):
 
 
 def _generate_2d_grid(frequencies, normal_modes, eq_geometry, displacements):
-    """Generate 2D grid points (d=2)"""
+    r"""Generates two-mode displaced coordinates.
+
+     Args:
+        frequencies (array[float]): the vibrational frequencies
+        normal_modes (tensorlike[float]): the vibrational normal modes
+        eq_geometry (tensorlike[float]): the equilibrium geometry
+        displacements (array(float)): the grid points
+
+    Returns:
+        tensorlike[float]: the mode indices, grid points, and displaced coordinates
+
+    **Example**
+
+    >>>
+    """
     grid_points = []
     n_modes = len(frequencies)
 
@@ -306,7 +364,21 @@ def _generate_2d_grid(frequencies, normal_modes, eq_geometry, displacements):
 
 
 def _generate_3d_grid(frequencies, normal_modes, eq_geometry, displacements):
-    """Generate 3D grid points (d=3)"""
+    r"""Generates three-mode displaced coordinates.
+
+     Args:
+        frequencies (array[float]): the vibrational frequencies
+        normal_modes (tensorlike[float]): the vibrational normal modes
+        eq_geometry (tensorlike[float]): the equilibrium geometry
+        displacements (array(float)): the grid points
+
+    Returns:
+        tensorlike[float]: the mode indices, grid points, and displaced coordinates
+
+    **Example**
+
+    >>>
+    """
     grid_points = []
     n_modes = len(frequencies)
 
