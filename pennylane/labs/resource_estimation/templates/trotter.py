@@ -267,7 +267,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         op_twobody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
+                "cmpr_factors_and_counts": tuple(
                     resource_rep(
                         plre.ResourceControlled,
                         {
@@ -275,8 +275,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
-                    )
-                    for i in range((2 * num_orb - 1) * num_orb)
+                    ),
+                    (2 * num_orb - 1) * num_orb,
                 )
             },
         )
@@ -547,7 +547,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         op_twobody = resource_rep(
             plre.ResourceProd,
             {
-                "cmpr_factors": tuple(
+                "cmpr_factors_and_counts": tuple(
                     resource_rep(
                         plre.ResourceControlled,
                         {
@@ -555,8 +555,8 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                             "num_ctrl_wires": ctrl_num_ctrl_wires,
                             "num_ctrl_values": ctrl_num_ctrl_values,
                         },
-                    )
-                    for i in range((2 * tensor_rank - 1) * tensor_rank)
+                    ),
+                    (2 * tensor_rank - 1) * tensor_rank,
                 )
             },
         )
