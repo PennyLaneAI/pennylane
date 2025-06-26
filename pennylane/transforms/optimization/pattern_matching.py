@@ -33,7 +33,7 @@ from pennylane.wires import Wires
 
 @transform
 def pattern_matching_optimization(
-    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
+    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None, allow_phase=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
@@ -212,7 +212,7 @@ def pattern_matching_optimization(
             raise QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
-        if not np.allclose(
+        if not allow_phase and not np.allclose(
             qml.matrix(pattern, wire_order=pattern.wires), np.eye(2**pattern.num_wires)
         ):
             raise QuantumFunctionError("Pattern is not valid, it does not implement identity.")

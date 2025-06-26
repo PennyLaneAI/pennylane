@@ -201,7 +201,7 @@ def replace_controlled_iX_gate(
 
         We can replace the multi-controlled iX gate by running the transform:
 
-        >>> lowered_qfunc = replace_multi_controlled_iX_gate(qfunc)
+        >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
         >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
         >>> print(qml.draw(lowered_qnode)())
 
@@ -232,3 +232,97 @@ def replace_controlled_iX_gate(
     ]
     pattern = QuantumTape(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
+
+
+@transform
+def replace_4_qubit_multi_controlled_X_gate(
+    tape: QuantumScript,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Quantum transform to replace 4-qubit multi controlled X gates, given on
+    page six of (Amy, M. and Ross, N. J., 2021).
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Example**
+
+    The transform can be applied on :class:`QNode` directly.
+
+    .. code-block:: python
+
+        @replace_relative_phase_toffoli
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
+            qml.X(4)
+            qml.X(5)
+            return qml.expval(qml.Z(0))
+
+    The 4-qubit multi controlled X gate is then replaced before execution.
+
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.X(4)
+                qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
+                qml.X(5)
+                return qml.expval(qml.Z(0))
+
+        The circuit before decomposition:
+
+        >>> dev = qml.device('default.qubit', wires=4)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)())
+            0: ────╭●─┤  <Z>
+            1: ────├●─┤
+            2: ────├●─┤
+            3: ────├●─┤
+            4: ──X─│──┤
+            6: ────╰X─┤
+            5: ──X────┤
+
+        We can replace the 4-qubit multi controlled X gate by running the transform:
+
+        >>> lowered_qfunc = replace_4_qubit_multi_controlled_X_gate(qfunc)
+        >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
+        >>> print(qml.draw(lowered_qnode)())
+
+            0: ──────────╭●─────────────┤  <Z>
+            1: ──────────├●─────────────┤
+            2: ───────╭●─│──╭●──────────┤
+            3: ────╭●─│──│──│──╭●───────┤
+            5: ──H─├●─├X─│──├X─├●──H──X─┤
+            4: ──H─│──╰●─╰X─╰●─│───H──X─┤
+            6: ────╰X──────────╰X───────┤
+
+    .. note::
+
+        This decomposition introduces a phase which must be managed appropriately! When trading local uncomputations
+        for relative phases as we do here, the work wires must remain in the same state when matched with a global
+        uncomputation later (Amy, M. and Ross, N. J., 2021).
+
+    """
+    pattern_ops = [
+        qml.MultiControlledX(wires=[0, 1, 2, 3, 6]),
+        # ------------
+        qml.Hadamard(4),
+        qml.Hadamard(5),
+        qml.Toffoli([3, 5, 6]),
+        qml.Toffoli([2, 4, 5]),
+        qml.Toffoli([0, 1, 4]),
+        qml.Toffoli([2, 4, 5]),
+        qml.Toffoli([3, 5, 6]),
+        qml.Hadamard(4),
+        qml.Hadamard(5),
+    ]
+    pattern = QuantumTape(pattern_ops)
+    return pattern_matching_optimization(tape, pattern_tapes=[pattern], allow_phase=True)
