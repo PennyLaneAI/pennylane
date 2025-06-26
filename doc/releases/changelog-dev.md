@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new transform :func:`qml.transforms.reduce_zx_calculus` has been added to simplify a given quantum
+* A new transform :func:`~.transforms.reduce_zx_calculus` has been added to simplify a given quantum
   circuit using graph-theoretic rules based on the ZX-calculus. The transform compiles the circuit to the
   Clifford+T gates set and is designed to optimize the number of T gates.
   It requires the Python open-source package `pyzx` to be installed.
