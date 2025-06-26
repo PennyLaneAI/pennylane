@@ -18,7 +18,7 @@ from typing import List, Optional, Union
 import numpy as np
 
 try:
-    from pyscf import cc, gto, scf, tdscf, mcscf, fci
+    from pyscf import cc, fci, gto, mcscf, scf, tdscf
 except ImportError as e:
     raise ImportError("This feature requires pyscf.") from e
 
@@ -260,15 +260,15 @@ def _run_casscf(
     """
     # Set up molecule
     mol = _setup_molecule(symbols, coords, basis, spin, point_group)
-    
+
     # Run SCF
     mf = _run_scf(mol, method_type="hf", conv_tol=conv_tol, max_cycle=max_cycle)
-    
+
     # Run CASSCF
     mc = mcscf.CASSCF(mf, ncas, nelecas)
     mc.conv_tol = conv_tol
     mc.max_cycle = max_cycle
-    
+
     # Set spin restriction if requested
     if restrict_to_singlet:
         if mol.spin != 0:
@@ -280,9 +280,10 @@ def _run_casscf(
         # For open-shell systems, use appropriate FCI solver
         if mol.spin != 0:
             from pyscf.fci import direct_spin1
+
             mc.fcisolver = direct_spin1.FCISolver(mol)
             mc.fcisolver.spin = mol.spin
-    
+
     # Compute multiple roots if requested
     if nroots > 1:
         weights = [1.0 / nroots] * nroots
@@ -290,68 +291,63 @@ def _run_casscf(
         mc = mc.state_average_(weights)
         mc.verbose = 3
         mc.kernel()
-        
+
         if not mc.converged:
             raise ValueError("The CASSCF did NOT converge.")
-        
+
         # CASSCF energies for all states
         energies = mc.e_states
     else:
         energies = [mc.kernel()[0]]
-    
+
     return energies
 
 
 def run_electronic_method(
-    method: str,
-    symbols: List[str],
-    coords: np.ndarray,
-    **kwargs
+    method: str, symbols: List[str], coords: np.ndarray, **kwargs
 ) -> List[float]:
     """
     Dispatcher function to run different electronic structure methods.
-    
+
     Args:
         method: Method to use ('casscf', 'tddft', or 'eom_ccsd')
         symbols: List of atomic symbols
         coords: Atomic coordinates in Angstroms
         **kwargs: Additional parameters for the specific method
-        
+
     Returns:
         List of energies for each state
-        
+
     Raises:
         ValueError: If required parameters are missing or method is not supported
     """
     # Common parameters for all methods
     common_params = {
-        'symbols': symbols,
-        'coords': coords,
+        "symbols": symbols,
+        "coords": coords,
     }
-    
+
     # Method-specific required parameters
-    required_params = {
-        'casscf': ['ncas', 'nelecas'],
-        'tddft': ['functional'],
-        'eom_ccsd': []
-    }
-    
+    required_params = {"casscf": ["ncas", "nelecas"], "tddft": ["functional"], "eom_ccsd": []}
+
     # Check if method is supported
     if method.lower() not in required_params:
-        raise ValueError(f"Unsupported method: {method}. Supported methods: 'casscf', 'tddft', 'eom_ccsd'")
-    
+        raise ValueError(
+            f"Unsupported method: {method}. Supported methods: 'casscf', 'tddft', 'eom_ccsd'"
+        )
+
     # Check for required parameters
     for param in required_params[method.lower()]:
         if param not in kwargs:
             raise ValueError(f"Missing required parameter '{param}' for method '{method}'")
-    
+
     # Prepare method-specific parameters by combining common params with kwargs
     method_params = {**common_params, **kwargs}
-    
+
     # Dispatch to the appropriate method
-    if method.lower() == 'casscf':
+    if method.lower() == "casscf":
         return _run_casscf(**method_params)
-    elif method.lower() == 'tddft':
+    elif method.lower() == "tddft":
         return _run_tddft(**method_params)
-    elif method.lower() == 'eom_ccsd':
+    elif method.lower() == "eom_ccsd":
         return _run_eom_ccsd(**method_params)

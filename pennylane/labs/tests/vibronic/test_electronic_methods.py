@@ -28,7 +28,7 @@ from pennylane.labs.vibronic.electronic_methods import (
     _run_scf,
     _run_tddft,
     _setup_molecule,
-    run_electronic_method
+    run_electronic_method,
 )
 
 
@@ -157,23 +157,20 @@ class TestElectronicMethods:
         """Test that run_electronic_method correctly dispatches to the appropriate method."""
         symbols = ["H", "H"]
         coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]])
-        
+
         # Common parameters
-        common_params = {
-            "basis": "sto-3g",
-            "nroots": 1,
-            **extra_params
-        }
-        
+        common_params = {"basis": "sto-3g", "nroots": 1, **extra_params}
+
         # Run the dispatcher
         energies = run_electronic_method(method, symbols, coords, **common_params)
-        
+
         # Check that we get the expected number of energies
         assert len(energies) == len(expected_energies)
-        
+
         # Check that all energies are finite
         assert all(np.isfinite(e) for e in energies)
-        
+
         # Compare with expected energies using a reasonable tolerance
-        assert np.allclose(energies, expected_energies, rtol=1e-5, atol=1e-5), \
-            f"Expected {expected_energies}, got {energies}"
+        assert np.allclose(
+            energies, expected_energies, rtol=1e-5, atol=1e-5
+        ), f"Expected {expected_energies}, got {energies}"
