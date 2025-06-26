@@ -27,6 +27,7 @@ jaxlib = pytest.importorskip("jaxlib")
 xdsl = pytest.importorskip("xdsl")
 
 from catalyst import CompileError
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl import passes
 from xdsl.context import Context
 from xdsl.dialects import builtin, transform
@@ -203,6 +204,14 @@ def test_integration_for_transform_interpreter(capsys):
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
     assert captured.out.strip() == "hello world"
+
+
+def test_integration_but_run_with_catalyst():
+
+    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+    def none(): ...
+
+    none()
 
 
 if __name__ == "__main__":
