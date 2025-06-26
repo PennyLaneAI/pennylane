@@ -39,7 +39,7 @@ from pennylane.qchem.vibrational.vibrational_class import (
 )
 
 from .pes_vibronic_utils import _harmonic_analysis, _grid_points, _generate_1d_grid
-from .pes_solver import _run_casscf
+from .pes_solver import _run_casscf, _run_tddft
 
 
 # constants
@@ -59,6 +59,7 @@ def vibronic_pes(
     grid_range=2.0,
     grid_type="uniform",
     method="rhf",
+    method_excited="tddft",
     optimize=True,
     rotate=True,
     pes_level=1,
@@ -167,10 +168,17 @@ def vibronic_pes(
         #
         # geometry_3d = _generate_3d_grid(freqs, vectors, eq_geometry, grid)
 
-        energy_1 = []
-        for geometry_point in geometry_1d:
-            new_coords = geometry_point["coordinates"]
-            energy_1.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
+        if method_excited == "casscf":
+            energy_1 = []
+            for geometry_point in geometry_1d:
+                new_coords = geometry_point["coordinates"]
+                energy_1.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
+
+        if method_excited == "tddft":
+            energy_1 = []
+            for geometry_point in geometry_1d:
+                new_coords = geometry_point["coordinates"]
+                energy_1.append(_run_tddft(mol_eq.symbols, new_coords))
 
         # energy_2 = []
         # for geometry_point in geometry_2d:
