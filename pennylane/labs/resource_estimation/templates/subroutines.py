@@ -679,7 +679,7 @@ class ResourceSelect(ResourceOperator):
         num_ops = len(cmpr_ops)
         work_qubits = math.ceil(math.log2(num_ops)) - 1
 
-        #gate_types.append(AllocWires(work_qubits))
+        gate_types.append(AllocWires(work_qubits))
         for cmp_rep in cmpr_ops:
             ctrl_op = plre.ResourceControlled.resource_rep(cmp_rep, 1, 0)
             gate_types.append(GateCount(ctrl_op))

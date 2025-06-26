@@ -79,7 +79,7 @@ class ResourceSelectTHC(ResourceOperator):
         # 2) Loading angles and rotations
         # Qubits for loading angles, will change based on parallel rotations
         mult_rots = resource_rep(plre.ResourceParallelMultiplexedRotation, {"num_ctrl_wires": m_register, "total_rotations":num_orb-1})
-        gate_list.append(plre.GateCount(mult_rots, 2))
+        gate_list.append(plre.GateCount(mult_rots, 4))
 
         # 3) Extra QROM cost for unloading the last angle
 
@@ -291,13 +291,16 @@ class ResourceSelectSparsePauli(ResourceOperator):
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 4))
 
-        ops_maj1 = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceY), 2*num_orb), (resource_rep(plre.ResourceZ), int((2*num_orb)*(2*num_orb - 1)/2)))})
-        unary_gate_maj1 = resource_rep(plre.ResourceSelect, {"cmpr_ops": [ops_maj1]})
-        controlled_unary_maj1 = resource_rep(plre.ResourceControlled, {"base_cmpr_op": unary_gate_maj1, "num_ctrl_wires":1, "num_ctrl_values":0})
-        #gate_list.append(plre.GateCount(controlled_unary_maj1, 2))
+        ops_maj1_Y = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceY), 2*num_orb), )})
+        ops_maj1_Z = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceZ), int((2*num_orb)*(2*num_orb - 1)/2)),)})
 
-        ops_maj0 = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceX), 2*num_orb), (resource_rep(plre.ResourceZ), int((2*num_orb)*(2*num_orb - 1)/2)))})
-        unary_gate_maj0 = resource_rep(plre.ResourceSelect, {"cmpr_ops": [ops_maj0]})
+        unary_gate_maj1 = resource_rep(plre.ResourceSelect, {"cmpr_ops": [ops_maj1_Y, ops_maj1_Z]})
+        controlled_unary_maj1 = resource_rep(plre.ResourceControlled, {"base_cmpr_op": unary_gate_maj1, "num_ctrl_wires":1, "num_ctrl_values":0})
+        gate_list.append(plre.GateCount(controlled_unary_maj1, 2))
+
+        ops_maj0_X = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceX), 2*num_orb), )})
+        ops_maj0_Z = resource_rep(plre.ResourceProd, {"cmpr_factors_and_counts": ((resource_rep(plre.ResourceZ), int((2*num_orb)*(2*num_orb - 1)/2)),)})
+        unary_gate_maj0 = resource_rep(plre.ResourceSelect, {"cmpr_ops": [ops_maj0_X, ops_maj0_Z]})
         controlled_unary_maj0 = resource_rep(plre.ResourceControlled, {"base_cmpr_op": unary_gate_maj0, "num_ctrl_wires":1, "num_ctrl_values":0})
         gate_list.append(plre.GateCount(controlled_unary_maj0, 2))
 
