@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new transform called :func:`~.transforms.replace_4_qubit_multi_controlled_X_gate` is implemented that 
+* A new transform called :func:`~.transforms.replace_gte_4_qubit_multi_controlled_X_gate` is implemented that 
   trades gates for a relative phase which must be cancelled or accounted for in future decompositions or qubit re-use 
   cases according to (Amy, M. and Ross, N. J., 2021).
   [(#7754)](https://github.com/PennyLaneAI/pennylane/pull/7754)

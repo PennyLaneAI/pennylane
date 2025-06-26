@@ -293,7 +293,7 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
 
         We can replace the 4-qubit multi controlled X gate by running the transform:
 
-        >>> lowered_qfunc = replace_4_qubit_multi_controlled_X_gate(qfunc)
+        >>> lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(qfunc)
         >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
         >>> print(qml.draw(lowered_qnode)())
 
