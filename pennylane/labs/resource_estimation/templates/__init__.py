@@ -15,3 +15,5 @@ r"""This module contains classes which integrate arithemtic operators with
 resource estimation."""
 
 from .subroutines import *
+from .thc import *
+from .compact_hamiltonian import *

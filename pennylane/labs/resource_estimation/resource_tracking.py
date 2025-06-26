@@ -71,6 +71,7 @@ resource_config = {
     "precision_multiplexer": 1e-9,
     "precision_qrom_state_prep": 1e-9,
     "select_swap_depth": 1,
+    "parallel_rotations": 1,
 }
 
 
