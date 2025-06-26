@@ -15,11 +15,13 @@
 
 import networkx as nx
 from collections import defaultdict
-
+import pennylane
 import random
 from itertools import product
 from pennylane import numpy as np
 from pennylane.measurements import MeasurementProcess
+from pennylane import sample
+from pennylane import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -304,167 +306,27 @@ def best_qpath(C, output_qubit_index):
 
     return Q_p_i, C
 
+def generate_dynamic_circuit(qubit_reuse_sequence, tape):
+    map_static_to_dynamic = {}
+    for dynamic_index, static_qubits in enumerate(qubit_reuse_sequence):
+        for static_qubit_index in static_qubits:
+            map_static_to_dynamic[static_qubit_index] = dynamic_index
+    print(map_static_to_dynamic)
+    new_ops, new_measurements = [], []
+    for op in tape.operations:
+        op_class = type(op)
 
-def add_qubit_reuse_edges(circuit, qubit_reuse_list):
-    """
-    Given the original circuit, and the a list, qubit_reuse_list, that 
-    contains the ordering of qubits in the dynamic circuit, the function 
-    returns a DAG that is a modified version of the original circuit DAG.
-    This modified DAG is a copy of the original DAG, but with edges that 
-    connects the reused qubits to the corresponding qubits that reused them
-    """
-    # this should be done before adding connecting edges.
-    circ_dag = circuit
-    # display(circ_dag.draw())
-    circ_dag_copy = copy.deepcopy(circ_dag)
-    total_qubits = len(circ_dag_copy.qubits)
-
-
-    # Create Edges
-    roots = list(circ_dag_copy.input_map.values())  # the roots or input nodes of the circuit
-    terminals = list(circ_dag_copy.output_map.values()) # the output nodes of the circuit
-
-    new_edges = []
-    for qubit_list in qubit_reuse_list:
-        if len(qubit_list)>0:
-            # Group the qubit indices to form edges
-            new_edges_indx = [(qubit_list[i], qubit_list[i + 1]) for 
-                              i in range(len(qubit_list) - 1)]
-            for root, terminal in new_edges_indx:
-                # the root here was the terminal before.
-                # The terminal is the qubit that will be 
-                # reused on the root
-                new_edges.append((terminals[root], roots[terminal]))
-
-    # display(circ_dag_copy.draw())             
-    for inp_node, outp_node in new_edges:
-        circ_dag_copy._multi_graph.add_edge(inp_node._node_id, outp_node._node_id, inp_node.wire)
-                
-    return circ_dag_copy, new_edges
-
-
-def static_to_dynamic_circuit(circuit, qubit_reuse_list, draw=False):
-    """
-    Converts a static quantum circuit into a dynamic quantum circuit by adding edges to the
-    original Directed Acyclic Graph (DAG) of the circuit and reordering qubits based on 
-    the qubit reuse list. This transformation is aimed at optimizing qubit reuse and improving 
-    the efficiency of quantum circuit execution.
-
-    The function first computes qubit reuse sets using the `compute_qubit_reuse_sets` function. 
-    It then adds edges to the original DAG circuit based on these reuse sets and removes any 
-    barrier nodes to avoid cyclical DAGs and enable topological sorting. The qubits of the 
-    original circuit are reordered into a new dynamic circuit based on the qubit reuse list.
-
-    Parameters:
-    - circuit (QuantumCircuit): The static quantum circuit to be transformed into a dynamic circuit.
-
-    Returns:
-    - QuantumCircuit: The transformed dynamic quantum circuit.
-
-    The function also handles the edge case where a cycle might be detected in the DAG after adding new edges.
-    In such cases, an AssertionError is raised. For each node in the DAG, the function applies operations
-    based on the remapped qubits, ensuring the dynamic circuit maintains the intended functionality of the
-    original static circuit.
-    """
-
-    # Return the original circuit if no qubit reuse is found
-    # if len(qubit_reuse_list) == circuit.num_qubits:
-    if qubit_reuse_list is None:
-        # print("This circuit is irreducible")
-        return circuit
-
-    circ_dag_copy, new_edges = add_qubit_reuse_edges(circuit, qubit_reuse_list) # add edges using the qubit_reuse_list
-
-	# remove barrier nodes from the new dag to avoid cyclical DAG and enable topological sorting
-    barrier_nodes = [node for node in list(circ_dag_copy.nodes()) if isinstance(node, DAGOpNode)  and node.op.name == "barrier"]
-
-    for op_node in barrier_nodes:
-        circ_dag_copy.remove_op_node(op_node)
-
-    # Check if there is a cycle in the DAG
-    if len(list(circ_dag_copy.nodes())) > len(list(circ_dag_copy.topological_nodes())):
-        assert False, "A cycle detected in the DAG"
-
-    # print("qubit_reuse_list length = ", len(qubit_reuse_list))
-    old_to_new_qubit_remap_dict = {} # map old qubits to new qubits
-    for new_qubit in range(len(qubit_reuse_list)):
-        for old_qubit in qubit_reuse_list[new_qubit]:
-            old_to_new_qubit_remap_dict[old_qubit] = new_qubit
-
-    # print("qubit_reuse_list = ", qubit_reuse_list)
-
-    # print("old_to_new_qubit_remap_dict = ", old_to_new_qubit_remap_dict)
-
-    # loop through the nodes in the circuit DAG
-    new_dag_copy = DAGCircuit()
-	# Add quantum registers to new_dag_copy
-    num_qubits = len(qubit_reuse_list) # number of qubits is the length of the qubit_reuse_list
-    qregs = QuantumRegister(num_qubits)
-    new_dag_copy.add_qreg(qregs)
-    qubits_indices = {i: qubit for i, qubit in enumerate(new_dag_copy.qubits)}  # Assign index to each clbit from 0 to total number of 
-
-    # Add classical registers to new_dag_copy
-    num_clbits = circ_dag_copy.num_clbits()
-    cregs = ClassicalRegister(num_clbits)
-    new_dag_copy.add_creg(cregs)
-    clbits_indices = {i: clbit for i, clbit in enumerate(new_dag_copy.clbits)}  # Assign index to each clbit from 0 to total number of clbits-1
-    
-    total_qr = len(qubit_reuse_list) # total number of qubits in dynamic circuit
-    measure_reset_nodes = [edge[0].__hash__() for edge in new_edges] # nodes to replace with measure and reset
-    remove_input_nodes = [edge[1].__hash__() for edge in new_edges] # nodes to replace with measure and reset
-    track_qubits = []
-
-    for node in circ_dag_copy.topological_nodes(): # it is important to organize it topologically
-        if not isinstance(node, DAGInNode) and not isinstance(node, DAGOutNode):
-            old_qubits = [n.index for n in node.qargs]
-            clbits = [n.index for n in node.cargs]
-
-            if len(old_qubits) > 1: # this is the two-qubit gate case
-                new_qubits = [old_to_new_qubit_remap_dict[q] for q in old_qubits]
-                new_wires = [qubits_indices[q] for q in new_qubits]
-                new_qargs = tuple(new_wires)
-
-                clbits_wires = [clbits_indices[c] for c in clbits]
-                new_cargs = tuple(clbits_wires)
-
-                new_node = DAGOpNode(op=node.op, qargs=new_qargs, cargs=new_cargs)
-                new_dag_copy.apply_operation_back(new_node.op, qargs=new_node.qargs, cargs=new_node.cargs)
-
-            else: # this is the one-qubit gate case
-                old_qubits = old_qubits[0] # to eliminate list for 1-qubit
-                new_qubits = old_to_new_qubit_remap_dict[old_qubits]
-                new_wires = [qubits_indices[new_qubits]]
-                new_qargs = tuple(new_wires)
-
-                clbits_wires = [clbits_indices[c] for c in clbits]
-                new_cargs = tuple(clbits_wires)
-                new_node = DAGOpNode(op=node.op, qargs=new_qargs, cargs=new_cargs)
-                new_dag_copy.apply_operation_back(new_node.op, qargs=new_node.qargs, cargs=new_node.cargs)
-        else:
-            old_qubits = node.wire.index
-            new_qubits = old_to_new_qubit_remap_dict[old_qubits]
-            new_wires = [qubits_indices[new_qubits]]
-            new_qargs = tuple(new_wires)
-
-            if isinstance(node, DAGInNode):
-                continue # since we have accounted for the qubits
-            elif isinstance(node, DAGOutNode):
-                # DAGOutNode and hence, reset operation has no cargs
-                if node.__hash__() in measure_reset_nodes:
-                    reset_node = add_reset_op(new_qargs)
-                    new_dag_copy.apply_operation_back(reset_node.op, qargs=reset_node.qargs, cargs=reset_node.cargs)
-                else:
-                    continue
-
-    
-    new_circ = dag_to_circuit(new_dag_copy)
-    
-    # if draw:
-    #     # display(new_circ.draw("mpl", fold=-1))
-    #     display(new_circ.draw("mpl"))
-    
-    return new_circ
-
+        op_params = op.parameters
+        new_wires = [map_static_to_dynamic[static_wire] for static_wire in op.wires]
+        new_op = op_class(*op_params, wires=new_wires)
+        new_ops.append(new_op)
+        if len(new_wires) == 2: 
+            m = measure(wires= new_wires[0], reset=True)
+            new_ops.append(m)
+            # new_measurements.append(sample(m))
+    print(new_ops)
+    print(new_measurements)
+    return QuantumScript(new_ops, [pennylane.expval(0)])
 
 @transform
 def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -486,6 +348,10 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
     """
     G = pennylane_to_networkx(tape)
+
+    # TODO: Check G doesn't have cycles
+    # TODO: Check G doesn't have mid-circuit measurements
+
     in_nodes, out_nodes = [], []
     node_attrs = nx.get_node_attributes(G,"type")
     for node in node_attrs:
@@ -529,13 +395,12 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
             R = R_prime
     print(R)
 
+    new_tape = generate_dynamic_circuit(R, tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]  # pragma: no cover
-
-    new_tape = tape.copy(operations=[])
-
+    
     return [new_tape], null_postprocessing
