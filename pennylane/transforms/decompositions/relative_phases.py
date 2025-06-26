@@ -144,6 +144,7 @@ def replace_controlled_iX_gate(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
+        num_controls (int): The number of controls on the CS gate.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
