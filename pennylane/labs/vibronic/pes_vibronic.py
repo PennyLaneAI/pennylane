@@ -84,8 +84,11 @@ def vibronic_pes(
         method (str): Electronic structure method used to perform geometry optimization.
             Available options are ``"rhf"`` and ``"uhf"`` for restricted and unrestricted
             Hartree-Fock, respectively. Default is ``"rhf"``.
+        method_excited (str): Electronic structure method used to perform excited state
+            calculations. Available options are ``"tddft"``, ``"casscf"`` and ``"eom_ccsd"``.
+            Default is ``"tddft"``.
         optimize (bool): if ``True`` perform geometry optimization. Default is ``True``.
-        rotate(bool): if ``True`` rotate the molecule to align normal modes with symmetry operators
+        rotate (bool): if ``True`` rotate the molecule to align normal modes with symmetry operators
         pes_level (int): the number of coupled modes for generating the potential energy surface data.
             Available options are ``1``, ``2``, ``3`` for one-mode, two-mode and three-mode levels,
             respctively.
@@ -95,18 +98,25 @@ def vibronic_pes(
             options are ``mp_pool``, ``cf_procpool``, ``cf_threadpool``, ``serial``,
             ``mpi4py_pool``, ``mpi4py_comm``. Default value is set to ``serial``. See Usage Details
             for more information.
+        use_gpu (bool): if ``True``, electronic structure calculations will be run on gpu. Default
+            is ``False``.
 
     Returns:
        VibrationalPES: the VibrationalPES object
 
     **Example**
 
-    >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibronic_pes(mol, optimize=False)
+    >>> import numpy as np
+    >>> from pennylane import qchem
+    >>> from pennylane.labs.vibronic import vibronic_pes
+    >>> symbols = ["H", "O", "H"]
+    >>> geometry = np.array([[-0.0399, -0.0038, 0.0000],
+    ...                      [ 1.5780,  0.8540, 0.0000],
+    ...                      [ 2.7909, -0.5159, 0.0000]])
+    >>> mol = qchem.Molecule(symbols, geometry, basis_name="6-31g", load_data=True)
+    >>> pes = vibronic_pes(mol, n_points=3, optimize=False, rotate=False, method_excited="tddft")
     >>> print(pes.freqs)
-    [0.02038828]
+    [0.00844238 0.01715041 0.01753766]
 
     .. details::
         :title: Usage Details
@@ -168,6 +178,8 @@ def vibronic_pes(
         grid = _grid_points(grid_type, grid_range, n_points)
 
         eq_geometry = mol_eq.coordinates * BOHR_TO_ANG
+
+        energy_1, energy_2, energy_3 = None, None, None
 
         if pes_level == 1:
             geometry_1d = _generate_1d_grid(freqs, vectors, eq_geometry, grid)

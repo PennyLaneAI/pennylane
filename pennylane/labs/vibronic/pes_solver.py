@@ -30,7 +30,8 @@ from itertools import combinations
 from pyscf import gto, scf, mcscf, tdscf, cc
 from pyscf.fci import direct_spin0
 from pyscf.symm.geom import SymmSys
-from gpu4pyscf.dft import rks, uks
+
+# from gpu4pyscf.dft import rks, uks
 
 from pennylane import concurrency, qchem
 
