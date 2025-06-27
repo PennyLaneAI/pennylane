@@ -4,7 +4,6 @@ from jax import jit
 from jax import numpy as jnp
 from jax import scipy as jsp
 from jax import value_and_grad
-from tqdm import tqdm
 import numpy as np
 
 def ob_correction(tbt, spin_orb=False):
@@ -117,7 +116,7 @@ def full_optimization(obt, tbt, mixing_arr=np.linspace(0,1,num=11), num_steps=10
 	fin_tbt = jnp.copy(tbt)
 	opt_mixing = None
 
-	for mixing in tqdm(mixing_arr, desc = 'Orbital optimization'):
+	for mixing in mixing_arr:
 		if verbose:
 			print(f"Starting orbital optimization with mixing coefficient {mixing}")
 		new_obt, new_tbt = optimize_params(obt, tbt, mixing, num_steps, learning_rate, seed)

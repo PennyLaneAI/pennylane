@@ -34,7 +34,7 @@ def cost_heuristic(T, Q, heuristic, **kwargs):
 		if Q < 500:
 			return Q+T
 		else:
-			return Q*1e20 + T
+			return Q*1e10 + T
 	if heuristic in linear_heuristics:
 		if heuristic == "T":
 			alpha = 0.95
