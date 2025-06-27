@@ -13,18 +13,21 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 
-import networkx as nx
-from collections import defaultdict
-import pennylane
 import random
+from collections import defaultdict
 from itertools import product
-from pennylane import numpy as np
-from pennylane.measurements import MeasurementProcess
-from pennylane import sample
+
+import networkx as nx
+
+import pennylane
 from pennylane import measure
+from pennylane import numpy as np
+from pennylane import sample
+from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
+
 
 def pennylane_to_networkx(tape) -> nx.DiGraph:
     """
@@ -51,12 +54,12 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
     Returns:
         nx.DiGraph: A directed graph representing the quantum circuit.
     """
-        # Create a new directed graph
+    # Create a new directed graph
     G = nx.DiGraph()
 
     # Get the number of wires directly from the tape's wires attribute.
     # This is more direct when dealing with a tape object.
-    num_wires = len(range(min(tape.wires),max(tape.wires)+1))
+    num_wires = len(range(min(tape.wires), max(tape.wires) + 1))
 
     # Dictionary to keep track of the *current* qubit state node (its ID) on each wire.
     # This helps in creating sequential connections based on the flow through operations.
@@ -67,7 +70,7 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
     for i in range(num_wires):
         node_name = f"Qubit_{i}_Init"
         G.add_node(node_name, type="initial_qubit_state", wire=i)
-        current_qubit_state_node[i] = node_name # Initialize the current node for this wire
+        current_qubit_state_node[i] = node_name  # Initialize the current node for this wire
 
     # 2. Add Operator Nodes (Blue) and connect them to qubit state nodes.
     # Iterate through each operation in the PennyLane tape.
@@ -90,7 +93,12 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
             # Create a new qubit state node representing the qubit's state *after* this operation.
             # This new node will be of type 'intermediate_or_final_qubit_state' (purple).
             output_qubit_node_id = f"Qubit_{wire_idx}_AfterOp_{op_idx}"
-            G.add_node(output_qubit_node_id, type="intermediate_or_final_qubit_state", wire=wire_idx, from_op=op_node_id)
+            G.add_node(
+                output_qubit_node_id,
+                type="intermediate_or_final_qubit_state",
+                wire=wire_idx,
+                from_op=op_node_id,
+            )
 
             # Add an edge from the operator node to the new output qubit state node.
             G.add_edge(op_node_id, output_qubit_node_id)
@@ -100,6 +108,7 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
             current_qubit_state_node[wire_idx] = output_qubit_node_id
 
     return G
+
 
 def merge_subsets(list_of_pairs):
     """
@@ -153,7 +162,14 @@ def merge_subsets(list_of_pairs):
             if elem not in sublist1_set:
                 sublist1_set.add(elem)
                 # Determine the position to insert the element based on relative order in sublist2
-                position = next((i for i, x in enumerate(sublist1) if x in sublist2 and sublist2.index(x) > sublist2.index(elem)), len(sublist1))
+                position = next(
+                    (
+                        i
+                        for i, x in enumerate(sublist1)
+                        if x in sublist2 and sublist2.index(x) > sublist2.index(elem)
+                    ),
+                    len(sublist1),
+                )
                 sublist1.insert(position, elem)
         return sublist1
 
@@ -184,7 +200,6 @@ def merge_subsets(list_of_pairs):
                 break
 
     return merged_list
-
 
 
 def finalize_reuse(qubit_reuse_list, num_qubits):
@@ -240,6 +255,7 @@ def update_candidate_matrix(C, output_qubit, input_qubit):
 
     return C
 
+
 def best_qpath(C, output_qubit_index):
     """
     Determines the optimized reuse path for a given output qubit.
@@ -260,8 +276,9 @@ def best_qpath(C, output_qubit_index):
 
         # Compute the intersection sets
         for input_qubit in P_r_i:
-            neighbors = set.intersection(*[set(np.where(C[k] == 1)[0])
-                                           for k in (Q_p_i + [input_qubit])])
+            neighbors = set.intersection(
+                *[set(np.where(C[k] == 1)[0]) for k in (Q_p_i + [input_qubit])]
+            )
             D[input_qubit] = neighbors
 
         if all(len(D[input_qubit]) == 0 for input_qubit in D):
@@ -306,6 +323,7 @@ def best_qpath(C, output_qubit_index):
 
     return Q_p_i, C
 
+
 def generate_dynamic_circuit(qubit_reuse_sequence, tape):
     map_static_to_dynamic = {}
     for dynamic_index, static_qubits in enumerate(qubit_reuse_sequence):
@@ -319,13 +337,14 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
         new_wires = [map_static_to_dynamic[static_wire] for static_wire in op.wires]
         new_op = op_class(*op_params, wires=new_wires)
         new_ops.append(new_op)
-        if len(new_wires) == 2: 
-            m = pennylane.measurements.MidMeasureMP(wires = new_wires[0], reset=True)
+        if len(new_wires) == 2:
+            m = pennylane.measurements.MidMeasureMP(wires=new_wires[0], reset=True)
             new_ops.append(m)
 
             # TODO: Figure out the measurement parts
             # new_measurements.append(pennylane.expval(m))
     return QuantumScript(new_ops, new_measurements)
+
 
 @transform
 def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -352,23 +371,25 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     # TODO: Check G doesn't have mid-circuit measurements
 
     in_nodes, out_nodes = [], []
-    node_attrs = nx.get_node_attributes(G,"type")
+    node_attrs = nx.get_node_attributes(G, "type")
     for node in node_attrs:
         data = node_attrs[node]
         if data == "initial_qubit_state":
             in_nodes.append(node)
         elif data == "intermediate_or_final_qubit_state":
-            if G.out_degree(node) == 0: 
+            if G.out_degree(node) == 0:
                 out_nodes.append(node)
 
-    num_wires = len(range(min(tape.wires),max(tape.wires)+1))
+    num_wires = len(range(min(tape.wires), max(tape.wires) + 1))
     B = np.eye(num_wires)
     for root_node, terminal_node in product(in_nodes, out_nodes):
-        B[int(root_node.split("_")[1]) ][int(terminal_node.split("_")[1])] = nx.has_path(G, root_node, terminal_node)
+        B[int(root_node.split("_")[1])][int(terminal_node.split("_")[1])] = nx.has_path(
+            G, root_node, terminal_node
+        )
     C = np.ones((num_wires, num_wires), dtype=int) - B.transpose()
     n = C.shape[0]
     R = [[i] for i in range(n)]
-    
+
     if np.all(C == 0):
         # return R  # Irreducible circuit
         return None  # Irreducible circuit
@@ -400,5 +421,5 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
         into a result for a single ``QuantumTape``.
         """
         return results[0]  # pragma: no cover
-    
+
     return [new_tape], null_postprocessing
