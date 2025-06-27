@@ -177,7 +177,6 @@ from .ops import (
 )
 
 from .templates import (
-    ResourceTrotterProduct,
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
     ResourceOutMultiplier,
@@ -185,4 +184,19 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceQFT,
+    ResourcePhaseAdder,
+    ResourceMultiplexedRotation,
+    ResourceUniformStatePrep,
+    ResourceComparator,
+    ResourceSelectTHC,
+    ResourcePrepTHC,
+    CompactHamiltonian,
+    ResourceParallelMultiplexedRotation,
+    ResourcePrepCDF,
+    ResourceAliasSampling,
+    ResourceSelectSparsePauli,
+    ResourcePrepSparsePauli,
+    ResourcePrepAC,
+    ResourceSelectAC,
 )
