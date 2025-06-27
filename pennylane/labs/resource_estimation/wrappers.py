@@ -10,10 +10,11 @@ import orbital_optimization as oo
 from hyperoptimization import resource_optimizer, resource_cost, cost_heuristic
 
 from templates.compact_hamiltonian import CompactHamiltonian
-# from templates.walk import ResourceWalk
 
-from templates.LCU_decomps import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm, sparse_matrix, double_factorization, compressed_double_factorization, l4
-from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli
+from templates.ac import norms_ac_groups
+from templates.LCU_decomps import sparse_matrix, double_factorization, compressed_double_factorization, l4
+from templates.optimization import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm
+from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli, ResourcePrepAC, ResourceSelectAC
 
 from cow_print import cow_print
 
@@ -27,7 +28,8 @@ CustomGateSet = {
     "T"
 }
 
-decomposition_methods = ["THC", "BLISS-THC", "CDF", "BLISS-CDF", "Sparse"]
+decomposition_methods = ["THC", "BLISS-THC", "CDF", "BLISS-CDF", "Sparse", "AC"]
+preopt_list = ["Sparse", "DF", "AC"]
 def create_compact_ham(obt, tbt, method, **kwargs):
 	if method not in decomposition_methods:
 		raise ValueError(f"Trying to do decomposition for method {method}, not defined! Only {decomposition_methods} have been defined")
@@ -42,6 +44,20 @@ def create_compact_ham(obt, tbt, method, **kwargs):
 
 		one_norm, num_unitaries = sparse_matrix(obt, tbt, tol_factor=1e-5)
 		return CompactHamiltonian.sparsepauli(Norbs, num_unitaries), one_norm
+
+	if method == "AC":
+		if "tol_factor" in kwargs:
+			tol_factor = kwargs["tol_factor"]
+		else:
+			tol_factor = 1e-5
+
+		obt_trunc = np.copy(obt)
+		tbt_trunc = np.copy(tbt)
+		obt_trunc[abs(obt_trunc)<tol_factor]=0
+		tbt_trunc[abs(tbt_trunc)<tol_factor]=0
+
+		ac_norms, num_paulis = norms_ac_groups(obt_trunc, tbt_trunc)
+		return CompactHamiltonian.anticommuting(Norbs, len(ac_norms), num_paulis), np.sum(ac_norms)
 
 	if method == "CDF" or method == "BLISS-CDF":
 		if "nfrags" in kwargs:
@@ -122,6 +138,14 @@ def create_resource_function(compact_ham, method, max_selwap = 8, **kwargs):
 		sel_kwargs = []
 		sel_ranges = []
 
+	if method == "AC":
+		PREP = ResourcePrepAC(compact_ham, **kwargs)
+		prep_kwargs = ["select_swap_depth"]
+		prep_ranges = [selswap_range]
+
+		SEL = ResourceSelectAC(compact_ham, **kwargs)
+		sel_kwargs = []
+		sel_ranges = []
 
 	if method in ["CDF", "BLISS-CDF"]:
 		PREP = ResourcePrepCDF(compact_ham, **kwargs)
@@ -186,7 +210,6 @@ def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, he
 
 	return opt_resources, one_norm, opt_params
 
-preopt_list = ["Sparse", "DF", "AC"]
 def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
 	TIMES_ARR = [time()]
 
