@@ -376,6 +376,7 @@ class ResourceSelectSparsePauli(ResourceOperator):
 
         gate_list = []
 
+        gate_list.append(AllocWires(int(np.ceil(np.log2(2*num_orb)))+1))
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 4))
 
@@ -411,26 +412,29 @@ class ResourceSelectSparsePauli(ResourceOperator):
 
         s_gate = resource_rep(plre.ResourceS())
         gate_list.append(plre.GateCount(s_gate, 2))
-
+        gate_list.append(FreeWires(int(np.ceil(np.log2(2*num_orb)))+1))
         return gate_list
 
 class ResourcePrepSparsePauli(ResourceOperator):
 
-    def __init__(self, compact_ham, wires=None):
+    def __init__(self, compact_ham, coeff_precision=2e-5, wires=None):
 
         self.compact_ham = compact_ham
+        self.coeff_precision = coeff_precision
         num_orb = compact_ham.params["num_orbitals"]
-        register_size = int(np.ceil(np.log2(num_orb)))
-        self.num_wires = 4+4*register_size + 2*num_orb
+        num_terms = compact_ham.params["num_terms"]
+        register_size = int(np.ceil(np.log2(2*num_orb)))
+        num_precision_wires = abs(math.floor(math.log2(coeff_precision)))
+        self.num_wires = 8 +2*num_precision_wires+8*register_size+int(np.ceil(np.log2(num_terms)))
         super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
-        return {"compact_ham": self.compact_ham}
+        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision}
 
     @classmethod
-    def resource_rep(cls, compact_ham) -> CompressedResourceOp:
-        params = {"compact_ham": compact_ham}
+    def resource_rep(cls, compact_ham, coeff_precision) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision}
         return CompressedResourceOp(cls, params)
 
     @classmethod
@@ -440,7 +444,10 @@ class ResourcePrepSparsePauli(ResourceOperator):
         n_terms = compact_ham.params["num_terms"]
         num_precision_wires = abs(math.floor(math.log2(coeff_precision)))
         gate_list = []
-
+        ks = abs(math.floor(math.log2(n_terms)))
+        ls = int(np.ceil(math.log2(n_terms/(2**ks))))
+        reusable_wires = max(ls, np.ceil(np.log2(n_terms))-1, 2*num_precision_wires-1)
+        gate_list.append(AllocWires(reusable_wires))
         uniform = resource_rep(plre.ResourceUniformStatePrep, {"register_size": int(np.ceil(np.log2(n_terms)))})
         gate_list.append(plre.GateCount(uniform, 1))
 
@@ -466,165 +473,118 @@ class ResourcePrepSparsePauli(ResourceOperator):
 
         gate_list.append(plre.GateCount(qrom,1))
 
-        #arithmatic gate
+        #arithmetic gate
         t = resource_rep(plre.ResourceT)
         gate_list.append(plre.GateCount(t, 8*num_precision_wires-4))
 
         rz = resource_rep(plre.ResourceRZ)
         gate_list.append(plre.GateCount(rz,2))
+        gate_list.append(FreeWires(reusable_wires))
+
 
         return gate_list
 
-# class ResourcePrepSelPrepDF(ResourceOperator):
 
-#     def __init__(self, compact_ham, wires=None):
+class ResourceSelectAC(ResourceOperator):
 
-#         self.compact_ham = compact_ham
-#         num_orb = compact_ham.params["num_orbitals"]
-#         register_size = int(np.ceil(np.log2(num_orb)))
-#         self.num_wires = 4+4*register_size + 2*num_orb
-#         super().__init__(wires=wires)
+    def __init__(self, compact_ham, wires=None):
 
-#     @property
-#     def resource_params(self) -> dict:
-#         return {"compact_ham": self.compact_ham}
+        self.compact_ham = compact_ham
+        num_orb = compact_ham.params["num_orbitals"]
+        num_ac_groups = compact_ham.params["num_ac_groups"]
+        self.num_wires = math.ceil(math.log2(num_ac_groups))+2*num_orb+1
+        super().__init__(wires=wires)
 
-#     @classmethod
-#     def resource_rep(cls, compact_ham) -> CompressedResourceOp:
-#         params = {"compact_ham": compact_ham}
-#         return CompressedResourceOp(cls, params)
+    @property
+    def resource_params(self) -> dict:
+        return {"compact_ham": self.compact_ham}
 
-#     @classmethod
-#     def default_resource_decomp(cls, compact_ham, **kwargs) -> list[GateCount]:
+    @classmethod
+    def resource_rep(cls, compact_ham) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham}
+        return CompressedResourceOp(cls, params)
 
-#         num_orb = compact_ham.params["num_orbitals"]
+    @classmethod
+    def default_resource_decomp(cls, compact_ham, **kwargs) -> list[GateCount]:
+        #just doing T counts for now
+        num_ac_groups = compact_ham.params["num_ac_groups"]
+        num_paulis = compact_ham.params["num_paulis"]
+        num_orb = compact_ham.params["num_orbitals"]
+        b_G = math.ceil(math.log2(num_ac_groups))
 
-#         gate_list = []
+        gate_list = []
+        gate_list.append(AllocWires(b_G))
+        gate_list.append(plre.AllocWires(b_G))
 
-#         uniform = resource_rep(plre.ResourceUniformStatePrep(register_size = int(np.ceil(np.log2(n_terms)))))
-#         gate_list.append(plre.GateCount(uniform, 1))
+        T = resource_rep(plre.ResourceT())
+        gate_list.append(plre.GateCount(T, 4 * num_ac_groups - 4))
 
-#         hadamard = resource_rep(plre.ResourceHadamard())
-#         gate_list.append(plre.GateCount(hadamard, mu + 1))
+        gate_list.append(plre.AllocWires(b_G + 1 + 2 * num_orb))
 
-#         cswap = resource_rep(plre.ResourceCSWAP)
-#         gate_list.append(plre.GateCount(cswap, 1 + int(np.ceil(np.log2(num_orb))) + int(np.ceil(np.log2(num_orb))/2) + int(np.ceil(np.log2(num_orb))/2)))
+        gate_list.append(plre.FreeWires(b_G))
 
-#         hadamard = resource_rep(plre.ResourceHadamard())
-#         controlled_hadamard = resource_rep(plre.ResourceControlled, {"base_cmpr_op": hadamard, "num_ctrl_wires":1, "num_ctrl_values":0})
-#         gate_list.append(plre.GateCount(controlled_hadamard, 2))
+        rz = resource_rep(plre.ResourceRZ(eps=1e-10))
+        gate_list.append(plre.GateCount(rz, 2 * num_paulis - 2 * num_ac_groups))
+        gate_list.append(FreeWires(b_G))
 
-#         pauliZ = resource_rep(plre.ResourceZ())
-#         controlled_pauliZ0 = resource_rep(plre.ResourceControlled, {"base_cmpr_op": pauliZ, "num_ctrl_wires":1, "num_ctrl_values":0})
-#         controlled_pauliZ1 = resource_rep(plre.ResourceControlled, {"base_cmpr_op": pauliZ, "num_ctrl_wires":1, "num_ctrl_values":1})
-
-#         gate_list.append(plre.GateCount(controlled_pauliZ0, 1))
-#         gate_list.append(plre.GateCount(controlled_pauliZ1, 1))
-
-#         qrom = resource_rep(plre.ResourceQROM(num_bitstrings = int(np.ceil(np.log2(n_terms))),
-#                                            size_bitstring = 4+mu+8*int(np.ceil(np.log2(num_orb)))))
-#         select_qrom = resource_rep(plre.ResourceSelect, {"cmpr_ops": qrom})
-#         gate_list.append(plre.GateCount(select_qrom,1))
-
-#         cnot = resource_rep(plre.ResourceCNOT())
-#         select_cnot = resource_rep(plre.ResourceSelect, {"cmpr_ops": cnot})
-#         gate_list.append(plre.GateCount(select_cnot,1))
-
-#         return gate_list
-
-# class ResourceSelectAC(ResourceOperator):
-
-#     def __init__(self, compact_ham, parallel_rotations=None, rotation_precision= 2e-5, wires=None):
-
-#         self.compact_ham = compact_ham
-#         self.parallel_rotations = parallel_rotations
-#         self.rotation_precision = rotation_precision
-#         num_ac_groups = compact_ham.params["num_ac_groups"]
-#         num_paulis = compact_ham.params["num_paulis"]
-#         self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(2*tensor_rank+1)))
-#         super().__init__(wires=wires)
-
-#     @property
-#     def resource_params(self) -> dict:
-#         return {"compact_ham": self.compact_ham, "parallel_rotations": self.parallel_rotations, "rotation_precision": self.rotation_precision}
-
-#     @classmethod
-#     def resource_rep(cls, compact_ham, parallel_rotations=None, rotation_precision=2e-5) -> CompressedResourceOp:
-#         params = {"compact_ham": compact_ham, "parallel_rotations": parallel_rotations,"rotation_precision": rotation_precision}
-#         return CompressedResourceOp(cls, params)
-
-#     @classmethod
-#     def default_resource_decomp(cls, compact_ham, parallel_rotations= None, rotation_precision=2e-5, **kwargs) -> list[GateCount]:
-#         #just doing T counts for now
-#         num_ac_groups = compact_ham.params["num_ac_groups"]
-#         num_paulis = compact_ham.params["num_paulis"]
-#         num_orb = compact_ham.params["num_orbitals"]
-#         b_G = math.ceil(math.log2(num_ac_groups))
-#         gate_list = []
-
-#         gate_list.append(plre.AllocWires(b_G))
-
-#         T = resource_rep(plre.ResourceT())
-#         gate_list.append(plre.GateCount(T, 4 * num_ac_groups - 4))
-
-#         gate_list.append(plre.AllocWires(b_G + 1 + 2 * num_orb))
-
-#         gate_list.append(plre.FreeWires(b_G))
-
-#         rz = resource_rep(plre.ResourceRZ(eps=1e-10))
-#         gate_list.append(plre.GateCount(rz, 2 * num_paulis - 2 * num_ac_groups))
-
-#         return gate_list
+        return gate_list
 
 
-# class ResourcePrepAC(ResourceOperator):
+class ResourcePrepAC(ResourceOperator):
 
-#     def __init__(self, compact_ham, coeff_precision= 2e-5, wires=None):
+    def __init__(self, compact_ham, coeff_precision= 2e-5, wires=None):
 
-#         self.compact_ham = compact_ham
-#         self.coeff_precision = coeff_precision
-#         num_ac_groups = compact_ham.params["num_ac_groups"]
-#         self.num_wires = 2 * int(np.ceil(math.log2(2*tensor_rank+1)))
-#         super().__init__(wires=wires)
+        self.compact_ham = compact_ham
+        self.coeff_precision = coeff_precision
+        num_precision_wires = abs(math.floor(math.log2(coeff_precision)))
+        num_ac_groups = compact_ham.params["num_ac_groups"]
+        k_K = math.floor(math.log2(num_ac_groups))
+        l_K = math.ceil(math.log2(num_ac_groups / 2**(k_K)))
+        b_K = l_K + k_K
+        self.num_wires = b_K + 2*num_precision_wires + 3
+        super().__init__(wires=wires)
 
-#     @property
-#     def resource_params(self) -> dict:
-#         return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision}
+    @property
+    def resource_params(self) -> dict:
+        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision}
 
-#     @classmethod
-#     def resource_rep(cls, compact_ham, coeff_precision=2e-5) -> CompressedResourceOp:
-#         params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision}
-#         return CompressedResourceOp(cls, params)
+    @classmethod
+    def resource_rep(cls, compact_ham, coeff_precision=2e-5) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision}
+        return CompressedResourceOp(cls, params)
 
-#     @classmethod
-#     def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, **kwargs) -> list[GateCount]:
-#         #mainly counting things with T cost
-#         num_ac_groups = compact_ham.params["num_ac_groups"]
-#         k_K = math.floor(math.log2(num_ac_groups))
-#         l_K = math.ceil(math.log2(num_ac_groups / 2**(k_K)))
-#         b_K = l_K + k_K
-#         mu_K = 7 # hard coding to match THC precision qubits?
+    @classmethod
+    def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, **kwargs) -> list[GateCount]:
+        #mainly counting things with T cost
+        num_ac_groups = compact_ham.params["num_ac_groups"]
+        k_K = math.floor(math.log2(num_ac_groups))
+        l_K = math.ceil(math.log2(num_ac_groups / 2**(k_K)))
+        b_K = l_K + k_K
 
-#         gate_list = []
+        num_precision_wires = abs(math.floor(math.log2(coeff_precision)))
+        reusable_wires = max(l_K, b_K-1, 2*num_precision_wires-1)
+        gate_list = []
+        gate_list.append(AllocWires(reusable_wires))
 
-#         state_prep = plre.ResourceUniformStatePrep(register_size=num_ac_groups)
-#         gate_list.append(plre.GateCount(state_prep, 1))
+        state_prep = resource_rep(plre.ResourceUniformStatePrep, {"register_size":num_ac_groups})
+        gate_list.append(plre.GateCount(state_prep, 1))
 
-#         hadamard = plre.ResourceHadamard()
-#         gate_list.append(plre.GateCount(hadamard, mu_K))
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, num_precision_wires))
 
-#         qrom1 = plre.ResourceQROM(num_bitstrings=num_ac_groups, size_bitstring=mu_K) #not sure if the bitstring length is good
-#         gate_list.append(plre.GateCount(qrom1, 1))
+        qrom1 = resource_rep(plre.ResourceQROM, {"num_bitstrings":2**num_ac_groups, "size_bitstring":num_precision_wires})
+        gate_list.append(plre.GateCount(qrom1, 1))
 
-#         comp = plre.ResourceComparator(num_wires=mu_K)
-#         gate_list.append(plre.GateCount(comp, 1))
+        comp = resource_rep(plre.ResourceComparator, {"num_wires":num_precision_wires})
+        gate_list.append(plre.GateCount(comp, 1))
 
-#         #do I need another qrom here?
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op":qrom1})))
 
-#         T = resource_rep(plre.ResourceT)
-#         gate_list.append(plre.GateCount(T, 7 * b_K))
+        T = resource_rep(plre.ResourceT)
+        gate_list.append(plre.GateCount(T, 7 * b_K))
 
-#         cz = resource_rep(plre.ResourceCZ())
-#         gate_list.append(plre.GateCount(T, 2))
+        cz = resource_rep(plre.ResourceCZ())
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(FreeWires(reusable_wires))
 
-#         return gate_list
+        return gate_list
