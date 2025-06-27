@@ -4,6 +4,8 @@ from jax import jit
 from jax import numpy as jnp
 from jax import scipy as jsp
 from jax import value_and_grad
+from tqdm import tqdm
+import numpy as np
 
 def ob_correction(tbt, spin_orb=False):
     #returns correction to one-body tensor coming from tbt inside fermionic operator F
@@ -71,7 +73,7 @@ def rot_one_norm(obt, tbt, params):
 
 	return pauli_1_norm(obt_rot, tbt_rot)
 
-def optimize_params(obt, tbt, mixing=0.1, num_steps=1000, learning_rate=1e-2, seed=0, verbose=False):
+def optimize_params(obt, tbt, mixing=0.03, num_steps=1000, learning_rate=1e-2, seed=0, verbose=False):
 	# Initialize parameters (for simplicity, a single scalar here)
 	N = tbt.shape[0]
 	num_params = int(N*(N-1)/2)
@@ -105,3 +107,33 @@ def optimize_params(obt, tbt, mixing=0.1, num_steps=1000, learning_rate=1e-2, se
 	Urot = params_to_Urot(params, N)
 
 	return rotate_obt(obt, Urot), rotate_tbt(tbt, Urot)
+
+def full_optimization(obt, tbt, mixing_arr=np.linspace(0,1,num=11), num_steps=1000, learning_rate=1e-2, seed=0, verbose=False):
+	curr_one_norm = pauli_1_norm(obt, tbt)
+	if verbose:
+		print(f"Started orbital optimization routine with 1-norm {curr_one_norm}")
+
+	fin_obt = jnp.copy(obt)
+	fin_tbt = jnp.copy(tbt)
+	opt_mixing = None
+
+	for mixing in tqdm(mixing_arr, desc = 'Orbital optimization'):
+		if verbose:
+			print(f"Starting orbital optimization with mixing coefficient {mixing}")
+		new_obt, new_tbt = optimize_params(obt, tbt, mixing, num_steps, learning_rate, seed)
+		my_one_norm = pauli_1_norm(new_obt, new_tbt)
+
+		if my_one_norm < curr_one_norm:
+			curr_one_norm = my_one_norm
+			opt_mixing = mixing
+			fin_obt = new_obt
+			fin_tbt = new_tbt
+
+	if verbose:
+		if mixing is None:
+			print(f"Orbital optimization routine was not able to improve one-norm, returning original tensors...")
+		else:
+			print(f"Orbital optimized 1-norm is {curr_one_norm} with mixing coefficient {opt_mixing}")
+
+
+	return fin_obt, fin_tbt
