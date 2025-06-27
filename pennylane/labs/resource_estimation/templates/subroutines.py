@@ -1467,7 +1467,7 @@ class ResourceUniformStatePrep(ResourceOperator):
 
         gate_lst = []
 
-        gate_lst.append(AllocWires(1))
+        gate_lst.append(AllocWires(1+k))
         hadamard = resource_rep(plre.ResourceHadamard)
 
         gate_lst.append(plre.GateCount(hadamard, 2**k + 3*l))
@@ -1477,7 +1477,7 @@ class ResourceUniformStatePrep(ResourceOperator):
 
         rz = resource_rep(plre.ResourceRZ)
         gate_lst.append(plre.GateCount(rz, 2))
-        gate_lst.append(FreeWires(1))
+        gate_lst.append(FreeWires(1+k))
 
         return gate_lst
 

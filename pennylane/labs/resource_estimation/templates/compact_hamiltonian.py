@@ -77,8 +77,8 @@ class CompactHamiltonian:
         return cls("sparsepauli", num_orbitals=num_orbitals, num_terms=num_terms)
 
     @classmethod
-    def anticommuting(cls, num_ac_groups:int):
-        return cls("anticommuting", num_ac_groups=num_ac_groups)
+    def anticommuting(cls, num_orbitals: int, num_ac_groups:int, num_paulis:int):
+        return cls("anticommuting", num_orbitals=num_orbitals, num_ac_groups=num_ac_groups, num_paulis=num_paulis)
 
     @classmethod
     def cdf(cls, num_orbitals: int, num_fragments: int):
