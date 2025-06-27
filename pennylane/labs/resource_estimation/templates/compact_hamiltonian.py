@@ -23,11 +23,7 @@ class CompactHamiltonian:
 
     Args:
         method_name (str): The name of the method used to construct the Hamiltonian
-            The methods available for constructing a `CompactHamiltonian` include:
-
-            - :meth:`cdf`: Constructs a Hamiltonian in the compressed double factorized representation
-            - :meth:`thc`: Constructs a Hamiltonian in the  tensor hypercontracted representation
-
+            The available are cdf, and thc.
         **params (Any): Keyword arguments specific to the chosen construction method,
 
             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
