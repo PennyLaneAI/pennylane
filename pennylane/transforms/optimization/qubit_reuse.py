@@ -19,8 +19,8 @@ from itertools import product
 
 import networkx as nx
 
-import pennylane
 from pennylane import numpy as np
+from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -335,7 +335,7 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
         new_op = op_class(*op_params, wires=new_wires)
         new_ops.append(new_op)
         if len(new_wires) == 2:
-            m = pennylane.measurements.MidMeasureMP(wires=new_wires[0], reset=True)
+            m = MidMeasureMP(wires=new_wires[0], reset=True)
             new_ops.append(m)
 
             # TODO: Figure out the measurement parts
