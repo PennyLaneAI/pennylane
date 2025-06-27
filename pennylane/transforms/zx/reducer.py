@@ -13,16 +13,6 @@
 # limitations under the License.
 """
 This module provides transforms to reduce a circuit applying simplification rules based on the ZX calculus.
-For more details about ZX calculus-based simplification of quantum circuits, see the following papers:
-
-    - Ross Duncan, Aleks Kissinger, Simon Perdrix, John van de Wetering (2019),
-    "Graph-theoretic Simplification of Quantum Circuits with the ZX-calculus", <https://arxiv.org/abs/1902.03178>
-
-    - Aleks Kissinger, John van de Wetering (2020),
-    "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>
-
-For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the online documentation:
-<https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>
 """
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -102,6 +92,16 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
         gates when optimizing a circuit composed primarily of Toffoli gates. Conversely, it tends
         to perform much better on Trotterized chemistry circuits.
 
+    For more details about ZX calculus-based simplification of quantum circuits, see the following papers:
+
+        - Ross Duncan, Aleks Kissinger, Simon Perdrix, John van de Wetering (2019),
+        "Graph-theoretic Simplification of Quantum Circuits with the ZX-calculus", <https://arxiv.org/abs/1902.03178>
+
+        - Aleks Kissinger, John van de Wetering (2020),
+        "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>
+
+    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the online documentation:
+    https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications
     """
 
     if not has_pyzx:  # pragma: no cover
