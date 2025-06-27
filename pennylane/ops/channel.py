@@ -646,7 +646,6 @@ class PauliError(Channel):
 
         # K1 is composed by Kraus matrices of operators
         K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.eye(1), p), p)
-        print("ABC", operators[::-1])
         for op in operators[::-1]:
             K1 = np.multi_dispatch()(np.kron)(ops[op], K1)
 
