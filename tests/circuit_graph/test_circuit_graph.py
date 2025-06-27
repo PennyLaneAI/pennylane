@@ -163,19 +163,23 @@ class TestCircuitGraph:
         queue = ops + obs
 
         ancestors = circuit.ancestors([queue[6]])
-        assert len(ancestors) == 3
+        ancestors_index = circuit.ancestors([6])
+        assert len(ancestors) == ancestors_index == 3
         for o_idx in (0, 1, 3):
             assert queue[o_idx] in ancestors
+            assert queue[o_idx] in ancestors_index
 
         descendants = circuit.descendants([queue[6]])
+        descendants_index = circuit.descendants([6])
         assert descendants == [queue[8]]
+        assert descendants_index == [queue[8]]
 
     def test_ancestors_and_descendents_repeated_op(self):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
         op = qml.X(0)
         ops = [op, qml.Y(0), op, qml.Z(0), op]
-        graph = CircuitGraph(ops, [], [0, 1, 2])
+        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
 
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
             graph.ancestors([op])

@@ -264,6 +264,7 @@ class CircuitGraph:
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "Cannot calculate ancestors for an operator that occurs multiple times."
+                "Please use ancestors_of_indexes instead."
             )
         ancestors = set()
         for op in ops:
@@ -274,11 +275,11 @@ class CircuitGraph:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
-    def _ancestors_of_indexes(self, indexes: Sequence[int], sort=False):
+    def ancestors_of_indexes(self, indexes: Sequence[int], sort=False):
         """Ancestors of a given set of operators.
 
         Args:
-            indexes (Sequence[int]) : the indices for the operators
+            indexes (Sequence[int]) : the index into the queue for the operator
 
         Returns:
             list[Operator]: ancestors of the given operators
@@ -289,11 +290,11 @@ class CircuitGraph:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
-    def _descendants_of_indexes(self, indexes: Sequence[int], sort=False):
+    def descendants_of_indexes(self, indexes: Sequence[int], sort=False):
         """Descendants of a given set of operators.
 
         Args:
-            indexes (Sequence[int]) : the indices for the operators
+            indexes (Sequence[int]) : the index into the queue for the operator
 
         Returns:
             list[Operator]: descendants of the given operators
@@ -320,7 +321,8 @@ class CircuitGraph:
             )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
-                "cannot calculate decendents for an operator that occurs multiple times."
+                "cannot calculate decendents for an operator that occurs multiple times. "
+                "Please use descendants_of_indexes instead."
             )
         descendants = set()
         for op in ops:
@@ -395,7 +397,7 @@ class CircuitGraph:
                 op = info["op"]
 
                 # get all predecessor ops of the op
-                sub = self._ancestors_of_indexes((info["op_idx"],))
+                sub = self.ancestors_of_indexes((info["op_idx"],))
 
                 # check if any of the dependents are in the
                 # currently assembled layer
@@ -419,8 +421,8 @@ class CircuitGraph:
         """
         # iterate through each layer
         for ops, param_inds, indexes in self.parametrized_layers:
-            pre_queue = self._ancestors_of_indexes(indexes, sort=True)
-            post_queue = self._descendants_of_indexes(indexes, sort=True)
+            pre_queue = self.ancestors_of_indexes(indexes, sort=True)
+            post_queue = self.descendants_of_indexes(indexes, sort=True)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
     def update_node(self, old, new):
