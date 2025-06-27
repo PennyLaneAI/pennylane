@@ -172,29 +172,37 @@ def vibronic_pes(
 
         if method_excited == "casscf":
             energy_1 = []
-
-
             arguments_1d = [
             (mol_eq.symbols, i["coordinates"], 2, 2)
             for i in geometry_1d
             ]
+
             executor_class = concurrency.backends.get_executor(backend)
             with executor_class(max_workers=num_workers) as executor:
                 energy_1 = list(executor.starmap(_run_casscf, arguments_1d))
 
         if method_excited == "tddft":
             energy_1 = []
+            arguments_1d = [
+            (mol_eq.symbols, i["coordinates"])
+            for i in geometry_1d
+            ]
 
-            
-            for geometry_point in geometry_1d:
-                new_coords = geometry_point["coordinates"]
-                energy_1.append(_run_tddft(mol_eq.symbols, new_coords))
+            executor_class = concurrency.backends.get_executor(backend)
+            with executor_class(max_workers=num_workers) as executor:
+                energy_1 = list(executor.starmap(_run_tddft, arguments_1d))
 
         if method_excited == "eom_ccsd":
             energy_1 = []
-            for geometry_point in geometry_1d:
-                new_coords = geometry_point["coordinates"]
-                energy_1.append(_run_eom_ccsd(mol_eq.symbols, new_coords))
+            arguments_1d = [
+            (mol_eq.symbols, i["coordinates"])
+            for i in geometry_1d
+            ]
+
+            executor_class = concurrency.backends.get_executor(backend)
+            with executor_class(max_workers=num_workers) as executor:
+                energy_1 = list(executor.starmap(_run_eom_ccsd, arguments_1d))
+
 
         # energy_2 = []
         # for geometry_point in geometry_2d:
