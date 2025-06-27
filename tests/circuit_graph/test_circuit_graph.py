@@ -163,14 +163,14 @@ class TestCircuitGraph:
         queue = ops + obs
 
         ancestors = circuit.ancestors([queue[6]])
-        ancestors_index = circuit.ancestors([6])
-        assert len(ancestors) == ancestors_index == 3
+        ancestors_index = circuit.ancestors_of_indexes([6])
+        assert len(ancestors) == len(ancestors_index) == 3
         for o_idx in (0, 1, 3):
             assert queue[o_idx] in ancestors
             assert queue[o_idx] in ancestors_index
 
         descendants = circuit.descendants([queue[6]])
-        descendants_index = circuit.descendants([6])
+        descendants_index = circuit.descendants_of_indexes([6])
         assert descendants == [queue[8]]
         assert descendants_index == [queue[8]]
 
