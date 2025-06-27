@@ -127,6 +127,8 @@ Templates:
     ~ResourceQROM
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
+    ~ResourceTrotterVibrational
+    ~ResourceTrotterVibronic
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -212,4 +214,6 @@ from .templates import (
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
 )
