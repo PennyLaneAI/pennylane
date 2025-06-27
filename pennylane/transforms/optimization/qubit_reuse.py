@@ -311,7 +311,6 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
     for dynamic_index, static_qubits in enumerate(qubit_reuse_sequence):
         for static_qubit_index in static_qubits:
             map_static_to_dynamic[static_qubit_index] = dynamic_index
-    print(map_static_to_dynamic)
     new_ops, new_measurements = [], []
     for op in tape.operations:
         op_class = type(op)
@@ -323,6 +322,8 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
         if len(new_wires) == 2: 
             m = pennylane.measurements.MidMeasureMP(wires = new_wires[0], reset=True)
             new_ops.append(m)
+
+            # TODO: Figure out the measurement parts
             # new_measurements.append(pennylane.expval(m))
     return QuantumScript(new_ops, new_measurements)
 
