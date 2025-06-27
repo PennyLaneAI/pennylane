@@ -1058,6 +1058,9 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same operation occurs multiple
+  times in the circuit.
+
 * Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
   some arguments are trainable and an intermediate transform does not preserve trainability information.
   [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
