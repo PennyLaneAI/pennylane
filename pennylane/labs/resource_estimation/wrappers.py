@@ -187,7 +187,8 @@ def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, he
 	return opt_resources, one_norm, opt_params
 
 preopt_list = ["Sparse", "DF", "AC"]
-def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
+def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
+
 	TIMES_ARR = [time()]
 
 	num_methods = len(method_list)
@@ -199,12 +200,18 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	if np.sum(do_preopt) > 0:
 		if verbose:
 			print(f"Found method which requires pre-optimization, applying orbital optimization and BLISS...")
-		preopt_obt = np.copy(obt)
-		preopt_tbt = np.copy(tbt)
-		preopt_obt, preopt_tbt = oo.optimize_params(obt, tbt)
-		preopt_obt, preopt_tbt = bliss.bliss_linprog(preopt_obt, preopt_tbt, eta)
-		preopt_obt = np.array(obt)
-		preopt_tbt = np.array(tbt)
+		oo_obt, oo_tbt = oo.full_optimization(obt, tbt, mixing_arr)
+		oo_obt = np.array(oo_obt)
+		oo_tbt = np.array(oo_tbt)
+		
+		bliss_obt, bliss_tbt = bliss.bliss_linprog(obt, tbt, eta)
+		bliss_obt = np.array(bliss_obt)
+		bliss_tbt = np.array(bliss_tbt)
+		
+		oo_bliss_obt, oo_bliss_tbt = bliss.bliss_linprog(oo_obt, oo_tbt, eta)
+		oo_bliss_obt = np.array(oo_bliss_obt)
+		oo_bliss_tbt = np.array(oo_bliss_tbt)
+
 		TIMES_ARR.append(time())
 		if verbose:
 			print(f"Optimized orbital frame and BLISS, optimization time was {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
@@ -221,20 +228,35 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	for i_method, method in enumerate(method_list):
 		if verbose:
 			print(f"\nOptimizing {method}...")
-		if do_preopt[i_method]:
-			preopt_res, preopt_one_norm, preopt_params = optimize_method(preopt_obt, preopt_tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)	
-			resources_list.append(preopt_res)
-			params_list.append(preopt_params)
-			one_norms_list.append(preopt_one_norm)
-			costs_list.append(resource_cost(preopt_res, heuristic, alpha=alpha))
-			method_final_list.append(method + "-(OO-BLISS)")
-		
+
 		my_res, my_one_norm, my_params = optimize_method(obt, tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)
 		resources_list.append(my_res)
 		params_list.append(my_params)
 		one_norms_list.append(my_one_norm)
 		costs_list.append(resource_cost(my_res, heuristic, alpha=alpha))
 		method_final_list.append(method)
+		
+		if do_preopt[i_method]:
+			bliss_res, bliss_one_norm, bliss_params = optimize_method(bliss_obt, bliss_tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)	
+			resources_list.append(bliss_res)
+			params_list.append(bliss_params)
+			one_norms_list.append(bliss_one_norm)
+			costs_list.append(resource_cost(bliss_res, heuristic, alpha=alpha))
+			method_final_list.append(method + "-(BLISS)")
+
+			oo_res, oo_one_norm, oo_params = optimize_method(oo_obt, oo_tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)	
+			resources_list.append(oo_res)
+			params_list.append(oo_params)
+			one_norms_list.append(oo_one_norm)
+			costs_list.append(resource_cost(oo_res, heuristic, alpha=alpha))
+			method_final_list.append(method + "-(OO)")
+
+			oo_bliss_res, oo_bliss_one_norm, oo_bliss_params = optimize_method(oo_bliss_obt, oo_bliss_tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)	
+			resources_list.append(oo_bliss_res)
+			params_list.append(oo_bliss_params)
+			one_norms_list.append(oo_bliss_one_norm)
+			costs_list.append(resource_cost(oo_bliss_res, heuristic, alpha=alpha))
+			method_final_list.append(method + "-(OO-BLISS)")
 
 		TIMES_ARR.append(time())
 		if verbose:
@@ -250,12 +272,13 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	if verbose:
 		print(f"Finished optimizing all methods after {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds!\n\n\n")
 		for ii in range(tot_methods):
-			print(f"Method {method_final_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm")
+			print(f"Method {method_final_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm and {hardness_heuristic_list[ii]:.2e} cost heuristic")
+
 
 	min_cost = min(hardness_heuristic_list)
 	min_index = hardness_heuristic_list.index(min_cost)
 
-	best_method = method_list[min_index]
+	best_method = method_final_list[min_index]
 	best_resources = resources_list[min_index]
 	best_one_norm = one_norms_list[min_index]
 	best_params = [int(pp) for pp in params_list[min_index]]

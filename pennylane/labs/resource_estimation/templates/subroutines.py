@@ -94,7 +94,6 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         """
         return CompressedResourceOp(cls, {"register_size": register_size})
 
-
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
@@ -1467,8 +1466,8 @@ class ResourceUniformStatePrep(ResourceOperator):
         l = math.ceil(math.log2(L))
 
         gate_lst = []
-
         gate_lst.append(AllocWires(1+k))
+
         hadamard = resource_rep(plre.ResourceHadamard)
 
         gate_lst.append(plre.GateCount(hadamard, 2**k + 3*l))
@@ -1478,6 +1477,7 @@ class ResourceUniformStatePrep(ResourceOperator):
 
         rz = resource_rep(plre.ResourceRZ)
         gate_lst.append(plre.GateCount(rz, 2))
+
         gate_lst.append(FreeWires(1+k))
 
         return gate_lst
