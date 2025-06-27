@@ -256,7 +256,7 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
 
     .. code-block:: python
 
-        @replace_relative_phase_toffoli(custom_quantum_cost={"Toffoli": 1})
+        @replace_relative_phase_toffoli(custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1})
         @qml.qnode(device=dev)
         def circuit():
             qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
