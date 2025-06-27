@@ -574,7 +574,7 @@ class PauliError(Channel):
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z", "I"}):
-            raise ValueError("The specified operators need to be either of 'I', 'X', 'Y' or 'Z'")
+            raise ValueError("The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.")
 
         # check if probabilities are legal
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:

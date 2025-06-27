@@ -742,7 +742,7 @@ class TestPauliError:
     EXPECTED_MESSAGES = [
         "The number of operators must match the number of wires",
         "p must be in the interval \\[0,1\\]",
-        "The specified operators need to be either of 'X', 'Y' or 'Z'",
+        "The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.",
         "Wires must be unique",
     ]
 
