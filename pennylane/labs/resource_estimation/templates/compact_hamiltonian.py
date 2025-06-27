@@ -73,8 +73,12 @@ class CompactHamiltonian:
         self.params = params
 
     @classmethod
-    def sparsepauli(cls, num_orbitals:int):
-        return cls("sparsepauli", num_orbitals=num_orbitals)
+    def sparsepauli(cls, num_orbitals:int, num_terms:int):
+        return cls("sparsepauli", num_orbitals=num_orbitals, num_terms=num_terms)
+
+    @classmethod
+    def anticommuting(cls, num_ac_groups:int):
+        return cls("anticommuting", num_ac_groups=num_ac_groups)
 
     @classmethod
     def cdf(cls, num_orbitals: int, num_fragments: int):
@@ -141,3 +145,4 @@ class CompactHamiltonian:
             grid_size=grid_size,
             taylor_degree=taylor_degree,
         )
+
