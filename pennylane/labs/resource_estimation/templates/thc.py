@@ -258,7 +258,7 @@ class ResourceSelectCDF(ResourceOperator):
 
         qrom_angle = resource_rep(plre.ResourceQROM,
             {
-                "num_bitstrings": 2**(m_register+i_register),
+                "num_bitstrings": num_fragments*num_orb,
                 "size_bitstring": rot_prec_wires,
                 "clean": False,
             }
