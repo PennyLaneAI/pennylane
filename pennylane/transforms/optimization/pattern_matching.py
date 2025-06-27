@@ -439,7 +439,11 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return (node_1.op.name == node_2.op.name) and (node_1.op.data == node_2.op.data)
+    return (
+        (node_1.op.name == node_2.op.name)
+        and (node_1.op.data == node_2.op.data)
+        and len(node_1.wires) == len(node_2.wires)
+    )
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
@@ -482,6 +486,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
+        "C(S)": "S",
         "CRot": "Rot",
         "MultiControlledX": "PauliX",
         "ControlledOperation": "ControlledOperation",
@@ -501,7 +506,8 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                 first_match_qubits_sub = [-1] * n_qubits_p
                 for q in node_p.wires:
                     node_circuit_perm = control_permuted + circuit_target
-                    first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
+                    index = node_p.wires.index(q)
+                    first_match_qubits_sub[q] = node_circuit_perm[index]
                 first_match_qubits.append(first_match_qubits_sub)
         # Symmetric target gate (target wires can be permuted) (For example CSWAP)
         else:
@@ -643,6 +649,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
     control_base = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
+        "CCZ": "PauliZ",
         "CY": "PauliY",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
@@ -651,6 +658,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         "CRY": "RY",
         "CRZ": "RZ",
         "CRot": "Rot",
+        "C(S)": "S",
         "MultiControlledX": "PauliX",
         "ControlledOperation": "ControlledOperation",
     }
@@ -1556,6 +1564,8 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "SWAP": 6,
                 "CSWAP": 63,
                 "Toffoli": 21,
+                "C(S)": 4,
+                "CCZ": 21,
             }
 
     def _pred_block(self, circuit_sublist, index):
@@ -1589,11 +1599,19 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
         for i in left:
-            cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            if self.template_dag.get_node(i).op.name != "MultiControlledX":
+                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            else:
+                # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
+                # see exercise 4.29 in Nielsen and Chuang
+                cost_left += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
 
         cost_right = 0
         for j in right:
-            cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
+            if self.template_dag.get_node(j).op.name != "MultiControlledX":
+                cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
+            else:
+                cost_right += 2 * 4 * len(self.template_dag.get_node(j).op.control_wires) ** 2
 
         return cost_left > cost_right
 
