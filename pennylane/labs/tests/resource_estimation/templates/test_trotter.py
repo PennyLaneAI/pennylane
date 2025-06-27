@@ -21,7 +21,7 @@ import pytest
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import QubitManager
 
-# pylint: disable=no-self-use, too-many-arguments
+# pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
 
 
 class TestTrotterCDF:
