@@ -188,7 +188,6 @@ def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, he
 
 preopt_list = ["Sparse", "DF", "AC"]
 def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
-
 	TIMES_ARR = [time()]
 
 	num_methods = len(method_list)
@@ -203,6 +202,9 @@ def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11
 		oo_obt, oo_tbt = oo.full_optimization(obt, tbt, mixing_arr)
 		oo_obt = np.array(oo_obt)
 		oo_tbt = np.array(oo_tbt)
+		TIMES_ARR.append(time())
+		if verbose:
+			print(f"Optimized orbital frame, optimization time was {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
 		
 		bliss_obt, bliss_tbt = bliss.bliss_linprog(obt, tbt, eta)
 		bliss_obt = np.array(bliss_obt)
@@ -214,7 +216,7 @@ def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11
 
 		TIMES_ARR.append(time())
 		if verbose:
-			print(f"Optimized orbital frame and BLISS, optimization time was {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
+			print(f"Ran BLISS, optimization time was {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
 
 	one_norms_list = []
 	resources_list = []
@@ -228,7 +230,6 @@ def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11
 	for i_method, method in enumerate(method_list):
 		if verbose:
 			print(f"\nOptimizing {method}...")
-
 		my_res, my_one_norm, my_params = optimize_method(obt, tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)
 		resources_list.append(my_res)
 		params_list.append(my_params)
@@ -273,7 +274,6 @@ def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11
 		print(f"Finished optimizing all methods after {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds!\n\n\n")
 		for ii in range(tot_methods):
 			print(f"Method {method_final_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm and {hardness_heuristic_list[ii]:.2e} cost heuristic")
-
 
 	min_cost = min(hardness_heuristic_list)
 	min_index = hardness_heuristic_list.index(min_cost)
