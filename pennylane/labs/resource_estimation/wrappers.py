@@ -6,14 +6,14 @@ import math
 from time import time
 
 import bliss
-from orbital_optimization import optimize_params
+import orbital_optimization as oo
 from hyperoptimization import resource_optimizer, resource_cost, cost_heuristic
 
 from templates.compact_hamiltonian import CompactHamiltonian
 # from templates.walk import ResourceWalk
 
 from templates.LCU_decomps import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm, sparse_matrix, double_factorization, compressed_double_factorization, l4
-from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourceSelectSparsePauli
+from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli
 
 from cow_print import cow_print
 
@@ -40,8 +40,8 @@ def create_compact_ham(obt, tbt, method, **kwargs):
 		else:
 			tol_factor = 1e-5
 
-		one_norm, num_unitaries = sparse_matrix(one_body, two_body, tol_factor=1e-5)
-		return CompactHamiltonian.sparse(N, num_unitaries), one_norm
+		one_norm, num_unitaries = sparse_matrix(obt, tbt, tol_factor=1e-5)
+		return CompactHamiltonian.sparsepauli(Norbs, num_unitaries), one_norm
 
 	if method == "CDF" or method == "BLISS-CDF":
 		if "nfrags" in kwargs:
@@ -112,37 +112,63 @@ def create_resource_function(compact_ham, method, max_selwap = 8, **kwargs):
 	if method not in decomposition_methods:
 		raise ValueError(f"Trying to do decomposition for method {method}, not defined! Only {decomposition_methods} have been defined")
 
+	selswap_range = 2**np.arange(max_selwap+1)
 	if method == "Sparse":
 		PREP = ResourcePrepSparsePauli(compact_ham, **kwargs)
+		prep_kwargs = ["select_swap_depth"]
+		prep_ranges = [selswap_range]
+
 		SEL = ResourceSelectSparsePauli(compact_ham, **kwargs)
+		sel_kwargs = []
+		sel_ranges = []
+
 
 	if method in ["CDF", "BLISS-CDF"]:
 		PREP = ResourcePrepCDF(compact_ham, **kwargs)
+		prep_kwargs = ["select_swap_depth"]
+		prep_ranges = [selswap_range]
+
+		par_range = np.arange(1,compact_ham.params["num_orbitals"])
 		SEL = ResourceSelectCDF(compact_ham, **kwargs)
+		sel_kwargs = ["select_swap_depth", "parallel_rotations"]
+		sel_ranges = [selswap_range, par_range]
+
 
 	if method in ["THC", "BLISS-THC"]:
 		PREP = ResourcePrepTHC(compact_ham, **kwargs)
-		SEL = ResourceSelectTHC(compact_ham, **kwargs)
+		prep_kwargs = ["select_swap_depth"]
+		prep_ranges = [selswap_range]
 
-	def prep_cost(select_swap_depth):
+		par_range = np.arange(1,compact_ham.params["num_orbitals"])
+		SEL = ResourceSelectTHC(compact_ham, **kwargs)
+		sel_kwargs = ["select_swap_depth", "parallel_rotations"]
+		sel_ranges = [selswap_range, par_range]
+
+	def prep_cost(*args):
 		prep_config = {}
 		prep_config.update(resource_config)
-		prep_config["select_swap_depth"] = select_swap_depth
+		for i_k,kw in enumerate(prep_kwargs):
+			prep_config[kw] = args[i_k]
+
 		return estimate_resources(PREP, gate_set=CustomGateSet, config=prep_config)
 
-	def sel_cost(select_swap_depth, parallel_rotations):
+	def sel_cost(*args):
 		sel_config = {}
 		sel_config.update(resource_config)
-		sel_config["parallel_rotations"] = parallel_rotations
-		sel_config["select_swap_depth"] = select_swap_depth
+		for i_k,kw in enumerate(sel_kwargs):
+			sel_config[kw] = args[i_k]
+
 		return estimate_resources(SEL, gate_set=CustomGateSet, config=sel_config)
 	
-	tot_cost = lambda ssd_prep, ssd_sel, par_rots_sel: 2*prep_cost(ssd_prep) + sel_cost(ssd_sel, par_rots_sel)
+	def tot_cost(*args):
+		num_prep = len(prep_kwargs)
 
-	selswap_range = 2**np.arange(max_selwap+1)
-	par_range = np.arange(1,compact_ham.params["num_orbitals"])
+		my_prep_cost = prep_cost(*args[:num_prep])
+		my_sel_cost = sel_cost(*args[num_prep:])
 
-	return tot_cost, (selswap_range, selswap_range, par_range)
+		return my_sel_cost + 2*my_prep_cost
+
+	return tot_cost, (*prep_ranges, *sel_ranges)
 
 
 def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
@@ -175,7 +201,10 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 			print(f"Found method which requires pre-optimization, applying orbital optimization and BLISS...")
 		preopt_obt = np.copy(obt)
 		preopt_tbt = np.copy(tbt)
-		preopt_obt, preopt_tbt = optimize_params(obt, tbt)
+		preopt_obt, preopt_tbt = oo.optimize_params(obt, tbt)
+		preopt_obt, preopt_tbt = bliss.bliss_linprog(preopt_obt, preopt_tbt, eta)
+		preopt_obt = np.array(obt)
+		preopt_tbt = np.array(tbt)
 		TIMES_ARR.append(time())
 		if verbose:
 			print(f"Optimized orbital frame and BLISS, optimization time was {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
@@ -184,6 +213,7 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	resources_list = []
 	costs_list = []
 	params_list = []
+	method_final_list = []
 
 	if verbose:
 		print("\n\nStarting optimization over methods!")
@@ -191,26 +221,36 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	for i_method, method in enumerate(method_list):
 		if verbose:
 			print(f"\nOptimizing {method}...")
+		if do_preopt[i_method]:
+			preopt_res, preopt_one_norm, preopt_params = optimize_method(preopt_obt, preopt_tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)	
+			resources_list.append(preopt_res)
+			params_list.append(preopt_params)
+			one_norms_list.append(preopt_one_norm)
+			costs_list.append(resource_cost(preopt_res, heuristic, alpha=alpha))
+			method_final_list.append(method + "-(OO-BLISS)")
+		
 		my_res, my_one_norm, my_params = optimize_method(obt, tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)
 		resources_list.append(my_res)
 		params_list.append(my_params)
 		one_norms_list.append(my_one_norm)
 		costs_list.append(resource_cost(my_res, heuristic, alpha=alpha))
+		method_final_list.append(method)
 
 		TIMES_ARR.append(time())
 		if verbose:
 			# print(f"Finished optimizing {method} method, found 1-norm of {my_one_norm:.2e} and resources \n{my_res}")
 			print(f"{method} optimization took {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds")
 
-	hardness_list = [resources_list[ii].clean_gate_counts["T"] * one_norms_list[ii] for ii in range(num_methods)]
-	qubits_list = [resources_list[ii].qubit_manager.total_qubits for ii in range(num_methods)]
-	hardness_heuristic_list = [cost_heuristic(hardness_list[ii], qubits_list[ii], heuristic, alpha=alpha) for ii in range(num_methods)]
+	tot_methods = len(method_final_list)
+	hardness_list = [resources_list[ii].clean_gate_counts["T"] * one_norms_list[ii] for ii in range(tot_methods)]
+	qubits_list = [resources_list[ii].qubit_manager.total_qubits for ii in range(tot_methods)]
+	hardness_heuristic_list = [cost_heuristic(hardness_list[ii], qubits_list[ii], heuristic, alpha=alpha) for ii in range(tot_methods)]
 
 	TIMES_ARR.append(time())
 	if verbose:
 		print(f"Finished optimizing all methods after {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds!\n\n\n")
-		for ii in range(num_methods):
-			print(f"Method {method_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm")
+		for ii in range(tot_methods):
+			print(f"Method {method_final_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm")
 
 	min_cost = min(hardness_heuristic_list)
 	min_index = hardness_heuristic_list.index(min_cost)
