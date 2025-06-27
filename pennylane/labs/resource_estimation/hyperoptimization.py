@@ -9,7 +9,7 @@ def extract_cost(resource_object):
 
 	return T_num, num_qubits
 
-heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Q3"]
+heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Q3", "Q500"]
 linear_heuristics = ["T", "Q", "full_T", "full_Q", "linear_mix"]
 '''
 Cost heuristics and what they do:
