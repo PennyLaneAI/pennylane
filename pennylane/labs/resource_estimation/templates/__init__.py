@@ -28,4 +28,5 @@ from .trotter import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
+from .qubitize import ResourceQubitizeTHC
 from .compact_hamiltonian import CompactHamiltonian
