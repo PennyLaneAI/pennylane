@@ -30,6 +30,7 @@ Modules
     trotter_error
     intermediate_reps
     zxopt
+    vibronic
 
 """
 
