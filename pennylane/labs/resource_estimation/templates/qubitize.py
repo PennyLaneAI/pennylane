@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 
 
 class ResourceQubitizeTHC(ResourceOperator):
-    r"""Resource class for Qubitization of THC Hamiltonian
+    r"""Resource class for Qubitization of THC Hamiltonian.
 
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
