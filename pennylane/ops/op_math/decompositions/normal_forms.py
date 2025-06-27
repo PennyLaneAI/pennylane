@@ -118,7 +118,7 @@ def _ma_normal_form(
             Default is ``False``.
 
     Returns:
-        Tuple[qml.operation.Operator, float] | tuple[int, tuple[int, ...], int, float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
+        Tuple[qml.operation.Operator, float] | tuple[tuple[int, tuple[int, ...], int], float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
     """
     parity_transforms = _parity_transforms()
     clifford_elements = _clifford_group_to_SO3()
@@ -148,4 +148,4 @@ def _ma_normal_form(
     t_bit = int(decomposition[0] == qml.T(0))
     c_bit = max(0, cl_index)
 
-    return (t_bit, tuple(rep_bits[t_bit:]), c_bit, g_phase)
+    return ((t_bit, tuple(rep_bits[t_bit:]), c_bit), g_phase)
