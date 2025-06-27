@@ -94,6 +94,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         """
         return CompressedResourceOp(cls, {"register_size": register_size})
 
+
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
         r"""Returns a dictionary representing the resources of the operator. The
