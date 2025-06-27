@@ -22,49 +22,35 @@ class CompactHamiltonian:
     r"""A compact representation for the Hamiltonian of a quantum system.
 
     Args:
-        method_name (str): The name of the method used to construct the Hamiltonian
-            (e.g., "cdf", "thc", "vibrational", "vibronic").
+        method_name (str): The name of the method used to construct the Hamiltonian.
+            The available methods are cdf, thc, vibrational, and vibronic.
         **params (Any): Keyword arguments specific to the chosen construction method,
-            For example:
 
             - For :meth:`~.CompactHamiltonian.cdf`, parameters include ``num_orbitals`` and ``num_fragments``.
             - For :meth:`~.CompactHamiltonian.thc`, parameters include ``num_orbitals`` and ``tensor_rank``.
+            - For :meth:`~.CompactHamiltonian.vibrational`, parameters include ``num_modes``, ``grid_size`` and ``taylor_degree``.
+            - For :meth:`~.CompactHamiltonian.vibronic`, parameters include ``num_modes``, ``num_states``, ``grid_size`` and ``taylor_degree``.
 
-            Refer to the documentation of each specific constructor method for their required parameters.
 
-    .. details::
-        :title: Usage Details
+    Returns:
+        CompactHamiltonian: An instance of CompactHamiltonian
 
-        The :class:`CompactHamiltonian` class is designed to be an alternative input to using the full
-        Hamiltonian for resource estimation. It should be used in combination with trotterization and
-        qubitization templates for more efficient state resource estimation.
+    **Example**
 
-        .. code-block:: python
+    The resources for trotterization of THC Hamiltonian can be extracted as:
 
-            import pennylane.labs.resource_estimation as plre
-            compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=8, num_fragments=4)
-            def circ():
-                plre.ResourceTrotterCDF(compact_ham, num_steps=100, order=2)
-                return
-
-        The resources can then be extracted as usual:
-
-        >>> res = plre.estimate_resources(circ)()
-        >>> print(res)
-        --- Resources: ---
-         Total qubits: 16
-         Total gates : 8.370E+6
-         Qubit breakdown:
-          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 16
-         Gate breakdown:
-          {'T': 7.711E+6, 'S': 2.019E+5, 'Z': 1.346E+5, 'Hadamard': 1.346E+5, 'CNOT': 1.873E+5}
-
-        Note that the specific parameters required for each method will depend on the
-        underlying Hamiltonian representation and the method used to construct it.
-        The methods available for constructing a `CompactHamiltonian` include:
-
-        - :meth:`cdf`: Constructs a Hamiltonian in the compressed double factorized representation
-        - :meth:`thc`: Constructs a Hamiltonian in the  tensor hypercontracted representation
+    >>> import pennylane.labs.resource_estimation as plre
+    >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=8, tensor_rank=40)
+    >>> trotter_thc = plre.ResourceTrotterTHC(compact_ham, num_steps=100, order=2)
+    >>> res = plre.estimate_resources(trotter_thc)
+    >>> print(res)
+    --- Resources: ---
+     Total qubits: 80
+     Total gates : 3.960E+7
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 80
+     Gate breakdown:
+      {'T': 3.638E+7, 'S': 9.699E+5, 'Z': 6.466E+5, 'Hadamard': 6.466E+5, 'CNOT': 9.553E+5}
 
     """
 

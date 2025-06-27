@@ -794,16 +794,16 @@
 
 * Added the `pennylane.labs.resource_estimation.CompactHamiltonian` to unblock the need to pass full
   Hamiltonian
-  Added `pennylane.labs.resource_estimation.ResourceOperator` templates which will be used to perform resource
-  estimation for trotterization of CDF and THC Hamiltonians.
+  Added `pennylane.labs.resource_estimation.ResourceTrotterCDF`, and `pennylane.labs.resource_estimation.ResourceTrotterTHC`
+  templates which will be used to perform resource estimation for trotterization of CDF and THC Hamiltonians respectively.
   [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
 
 * Added the `pennylane.labs.ResourceQubitize` template which can be used to perform resource
   estimation for qubitization of THC Hamiltonian.
   [(#7730)](https://github.com/PennyLaneAI/pennylane/pull/7730)
 
-* Added `pennylane.labs.resource_estimation.ResourceOperator` templates which will be used to perform resource
-  estimation for trotterization of vibrational and vibronic Hamiltonians.
+* Added `pennylane.labs.resource_estimation.ResourceTrotterVibrational` and `pennylane.labs.resource_estimation.ResourceTrotterVibronic`
+  templates which can be used to perform resource estimation for trotterization of vibrational and vibronic Hamiltonians respectively.
   [(#7720)](https://github.com/PennyLaneAI/pennylane/pull/7720)
 
 * Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
