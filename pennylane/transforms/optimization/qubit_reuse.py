@@ -20,10 +20,7 @@ from itertools import product
 import networkx as nx
 
 import pennylane
-from pennylane import measure
 from pennylane import numpy as np
-from pennylane import sample
-from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
