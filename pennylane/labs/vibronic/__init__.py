@@ -24,9 +24,6 @@
     :toctree: api
 
     ~pes_vibronic
-    ~pes_solver
-    ~pes_vibronic_utils
-
 """
 
 from .pes_vibronic import vibronic_pes
