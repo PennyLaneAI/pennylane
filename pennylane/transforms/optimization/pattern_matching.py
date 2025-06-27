@@ -1602,26 +1602,26 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
 
-        def _calculate_cost(cost):
-            if self.template_dag.get_node(i).op.name != "MultiControlledX":
-                cost += self.quantum_cost[self.template_dag.get_node(i).op.name]
-            elif len(self.template_dag.get_node(i).op.control_wires) >= 4 and self.allow_phase:
+        def _calculate_cost(cost, index):
+            if self.template_dag.get_node(index).op.name != "MultiControlledX":
+                cost += self.quantum_cost[self.template_dag.get_node(index).op.name]
+            elif len(self.template_dag.get_node(index).op.control_wires) >= 4 and self.allow_phase:
                 # special case possible due to phase trick, approx. MultiControlledX cost == MultiControlledH cost
                 cost += 9 * (
-                    2 * 4 * (2 + len(self.template_dag.get_node(i).op.control_wires) - 4) ** 2
+                    2 * 4 * (2 + len(self.template_dag.get_node(index).op.control_wires) - 4) ** 2
                 )
             else:
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
-                cost += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
+                cost += 2 * 4 * len(self.template_dag.get_node(index).op.control_wires) ** 2
             return cost
 
         for i in left:
-            cost_left = _calculate_cost(cost_left)
+            cost_left = _calculate_cost(cost_left, i)
 
         cost_right = 0
         for j in right:
-            cost_right = _calculate_cost(cost_right)
+            cost_right = _calculate_cost(cost_right, j)
 
         return cost_left > cost_right
 

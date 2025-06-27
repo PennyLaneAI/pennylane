@@ -236,7 +236,7 @@ def replace_controlled_iX_gate(
 
 @transform
 def replace_gte_4_qubit_multi_controlled_X_gate(
-    tape: QuantumScript, additional_controls=0
+    tape: QuantumScript, custom_quantum_cost=None, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
     page six of (Amy, M. and Ross, N. J., 2021).
@@ -244,6 +244,7 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         additional_controls (int): Additional controls in excess of 4.
+        custom_quantum_cost (dict): Custom cost dict for involved gates.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
@@ -255,7 +256,7 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
 
     .. code-block:: python
 
-        @replace_relative_phase_toffoli
+        @replace_relative_phase_toffoli(custom_quantum_cost={"Toffoli": 1})
         @qml.qnode(device=dev)
         def circuit():
             qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
@@ -293,7 +294,10 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
 
         We can replace the 4-qubit multi controlled X gate by running the transform:
 
-        >>> lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(qfunc)
+        >>> lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
+        >>>     qfunc,
+        >>>     custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1}
+        >>> )
         >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
         >>> print(qml.draw(lowered_qnode)())
 
@@ -349,4 +353,9 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
         qml.ctrl(qml.Hadamard(additional_controls + 5), list(range(additional_controls))),
     ]
     pattern = QuantumTape(pattern_ops)
-    return pattern_matching_optimization(tape, pattern_tapes=[pattern], allow_phase=True)
+    return pattern_matching_optimization(
+        tape,
+        pattern_tapes=[pattern],
+        custom_quantum_cost=custom_quantum_cost,
+        allow_phase=True
+    )
