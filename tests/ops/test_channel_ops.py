@@ -819,7 +819,8 @@ class TestPauliError:
         ],
         [
             np.sqrt(0.5) * np.eye(4),
-            np.sqrt(0.5) * np.array(
+            np.sqrt(0.5)
+            * np.array(
                 [
                     [1.0, 0.0, 0.0, 0.0],
                     [0.0, 1.0, 0.0, 0.0],
