@@ -31,9 +31,9 @@ def cost_heuristic(T, Q, heuristic, **kwargs):
 		elif heuristic == "Q":
 			alpha = 0.05
 		elif heuristic == "full_T":
-			alpha = 1 - 1e-4
+			alpha = 1 - 1e-8
 		elif heuristic == "full_Q":
-			alpha = 0 + 1e-4
+			alpha = 0 + 1e-8
 		else:
 			if "alpha" in kwargs:
 				alpha = kwargs["alpha"]
