@@ -25,16 +25,47 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
     gtol: float = 1e-8,
     verbose: bool = True,
     include_bias_terms: bool = True,
+    objective: str = "fitting",  # ✅ NUEVO: "fitting" o "one_norm"
+    h: Optional[np.ndarray] = None,  # ✅ NUEVO: Hamiltoniano de 1 cuerpo
+    lambda_penalty: float = 1.0,  # ✅ NUEVO: Peso para fitting_loss en one_norm
 ) -> Dict[str, np.ndarray]:
-    """Enhanced THC optimization with optax L-BFGS."""
+    """Enhanced THC optimization with optax L-BFGS.
+    
+    Args:
+        eri: Two-body integrals tensor
+        nthc: Number of THC factors
+        chkfile_name: Optional checkpoint file name
+        initial_guess: Initial parameter guess
+        random_seed: Random seed for initialization
+        maxiter: Maximum optimization iterations
+        penalty_param: Regularization parameter
+        gtol: Gradient tolerance
+        verbose: Print optimization progress
+        include_bias_terms: Whether to include bias correction terms
+        objective: Optimization objective ("fitting" or "one_norm")
+        h: One-body Hamiltonian matrix (required for "one_norm" objective)
+        lambda_penalty: Penalty weight for fitting loss in "one_norm" objective
+    
+    Returns:
+        Dictionary containing optimized parameters
+    """
+    
+    # Validate inputs
+    valid_objectives = ["fitting", "one_norm"]
+    if objective not in valid_objectives:
+        raise ValueError(f"objective must be one of {valid_objectives}, got '{objective}'")
+    
+    if objective == "one_norm" and h is None:
+        raise ValueError("One-body Hamiltonian 'h' is required for 'one_norm' objective.")
     
     norb = eri.shape[0]
     eri_jax = jnp.array(eri)
+    h_jax = jnp.array(h) if h is not None else None
 
-    # 1. Set initial guess
+    # 1. Set initial guess with different parameters based on objective
     if initial_guess is None:
         key = jax.random.PRNGKey(random_seed if random_seed is not None else 0)
-        key1, key2, key3, key4 = jax.random.split(key, 4)
+        key1, key2, key3, key4, key5 = jax.random.split(key, 5)
         
         params = {
             'etaPp': jax.random.normal(key1, (nthc, norb)),
@@ -42,23 +73,34 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
         }
         
         if include_bias_terms:
-            params['alpha2'] = jnp.array(0.)
-            params['beta'] = jnp.zeros((norb, norb))
+            if objective == "fitting":
+                params['alpha2'] = jnp.array(0.)
+                params['beta'] = jnp.zeros((norb, norb))
+            elif objective == "one_norm":
+                params['alpha1'] = jnp.array(0.)
+                params['beta'] = jax.random.normal(key5, (norb, norb)) * 0.01  # Small random start
     else:
         params = {k: jnp.array(v) for k, v in initial_guess.items()}
         
-        if include_bias_terms and 'alpha2' not in params:
-            params['alpha2'] = jnp.array(0.)
-        if include_bias_terms and 'beta' not in params:
-            params['beta'] = jnp.zeros((norb, norb))
+        if include_bias_terms:
+            if objective == "fitting":
+                if 'alpha2' not in params:
+                    params['alpha2'] = jnp.array(0.)
+                if 'beta' not in params:
+                    params['beta'] = jnp.zeros((norb, norb))
+            elif objective == "one_norm":
+                if 'alpha1' not in params:
+                    params['alpha1'] = jnp.array(0.)
+                if 'beta' not in params:
+                    params['beta'] = jnp.zeros((norb, norb))
 
     # 2. Compute penalty parameter if not provided
     if penalty_param is None:
-        penalty_param = _compute_penalty_param_enhanced(params, eri_jax, include_bias_terms)
+        penalty_param = _compute_penalty_param_enhanced(params, eri_jax, include_bias_terms, objective)
         if verbose:
             print(f"Auto-computed penalty_param: {penalty_param}")
 
-    # ✅ CORRECCIÓN: Reducir penalty parameter para bias terms para permitir mayor flexibilidad
+    # Adjust penalty parameter for bias terms
     if include_bias_terms:
         penalty_param = penalty_param * 0.1  # Reduce penalty for bias optimization
         if verbose:
@@ -69,48 +111,85 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
         etaPp = params_dict['etaPp']
         MPQ = params_dict['MPQ']
         
-        # Apply bias corrections if enabled
-        g_modified = eri_jax
-        if include_bias_terms:
-            alpha2 = params_dict['alpha2']
-            beta = params_dict['beta']
+        if objective == "fitting":
+            # Original fitting objective
+            g_modified = eri_jax
+            if include_bias_terms:
+                alpha2 = params_dict['alpha2']
+                beta = params_dict['beta']
+                
+                eye = jnp.eye(norb)
+                alpha2_term = alpha2 * jnp.einsum('pq,rs->pqrs', eye, eye)
+                beta_term1 = 0.5 * jnp.einsum('pq,rs->pqrs', beta, eye)
+                beta_term2 = 0.5 * jnp.einsum('pq,rs->pqrs', eye, beta)
+                
+                g_modified = eri_jax - alpha2_term - beta_term1 - beta_term2
+            
+            # THC approximation
+            CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
+            Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
+            
+            # Fitting loss
+            deri = g_modified - Iapprox
+            fitting_loss = 0.5 * jnp.sum(deri**2)
+            
+            # Regularization
+            if include_bias_terms:
+                reg_thc = penalty_param * jnp.sum(MPQ**2)
+                reg_alpha2 = penalty_param * 0.01 * alpha2**2
+                reg_beta = penalty_param * 0.01 * jnp.sum(beta**2)
+                reg = reg_thc + reg_alpha2 + reg_beta
+            else:
+                reg = penalty_param * jnp.sum(MPQ**2)
+            
+            return fitting_loss + reg
+        
+        elif objective == "one_norm":
+            # ✅ NUEVO: Objetivo one_norm
+            
+            # PARTE 1: Calcular fitting_loss (ERI original sin modificar)
+            CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
+            Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
+            deri = eri_jax - Iapprox  # ERI original, sin bias corrections
+            fitting_loss = 0.5 * jnp.sum(deri**2)
+            
+            # PARTE 2: Calcular norma-1 del Hamiltoniano
+            if include_bias_terms:
+                alpha1 = params_dict['alpha1']
+                beta_asym = params_dict['beta']
+                beta = 0.5 * (beta_asym + beta_asym.T)  # Simetrizar beta
+            else:
+                alpha1 = 0.0
+                beta = jnp.zeros((norb, norb))
             
             eye = jnp.eye(norb)
-            alpha2_term = alpha2 * jnp.einsum('pq,rs->pqrs', eye, eye)
-            beta_term1 = 0.5 * jnp.einsum('pq,rs->pqrs', beta, eye)
-            beta_term2 = 0.5 * jnp.einsum('pq,rs->pqrs', eye, beta)
             
-            g_modified = eri_jax - alpha2_term - beta_term1 - beta_term2
-        
-        # THC approximation
-        CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
-        Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
-        
-        # Loss
-        deri = g_modified - Iapprox
-        loss = 0.5 * jnp.sum(deri**2)
-        
-        # ✅ CORRECCIÓN: Usar regularización más simple y efectiva
-        if include_bias_terms:
-            # Regularización balanceada para bias terms
-            reg_thc = penalty_param * jnp.sum(MPQ**2)
-            reg_alpha2 = penalty_param * 0.01 * alpha2**2  # Muy baja penalización para alpha2
-            reg_beta = penalty_param * 0.01 * jnp.sum(beta**2)  # Muy baja penalización para beta
-            reg = reg_thc + reg_alpha2 + reg_beta
-        else:
-            # Simple L2 regularization (OpenFermion compatible)
-            reg = penalty_param * jnp.sum(MPQ**2)
-        
-        return loss + reg
+            # Calculate h_pq^(BI) from Eq. (16)
+            g_trace = jnp.einsum('prrq->pq', eri_jax)  # Constant term
+            h_bi = h_jax - 0.5 * g_trace - alpha1 * eye + 0.5 * beta
+            
+            # Eigenvalues of the one-body term
+            t_k = jnp.linalg.eigvalsh(h_bi)
+            
+            # 1-norm from Eq. (23)
+            lambda_one_body = jnp.sum(jnp.abs(t_k))
+            lambda_two_body = 0.5 * jnp.sum(jnp.abs(MPQ)) - 0.25 * jnp.sum(jnp.abs(jnp.diag(MPQ)))
+            lambda_thc = lambda_one_body + lambda_two_body
+            
+            # Total loss is the 1-norm plus a penalty for the fitting quality
+            return lambda_thc + lambda_penalty * fitting_loss
 
-    # 4. Optimize usando scipy L-BFGS-B
+    # 4. Optimize using scipy L-BFGS-B
     from scipy.optimize import minimize
     
     # Flatten parameters for scipy
     def pack_params(params_dict):
         arrays = [params_dict['etaPp'].flatten(), params_dict['MPQ'].flatten()]
         if include_bias_terms:
-            arrays.extend([jnp.array([params_dict['alpha2']]), params_dict['beta'].flatten()])
+            if objective == "fitting":
+                arrays.extend([jnp.array([params_dict['alpha2']]), params_dict['beta'].flatten()])
+            elif objective == "one_norm":
+                arrays.extend([jnp.array([params_dict['alpha1']]), params_dict['beta'].flatten()])
         return jnp.concatenate(arrays)
     
     def unpack_params(x_flat):
@@ -124,8 +203,12 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
         result = {'etaPp': etaPp, 'MPQ': MPQ}
         
         if include_bias_terms:
-            result['alpha2'] = x_flat[idx]
-            idx += 1
+            if objective == "fitting":
+                result['alpha2'] = x_flat[idx]
+                idx += 1
+            elif objective == "one_norm":
+                result['alpha1'] = x_flat[idx]
+                idx += 1
             result['beta'] = x_flat[idx:idx + norb*norb].reshape((norb, norb))
         
         return result
@@ -139,7 +222,10 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
         grads = jax.grad(objective_fn)(params_dict)
         grad_arrays = [grads['etaPp'].flatten(), grads['MPQ'].flatten()]
         if include_bias_terms:
-            grad_arrays.extend([jnp.array([grads['alpha2']]), grads['beta'].flatten()])
+            if objective == "fitting":
+                grad_arrays.extend([jnp.array([grads['alpha2']]), grads['beta'].flatten()])
+            elif objective == "one_norm":
+                grad_arrays.extend([jnp.array([grads['alpha1']]), grads['beta'].flatten()])
         return np.array(jnp.concatenate(grad_arrays))
     
     # Initial point
@@ -148,7 +234,7 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
     # Optimize
     if verbose:
         bias_info = "with bias terms" if include_bias_terms else "without bias terms"
-        print(f"Starting optimization with {len(x0)} parameters {bias_info}...")
+        print(f"Starting {objective} optimization with {len(x0)} parameters {bias_info}...")
     
     result = minimize(
         fun=objective_flat,
@@ -166,46 +252,63 @@ def optax_lbfgs_opt_thc_l2reg_enhanced(
     
     # Save if requested
     if chkfile_name is not None:
-        _save_thc_parameters_enhanced(final_params, chkfile_name, include_bias_terms)
+        _save_thc_parameters_enhanced(final_params, chkfile_name, include_bias_terms, objective)
     
     if verbose:
-        print(f"Optimization completed. Final loss: {result.fun:.6e}")
+        print(f"Optimization completed. Final objective value: {result.fun:.6e}")
         if include_bias_terms:
-            print(f"Final alpha2: {final_params['alpha2']:.6e}")
-            print(f"Final beta norm: {np.linalg.norm(final_params['beta']):.6e}")
+            if objective == "fitting" and 'alpha2' in final_params:
+                print(f"Final alpha2: {final_params['alpha2']:.6e}")
+            elif objective == "one_norm" and 'alpha1' in final_params:
+                print(f"Final alpha1: {final_params['alpha1']:.6e}")
+            if 'beta' in final_params:
+                print(f"Final beta norm: {np.linalg.norm(final_params['beta']):.6e}")
     
     return final_params
+
+
 def _compute_penalty_param_enhanced(
     params: Dict[str, jnp.ndarray], 
     eri: jnp.ndarray,
-    include_bias_terms: bool
+    include_bias_terms: bool,
+    objective: str = "fitting"
 ) -> float:
     """Compute penalty parameter for the enhanced objective function."""
     etaPp = params['etaPp']
     MPQ = params['MPQ']
     norb = eri.shape[0]
     
-    # Apply bias corrections if included
-    g_modified = eri
-    if include_bias_terms:
-        alpha2 = params['alpha2']
-        beta = params['beta']
+    if objective == "fitting":
+        # Original fitting objective penalty calculation
+        g_modified = eri
+        if include_bias_terms:
+            alpha2 = params.get('alpha2', 0.0)
+            beta = params.get('beta', jnp.zeros((norb, norb)))
+            
+            eye = jnp.eye(norb)
+            alpha2_term = alpha2 * jnp.einsum('pq,rs->pqrs', eye, eye)
+            beta_term1 = 0.5 * jnp.einsum('pq,rs->pqrs', beta, eye)
+            beta_term2 = 0.5 * jnp.einsum('pq,rs->pqrs', eye, beta)
+            
+            g_modified = eri - alpha2_term - beta_term1 - beta_term2
         
-        eye = jnp.eye(norb)
-        alpha2_term = alpha2 * jnp.einsum('pq,rs->pqrs', eye, eye)
-        beta_term1 = 0.5 * jnp.einsum('pq,rs->pqrs', beta, eye)
-        beta_term2 = 0.5 * jnp.einsum('pq,rs->pqrs', eye, beta)
+        # Compute initial loss
+        CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
+        Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
+        deri = g_modified - Iapprox
+        sum_square_loss = 0.5 * jnp.sum(deri**2)
         
-        g_modified = eri - alpha2_term - beta_term1 - beta_term2
-    
-    # Compute initial loss
-    CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
-    Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
-    deri = g_modified - Iapprox
-    sum_square_loss = 0.5 * jnp.sum(deri**2)
-    
-    # ✅ CORRECCIÓN: Usar siempre la misma escala para consistency
-    regularization_scale = jnp.sum(MPQ**2)  # OpenFermion-compatible siempre
+        regularization_scale = jnp.sum(MPQ**2)
+        
+    elif objective == "one_norm":
+        # For one_norm objective, use fitting loss as reference for penalty calculation
+        CprP = jnp.einsum("Pp,Pr->prP", etaPp, etaPp)
+        Iapprox = jnp.einsum('pqU,UV,rsV->pqrs', CprP, MPQ, CprP)
+        deri = eri - Iapprox
+        sum_square_loss = 0.5 * jnp.sum(deri**2)
+        
+        # Scale based on the 1-norm terms magnitude
+        regularization_scale = jnp.sum(jnp.abs(MPQ))
     
     # Avoid division by zero
     if regularization_scale < 1e-12:
@@ -215,18 +318,25 @@ def _compute_penalty_param_enhanced(
 
 
 def _save_thc_parameters_enhanced(
-    params: Dict[str, jnp.ndarray],  # Fixed: was jnp.ndArray
+    params: Dict[str, jnp.ndarray],
     chkfile_name: str, 
-    include_bias_terms: bool
+    include_bias_terms: bool,
+    objective: str = "fitting"
 ) -> None:
     """Save enhanced THC parameters to HDF5 file."""
     with h5py.File(chkfile_name, "w") as f:
         f["etaPp"] = np.array(params['etaPp'])
         f["ZPQ"] = np.array(params['MPQ'])  # Keep OpenFermion naming convention
+        f["objective"] = objective  # ✅ NUEVO: Guardar el tipo de objetivo
         
         if include_bias_terms:
-            f["alpha2"] = np.array(params['alpha2'])
-            f["beta"] = np.array(params['beta'])
+            if objective == "fitting" and 'alpha2' in params:
+                f["alpha2"] = np.array(params['alpha2'])
+            elif objective == "one_norm" and 'alpha1' in params:
+                f["alpha1"] = np.array(params['alpha1'])  # ✅ NUEVO
+            
+            if 'beta' in params:
+                f["beta"] = np.array(params['beta'])
 
 
 def load_thc_parameters_enhanced(chkfile_name: str) -> Dict[str, np.ndarray]:
@@ -236,8 +346,18 @@ def load_thc_parameters_enhanced(chkfile_name: str) -> Dict[str, np.ndarray]:
         params['etaPp'] = np.array(f["etaPp"])
         params['MPQ'] = np.array(f["ZPQ"])  # Handle OpenFermion naming convention
         
-        if "alpha2" in f:
+        # Load objective if available
+        if "objective" in f:
+            params['objective'] = f["objective"][()].decode() if isinstance(f["objective"][()], bytes) else str(f["objective"][()])
+        else:
+            params['objective'] = "fitting"  # Default for backward compatibility
+        
+        # Load bias parameters based on objective
+        if params['objective'] == "fitting" and "alpha2" in f:
             params['alpha2'] = np.array(f["alpha2"])
+        elif params['objective'] == "one_norm" and "alpha1" in f:
+            params['alpha1'] = np.array(f["alpha1"])
+        
         if "beta" in f:
             params['beta'] = np.array(f["beta"])
     
@@ -255,7 +375,10 @@ def thc_via_cp3(
     random_start_thc=True,
     verify=False,
     penalty_param=None,
-    thc_method="standard",  # New unified parameter
+    thc_method="standard",  # Existing parameter
+    h_one=None,  # ✅ NUEVO: Hamiltoniano de 1 cuerpo
+    objective="fitting",  # ✅ NUEVO: Para enhanced methods
+    lambda_penalty=1.0,  # ✅ NUEVO: Para one_norm objective
 ):
     """
     THC-CP3 performs an SVD decomposition of the eri matrix followed by a CP
@@ -279,6 +402,10 @@ def thc_via_cp3(
             - "standard": Original L-BFGS-B optimizer
             - "enhanced": Optax L-BFGS without bias terms  
             - "enhanced_bias": Optax L-BFGS with bias correction terms
+            - "enhanced_one_norm": Optax L-BFGS with one_norm objective
+        h_one (np.ndarray) - One-body Hamiltonian matrix (required for enhanced_one_norm)
+        objective (str) - Optimization objective for enhanced methods ("fitting" or "one_norm")
+        lambda_penalty (float) - Penalty weight for fitting loss in one_norm objective
 
     returns:
         eri_thc - (N x N x N x N) reconstructed ERIs from THC factorization
@@ -293,9 +420,18 @@ def thc_via_cp3(
         raise ImportError("pybtas could not be imported. Is it installed and in PYTHONPATH?")
 
     # Validate thc_method parameter
-    valid_methods = ["standard", "enhanced", "enhanced_bias"]
+    valid_methods = ["standard", "enhanced", "enhanced_bias", "enhanced_one_norm"]  # ✅ NUEVO método
     if thc_method not in valid_methods:
         raise ValueError(f"thc_method must be one of {valid_methods}, got '{thc_method}'")
+
+    # ✅ NUEVO: Validar parámetros para enhanced_one_norm
+    if thc_method == "enhanced_one_norm":
+        if objective not in ["fitting", "one_norm"]:
+            raise ValueError(f"objective must be 'fitting' or 'one_norm' for enhanced_one_norm method")
+        
+        # h_one solo es requerido para objective="one_norm"
+        if objective == "one_norm" and h_one is None:
+            raise ValueError("h_one is required when using enhanced_one_norm method with objective='one_norm'")
 
     info = locals()
     info.pop('eri_full', None)  # data too big for info dict
@@ -376,6 +512,7 @@ def thc_via_cp3(
                 maxiter=bfgs_maxiter,
                 penalty_param=penalty_param,
                 include_bias_terms=False,  # No bias terms for standard method
+                objective="fitting",  # Always fitting for standard
                 verbose=verify
             )
             
@@ -406,6 +543,7 @@ def thc_via_cp3(
                 maxiter=bfgs_maxiter,
                 penalty_param=penalty_param,
                 include_bias_terms=include_bias,
+                objective="fitting",  # Always fitting for estas métodos
                 verbose=verify
             )
             
@@ -417,6 +555,52 @@ def thc_via_cp3(
             if include_bias:
                 info['alpha2_optimized'] = result_params['alpha2']
                 info['beta_optimized'] = result_params['beta']
+        
+        elif thc_method == "enhanced_one_norm":
+            # ✅ NUEVO: Enhanced optimization with one_norm objective
+            include_bias = True  # Always include bias terms for one_norm
+            
+            # Prepare initial parameters dictionary based on objective
+            initial_params = {
+                'etaPp': thc_leaf,
+                'MPQ': thc_central,
+            }
+            
+            # ✅ CORRECCIÓN: Usar parámetros apropiados según el objetivo
+            if objective == "fitting":
+                initial_params['alpha2'] = np.array(0.)  # Use alpha2 for fitting
+                initial_params['beta'] = np.zeros((norb, norb))
+            elif objective == "one_norm":
+                initial_params['alpha1'] = np.array(0.)  # Use alpha1 for one_norm
+                initial_params['beta'] = np.zeros((norb, norb))
+            
+            # Run enhanced optimization with specified objective
+            result_params = optax_lbfgs_opt_thc_l2reg_enhanced(
+                eri=eri_full,
+                h=h_one,  # Required for one_norm (but can be None for fitting)
+                nthc=nthc,
+                initial_guess=initial_params,
+                maxiter=bfgs_maxiter,
+                penalty_param=penalty_param,
+                include_bias_terms=include_bias,
+                objective=objective,  # "fitting" o "one_norm"
+                lambda_penalty=lambda_penalty,
+                verbose=verify
+            )
+            
+            # Extract optimized leaf and central tensors
+            thc_leaf = result_params['etaPp']
+            thc_central = result_params['MPQ']
+            
+            # ✅ CORRECCIÓN: Store bias parameters based on what was actually optimized
+            if objective == "fitting":
+                info['alpha2_optimized'] = result_params['alpha2']
+                info['beta_optimized'] = result_params['beta']
+            elif objective == "one_norm":
+                info['alpha1_optimized'] = result_params['alpha1']
+                info['beta_optimized'] = result_params['beta']
+            
+            info['objective_used'] = objective
 
     # Reconstruct final ERI tensor
     eri_thc = np.einsum(
@@ -436,6 +620,13 @@ def thc_via_cp3(
                     fid.create_dataset('alpha2', data=info['alpha2_optimized'])
                 if 'beta_optimized' in info:
                     fid.create_dataset('beta', data=info['beta_optimized'])
+            elif thc_method == "enhanced_one_norm" and perform_bfgs_opt:
+                if 'alpha1_optimized' in info:
+                    fid.create_dataset('alpha1', data=info['alpha1_optimized'])
+                if 'beta_optimized' in info:
+                    fid.create_dataset('beta', data=info['beta_optimized'])
+                if 'objective_used' in info:
+                    fid.create_dataset('objective', data=info['objective_used'])
             
             fid.create_dataset('info', data=str(info))
 
@@ -475,5 +666,82 @@ def run_enhanced_thc_optimization_example():
     return params
 
 
+def run_one_norm_optimization_example():
+    """✅ NUEVO: Example showing how to use the one_norm objective."""
+    # Create dummy data
+    norb = 4
+    nthc = 6
+    np.random.seed(123)
+    
+    # Create symmetric ERI and one-body Hamiltonian
+    eri = np.random.random((norb, norb, norb, norb)) * 0.1
+    eri = 0.5 * (eri + eri.transpose(1, 0, 2, 3))
+    eri = 0.5 * (eri + eri.transpose(0, 1, 3, 2))
+    eri = 0.5 * (eri + eri.transpose(2, 3, 0, 1))
+    
+    h_one = np.random.random((norb, norb)) * 0.05
+    h_one = 0.5 * (h_one + h_one.T)
+    
+    print("Testing one_norm objective...")
+    
+    # Test fitting objective
+    params_fitting = optax_lbfgs_opt_thc_l2reg_enhanced(
+        eri=eri,
+        h=h_one,
+        nthc=nthc,
+        objective="fitting",
+        include_bias_terms=True,
+        maxiter=100,
+        verbose=True,
+        random_seed=456
+    )
+    
+    # Test one_norm objective
+    params_one_norm = optax_lbfgs_opt_thc_l2reg_enhanced(
+        eri=eri,
+        h=h_one,
+        nthc=nthc,
+        objective="one_norm",
+        include_bias_terms=True,
+        lambda_penalty=0.1,
+        maxiter=100,
+        verbose=True,
+        random_seed=456
+    )
+    
+    print("\nFitting objective results:")
+    if 'alpha2' in params_fitting:
+        print(f"  alpha2: {params_fitting['alpha2']:.6e}")
+    print(f"  beta norm: {np.linalg.norm(params_fitting['beta']):.6e}")
+    
+    print("\nOne-norm objective results:")
+    if 'alpha1' in params_one_norm:
+        print(f"  alpha1: {params_one_norm['alpha1']:.6e}")
+    print(f"  beta norm: {np.linalg.norm(params_one_norm['beta']):.6e}")
+    
+    # Test via thc_via_cp3 interface
+    print("\nTesting via thc_via_cp3 interface...")
+    eri_thc, thc_leaf, thc_central, info = thc_via_cp3(
+        eri_full=eri,
+        h_one=h_one,
+        nthc=nthc,
+        thc_method="enhanced_one_norm",
+        objective="one_norm",
+        lambda_penalty=0.1,
+        bfgs_maxiter=50,
+        verify=True
+    )
+    
+    print(f"Final ERI reconstruction error: {np.linalg.norm(eri_thc - eri):.6e}")
+    if 'alpha1_optimized' in info:
+        print(f"Optimized alpha1: {info['alpha1_optimized']:.6e}")
+    if 'beta_optimized' in info:
+        print(f"Optimized beta norm: {np.linalg.norm(info['beta_optimized']):.6e}")
+    
+    return params_fitting, params_one_norm
+
+
 #if __name__ == "__main__":
 #    run_enhanced_thc_optimization_example()
+#    print("\n" + "="*50 + "\n")
+#    run_one_norm_optimization_example()
