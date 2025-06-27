@@ -594,10 +594,8 @@
   gate-set that can be translated to the MBQC formalism.
   [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
-* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
-  experimental and not integrated.
-  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
-  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
+
+<h4>Other improvements</h4>
 
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
@@ -669,8 +667,11 @@
 
 * Alias for Identity (`I`) is now accessible from `qml.ops`.
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
-
-<h4>Other improvements</h4>
+  
+* Adds a new `allocation` module containing `allocate` and `deallocate` instructions for requesting dynamic wires. This is currently
+  experimental and not integrated.
+  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
+  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
 
 * Computing the angles for uniformly controlled rotations, used in :class:`~.MottonenStatePreparation`
   and :class:`~.SelectPauliRot`, now takes much less computational effort and memory.
