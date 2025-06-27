@@ -15,6 +15,8 @@ from templates.compact_hamiltonian import CompactHamiltonian
 from templates.LCU_decomps import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm, sparse_matrix, double_factorization, compressed_double_factorization, l4
 from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourceSelectSparsePauli
 
+from cow_print import cow_print
+
 CustomGateSet = {
     "X",
     "Y",
@@ -104,9 +106,15 @@ def create_compact_ham(obt, tbt, method, **kwargs):
 
 		return CompactHamiltonian.thc(Norbs,nthc), one_norm
 
-def create_resource_function(compact_ham, method, max_selwap = 10, **kwargs):
+	raise ValueError(f"Tried to create CompactHamiltonian for method {method}, not defined!")
+
+def create_resource_function(compact_ham, method, max_selwap = 8, **kwargs):
 	if method not in decomposition_methods:
 		raise ValueError(f"Trying to do decomposition for method {method}, not defined! Only {decomposition_methods} have been defined")
+
+	if method == "Sparse":
+		PREP = ResourcePrepSparsePauli(compact_ham, **kwargs)
+		SEL = ResourceSelectSparsePauli(compact_ham, **kwargs)
 
 	if method in ["CDF", "BLISS-CDF"]:
 		PREP = ResourcePrepCDF(compact_ham, **kwargs)
@@ -117,21 +125,24 @@ def create_resource_function(compact_ham, method, max_selwap = 10, **kwargs):
 		SEL = ResourceSelectTHC(compact_ham, **kwargs)
 
 	def prep_cost(select_swap_depth):
-		prep_config = {"select_swap_depth":select_swap_depth}
+		prep_config = {}
 		prep_config.update(resource_config)
+		prep_config["select_swap_depth"] = select_swap_depth
 		return estimate_resources(PREP, gate_set=CustomGateSet, config=prep_config)
 
-	def sel_cost(parallel_rotations):
-		sel_config = {"parallel_rotations":parallel_rotations}
+	def sel_cost(select_swap_depth, parallel_rotations):
+		sel_config = {}
 		sel_config.update(resource_config)
+		sel_config["parallel_rotations"] = parallel_rotations
+		sel_config["select_swap_depth"] = select_swap_depth
 		return estimate_resources(SEL, gate_set=CustomGateSet, config=sel_config)
 	
-	tot_cost = lambda select_swap_depth, parallel_rotations: 2*prep_cost(select_swap_depth) + sel_cost(parallel_rotations)
+	tot_cost = lambda ssd_prep, ssd_sel, par_rots_sel: 2*prep_cost(ssd_prep) + sel_cost(ssd_sel, par_rots_sel)
 
 	selswap_range = 2**np.arange(max_selwap+1)
 	par_range = np.arange(1,compact_ham.params["num_orbitals"])
 
-	return tot_cost, (selswap_range, par_range)
+	return tot_cost, (selswap_range, selswap_range, par_range)
 
 
 def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, heuristic="Q3", verbose=True, **kwargs):
@@ -153,8 +164,8 @@ preopt_list = ["Sparse", "DF", "AC"]
 def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, heuristic="Q3", verbose=True, **kwargs):
 	TIMES_ARR = [time()]
 
-	orig_methods = len(method_list)
-	do_preopt = np.zeros(orig_methods,dtype=bool)
+	num_methods = len(method_list)
+	do_preopt = np.zeros(num_methods,dtype=bool)
 	for i_method, method in enumerate(method_list):
 		if method in preopt_list:
 			do_preopt[i_method] = True
@@ -205,9 +216,10 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	best_method = method_list[min_index]
 	best_resources = resources_list[min_index]
 	best_one_norm = one_norms_list[min_index]
-	print(f"\nDetermined best method to be {best_method} with associated numbers:")
-	print(f"		- one-norm: {best_one_norm:.2f}")
-	print(f"		- T-gates: {best_resources.clean_gate_counts["T"]:.2e}")
-	print(f"		- Qubits: {best_resources.qubit_manager.total_qubits:.0f}")
+	cow_print(best_method, best_one_norm, best_resources.clean_gate_counts["T"], best_resources.qubit_manager.total_qubits)
+	# print(f"\nDetermined best method to be {best_method} with associated numbers:")
+	# print(f"		- one-norm: {best_one_norm:.2f}")
+	# print(f"		- T-gates: {best_resources.clean_gate_counts["T"]:.2e}")
+	# print(f"		- Qubits: {best_resources.qubit_manager.total_qubits:.0f}")
 
 	return best_method, best_resources, best_one_norm

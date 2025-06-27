@@ -1600,10 +1600,10 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
         gate_lst.append(plre.GateCount(phasegrad,1))
         gate_lst.append(AllocWires(num_prec_wires*parallel_rotations))
         if num_full_blocks > 0:
-            gate_lst.append(plre.GateCount(mult_rot, num_full_blocks * parallel_rotations))
+            gate_lst.append(plre.GateCount(mult_rot, num_full_blocks))
 
         if num_leftover_rotations > 0:
-            gate_lst.append(plre.GateCount(mult_rot, num_leftover_rotations))
+            gate_lst.append(plre.GateCount(mult_rot, 1))
 
         gate_lst.append(FreeWires(num_prec_wires * parallel_rotations))
 
