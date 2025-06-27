@@ -145,7 +145,7 @@ def create_resource_function(compact_ham, method, max_selwap = 8, **kwargs):
 	return tot_cost, (selswap_range, selswap_range, par_range)
 
 
-def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, heuristic="Q3", verbose=True, **kwargs):
+def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
 	'''
 	Loop for obtaining best decomposition for a given method
 	alpha is optimization heuristic parameter
