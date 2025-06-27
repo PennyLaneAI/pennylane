@@ -47,3 +47,17 @@ def test_onemode_pes_tddft():
     pes_obj = vibronic_pes(mol, n_points=3, optimize=False, rotate=False, method_excited="tddft")
 
     assert np.allclose(pes_obj.pes_onemode[-1], np.array([-76.3696919180982, -76.35911133631555]))
+
+
+def test_onemode_pes_eom():
+
+    symbols = ["H", "O", "H"]
+    geometry = np.array(
+        [[-0.0399, -0.0038, 0.0000], [1.5780, 0.8540, 0.0000], [2.7909, -0.5159, 0.0000]]
+    )
+
+    mol = qchem.Molecule(symbols, geometry, basis_name="6-31g", unit="bohr", load_data=True)
+
+    pes_obj = vibronic_pes(mol, n_points=3, optimize=False, rotate=False, method_excited="eom_ccsd")
+
+    assert np.allclose(pes_obj.pes_onemode[-1], np.array([-76.19592216073853, -75.69534308774865]))

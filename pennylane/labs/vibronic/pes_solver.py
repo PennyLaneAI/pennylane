@@ -190,3 +190,83 @@ def _run_tddft(
     energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
 
     return energies
+
+
+def _run_eom_ccsd(
+    symbols,
+    coords,
+    basis="6-31g*",
+    nroots=2,
+    conv_tol=1e-7,
+    conv_tol_eom=1e-6,
+    max_cycle=50,
+    max_cycle_eom=20,
+    restrict_to_singlet=True,
+    spin=0,
+    point_group=None,
+    frozen=None,
+):
+    """
+    Run EOM-CCSD calculation and return energies.
+
+    Args:
+        mol: PySCF Mole object
+
+    Returns:
+        List of EOM-CCSD energies in Hartree, including ground state
+    """
+    coords = [[symbol, tuple(np.array(coords)[i])] for i, symbol in enumerate(symbols)]
+
+    mol = gto.Mole()
+    mol.atom = coords
+    mol.unit = "Angstrom"
+    mol.basis = basis
+    mol.spin = spin
+    if point_group:
+        mol.symmetry = point_group.lower()
+        mol.symmetry_subgroup = point_group.lower()
+
+    mol.build()
+
+    # Run HF based on spin
+    if mol.spin == 0:
+        mf = scf.RHF(mol)
+    else:
+        mf = scf.UHF(mol)
+
+    mf.kernel()
+
+    # Get ground state energy
+    gs_energy = mf.e_tot
+
+    # Run CCSD
+    if mol.spin == 0:
+        mycc = cc.RCCSD(mf)
+    else:
+        mycc = cc.UCCSD(mf)
+
+    # Set convergence parameters
+    mycc.conv_tol = conv_tol
+    mycc.max_cycle = max_cycle
+
+    # Set frozen orbitals if specified
+    if frozen is not None:
+        mycc.frozen = frozen
+
+    mycc.kernel()
+
+    if not mycc.converged:
+        raise RuntimeError("CCSD calculation did not converge")
+
+    # Run EOM-CCSD
+    if mol.spin == 0:
+        energies_eomcc, cvecs_eomcc = mycc.eomee_ccsd_singlet(nroots=nroots - 1)
+    else:
+        energies_eomcc, cvecs_eomcc = cc.EOM(mycc)  # placeholder
+
+    # Get excitation energies and convert to total energies
+    excitation_energies = energies_eomcc
+
+    energies = [mycc.e_tot] + [gs_energy + e for e in [excitation_energies]]
+
+    return energies
