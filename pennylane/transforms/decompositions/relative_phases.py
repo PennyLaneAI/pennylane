@@ -354,8 +354,5 @@ def replace_gte_4_qubit_multi_controlled_X_gate(
     ]
     pattern = QuantumTape(pattern_ops)
     return pattern_matching_optimization(
-        tape,
-        pattern_tapes=[pattern],
-        custom_quantum_cost=custom_quantum_cost,
-        allow_phase=True
+        tape, pattern_tapes=[pattern], custom_quantum_cost=custom_quantum_cost, allow_phase=True
     )

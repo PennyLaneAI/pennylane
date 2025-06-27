@@ -22,14 +22,14 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions.relative_phases import (  # pylint: disable=no-name-in-module
     replace_controlled_iX_gate,
+    replace_gte_4_qubit_multi_controlled_X_gate,
     replace_relative_phase_toffoli,
-    replace_gte_4_qubit_multi_controlled_X_gate
 )
 
 
 class TestMultiControlledXGate:
 
-    def test_basic_transform(self):
+    def test_additional_controls(self):
 
         controls = 5
 
@@ -39,14 +39,14 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        dev = qml.device('default.qubit', wires=8 + (controls - 4))
+        dev = qml.device("default.qubit", wires=8 + (controls - 4))
         qnode = qml.QNode(qfunc, dev)
         print(qml.draw(qnode)())
 
         lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
             qfunc,
             additional_controls=controls - 4,
-            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1}
+            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1},
         )
 
         tape = qml.tape.make_qscript(lowered_qfunc)()
@@ -55,30 +55,27 @@ class TestMultiControlledXGate:
             qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
             qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
             qml.MultiControlledX(
-                list(range(controls - 4))
-                + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
             ),
             qml.MultiControlledX(
-                list(range(controls - 4))
-                + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
             ),
             qml.MultiControlledX(
-                list(range(controls - 4))
-                + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
+                list(range(controls - 4)) + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
             ),
             qml.MultiControlledX(
-                list(range(controls - 4))
-                + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
             ),
             qml.MultiControlledX(
-                list(range(controls - 4))
-                + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
             ),
             qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
             qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
             qml.PauliX(5),
-            qml.PauliX(6)
+            qml.PauliX(6),
         ]
+
+    def test_basic_transform(self):
 
         controls = 4
 
@@ -88,14 +85,14 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        dev = qml.device('default.qubit', wires=8 + (controls - 4))
+        dev = qml.device("default.qubit", wires=8 + (controls - 4))
         qnode = qml.QNode(qfunc, dev)
         print(qml.draw(qnode)())
 
         lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
             qfunc,
             additional_controls=controls - 4,
-            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1}
+            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1},
         )
 
         tape = qml.tape.make_qscript(lowered_qfunc)()
@@ -104,29 +101,24 @@ class TestMultiControlledXGate:
             qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
             qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
             qml.Toffoli(
-                list(range(controls - 4))
-                + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
             ),
             qml.Toffoli(
-                list(range(controls - 4))
-                + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
             ),
             qml.Toffoli(
-                list(range(controls - 4))
-                + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
+                list(range(controls - 4)) + [controls - 4 + 0, controls - 4 + 1, controls - 4 + 4]
             ),
             qml.Toffoli(
-                list(range(controls - 4))
-                + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
+                list(range(controls - 4)) + [controls - 4 + 2, controls - 4 + 4, controls - 4 + 5]
             ),
             qml.Toffoli(
-                list(range(controls - 4))
-                + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
+                list(range(controls - 4)) + [controls - 4 + 3, controls - 4 + 5, controls - 4 + 6]
             ),
             qml.ctrl(qml.Hadamard(controls - 4 + 5), list(range(controls - 4))),
             qml.ctrl(qml.Hadamard(controls - 4 + 4), list(range(controls - 4))),
             qml.PauliX(4),
-            qml.PauliX(5)
+            qml.PauliX(5),
         ]
 
 
