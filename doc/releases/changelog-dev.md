@@ -792,6 +792,12 @@
   estimation for multi-qubit parametic gates.
   [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
 
+* Added the `pennylane.labs.resource_estimation.CompactHamiltonian` to unblock the need to pass full
+  Hamiltonian
+  Added `pennylane.labs.resource_estimation.ResourceTrotterCDF`, and `pennylane.labs.resource_estimation.ResourceTrotterTHC`
+  templates which will be used to perform resource estimation for trotterization of CDF and THC Hamiltonians respectively.
+  [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
+
 * Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
   supporting compact hamiltonian development.
   [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
@@ -1042,16 +1048,13 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
-<<<<<<< snapshots-warning
 * Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
-=======
+
 * In the :doc:`/development/guide/documentation` page, removed references to the outdated Sphinx and unsupported Python 3.8 version. 
   This helps ensure contributors follow current standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
-
->>>>>>> master
 
 <h3>Bug fixes 🐛</h3>
 

@@ -22,3 +22,5 @@ from .subroutines import (
     ResourceSelect,
     ResourceQROM,
 )
+from .compact_hamiltonian import CompactHamiltonian
+from .trotter import ResourceTrotterCDF, ResourceTrotterTHC
