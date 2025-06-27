@@ -25,10 +25,11 @@ For the list of ZX calculus-based simplification rules implemented in ``pyzx``, 
 <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>
 """
 
-import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
+
+from .converter import from_zx, to_zx
 
 has_pyzx = True
 try:
@@ -108,10 +109,10 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
             "The `pyzx` package is required. You can install it by `pip install pyzx`."
         )
 
-    zx_graph = qml.transforms.to_zx(tape)
+    zx_graph = to_zx(tape)
     pyzx.full_reduce(zx_graph)
     zx_graph = pyzx.extract_circuit(zx_graph).to_graph()
-    qscript = qml.transforms.from_zx(zx_graph)
+    qscript = from_zx(zx_graph)
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
