@@ -158,10 +158,10 @@ def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, he
 
 	opt_resources, opt_params = resource_optimizer(cost_func, *opt_ranges, heuristic=heuristic, verbose=verbose, alpha=alpha)
 
-	return opt_resources, one_norm
+	return opt_resources, one_norm, opt_params
 
 preopt_list = ["Sparse", "DF", "AC"]
-def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, heuristic="Q3", verbose=True, **kwargs):
+def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
 	TIMES_ARR = [time()]
 
 	num_methods = len(method_list)
@@ -183,6 +183,7 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	one_norms_list = []
 	resources_list = []
 	costs_list = []
+	params_list = []
 
 	if verbose:
 		print("\n\nStarting optimization over methods!")
@@ -190,8 +191,9 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	for i_method, method in enumerate(method_list):
 		if verbose:
 			print(f"\nOptimizing {method}...")
-		my_res, my_one_norm = optimize_method(obt, tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)
+		my_res, my_one_norm, my_params = optimize_method(obt, tbt, method, eta, compact_ham_kwargs, alpha, heuristic, verbose=False, **kwargs)
 		resources_list.append(my_res)
+		params_list.append(my_params)
 		one_norms_list.append(my_one_norm)
 		costs_list.append(resource_cost(my_res, heuristic, alpha=alpha))
 
@@ -216,10 +218,7 @@ def find_optimum(obt, tbt, eta, method_list, compact_ham_kwargs={}, alpha=0.95, 
 	best_method = method_list[min_index]
 	best_resources = resources_list[min_index]
 	best_one_norm = one_norms_list[min_index]
-	cow_print(best_method, best_one_norm, best_resources.clean_gate_counts["T"], best_resources.qubit_manager.total_qubits)
-	# print(f"\nDetermined best method to be {best_method} with associated numbers:")
-	# print(f"		- one-norm: {best_one_norm:.2f}")
-	# print(f"		- T-gates: {best_resources.clean_gate_counts["T"]:.2e}")
-	# print(f"		- Qubits: {best_resources.qubit_manager.total_qubits:.0f}")
-
+	best_params = [int(pp) for pp in params_list[min_index]]
+	cow_print(best_method, best_one_norm, best_resources.clean_gate_counts["T"], best_resources.qubit_manager.total_qubits, best_params)
+	
 	return best_method, best_resources, best_one_norm
