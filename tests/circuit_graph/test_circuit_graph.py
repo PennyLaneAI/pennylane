@@ -268,6 +268,27 @@ class TestCircuitGraph:
         assert layers[2].ops == [ops[x] for x in [5, 6]]
         assert layers[2].param_inds == [6, 7]
 
+    def test_iterate_layers_repeat_op(self):
+        """Test iterate_parametrized_layers can work when the operation is repeated."""
+        op = qml.RX(0.5, 0)
+        par_info = [{"op": op, "op_idx": 0, "p_idx": 0}, {"op": op, "op_idx": 2, "p_idx": 0}]
+        graph = qml.CircuitGraph(
+            [op, qml.X(0), op], [], wires=op.wires, trainable_params={0, 1}, par_info=par_info
+        )
+        layers = list(graph.iterate_parametrized_layers())
+
+        assert len(layers) == 2
+
+        assert layers[0].pre_ops == []
+        assert layers[0].ops == [op]
+        assert layers[0].param_inds == (0,)
+        assert layers[0].post_ops == [qml.X(0), op]
+
+        assert layers[1].ops == [op]
+        assert layers[1].param_inds == (1,)
+        assert layers[1].pre_ops == [op, qml.X(0)]
+        assert layers[1].post_ops == []
+
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
     def test_iterate_layers(self, parametrized_circuit_gaussian, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""

@@ -274,7 +274,7 @@ class CircuitGraph:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
-    def ancestors_of_indexes(self, indexes: Sequence[int], sort=False):
+    def _ancestors_of_indexes(self, indexes: Sequence[int], sort=False):
         """Ancestors of a given set of operators.
 
         Args:
@@ -289,7 +289,7 @@ class CircuitGraph:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
-    def descendants_of_indexes(self, indexes: Sequence[int], sort=False):
+    def _descendants_of_indexes(self, indexes: Sequence[int], sort=False):
         """Descendants of a given set of operators.
 
         Args:
@@ -299,7 +299,7 @@ class CircuitGraph:
             list[Operator]: descendants of the given operators
         """
 
-        ancestors = {i for ind in indexes for i in rx.ancestors(self._graph, ind)}
+        ancestors = {i for ind in indexes for i in rx.descendants(self._graph, ind)}
         if sort:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
@@ -395,7 +395,7 @@ class CircuitGraph:
                 op = info["op"]
 
                 # get all predecessor ops of the op
-                sub = self.ancestors_of_indexes((info["op_idx"],))
+                sub = self._ancestors_of_indexes((info["op_idx"],))
 
                 # check if any of the dependents are in the
                 # currently assembled layer
@@ -406,8 +406,8 @@ class CircuitGraph:
 
                 # store the parameters and ops indices for the layer
                 current.ops.append(op)
+                current.ops_inds.append(info["op_idx"])
                 current.param_inds.append(idx)
-                current.param_inds.append(info["op_idx"])
 
         return layers
 
@@ -419,8 +419,8 @@ class CircuitGraph:
         """
         # iterate through each layer
         for ops, param_inds, indexes in self.parametrized_layers:
-            pre_queue = self.ancestors_of_indexes(indexes, sort=True)
-            post_queue = self.descendants_of_indexes(indexes, sort=True)
+            pre_queue = self._ancestors_of_indexes(indexes, sort=True)
+            post_queue = self._descendants_of_indexes(indexes, sort=True)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
     def update_node(self, old, new):
