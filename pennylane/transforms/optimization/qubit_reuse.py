@@ -321,12 +321,10 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
         new_op = op_class(*op_params, wires=new_wires)
         new_ops.append(new_op)
         if len(new_wires) == 2: 
-            m = measure(wires= new_wires[0], reset=True)
+            m = pennylane.measurements.MidMeasureMP(wires = new_wires[0], reset=True)
             new_ops.append(m)
-            # new_measurements.append(sample(m))
-    print(new_ops)
-    print(new_measurements)
-    return QuantumScript(new_ops, [pennylane.expval(0)])
+            # new_measurements.append(pennylane.expval(m))
+    return QuantumScript(new_ops, new_measurements)
 
 @transform
 def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -393,7 +391,6 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
         if len(R_prime) < len(R):
             R = R_prime
-    print(R)
 
     new_tape = generate_dynamic_circuit(R, tape)
 
