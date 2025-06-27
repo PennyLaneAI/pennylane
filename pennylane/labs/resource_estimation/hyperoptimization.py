@@ -24,7 +24,11 @@ Cost heuristics and what they do:
 '''
 def cost_heuristic(T, Q, heuristic, **kwargs):
 	if heuristic == "Q3":
-		return T * (Q**3)
+		if "alpha" in kwargs:
+			alpha = kwargs["alpha"]
+		else:
+			alpha = 10
+		return T * ((alpha*Q)**3)
 	if heuristic == "Q500":
 		if Q < 500:
 			return T
