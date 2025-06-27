@@ -783,8 +783,8 @@ class TestPauliError:
 
         assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
-    OPERATORS = ["X", "XY", "ZX"]
-    WIRES = [[1], [0, 1], [3, 1]]
+    OPERATORS = ["X", "XY", "ZX", "ZI"]
+    WIRES = [[1], [0, 1], [3, 1], [1, 0]]
     EXPECTED_KS = [
         [
             np.sqrt(0.5) * np.eye(2),
@@ -817,6 +817,17 @@ class TestPauliError:
                 ]
             ),
         ],
+        [
+            np.sqrt(0.5) * np.eye(4),
+            np.sqrt(0.5) * np.array(
+                [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, 0.0, 0.0, -1.0],
+                ]
+            ),
+        ],
     ]
 
     @pytest.mark.parametrize(
@@ -837,9 +848,13 @@ class TestPauliError:
             -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(4),
             1 / (2 * qml.math.sqrt(p)) * (qml.math.diag([1j, -1j, 1j, -1j])[::-1]),
         ],
+        "ZI": lambda p: [
+            -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(4),
+            1 / (2 * qml.math.sqrt(p)) * (qml.math.diag([1, 1, -1, -1])),
+        ],
     }
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self, ops):
         p = pnp.array(0.43, requires_grad=True)
@@ -860,7 +875,7 @@ class TestPauliError:
         jac = jac_fn_real(p) + 1j * jac_fn_imag(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.torch
     def test_kraus_jac_torch(self, ops):
         import torch
@@ -884,7 +899,7 @@ class TestPauliError:
             jac_real + 1j * jac_imag, self.expected_jac_fn[ops](p.detach().numpy())
         )
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.tf
     def test_kraus_jac_tf(self, ops):
         import tensorflow as tf
@@ -896,7 +911,7 @@ class TestPauliError:
         jac = tape.jacobian(out, p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.jax
     def test_kraus_jac_jax(self, ops):
         import jax
