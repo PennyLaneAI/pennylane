@@ -562,6 +562,17 @@ def _save_thc_results(thc_save_file, thc_leaf, thc_central, thc_method, info, pe
         
         fid.create_dataset('info', data=str(info))
 
+def thc_one_norm(kappa, zeta):
+    D,_ = np.linalg.eigh(kappa)
+
+    lambda_1 = np.sum(np.abs(D))
+
+    lambda_2 = 0.5*np.sum(np.abs(zeta))
+    M = zeta.shape[0]
+    for mm in range(M):
+        lambda_2 -= 0.25 * zeta[mm,mm]
+
+    return lambda_1 + lambda_2
 
 # Example usage functions
 def run_enhanced_thc_optimization_example():
