@@ -51,6 +51,8 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
     """
     eta: number of electrons
     """
+    if verbose:
+        print(f"Starting BLISS linprog routine with 1-norm {pauli_1_norm(one_body, two_body)}")
     N = one_body.shape[0]
     Ne_obt, Ne2_tbt = symmetry_builder(N)
 
@@ -110,7 +112,7 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
                 A_mat[idx, t1_idx] = 1
                 A_mat[idx, t2_idx] = 2*eta
             
-            A_mat[idx, O_dict[(ii,jj)]] = eta
+            A_mat[idx, O_dict[(ii,jj)]] = -eta
             idx += 1
 
     # full two-body components
@@ -172,7 +174,7 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
     omat = res.x[omat_idx:omat_idx+obt_len].reshape((N, N))
     O = (omat + omat.T) / 2
     
-    if verbose:
+    if verbose == 2:
         print("Finished BLISS optimization, found parameters")
         print(f"t1={t1:.2e}, t2={t2:.2e}, O =\n")
         print(np.round(O, decimals=3))
@@ -190,6 +192,9 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
 
     new_obt = one_body - s1_obt
     new_tbt = two_body - s2_tbt
+
+    if verbose:
+        print(f"Finished BLISS linprog routine with 1-norm {pauli_1_norm(new_obt, new_tbt)}")
 
     return new_obt, new_tbt
 
