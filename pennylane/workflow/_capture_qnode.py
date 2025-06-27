@@ -429,7 +429,7 @@ def _get_jaxpr_cache_key(dynamic_args, static_args, kwargs, abstracted_axes):
         dynamic_args (tuple): dynamic positional arguments of the cached qfunc
         static_args (tuple): static positional arguments of the cached qfunc
         kwargs (dict): keyword arguments of the cached qfunc
-        abstract_axes (Union[tuple[dict[int, str]], None]): corresponding abstract axes
+        abstract_axes (Optional[tuple[dict[int, str]]]): corresponding abstract axes
             of positional arguments
 
     Returns:

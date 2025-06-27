@@ -13,17 +13,24 @@
 # limitations under the License.
 """Contains a function for setting up the inner and outer transform programs for execution of a QNode."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from cachetools import LRUCache
 
-import pennylane as qml
 from pennylane.math import Interface
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.convert_to_numpy_parameters import convert_to_numpy_parameters
+from pennylane.transforms.core import TransformProgram, transform
 
 from ._cache_transform import _cache_transform
 
+if TYPE_CHECKING:
+    from pennylane.devices import Device
+    from pennylane.devices.execution_config import ExecutionConfig
 
-def _prune_dynamic_transform(outer_transform, inner_transform):
+
+def _prune_dynamic_transform(outer_transform: TransformProgram, inner_transform: TransformProgram):
     """Ensure a single ``dynamic_one_shot`` transform is applied.
 
     Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
@@ -51,8 +58,8 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
 
 
 def _setup_transform_program(
-    device: "qml.devices.Device",
-    resolved_execution_config: "qml.devices.ExecutionConfig",
+    device: Device,
+    resolved_execution_config: ExecutionConfig,
     cache=None,
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
@@ -72,13 +79,13 @@ def _setup_transform_program(
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
-    outer_transform_program = qml.transforms.core.TransformProgram()
-    inner_transform_program = qml.transforms.core.TransformProgram()
+    outer_transform_program = TransformProgram()
+    inner_transform_program = TransformProgram()
 
     # Add the gradient expand to the program if necessary
     if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
         outer_transform_program.add_transform(
-            qml.transform(resolved_execution_config.gradient_method.expand_transform),
+            transform(resolved_execution_config.gradient_method.expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
     if resolved_execution_config.use_device_gradient:
@@ -109,7 +116,7 @@ def _setup_transform_program(
         or resolved_execution_config.gradient_method == "backprop"
     )
     if not interface_data_supported:
-        inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
+        inner_transform_program.add_transform(convert_to_numpy_parameters)
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
