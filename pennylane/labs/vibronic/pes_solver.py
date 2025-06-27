@@ -30,6 +30,7 @@ from itertools import combinations
 from pyscf import gto, scf, mcscf, tdscf, cc
 from pyscf.fci import direct_spin0
 from pyscf.symm.geom import SymmSys
+from gpu4pyscf.dft import rks, uks
 
 from pennylane import concurrency, qchem
 
@@ -182,6 +183,83 @@ def _run_tddft(
     # Run calculation
     td.kernel()
     td.analyze(verbose=4)
+
+    # Get excitation energies (in eV) and convert to Hartree
+    excitation_energies = td.e / 27.2114
+
+    # Add ground state energy to get total energies
+    energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
+
+    return energies
+
+
+def _run_tddft_gpu(
+    symbols,
+    coords,
+    basis="6-31g*",
+    functional="cam-b3lyp",
+    nroots=2,
+    conv_tol=1e-7,
+    max_cycle=50,
+    restrict_to_singlet=True,
+    spin=0,
+    point_group=None,
+):
+    """
+    Run TDDFT calculation and return energies.
+
+    Args:
+        mol: PySCF Mole object
+
+    Returns:
+        List of TDDFT energies in Hartree, including ground state
+    """
+
+    coords = [[symbol, tuple(np.array(coords)[i])] for i, symbol in enumerate(symbols)]
+
+    mol = gto.Mole()
+    mol.atom = coords
+    mol.unit = "Angstrom"
+    mol.basis = basis
+    mol.spin = spin
+    if point_group:
+        mol.symmetry = point_group.lower()
+        mol.symmetry_subgroup = point_group.lower()
+
+    mol.build()
+
+    # Run DFT based on spin
+    if mol.spin == 0:
+        mf = rks.RKS(mol)
+    else:
+        mf = uks.UKS(mol)
+    mf.xc = functional
+    mf.kernel()
+
+    # Get ground state energy
+    gs_energy = mf.e_tot
+
+    # Run TDDFT
+    td = mf.TDA()
+    td.nstates = nroots - 1
+    td.conv_tol = conv_tol
+    td.max_cycle = max_cycle
+
+    # Set spin restriction if requested
+    if restrict_to_singlet:
+        if mol.spin != 0:
+            raise ValueError("Cannot restrict to singlet for open-shell system")
+        td.singlet = True
+    else:
+        td.singlet = False
+
+    print("DEBUG: Running TDDFT kernel...")
+    # Run calculation
+    td.kernel()
+    print("DEBUG: TDDFT kernel completed")
+    td.analyze(verbose=4)
+
+
 
     # Get excitation energies (in eV) and convert to Hartree
     excitation_energies = td.e / 27.2114
