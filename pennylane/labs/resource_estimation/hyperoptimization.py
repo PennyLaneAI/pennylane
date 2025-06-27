@@ -31,9 +31,9 @@ def cost_heuristic(T, Q, heuristic, **kwargs):
 		elif heuristic == "Q":
 			alpha = 0.05
 		elif heuristic == "full_T":
-			alpha = 1
+			alpha = 1 - 1e-4
 		elif heuristic == "full_Q":
-			alpha = 0
+			alpha = 0 + 1e-4
 		else:
 			if "alpha" in kwargs:
 				alpha = kwargs["alpha"]
@@ -72,10 +72,12 @@ def resource_optimizer(resource_func, *ranges, heuristic="Q3", verbose=True, **k
 	min_combo = None
 	for params_idxs in itertools.product(*params_iterables):
 		current_combo = tuple(ranges[jj][params_idxs[jj]] for jj in range(num_params))
-		print(F"Trying current combo of {[int(combo) for combo in current_combo]}")
+		if verbose:
+			print(F"Trying current combo of {[int(combo) for combo in current_combo]}")
 		my_resources = resource_func(*current_combo)
 		my_T, my_Q = extract_cost(my_resources)
-		print(f"Number of qubits is {my_Q} and number of T-gates is {my_T:.2e}")
+		if verbose:
+			print(f"Number of qubits is {my_Q} and number of T-gates is {my_T:.2e}")
 		cost_matrix[params_idxs] = resource_cost(my_resources, heuristic, **kwargs)
 
 		if min_val is None:
