@@ -18,7 +18,15 @@
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
-.. currentmodule:: pennylane.labs.trotter_error
+.. currentmodule:: pennylane.labs.vibronic
+
+.. autosummary::
+    :toctree: api
+
+    ~pes_vibronic
+    ~pes_solver
+    ~pes_vibronic_utils
+
 """
 
 from .pes_vibronic import vibronic_pes
