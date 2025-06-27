@@ -798,8 +798,8 @@
   estimation for trotterization of CDF and THC Hamiltonians.
   [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
 
-* Added `pennylane.labs.resource_estimation.ResourceOperator` templates which will be used to perform resource
-  estimation for trotterization of vibrational and vibronic Hamiltonians.
+* Added `pennylane.labs.resource_estimation.ResourceTrotterVibrational` and `pennylane.labs.resource_estimation.ResourceTrotterVibronic`
+  templates which can be used to perform resource estimation for trotterization of vibrational and vibronic Hamiltonians respectively.
   [(#7720)](https://github.com/PennyLaneAI/pennylane/pull/7720)
 
 * Added `pennylane.labs.ResourceOperator` templates for various algorithms required for 
