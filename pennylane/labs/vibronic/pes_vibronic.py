@@ -38,7 +38,13 @@ from pennylane.qchem.vibrational.vibrational_class import (
     optimize_geometry,
 )
 
-from .pes_vibronic_utils import _harmonic_analysis, _grid_points, _generate_1d_grid
+from .pes_vibronic_utils import (
+    _harmonic_analysis,
+    _grid_points,
+    _generate_1d_grid,
+    _generate_2d_grid,
+    _generate_3d_grid,
+)
 from .pes_solver import _run_casscf, _run_tddft, _run_eom_ccsd
 
 
@@ -65,6 +71,7 @@ def vibronic_pes(
     pes_level=1,
     num_workers=1,
     backend="serial",
+    use_gpu=False,
 ):
     r"""Computes potential energy surfaces along vibrational normal modes.
 
@@ -162,62 +169,86 @@ def vibronic_pes(
 
         eq_geometry = mol_eq.coordinates * BOHR_TO_ANG
 
-        geometry_1d = _generate_1d_grid(freqs, vectors, eq_geometry, grid)
+        if pes_level == 1:
+            geometry_1d = _generate_1d_grid(freqs, vectors, eq_geometry, grid)
+            if method_excited == "casscf":
+                energy_1 = []
+                arguments_1d = [(mol_eq.symbols, i["coordinates"], 2, 2) for i in geometry_1d]
 
-        # geometry_2d = _generate_2d_grid(freqs, vectors, eq_geometry, grid)
-        #
-        # geometry_3d = _generate_3d_grid(freqs, vectors, eq_geometry, grid)
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_1 = list(executor.starmap(_run_casscf, arguments_1d))
 
-        
+            if method_excited == "tddft":
+                energy_1 = []
+                arguments_1d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_1d]
 
-        if method_excited == "casscf":
-            energy_1 = []
-            arguments_1d = [
-            (mol_eq.symbols, i["coordinates"], 2, 2)
-            for i in geometry_1d
-            ]
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_1 = list(executor.starmap(_run_tddft, arguments_1d))
 
-            executor_class = concurrency.backends.get_executor(backend)
-            with executor_class(max_workers=num_workers) as executor:
-                energy_1 = list(executor.starmap(_run_casscf, arguments_1d))
+            if method_excited == "eom_ccsd":
+                energy_1 = []
+                arguments_1d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_1d]
 
-        if method_excited == "tddft":
-            energy_1 = []
-            arguments_1d = [
-            (mol_eq.symbols, i["coordinates"])
-            for i in geometry_1d
-            ]
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_1 = list(executor.starmap(_run_eom_ccsd, arguments_1d))
 
-            executor_class = concurrency.backends.get_executor(backend)
-            with executor_class(max_workers=num_workers) as executor:
-                energy_1 = list(executor.starmap(_run_tddft, arguments_1d))
+        if pes_level == 2:
+            geometry_2d = _generate_2d_grid(freqs, vectors, eq_geometry, grid)
+            if method_excited == "casscf":
+                energy_2 = []
+                arguments_2d = [(mol_eq.symbols, i["coordinates"], 2, 2) for i in geometry_2d]
 
-        if method_excited == "eom_ccsd":
-            energy_1 = []
-            arguments_1d = [
-            (mol_eq.symbols, i["coordinates"])
-            for i in geometry_1d
-            ]
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_2 = list(executor.starmap(_run_casscf, arguments_2d))
 
-            executor_class = concurrency.backends.get_executor(backend)
-            with executor_class(max_workers=num_workers) as executor:
-                energy_1 = list(executor.starmap(_run_eom_ccsd, arguments_1d))
+            if method_excited == "tddft":
+                energy_2 = []
+                arguments_2d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_2d]
 
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_2 = list(executor.starmap(_run_tddft, arguments_2d))
 
-        # energy_2 = []
-        # for geometry_point in geometry_2d:
-        #     new_coords = geometry_point["coordinates"]
-        #     energy_2.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
-        #
-        # energy_3 = []
-        # for geometry_point in geometry_3d:
-        #     new_coords = geometry_point["coordinates"]
-        #     energy_3.append(_run_casscf(mol_eq.symbols, new_coords, ncas=2, nelecas=2))
+            if method_excited == "eom_ccsd":
+                energy_2 = []
+                arguments_2d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_2d]
 
-        freqs = freqs * CM_TO_AU
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_2 = list(executor.starmap(_run_eom_ccsd, arguments_2d))
+
+        if pes_level == 3:
+            geometry_3d = _generate_3d_grid(freqs, vectors, eq_geometry, grid)
+            if method_excited == "casscf":
+                energy_3 = []
+                arguments_3d = [(mol_eq.symbols, i["coordinates"], 2, 2) for i in geometry_3d]
+
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_3 = list(executor.starmap(_run_casscf, arguments_3d))
+
+            if method_excited == "tddft":
+                energy_3 = []
+                arguments_3d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_3d]
+
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_3 = list(executor.starmap(_run_tddft, arguments_3d))
+
+            if method_excited == "eom_ccsd":
+                energy_3 = []
+                arguments_3d = [(mol_eq.symbols, i["coordinates"]) for i in geometry_3d]
+
+                executor_class = concurrency.backends.get_executor(backend)
+                with executor_class(max_workers=num_workers) as executor:
+                    energy_3 = list(executor.starmap(_run_eom_ccsd, arguments_3d))
 
         return VibrationalPES(
-            freqs,
+            freqs * CM_TO_AU,
             grid,
-            pes_data=[energy_1],
+            pes_data=[energy_1, energy_2, energy_3],
         )
