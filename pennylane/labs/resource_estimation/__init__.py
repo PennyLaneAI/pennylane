@@ -196,7 +196,7 @@ from .templates import (
     ResourcePrepCDF,
     ResourceAliasSampling,
     ResourceSelectSparsePauli,
-    ResourcePrepSparsePauli
-    # ResourcePrepAC,
-    # ResourceSelectAC,
+    ResourcePrepSparsePauli,
+    ResourcePrepAC,
+    ResourceSelectAC,
 )

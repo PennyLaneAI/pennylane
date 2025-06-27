@@ -53,6 +53,7 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
     """
     if verbose:
         print(f"Starting BLISS linprog routine with 1-norm {pauli_1_norm(one_body, two_body)}")
+
     N = one_body.shape[0]
     Ne_obt, Ne2_tbt = symmetry_builder(N)
 
@@ -111,8 +112,9 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
             if ii == jj:
                 A_mat[idx, t1_idx] = 1
                 A_mat[idx, t2_idx] = 2*eta
-            
+ 
             A_mat[idx, O_dict[(ii,jj)]] = -eta
+
             idx += 1
 
     # full two-body components
@@ -195,6 +197,7 @@ def bliss_linprog(one_body, two_body, eta, verbose=False, model="highs"):
 
     if verbose:
         print(f"Finished BLISS linprog routine with 1-norm {pauli_1_norm(new_obt, new_tbt)}")
+
 
     return new_obt, new_tbt
 
