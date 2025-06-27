@@ -13,17 +13,12 @@
 # limitations under the License.
 """Module containing functionality for constructing vibronic Hamiltonians.
 
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
 .. currentmodule:: pennylane.labs.vibronic
 
 .. autosummary::
     :toctree: api
 
-    ~pes_vibronic
+    ~vibronic_pes
 """
 
 from .pes_vibronic import vibronic_pes
