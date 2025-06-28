@@ -734,6 +734,9 @@
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
 
+* Fixed the wrong `sum` to `sum_abstracted` in the docstring on :func:`~pennylane.compiler.qjit`.
+  [(#7587)](https://github.com/PennyLaneAI/pennylane/pull/7587)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The imports of dependencies introduced by ``labs`` functionalities have been modified such that
@@ -1237,6 +1240,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Sengthai Heng,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,

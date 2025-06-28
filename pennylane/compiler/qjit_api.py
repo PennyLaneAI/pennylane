@@ -277,8 +277,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             def sum_abstracted(arr):
                 return jnp.sum(arr)
 
-            sum(jnp.array([1]))     # Compilation happens here.
-            sum(jnp.array([1, 1]))  # No need to recompile.
+            sum_abstracted(jnp.array([1]))     # Compilation happens here.
+            sum_abstracted(jnp.array([1, 1]))  # No need to recompile.
 
         The ``sum_abstracted`` function would only compile once and its definition would be
         reused for subsequent function calls.
