@@ -285,6 +285,10 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         return pow_resource_rep(**params)
     if op_type is qml.ops.ControlledOp:
         op_type = qml.ops.Controlled
+    if op_type is qml.ops.Controlled:
+        base_rep = resource_rep(params["base_class"], **params["base_params"])
+        params["base_class"] = base_rep.op_type
+        params["base_params"] = base_rep.params
     return CompressedResourceOp(op_type, params)
 
 
