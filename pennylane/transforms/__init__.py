@@ -115,7 +115,6 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.add_noise
     ~defer_measurements
     ~transforms.diagonalize_measurements
-    ~transforms.set_shots
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
@@ -289,9 +288,10 @@ for a comprehensive overview of transforms and core functionalities, consult the
 
 # Leave as alias for backwards-compatibility
 from pennylane.tape import make_qscript as make_tape
+from pennylane.exceptions import TransformError
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform, TransformError
+from .core import transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
@@ -303,7 +303,6 @@ from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
-from .set_shots import set_shots
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
