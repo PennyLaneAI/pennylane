@@ -39,7 +39,6 @@ def create_initial_state(
         array: The initial state of a circuit
     """
     num_wires = len(wires)
-    num_axes = 2 * num_wires
 
     if not prep_operation:
         return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
@@ -49,10 +48,10 @@ def create_initial_state(
     else:
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
-    return _post_process(rho, num_axes, like)
+    return _post_process(rho, num_wires, like)
 
 
-def _post_process(rho, num_axes, like):
+def _post_process(rho, num_wires, like):
     r"""
     This post-processor is necessary to ensure that the density matrix is in
     the correct format, i.e. the original tensor form, instead of the pure
@@ -60,7 +59,7 @@ def _post_process(rho, num_axes, like):
     in the module (again from some legacy code).
     """
     # Ensure correct shape and remove batch dimension if unused.
-    rho = math.reshape(rho, (-1,) + (3,) * num_axes)
+    rho = math.reshape(rho, (-1,) + (3, 3) * num_wires)
     rho = math.squeeze(rho)
 
     dtype = str(rho.dtype)
