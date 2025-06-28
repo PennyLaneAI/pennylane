@@ -41,13 +41,30 @@ def create_initial_state(
     if not prep_operation:
         rho = _create_basis_state(num_wires, 0)
 
+    if isinstance(prep_operation, qml.QubitDensityMatrix):
+        rho = prep_operation.data
     else:
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
-    # TODO: add instance for prep_operations as added
+    return _post_process(rho, num_wires, like)
 
-    return qp.math.asarray(rho, like=like)
 
+def _post_process(rho, num_wires, like):
+    r"""
+    This post-processor is necessary to ensure that the density matrix is in
+    the correct format, i.e. the original tensor form, instead of the pure
+    matrix form, as requested by all the other more fundamental chore functions
+    in the module (again from some legacy code).
+    """
+    # Ensure correct shape and remove batch dimension if unused.
+    rho = math.reshape(rho, (-1,) + (3, 3) * num_wires)
+    rho = math.squeeze(rho)
+
+    dtype = str(rho.dtype)
+    floating_single = "float32" in dtype or "complex64" in dtype
+    dtype = "complex64" if floating_single else "complex128"
+    dtype = "complex128" if like == "tensorflow" else dtype
+    return math.cast(math.asarray(rho, like=like), dtype)
 
 def _apply_state_vector(state, num_wires):  # function is easy to abstract for qudit
     """Initialize the internal state in a specified pure state.
@@ -62,10 +79,13 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
         representing the density matrix of this state, where ``QUDIT_DIM`` is
         the dimension of the system.
     """
-
-    # Initialize the entire set of wires with the state
-    rho = qp.math.outer(state, qp.math.conj(state))
-    return qp.math.reshape(rho, [QUDIT_DIM] * 2 * num_wires)
+    # Don't assume the expected shape to be fixed
+    batch_size = math.get_batch_size(
+        pure_state, expected_shape=(3,) * num_wires, expected_size=3**num_wires
+    )
+    if batch_size is None:
+        return _flatten_outer(pure_state)
+    return math.stack([_flatten_outer(s) for s in pure_state])
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
@@ -83,3 +103,9 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
     rho = qp.math.zeros((QUDIT_DIM**num_wires, QUDIT_DIM**num_wires))
     rho[index, index] = 1
     return qp.math.reshape(rho, [QUDIT_DIM] * (2 * num_wires))
+
+
+def _flatten_outer(s):
+    r"""Flattens the outer product of a vector."""
+    s_flatten = math.flatten(s)
+    return math.outer(s_flatten, math.conj(s_flatten))
