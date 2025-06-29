@@ -44,7 +44,7 @@ def create_initial_state(
         return qml.math.asarray(_create_basis_state(num_wires, 0), like=like)
 
     if isinstance(prep_operation, qml.QubitDensityMatrix):
-        rho = prep_operation.data
+        rho = prep_operation.data[0]
     else:
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
