@@ -14,8 +14,6 @@
 
 """Utility functions for decompositions are available from ``qml.math.decomposition``."""
 
-from functools import reduce
-
 import numpy as np
 
 from pennylane import math
@@ -403,11 +401,53 @@ def _givens_matrix_real(a, b, left=True, tol=1e-8):
     return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
 
 
-def ___make_G(mat, i, j, n):
-    rotation_matrix = np.eye(n, dtype=float)
-    rotation_matrix[i, i], rotation_matrix[j, j] = mat[0, 0], mat[1, 1]
-    rotation_matrix[i, j], rotation_matrix[j, i] = mat[0, 1], mat[1, 0]
-    return rotation_matrix
+def _absorb_phases_so(left_givens, right_givens, N, unitary, interface):
+    last_rotations = left_givens if N % 2 else right_givens
+    for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
+        grot_mat, (i, j) = last_rotations[k]
+        idx0, idx1 = (j, i) if N % 2 else (i, j)
+        if unitary[idx0, idx0] < 0:
+            unitary = _set_unitary_matrix(unitary, (i, i), -unitary[i, i], like=interface)
+            unitary = _set_unitary_matrix(unitary, (j, j), -unitary[j, j], like=interface)
+            if unitary[idx1, idx1] < 0:
+                last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
+            else:
+                last_rotations[k] = (grot_mat * (-1.0), (i, j))
+        elif unitary[idx1, idx1] < 0:
+            last_rotations[k] = (grot_mat.T, (i, j))
+
+    left_givens = [(mat.T, indices) for mat, indices in left_givens]
+    return math.diag(unitary), left_givens + list(reversed(right_givens))
+
+
+def _commute_phases_u(left_givens, right_givens, unitary, interface):
+    nleft_givens = []
+    for grot_mat, (i, j) in reversed(left_givens):
+        sphase_mat = math.diag(math.diag(unitary)[math.array([i, j])])
+        decomp_mat = math.conj(grot_mat).T @ sphase_mat
+        givens_mat = _givens_matrix(*decomp_mat[1, :].T)
+        nphase_mat = decomp_mat @ givens_mat.T
+
+        # check for T_{m,n}^{-1} x D = D x T.
+        if not math.is_abstract(decomp_mat) and not math.allclose(
+            nphase_mat @ math.conj(givens_mat), decomp_mat
+        ):  # pragma: no cover
+            raise ValueError("Failed to shift phase transposition.")
+
+        for diag_idx, diag_val in zip([(i, i), (j, j)], math.diag(nphase_mat)):
+            unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
+        nleft_givens.append((math.conj(givens_mat), (i, j)))
+
+    phases, ordered_rotations = math.diag(unitary), []
+
+    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
+        if not math.is_abstract(grot_mat) and not math.all(
+            math.isreal(grot_mat[0, 1]) and math.isreal(grot_mat[1, 1])
+        ):  # pragma: no cover
+            raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
+        ordered_rotations.append((grot_mat, (i, j)))
+
+    return phases, ordered_rotations
 
 
 # pylint: disable=too-many-branches
@@ -507,7 +547,6 @@ def givens_decomposition(unitary, is_so=False):
     else:
         givens_fn = _givens_matrix
 
-    unitary_copy = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
     unitary = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
     shape = math.shape(unitary)
 
@@ -517,121 +556,24 @@ def givens_decomposition(unitary, is_so=False):
     N = shape[0]
 
     left_givens, right_givens = [], []
-    print(f"Have input matrix:\n{np.round(unitary, 4)}")
     for i in range(1, N):
-        print(f"{i=}")
         if i % 2:
             for j in range(0, i):
-                print(f"{j=}")
-                print(f"Attempt to eliminate U[{N-j-1}, {i-j-1}]")
                 indices = [i - j - 1, i - j]
                 grot_mat = givens_fn(*unitary[N - j - 1, indices].T, left=True)
-                # unitary = _set_unitary_matrix(
-                # unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
-                # )
-                unitary = unitary @ ___make_G(grot_mat.T, *indices, N)
+                unitary = _set_unitary_matrix(
+                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+                )
                 right_givens.append((math.conj(grot_mat), indices))
-                print(f"U[{N-j-1}, {i-j-1}]={unitary[N-j-1, i-j-1]}")
-                if not np.isclose(unitary[N - j - 1, i - j - 1], 0.0):
-                    print("failed.")
-            if i == N - 1:
-                print("finishing with right")
         else:
             for j in range(1, i + 1):
-                print(f"{j=}")
-                print(f"Attempt to eliminate U[{N+j-i-1}, {j-1}]")
                 indices = [N + j - i - 2, N + j - i - 1]
                 grot_mat = givens_fn(*unitary[indices, j - 1], left=False)
-                # unitary = _set_unitary_matrix(
-                # unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
-                # )
-                unitary = ___make_G(grot_mat, *indices, N) @ unitary
+                unitary = _set_unitary_matrix(
+                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+                )
                 left_givens.append((grot_mat, indices))
-                print(f"U[{N+j-i-1}, {j-1}]={unitary[N+j-i-1, j-1]}")
-                if not np.isclose(unitary[N + j - i - 1, j - 1], 0.0):
-                    print("failed.")
-            if i == N - 1:
-                print("finishing with left")
-        print(f"Have current matrix:\n{np.round(unitary, 4)}")
-
     if is_so:
+        return _absorb_phases_so(left_givens, right_givens, N, unitary, interface)
 
-        left_rots = [___make_G(mat, *ids, N) for mat, ids in reversed(left_givens)]
-        right_rots = [___make_G(mat.T, *ids, N) for mat, ids in right_givens]
-        reconstruction = reduce(np.dot, left_rots + [unitary_copy] + right_rots)
-        assert np.allclose(unitary, reconstruction), f"{reconstruction}"
-        assert np.allclose(np.eye(N), np.dot(unitary, reconstruction)), f"{reconstruction}"
-        __recon_ = left_rots + [unitary_copy] + right_rots
-
-        if N % 2:
-            last_rotations = left_givens
-            for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
-                grot_mat, (i, j) = last_rotations[k]
-                if unitary[j, j] < 0:
-                    # print(f"flipping Givens matrix on {i=} and {j=}")
-                    unitary = _set_unitary_matrix(unitary, (i, i), -unitary[i, i], like=interface)
-                    unitary = _set_unitary_matrix(unitary, (j, j), -unitary[j, j], like=interface)
-                    if unitary[i, i] < 0:
-                        last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
-                    else:
-                        last_rotations[k] = (grot_mat * (-1.0), (i, j))
-                elif unitary[i, i] < 0:
-                    last_rotations[k] = (grot_mat.T, (i, j))
-        else:
-            last_rotations = right_givens
-            for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
-                grot_mat, (i, j) = last_rotations[k]
-                if unitary[i, i] < 0:
-                    unitary = _set_unitary_matrix(unitary, (i, i), -unitary[i, i], like=interface)
-                    unitary = _set_unitary_matrix(unitary, (j, j), -unitary[j, j], like=interface)
-                    if unitary[j, j] < 0:
-                        last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
-                    else:
-                        last_rotations[k] = (grot_mat * (-1.0), (i, j))
-                elif unitary[j, j] < 0:
-                    last_rotations[k] = (grot_mat.T, (i, j))
-
-        phases = math.diag(unitary)
-
-        left_rots = [___make_G(mat, *ids, N) for mat, ids in reversed(left_givens)]
-        right_rots = [___make_G(mat.T, *ids, N) for mat, ids in right_givens]
-        reconstruction_ = reduce(np.dot, left_rots + [unitary_copy] + right_rots)
-        assert np.allclose(np.eye(N), reconstruction_), f"{np.round(reconstruction_, 4)}"
-
-        left_givens = [(mat.T, indices) for mat, indices in left_givens]
-        ordered_rotations = left_givens + list(reversed(right_givens))
-
-        recon_rotations = [___make_G(mat, *ids, N) for mat, ids in ordered_rotations]
-        reconstruction = reduce(np.dot, recon_rotations)
-        assert np.allclose(unitary_copy, reconstruction)
-
-    else:
-        nleft_givens = []
-        for grot_mat, (i, j) in reversed(left_givens):
-            sphase_mat = math.diag(math.diag(unitary)[math.array([i, j])])
-            decomp_mat = math.conj(grot_mat).T @ sphase_mat
-            givens_mat = givens_fn(*decomp_mat[1, :].T)
-            nphase_mat = decomp_mat @ givens_mat.T
-
-            # check for T_{m,n}^{-1} x D = D x T.
-            if not math.is_abstract(decomp_mat) and not math.allclose(
-                nphase_mat @ math.conj(givens_mat), decomp_mat
-            ):  # pragma: no cover
-                raise ValueError("Failed to shift phase transposition.")
-
-            for diag_idx, diag_val in zip([(i, i), (j, j)], math.diag(nphase_mat)):
-                unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
-            nleft_givens.append((math.conj(givens_mat), (i, j)))
-        print(*left_givens, sep="\n")
-        print(*nleft_givens, sep="\n")
-
-        phases, ordered_rotations = math.diag(unitary), []
-
-        for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-            if not math.is_abstract(grot_mat) and not math.all(
-                math.isreal(grot_mat[0, 1]) and math.isreal(grot_mat[1, 1])
-            ):  # pragma: no cover
-                raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
-            ordered_rotations.append((grot_mat, (i, j)))
-
-    return phases, ordered_rotations
+    return _commute_phases_u(left_givens, right_givens, unitary, interface)
