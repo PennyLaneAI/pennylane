@@ -16,7 +16,7 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 """
 
 import pytest
-from scipy.stats import unitary_group
+from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -97,7 +97,31 @@ def test_givens_decomposition(shape):
         decomposed_matrix = decomposed_matrix @ rotation_matrix
 
     # check if U = D x Π T_{m, n}
-    assert np.allclose(matrix, decomposed_matrix)
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
+
+
+@pytest.mark.parametrize("shape", [2, 3, 4, 5, 6, 7, 8, 14, 15, 16])
+@pytest.mark.parametrize("is_so", (False, True))
+def test_givens_decomposition_real_valued(shape, is_so, seed):
+    r"""Test that `givens_decomposition` perform correct Givens decomposition of
+    real-valued matrices."""
+
+    matrix = ortho_group.rvs(shape, random_state=seed)
+    matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
+
+    phase_mat, ordered_rotations = givens_decomposition(matrix, is_so=is_so)
+    dtype = float if is_so else complex
+    decomposed_matrix = np.diag(phase_mat)
+    for grot_mat, (i, j) in ordered_rotations:
+        rotation_matrix = np.eye(shape, dtype=dtype)
+        rotation_matrix[i, i], rotation_matrix[j, j] = grot_mat[0, 0], grot_mat[1, 1]
+        rotation_matrix[i, j], rotation_matrix[j, i] = grot_mat[0, 1], grot_mat[1, 0]
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    # check data type
+    assert decomposed_matrix.dtype == dtype
+    # check if U = D x Π T_{m, n}
+    assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
 
 
 @pytest.mark.parametrize(
