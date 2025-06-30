@@ -14,18 +14,43 @@
 """
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
+import numpy as np
 
-import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
+from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import WiresLike
 
 
-class BasisRotation(Operation):
-    r"""Implement a circuit that provides a unitary that can be used to do an exact single-body basis rotation.
+def _adjust_determinant(matrix, wires):
+    """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1
+    and queue a phase shift that is equivalent to this adjustment in the context of BasisRotation.
+    """
+    det = math.linalg.det(matrix)
+    if math.is_abstract(matrix) or det < 0:
+        # Adjust determinant to make unitary matrix special orthogonal; multiplication of
+        # the first column with -1 is equal to prepending the decomposition with a phase shift
+        matrix = (
+            math.copy(matrix)
+            if math.get_interface(matrix) == "jax"
+            else math.toarray(matrix).copy()
+        )
+        matrix = math.T(math.set_index(math.T(matrix), 0, -matrix[:, 0]))
+        return PhaseShift(np.pi * (1 - det) / 2, wires=wires[0]), matrix
+    return None, matrix
 
-    The :class:`~.pennylane.BasisRotation` template performs the following unitary transformation :math:`U(u)` determined by the single-particle fermionic
+
+def _isrealobj(obj):
+    return not math.get_dtype_name(obj).startswith("complex")
+
+
+class BasisRotation(Operation):
+    r"""Implements a circuit that performs an exact single-body basis rotation using Givens
+    rotations and phase shifts.
+
+    The :class:`~.BasisRotation` template performs the following unitary transformation
+    :math:`U(u)` determined by the single-particle fermionic
     generators as given in `arXiv:1711.04789 <https://arxiv.org/abs/1711.04789>`_\ :
 
     .. math::
@@ -35,6 +60,9 @@ class BasisRotation(Operation):
     The unitary :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given in
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
+    For real-valued, i.e., orthogonal :math:`u`, only ``SingleExcitation`` gates are required, up
+    to a :math:`~.PauliZ` phase flip for :math:`\operatorname{det}(u)=-1` (implemented as
+    ``PhaseShift(np.pi * (1 - det) / 2)``.
 
     Args:
         wires (Iterable[Any]): wires that the operator acts on
@@ -85,7 +113,7 @@ class BasisRotation(Operation):
 
         .. math::
 
-            U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
+            U(u) a_p^\dagger = b_p^\dagger,
 
         where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively.
         The operators :math:`a_p^\dagger` and :math:`b_p^\dagger` are related to each other by the following equation:
@@ -94,11 +122,100 @@ class BasisRotation(Operation):
 
             b_p^\dagger = \sum_{q}u_{pq} a_p^\dagger.
 
+        The rotation is irreducibly represented as a unitary :math:`N\times N` matrix :math:`u`,
+        which can be factorized into nearest-neighbour Givens rotations of the form
+
+        .. math::
+
+            T_{k}(\theta) = \begin{pmatrix}
+                1 & 0 & \cdots & 0 & 0 & \cdots & 0 & 0 \\
+                0 & 1 & & & & & 0 & 0 \\
+                \vdots & \ddots & & & & & & \vdots \\
+                0 & & & & \cos(\theta) & -\sin(\theta) & & 0 \\
+                0 & & & & \sin(\theta) & \cos(\theta) & & 0 \\
+                \vdots & & & & & & \ddots& \vdots \\
+                0 & 0 & & & & & 1 & 0 \\
+                0 & 0 & \cdots & 0 & 0  & \cdots & 0 & 1 \\
+            \end{pmatrix},
+
+        where the four non-trivial entries are at indices :math:`k` and :math:`k+1`, and
+        into individual phase shifts of the form
+
+        .. math::
+
+            P_{j}(\phi) = \operatorname{diag}(1,\cdots, 1, e^{i\phi}, 1, \cdots, 1),
+
+        where the single non-trivial entry is at index :math:`j`.
+        Such a factorization is implemented in :func:`~.math.decomposition.givens_decomposition`.
+        It will be useful to look at the generators of :math:`T_{k}` as well as :math:`P_j`, and
+        at the Lie algebra :math:`\mathfrak{g}` they generate:
+
+        ..math::
+
+            T_k(\theta) &= \exp(\theta E_{k,k+1})\\
+            P_j(\phi) &= \exp(i \phi D_{j})
+            \langle\{E_{k,k+1}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{E_{k,\ell} | 1\leq k<\ell\leq N\}\cong\mathfrak{so}(N)\\
+            \langle\{D_{j}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{D_{j} | 1\leq j\leq N\}\cong\mathfrak{u}(1)^N\\
+            \mathfrak{g}&=\langle\{D_{j}\}_k\cup\{E_{k,k+1}\}_k\rangle_\text{Lie} \cong \mathfrak{u}(N).
+
+        Here we used the matrices :math:`E_{k,\ell}` that are zero everywhere except for a
+        :math:`-1` in position :math:`(k,\ell)` and a :math:`1` in position :math:`(\ell,k)`,
+        as well as :math:`D_j` which is zero everywhere except for a :math:`1` in position
+        :math:`(j,j)`. The full algebra :math:`\mathfrak{g}` additionally contains the
+        matrices :math:`F_{k,\ell}` that look like the :math:`E_{k,\ell}` but without any
+        minus sign.
+
+        The template ``BasisRotation`` maps the factorization of :math:`u` to a quantum circuit
+        via the identification
+
+        .. math::
+
+            T_{k}(\theta) &\longrightarrow \texttt{SingleExcitation}(2\theta,\texttt{wires=[k, k+1]}),\\
+            P_{j}(\phi) &\longrightarrow \texttt{PhaseShift}(\phi, \texttt{wires=[j]}).
+
+        This identification is a group homomorphism, which is proven in
+        `arXiv:1711.04789 <https://arxiv.org/abs/1711.04789>`_. We can understand this
+        by looking at the algebra to which this mapping sends the algebra :math:`\mathfrak{g}`
+        from above.
+        The ``SingleExcitation gates have the generators
+        :math:`\hat{E}_{k,k+1}=\tfrac{i}{2}(X_k Y_{k+1} - Y_k X_{k+1})`
+        (note the additional prefactor of :math:`2` from the mapping):
+
+        >>> qml.generator(qml.SingleExcitation(0.2512, [0, 1]))
+        (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
+
+        Similarly, the ``PhaseShift`` gates have the generators
+        :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{1}-Z_j)=i|1\rangle\langle 1|_j`:
+
+        >>> qml.generator(qml.PhaseShift(0.742, [0]))
+        (Projector(array([1]), wires=[0]), 1.0)
+
+        It turns out that these generators have equivalent commutation relations to those of
+        the irreducibly represented ones above, with a crucial feature in how the identification
+        :math:`E_{k,k+1}\mapsto \hat{E}_{k,k+1}` generalizes.
+        One could try to map, say :math:`E_{2, 4}` to :math:`\tfrac{i}{2}(X_2 Y_4 -Y_2 X_4)`,
+        but this will not be consistent with the operators and commutation relations in the
+        algebra. Instead, we need to insert strings of Pauli :math:`Z` operators whenever the
+        interaction encoded by the generator is not between nearest neighbours, so that
+        :math:`E_{2,5}` maps to :math:`\tfrac{i}{2}(X_2 Z_3 Y_4 -Y_2 Z_3 X_4)`.
+        Denoting these :math:`Z`-string connected operators with a line drawn above the
+        Pauli operators at the end points, we have
+
+        .. math::
+
+            E_{k,\ell} & \mapsto \hat{E}_{k,\ell} = \tfrac{i}{2}(\overline{X_kY_\ell}-\overline{Y_kX_\ell})\\
+            F_{k,\ell} & \mapsto \hat{F}_{k,\ell} = \tfrac{i}{2}(\overline{X_kX_\ell}+\overline{Y_kY_\ell})\\
+            D_{j} & \mapsto \hat{D}_{j} = \tfrac{i}{2}(\mathbb{1}-Z_j)
+
+        The fact that we need to use :math:`\overline{X_kY_\ell}` instead of :math:`X_kY_\ell`
+        is a consequence of mapping fermions onto qubits via the Jordan-Wigner transformation.
+        Depending on the application, the relative signs in this mapping need to be considered
+        with additional care.
     """
 
     grad_method = None
 
-    resource_keys = {"dim"}
+    resource_keys = {"dim", "is_real"}
 
     @classmethod
     def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
@@ -134,7 +251,7 @@ class BasisRotation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"dim": qml.math.shape(self.data[0])[0]}
+        return {"dim": math.shape(self.data[0])[0], "is_real": _isrealobj(self.data[0])}
 
     @property
     def num_params(self):
@@ -159,16 +276,10 @@ class BasisRotation(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        M, N = math.shape(unitary_matrix)
-        if M != N:
-            raise ValueError(
-                f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
-            )
-
         if check:
             if not math.is_abstract(unitary_matrix) and not math.allclose(
                 unitary_matrix @ math.conj(unitary_matrix).T,
-                math.eye(M, dtype=complex),
+                math.eye(len(unitary_matrix), dtype=complex),
                 atol=1e-4,
             ):
                 raise ValueError("The provided transformation matrix should be unitary.")
@@ -178,47 +289,68 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+        if _isrealobj(unitary_matrix):
+            op, unitary_matrix = _adjust_determinant(unitary_matrix, wires)
+            if op is not None:
+                op_list.append(op)
+
+            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
+            for grot_mat, (i, j) in givens_list:
+                theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+                op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
+            return op_list
+
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
 
         for idx, phase in enumerate(phase_list):
-            op_list.append(qml.PhaseShift(math.angle(phase), wires=wires[idx]))
+            op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))
 
-        for grot_mat, indices in givens_list:
+        for grot_mat, (i, j) in givens_list:
             theta = math.arccos(math.real(grot_mat[1, 1]))
             phi = math.angle(grot_mat[0, 0])
 
-            op_list.append(
-                qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
-            )
+            op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
 
             if math.is_abstract(phi) or not math.isclose(phi, 0.0):
-                op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
+                op_list.append(PhaseShift(phi, wires=wires[i]))
 
         return op_list
 
 
-def _basis_rotation_decomp_resources(dim):
+def _basis_rotation_decomp_resources(dim, is_real):
     se_count = dim * (dim - 1) / 2
+    if is_real:
+        return {PhaseShift: 1, SingleExcitation: se_count}
+
     ps_count = dim + se_count
-    return {qml.PhaseShift: ps_count, qml.SingleExcitation: se_count}
+    return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
 @register_resources(_basis_rotation_decomp_resources)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
     def _phase_shift(_phi, _wires):
-        qml.PhaseShift(_phi, wires=_wires)
+        PhaseShift(_phi, wires=_wires)
 
-    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+    if _isrealobj(unitary_matrix):
+        _, unitary_matrix = _adjust_determinant(unitary_matrix, wires)
+
+        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
+        for grot_mat, (i, j) in givens_list:
+            theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
+            SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+        return
+
+    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
 
     for idx, phase in enumerate(phase_list):
-        qml.PhaseShift(math.angle(phase), wires=wires[idx])
+        PhaseShift(math.angle(phase), wires=wires[idx])
 
-    for grot_mat, indices in givens_list:
+    for grot_mat, (i, j) in givens_list:
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
-        qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
-        qml.cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[indices[0]])
+        SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+        cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[i])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
