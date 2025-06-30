@@ -60,9 +60,10 @@ class BasisRotation(Operation):
     The unitary :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given in
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
-    For real-valued, i.e., orthogonal :math:`u`, only ``SingleExcitation`` gates are required, up
-    to a :math:`~.PauliZ` phase flip for :math:`\operatorname{det}(u)=-1` (implemented as
-    ``PhaseShift(np.pi * (1 - det) / 2)``.
+    For real-valued, i.e., orthogonal :math:`u`, only ``SingleExcitation`` gates are required,
+    except for a :class:`~.PauliZ` phase flip for :math:`\operatorname{det}(u)=-1`.
+
+    .. seealso:: :func:`~.math.decomposition.givens_decomposition` for the underlying matrix factorization.
 
     Args:
         wires (Iterable[Any]): wires that the operator acts on
@@ -131,8 +132,8 @@ class BasisRotation(Operation):
                 1 & 0 & \cdots & 0 & 0 & \cdots & 0 & 0 \\
                 0 & 1 & & & & & 0 & 0 \\
                 \vdots & \ddots & & & & & & \vdots \\
-                0 & & & & \cos(\theta) & -\sin(\theta) & & 0 \\
-                0 & & & & \sin(\theta) & \cos(\theta) & & 0 \\
+                0 & & & \cos(\theta) & -\sin(\theta) & & & 0 \\
+                0 & & & \sin(\theta) & \cos(\theta) & & & 0 \\
                 \vdots & & & & & & \ddots& \vdots \\
                 0 & 0 & & & & & 1 & 0 \\
                 0 & 0 & \cdots & 0 & 0  & \cdots & 0 & 1 \\
@@ -150,7 +151,7 @@ class BasisRotation(Operation):
         It will be useful to look at the generators of :math:`T_{k}` as well as :math:`P_j`, and
         at the Lie algebra :math:`\mathfrak{g}` they generate:
 
-        ..math::
+        .. math::
 
             T_k(\theta) &= \exp(\theta E_{k,k+1})\\
             P_j(\phi) &= \exp(i \phi D_{j})
@@ -170,14 +171,14 @@ class BasisRotation(Operation):
 
         .. math::
 
-            T_{k}(\theta) &\longrightarrow \texttt{SingleExcitation}(2\theta,\texttt{wires=[k, k+1]}),\\
-            P_{j}(\phi) &\longrightarrow \texttt{PhaseShift}(\phi, \texttt{wires=[j]}).
+            T_{k}(\theta) &\mapsto \texttt{SingleExcitation}(2\theta,\texttt{wires=[k, k+1]}),\\
+            P_{j}(\phi) &\mapsto \texttt{PhaseShift}(\phi, \texttt{wires=[j]}).
 
         This identification is a group homomorphism, which is proven in
         `arXiv:1711.04789 <https://arxiv.org/abs/1711.04789>`_. We can understand this
         by looking at the algebra to which this mapping sends the algebra :math:`\mathfrak{g}`
         from above.
-        The ``SingleExcitation gates have the generators
+        The ``SingleExcitation`` gates have the generators
         :math:`\hat{E}_{k,k+1}=\tfrac{i}{2}(X_k Y_{k+1} - Y_k X_{k+1})`
         (note the additional prefactor of :math:`2` from the mapping):
 
@@ -190,27 +191,27 @@ class BasisRotation(Operation):
         >>> qml.generator(qml.PhaseShift(0.742, [0]))
         (Projector(array([1]), wires=[0]), 1.0)
 
-        It turns out that these generators have equivalent commutation relations to those of
-        the irreducibly represented ones above, with a crucial feature in how the identification
+        It turns out that these generators have commutation relations equivalent to those of
+        the irreducible matrices above, with a crucial feature in how the identification
         :math:`E_{k,k+1}\mapsto \hat{E}_{k,k+1}` generalizes.
         One could try to map, say :math:`E_{2, 4}` to :math:`\tfrac{i}{2}(X_2 Y_4 -Y_2 X_4)`,
         but this will not be consistent with the operators and commutation relations in the
         algebra. Instead, we need to insert strings of Pauli :math:`Z` operators whenever the
         interaction encoded by the generator is not between nearest neighbours, so that
-        :math:`E_{2,5}` maps to :math:`\tfrac{i}{2}(X_2 Z_3 Y_4 -Y_2 Z_3 X_4)`.
-        Denoting these :math:`Z`-string connected operators with a line drawn above the
-        Pauli operators at the end points, we have
+        :math:`E_{2,4}` maps to :math:`\tfrac{i}{2}(X_2 Z_3 Y_4 -Y_2 Z_3 X_4)`,
+        which we also denote as :math:`\tfrac{i}{2}(\overline{X_2 Y_4} -\overline{Y_2 X_4})`.
+        Then we have
 
         .. math::
 
-            E_{k,\ell} & \mapsto \hat{E}_{k,\ell} = \tfrac{i}{2}(\overline{X_kY_\ell}-\overline{Y_kX_\ell})\\
-            F_{k,\ell} & \mapsto \hat{F}_{k,\ell} = \tfrac{i}{2}(\overline{X_kX_\ell}+\overline{Y_kY_\ell})\\
-            D_{j} & \mapsto \hat{D}_{j} = \tfrac{i}{2}(\mathbb{1}-Z_j)
+            E_{k,\ell} & \mapsto \hat{E}_{k,\ell} = \tfrac{i}{2}(\overline{X_kY_\ell}-\overline{Y_kX_\ell}),\\
+            F_{k,\ell} & \mapsto \hat{F}_{k,\ell} = \tfrac{i}{2}(\overline{X_kX_\ell}+\overline{Y_kY_\ell}),\\
+            D_{j} & \mapsto \hat{D}_{j} = \tfrac{i}{2}(\mathbb{1}-Z_j).
 
         The fact that we need to use :math:`\overline{X_kY_\ell}` instead of :math:`X_kY_\ell`
         is a consequence of mapping fermions onto qubits via the Jordan-Wigner transformation.
-        Depending on the application, the relative signs in this mapping need to be considered
-        with additional care.
+        Depending on the application, the relative signs between operators in this mapping need
+        to be considered with extra care.
     """
 
     grad_method = None

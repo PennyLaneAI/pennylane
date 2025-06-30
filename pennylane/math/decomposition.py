@@ -356,26 +356,61 @@ def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
 
 
-def _absorb_phases_so(left_givens, right_givens, N, unitary, interface):
+def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
+    """Function handling the diagonal phases left over from diagonalization via Givens
+    rotations, for the real-valued case.
+
+    The rotations in `left_givens` and `right_givens` are such that
+    `reduce(dot, [mat.T for mat in left_givens] + reversed(right_givens)) == phases`
+    and the phases are guaranteed to be 1 or -1.
+    This function goes through the last `N-1` nearest-neighbour Givens rotations added
+    in the diagonalization. They are the last ones in `left_givens` (`right_givens`) if `N` is
+    odd (even). For each of these rotations, we do the following, depending on the
+    phases on the affected matrix indices. Here we denote by `idx0` the matrix index that will
+    not be affected by any subsequent Givens rotation, and by `idx1` the matrix index that
+    also will be affected by the following rotation.
+
+    - If both phases are 1, do nothing.
+    - If both phases are -1, absorb them in the rotation by multiplying it with -np.eye(2).
+    - If the phases at `idx0, idx1` are `-1, 1`, absorb two phases in the rotation and commute
+      the created phase at `idx1` through the rotation, causing it to transpose.
+    - If the phases are `idx, idx1` are `1, -1`, commute the phase through the rotation, causing
+      it to transpose.
+
+    The phases with -1 are guaranteed to come in an even number, so that this procedure will
+    end up with modified rotations and the identity as phase matrix.
+    """
     last_rotations = left_givens if N % 2 else right_givens
+    phases = math.diag(phases)
     for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
         grot_mat, (i, j) = last_rotations[k]
         idx0, idx1 = (j, i) if N % 2 else (i, j)
-        if unitary[idx0, idx0] < 0:
-            unitary = _set_unitary_matrix(unitary, (i, i), -unitary[i, i], like=interface)
-            unitary = _set_unitary_matrix(unitary, (j, j), -unitary[j, j], like=interface)
-            if unitary[idx1, idx1] < 0:
+        if phases[idx0] < 0:
+            phases = _set_unitary_matrix(phases, i, -phases[i], like=interface)
+            phases = _set_unitary_matrix(phases, j, -phases[j], like=interface)
+            if phases[idx1] < 0:
                 last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
             else:
                 last_rotations[k] = (grot_mat * (-1.0), (i, j))
-        elif unitary[idx1, idx1] < 0:
+        elif phases[idx1] < 0:
             last_rotations[k] = (grot_mat.T, (i, j))
 
     left_givens = [(mat.T, indices) for mat, indices in left_givens]
-    return math.diag(unitary), left_givens + list(reversed(right_givens))
+    return phases, left_givens + list(reversed(right_givens))
 
 
 def _commute_phases_u(left_givens, right_givens, unitary, interface):
+    """Function handling the diagonal phases left over from diagonalization via Givens
+    rotations, for the complex-valued case.
+
+    After the diagonalization, the phases sit at the diagonal of the square grid of Givens
+    rotations. Instead, we want them to be moved to the front of the decomposition. For
+    this, the condition `T_{m,n}^{-1} x D = D' x T'` is solved, see the Optica reference
+    for details.
+
+    After pulling the phases out, the Givens rotations are reordered so that they do not
+    diagonalize, but reproduce, the original unitary.
+    """
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         sphase_mat = math.diag(math.diag(unitary)[math.array([i, j])])
@@ -395,6 +430,7 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
 
     phases, ordered_rotations = math.diag(unitary), []
 
+    # Reordering and validation.
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
         if not math.is_abstract(grot_mat) and not math.all(
             math.isreal(grot_mat[0, 1]) and math.isreal(grot_mat[1, 1])
