@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,22 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
+
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+# pylint: disable=arguments-differ
 import functools
+from collections import Counter
 from operator import matmul
 from typing import Optional, Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane import math, queuing
+from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
+from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane.operation import FlatPytree, Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -61,7 +64,6 @@ class MultiRZ(Operation):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -80,11 +82,13 @@ class MultiRZ(Operation):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -107,27 +111,23 @@ class MultiRZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
         """
-        eigs = qml.math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if qml.math.get_interface(theta) == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-            eigs = qml.math.cast_like(eigs, 1j)
+        if math.get_interface(theta) == "tensorflow":
+            theta = math.cast_like(theta, 1j)
+            eigs = math.cast_like(eigs, 1j)
 
-        if qml.math.ndim(theta) == 0:
-            return qml.math.diag(qml.math.exp(-0.5j * theta * eigs))
+        if math.ndim(theta) == 0:
+            return math.diag(math.exp(-0.5j * theta * eigs))
 
-        diags = qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
-        return diags[:, :, np.newaxis] * qml.math.cast_like(
-            qml.math.eye(2**num_wires, like=diags), diags
-        )
+        diags = math.exp(math.outer(-0.5j * theta, eigs))
+        return diags[:, :, np.newaxis] * math.cast_like(math.eye(2**num_wires, like=diags), diags)
 
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, num_wires: int
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -155,21 +155,21 @@ class MultiRZ(Operation):
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        eigs = qml.math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if qml.math.get_interface(theta) == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-            eigs = qml.math.cast_like(eigs, 1j)
+        if math.get_interface(theta) == "tensorflow":
+            theta = math.cast_like(theta, 1j)
+            eigs = math.cast_like(eigs, 1j)
 
-        if qml.math.ndim(theta) == 0:
-            return qml.math.exp(-0.5j * theta * eigs)
+        if math.ndim(theta) == 0:
+            return math.exp(-0.5j * theta * eigs)
 
-        return qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
+        return math.exp(math.outer(-0.5j * theta, eigs))
 
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         theta: TensorLike, wires: WiresLike, **kwargs
-    ) -> list["qml.operation.Operator"]:
+    ) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -203,7 +203,7 @@ class MultiRZ(Operation):
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "MultiRZ":
@@ -236,6 +236,8 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
+add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
+add_decomps("Pow(MultiRZ)", pow_rotation)
 
 
 class PauliRot(Operation):
@@ -277,7 +279,6 @@ class PauliRot(Operation):
     0.8775825618903724
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -312,8 +313,13 @@ class PauliRot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
-        self.hyperparameters["pauli_word"] = pauli_word
 
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
+            )
+
+        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
@@ -366,7 +372,7 @@ class PauliRot(Operation):
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
-            param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
+            param_string = f"\n({math.asarray(self.parameters[0]):.{decimals}f})"
             op_label += param_string
 
         return op_label
@@ -388,9 +394,7 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -418,10 +422,10 @@ class PauliRot(Operation):
                 "Allowed characters are I, X, Y and Z"
             )
 
-        interface = qml.math.get_interface(theta)
+        interface = math.get_interface(theta)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            theta = math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
@@ -437,18 +441,18 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            qml.math.kron,
+            math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
         if interface == "tensorflow":
-            conjugation_matrix = qml.math.cast_like(conjugation_matrix, 1j)
+            conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
-        return expand_matrix(
-            qml.math.einsum(
+        return math.expand_matrix(
+            math.einsum(
                 "...jk,ij->...ik",
-                qml.math.tensordot(multi_Z_rot_matrix, conjugation_matrix, axes=[[-1], [0]]),
-                qml.math.conj(conjugation_matrix),
+                math.tensordot(multi_Z_rot_matrix, conjugation_matrix, axes=[[-1], [0]]),
+                math.conj(conjugation_matrix),
             ),
             non_identity_wires,
             list(range(len(pauli_word))),
@@ -463,9 +467,7 @@ class PauliRot(Operation):
         )
 
     @staticmethod
-    def compute_eigvals(
-        theta: TensorLike, pauli_word: str
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(theta: TensorLike, pauli_word: str) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -488,8 +490,8 @@ class PauliRot(Operation):
         >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+        if math.get_interface(theta) == "tensorflow":
+            theta = math.cast_like(theta, 1j)
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
@@ -500,7 +502,7 @@ class PauliRot(Operation):
     @staticmethod
     def compute_decomposition(
         theta: TensorLike, wires: WiresLike, pauli_word: str
-    ) -> list["qml.operation.Operator"]:
+    ) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -560,6 +562,18 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
+def _pauli_rot_resources(pauli_word):
+    if set(pauli_word) == {"I"}:
+        return {qml.GlobalPhase: 1}
+    num_active_wires = len(pauli_word.replace("I", ""))
+    return {
+        qml.Hadamard: 2 * pauli_word.count("X"),
+        qml.RX: 2 * pauli_word.count("Y"),
+        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+    }
+
+
+@register_resources(_pauli_rot_resources)
 def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
     if set(pauli_word) == {"I"}:
         qml.GlobalPhase(theta / 2)
@@ -580,19 +594,9 @@ def _pauli_rot_decomposition(theta, pauli_word, wires, **__):
             qml.RX(-np.pi / 2, wires=[wire])
 
 
-def _pauli_rot_resources(pauli_word):
-    if set(pauli_word) == {"I"}:
-        return {qml.GlobalPhase: 1}
-    num_active_wires = len(pauli_word.replace("I", ""))
-    return {
-        qml.Hadamard: 2 * pauli_word.count("X"),
-        qml.RX: 2 * pauli_word.count("Y"),
-        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
-    }
-
-
-pauli_rot_decomposition = qml.register_resources(_pauli_rot_resources, _pauli_rot_decomposition)
-add_decomps(PauliRot, pauli_rot_decomposition)
+add_decomps(PauliRot, _pauli_rot_decomposition)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation)
+add_decomps("Pow(PauliRot)", pow_rotation)
 
 
 class PCPhase(Operation):
@@ -601,7 +605,7 @@ class PCPhase(Operation):
 
     This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
     basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
-    to the remaining basis vectors. For example, consider the 2-qubit case where :math:`dim = 3`:
+    to the remaining basis vectors. For example, consider the 2-qubit case where ``dim = 3``:
 
     .. math:: \Pi(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
@@ -609,6 +613,10 @@ class PCPhase(Operation):
                 0 & 0 & e^{i\phi} & 0 \\
                 0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
+
+    This can also be written as :math:`\Pi(\phi) = \exp(i\phi(2\Pi-\mathbb{I}_N))`, where
+    :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits and :math:`\Pi` is
+    the diagonal projector with ``dim`` ones and ``N-dim`` zeros.
 
     **Details:**
 
@@ -626,33 +634,48 @@ class PCPhase(Operation):
 
     We can define a circuit using :class:`~.PCPhase` as follows:
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> @qml.qnode(dev)
-    >>> def example_circuit():
-    ...     qml.PCPhase(0.27, dim = 2, wires=range(2))
-    ...     return qml.state()
+    >>> op_3 = qml.PCPhase(0.27, dim = 3, wires=range(3))
 
-    The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 2`
-    basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors.
+    The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 3`
+    basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors, as we can see from
+    the diagonal of the matrix for this circuit.
 
-    >>> print(np.round(qml.matrix(example_circuit)(),2))
-    [[0.96+0.27j 0.  +0.j   0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.96+0.27j 0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.96-0.27j 0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.  +0.j   0.96-0.27j]]
+    >>> print(np.round(np.diag(qml.matrix(op_3)),2))
+    [0.96+0.27j 0.96+0.27j 0.96+0.27j 0.96-0.27j 0.96-0.27j 0.96-0.27j
+     0.96-0.27j 0.96-0.27j]
 
-    We can also choose a different :math:`dim` value to apply the phase shift to a different set of
+    We can also choose a different ``dim`` value to apply the phase shift to a different set of
     basis vectors as follows:
 
-    >>> pc_op = qml.PCPhase(1.23, dim=3, wires=[1, 2])
-    >>> print(np.round(qml.matrix(pc_op),2))
-    [[0.33+0.94j 0.  +0.j   0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.33+0.94j 0.  +0.j   0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.33+0.94j 0.  +0.j  ]
-     [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
+    >>> op_7 = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
+    >>> print(np.round(np.diag(qml.matrix(op_7)),2))
+    [0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j
+     0.33+0.94j 0.33-0.94j]
+
+    ``PCPhase`` operations are decomposed into (multi-)controlled :class:`~.PhaseShift`
+    operations which share the same control values on common control wires, and Pauli-X operations,
+    possibly complemented by a global phase.
+
+    >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+    >>> print(qml.draw(op_13.decomposition)())
+    1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
+    2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
+    3: ──GlobalPhase(-1.23)────────────├○───────────┤
+    4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+
+    If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
+
+    >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
+    >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
+    0: ──GlobalPhase(1.23)────╭○───────────┤
+    1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─┤
+    2: ──GlobalPhase(1.23)─────────────────┤
+    3: ──GlobalPhase(1.23)─────────────────┤
+    4: ──GlobalPhase(1.23)─────────────────┤
+    5: ──GlobalPhase(1.23)─────────────────┤
+
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
     ndim_params = (0,)
@@ -662,9 +685,28 @@ class PCPhase(Operation):
     grad_method = "A"
     parameter_frequencies = [(2,)]
 
+    resource_keys = {"num_wires", "dim"}
+
     def generator(self) -> "qml.Hermitian":
-        dim, shape = self.hyperparameters["dimension"]
-        mat = np.diag([1 if index < dim else -1 for index in range(shape)])
+        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
+        The operator reads
+
+        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
+
+        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
+        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+
+        Correspondingly, the generator is
+        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
+
+        >>> qml.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
+        Hermitian(array([[ 1,  0,  0,  0],
+           [ 0,  1,  0,  0],
+           [ 0,  0,  1,  0],
+           [ 0,  0,  0, -1]]), wires=[0, 1])
+        """
+        dim, N = self.hyperparameters["dimension"]
+        mat = np.diag([1] * dim + [-1] * (N - dim))
         return qml.Hermitian(mat, wires=self.wires)
 
     def _flatten(self) -> FlatPytree:
@@ -683,15 +725,19 @@ class PCPhase(Operation):
         super().__init__(phi, wires=wires, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
+
     @staticmethod
     def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = dimension
 
-        if qml.math.get_interface(phi) == "tensorflow":
-            p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-            minus_p = qml.math.exp(-1j * qml.math.cast_like(phi, 1j))
-            zeros = qml.math.zeros_like(p)
+        if math.get_interface(phi) == "tensorflow":
+            p = math.exp(1j * math.cast_like(phi, 1j))
+            minus_p = math.exp(-1j * math.cast_like(phi, 1j))
+            zeros = math.zeros_like(p)
 
             columns = []
             for i in range(t):
@@ -700,17 +746,17 @@ class PCPhase(Operation):
                     if i < d
                     else [minus_p if j == i else zeros for j in range(t)]
                 )
-            r = qml.math.stack(columns, like="tensorflow", axis=-2)
+            r = math.stack(columns, like="tensorflow", axis=-2)
             return r
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
 
-        if qml.math.ndim(arg) == 0:
-            return qml.math.diag(qml.math.exp(arg * prefactors))
+        if math.ndim(arg) == 0:
+            return math.diag(math.exp(arg * prefactors))
 
-        diags = qml.math.exp(qml.math.outer(arg, prefactors))
-        return qml.math.stack([qml.math.diag(d) for d in diags])
+        diags = math.exp(math.outer(arg, prefactors))
+        return math.stack([math.diag(d) for d in diags])
 
     @staticmethod
     def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
@@ -718,76 +764,129 @@ class PCPhase(Operation):
         phi = params[0]
         d, t = hyperparams["dimension"]
 
-        if qml.math.get_interface(phi) == "tensorflow":
-            phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-            minus_phase = qml.math.exp(-1j * qml.math.cast_like(phi, 1j))
+        if math.get_interface(phi) == "tensorflow":
+            phase = math.exp(1j * math.cast_like(phi, 1j))
+            minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
             return stack_last([phase if index < d else minus_phase for index in range(t)])
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
 
-        if qml.math.ndim(phi) == 0:
+        if math.ndim(phi) == 0:
             product = arg * prefactors
         else:
-            product = qml.math.outer(arg, prefactors)
-        return qml.math.exp(product)
+            product = math.outer(arg, prefactors)
+        return math.exp(product)
 
     @staticmethod
     def compute_decomposition(
         *params: TensorLike, wires: WiresLike, **hyperparams
-    ) -> list["qml.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. note::
-
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
+    ) -> list[Operator]:
+        r"""Representation of the PCPhase operator as a product of other operators (static method).
 
         Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the
+                ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyper-parameters of the operator,
+                as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator
+
+        In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
+        of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
+        potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
+        For example, for ``dim=13`` on four qubits:
+
+        >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+        >>> print(qml.draw(op_13.decomposition)())
+        1: ──GlobalPhase(-1.23)─╭●─────────╭●───────────┤
+        2: ──GlobalPhase(-1.23)─╰Rϕ(-2.46)─├●───────────┤
+        3: ──GlobalPhase(-1.23)────────────├○───────────┤
+        4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
+
+        A detailed description of the algorithm and integer decomposition subroutine
+        is provided in ``pennylane/ops/qubit/pcphase_decomposition.md`` and
+        ``pennylane/math/decomp_int_to_powers_of_two.md``. In the following
+        we provide a detailed example for illustration purposes.
+
+        **Detailed example**
+
+        Consider the projector-controlled phase gate on :math:`n=4` qubits and with
+        :math:`d=\texttt{dim}=3`, i.e,
+
+        >>> op_3 = qml.PCPhase(1.23, dim=3, wires=[0, 1, 2, 3])
+
+        It acts on :math:`N=2^n=16`-dimensional vectors and is described by
+
+        .. math:: \Pi(\phi) = \exp(i\phi G) = \exp(i\phi(2\Pi-\mathbb{I}_N)),
+
+        where :math:`G` is a diagonal matrix with :math:`d=3` ones, followed by
+        :math:`2^n-d = 16 - 3=13` negative ones. Accordingly, :math:`\Pi` is diagonal with
+        :math:`3` ones and :math:`13` zeros.
+
+        First, we implement the global phase generated by :math:`\mathbb{I}_N` with
+        a :class:`~.GlobalPhase` gate with angle :math:`-\phi`.
+        Then we decompose :math:`d` into powers of two with positive or negative sign, via
+        :math:`d=3=4-1 = 2^2-2^0`. This decomposition tells us that we can write the
+        target gate with two (multi-)controlled phase shift gates. For this, we rewrite
+        the projector :math:`\Pi` according to the decomposition as
+
+        .. math::
+
+            \Pi &= \text{diag}(1, 1, 1, 0, 0, \dots, 0)\\
+            &=\text{diag}(1, 1, 1, 1, 0, \dots, 0)
+            -\text{diag}(0, 0, 0, 1, 0, \dots, 0)
+
+        where :math:`0,\dots, 0` indicates :math:`12` zeros each time.
+        How do we realize this projector decomposition on the gate level?
+
+        A singly-controlled phase shift gate applies a phase to a quarter of all computational
+        basis states (the control filters by the state of one qubit, and the phase shift gate
+        itself filters by the :math:`|1\rangle` state of the target qubit, cutting the number
+        of states we are acting on in half each time).
+        For :math:`n=4`, this amounts to :math:`2^4/4=4` states, which is exactly
+        what we need for the first term above. To apply the phase to the *first* four states,
+        :math:`|0000\rangle`, :math:`|0001\rangle`, :math:`|0010\rangle`, and :math:`|0011\rangle`,
+        we want to "filter by" the first two qubits being in the :math:`|0\rangle` state.
+        For qubit :math:`0`, we do this by controlling on the :math:`|0\rangle` state.
+        For qubit :math:`1`, we pick it as the target of the controlled phase shift operation.
+        Generically, this would make it act on the :math:`|1\rangle` state, so we simply flip
+        qubit :math:`1` before and after the operation to apply the phase to the :math:`|0\rangle`
+        state instead.
+        Thus, we conclude this first step by applying the gates
+        ``qml.X(1)``, ``qml.ctrl(qml.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
+        and ``qml.X(1)``.
+
+        Next, we implement the second term in the projector decomposition, applying a phase
+        to a single computational basis state. This requires us to fully control a phase shift
+        gate, i.e., we use the last qubit as target and the other three as controls (there is
+        some freedom of choice here, but this is a convenient choice).
+        We want to apply the phase to the state :math:`|3\rangle=|0011\rangle`. So the controls
+        :math:`0` and :math:`1` are set to zero and the control :math:`2` is set to one.
+        As we want to effect the phase onto the :math:`|1\rangle` state of qubit :math:`3`,
+        we don't need to flip the target bit as we did before. However, given the negative sign
+        in the projector decomposition, we need to multiply the phase with :math:`-1`.
+        Overall, we apply the gate
+        ``qml.ctrl(qml.PhaseShift(-2 * phi, 3), control=[0, 1, 2], control_values=[0, 0, 1])``,
+        which concludes the decomposition, now reading:
+
+        >>> print(qml.draw(op_3.decomposition)())
+        0: ──GlobalPhase(1.23)────╭○───────────╭○─────────┤
+        1: ──GlobalPhase(1.23)──X─╰Rϕ(2.46)──X─├○─────────┤
+        2: ──GlobalPhase(1.23)─────────────────├●─────────┤
+        3: ──GlobalPhase(1.23)─────────────────╰Rϕ(-2.46)─┤
+
         """
-        phi = params[0]
-        k, n = hyperparams["dimension"]
+        with queuing.AnnotatedQueue() as q:
+            _decompose_pcphase(*params, wires=wires, **hyperparams)
 
-        def _get_op_from_binary_rep(binary_rep, theta, wires):
-            if len(binary_rep) == 1:
-                op = (
-                    PhaseShift(theta, wires[0])
-                    if int(binary_rep)
-                    else PauliX(wires[0]) @ PhaseShift(theta, wires[0]) @ PauliX(wires[0])
-                )
-            else:
-                base_op = (
-                    PhaseShift(theta, wires[-1])
-                    if int(binary_rep[-1])
-                    else PauliX(wires[-1]) @ PhaseShift(theta, wires[-1]) @ PauliX(wires[-1])
-                )
-                op = qml.ctrl(
-                    base_op, control=wires[:-1], control_values=[int(i) for i in binary_rep[:-1]]
-                )
-            return op
+        if queuing.QueuingManager.recording():
+            for op in q.queue:
+                queuing.apply(op)
 
-        n_log2 = int(np.log2(n))
-        positive_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
-        negative_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k, n)]
-
-        positive_ops = [
-            _get_op_from_binary_rep(br, phi, wires=wires) for br in positive_binary_reps
-        ]
-        negative_ops = [
-            _get_op_from_binary_rep(br, -1 * phi, wires=wires) for br in negative_binary_reps
-        ]
-
-        return positive_ops + negative_ops
+        return q.queue
 
     def adjoint(self) -> "PCPhase":
         """Computes the adjoint of the operator."""
@@ -795,7 +894,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         """Computes the operator raised to z."""
         phi = self.parameters[0]
         dim, _ = self.hyperparameters["dimension"]
@@ -819,6 +918,187 @@ class PCPhase(Operation):
     ) -> str:
         """The label of the operator when displayed in a circuit."""
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
+
+
+def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
+    if n_control_wires == 0:
+        return {qml.PhaseShift: 1}
+    return {
+        controlled_resource_rep(
+            qml.PhaseShift,
+            {},
+            num_control_wires=n_control_wires,
+            num_zero_control_values=n_zero_control_values,
+            num_work_wires=n_work_wires,
+        ): 1,
+        qml.X: 2 * (1 - subspace),
+    }
+
+
+def _ctrl_phase_shift(
+    phi, target_wire, subspace, control_wires, control_values, work_wires
+):  # pylint: disable=too-many-arguments
+    r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
+    target qubit/wire.
+
+    Args:
+        phi (float): Phase shift angle
+        target_wire (~.Wires): the target wire to apply phase shift to.
+        subspace (int): which subspace of the target wire the phase shift is applied to. 0 or 1.
+        control_wires (WiresLike): the control wires
+        control_values (Iterable[bool | int]): the control values.
+        work_wires (WiresLike): the work wires
+
+    Returns:
+        float: any global phase produced in the process.
+
+    The decomposition for subspace=1 always is a simple ``PhaseShift`` gate, or its controlled
+    counterpart. The decomposition of a non-controlled phase shift for subspace=0 can be achieved
+    in two ways: The first is to flip the angle of the phase shift and complementing it with a
+    global phase, so that the (diagonal of the) gate is decomposed as
+
+    .. math::
+
+        (\exp(i\phi), 1) = (1, \exp(-i\phi)) (\exp(i\phi), \exp(i\phi)).
+
+    The second is to conjugate a phase shift by Pauli-X operators on the same qubit, decomposing
+    the gate matrix as
+
+    / e^(i\phi)   0 \ -- / 0   1 \/ 1     0     \/ 0   1 \
+    \     0       1 / -- \ 1   0 /\ 0 e^(i\phi) /\ 1   0 /.
+
+    Without controls, the first approach is nicer, because global phases usually are free
+    operations. With controls, however, this approach would lead to a controlled global
+    phase, which is equivalent to a phase shift on top of the controlled phase shift. For the
+    second approach, we may use
+    `the ctrl(compute-uncompute) pattern <https://iopscience.iop.org/article/10.1088/2058-9565/aaa5cc>`__
+    to avoid controlling the Pauli-X operations, yielding two non-controlled Pauli-X gates and the
+    "main" controlled phase shift operation. We deem this decomposition to be better.
+
+    """
+
+    if subspace == 1:
+        # If there are no control wires, we are dealing with the very first phase shift of
+        # the decomposition, which should be adding projectors. So subspace should have been 0.
+        assert len(control_wires) > 0
+        qml.ctrl(
+            qml.PhaseShift(phi, wires=target_wire),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        )
+        return 0.0
+
+    if len(control_wires) == 0:
+        # Flip angle for phase_shift(subspace=0) = phase_shift(subspace=1)*global_phase
+        qml.PhaseShift(-phi, wires=target_wire)
+        return -phi
+
+    qml.X(target_wire)
+    qml.ctrl(
+        qml.PhaseShift(phi, wires=target_wire),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+    )
+    qml.X(target_wire)
+    return 0.0
+
+
+def _decompose_pcphase_resource(num_wires, dim):
+    """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
+
+    gate_count = Counter()
+    flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
+    sigma = (-1) ** flipped
+    powers_of_two = [sigma * val for val in powers_of_two]
+
+    n_zero_control_values = 0
+    for i, c_i in enumerate(powers_of_two):
+
+        if c_i != 0:
+            subspace = int(c_i < 0)
+            if flipped:
+                subspace = 1 - subspace
+            gate_count.update(
+                _ctrl_phase_shift_resource(
+                    subspace,
+                    n_control_wires=i,
+                    n_zero_control_values=n_zero_control_values,
+                    n_work_wires=num_wires - i - 1,
+                )
+            )
+
+        d_i = next(iter(val for val in powers_of_two[i + 1 :] if val != 0), None)
+        next_cval = d_i == 1
+        if c_i == 0:
+            next_cval = not next_cval
+        if flipped:
+            next_cval = not next_cval
+        if not next_cval:
+            n_zero_control_values += 1
+
+    gate_count[qml.GlobalPhase] += 1
+    return dict(gate_count)
+
+
+@register_resources(_decompose_pcphase_resource)
+def _decompose_pcphase(phi, wires, dimension):
+    """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
+
+    dim, _ = dimension
+
+    # Use one more bit than there are wires, according to flipping all relevant bits for the
+    # projector decomposition, or a global phase on the gate level. Afterwards, we have
+    # dim <= 2**len(wires)=2**(n-1), which is a requirement of decomp_int_to_powers_of_two.
+    flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, len(wires) + 1)
+
+    sigma = (-1) ** flipped
+
+    # Overall global phase to implement I_N part of the generator
+    global_phase = sigma * phi
+
+    phi = 2 * sigma * phi
+
+    # If in flipped (sigma=-1) mode, reverse the sign of all coefficients
+    powers_of_two = [sigma * val for val in powers_of_two]
+
+    assert len(powers_of_two) == len(wires)
+
+    control_values = []
+    for i, c_i in enumerate(powers_of_two):
+
+        if c_i != 0:
+            # Projector with rank 2**(n-1-i) needs to be added/subtracted
+            subspace = int(c_i < 0)  # If c_i < 0, target |1> subspace, else target |0> subspace
+            if flipped:  # Flip subspace if in flipped (sigma=-1) mode
+                subspace = 1 - subspace
+            global_phase += _ctrl_phase_shift(
+                c_i * phi,
+                target_wire=wires[i],
+                subspace=subspace,
+                control_wires=wires[:i],
+                control_values=control_values,
+                work_wires=wires[i + 1 :],  # Unused wires of PCPhase can be used as work wires
+            )
+
+        # The control value to be used on the current wire (it will be the same for all
+        # subsequent operations) depends on whether we add or subtract next)
+        d_i = next(iter(val for val in powers_of_two[i + 1 :] if val != 0), None)
+        # If we add next, control into the |1> subspace, otherwise into |0> subspace
+        # The control value is modified both if we are in the flipped global phase mode and if
+        # the current loop iteration did not add a bit string/projector/gate (c_i==0)
+        next_cval = d_i == 1
+        if c_i == 0:
+            next_cval = not next_cval
+        if flipped:
+            next_cval = not next_cval
+        control_values.append(next_cval)
+
+    qml.GlobalPhase(global_phase)
+
+
+add_decomps(PCPhase, _decompose_pcphase)
 
 
 class IsingXX(Operation):
@@ -900,26 +1180,26 @@ class IsingXX(Operation):
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
                dtype=torch.complex128)
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
-        eye = qml.math.eye(4, like=phi)
-        rev_eye = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if qml.math.get_interface(phi) == "tensorflow":
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-            eye = qml.math.cast_like(eye, 1j)
-            rev_eye = qml.math.cast_like(rev_eye, 1j)
+        eye = math.eye(4, like=phi)
+        rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
+        if math.get_interface(phi) == "tensorflow":
+            c = math.cast_like(c, 1j)
+            s = math.cast_like(s, 1j)
+            eye = math.cast_like(eye, 1j)
+            rev_eye = math.cast_like(rev_eye, 1j)
 
         # The following avoids casting an imaginary quantity to reals when backpropagating
         js = -1j * s
-        if qml.math.ndim(phi) == 0:
+        if math.ndim(phi) == 0:
             return c * eye + js * rev_eye
 
-        return qml.math.tensordot(c, eye, axes=0) + qml.math.tensordot(js, rev_eye, axes=0)
+        return math.tensordot(c, eye, axes=0) + math.tensordot(js, rev_eye, axes=0)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -951,7 +1231,7 @@ class IsingXX(Operation):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingXX(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
@@ -975,6 +1255,8 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot)
+add_decomps("Adjoint(IsingXX)", adjoint_rotation)
+add_decomps("Pow(IsingXX)", pow_rotation)
 
 
 class IsingYY(Operation):
@@ -1033,7 +1315,7 @@ class IsingYY(Operation):
         return {}
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1084,16 +1366,16 @@ class IsingYY(Operation):
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
-        if qml.math.get_interface(phi) == "tensorflow":
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            c = math.cast_like(c, 1j)
+            s = math.cast_like(s, 1j)
 
         js = 1j * s
-        r_term = qml.math.cast_like(
-            qml.math.array(
+        r_term = math.cast_like(
+            math.array(
                 [
                     [0.0, 0.0, 0.0, 1.0],
                     [0.0, 0.0, -1.0, 0.0],
@@ -1104,16 +1386,16 @@ class IsingYY(Operation):
             ),
             1j,
         )
-        if qml.math.ndim(phi) == 0:
-            return c * qml.math.cast_like(qml.math.eye(4, like=c), c) + js * r_term
+        if math.ndim(phi) == 0:
+            return c * math.cast_like(math.eye(4, like=c), c) + js * r_term
 
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, r_term, axes=0)
+        return math.tensordot(c, np.eye(4), axes=0) + math.tensordot(js, r_term, axes=0)
 
     def adjoint(self) -> "IsingYY":
         (phi,) = self.parameters
         return IsingYY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingYY":
@@ -1137,6 +1419,8 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy)
+add_decomps("Adjoint(IsingYY)", adjoint_rotation)
+add_decomps("Pow(IsingYY)", pow_rotation)
 
 
 class IsingZZ(Operation):
@@ -1247,22 +1531,22 @@ class IsingZZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            p = qml.math.exp(-0.5j * qml.math.cast_like(phi, 1j))
-            if qml.math.ndim(p) == 0:
-                return qml.math.diag([p, qml.math.conj(p), qml.math.conj(p), p])
+        if math.get_interface(phi) == "tensorflow":
+            p = math.exp(-0.5j * math.cast_like(phi, 1j))
+            if math.ndim(p) == 0:
+                return math.diag([p, math.conj(p), math.conj(p), p])
 
-            diags = stack_last([p, qml.math.conj(p), qml.math.conj(p), p])
-            return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(4, like=diags), diags)
+            diags = stack_last([p, math.conj(p), math.conj(p), p])
+            return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
-        signs = qml.math.array([1, -1, -1, 1], like=phi)
+        signs = math.array([1, -1, -1, 1], like=phi)
         arg = -0.5j * phi
 
-        if qml.math.ndim(arg) == 0:
-            return qml.math.diag(qml.math.exp(arg * signs))
+        if math.ndim(arg) == 0:
+            return math.diag(math.exp(arg * signs))
 
-        diags = qml.math.exp(qml.math.outer(arg, signs))
-        return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(4, like=diags), diags)
+        diags = math.exp(math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
     def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1291,22 +1575,22 @@ class IsingZZ(Operation):
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phase = qml.math.exp(-0.5j * qml.math.cast_like(phi, 1j))
-            return stack_last([phase, qml.math.conj(phase), qml.math.conj(phase), phase])
+        if math.get_interface(phi) == "tensorflow":
+            phase = math.exp(-0.5j * math.cast_like(phi, 1j))
+            return stack_last([phase, math.conj(phase), math.conj(phase), phase])
 
-        prefactors = qml.math.array([-0.5j, 0.5j, 0.5j, -0.5j], like=phi)
-        if qml.math.ndim(phi) == 0:
+        prefactors = math.array([-0.5j, 0.5j, 0.5j, -0.5j], like=phi)
+        if math.ndim(phi) == 0:
             product = phi * prefactors
         else:
-            product = qml.math.outer(phi, prefactors)
-        return qml.math.exp(product)
+            product = math.outer(phi, prefactors)
+        return math.exp(product)
 
     def adjoint(self) -> "IsingZZ":
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
@@ -1330,13 +1614,15 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot)
+add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
+add_decomps("Pow(IsingZZ)", pow_rotation)
 
 
 class IsingXY(Operation):
     r"""
     Ising (XX + YY) coupling gate
 
-    .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\theta}{4} (X \otimes X + Y \otimes Y)\right) =
+    .. math:: \mathtt{XY}(\phi) = \exp\left(i \frac{\phi}{4} (X \otimes X + Y \otimes Y)\right) =
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
@@ -1406,7 +1692,7 @@ class IsingXY(Operation):
         return {}
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1460,16 +1746,16 @@ class IsingXY(Operation):
                [0.        +0.j        , 0.        +0.24740396j,        0.96891242+0.j        , 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,        0.        +0.j        , 1.        +0.j        ]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
-        if qml.math.get_interface(phi) == "tensorflow":
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            c = math.cast_like(c, 1j)
+            s = math.cast_like(s, 1j)
 
         js = 1j * s
-        off_diag = qml.math.cast_like(
-            qml.math.array(
+        off_diag = math.cast_like(
+            math.array(
                 [
                     [0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, 1.0, 0.0],
@@ -1480,12 +1766,12 @@ class IsingXY(Operation):
             ),
             1j,
         )
-        if qml.math.ndim(phi) == 0:
-            return qml.math.diag([1, c, c, 1]) + js * off_diag
+        if math.ndim(phi) == 0:
+            return math.diag([1, c, c, 1]) + js * off_diag
 
-        ones = qml.math.ones_like(c)
+        ones = math.ones_like(c)
         diags = stack_last([ones, c, c, ones])[:, :, np.newaxis]
-        return diags * np.eye(4) + qml.math.tensordot(js, off_diag, axes=0)
+        return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
     def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1514,20 +1800,20 @@ class IsingXY(Operation):
         >>> qml.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
         signs = np.array([1, -1, 0, 0])
-        if qml.math.ndim(phi) == 0:
-            return qml.math.exp(0.5j * phi * signs)
+        if math.ndim(phi) == 0:
+            return math.exp(0.5j * phi * signs)
 
-        return qml.math.exp(qml.math.tensordot(0.5j * phi, signs, axes=0))
+        return math.exp(math.tensordot(0.5j * phi, signs, axes=0))
 
     def adjoint(self) -> "IsingXY":
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingXY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
@@ -1554,6 +1840,8 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
+add_decomps("Adjoint(IsingXY)", adjoint_rotation)
+add_decomps("Pow(IsingXY)", pow_rotation)
 
 
 class PSWAP(Operation):
@@ -1602,7 +1890,7 @@ class PSWAP(Operation):
         return {}
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1653,14 +1941,14 @@ class PSWAP(Operation):
               [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
               [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        e = qml.math.exp(1j * phi)
-        zero = qml.math.zeros_like(phi)
-        one = qml.math.ones_like(phi)
+        e = math.exp(1j * phi)
+        zero = math.zeros_like(phi)
+        one = math.ones_like(phi)
 
-        return qml.math.stack(
+        return math.stack(
             [
                 stack_last([one, zero, zero, zero]),
                 stack_last([zero, zero, e, zero]),
@@ -1697,12 +1985,12 @@ class PSWAP(Operation):
         >>> qml.PSWAP.compute_eigvals(0.5)
         array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        e = qml.math.exp(1j * phi)
-        one = qml.math.ones_like(phi)
-        return qml.math.transpose(qml.math.stack([one, one, -e, e]))
+        e = math.exp(1j * phi)
+        one = math.ones_like(phi)
+        return math.transpose(math.stack([one, one, -e, e]))
 
     def adjoint(self) -> "PSWAP":
         (phi,) = self.parameters
@@ -1730,6 +2018,7 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot)
+add_decomps("Adjoint(PSWAP)", adjoint_rotation)
 
 
 class CPhaseShift00(Operation):
@@ -1817,14 +2106,14 @@ class CPhaseShift00(Operation):
                     [0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j, 0.0+0.0j],
                     [0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j, 1.0+0.0j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        exp_part = math.exp(1j * phi)
 
-        if qml.math.ndim(phi) > 0:
-            ones = qml.math.ones_like(exp_part)
-            zeros = qml.math.zeros_like(exp_part)
+        if math.ndim(phi) > 0:
+            ones = math.ones_like(exp_part)
+            zeros = math.zeros_like(exp_part)
             matrix = [
                 [exp_part, zeros, zeros, zeros],
                 [zeros, ones, zeros, zeros],
@@ -1832,9 +2121,9 @@ class CPhaseShift00(Operation):
                 [zeros, zeros, zeros, ones],
             ]
 
-            return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
+            return math.stack([stack_last(row) for row in matrix], axis=-2)
 
-        return qml.math.diag([exp_part, 1, 1, 1])
+        return math.diag([exp_part, 1, 1, 1])
 
     @staticmethod
     def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1863,15 +2152,15 @@ class CPhaseShift00(Operation):
         >>> qml.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
-        ones = qml.math.ones_like(exp_part)
+        exp_part = math.exp(1j * phi)
+        ones = math.ones_like(exp_part)
         return stack_last([exp_part, ones, ones, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1948,6 +2237,8 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift00, _cphaseshift00)
+add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift00)", pow_rotation)
 
 
 class CPhaseShift01(Operation):
@@ -2035,14 +2326,14 @@ class CPhaseShift01(Operation):
                     [0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j],
                     [0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        exp_part = math.exp(1j * phi)
 
-        if qml.math.ndim(phi) > 0:
-            ones = qml.math.ones_like(exp_part)
-            zeros = qml.math.zeros_like(exp_part)
+        if math.ndim(phi) > 0:
+            ones = math.ones_like(exp_part)
+            zeros = math.zeros_like(exp_part)
             matrix = [
                 [ones, zeros, zeros, zeros],
                 [zeros, exp_part, zeros, zeros],
@@ -2050,9 +2341,9 @@ class CPhaseShift01(Operation):
                 [zeros, zeros, zeros, ones],
             ]
 
-            return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
+            return math.stack([stack_last(row) for row in matrix], axis=-2)
 
-        return qml.math.diag([1, exp_part, 1, 1])
+        return math.diag([1, exp_part, 1, 1])
 
     @staticmethod
     def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -2081,15 +2372,15 @@ class CPhaseShift01(Operation):
         >>> qml.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
-        ones = qml.math.ones_like(exp_part)
+        exp_part = math.exp(1j * phi)
+        ones = math.ones_like(exp_part)
         return stack_last([ones, exp_part, ones, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2157,6 +2448,8 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift01, _cphaseshift01)
+add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift01)", pow_rotation)
 
 
 class CPhaseShift10(Operation):
@@ -2243,14 +2536,14 @@ class CPhaseShift10(Operation):
                     [0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j],
                     [0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        exp_part = math.exp(1j * phi)
 
-        if qml.math.ndim(phi) > 0:
-            ones = qml.math.ones_like(exp_part)
-            zeros = qml.math.zeros_like(exp_part)
+        if math.ndim(phi) > 0:
+            ones = math.ones_like(exp_part)
+            zeros = math.zeros_like(exp_part)
             matrix = [
                 [ones, zeros, zeros, zeros],
                 [zeros, ones, zeros, zeros],
@@ -2258,9 +2551,9 @@ class CPhaseShift10(Operation):
                 [zeros, zeros, zeros, ones],
             ]
 
-            return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
+            return math.stack([stack_last(row) for row in matrix], axis=-2)
 
-        return qml.math.diag([1, 1, exp_part, 1])
+        return math.diag([1, 1, exp_part, 1])
 
     @staticmethod
     def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -2289,15 +2582,15 @@ class CPhaseShift10(Operation):
         >>> qml.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
+        if math.get_interface(phi) == "tensorflow":
+            phi = math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
-        ones = qml.math.ones_like(exp_part)
+        exp_part = math.exp(1j * phi)
+        ones = math.ones_like(exp_part)
         return stack_last([ones, ones, exp_part, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2360,3 +2653,5 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, _cphaseshift10)
+add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation)
+add_decomps("Pow(CPhaseShift10)", pow_rotation)

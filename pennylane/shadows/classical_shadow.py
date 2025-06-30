@@ -47,7 +47,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
+        on `estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`__.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -56,7 +56,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on :doc:`Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <demos/tutorial_diffable_shadows>`__, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -64,7 +64,9 @@ class ClassicalShadow:
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=range(2), shots=1000)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=range(2))
+        @partial(qml.set_shots, shots=1000)
         @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
@@ -193,7 +195,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=range(2))
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def qnode():
                 qml.Hadamard(0)
@@ -286,7 +290,7 @@ class ClassicalShadow:
         save quantum circuit executions.
 
         Args:
-            H (qml.Observable): Observable to compute the expectation value
+            H (qml.operation.Operator): Observable to compute the expectation value
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:
@@ -296,7 +300,9 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            from functools import partial
+            dev = qml.device("default.qubit", wires=range(2))
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def qnode(x):
                 qml.Hadamard(0)
@@ -383,9 +389,11 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
+            from functools import partial
             wires = 4
-            dev = qml.device("default.qubit", wires=range(wires), shots=1000)
+            dev = qml.device("default.qubit", wires=range(wires))
 
+            @partial(qml.set_shots, shots=1000)
             @qml.qnode(dev)
             def max_entangled_circuit():
                 qml.Hadamard(wires=0)

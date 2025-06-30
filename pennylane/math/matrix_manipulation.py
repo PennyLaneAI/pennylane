@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains methods to expand the matrix representation of an operator
-to a higher hilbert space with re-ordered wires."""
+
+"""This module contains methods that manipulates matrices."""
+
 import itertools
 import numbers
-from collections.abc import Callable, Generator, Iterable
 from functools import reduce
-from typing import Sequence, Union
+from typing import Callable, Iterable, Sequence, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
@@ -25,8 +25,8 @@ from scipy.sparse import csr_matrix, eye, kron
 from pennylane import math
 
 
+# pylint: disable=too-many-branches
 def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_format="csr"):
-    # pylint: disable=too-many-branches
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -269,13 +269,13 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
     return csr_matrix((data, (index_i, index_j)))
 
 
-def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -> csr_matrix:
+def _permutation_sparse_matrix(expanded_wires: Sequence, wire_order: Sequence) -> csr_matrix:
     """Helper function which generates a permutation matrix in sparse format that swaps the wires
     in ``expanded_wires`` to match the order given by the ``wire_order`` argument.
 
     Args:
-        expanded_wires (Iterable): inital wires
-        wire_order (Iterable): final wires
+        expanded_wires (Sequence): inital wires
+        wire_order (Sequence): final wires
 
     Returns:
         csr_matrix: permutation matrix in CSR sparse format
@@ -296,15 +296,14 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Generator[tuple[np.ndarray, Sequence], None, None], reduce_func: Callable
+    mats_and_wires_gen: Iterable[tuple[np.ndarray, Sequence]], reduce_func: Callable
 ) -> tuple[np.ndarray, Sequence]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
-    generator, from left to right, so as to reduce the sequence to a tuple containing a single
+    generator, from left to right, reducing the sequence to a tuple containing a single
     matrix and the wires it acts on.
 
     Args:
-        mats_and_wires_gen (Generator): generator of tuples containing the matrix and the wires of
-            each operator
+        mats_and_wires_gen (Iterable): tuples containing the matrix and the wires of each operator
         reduce_func (callable): function used to reduce the sequence of operators
 
     Returns:
@@ -402,3 +401,67 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = math.moveaxis(expanded_tensor, tuple(original_indices), tuple(wire_indices))
 
     return math.reshape(expanded_tensor, (qudit_order**M,))
+
+
+def convert_to_su2(U, return_global_phase=False):
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
+
+    Args:
+        U (array[complex]): A matrix with a batch dimension, presumed to be
+            of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(2)` representation is returned.
+
+    Returns:
+        array[complex]:
+            A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is equivalent to U up to a
+            global phase. If ``return_global_phase=True``, a 2-element tuple is returned, with
+            the first element being the :math:`SU(2)` equivalent and the second, the global phase.
+
+    """
+    # Compute the determinant
+    U = math.cast(U, "complex128")
+    batch_size = get_batch_size(U, (2, 2), 4)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        determinant = math.linalg.det(U)
+    global_phase = math.angle(determinant) / 2
+    U = math.cast_like(U, determinant)
+    if batch_size:
+        c_phase = math.cast_like(global_phase, 1j)
+        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
+        U = U * math.exp(-1j * batched_phase)
+    else:
+        c_phase = math.cast_like(global_phase, 1j)
+        U = U * math.exp(-1j * c_phase)
+    return (U, global_phase) if return_global_phase else U
+
+
+def convert_to_su4(U, return_global_phase=False):
+    r"""Convert a 4x4 matrix to :math:`SU(4)`.
+
+    Args:
+        U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(4)` representation is returned.
+
+    Returns:
+        array[complex]:
+            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up to a global
+            phase. If ``return_global_phase=True``, a 2-element tuple is returned, with the first
+            element being the :math:`SU(4)` equivalent and the second, the global phase.
+
+    """
+    # Compute the determinant
+    U = math.cast(U, "complex128")
+    batch_size = get_batch_size(U, (4, 4), 16)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        determinant = math.linalg.det(U)
+    global_phase = math.angle(determinant) / 4
+    if batch_size:
+        c_phase = math.cast_like(global_phase, 1j)
+        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
+        U = U * math.exp(-1j * batched_phase)
+    else:
+        c_phase = math.cast_like(global_phase, 1j)
+        U = U * math.exp(-1j * c_phase)
+    return (U, global_phase) if return_global_phase else U

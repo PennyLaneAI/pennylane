@@ -219,7 +219,7 @@ class TestDiagonalizeObservable:
         """Test that an unknown observable is left undiagonalized"""
 
         # pylint: disable=too-few-public-methods
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
 
             @property
             def name(self):

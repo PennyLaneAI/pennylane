@@ -88,7 +88,7 @@ def horizontal_cartan_subalgebra(
 
     where :math:`\mathfrak{a})` is the CSA and :math:`\tilde{\mathfrak{m}}` is the remainder of the horizontal subspace :math:`\mathfrak{m}`.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         k (List[Union[PauliSentence, TensorLike]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.

@@ -51,8 +51,8 @@ class TestMergeRotationsInterpreter:
         @MergeRotationsInterpreter()
         def f(a, b, c, wires):
             qml.RX(a, wires=wires)
-            qml.RY(a, wires=2)
             qml.RX(b, wires=wires)
+            qml.RY(a, wires=2)
             qml.Rot(0, 0, c, wires=1)
             qml.Rot(0, 0, c, wires=1)
             return qml.expval(qml.PauliZ(0))
@@ -413,6 +413,100 @@ class TestMergeRotationsInterpreter:
         ops = collector.state["ops"]
         assert ops == expected_ops
 
+    def test_dynamic_wires_between_static_wires(self):
+        """Test that operations with dynamic wires between operations with static
+        wires cause merging to not happen."""
+
+        @MergeRotationsInterpreter()
+        def f(x, y, w):
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0)
+
+        dyn_wire = 0
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+        expected_meas = [qml.expval(qml.Z(0))]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 0), qml.RX(2.5, 0), qml.RY(3.5, 0)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+        dyn_wire = 1
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 1), qml.RX(2.5, 0), qml.RY(3.5, 1)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+    def test_same_dyn_wires_merge(self):
+        """Test that ops on the same dynamic wires get merged."""
+
+        @MergeRotationsInterpreter()
+        def f(x, y, w):
+            qml.RX(x, 0)
+            qml.RY(y, w)
+            qml.RY(y, w)
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0)
+
+        dyn_wire = 0
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, dyn_wire)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(jnp.array(7.0), 0), qml.RX(2.5, 0)]
+        expected_meas = [qml.expval(qml.Z(0))]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+    def test_different_dyn_wires_interleaved(self):
+        """Test that ops on different dynamic wires interleaved with each other
+        do not merge."""
+
+        @MergeRotationsInterpreter()
+        def f(x, y, w1, w2):
+            qml.RX(x, w1)
+            qml.RY(y, w2)
+            qml.RX(x, w1)
+            qml.RY(y, w2)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(2.5, 3.5, 0, 0)
+
+        dyn_wires = (0, 0)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, *dyn_wires)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 0), qml.RX(2.5, 0), qml.RY(3.5, 0)]
+        expected_meas = [qml.expval(qml.Z(0))]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
+        dyn_wires = (0, 1)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 2.5, 3.5, *dyn_wires)
+        ops = collector.state["ops"]
+        meas = collector.state["measurements"]
+
+        expected_ops = [qml.RX(2.5, 0), qml.RY(3.5, 1), qml.RX(2.5, 0), qml.RY(3.5, 1)]
+        assert ops == expected_ops
+        assert meas == expected_meas
+
 
 @pytest.mark.parametrize(("theta1, theta2"), [(0.1, 0.2), (0.1, -0.1)])
 def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
@@ -428,7 +522,7 @@ def test_merge_rotations_plxpr_to_plxpr_transform(theta1, theta2):
     jaxpr = jax.make_jaxpr(f)(*args)
     transformed_jaxpr = merge_rotations_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     collector = CollectOpsandMeas()
     collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 

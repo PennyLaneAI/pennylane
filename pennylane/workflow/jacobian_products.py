@@ -14,21 +14,26 @@
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
+from __future__ import annotations
+
 import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import ResultBatch, TensorLike
+from pennylane.exceptions import QuantumFunctionError
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import ResultBatch, TensorLike
 
 
 def _compute_vjps(jacs, dys, tapes):
@@ -216,18 +221,18 @@ class NoGradients(JacobianProductCalculator):
     error_msg = "Derivatives cannot be calculated with diff_method=None"
 
     def compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jvp(
         self, tapes: QuantumScriptBatch, tangents: Sequence[Sequence[TensorLike]]
     ) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
 
 class TransformJacobianProducts(JacobianProductCalculator):

@@ -14,11 +14,22 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
+from textwrap import dedent
 from unittest.mock import Mock
 
+import numpy as np
 import pytest
 
 import pennylane as qml
+
+has_openqasm = True
+try:
+    import openqasm3
+
+    from pennylane.io.io import from_qasm3
+    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
 
 
 class MockPluginConverter:
@@ -193,3 +204,136 @@ class TestLoad:
 
             if mock_plugin_converters[plugin_converter].called:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
+
+
+@pytest.mark.external
+class TestOpenQasm:
+    """Test the qml.to_openqasm and qml.from_qasm3 functions."""
+
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_from_qasm3(self, mocker):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            rx(1.2) q0;
+            rz(0.9) q0;
+            """
+
+        # setup mocks
+        parse = mocker.spy(openqasm3.parser, "parse")
+        visit = mocker.spy(QasmInterpreter, "interpret")
+
+        # call the method
+        from_qasm3(circuit)
+
+        # assertions
+        parse.assert_called_with(circuit, permissive=True)
+        visit.assert_called_once()
+
+    def test_basic_example(self):
+        """Test basic usage on simple circuit with parameters."""
+
+        @qml.qnode(self.dev)
+        def circuit(theta, phi):
+            qml.RX(theta, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(phi, wires=1)
+            return qml.sample()
+
+        qasm = qml.to_openqasm(circuit)(1.2, 0.9)
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            rx(1.2) q[0];
+            cx q[0],q[1];
+            rz(0.9) q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_measure_qubits_subset_only(self):
+        """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=1)
+
+        qasm = qml.to_openqasm(circuit, measure_all=False)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            h q[0];
+            cx q[0],q[1];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_rotations_with_expval(self):
+        """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        qasm = qml.to_openqasm(circuit, rotations=True)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            h q[0];
+            cx q[0],q[1];
+            h q[0];
+            z q[1];
+            s q[1];
+            h q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+        assert qasm == expected
+
+    def test_precision(self):
+        """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.RX(np.pi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        qasm = qml.to_openqasm(circuit, precision=4)()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            rx(3.142) q[0];
+            cx q[0],q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+
+        assert qasm == expected

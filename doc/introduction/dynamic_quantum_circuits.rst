@@ -41,9 +41,9 @@ of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
 methods. Also consider our
-:doc:`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`
-:doc:`how-to on collecting statistics of mid-circuit measurements <demos/tutorial_how_to_collect_mcm_stats>`,
-and :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+`Introduction to mid-circuit measurements <demos/tutorial_mcm_introduction>`_,
+`how-to on collecting statistics of mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_collect_mcm_stats>`_,
+and `how-to on creating dynamic circuits with mid-circuit measurements <https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
 Resetting qubits
 ****************
@@ -127,8 +127,8 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
 For more examples, refer to the :func:`~.pennylane.cond` documentation
-and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements
-<demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
+and the `how-to on creating dynamic circuits with mid-circuit measurements
+<https://pennylane.ai/qml/demos/tutorial_how_to_create_dynamic_mcm_circuits>`_.
 
 .. _mid_circuit_measurements_statistics:
 
@@ -266,7 +266,7 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 | Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`                   | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
-| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
+| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :gr:`\ ` yes |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 
 
@@ -393,11 +393,19 @@ Since the counts of many nodes come out to be zero for shot-based simulations,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 cost.
 
-.. warning::
+.. note::
 
-    The tree-traversal algorithm is only supported by the
-    :class:`~.pennylane.devices.DefaultQubit` device, and currently does
-    not support just-in-time (JIT) compilation.
+    The tree-traversal algorithm is supported by the following devices:
+
+    * :class:`~.pennylane.devices.DefaultQubit`,
+    
+    * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
+    
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_,
+    
+    * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
+    
+    and currently does not support just-in-time (JIT) compilation.
 
 .. _mcm_config:
 

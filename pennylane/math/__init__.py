@@ -30,11 +30,19 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
+from .matrix_manipulation import (
+    expand_matrix,
+    expand_vector,
+    reduce_matrices,
+    get_batch_size,
+    convert_to_su2,
+    convert_to_su4,
+)
 from .multi_dispatch import (
     add,
     array,
@@ -93,6 +101,7 @@ from .utils import (
     in_backprop,
     requires_grad,
     is_abstract,
+    binary_finite_reduced_row_echelon,
 )
 from .interface_utils import (
     get_canonical_interface_name,
@@ -104,6 +113,7 @@ from .interface_utils import (
     InterfaceLike,
 )
 from .grad import grad, jacobian
+from . import decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj
@@ -164,6 +174,8 @@ __all__ = [
     "cast_like",
     "concatenate",
     "convert_like",
+    "convert_to_su2",
+    "convert_to_su4",
     "cov_matrix",
     "detach",
     "diag",
@@ -206,6 +218,7 @@ __all__ = [
     "reduce_dm",
     "reduce_matrices",
     "reduce_statevector",
+    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
     "scatter",

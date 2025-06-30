@@ -12,42 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
-from collections import defaultdict
-from typing import Dict
+from functools import singledispatch
+from typing import Dict, Iterable, Tuple, Union
 
 import pennylane.labs.resource_estimation as re
-from pennylane import math
-from pennylane.labs.resource_estimation.resource_container import _scale_dict
-from pennylane.operation import Operation
-from pennylane.ops.op_math.adjoint import AdjointOperation
-from pennylane.ops.op_math.controlled import ControlledOp
-from pennylane.ops.op_math.exp import Exp
-from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.prod import Prod
-from pennylane.pauli import PauliSentence
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
+from pennylane.labs.resource_estimation.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+)
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
 
 
-class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
-    r"""Resource class for the symbolic AdjointOperation.
+class ResourceAdjoint(ResourceOperator):
+    r"""Resource class for the symbolic Adjoint operation.
 
     A symbolic class used to represent the adjoint of some base operation.
 
     Args:
-        base (~.operation.Operator): The operator that we want the adjoint of.
-
-    Resource Parameters:
-        * base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-        * base_params (dict): the resource parameters required to extract the cost of the base operator
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+            want the adjoint of.
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         This symbolic operation represents the adjoint of some base operation. The resources are
-        determined as follows. If the base operation class :code:`base_class` implements the
-        :code:`.adjoint_resource_decomp()` method, then the resources are obtained from this.
+        determined as follows. If the base operation implements the
+        :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+        this.
 
         Otherwise, the adjoint resources are given as the adjoint of each operation in the
-        base operation's resources (via :code:`.resources()`).
+        base operation's resources.
 
     .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
 
@@ -55,147 +55,60 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
     The adjoint operation can be constructed like this:
 
-    >>> qft = re.ResourceQFT(wires=range(3))
-    >>> adjoint_qft = re.ResourceAdjoint(qft)
-    >>> adjoint_qft.resources(**adjoint_qft.resource_params)
-    defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
-    Adjoint(ControlledPhaseShift): 3})
+    >>> qft = plre.ResourceQFT(num_wires=3)
+    >>> adj_qft = plre.ResourceAdjoint(qft)
 
-    Alternatively, we can call the resources method on from the class:
+    We can see how the resources differ by choosing a suitable gateset and estimating resources:
 
-    >>> re.ResourceAdjoint.resources(
-    ...     base_class = re.ResourceQFT,
-    ...     base_params = {"num_wires": 3},
-    ... )
-    defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
-    Adjoint(ControlledPhaseShift): 3})
-
-    .. details::
-        :title: Usage Details
-
-        We can configure the resources for the adjoint of a base operation by modifying
-        its :code:`.adjoint_resource_decomp(**resource_params)` method. Consider for example this
-        custom PauliZ class, where the adjoint resources are not defined (this is the default
-        for a general :class:`~.ResourceOperator`).
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def adjoint_resource_decomp(cls):
-                    raise re.ResourcesNotDefined
-
-        When this method is not defined, the adjoint resources are computed by taking the
-        adjoint of the resources of the operation.
-
-        >>> CustomZ.resources()
-        {S: 2}
-        >>> re.ResourceAdjoint.resources(CustomZ, {})
-        defaultdict(<class 'int'>, {Adjoint(S): 2})
-
-        We can update the adjoint resources with the observation that the PauliZ gate is self-adjoint,
-        so the resources should just be the same as the base operation:
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def adjoint_resource_decomp(cls):
-                    return {cls.resource_rep(): 1}
-
-        >>> re.ResourceAdjoint.resources(CustomZ, {})
-        {CustomZ: 1}
+    >>> gate_set = {
+    ...     "SWAP",
+    ...     "Adjoint(SWAP)",
+    ...     "Hadamard",
+    ...     "Adjoint(Hadamard)",
+    ...     "ControlledPhaseShift",
+    ...     "Adjoint(ControlledPhaseShift)",
+    ... }
+    >>>
+    >>> print(plre.estimate_resources(qft, gate_set))
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 7
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+     {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+    >>>
+    >>> print(plre.estimate_resources(adj_qft, gate_set))
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 7
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+     {'Adjoint(ControlledPhaseShift)': 3, 'Adjoint(SWAP)': 1, 'Adjoint(Hadamard)': 3}
 
     """
 
-    @classmethod
-    def _resource_decomp(
-        cls, base_class, base_params, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+    resource_keys = {"base_cmpr_op"}
 
-        Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+    def __init__(self, base_op: ResourceOperator, wires=None) -> None:
+        self.queue(remove_op=base_op)
+        base_cmpr_op = base_op.resource_rep_from_op()
 
-        Resources:
-            This symbolic operation represents the adjoint of some base operation. The resources are
-            determined as follows. If the base operation class :code:`base_class` implements the
-            :code:`.adjoint_resource_decomp()` method, then the resources are obtained from this.
+        self.base_op = base_cmpr_op
 
-            Otherwise, the adjoint resources are given as the adjoint of each operation in the
-            base operation's resources (via :code:`.resources()`).
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None or base_op.wires
+            self.num_wires = base_op.num_wires
 
-        **Example**
-
-        The adjoint operation can be constructed like this:
-
-        >>> qft = re.ResourceQFT(wires=range(3))
-        >>> adjoint_qft = re.ResourceAdjoint(qft)
-        >>> adjoint_qft.resources(**adjoint_qft.resource_params)
-        defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
-        Adjoint(ControlledPhaseShift): 3})
-
-        Alternatively, we can call the resources method on from the class:
-
-        >>> re.ResourceAdjoint.resources(
-        ...     base_class = re.ResourceQFT,
-        ...     base_params = {"num_wires": 3},
-        ... )
-        defaultdict(<class 'int'>, {Adjoint(Hadamard): 3, Adjoint(SWAP): 1,
-        Adjoint(ControlledPhaseShift): 3})
-
-        .. details::
-            :title: Usage Details
-
-            We can configure the resources for the adjoint of a base operation by modifying
-            its :code:`.adjoint_resource_decomp(**resource_params)` method. Consider for example this
-            custom PauliZ class, where the adjoint resources are not defined (this is the default
-            for a general :class:`~.ResourceOperator`).
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def adjoint_resource_decomp(cls):
-                        raise re.ResourcesNotDefined
-
-            When this method is not defined, the adjoint resources are computed by taking the
-            adjoint of the resources of the operation.
-
-            >>> CustomZ.resources()
-            {S: 2}
-            >>> re.ResourceAdjoint.resources(CustomZ, {})
-            defaultdict(<class 'int'>, {Adjoint(S): 2})
-
-            We can update the adjoint resources with the observation that the PauliZ gate is self-adjoint,
-            so the resources should just be the same as the base operation:
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def adjoint_resource_decomp(cls):
-                        return {cls.resource_rep(): 1}
-
-            >>> re.ResourceAdjoint.resources(CustomZ, {})
-            {CustomZ: 1}
-        """
-        try:
-            return base_class.adjoint_resource_decomp(**base_params)
-        except re.ResourcesNotDefined:
-            gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params, **kwargs)
-            for gate, count in decomp.items():
-                rep = cls.resource_rep(gate.op_type, gate.params)
-                gate_types[rep] = count
-
-            return gate_types
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> dict:
@@ -203,81 +116,148 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
+            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+            that we want the adjoint of.
 
         """
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+        return {"base_cmpr_op": self.base_op}
 
     @classmethod
-    def resource_rep(cls, base_class, base_params) -> re.CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+                that we want the adjoint of.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
+        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op})
 
-    @staticmethod
-    def adjoint_resource_decomp(base_class, base_params) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for the adjoint of the operator.
+    @classmethod
+    def default_resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator that we want the adjoint of
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+                compressed resource representation for the operator we want the adjoint of.
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            This symbolic operation represents the adjoint of some base operation. The resources are
+            determined as follows. If the base operation implements the
+            :code:`.default_adjoint_resource_decomp()` method, then the resources are obtained from
+            this.
+
+            Otherwise, the adjoint resources are given as the adjoint of each operation in the
+            base operation's resources.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        .. seealso:: :class:`~.ops.op_math.adjoint.AdjointOperation`
+
+        **Example**
+
+        The adjoint operation can be constructed like this:
+
+        >>> qft = plre.ResourceQFT(num_wires=3)
+        >>> adj_qft = plre.ResourceAdjoint(qft)
+
+        We can see how the resources differ by choosing a suitable gateset and estimating resources:
+
+        >>> gate_set = {
+        ...     "SWAP",
+        ...     "Adjoint(SWAP)",
+        ...     "Hadamard",
+        ...     "Adjoint(Hadamard)",
+        ...     "ControlledPhaseShift",
+        ...     "Adjoint(ControlledPhaseShift)",
+        ... }
+        >>>
+        >>> print(plre.estimate_resources(qft, gate_set))
+        --- Resources: ---
+        Total qubits: 3
+        Total gates : 7
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+        Gate breakdown:
+        {'Hadamard': 3, 'SWAP': 1, 'ControlledPhaseShift': 3}
+        >>>
+        >>> print(plre.estimate_resources(adj_qft, gate_set))
+        --- Resources: ---
+        Total qubits: 3
+        Total gates : 7
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+        Gate breakdown:
+        {'Adjoint(ControlledPhaseShift)': 3, 'Adjoint(SWAP)': 1, 'Adjoint(Hadamard)': 3}
+
+        """
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        try:
+            return base_class.adjoint_resource_decomp(**base_params)
+        except ResourcesNotDefined:
+            gate_lst = []
+            decomp = base_class.resource_decomp(**base_params, **kwargs)
+
+            for gate in decomp[::-1]:  # reverse the order
+                gate_lst.append(_apply_adj(gate))
+            return gate_lst
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls, base_cmpr_op: CompressedResourceOp):
+        r"""Returns a list representing the resources for the adjoint of the operator.
+
+        Args:
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+                compressed resource representation for the operator we want the adjoint of.
 
         Resources:
             The adjoint of an adjointed operation is just the original operation. The resources
             are given as one instance of the base operation.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        return {base_class.resource_rep(**base_params): 1}
+        return [GateCount(base_cmpr_op)]
 
     @staticmethod
-    def tracking_name(base_class, base_params) -> str:
+    def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_class.tracking_name(**base_params)
+        base_name = base_cmpr_op.name
         return f"Adjoint({base_name})"
 
 
-class ResourceControlled(ControlledOp, re.ResourceOperator):
-    r"""Resource class for the symbolic ControlledOp.
+class ResourceControlled(ResourceOperator):
+    r"""Resource class for the symbolic Controlled operation.
 
-    A symbolic class used to represent the application of some base operation controlled on the state
-    of some control qubits.
+    A symbolic class used to represent the application of some base operation controlled on the
+    state of some control qubits.
 
     Args:
-        base (~.operation.Operator): the operator that is controlled
-        control_wires (Any): The wires to control on.
-        control_values (Iterable[Bool]): The values to control on. Must be the same
-            length as ``control_wires``. Defaults to ``True`` for all control wires.
-            Provided values are converted to `Bool` internally.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
-
-    Resource Parameters:
-        * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-        * base_params (dict): the resource parameters required to extract the cost of the base operator
-        * num_ctrl_wires (int): the number of qubits the operation is controlled on
-        * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-        * num_work_wires (int): the number of additional qubits that can be used for decomposition
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The base operator to be
+            controlled.
+        num_ctrl_wires (int): the number of qubits the operation is controlled on
+        num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            :math:`|0\rangle` state
 
     Resources:
-        The resources are determined as follows. If the base operation class :code:`base_class`
-        implements the :code:`.controlled_resource_decomp()` method, then the resources are obtained
-        directly from this.
+        The resources are determined as follows. If the base operator implements the
+        :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
+        this.
 
-        Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-        should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
-        cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
-        resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
+        Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+        which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
+        to an additional cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`.
+        Secondly, the base operation resources are extracted and we add to the cost the controlled
         variant of each operation in the resources.
 
     .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
@@ -286,188 +266,61 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
     The controlled operation can be constructed like this:
 
-    >>> qft = re.ResourceQFT(wires=range(3))
-    >>> controlled_qft = re.ResourceControlled(
-    ...    qft, control_wires=['c0', 'c1', 'c2'], control_values=[1, 1, 1], work_wires=['w1', 'w2'],
-    ... )
-    >>> controlled_qft.resources(**controlled_qft.resource_params)
-    defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
+    >>> x = plre.ResourceX()
+    >>> cx = plre.ResourceControlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+    >>> ccx = plre.ResourceControlled(x, num_ctrl_wires=2, num_ctrl_values=2)
 
-    Alternatively, we can call the resources method on from the class:
+    We can observe the expected gates when we estimate the resources.
 
-    >>> re.ResourceControlled.resources(
-    ...     base_class = re.ResourceQFT,
-    ...     base_params = {"num_wires": 3},
-    ...     num_ctrl_wires = 3,
-    ...     num_ctrl_values = 0,
-    ...     num_work_wires = 2,
-    ... )
-    defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
-
-    .. details::
-        :title: Usage Details
-
-        We can configure the resources for the controlled of a base operation by modifying
-        its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
-        **resource_params)` method. Consider for example this custom PauliZ class, where the
-        controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
-
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
-                    raise re.ResourcesNotDefined
-
-        When this method is not defined, the controlled resources are computed by taking the
-        controlled of each operation in the resources of the base operation.
-
-        >>> CustomZ.resources()
-        {S: 2}
-        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
-        defaultdict(<class 'int'>, {C(S,2,0,3): 2})
-
-        We can update the controlled resources with the observation that the PauliZ gate when controlled
-        on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
-        so we can modify the base operation:
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
-                    if num_ctrl_wires == 1 and num_ctrl_values == 0:
-                        return {
-                            re.ResourceHadamard.resource_rep(): 2,
-                            re.ResourceCNOT.resource_rep(): 1,
-                        }
-                    raise re.ResourcesNotDefined
-
-        >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
-        {Hadamard: 2, CNOT: 1}
+    >>> print(plre.estimate_resources(cx))
+    --- Resources: ---
+    Total qubits: 2
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
+    Gate breakdown:
+    {'CNOT': 1}
+    >>>
+    >>> print(plre.estimate_resources(ccx))
+    --- Resources: ---
+    Total qubits: 3
+    Total gates : 5
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+    Gate breakdown:
+    {'X': 4, 'Toffoli': 1}
 
     """
 
-    @classmethod
-    def _resource_decomp(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+    resource_keys = {"base_cmpr_op", "num_ctrl_wires", "num_ctrl_values"}
 
-        Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+    def __init__(
+        self,
+        base_op: ResourceOperator,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
+        wires=None,
+    ) -> None:
+        self.queue(remove_base_op=base_op)
+        base_cmpr_op = base_op.resource_rep_from_op()
 
-        Resources:
-            The resources are determined as follows. If the base operation class :code:`base_class`
-            implements the :code:`.controlled_resource_decomp()` method, then the resources are obtained
-            directly from this.
+        self.base_op = base_cmpr_op
+        self.num_ctrl_wires = num_ctrl_wires
+        self.num_ctrl_values = num_ctrl_values
 
-            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits which
-            should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds to an additional
-            cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`. Secondly, the base operation
-            resources are extracted (via :code:`.resources()`) and we add to the cost the controlled
-            variant of each operation in the resources.
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None
+            num_base_wires = base_op.num_wires
+            self.num_wires = num_ctrl_wires + num_base_wires
 
-        .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
-
-        **Example**
-
-        The controlled operation can be constructed like this:
-
-        >>> qft = re.ResourceQFT(wires=range(3))
-        >>> controlled_qft = re.ResourceControlled(
-        ...    qft, control_wires=['c0', 'c1', 'c2'], control_values=[1, 1, 1], work_wires=['w1', 'w2'],
-        ... )
-        >>> controlled_qft.resources(**controlled_qft.resource_params)
-        defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
-
-        Alternatively, we can call the resources method on from the class:
-
-        >>> re.ResourceControlled.resources(
-        ...     base_class = re.ResourceQFT,
-        ...     base_params = {"num_wires": 3},
-        ...     num_ctrl_wires = 3,
-        ...     num_ctrl_values = 0,
-        ...     num_work_wires = 2,
-        ... )
-        defaultdict(<class 'int'>, {C(Hadamard,3,0,2): 3, C(SWAP,3,0,2): 1, C(ControlledPhaseShift,3,0,2): 3})
-
-        .. details::
-            :title: Usage Details
-
-            We can configure the resources for the controlled of a base operation by modifying
-            its :code:`.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires,
-            **resource_params)` method. Consider for example this custom PauliZ class, where the
-            controlled resources are not defined (this is the default for a general :class:`~.ResourceOperator`).
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
-                        raise re.ResourcesNotDefined
-
-            When this method is not defined, the controlled resources are computed by taking the
-            controlled of each operation in the resources of the base operation.
-
-            >>> CustomZ.resources()
-            {S: 2}
-            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
-            defaultdict(<class 'int'>, {C(S,2,0,3): 2})
-
-            We can update the controlled resources with the observation that the PauliZ gate when controlled
-            on a single wire is equivalent to :math:`\hat{CZ} = \hat{H} \cdot \hat{CNOT} \cdot \hat{H}`.
-            so we can modify the base operation:
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires):
-                        if num_ctrl_wires == 1 and num_ctrl_values == 0:
-                            return {
-                                re.ResourceHadamard.resource_rep(): 2,
-                                re.ResourceCNOT.resource_rep(): 1,
-                            }
-                        raise re.ResourcesNotDefined
-
-            >>> re.ResourceControlled.resources(CustomZ, {}, num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0)
-            {Hadamard: 2, CNOT: 1}
-
-        """
-        try:
-            return base_class.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
-            )
-        except re.ResourcesNotDefined:
-            pass
-
-        gate_types = defaultdict(int)
-
-        if num_ctrl_values == 0:
-            decomp = base_class.resources(**base_params, **kwargs)
-            for gate, count in decomp.items():
-                rep = cls.resource_rep(gate.op_type, gate.params, num_ctrl_wires, 0, num_work_wires)
-                gate_types[rep] = count
-
-            return gate_types
-
-        no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
-        x = re.ResourceX.resource_rep()
-        gate_types[no_control] = 1
-        gate_types[x] = 2 * num_ctrl_values
-
-        return gate_types
+    def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_base_op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> dict:
@@ -475,76 +328,162 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
-                * num_ctrl_wires (int): the number of qubits the operation is controlled on
-                * num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-                * num_work_wires (int): the number of additional qubits that can be used for decomposition
+            * base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+            operator to be controlled.
+            * num_ctrl_wires (int): the number of qubits the operation is controlled on
+            * num_ctrl_values (int): the number of control qubits, that are controlled when in the
+            :math:`|0\rangle` state
         """
+
         return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
-            "num_ctrl_wires": len(self.control_wires),
-            "num_ctrl_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
+            "base_cmpr_op": self.base_op,
+            "num_ctrl_wires": self.num_ctrl_wires,
+            "num_ctrl_values": self.num_ctrl_values,
         }
 
     @classmethod
     def resource_rep(
-        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires
-    ) -> re.CompressedResourceOp:
+        cls,
+        base_cmpr_op,
+        num_ctrl_wires,
+        num_ctrl_values,
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+                operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
-            num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
-            num_work_wires (int): the number of additional qubits that can be used for decomposition
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the
+                :math:`|0\rangle` state
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(
+        return CompressedResourceOp(
             cls,
             {
-                "base_class": base_class,
-                "base_params": base_params,
+                "base_cmpr_op": base_cmpr_op,
                 "num_ctrl_wires": num_ctrl_wires,
                 "num_ctrl_values": num_ctrl_values,
-                "num_work_wires": num_work_wires,
             },
         )
 
     @classmethod
-    def controlled_resource_decomp(
-        cls,
-        outer_num_ctrl_wires,
-        outer_num_ctrl_values,
-        outer_num_work_wires,
-        base_class,
-        base_params,
-        num_ctrl_wires,
-        num_ctrl_values,
-        num_work_wires,
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for a controlled version of the operator.
+    def default_resource_decomp(
+        cls, base_cmpr_op, num_ctrl_wires, num_ctrl_values, **kwargs
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            outer_num_ctrl_wires (int): The number of control qubits to further control the base
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+                operator to be controlled.
+            num_ctrl_wires (int): the number of qubits the operation is controlled on
+            num_ctrl_values (int): the number of control qubits, that are controlled when in the
+                :math:`|0\rangle` state
+
+        Resources:
+            The resources are determined as follows. If the base operator implements the
+            :code:`.controlled_resource_decomp()` method, then the resources are obtained directly from
+            this.
+
+            Otherwise, the controlled resources are given in two steps. Firstly, any control qubits
+            which should be triggered when in the :math:`|0\rangle` state, are flipped. This corresponds
+            to an additional cost of two :class:`~.ResourceX` gates per :code:`num_ctrl_values`.
+            Secondly, the base operation resources are extracted and we add to the cost the controlled
+            variant of each operation in the resources.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        .. seealso:: :class:`~.ops.op_math.controlled.ControlledOp`
+
+        **Example**
+
+        The controlled operation can be constructed like this:
+
+        >>> x = plre.ResourceX()
+        >>> cx = plre.ResourceControlled(x, num_ctrl_wires=1, num_ctrl_values=0)
+        >>> ccx = plre.ResourceControlled(x, num_ctrl_wires=2, num_ctrl_values=2)
+
+        We can observe the expected gates when we estimate the resources.
+
+        >>> print(plre.estimate_resources(cx))
+        --- Resources: ---
+        Total qubits: 2
+        Total gates : 1
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 2
+        Gate breakdown:
+        {'CNOT': 1}
+        >>>
+        >>> print(plre.estimate_resources(ccx))
+        --- Resources: ---
+        Total qubits: 3
+        Total gates : 5
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+        Gate breakdown:
+        {'X': 4, 'Toffoli': 1}
+
+        """
+
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        try:
+            return base_class.controlled_resource_decomp(
+                ctrl_num_ctrl_wires=num_ctrl_wires,
+                ctrl_num_ctrl_values=num_ctrl_values,
+                **base_params,
+            )
+        except re.ResourcesNotDefined:
+            pass
+
+        gate_lst = []
+        if num_ctrl_values != 0:
+            x = resource_rep(re.ResourceX)
+            gate_lst.append(GateCount(x, 2 * num_ctrl_values))
+
+        decomp = base_class.resource_decomp(**base_params, **kwargs)
+        for action in decomp:
+            if isinstance(action, GateCount):
+                gate = action.gate
+                c_gate = cls.resource_rep(
+                    gate,
+                    num_ctrl_wires,
+                    num_ctrl_values=0,  # we flipped already and added the X gates above
+                )
+                gate_lst.append(GateCount(c_gate, action.count))
+
+            else:
+                gate_lst.append(action)
+
+        return gate_lst
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
+        base_cmpr_op,
+        num_ctrl_wires,
+        num_ctrl_values,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for a controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): The number of control qubits to further control the base
                 controlled operation upon.
-            outer_num_ctrl_values (int): The subset of those control qubits, which further control
+            ctrl_num_ctrl_values (int): The subset of those control qubits, which further control
                 the base controlled operation, which are controlled when in the :math:`|0\rangle` state.
-            outer_num_work_wires (int): the number of additional qubits that can be used in the
-                decomposition for the further controlled, base control oepration.
-            base_class (Type[~.ResourceOperator]): the class type of the base operator to be controlled
-            base_params (dict): the resource parameters required to extract the cost of the base operator
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+                operator to be controlled.
             num_ctrl_wires (int): the number of control qubits of the operation
             num_ctrl_values (int): The subset of control qubits of the operation, that are controlled
                 when in the :math:`|0\rangle` state.
-            num_work_wires (int): The number of additional qubits that can be used for the
-                decomposition of the operation.
 
         Resources:
             The resources are derived by simply combining the control qubits, control-values and
@@ -552,39 +491,41 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             on the whole set of control-qubits.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        return {
-            cls.resource_rep(
-                base_class,
-                base_params,
-                outer_num_ctrl_wires + num_ctrl_wires,
-                outer_num_ctrl_values + num_ctrl_values,
-                outer_num_work_wires + num_work_wires,
-            ): 1
-        }
+        return [
+            GateCount(
+                cls.resource_rep(
+                    base_cmpr_op,
+                    ctrl_num_ctrl_wires + num_ctrl_wires,
+                    ctrl_num_ctrl_values + num_ctrl_values,
+                )
+            ),
+        ]
 
     @staticmethod
-    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
+    def tracking_name(
+        base_cmpr_op: CompressedResourceOp,
+        num_ctrl_wires: int,
+        num_ctrl_values: int,
+    ):
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_class.tracking_name(**base_params)
-        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{num_work_wires})"
+        base_name = base_cmpr_op.name
+        return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_ctrl_values={num_ctrl_values})"
 
 
-class ResourcePow(PowOperation, re.ResourceOperator):
+class ResourcePow(ResourceOperator):
     r"""Resource class for the symbolic Pow operation.
 
     A symbolic class used to represent some base operation raised to a power.
 
     Args:
-        base (~.operation.Operator): the operator to be raised to a power
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+            want to exponentiate.
         z (float): the exponent (default value is 1)
-
-    Resource Parameters:
-        * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-        * base_params (dict): the resource parameters required to extract the cost of the base operator
-        * z (int): the power that the operator is being raised to
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -599,75 +540,93 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
     The operation raised to a power :math:`z` can be constructed like this:
 
-    >>> qft = re.ResourceQFT(wires=range(3))
-    >>> pow_qft = re.ResourcePow(qft, 2)
-    >>> pow_qft.resources(**pow_qft.resource_params)
-    defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+    >>> z = plre.ResourceZ()
+    >>> z_2 = plre.ResourcePow(z, 2)
+    >>> z_5 = plre.ResourcePow(z, 5)
 
-    Alternatively, we can call the resources method on from the class:
+    We obtain the expected resources.
 
-    >>> re.ResourcePow.resources(
-    ...     base_class = re.ResourceQFT,
-    ...     base_params = {"num_wires": 3},
-    ...     z = 2,
-    ... )
-    defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
-
-    .. details::
-        :title: Usage Details
-
-        We can configure the resources for the power of a base operation by modifying
-        its :code:`.pow_resource_decomp(**resource_params, z)` method. Consider for example this
-        custom PauliZ class, where the pow-resources are not defined (this is the default
-        for a general :class:`~.ResourceOperator`).
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def pow_resource_decomp(cls, z):
-                    raise re.ResourcesNotDefined
-
-        When this method is not defined, the resources are computed by taking the power of
-        each operation in the resources of the base operation.
-
-        >>> CustomZ.resources()
-        {S: 2}
-        >>> re.ResourcePow.resources(CustomZ, {}, z=2)
-        defaultdict(<class 'int'>, {Pow(S, 2): 2})
-
-        We can update the resources with the observation that the PauliZ gate is self-inverse,
-        so the resources should when :math:`z mod 2 = 0` should just be the identity operation:
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def pow_resource_decomp(cls, z):
-                    if z%2 == 0:
-                        return {re.ResourceIdentity.resource_rep(): 1}
-                    return {cls.resource_rep(): 1}
-
-        >>> re.ResourcePow.resources(CustomZ, {}, z=2)
-        {Identity: 1}
-        >>> re.ResourcePow.resources(CustomZ, {}, z=3)
-        {CustomZ: 1}
+    >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'Identity': 1}
+    >>>
+    >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 1
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'Z': 1}
 
     """
 
+    resource_keys = {"base_cmpr_op", "z"}
+
+    def __init__(self, base_op: ResourceOperator, z: int, wires=None) -> None:
+        self.queue(remove_op=base_op)
+        base_cmpr_op = base_op.resource_rep_from_op()
+
+        self.z = z
+        self.base_op = base_cmpr_op
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = None or base_op.wires
+            self.num_wires = base_op.num_wires
+
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_op)
+        context.append(self)
+        return self
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): The class type of the base operator to be raised to some power.
+                * base_params (dict): the resource parameters required to extract the cost of the base operator
+                * z (int): the power that the operator is being raised to
+        """
+        return {
+            "base_cmpr_op": self.base_op,
+            "z": self.z,
+        }
+
     @classmethod
-    def _resource_decomp(
-        cls, base_class, base_params, z, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+    def resource_rep(cls, base_cmpr_op, z) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
+            base_class (Type[~.pennylane.labs.resource_estimation.ResourceOperator]): The class type of the base operator to be raised to some power.
             base_params (dict): the resource parameters required to extract the cost of the base operator
             z (int): the power that the operator is being raised to
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "z": z})
+
+    @classmethod
+    def default_resource_decomp(cls, base_cmpr_op, z, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+                compressed resource representation for the operator we want to exponentiate.
+            z (float): the exponent (default value is 1)
 
         Resources:
             The resources are determined as follows. If the power :math:`z = 0`, then we have the identitiy
@@ -676,135 +635,65 @@ class ResourcePow(PowOperation, re.ResourceOperator):
             the resources of the operation raised to the power :math:`z` are given by extracting the base
             operation's resources (via :code:`.resources()`) and raising each operation to the same power.
 
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        .. seealso:: :class:`~.ops.op_math.pow.PowOperation`
+
         **Example**
 
         The operation raised to a power :math:`z` can be constructed like this:
 
-        >>> qft = re.ResourceQFT(wires=range(3))
-        >>> pow_qft = re.ResourcePow(qft, 2)
-        >>> pow_qft.resources(**pow_qft.resource_params)
-        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
+        >>> z = plre.ResourceZ()
+        >>> z_2 = plre.ResourcePow(z, 2)
+        >>> z_5 = plre.ResourcePow(z, 5)
 
-        Alternatively, we can call the resources method on from the class:
+        We obtain the expected resources.
 
-        >>> re.ResourcePow.resources(
-        ...     base_class = re.ResourceQFT,
-        ...     base_params = {"num_wires": 3},
-        ...     z = 2,
-        ... )
-        defaultdict(<class 'int'>, {Pow(Hadamard, 2): 3, Pow(SWAP, 2): 1, Pow(ControlledPhaseShift, 2): 3})
-
-        .. details::
-            :title: Usage Details
-
-            We can configure the resources for the power of a base operation by modifying
-            its :code:`.pow_resource_decomp(**resource_params, z)` method. Consider for example this
-            custom PauliZ class, where the pow-resources are not defined (this is the default
-            for a general :class:`~.ResourceOperator`).
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def pow_resource_decomp(cls, z):
-                        raise re.ResourcesNotDefined
-
-            When this method is not defined, the resources are computed by taking the power of
-            each operation in the resources of the base operation.
-
-            >>> CustomZ.resources()
-            {S: 2}
-            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
-            defaultdict(<class 'int'>, {Pow(S, 2): 2})
-
-            We can update the resources with the observation that the PauliZ gate is self-inverse,
-            so the resources should when :math:`z mod 2 = 0` should just be the identity operation:
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def pow_resource_decomp(cls, z):
-                        if z%2 == 0:
-                            return {re.ResourceIdentity.resource_rep(): 1}
-                        return {cls.resource_rep(): 1}
-
-            >>> re.ResourcePow.resources(CustomZ, {}, z=2)
-            {Identity: 1}
-            >>> re.ResourcePow.resources(CustomZ, {}, z=3)
-            {CustomZ: 1}
+        >>> print(plre.estimate_resources(z_2, gate_set={"Identity", "Z"}))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 1
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'Identity': 1}
+        >>>
+        >>> print(plre.estimate_resources(z_5, gate_set={"Identity", "Z"}))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 1
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'Z': 1}
 
         """
+        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+
         if z == 0:
-            return {re.ResourceIdentity.resource_rep(): 1}
+            return [GateCount(resource_rep(re.ResourceIdentity))]
 
         if z == 1:
-            return {base_class.resource_rep(**base_params): 1}
+            return [GateCount(base_cmpr_op)]
 
         try:
-            return base_class.pow_resource_decomp(z, **base_params)
+            return base_class.pow_resource_decomp(pow_z=z, **base_params)
         except re.ResourcesNotDefined:
-            pass
-
-        try:
-            gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params, **kwargs)
-            for gate, count in decomp.items():
-                rep = cls.resource_rep(gate.op_type, gate.params, z)
-                gate_types[rep] = count
-
-            return gate_types
-        except re.ResourcesNotDefined:
-            pass
-
-        return {base_class.resource_rep(**base_params): z}
-
-    @property
-    def resource_params(self) -> dict:
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
-                * z (int): the power that the operator is being raised to
-        """
-        return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
-            "z": self.z,
-        }
+            return [GateCount(base_cmpr_op, z)]
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, z) -> re.CompressedResourceOp:
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+    def default_pow_resource_decomp(cls, pow_z, base_cmpr_op, z):
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            z (int): the power that the operator is being raised to
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "base_params": base_params, "z": z}
-        )
-
-    @classmethod
-    def pow_resource_decomp(
-        cls, z0, base_class, base_params, z
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
-
-        Args:
-            z0 (int): the power that the power-operator is being raised to
-            base_class (Type[~.ResourceOperator]): The class type of the base operator to be raised to some power.
-            base_params (dict): The resource parameters required to extract the cost of the base operator.
-            z (int): the power that the base operator is being raised to
+            pow_z (int): the exponent that the pow-operator is being raised to
+            base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): A
+                compressed resource representation for the operator we want to exponentiate.
+            z (float): the exponent that the base operator is being raised to (default value is 1)
 
         Resources:
             The resources are derived by simply adding together the :math:`z` exponent and the
@@ -812,380 +701,116 @@ class ResourcePow(PowOperation, re.ResourceOperator):
             the base operator to the power :math:`z + z_{0}`.
 
         Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
         """
-        return {cls.resource_rep(base_class, base_params, z0 * z): 1}
+        return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
 
     @staticmethod
-    def tracking_name(base_class, base_params, z) -> str:
+    def tracking_name(base_cmpr_op: CompressedResourceOp, z: int) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        base_name = base_class.tracking_name(**base_params)
+        base_name = base_cmpr_op.name
         return f"Pow({base_name}, {z})"
 
 
-class ResourceExp(Exp, re.ResourceOperator):
-    r"""Resource class for the symbolic Exp operation.
-
-    A symbolic class used to represent the exponential of some base operation.
-
-    Args:
-        base (~.operation.Operator): The operator to be exponentiated
-        coeff=1 (Number): A scalar coefficient of the operator.
-        num_steps (int): The number of steps used in the decomposition of the exponential operator,
-            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
-            decomposition is needed, an error will be raised.
-        id (str): id for the Exp operator. Default is None.
-
-    Resource Parameters:
-        * base_class (Type[~.ResourceOperator]): The class type of the base operator that is exponentiated.
-        * base_params (dict): the resource parameters required to extract the cost of the base operator
-        * base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-        * coeff (complex): a scalar value which multiplies the base operator in the exponent
-        * num_steps (int): the number of trotter steps to use in approximating the exponential
-
-    Resources:
-        This symbolic operation represents the exponential of some base operation. The resources
-        are determined as follows. If the base operation class :code:`base_class` implements the
-        :code:`.exp_resource_decomp()` method, then the resources are obtained from this.
-
-        Otherwise, the exponetiated operator's resources are computed using the linear combination
-        of Pauli words representation (:code:`base_pauli_rep`). The exponential is approximated by
-        the product of the exponential of each Pauli word in the sum. This product is repeated
-        :code:`num_steps` many times. Specifically, the cost for the exponential of each Pauli word
-        is given by an associated :class:`~.ResourcePauliRot`.
-
-    .. seealso:: :class:`~.ops.op_math.exp.Exp`
-
-    **Example**
-
-    The exponentiated operation can be constructed like this:
-
-    >>> hamiltonian = qml.dot([0.1, -2.3], [qml.X(0)@qml.Y(1), qml.Z(0)])
-    >>> hamiltonian
-    0.1 * (X(0) @ Y(1)) + -2.3 * Z(0)
-    >>> exp_hamiltonian = re.ResourceExp(hamiltonian, 0.1*1j, num_steps=2)
-    >>> exp_hamiltonian.resources(**exp_hamiltonian.resource_params)
-    defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
-
-    Alternatively, we can call the resources method on from the class:
-
-    >>> re.ResourceExp.resources(
-    ...     base_class = qml.ops.Sum,
-    ...     base_params = {},
-    ...     base_pauli_rep = hamiltonian.pauli_rep,
-    ...     coeff = 0.1*1j,
-    ...     num_steps = 2,
-    ... )
-    defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
-
-    .. details::
-        :title: Usage Details
-
-        We can configure the resources for the exponential of a base operation by modifying
-        its :code:`.exp_resource_decomp(scalar, num_steps, **resource_params)` method. Consider
-        for example this custom PauliZ class, where the exponentiated resources are not defined
-        (this is the default for a general :class:`~.ResourceOperator`).
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def exp_resource_decomp(cls, scalar, num_steps):
-                    raise re.ResourcesNotDefined
-
-        When this method is not defined, the resources are computed from the linear combination
-        of Pauli words representation.
-
-        >>> pauli_rep = CustomZ(wires=0).pauli_rep
-        >>> pauli_rep
-        1.0 * Z(0)
-        >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
-        defaultdict(<class 'int'>, {PauliRot: 3})
-
-        We can update the exponential resources with the observation that the PauliZ gate, when
-        exponentiated, produces an RZ rotation:
-
-        .. code-block:: python
-
-            class CustomZ(re.ResourceZ):
-
-                @classmethod
-                def exp_resource_decomp(cls, scalar, num_steps):
-                    return {re.ResourceRZ.resource_rep(): num_steps}
-
-        >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
-        {RZ: 3}
-
-    """
-
-    @staticmethod
-    def _resource_decomp(
-        base_class: Operation,
-        base_params: Dict,
-        base_pauli_rep: PauliSentence,
-        coeff: complex,
-        num_steps: int,
-        **kwargs,
-    ):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
-
-        Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
-                exponentiated.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
-                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-            coeff (complex): a scalar value which multiplies the base operator in the exponent
-            num_steps (int): the number of trotter steps to use in approximating the exponential
-
-        Resources:
-            This symbolic operation represents the exponential of some base operation. The resources
-            are determined as follows. If the base operation class :code:`base_class` implements the
-            :code:`.exp_resource_decomp()` method, then the resources are obtained from this.
-
-            Otherwise, the exponetiated operator's resources are computed using the linear combination
-            of Pauli words representation (:code:`base_pauli_rep`). The exponential is approximated by
-            the product of the exponential of each Pauli word in the sum. This product is repeated
-            :code:`num_steps` many times. Specifically, the cost for the exponential of each Pauli word
-            is given by an associated :class:`~.ResourcePauliRot`.
-
-        **Example**
-
-        The exponentiated operation can be constructed like this:
-
-        >>> hamiltonian = qml.dot([0.1, -2.3], [qml.X(0)@qml.Y(1), qml.Z(0)])
-        >>> hamiltonian
-        0.1 * (X(0) @ Y(1)) + -2.3 * Z(0)
-        >>> exp_hamiltonian = re.ResourceExp(hamiltonian, 0.1*1j, num_steps=2)
-        >>> exp_hamiltonian.resources(**exp_hamiltonian.resource_params)
-        defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
-
-        Alternatively, we can call the resources method on from the class:
-
-        >>> re.ResourceExp.resources(
-        ...     base_class = qml.ops.Sum,
-        ...     base_params = {},
-        ...     base_pauli_rep = hamiltonian.pauli_rep,
-        ...     coeff = 0.1*1j,
-        ...     num_steps = 2,
-        ... )
-        defaultdict(<class 'int'>, {PauliRot: 2, PauliRot: 2})
-
-        .. details::
-            :title: Usage Details
-
-            We can configure the resources for the exponential of a base operation by modifying
-            its :code:`.exp_resource_decomp(scalar, num_steps, **resource_params)` method. Consider
-            for example this custom PauliZ class, where the exponentiated resources are not defined
-            (this is the default for a general :class:`~.ResourceOperator`).
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def exp_resource_decomp(cls, scalar, num_steps):
-                        raise re.ResourcesNotDefined
-
-            When this method is not defined, the resources are computed from the linear combination
-            of Pauli words representation.
-
-            >>> pauli_rep = CustomZ(wires=0).pauli_rep
-            >>> pauli_rep
-            1.0 * Z(0)
-            >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
-            defaultdict(<class 'int'>, {PauliRot: 3})
-
-            We can update the exponential resources with the observation that the PauliZ gate, when
-            exponentiated, produces an RZ rotation:
-
-            .. code-block:: python
-
-                class CustomZ(re.ResourceZ):
-
-                    @classmethod
-                    def exp_resource_decomp(cls, scalar, num_steps):
-                        return {re.ResourceRZ.resource_rep(): num_steps}
-
-            >>> re.ResourceExp.resources(CustomZ, {}, base_pauli_rep=pauli_rep, coeff=0.1*1j, num_steps=3)
-            {RZ: 3}
-
-        """
-        # Custom exponential operator resources:
-        if issubclass(base_class, re.ResourceOperator):
-            try:
-                return base_class.exp_resource_decomp(coeff, num_steps, **base_params)
-            except re.ResourcesNotDefined:
-                pass
-
-        if base_pauli_rep and math.real(coeff) == 0:
-            scalar = num_steps or 1  # 1st-order Trotter-Suzuki with 'num_steps' trotter steps:
-            return _scale_dict(
-                _resources_from_pauli_sentence(base_pauli_rep), scalar=scalar, in_place=True
-            )
-
-        raise re.ResourcesNotDefined
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-                * base_class (Type[ResourceOperator]): The class type of the base operator that is exponentiated.
-                * base_params (dict): the resource parameters required to extract the cost of the base operator
-                * base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-                * coeff (complex): a scalar value which multiplies the base operator in the exponent
-                * num_steps (int): the number of trotter steps to use in approximating the exponential
-        """
-        return _extract_exp_params(self.base, self.scalar, self.num_steps)
-
-    @classmethod
-    def resource_rep(cls, base_class, base_params, base_pauli_rep, coeff, num_steps):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Args:
-            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
-                exponentiated.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
-                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-            coeff (complex): a scalar value which multiplies the base operator in the exponent
-            num_steps (int): the number of trotter steps to use in approximating the exponential
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        name = cls.tracking_name(base_class, base_params, base_pauli_rep, coeff, num_steps)
-        return re.CompressedResourceOp(
-            cls,
-            {
-                "base_class": base_class,
-                "base_params": base_params,
-                "base_pauli_rep": base_pauli_rep,
-                "coeff": coeff,
-                "num_steps": num_steps,
-            },
-            name=name,
-        )
-
-    @classmethod
-    def pow_resource_decomp(
-        cls, z0, base_class, base_params, base_pauli_rep, coeff, num_steps
-    ) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources for an operator raised to a power.
-
-        Args:
-            z0 (int): the power that the operator is being raised to
-            base_class (Type[~.ResourceOperator]): The class type of the base operator that is
-                exponentiated.
-            base_params (dict): the resource parameters required to extract the cost of the base operator
-            base_pauli_rep (Union[PauliSentence, None]): The base operator represented as a linear
-                combination of Pauli words. If such a representation is not applicable, then :code:`None`.
-            coeff (complex): a scalar value which multiplies the base operator in the exponent
-            num_steps (int): the number of trotter steps to use in approximating the exponential
-
-        Resources:
-            The resources are derived by simply multiplying together the :math:`z0` exponent and the
-            :code:`coeff` coefficient into a single instance of :class:`~.ResourceExp` gate with
-            coefficient :code:`z0 * coeff`.
-
-        Returns:
-            Dict[CompressedResourceOp, int]: The keys are the operators and the associated
-                values are the counts.
-        """
-        return {cls.resource_rep(base_class, base_params, base_pauli_rep, z0 * coeff, num_steps): 1}
-
-    @staticmethod
-    def tracking_name(
-        base_class: Operation,
-        base_params: Dict,
-        base_pauli_rep: PauliSentence,
-        coeff: complex,
-        num_steps: int,
-    ):  # pylint: disable=unused-argument
-        r"""Returns the tracking name built with the operator's parameters."""
-        base_name = (
-            base_class.tracking_name(**base_params)
-            if issubclass(base_class, re.ResourceOperator)
-            else base_class.__name__
-        )
-
-        return f"Exp({base_name}, {coeff}, num_steps={num_steps})".replace("Resource", "")
-
-
-class ResourceProd(Prod, re.ResourceOperator):
+class ResourceProd(ResourceOperator):
     r"""Resource class for the symbolic Prod operation.
 
     A symbolic class used to represent a product of some base operations.
 
     Args:
-        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
-
-    Resource Parameters:
-        * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
+        res_ops (tuple[~.pennylane.labs.resource_estimation.ResourceOperator]): A tuple of
+            resource operators or a nested tuple of resource operators and counts.
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        This symbolic class represents a product of operations. The resources are defined trivially as the counts for each operation in the product.
+        This symbolic class represents a product of operations. The resources are defined trivially
+        as the counts for each operation in the product.
 
     .. seealso:: :class:`~.ops.op_math.prod.Prod`
 
     **Example**
 
-    The product of operations can be constructed as follows. Note, each operation in the
-    product must be a valid :class:`~.ResourceOperator`
+    The product of operations can be constructed from a list of operations or
+    a nested tuple where each operator is accompanied with the number of counts.
+    Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
 
-    >>> prod_op = re.ResourceProd(
-    ...     re.ResourceQFT(range(3)),
-    ...     re.ResourceZ(0),
-    ...     re.ResourceGlobalPhase(1.23, wires=[1])
-    ... )
-    >>> prod_op
-    ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ ResourceGlobalPhase(1.23, wires=[1])
-    >>> prod_op.resources(**prod_op.resource_params)
-    defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
+    We can construct a product operator as follows:
+
+    >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
+    >>> prod_xyz = plre.ResourceProd(factors)
+    >>>
+    >>> print(plre.estimate_resources(prod_xyz))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 3
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+     {'X': 1, 'Y': 1, 'Z': 1}
+
+    We can also specify the factors as a tuple with
+
+    >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
+    >>> prod_x2z3 = plre.ResourceProd(factors)
+    >>>
+    >>> print(plre.estimate_resources(prod_x2z3))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 5
+    Qubit breakdown:
+     clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+     {'X': 2, 'Z': 3}
 
     """
 
-    @staticmethod
-    def _resource_decomp(cmpr_factors, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+    resource_keys = {"cmpr_factors_and_counts"}
 
-        Args:
-            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
-                representation, corresponding to the factors in the product.
+    def __init__(
+        self,
+        res_ops: Iterable[Union[ResourceOperator, Tuple[int, ResourceOperator]]],
+        wires=None,
+    ) -> None:
 
-        Resources:
-            This symbolic class represents a product of operations. The resources are defined
-                trivially as the counts for each operation in the product.
+        ops = []
+        counts = []
+        for op_or_tup in res_ops:
+            op, count = op_or_tup if isinstance(op_or_tup, tuple) else (op_or_tup, 1)
 
-        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+            ops.append(op)
+            counts.append(count)
 
-        **Example**
+        self.queue(ops)
 
-        The product of operations can be constructed as follows. Note, each operation in the
-        product must be a valid :class:`~.ResourceOperator`
+        try:
+            cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+        except AttributeError as error:
+            raise ValueError(
+                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
 
-        >>> prod_op = re.ResourceProd(
-        ...     re.ResourceQFT(range(3)),
-        ...     re.ResourceZ(0),
-        ...     re.ResourceGlobalPhase(1.23, wires=[1])
-        ... )
-        >>> prod_op
-        ResourceQFT(wires=[0, 1, 2]) @ Z(0) @ ResourceGlobalPhase(1.23, wires=[1])
-        >>> prod_op.resources(**prod_op.resource_params)
-        defaultdict(<class 'int'>, {QFT(3): 1, Z: 1, GlobalPhase: 1})
+        self.cmpr_factors_and_counts = tuple(zip(cmpr_ops, counts))
 
-        """
-        res = defaultdict(int)
-        for factor in cmpr_factors:
-            res[factor] += 1
-        return res
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            ops_wires = [op.wires for op in ops if op.wires is not None]
+            if len(ops_wires) == 0:
+                self.wires = None
+                self.num_wires = max((op.num_wires for op in ops))
+            else:
+                self.wires = Wires.all_wires(ops_wires)
+                self.num_wires = len(self.wires)
+
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> Dict:
@@ -1193,59 +818,304 @@ class ResourceProd(Prod, re.ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed representation, corresponding to the factors in the product.
+            * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+            A sequence of tuples containing the operations, in the compressed representation, and
+            a count for how many times they are repeated corresponding to the factors in the product.
         """
-        try:
-            cmpr_factors = tuple(factor.resource_rep_from_op() for factor in self.operands)
-        except AttributeError as error:
-            raise ValueError(
-                "All factors of the Product must be instances of `ResourceOperator` in order to obtain resources."
-            ) from error
-
-        return {"cmpr_factors": cmpr_factors}
+        return {"cmpr_factors_and_counts": self.cmpr_factors_and_counts}
 
     @classmethod
-    def resource_rep(cls, cmpr_factors) -> re.CompressedResourceOp:
+    def resource_rep(cls, cmpr_factors_and_counts) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_factors (list[CompressedResourceOp]): A list of operations, in the compressed
-                representation, corresponding to the factors in the product.
+            cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                A sequence of tuples containing the operations, in the compressed representation, and
+                a count for how many times they are repeated corresponding to the factors in the product.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return re.CompressedResourceOp(cls, {"cmpr_factors": cmpr_factors})
+        return CompressedResourceOp(cls, {"cmpr_factors_and_counts": cmpr_factors_and_counts})
+
+    @classmethod
+    def default_resource_decomp(cls, cmpr_factors_and_counts, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                A sequence of tuples containing the operations, in the compressed representation, and
+                a count for how many times they are repeated corresponding to the factors in the product.
+
+        Resources:
+            This symbolic class represents a product of operations. The resources are defined
+            trivially as the counts for each operation in the product.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        The product of operations can be constructed as follows. Note, each operation in the
+        product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+
+        >>> factors = [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()]
+        >>> prod_xyz = plre.ResourceProd(factors)
+        >>>
+        >>> print(plre.estimate_resources(prod_xyz))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 3
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'X': 1, 'Y': 1, 'Z': 1}
+
+        We can also specify the factors as a tuple with
+
+        >>> factors = [(plre.ResourceX(), 2), (plre.ResourceZ(), 3)]
+        >>> prod_x2z3 = plre.ResourceProd(factors)
+        >>>
+        >>> print(plre.estimate_resources(prod_x2z3))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 5
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'X': 2, 'Z': 3}
+
+        """
+        return [GateCount(cmpr_op, count) for cmpr_op, count in cmpr_factors_and_counts]
 
 
-def _extract_exp_params(base_op, scalar, num_steps):
-    pauli_rep = base_op.pauli_rep
-    isinstance_resource_op = isinstance(base_op, re.ResourceOperator)
+class ResourceChangeBasisOp(ResourceOperator):
+    r"""Change of Basis resource operator.
 
-    if (not isinstance_resource_op) and (pauli_rep is None):
-        raise ValueError(
-            f"Cannot obtain resources for the exponential of {base_op}, if it is not a ResourceOperator and it doesn't have a Pauli decomposition."
+    A symbolic class used to represent a change of basis operation. This is a special
+    type of operator which can be expressed as
+    :math:`\hat{U}_{compute} \cdot \hat{V} \cdot \hat{U}_{uncompute}`. If no :code:`uncompute_op` is
+    provided then the adjoint of the :code:`compute_op` is used by default.
+
+    Args:
+        compute_op (~.pennylane.labs.resource_estimation.ResourceOperator): A resource operator
+            representing the basis change operation.
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): A resource operator
+            representing the base operation.
+        uncompute_op (~.pennylane.labs.resource_estimation.ResourceOperator, optional): An optional
+            resource operator representing the inverse of the basis change operation.
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        This symbolic class represents a product of the three provided operations. The resources are
+        defined trivially as the sum of the costs of each.
+
+    .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+    **Example**
+
+    Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+    The change of basis operation can be constructed as follows:
+
+    >>> compute_u = plre.ResourceS()
+    >>> base_v = plre.ResourceZ()
+    >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
+    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 3
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'S': 1, 'Z': 1, 'Adjoint(S)': 1}
+
+    We can also set the :code:`uncompute_op` directly.
+
+    >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
+    >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
+    >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+    --- Resources: ---
+    Total qubits: 1
+    Total gates : 4
+    Qubit breakdown:
+    clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+    Gate breakdown:
+    {'S': 2, 'Z': 2}
+
+    """
+
+    resource_keys = {"cmpr_compute_op", "cmpr_base_op", "cmpr_uncompute_op"}
+
+    def __init__(
+        self,
+        compute_op: ResourceOperator,
+        base_op: ResourceOperator,
+        uncompute_op: Union[None, ResourceOperator] = None,
+        wires=None,
+    ) -> None:
+        uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
+        ops_to_remove = [compute_op, base_op, uncompute_op]
+
+        self.queue(ops_to_remove)
+
+        try:
+            self.cmpr_compute_op = compute_op.resource_rep_from_op()
+            self.cmpr_base_op = base_op.resource_rep_from_op()
+            self.cmpr_uncompute_op = uncompute_op.resource_rep_from_op()
+
+        except AttributeError as error:
+            raise ValueError(
+                "All ops of the ChangeofBasisOp must be instances of `ResourceOperator` in order to obtain resources."
+            ) from error
+
+        if wires:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            ops_wires = [op.wires for op in ops_to_remove if op.wires is not None]
+            if len(ops_wires) == 0:
+                self.wires = None
+                self.num_wires = max((op.num_wires for op in ops_to_remove))
+            else:
+                self.wires = Wires.all_wires(ops_wires)
+                self.num_wires = len(self.wires)
+
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+            * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+            to the compute operation.
+            * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+            to the base operation.
+            * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+            to the uncompute operation.
+
+        """
+        return {
+            "cmpr_compute_op": self.cmpr_compute_op,
+            "cmpr_base_op": self.cmpr_base_op,
+            "cmpr_uncompute_op": self.cmpr_uncompute_op,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op=None
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to estimate the resources.
+
+        Args:
+            cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the compute operation.
+            cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the base operation.
+            cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the uncompute operation.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(
+            ResourceAdjoint, {"base_cmpr_op": cmpr_compute_op}
+        )
+        return CompressedResourceOp(
+            cls,
+            {
+                "cmpr_compute_op": cmpr_compute_op,
+                "cmpr_base_op": cmpr_base_op,
+                "cmpr_uncompute_op": cmpr_uncompute_op,
+            },
         )
 
-    base_class = type(base_op)
-    base_params = base_op.resource_params if isinstance_resource_op else {}
+    @classmethod
+    def default_resource_decomp(cls, cmpr_compute_op, cmpr_base_op, cmpr_uncompute_op, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
 
-    return {
-        "base_class": base_class,
-        "base_params": base_params,
-        "base_pauli_rep": pauli_rep,
-        "coeff": scalar,
-        "num_steps": num_steps,
-    }
+        Args:
+            cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the compute operation.
+            cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the base operation.
+            cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the uncompute operation.
+
+        Resources:
+            This symbolic class represents a product of the three provided operations. The resources are
+            defined trivially as the sum of the costs of each.
+
+        .. seealso:: :class:`~.ops.op_math.prod.Prod`
+
+        **Example**
+
+        Note, each operation in the product must be a valid :class:`~.pennylane.labs.resource_estimation.ResourceOperator`
+        The change of basis operation can be constructed as follows:
+
+        >>> compute_u = plre.ResourceS()
+        >>> base_v = plre.ResourceZ()
+        >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v)
+        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 3
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'S': 1, 'Z': 1, 'Adjoint(S)': 1}
+
+        We can also set the :code:`uncompute_op` directly.
+
+        >>> uncompute_u = plre.ResourceProd([plre.ResourceZ(), plre.ResourceS()])
+        >>> cb_op = plre.ResourceChangeBasisOp(compute_u, base_v, uncompute_u)
+        >>> print(plre.estimate_resources(cb_op, gate_set={"Z", "S", "Adjoint(S)"}))
+        --- Resources: ---
+        Total qubits: 1
+        Total gates : 4
+        Qubit breakdown:
+        clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+        Gate breakdown:
+        {'S': 2, 'Z': 2}
+
+        """
+        return [
+            GateCount(cmpr_compute_op),
+            GateCount(cmpr_base_op),
+            GateCount(cmpr_uncompute_op),
+        ]
 
 
-def _resources_from_pauli_sentence(pauli_sentence):
-    gate_types = defaultdict(int)
+@singledispatch
+def _apply_adj(action):
+    raise TypeError(f"Unsupported type {action}")
 
-    for pauli_word in iter(pauli_sentence.keys()):
-        pauli_string = "".join((str(v) for v in pauli_word.values()))
-        pauli_rot_gate = re.ResourcePauliRot.resource_rep(pauli_string)
-        gate_types[pauli_rot_gate] = 1
 
-    return gate_types
+@_apply_adj.register
+def _(action: GateCount):
+    gate = action.gate
+    return GateCount(resource_rep(ResourceAdjoint, {"base_cmpr_op": gate}), action.count)
+
+
+@_apply_adj.register
+def _(action: AllocWires):
+    return FreeWires(action.num_wires)
+
+
+@_apply_adj.register
+def _(action: FreeWires):
+    return AllocWires(action.num_wires)

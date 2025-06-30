@@ -14,16 +14,15 @@
 """
 This module contains a developer focused execution function for internal executions
 """
+from __future__ import annotations
 
 from dataclasses import replace
 from functools import partial
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformProgram
-from pennylane.typing import ResultBatch
 from pennylane.workflow import _cache_transform
 
 from .jacobian_products import (
@@ -34,7 +33,12 @@ from .jacobian_products import (
     TransformJacobianProducts,
 )
 
-ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformProgram
+    from pennylane.typing import ResultBatch
+
+    ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 def _construct_tf_autograph_pipeline(
@@ -192,33 +196,34 @@ def _get_ml_boundary_execute(
     grad_on_execution = resolved_execution_config.grad_on_execution
     device_vjp = resolved_execution_config.use_device_jacobian_product
     try:
-        if interface == Interface.AUTOGRAD:
-            from .interfaces.autograd import autograd_execute as ml_boundary
+        match interface:
+            case Interface.AUTOGRAD:
+                from .interfaces.autograd import autograd_execute as ml_boundary
 
-        elif interface == Interface.TF_AUTOGRAPH:
-            from .interfaces.tensorflow_autograph import execute as ml_boundary
+            case Interface.TF_AUTOGRAPH:
+                from .interfaces.tensorflow_autograph import execute as ml_boundary
 
-            ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
+                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
-        elif interface == Interface.TF:
-            from .interfaces.tensorflow import tf_execute as full_ml_boundary
+            case Interface.TF:
+                from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
-            ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
+                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
-        elif interface == Interface.TORCH:
-            from .interfaces.torch import execute as ml_boundary
+            case Interface.TORCH:
+                from .interfaces.torch import execute as ml_boundary
 
-        elif interface == Interface.JAX_JIT and resolved_execution_config.convert_to_numpy:
-            from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
+            case Interface.JAX_JIT if resolved_execution_config.convert_to_numpy:
+                from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
-        else:  # interface is jax
-            if device_vjp:
-                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
-            else:
-                from .interfaces.jax import jax_jvp_execute as ml_boundary
+            case _:  # interface is jax
+                if device_vjp:
+                    from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
+                else:
+                    from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"{interface} not found. Please install the latest "
             f"version of {interface} to enable the '{interface}' interface."
         ) from e
@@ -297,8 +302,9 @@ def run(
             config,
             differentiable=config.derivative_order > 1,
         )
-
-        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=unexpected-keyword-arg, too-many-function-args
+        results = ml_execute(
             tapes,
             device,
             execute_fn,

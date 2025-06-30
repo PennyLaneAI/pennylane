@@ -17,7 +17,6 @@ import warnings
 from datetime import datetime
 from functools import partial
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import pennylane as qml
@@ -25,15 +24,22 @@ from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
+    has_jax = True
 except ImportError:
     has_jax = False
+
+try:
+    import matplotlib.pyplot as plt
+
+    has_plt = True
+except ImportError:
+    has_plt = False
 
 
 def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
@@ -77,11 +83,11 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
-    see eq. (6) therein and our :doc:`demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>` for more details.
+    see eq. (6) therein and our `demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
+    .. seealso:: `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -90,7 +96,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
             with the implicit ordering ``(k, mtilde, a)``.
-        verbose (bool): Plot the optimization
+        verbose (bool): Plot the optimization. Requires matplotlib to be installed (``pip install matplotlib``)
         opt_kwargs (dict): Keyword arguments for the optimization like initial starting values
             for :math:`\theta` of dimension ``(dim_k,)``, given as ``theta0``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
@@ -218,6 +224,11 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         raise ImportError(
             "jax and optax are required for variational_kak_adj. You can install them with pip install jax jaxlib optax."
         )  # pragma: no cover
+    if verbose >= 1 and not has_plt:  # pragma: no cover
+        print(
+            "variational_kak_adj requires matplotlib to display a figure with the optimization "
+            "progress (for verbose>=1). You can install it with pip install matplotlib"
+        )
 
     if opt_kwargs is None:
         opt_kwargs = {}

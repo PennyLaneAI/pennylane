@@ -23,7 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -516,6 +517,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+def test_empty_repr():
+    """Test that an empty prod still has a repr that indicates it's a prod."""
+    assert repr(Prod()) == "Prod()"
+
+
 # pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
@@ -534,8 +540,8 @@ class TestMatrix:
         true_mat = mat1 @ mat2
 
         prod_op = Prod(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         prod_mat = prod_op.matrix()
 
@@ -1080,11 +1086,11 @@ class TestProperties:
     op_pauli_reps_nested = (
         (
             qml.prod(
-                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
-                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+                qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)),
+                qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)),
             ),
             qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
-        ),  # prod + pow
+        ),
         (
             qml.prod(
                 qml.s_prod(
@@ -1222,8 +1228,8 @@ class TestSimplify:
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
-            qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.RX(1.23, wires=0),
+            qml.RX(-1.23, wires=0),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
@@ -1236,6 +1242,33 @@ class TestSimplify:
         )
         final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_single_wire(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on one wire."""
+        prod_op = qml.prod(qml.X(0) @ qml.Y(0) @ qml.Z(0) @ qml.H(0))
+        final_op = 1j * qml.H(0)
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_two_wires(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on two wires."""
+        prod_op = qml.prod(
+            qml.X(0)
+            @ qml.Z("a")
+            @ qml.Y(0)
+            @ qml.Z(0)
+            @ qml.X("a")
+            @ qml.Y("a")
+            @ qml.H(0)
+            @ qml.H("a")
+        )
+        final_op = qml.simplify(-1 * qml.H(0) @ qml.H("a"))
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
         qml.assert_equal(simplified_op, final_op)
 
     def test_grouping_with_product_of_sums(self):
@@ -1459,7 +1492,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             my_circ()
 
     def test_operation_integration(self):

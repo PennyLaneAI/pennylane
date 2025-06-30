@@ -20,7 +20,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
 
@@ -497,7 +497,6 @@ class FermionicDoubleExcitation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -552,10 +551,10 @@ class FermionicDoubleExcitation(Operation):
     def num_params(self):
         return 1
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_decomposition(
-        weight, wires, wires1, wires2
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

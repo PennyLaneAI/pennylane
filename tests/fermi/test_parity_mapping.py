@@ -486,7 +486,7 @@ def test_parity_transform_for_identity_ps():
     ),
 )
 def test_parity_transform_for_null_operator_fermi_word_ps(operator):
-    """Test that the parity_tranform function works when the result is 0"""
+    """Test that the parity_transform function works when the result is 0"""
     # in PauliSentence return format, returns None
     assert parity_transform(operator, 4, ps=True).simplify() is None
 

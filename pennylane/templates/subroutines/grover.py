@@ -17,7 +17,7 @@ Contains the Grover Operation template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
 
@@ -100,7 +100,6 @@ class GroverOperator(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __repr__(self):
@@ -184,7 +183,6 @@ class GroverOperator(Operation):
         *wires, work_wires, n_wires
     ):  # pylint: disable=arguments-differ
         wires = qml.math.array(wires, like="jax")
-        work_wires = qml.math.array(work_wires, like="jax")
         ctrl_values = [0] * (n_wires - 1)
 
         @qml.for_loop(len(wires) - 1)

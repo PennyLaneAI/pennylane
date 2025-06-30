@@ -17,9 +17,10 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
+from typing import Any, Hashable, Iterable
 
 from pennylane import math as np
-from pennylane.operation import AnyWires, Channel
+from pennylane.operation import Channel
 from pennylane.wires import Wires, WiresLike
 
 
@@ -559,15 +560,17 @@ class PauliError(Channel):
                [0.70710678, 0.        ]])
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
+    num_params = 1
 
-    num_params = 2
+    resource_keys = {
+        "operators",
+    }
+
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, operators, p, wires: WiresLike, id=None):
         wires = Wires(wires)
-        super().__init__(operators, p, wires=wires, id=id)
+        super().__init__(p, wires=wires, id=id)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z"}):
@@ -581,6 +584,8 @@ class PauliError(Channel):
         if len(self.wires) != len(operators):
             raise ValueError("The number of operators must match the number of wires")
 
+        self.hyperparameters["operators"] = operators
+
         nq = len(self.wires)
 
         if nq > 20:
@@ -588,8 +593,23 @@ class PauliError(Channel):
                 f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
             )
 
+    @classmethod
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
+        """
+        Constructs a PauliError from its serialized version.
+
+        Args:
+            data (Iterable[Any]): the data of the PauliError.
+            metadata (Hashable): the hyperparameters of the PauliError.
+
+        Returns:
+            A constructed PauliError.
+        """
+        hyperparameters_dict = dict(metadata[1])
+        return PauliError(hyperparameters_dict["operators"], data[0], wires=metadata[0])
+
     @staticmethod
-    def compute_kraus_matrices(operators, p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
         """Kraus matrices representing the PauliError channel.
 
         Args:
@@ -713,7 +733,6 @@ class QubitChannel(Channel):
         id (str or None): String representing the operation (optional)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, K_list, wires: WiresLike, id=None):

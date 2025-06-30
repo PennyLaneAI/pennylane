@@ -56,8 +56,9 @@ class QROM(Operation):
         # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
-        dev = qml.device("default.qubit", shots = 1)
+        dev = qml.device("default.qubit")
 
+        @partial(qml.set_shots, shots = 1)
         @qml.qnode(dev)
         def circuit():
 
@@ -184,7 +185,7 @@ class QROM(Operation):
 
         return copied_op
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
 
         return self.compute_decomposition(
             self.bitstrings,

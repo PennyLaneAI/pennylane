@@ -265,7 +265,7 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            # pylint: disable=protected-access
+
             dev_shots = objective_fn.device.shots
 
             shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)

@@ -16,13 +16,14 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
-# pylint: disable=not-callable, unused-argument
+# pylint: disable=not-callable
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
-from pennylane.math import get_canonical_interface_name
+from pennylane.exceptions import DeviceError
+from pennylane.math import get_canonical_interface_name, requires_grad
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
@@ -101,7 +102,7 @@ def legacy_device_batch_transform(tape, device):
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    if isinstance(op, qml.QubitUnitary) and not qml.operation.is_trainable(op):
+    if isinstance(op, qml.QubitUnitary) and not any(requires_grad(d) for d in op.data):
         return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
@@ -242,7 +243,7 @@ class LegacyDeviceFacade(Device):
     def _setup_backprop_config(self, execution_config):
         tape = qml.tape.QuantumScript()
         if not self._validate_backprop_method(tape):
-            raise qml.DeviceError("device does not support backprop.")
+            raise DeviceError("device does not support backprop.")
         if execution_config.use_device_gradient is None:
             return replace(execution_config, use_device_gradient=True)
         return execution_config
@@ -250,7 +251,7 @@ class LegacyDeviceFacade(Device):
     def _setup_adjoint_config(self, execution_config):
         tape = qml.tape.QuantumScript([], [])
         if not self._validate_adjoint_method(tape):
-            raise qml.DeviceError("device does not support device derivatives")
+            raise DeviceError("device does not support device derivatives")
         updated_values = {
             "gradient_keyword_arguments": {"use_device_state": True, "method": "adjoint_jacobian"}
         }
@@ -265,7 +266,7 @@ class LegacyDeviceFacade(Device):
         tape = qml.tape.QuantumScript([], [])
 
         if not self._validate_device_method(tape):
-            raise qml.DeviceError("device does not support device derivatives")
+            raise DeviceError("device does not support device derivatives")
 
         updated_values = {}
         if execution_config.use_device_gradient is None:
@@ -274,7 +275,6 @@ class LegacyDeviceFacade(Device):
             updated_values["grad_on_execution"] = True
         return replace(execution_config, **updated_values)
 
-    # pylint: disable=too-many-return-statements
     def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])
@@ -356,7 +356,7 @@ class LegacyDeviceFacade(Device):
             program((tape,))
         except (
             qml.operation.DecompositionUndefinedError,
-            qml.DeviceError,
+            DeviceError,
             AttributeError,
         ):
             return False

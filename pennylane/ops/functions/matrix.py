@@ -16,15 +16,15 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-# pylint: disable=protected-access,too-many-branches
+# pylint: disable=too-many-branches
 from typing import Union
 
 import pennylane as qml
 from pennylane import transform
+from pennylane.exceptions import TransformError
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 

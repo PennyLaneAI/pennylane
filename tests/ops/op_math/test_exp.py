@@ -20,13 +20,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
-    AllWires,
-    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
+from pennylane.ops.op_math.exp import trotter_decomp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -469,11 +468,7 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = (
-            [0, 1, 2]
-            if op_class.num_wires in {AnyWires, AllWires}
-            else list(range(op_class.num_wires))
-        )
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -614,6 +609,66 @@ class TestDecomposition:
         op = qml.exp(hamiltonian, coeff, num_steps=100)
         matrix = qml.prod(*op.decomposition()).matrix()
         assert qml.math.allclose(matrix, op.matrix())
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (3j, qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (-1j, qml.Y(1) + 3 * qml.PauliX(0) @ qml.PauliZ(2)),
+            (-1, 1j * qml.PauliY(1) + 3j * qml.PauliX(0) @ qml.PauliZ(2)),
+            (0.3j, qml.Z(0) @ qml.Y(1)),
+            (0.3j, qml.Z(0)),
+        ],
+    )
+    def test_trotter_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the trotter decomposition works in the new graph-based system."""
+
+        op = qml.exp(hamiltonian, coeff, num_steps=100)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
+    def test_trotter_decomposition_condition(self):
+        """Tests the condition of the trotter decomposition rule."""
+
+        hamiltonian = qml.RX(0.5, wires=0)
+        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0)
+        op = qml.exp(hamiltonian, coeff=1.5)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0) + qml.RX(0.5, wires=1)
+        op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (0.3j, qml.Z(0) @ qml.Y(1)),
+            (0.5, 0.1j * qml.Y(0) @ qml.I(1) @ qml.Z(2)),
+        ],
+    )
+    def test_pauli_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the pauli decomposition works in the new graph-based system."""
+
+        op = qml.exp(hamiltonian, coeff)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        assert len(decomp_tape) == 1
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
 
 
 class TestMiscMethods:

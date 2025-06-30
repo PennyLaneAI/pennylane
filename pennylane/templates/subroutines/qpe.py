@@ -14,11 +14,18 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
-# pylint: disable=too-many-arguments,arguments-differ
+# pylint: disable=arguments-differ
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operator
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+)
+from pennylane.exceptions import QuantumFunctionError
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
@@ -141,10 +148,10 @@ class QuantumPhaseEstimation(ErrorOperation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
-    # pylint: disable=no-member
+    resource_keys = {"base_resource_rep", "num_estimation_wires"}
+
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
         metadata = (self.hyperparameters["estimation_wires"],)
@@ -158,18 +165,28 @@ class QuantumPhaseEstimation(ErrorOperation):
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
         return cls(data[0], estimation_wires=metadata[0])
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_resource_rep": qml.resource_rep(
+                type(self.hyperparameters["unitary"]),
+                **self.hyperparameters["unitary"].resource_params,
+            ),
+            "num_estimation_wires": len(self.estimation_wires),
+        }
+
     def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "The unitary is expressed as an operator, which already has target wires "
                     "defined, do not additionally specify target wires."
                 )
             target_wires = unitary.wires
 
         elif target_wires is None:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Target wires must be specified if the unitary is expressed as a matrix."
             )
 
@@ -179,16 +196,14 @@ class QuantumPhaseEstimation(ErrorOperation):
         # Estimation wires are required, but kept as an optional argument so that it can be
         # placed after target_wires for backwards compatibility.
         if estimation_wires is None:
-            raise qml.QuantumFunctionError("No estimation wires specified.")
+            raise QuantumFunctionError("No estimation wires specified.")
 
         target_wires = qml.wires.Wires(target_wires)
         estimation_wires = qml.wires.Wires(estimation_wires)
         wires = target_wires + estimation_wires
 
         if any(wire in target_wires for wire in estimation_wires):
-            raise qml.QuantumFunctionError(
-                "The target wires and estimation wires must not overlap."
-            )
+            raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
 
         self._hyperparameters = {
             "unitary": unitary,
@@ -284,3 +299,35 @@ class QuantumPhaseEstimation(ErrorOperation):
         op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list
+
+
+def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
+    gate_count = {
+        qml.H: num_estimation_wires,
+        adjoint_resource_rep(qml.QFT, {"num_wires": num_estimation_wires}): 1,
+    }
+    for i in range(num_estimation_wires):
+        gate_count[
+            controlled_resource_rep(
+                qml.ops.Pow,
+                {
+                    "base_class": base_resource_rep.op_type,
+                    "base_params": base_resource_rep.params,
+                    "z": 2**i,
+                },
+                num_control_wires=1,
+            )
+        ] = 1
+    return gate_count
+
+
+@register_resources(_qpe_decomp_resource)
+def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unused-argument
+    for w in estimation_wires:
+        qml.H(w)
+    for i, w in enumerate(estimation_wires):
+        qml.ctrl(qml.pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
+    qml.adjoint(qml.templates.QFT(wires=estimation_wires))
+
+
+add_decomps(QuantumPhaseEstimation, _qpe_decomp)

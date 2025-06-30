@@ -195,6 +195,7 @@ class TestCaching:
                 [tape],
                 dev,
                 diff_method=param_shift,
+                cache=True,
                 cachesize=cachesize,
             )[0]
 
@@ -913,15 +914,12 @@ class TestJitAllCounts:
         for val in ["01", "10", "11"]:
             assert qml.math.allclose(res[val], 0)
 
-    @pytest.mark.parametrize(
-        "device_name",
-        (
-            pytest.param("default.qubit", marks=pytest.mark.xfail),
-            pytest.param("reference.qubit", marks=pytest.mark.xfail),
-        ),
-    )
+    @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     def test_jit_allcounts_broadcasting(self, device_name):
         """Test jitting with counts with all_outcomes == True."""
+
+        if device_name == "default.qubit":
+            pytest.xfail(reason="counts on the executed tape is not compatible with JAX-JIT")
 
         tape = qml.tape.QuantumScript(
             [qml.RX(np.array([0.0, 0.0]), 0)],
