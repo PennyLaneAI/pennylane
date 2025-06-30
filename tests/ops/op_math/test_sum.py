@@ -903,14 +903,18 @@ class TestProperties:
     def test_label(self):
         """Tests the label method of Sum when <=3 coefficients."""
         H = qml.ops.Sum(-0.8 * Z(0))
-        assert H.label() == "𝓗"
-        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+        assert H.label() == "(-0.8*Z)"
+        assert H.label(decimals=2) == "(-0.80*Z)"
 
     def test_label_many_coefficients(self):
         """Tests the label method of Sum when >3 coefficients."""
         H = qml.ops.Sum(*(0.1 * qml.Z(0) for _ in range(5)))
-        assert H.label() == "𝓗"
-        assert H.label(decimals=2) == "𝓗"
+        assert H.label() == "(0.1*Z)+(0.1*Z)+(0.1*Z)+(0.1*Z)+(0.1*Z)"
+        assert H.label(decimals=2) == "(0.10*Z)+(0.10*Z)+(0.10*Z)+(0.10*Z)+(0.10*Z)"
+
+        cache = {"large_ops": []}
+        assert H.label(cache=cache) == "H0"
+        assert cache["large_ops"][0] == (H, "(0.1*Z)+(0.1*Z)+(0.1*Z)+(0.1*Z)+(0.1*Z)")
 
 
 class TestSimplify:

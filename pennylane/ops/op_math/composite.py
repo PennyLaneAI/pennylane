@@ -335,7 +335,8 @@ class CompositeOp(Operator):
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        base_label = self._base_label(decimals, base_label)
+        base_cache = {"matrices": cache["matrices"]} if cache and "matrices" in cache else None
+        base_label = self._base_label(decimals, base_label, cache=base_cache)
         if (
             cache is None
             or not isinstance(cache.get("large_ops", None), list)
@@ -343,11 +344,11 @@ class CompositeOp(Operator):
         ):
             return base_label
 
-        for i, obs in enumerate(cache["large_ops"]):
+        for i, (obs, _) in enumerate(cache["large_ops"]):
             if obs == self:
                 return f"H{i}"
-        cache["large_ops"].append(self)
-        return f"H{len(cache["large_ops"])-1}"
+        cache["large_ops"].append((self, base_label))
+        return f"H{len(cache['large_ops'])-1}"
 
     def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures

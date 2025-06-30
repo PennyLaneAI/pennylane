@@ -486,7 +486,8 @@ def tape_text(
 
     if cache["large_ops"]:
         obs_str = "".join(
-            _large_op_label(H, i, max_length) for i, H in enumerate(cache["large_ops"])
+            _large_op_label(H_label, i, max_length)
+            for i, (_, H_label) in enumerate(cache["large_ops"])
         )
         tape_totals = tape_totals + obs_str
     if show_matrices:

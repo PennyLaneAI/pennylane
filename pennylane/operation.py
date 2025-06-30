@@ -1117,7 +1117,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
             cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
+                in the same drawing. Possible keys are `"matrices"` and `"large_ops"`.
 
         Returns:
             str: label to use in drawings
@@ -1160,6 +1160,19 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 [0., 1., 0., 0.],
                 [0., 0., 1., 0.],
                 [0., 0., 0., 1.]], requires_grad=True)]
+
+        Operators with long labels can use the ``large_ops`` cache:
+
+        >>> H = qml.X(0) + qml.Y(0) + qml.Z(0)
+        >>> cache = {'large_ops': []}
+        >>> H.label(cache=cache)
+        'H0'
+        >>> cache
+        {'large_ops': [X(0) + Y(0) + Z(0)]}
+        >>> H2 = qml.X(0) + qml.Y(0) + qml.Z(0)
+        >>> H2.label(cache=cache)
+        'H0'
+
 
         """
         op_label = base_label or self.__class__.__name__
