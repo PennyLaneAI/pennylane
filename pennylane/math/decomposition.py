@@ -381,22 +381,21 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
     end up with modified rotations and the identity as phase matrix.
     """
     last_rotations = left_givens if N % 2 else right_givens
-    phases = math.diag(phases)
     for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
         grot_mat, (i, j) = last_rotations[k]
         idx0, idx1 = (j, i) if N % 2 else (i, j)
-        if phases[idx0] < 0:
-            phases = _set_unitary_matrix(phases, i, -phases[i], like=interface)
-            phases = _set_unitary_matrix(phases, j, -phases[j], like=interface)
-            if phases[idx1] < 0:
+        if phases[idx0, idx0] < 0:
+            phases = _set_unitary_matrix(phases, (i, i), -phases[i, i], like=interface)
+            phases = _set_unitary_matrix(phases, (j, j), -phases[j, j], like=interface)
+            if phases[idx1, idx1] < 0:
                 last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
             else:
                 last_rotations[k] = (grot_mat * (-1.0), (i, j))
-        elif phases[idx1] < 0:
+        elif phases[idx1, idx1] < 0:
             last_rotations[k] = (grot_mat.T, (i, j))
 
     left_givens = [(mat.T, indices) for mat, indices in left_givens]
-    return phases, left_givens + list(reversed(right_givens))
+    return math.diag(phases), left_givens + list(reversed(right_givens))
 
 
 def _commute_phases_u(left_givens, right_givens, unitary, interface):

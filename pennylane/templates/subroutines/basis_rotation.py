@@ -100,10 +100,27 @@ class BasisRotation(Operation):
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
         >>> circ_unitary = qml.matrix(circuit, wire_order=wires)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
-        tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
-                [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
-                [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
-                [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]], requires_grad=True)
+        array([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
+               [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
+               [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
+               [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]])
+
+        The ``BasisRotation`` is implemented with ``PhasShift`` and ``SingleExcitation`` gates:
+
+        >>> print(qml.draw(qml.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
+        0: ──Rϕ(-1.52)─╭G(1.38)──Rϕ(-1.62)─┤
+        1: ──Rϕ(1.62)──╰G(1.38)────────────┤
+
+        For real-valued matrices, the decomposition only consists of ``SingleExcitation`` gates,
+        except for one phase gate to account for negative determinants:
+
+        >>> from scipy.stats import ortho_group
+        >>> O = ortho_group.rvs(4, random_state=51)
+        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
+        0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
+        1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
+        2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
+        3: ───────────╰G(-2.98)──────────╰G(5.70)─┤
 
     .. details::
         :title: Theory
@@ -121,7 +138,7 @@ class BasisRotation(Operation):
 
         .. math::
 
-            b_p^\dagger = \sum_{q}u_{pq} a_p^\dagger.
+            b_p^\dagger = \sum_{q}u_{pq} a_q^\dagger.
 
         The rotation is irreducibly represented as a unitary :math:`N\times N` matrix :math:`u`,
         which can be factorized into nearest-neighbour Givens rotations of the form
@@ -131,10 +148,10 @@ class BasisRotation(Operation):
             T_{k}(\theta) = \begin{pmatrix}
                 1 & 0 & \cdots & 0 & 0 & \cdots & 0 & 0 \\
                 0 & 1 & & & & & 0 & 0 \\
-                \vdots & \ddots & & & & & & \vdots \\
+                \vdots & & \ddots & & & & & \vdots \\
                 0 & & & \cos(\theta) & -\sin(\theta) & & & 0 \\
                 0 & & & \sin(\theta) & \cos(\theta) & & & 0 \\
-                \vdots & & & & & & \ddots& \vdots \\
+                \vdots & & & & & \ddots & & \vdots \\
                 0 & 0 & & & & & 1 & 0 \\
                 0 & 0 & \cdots & 0 & 0  & \cdots & 0 & 1 \\
             \end{pmatrix},
@@ -154,17 +171,21 @@ class BasisRotation(Operation):
         .. math::
 
             T_k(\theta) &= \exp(\theta E_{k,k+1})\\
-            P_j(\phi) &= \exp(i \phi D_{j})
+            P_j(\phi) &= \exp(i \phi D_{j})\\
             \langle\{E_{k,k+1}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{E_{k,\ell} | 1\leq k<\ell\leq N\}\cong\mathfrak{so}(N)\\
             \langle\{D_{j}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{D_{j} | 1\leq j\leq N\}\cong\mathfrak{u}(1)^N\\
-            \mathfrak{g}&=\langle\{D_{j}\}_k\cup\{E_{k,k+1}\}_k\rangle_\text{Lie} \cong \mathfrak{u}(N).
+            \mathfrak{g}\coloneqq\langle\{D_{j}\}_j\cup\{E_{k,k+1}\}_k\rangle_\text{Lie}
+            &=\text{span}_{\mathbb{R}}\left(\{E_{k,\ell}, F_{k,\ell}| 1\leq k<\ell \leq N\}\cup\{D_{j}\}_j\right)
+            \cong \mathfrak{u}(N).
 
         Here we used the matrices :math:`E_{k,\ell}` that are zero everywhere except for a
         :math:`-1` in position :math:`(k,\ell)` and a :math:`1` in position :math:`(\ell,k)`,
         as well as :math:`D_j` which is zero everywhere except for a :math:`1` in position
         :math:`(j,j)`. The full algebra :math:`\mathfrak{g}` additionally contains the
         matrices :math:`F_{k,\ell}` that look like the :math:`E_{k,\ell}` but without any
-        minus sign.
+        minus sign. There are :math:`\tfrac{1}{2}N(N-1)` matrices :math:`E` and :math:`F` each,
+        and :math:`N` matrices :math:`D`, spanning the :math:`N^2`-dimensional
+        algebra :math:`\mathfrak{u}(N)`.
 
         The template ``BasisRotation`` maps the factorization of :math:`u` to a quantum circuit
         via the identification
@@ -186,7 +207,7 @@ class BasisRotation(Operation):
         (X(0) @ Y(1) + -1.0 * (Y(0) @ X(1)), np.float64(0.25))
 
         Similarly, the ``PhaseShift`` gates have the generators
-        :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{1}-Z_j)=i|1\rangle\langle 1|_j`:
+        :math:`\hat{D}_j=\tfrac{i}{2}(\mathbb{I}-Z_j)=i|1\rangle\langle 1|_j`:
 
         >>> qml.generator(qml.PhaseShift(0.742, [0]))
         (Projector(array([1]), wires=[0]), 1.0)
@@ -206,7 +227,7 @@ class BasisRotation(Operation):
 
             E_{k,\ell} & \mapsto \hat{E}_{k,\ell} = \tfrac{i}{2}(\overline{X_kY_\ell}-\overline{Y_kX_\ell}),\\
             F_{k,\ell} & \mapsto \hat{F}_{k,\ell} = \tfrac{i}{2}(\overline{X_kX_\ell}+\overline{Y_kY_\ell}),\\
-            D_{j} & \mapsto \hat{D}_{j} = \tfrac{i}{2}(\mathbb{1}-Z_j).
+            D_{j} & \mapsto \hat{D}_{j} = \tfrac{i}{2}(\mathbb{I}-Z_j).
 
         The fact that we need to use :math:`\overline{X_kY_\ell}` instead of :math:`X_kY_\ell`
         is a consequence of mapping fermions onto qubits via the Jordan-Wigner transformation.
