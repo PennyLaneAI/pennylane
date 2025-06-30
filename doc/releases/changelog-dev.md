@@ -598,6 +598,7 @@
 <h4>Other improvements</h4>
 
 * `qml.evolve` now errors out if the first argument is not a valid type.
+  [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
 
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
