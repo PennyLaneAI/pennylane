@@ -586,14 +586,14 @@ class QasmInterpreter:
             context (Context): the current context.
         """
 
-        def _check_for_mcm(curr_context: Context):
+        def _check_for_mcm(node: ast.WhileLoop, curr_context: Context):
             if isinstance(self.visit(node.while_condition, curr_context), MeasurementValue):
                 raise ValueError(
                     "Mid circuit measurement outcomes can not be used as conditions to a while loop. "
                     "To condition on the outcome of a measurement, please use if / else."
                 )
 
-        _check_for_mcm(context)
+        _check_for_mcm(node, context)
 
         @while_loop(partial(self.visit, node.while_condition))  # traces data dep through context
         def loop(context):
@@ -610,7 +610,7 @@ class QasmInterpreter:
             except ContinueException:
                 pass  # evaluation of this iteration ends, and we continue to the next
 
-            _check_for_mcm(context)
+            _check_for_mcm(node, context)
 
             return context
 
@@ -1094,15 +1094,17 @@ class QasmInterpreter:
         try:
             if isinstance(node.type, ast.IntType):
                 ret = int(arg)
-            if isinstance(node.type, ast.UintType):
+            elif isinstance(node.type, ast.UintType):
                 ret = uint(arg)
-            if isinstance(node.type, ast.FloatType):
+            elif isinstance(node.type, ast.FloatType):
                 ret = float(arg)
-            if isinstance(node.type, ast.ComplexType):
+            elif isinstance(node.type, ast.ComplexType):
                 ret = complex(arg)
-            if isinstance(node.type, ast.BoolType):
+            elif isinstance(node.type, ast.BoolType):
                 ret = bool(arg)
             # TODO: durations, angles, etc.
+            else:
+                raise TypeError(f"Unsupported cast type {node.type.__class__.__name__}")
         except TypeError as e:
             raise TypeError(
                 f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}"

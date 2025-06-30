@@ -818,6 +818,22 @@ class TestVariables:
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
 
+    def test_unsupported_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0;
+            const duration l = duration(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Unable to cast float to DurationType: Unsupported cast type DurationType",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
+
     def test_cannot_cast(self):
         # parse the QASM program
         ast = parse(
