@@ -672,8 +672,9 @@ class QasmInterpreter:
             TypeError: if it is a qubit register declaration.
         """
         if isinstance(node.size, ast.IntegerLiteral):
-            raise TypeError("Qubit registers are not yet supported, "
-                            "please declare each qubit individually.")
+            raise TypeError(
+                "Qubit registers are not yet supported, please declare each qubit individually."
+            )
         context.wires.append(node.qubit.name)
 
     @visit.register(ast.ClassicalAssignment)
