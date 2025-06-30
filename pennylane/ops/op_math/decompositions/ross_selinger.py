@@ -70,7 +70,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
         decomposition_info (tuple): The decomposition information.
 
     Returns:
-        list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
+        list[~pennylane.operation.Operation]: A Clifford+T gate implementing the instructions from `decomposition_info`.
     """
     ops = []
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
