@@ -667,6 +667,9 @@ class QasmInterpreter:
         Args:
             node (QASMNode): The QubitDeclaration QASMNode.
             context (Context): The current context.
+
+        Raises:
+            TypeError: if it is a qubit register declaration.
         """
         if isinstance(node.size, ast.IntegerLiteral):
             raise TypeError("Qubit registers are not yet supported, "
