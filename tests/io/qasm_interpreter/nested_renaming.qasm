@@ -1,4 +1,4 @@
-qubit q0;
+qubit[1] q;
 
 def f3(qubit q2) {
     h q2;
@@ -14,4 +14,4 @@ def f1(qubit q1) {
     f2(q1);
 }
 
-f1(q0);
+f1(q[0]);
