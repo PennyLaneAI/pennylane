@@ -671,7 +671,7 @@ class QasmInterpreter:
         Raises:
             TypeError: if it is a qubit register declaration.
         """
-        if isinstance(node.size, ast.IntegerLiteral):
+        if node.size is not None:
             raise TypeError(
                 "Qubit registers are not yet supported, please declare each qubit individually."
             )
