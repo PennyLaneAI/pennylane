@@ -1237,7 +1237,7 @@ class QasmInterpreter:
             node (QASMNode): The QubitDeclaration QASMNode.
             context (Context): The current context.
         """
-        if isinstance(node.size, IntegerLiteral):
+        if node.size is not None and isinstance(self.visit(node.size, context), int):
             context.registers[node.qubit.name] = []
             for i in range(self.visit(node.size, context)):
                 context.wires.append(f"{node.qubit.name}[{i}]")
