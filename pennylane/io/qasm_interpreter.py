@@ -668,6 +668,9 @@ class QasmInterpreter:
             node (QASMNode): The QubitDeclaration QASMNode.
             context (Context): The current context.
         """
+        if isinstance(node.size, ast.IntegerLiteral):
+            raise TypeError("Qubit registers are not yet supported, "
+                            "please declare each qubit individually.")
         context.wires.append(node.qubit.name)
 
     @visit.register(ast.ClassicalAssignment)
