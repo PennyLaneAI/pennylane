@@ -68,7 +68,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
+    expected_set = DefaultQutrit.operations | {"Snapshot"} | channels | {"QutritDensityMatrix"}
     return op.name in expected_set
 
 
