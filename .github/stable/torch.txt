@@ -5,7 +5,7 @@ autograd==1.8.0
 autoray==0.7.1
 black==25.1.0
 build==1.2.2.post1
-cachetools==6.0.0
+cachetools==6.1.0
 certifi==2025.6.15
 cffi==1.17.1
 cfgv==3.4.0
@@ -62,7 +62,7 @@ osqp==1.0.4
 packaging==25.0
 pandas==2.3.0
 pathspec==0.12.1
-PennyLane_Lightning==0.42.0.dev35
+PennyLane_Lightning==0.42.0.dev38
 pillow==11.2.1
 platformdirs==4.3.8
 pluggy==1.6.0
@@ -72,11 +72,11 @@ py==1.11.0
 py-cpuinfo==9.0.0
 pycparser==2.22
 pydot==3.0.4
-Pygments==2.19.1
+Pygments==2.19.2
 pylint==2.7.4
 pyparsing==3.2.3
 pyproject_hooks==1.2.0
-pytest==8.4.0
+pytest==8.4.1
 pytest-benchmark==5.1.0
 pytest-cov==6.2.1
 pytest-forked==1.6.0
@@ -91,7 +91,7 @@ requests==2.32.4
 rich==13.9.4
 rustworkx==0.16.0
 scipy==1.15.3
-scipy-openblas32==0.3.29.265.1
+scipy-openblas32==0.3.30.0.0
 scs==3.2.7.post2
 six==1.17.0
 smmap==5.0.2
@@ -106,7 +106,7 @@ torch==2.5.1
 triton==3.1.0
 typing_extensions==4.14.0
 tzdata==2025.2
-urllib3==2.4.0
+urllib3==2.5.0
 virtualenv==20.31.2
 wcwidth==0.2.13
 wrapt==1.12.1
