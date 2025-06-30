@@ -6,6 +6,11 @@
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
+* The decomposition of :class:`~.BasisRotation` has been updated to skip redundant phase shift
+  gates with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. Only a
+  single phase shift is required in case the matrix has determinant :math:`-1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
@@ -1033,6 +1038,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
 
 <h3>Documentation 📝</h3>
+
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
 * The functions in `qml.qchem.vibrational` are updated to include additional information about the 
   theory and input arguments.
