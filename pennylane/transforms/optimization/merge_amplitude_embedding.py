@@ -19,11 +19,11 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane import AmplitudeEmbedding
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, TransformError
 from pennylane.math import flatten, is_abstract, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import TransformError, transform
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 
