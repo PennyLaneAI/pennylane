@@ -125,7 +125,7 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
 
 
 @pytest.mark.parametrize(
-    ("unitary_matrix", "msg_match"),
+    ("unitary_matrix", "is_so", "msg_match"),
     [
         (
             np.array(
@@ -134,6 +134,7 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                 ]
             ),
+            False,
             "The unitary matrix should be of shape NxN",
         ),
         (
@@ -143,15 +144,17 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                 ]
             ).T,
+            False,
             "The unitary matrix should be of shape NxN",
         ),
+        (np.eye(2, dtype=complex), True, "Expected real-valued input"),
     ],
 )
-def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
+def test_givens_decomposition_exceptions(unitary_matrix, is_so, msg_match):
     """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
 
     with pytest.raises(ValueError, match=msg_match):
-        givens_decomposition(unitary_matrix)
+        givens_decomposition(unitary_matrix, is_so=is_so)
 
 
 @pytest.mark.jax

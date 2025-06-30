@@ -298,7 +298,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     return unitary_matrix
 
 
-def _givens_matrix(a, b, left=True, tol=1e-8):
+def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -333,7 +333,6 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
 
     interface = interface_a
 
-    aprod = math.nan_to_num(abs_b * abs_a)
     hypot = math.hypot(abs_a, abs_b) + 1e-15  # avoid division by zero
 
     cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
@@ -342,63 +341,19 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
     sine = math.where(abs_a < tol, 0.0, sine)
 
+    if real_valued:
+        sign = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
+        if not left:
+            cosine, sine = sine, -cosine
+        return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
+
+    aprod = math.nan_to_num(abs_b * abs_a)
     phase = math.where(abs_b < tol, 1.0, (1.0 * b * math.conj(a)) / (aprod + 1e-15))
     phase = math.where(abs_a < tol, 1.0, phase)
-
     if left:
         return math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
 
     return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
-
-
-def _givens_matrix_real(a, b, left=True, tol=1e-8):
-    r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
-
-    When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
-
-    .. math::
-
-            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix} \quad \quad \quad \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
-
-    where :math:`r` is a complex number.
-
-    Args:
-        a (float or complex): first element of the vector for which the Givens matrix is being computed
-        b (float or complex): second element of the vector for which the Givens matrix is being computed
-        left (bool): determines if the Givens matrix is being applied from the left side or right side.
-        tol (float): determines tolerance limits for :math:`|a|` and :math:`|b|` under which they are considered as zero.
-
-    Returns:
-        tensor_like: Givens rotation matrix
-
-    Raises:
-        TypeError: if a and b have different interfaces
-
-    """
-
-    abs_a, abs_b = math.abs(a), math.abs(b)
-    interface_a, interface_b = math.get_interface(a), math.get_interface(b)
-
-    if interface_a != interface_b:
-        raise TypeError(
-            f"The interfaces of 'a' and 'b' do not match. Got {interface_a} and {interface_b}."
-        )
-
-    interface = interface_a
-
-    hypot = math.hypot(abs_a, abs_b) + 1e-15  # avoid division by zero
-
-    cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
-    cosine = math.where(abs_a < tol, 1.0, cosine)
-
-    sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
-    sine = math.where(abs_a < tol, 0.0, sine)
-
-    sign = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
-
-    if not left:
-        cosine, sine = sine, -cosine
-    return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
 
 
 def _absorb_phases_so(left_givens, right_givens, N, unitary, interface):
@@ -541,11 +496,11 @@ def givens_decomposition(unitary, is_so=False):
 
     """
     interface = math.get_deep_interface(unitary)
-    if is_so:
-        givens_fn = _givens_matrix_real
-        assert math.isreal(unitary[0, 0])  # arrays have consistent dtypes, so it check just one
-    else:
-        givens_fn = _givens_matrix
+    if is_so and math.get_dtype_name(unitary).startswith("complex"):
+        raise ValueError(
+            f"Expected real-valued input for is_so=True, but got {math.round(unitary, 4)} "
+            f"with dtype {math.get_dtype_name(unitary)}"
+        )
 
     unitary = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
     shape = math.shape(unitary)
@@ -560,7 +515,9 @@ def givens_decomposition(unitary, is_so=False):
         if i % 2:
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
-                grot_mat = givens_fn(*unitary[N - j - 1, indices].T, left=True)
+                grot_mat = _givens_matrix(
+                    *unitary[N - j - 1, indices].T, left=True, real_valued=is_so
+                )
                 unitary = _set_unitary_matrix(
                     unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
                 )
@@ -568,7 +525,7 @@ def givens_decomposition(unitary, is_so=False):
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                grot_mat = givens_fn(*unitary[indices, j - 1], left=False)
+                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=is_so)
                 unitary = _set_unitary_matrix(
                     unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
                 )
