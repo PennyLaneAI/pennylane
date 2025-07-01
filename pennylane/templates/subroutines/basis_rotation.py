@@ -333,13 +333,13 @@ class BasisRotation(Operation):
             if op is not None:
                 op_list.append(op)
 
-            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
+            _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
             for grot_mat, (i, j) in givens_list:
                 theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
                 op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
             return op_list
 
-        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
+        phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))

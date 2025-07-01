@@ -145,16 +145,15 @@ def test_givens_decomposition(shape):
 
 
 @pytest.mark.parametrize("shape", [2, 3, 4, 5, 6, 7, 8, 14, 15, 16])
-@pytest.mark.parametrize("is_so", (False, True))
-def test_givens_decomposition_real_valued(shape, is_so, seed):
+@pytest.mark.parametrize("dtype", [np.complex128, np.float64])
+def test_givens_decomposition_real_valued(shape, dtype, seed):
     r"""Test that `givens_decomposition` perform correct Givens decomposition of
-    real-valued matrices."""
+    real-valued matrices, both for real and complex data type."""
 
-    matrix = ortho_group.rvs(shape, random_state=seed)
+    matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
     matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
 
-    phase_mat, ordered_rotations = givens_decomposition(matrix, is_so=is_so)
-    dtype = float if is_so else complex
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, j) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=dtype)
@@ -169,7 +168,7 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
 
 
 @pytest.mark.parametrize(
-    ("unitary_matrix", "is_so", "msg_match"),
+    ("unitary_matrix", "msg_match"),
     [
         (
             np.array(
@@ -178,7 +177,6 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                 ]
             ),
-            False,
             "The unitary matrix should be of shape NxN",
         ),
         (
@@ -188,17 +186,15 @@ def test_givens_decomposition_real_valued(shape, is_so, seed):
                     [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
                 ]
             ).T,
-            False,
             "The unitary matrix should be of shape NxN",
         ),
-        (np.eye(2, dtype=complex), True, "Expected real-valued input"),
     ],
 )
-def test_givens_decomposition_exceptions(unitary_matrix, is_so, msg_match):
+def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
     """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
 
     with pytest.raises(ValueError, match=msg_match):
-        givens_decomposition(unitary_matrix, is_so=is_so)
+        givens_decomposition(unitary_matrix)
 
 
 @pytest.mark.jax

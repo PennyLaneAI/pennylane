@@ -427,29 +427,38 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
 
 
 # pylint: disable=too-many-branches
-def givens_decomposition(unitary, is_so=False):
+def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     This decomposition is based on the construction scheme given in `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ ,
-    which allows one to write any unitary matrix :math:`U` as:
+    which allows one to write any :math:`N\times N` unitary matrix :math:`U` as:
 
     .. math::
 
-        U = D \left(\prod_{(m, n) \in G} T_{m, n}(\theta, \phi)\right),
+        U = D \left(\prod_{m \in G} T_m(\theta, \phi)\right),
 
-    where :math:`D` is a diagonal phase matrix, :math:`T(\theta, \phi)` is the Givens rotation gates with phase shifts and :math:`G` defines the
-    specific ordered sequence of the Givens rotation gates acting on wires :math:`(m, n)`. The unitary for the :math:`T(\theta, \phi)` gates
-    appearing in the decomposition is of the following form:
+    where :math:`D` is a diagonal phase matrix, :math:`T_m(\theta, \phi)` is the Givens rotation
+    (with phase shift) between matrix indices :math:`m` and :math:`m+1` (zero-based indexing),
+    and :math:`G` defines the ordered sequence of the Givens rotations. The explicit form of the
+    Givens rotation with phase shift reads:
 
     .. math:: T(\theta, \phi) = \begin{bmatrix}
-                                    1 & 0 & 0 & 0 \\
+                                    \mathbb{I}_{m} & 0 & 0 & 0 \\
                                     0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
                                     0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
-                                    0 & 0 & 0 & 1
+                                    0 & 0 & 0 & \mathbb{I}_{N-m-2}
                                 \end{bmatrix},
 
-    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace
-    and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+    where :math:`\theta \in [0, \pi/2]` is the angle of rotation
+    and :math:`\phi \in [0, 2 \pi]` represents the phase shift.
+
+    For real-valued matrices with unit determinant, i.e. special orthogonal :math:`U`,
+    all phase angles :math:`\phi` vanish and :math:`D` can be fixed to the identity,
+    absorbing its phases :math:`\pm 1` (with an even number of :math:`-1`\ s due to the
+    determinant constraint) into the :math:`T` matrices.
+    Whether :math:`U` is orthogonal is inferred from the data type of ``unitary``.
+    If the determinant of an orthogonal :math:`U` is negative, this will show as a single
+    negative phase in the first output value of ``givens_decomposition``.
 
     **Example**
 
@@ -487,17 +496,6 @@ def givens_decomposition(unitary, is_so=False):
     .. details::
         :title: Theory and Pseudocode
 
-        **Givens Rotation**
-
-        Applying the Givens rotation :math:`T(\theta, \phi)` performs the following transformation of the basis states:
-
-        .. math::
-
-            &|00\rangle \mapsto |00\rangle\\
-            &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
-            &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
-            &|11\rangle \mapsto |11\rangle.
-
         **Pseudocode**
 
         The algorithm that implements the decomposition is the following:
@@ -511,17 +509,22 @@ def givens_decomposition(unitary, is_so=False):
                             # Find T^-1(i-j, i-j+1) matrix that nulls element (N-j, i-j) of U
                             # Update U = U @ T^-1(i-j, i-j+1)
                     else:
-                        for j in range(1, i):
+                        for j in range(i):
                             # Find T(N+j-i-1, N+j-i) matrix that nulls element (N+j-i, j) of U
                             # Update U = T(N+j-i-1, N+j-i) @ U
 
+                if real_data_type:
+                    # Absorb the diagonal phases, which can only be 1s and an even number of
+                    # -1s, in the T gates. Adjust ordering and/or matrices of left-applied
+                    # and right-applied T matrices so that they make up U instead of U^{-1}.
+                else:
+                    # Commute the diagonal phases from between the left-applied and right-applied
+                    # T matrices to the left. Adjust ordering and/or matrices of left-applied
+                    # and right-applied T matrices so that they make up U instead of U^{-1}.
+
     """
     interface = math.get_deep_interface(unitary)
-    if is_so and math.get_dtype_name(unitary).startswith("complex"):
-        raise ValueError(
-            f"Expected real-valued input for is_so=True, but got {math.round(unitary, 4)} "
-            f"with dtype {math.get_dtype_name(unitary)}"
-        )
+    is_real = not math.get_dtype_name(unitary).startswith("complex")
 
     unitary = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
     shape = math.shape(unitary)
@@ -534,24 +537,22 @@ def givens_decomposition(unitary, is_so=False):
     left_givens, right_givens = [], []
     for i in range(1, N):
         if i % 2:
-            for j in range(0, i):
+            for j in range(i):
                 indices = [i - j - 1, i - j]
-                grot_mat = _givens_matrix(
-                    *unitary[N - j - 1, indices].T, left=True, real_valued=is_so
-                )
+                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, real_valued=is_real)
                 unitary = _set_unitary_matrix(
                     unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
                 )
                 right_givens.append((math.conj(grot_mat), indices))
         else:
-            for j in range(1, i + 1):
-                indices = [N + j - i - 2, N + j - i - 1]
-                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=is_so)
+            for j in range(i):
+                indices = [N + j - i - 1, N + j - i]
+                grot_mat = _givens_matrix(*unitary[indices, j], left=False, real_valued=is_real)
                 unitary = _set_unitary_matrix(
                     unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
                 )
                 left_givens.append((grot_mat, indices))
-    if is_so:
+    if is_real:
         return _absorb_phases_so(left_givens, right_givens, N, unitary, interface)
 
     return _commute_phases_u(left_givens, right_givens, unitary, interface)
