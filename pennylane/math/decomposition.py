@@ -416,28 +416,14 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
         decomp_mat = math.conj(grot_mat).T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
-
-        # check for T_{m,n}^{-1} x D = D x T.
-        if not math.is_abstract(decomp_mat) and not math.allclose(
-            nphase_mat @ math.conj(givens_mat), decomp_mat
-        ):  # pragma: no cover
-            raise ValueError("Failed to shift phase transposition.")
-
         for diag_idx, diag_val in zip([(i, i), (j, j)], math.diag(nphase_mat)):
             unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
+
         nleft_givens.append((math.conj(givens_mat), (i, j)))
 
-    phases, ordered_rotations = math.diag(unitary), []
+    ordered_rotations = list(reversed(nleft_givens)) + list(reversed(right_givens))
 
-    # Reordering and validation.
-    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not math.is_abstract(grot_mat) and not math.all(
-            math.isreal(grot_mat[0, 1]) and math.isreal(grot_mat[1, 1])
-        ):  # pragma: no cover
-            raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
-        ordered_rotations.append((grot_mat, (i, j)))
-
-    return phases, ordered_rotations
+    return math.diag(unitary), ordered_rotations
 
 
 # pylint: disable=too-many-branches

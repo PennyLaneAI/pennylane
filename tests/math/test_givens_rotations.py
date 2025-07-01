@@ -32,6 +32,9 @@ from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, gi
         (1.5 + 2.3j, 2.1 - 3.7j),
         (1.0, 0.0),
         (0.0, 1.0),
+        (-1.0, 0.0),
+        (0.0, -1.0),
+        (0.0, 1j),
         (1.2, 2.3j),
         (0.0, 0.0),
     ],
@@ -42,14 +45,55 @@ def test_givens_matrix(a, b, left):
     grot_mat = _givens_matrix(a, b, left)
     assert np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
 
-    rotated_vector = grot_mat @ np.array([a, b]).T
-    result_element = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
-    rvec = np.array([0.0, result_element]).T if left else np.array([result_element, 0.0]).T
+    rotated_vector = grot_mat @ np.array([a, b])
+    if np.abs(a) < 1e-8 or np.abs(b) < 1e-8:
+        phase = 1.0
+    else:
+        phase = b * np.conj(a) / np.abs(a) / np.abs(b)
+    hypot = np.hypot(np.abs(a), np.abs(b)) + 1e-15
+    result_element = (phase * a * np.abs(a) + b * np.abs(b)) / hypot
+    rvec = np.array([0.0, result_element]) if left else np.array([result_element, 0.0])
     assert np.allclose([a, b], 0.0) or np.allclose(rotated_vector, rvec)
 
     res1 = np.round(grot_mat @ grot_mat.conj().T, 5)
     res2 = np.round(grot_mat.conj().T @ grot_mat, 5)
     assert np.all(res1 == res2) and np.all(res1 == np.eye(2))
+
+
+@pytest.mark.parametrize("left", [True, False])
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        (1.2, 2.3),
+        (1.0, 1.0),
+        (1.0, 0.0),
+        (0.0, 1.0),
+        (-1.0, 0.0),
+        (0.0, -1.0),
+        (-1.0, -1.0),
+        (0.1, 20.3),
+        (-0.1, 20.3),
+        (0.0, 0.0),
+    ],
+)
+def test_givens_matrix_real(a, b, left):
+    r"""Test that `_givens_matrix` builds the correct real-valued Givens rotation matrices."""
+
+    grot_mat = _givens_matrix(a, b, left, real_valued=True)
+    assert grot_mat.dtype == np.float64
+
+    rotated_vector = grot_mat @ np.array([a, b])
+    sign = np.sign(a * b)
+    if np.abs(a) < 1e-8 or np.abs(b) < 1e-8:
+        sign = 1.0
+    hypot = np.hypot(np.abs(a), np.abs(b)) + 1e-15
+    result_element = (sign * a * np.abs(a) + b * np.abs(b)) / hypot
+    if not left:
+        result_element *= sign
+    rvec = np.array([0.0, result_element]) if left else np.array([result_element, 0.0])
+    assert np.allclose([a, b], 0.0) or np.allclose(rotated_vector, rvec)
+    assert np.allclose(grot_mat @ grot_mat.T, np.eye(2))
+    assert np.allclose(grot_mat.T @ grot_mat, np.eye(2))
 
 
 @pytest.mark.parametrize("left", [True, False])

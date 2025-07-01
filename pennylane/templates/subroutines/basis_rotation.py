@@ -233,6 +233,19 @@ class BasisRotation(Operation):
         is a consequence of mapping fermions onto qubits via the Jordan-Wigner transformation.
         Depending on the application, the relative signs between operators in this mapping need
         to be considered with extra care.
+
+        **Real rotation matrices**
+
+        It is common that the orbital rotation matrix implemented by ``BasisRotation`` is
+        real-valued, and thus orthogonal. The generators :math:`E_{k,k+1}` generate the Lie
+        algebra :math:`\mathfrak{so}(N)`, which means that the Givens rotations
+        :math:`T_k` are sufficient to factorize the full rotation, and only ``SingleExcitation``
+        gates are needed in the quantum circuit. A small exception occurs for orthogonal matrices
+        that are not *special* orthogonal (unit determinant), i.e., that have
+        determinant :math:`-1`. For those, a phase flip gate :class:`~.Z` can be used to invert
+        the sign of one row or column of the matrix, which then has unit determinant and can be
+        implemented with ``SingleExcitation`` gates.
+
     """
 
     grad_method = None
