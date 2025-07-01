@@ -374,13 +374,13 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
     if _isrealobj(unitary_matrix):
         _, unitary_matrix = _adjust_determinant(unitary_matrix, wires)
 
-        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix, True)
+        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
         for grot_mat, (i, j) in givens_list:
             theta = math.arctan2(grot_mat[0, 1], grot_mat[0, 0])
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
         return
 
-    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix, False)
+    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
     for idx, phase in enumerate(phase_list):
         PhaseShift(math.angle(phase), wires=wires[idx])
