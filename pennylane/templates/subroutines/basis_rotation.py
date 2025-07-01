@@ -105,7 +105,8 @@ class BasisRotation(Operation):
                [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
                [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]])
 
-        The ``BasisRotation`` is implemented with ``PhasShift`` and ``SingleExcitation`` gates:
+        The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
+        :class:`~.SingleExcitation` gates:
 
         >>> print(qml.draw(qml.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
         0: ──Rϕ(-1.52)─╭G(1.38)──Rϕ(-1.62)─┤
@@ -141,7 +142,8 @@ class BasisRotation(Operation):
             b_p^\dagger = \sum_{q}u_{pq} a_q^\dagger.
 
         The rotation is irreducibly represented as a unitary :math:`N\times N` matrix :math:`u`,
-        which can be factorized into nearest-neighbour Givens rotations of the form
+        which can be factorized into nearest-neighbour Givens rotations and individual phase
+        shifts. The Givens rotations take the form
 
         .. math::
 
@@ -157,7 +159,7 @@ class BasisRotation(Operation):
             \end{pmatrix},
 
         where the four non-trivial entries are at indices :math:`k` and :math:`k+1`, and
-        into individual phase shifts of the form
+        the phase shifts read
 
         .. math::
 
@@ -165,16 +167,16 @@ class BasisRotation(Operation):
 
         where the single non-trivial entry is at index :math:`j`.
         Such a factorization is implemented in :func:`~.math.decomposition.givens_decomposition`.
-        It will be useful to look at the generators of :math:`T_{k}` as well as :math:`P_j`, and
-        at the Lie algebra :math:`\mathfrak{g}` they generate:
+        It will be useful to look at the generators of :math:`T_{k}` and :math:`P_j`, as well as
+        the Lie algebra :math:`\mathfrak{g}` they generate:
 
         .. math::
 
             T_k(\theta) &= \exp(\theta E_{k,k+1})\\
             P_j(\phi) &= \exp(i \phi D_{j})\\
             \langle\{E_{k,k+1}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{E_{k,\ell} | 1\leq k<\ell\leq N\}\cong\mathfrak{so}(N)\\
-            \langle\{D_{j}\}_k\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{D_{j} | 1\leq j\leq N\}\cong\mathfrak{u}(1)^N\\
-            \mathfrak{g}\coloneqq\langle\{D_{j}\}_j\cup\{E_{k,k+1}\}_k\rangle_\text{Lie}
+            \langle\{D_{j}\}_j\rangle_\text{Lie} &= \text{span}_{\mathbb{R}}\{D_{j} | 1\leq j\leq N\}\cong\mathfrak{u}(1)^N\\
+            \mathfrak{g}=\langle\{D_{j}\}_j\cup\{E_{k,k+1}\}_k\rangle_\text{Lie}
             &=\text{span}_{\mathbb{R}}\left(\{E_{k,\ell}, F_{k,\ell}| 1\leq k<\ell \leq N\}\cup\{D_{j}\}_j\right)
             \cong \mathfrak{u}(N).
 
@@ -184,8 +186,8 @@ class BasisRotation(Operation):
         :math:`(j,j)`. The full algebra :math:`\mathfrak{g}` additionally contains the
         matrices :math:`F_{k,\ell}` that look like the :math:`E_{k,\ell}` but without any
         minus sign. There are :math:`\tfrac{1}{2}N(N-1)` matrices :math:`E` and :math:`F` each,
-        and :math:`N` matrices :math:`D`, spanning the :math:`N^2`-dimensional
-        algebra :math:`\mathfrak{u}(N)`.
+        and :math:`N` matrices :math:`D`, so that all taken together span the
+        :math:`N^2`-dimensional algebra :math:`\mathfrak{u}(N)`.
 
         The template ``BasisRotation`` maps the factorization of :math:`u` to a quantum circuit
         via the identification
@@ -212,10 +214,11 @@ class BasisRotation(Operation):
         >>> qml.generator(qml.PhaseShift(0.742, [0]))
         (Projector(array([1]), wires=[0]), 1.0)
 
-        It turns out that these generators have commutation relations equivalent to those of
+        It turns out that these generators :math:`\hat{E}_{k,k+1}` and :math:`\hat{D}_j`
+        have commutation relations equivalent to those of
         the irreducible matrices above, with a crucial feature in how the identification
         :math:`E_{k,k+1}\mapsto \hat{E}_{k,k+1}` generalizes.
-        One could try to map, say :math:`E_{2, 4}` to :math:`\tfrac{i}{2}(X_2 Y_4 -Y_2 X_4)`,
+        One could try to map, say, :math:`E_{2, 4}` to :math:`\tfrac{i}{2}(X_2 Y_4 -Y_2 X_4)`,
         but this will not be consistent with the operators and commutation relations in the
         algebra. Instead, we need to insert strings of Pauli :math:`Z` operators whenever the
         interaction encoded by the generator is not between nearest neighbours, so that
@@ -232,7 +235,7 @@ class BasisRotation(Operation):
         The fact that we need to use :math:`\overline{X_kY_\ell}` instead of :math:`X_kY_\ell`
         is a consequence of mapping fermions onto qubits via the Jordan-Wigner transformation.
         Depending on the application, the relative signs between operators in this mapping need
-        to be considered with extra care.
+        to be evaluated with extra care.
 
         **Real rotation matrices**
 
@@ -242,9 +245,10 @@ class BasisRotation(Operation):
         :math:`T_k` are sufficient to factorize the full rotation, and only ``SingleExcitation``
         gates are needed in the quantum circuit. A small exception occurs for orthogonal matrices
         that are not *special* orthogonal (unit determinant), i.e., that have
-        determinant :math:`-1`. For those, a phase flip gate :class:`~.Z` can be used to invert
-        the sign of one row or column of the matrix, which then has unit determinant and can be
-        implemented with ``SingleExcitation`` gates.
+        determinant :math:`-1`. For those, the sign of one row or column of the matrix can be
+        inverted, corresponding to a phase flip gate :class:`~.PauliZ` in the circuit.
+        The new matrix then has unit determinant and can be
+        implemented exclusively with ``SingleExcitation`` gates.
 
     """
 
