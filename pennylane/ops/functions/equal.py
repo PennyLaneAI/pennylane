@@ -701,7 +701,7 @@ def _equal_measurements(
             if qml.math.allclose(op1.eigvals(), op2.eigvals(), rtol=rtol, atol=atol):
                 return True
             return f"Eigenvalues are not close: op1.eigvals={op1.eigvals()}, op2.eigvals={op2.eigvals()}, with rtol={rtol}, atol={atol}"
-        elif op1.eigvals() is None and op2.eigvals() is None:
+        if op1.eigvals() is None and op2.eigvals() is None:
             return True
         return "One measurement has eigvals defined and the other does not"
     return "Measurements have different structures: mismatched obs or mv attributes"
