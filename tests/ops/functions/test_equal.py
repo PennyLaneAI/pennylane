@@ -2930,8 +2930,6 @@ def test_different_observables():
 def test_equal_measurement_value():
     mv1 = MeasurementValue(0.5)
     mv2 = MeasurementValue(0.5)
-    m1 = qml.apply(mv1)
-    m2 = qml.apply(mv2)
     assert qml.equal(m1, m2)
 
 def test_measurement_wire_mismatch():
