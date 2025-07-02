@@ -30,6 +30,7 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.allocation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -75,19 +76,6 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-    from_qasm3,
-)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -114,7 +102,22 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+    ToBloq,
+)
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -130,7 +133,6 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
-    set_shots,
 )
 from pennylane.ops.functions import (
     dot,

@@ -3,7 +3,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 from re import escape
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -34,6 +34,10 @@ from pennylane import (
     S,
     T,
     Toffoli,
+    device,
+    measure,
+    probs,
+    qnode,
     queuing,
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
@@ -185,7 +189,7 @@ class TestIO:
 
         with pytest.raises(
             ValueError,
-            match="Missing input theta. Please pass theta as " "a keyword argument to from_qasm3.",
+            match="Missing input theta. Please pass theta as a keyword argument to from_qasm3.",
         ):
             QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
 
@@ -215,6 +219,49 @@ class TestIO:
 @pytest.mark.external
 class TestMeasurementReset:
 
+    def test_condition_on_measurement(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        with pytest.raises(
+            ValueError, match="Mid circuit measurement outcomes can not be used as conditions"
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "cond_meas", "wire_map": None})
+
+    def test_combine_processing_functions(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        results = {
+            "res_1": None,
+            "res_2": None,
+            "res_3": None,
+        }
+
+        @qnode(device("default.qubit", wires=[0, 1, 2]))
+        def add_meas(results):
+            m1 = measure(0)
+            m2 = measure(1)
+            m = m1 + m2
+            results["res_1"] = m1.processing_fn(1)
+            results["res_2"] = m2.processing_fn(2)
+            results["res_3"] = m.processing_fn(1, 2)
+            return probs(0)
+
+        context = QasmInterpreter().interpret(ast, context={"name": "add_meas", "wire_map": None})
+
+        add_meas(results)
+
+        assert results["res_1"] == context.vars["c"].val.processing_fn(1) == 1
+        assert results["res_2"] == context.vars["d"].val.processing_fn(2) == 2
+        assert results["res_3"] == context.vars["res"].val.processing_fn(1, 2) == 3
+
     def test_resets(self):
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
@@ -224,7 +271,7 @@ class TestMeasurementReset:
 
         assert isinstance(q.queue[0], MidMeasureMP)
         assert q.queue[0].wires == Wires(["qubits"])
-        assert q.queue[0].reset == True
+        assert q.queue[0].reset
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
@@ -270,25 +317,25 @@ class TestMeasurementReset:
             return res_1 == res_2 and meas_1 == meas_2
 
         # first call
-        call = 0
+        curr_call = 0
         # c = c + 1;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[curr_call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1:] == ("+", 1, 4)
+        assert eval_binary.call_args_list[curr_call].args[1:] == ("+", 1, 4)
 
         # second call
-        call += 1
+        curr_call += 1
         # c = d / c;
         assert compare_measurement_values(
-            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[call].args[0]
+            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[curr_call].args[0]
         )
-        assert eval_binary.call_args_list[call].args[1] == "/"
+        assert eval_binary.call_args_list[curr_call].args[1] == "/"
         assert compare_measurement_values(
             MeasurementValue([PauliX(0)], (lambda: mock_one() + 1)),
-            eval_binary.call_args_list[call].args[2],
+            eval_binary.call_args_list[curr_call].args[2],
         )
-        assert eval_binary.call_args_list[call].args[3] == 5
+        assert eval_binary.call_args_list[curr_call].args[3] == 5
 
     def test_measurement(self):
         # parse the QASM
@@ -307,6 +354,43 @@ class TestMeasurementReset:
 
 @pytest.mark.external
 class TestControlFlow:
+
+    def test_nested_control_flow(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_control_flow.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-control-flow", "wire_map": None}
+            )
+
+        assert q.queue == [
+            # first we have PauliX 5 times in the first loop within the first nested if
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            # next we have PauliZ from the while loop within the first case of the switch
+            PauliZ("q0"),
+            # finally we have the repeated pattern XYY four times from the nested for loops at the bottom
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+        ]
 
     def test_nested_end(self):
         # parse the QASM
@@ -890,6 +974,22 @@ class TestVariables:
 
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
+
+    def test_unsupported_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0;
+            const duration l = duration(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Unable to cast float to DurationType: Unsupported cast type DurationType",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
 
     def test_cannot_cast(self):
         # parse the QASM program
