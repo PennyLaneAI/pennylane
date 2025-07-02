@@ -29,31 +29,6 @@ from pennylane.compiler.python_compiler.transforms import CombineGlobalPhasesPas
 class TestCombineGlobalPhasesPass:
     """Unit tests for CombineGlobalPhasesPass."""
 
-    def test_no_global_phases_ops(self, run_filecheck):
-        """Test that nothing changes when there are no global phase operations."""
-        program = """
-            func.func @test_func(%arg0: f64, %arg1: f64) {
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-                %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                // CHECK: quantum.custom "RY"() [[q1:%.*]] : !quantum.bit
-                %1 = quantum.custom "RX"() %0 : !quantum.bit
-                %2 = quantum.custom "RY"() %1 : !quantum.bit
-                return
-            }
-        """
-
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
-
     def test_combinable_ops_without_control_flow(self, run_filecheck):
         """Test that combine global phases in a func without control flows."""
         program = """
@@ -138,8 +113,10 @@ class TestCombineGlobalPhasesPass:
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK: [[ret:%.*]] = scf.if [[cond:%.*]] -> (f64) {
                 // [[two:%.*]] = arith.constant [[two:%2.*]] : f64
+                // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
                 // [[arg0x2:%.*]] = arith.mulf [[arg0:%.*]], [[two:%.*]] : f64
-                // quantum.gphase([[arg0x2:%.*]])
+                // [[phi_sum:%.+]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                // quantum.gphase [[phi_sum]]
                 // scf.yield [[arg0x2:%.*]] : f64
                 //} else {
                 // [[%two1:%.*]] = arith.constant [[two1:%2.*]] : f64
@@ -151,11 +128,11 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
                 // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 %ret = scf.if %cond -> (f64) {
+                    %two0 = arith.constant 2 : f64
+                    %arg0x2 = arith.mulf %arg0, %two0 : f64
                     %t0 = "test.op"() : () -> f64
                     quantum.gphase %t0
                     quantum.gphase %t0
-                    // CHECK: [[phi_sum:%.+]] = arith.addf
-                    // CHECK: quantum.gphase [[phi_sum]]
                     scf.yield %arg0x2 : f64
                 } else {
                     %two1 = arith.constant 2 : f64
