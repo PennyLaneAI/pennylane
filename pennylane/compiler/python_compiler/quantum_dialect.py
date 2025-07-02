@@ -29,7 +29,6 @@ from typing import Sequence, TypeAlias
 
 from xdsl.dialects.builtin import (
     AnyAttr,
-    AnyOf,
     BaseAttr,
     Float64Type,
     FloatAttr,
@@ -505,7 +504,7 @@ class HamiltonianOp(IRDLOperation):
         `(` $coeffs `:` type($coeffs) `)` $terms attr-dict `:` type(results)
     """
 
-    coeffs = operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    coeffs = operand_def(AnyAttr())
 
     terms = var_operand_def(BaseAttr(ObservableType))
 
@@ -522,7 +521,7 @@ class HermitianOp(IRDLOperation):
         `(` $matrix `:` type($matrix) `)` $qubits attr-dict `:` type(results)
     """
 
-    matrix = operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    matrix = operand_def(AnyAttr())
 
     qubits = var_operand_def(BaseAttr(QubitType))
 
@@ -719,7 +718,7 @@ class QubitUnitaryOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    matrix = operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    matrix = operand_def(AnyAttr())
 
     in_qubits = var_operand_def(BaseAttr(QubitType))
 
@@ -752,9 +751,9 @@ class SampleOp(IRDLOperation):
 
     dynamic_shape = var_operand_def(EqAttrConstraint(IntegerType(64)))
 
-    in_data = opt_operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    in_data = opt_operand_def(AnyAttr())
 
-    samples = opt_result_def(AnyOf((AnyAttr(), AnyAttr())))
+    samples = opt_result_def(AnyAttr())
 
 
 @irdl_op_definition
@@ -767,7 +766,7 @@ class SetBasisStateOp(IRDLOperation):
         `(` $basis_state`)` $in_qubits attr-dict `:` functional-type(operands, results)
     """
 
-    basis_state = operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    basis_state = operand_def(AnyAttr())
 
     in_qubits = var_operand_def(BaseAttr(QubitType))
 
@@ -784,7 +783,7 @@ class SetStateOp(IRDLOperation):
         `(` $in_state `)` $in_qubits attr-dict `:` functional-type(operands, results)
     """
 
-    in_state = operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    in_state = operand_def(AnyAttr())
 
     in_qubits = var_operand_def(BaseAttr(QubitType))
 
