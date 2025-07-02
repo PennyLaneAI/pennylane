@@ -24,7 +24,7 @@ from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
 from ..quantum_dialect import GlobalPhaseOp
-from .utils import xdsl_transform
+from .api import compiler_transform
 
 
 class CombineGlobalPhasesPattern(
@@ -84,4 +84,4 @@ class CombineGlobalPhasesPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-combine_global_phases_pass = xdsl_transform(CombineGlobalPhasesPass)
+combine_global_phases_pass = compiler_transform(CombineGlobalPhasesPass)
