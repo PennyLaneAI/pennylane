@@ -151,9 +151,11 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
                 // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 %ret = scf.if %cond -> (f64) {
-                    %two0 = arith.constant 2 : f64
-                    %arg0x2 = arith.mulf %arg0, %two0 : f64
-                    quantum.gphase %arg0x2
+                    %t0 = "test.op"() : () -> f64
+                    quantum.gphase %t0
+                    quantum.gphase %t0
+                    // CHECK: [[phi_sum:%.+]] = arith.addf
+                    // CHECK: quantum.gphase [[phi_sum]]
                     scf.yield %arg0x2 : f64
                 } else {
                     %two1 = arith.constant 2 : f64
