@@ -37,7 +37,7 @@ class CombineGlobalPhasesPattern(
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, root: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+        self, root: func.FuncOp | IfOp | ForOp | WhileOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         GlobalPhase oprations."""
@@ -47,8 +47,6 @@ class CombineGlobalPhasesPattern(
             for op in region.ops:
                 if isinstance(op, GlobalPhaseOp):
                     global_phases.append(op)
-                elif isinstance(op, (IfOp, ForOp, WhileOp)):
-                    continue
 
         if len(global_phases) < 2:
             return
@@ -64,7 +62,7 @@ class CombineGlobalPhasesPattern(
             rewriter.erase_op(prev)
             prev = current
 
-        prev.operands[0] = phi_sum
+        prev.operands[0].replace_by_if(phi_sum, lambda use: use.operation == prev)
         rewriter.notify_op_modified(prev)
         return
 
@@ -79,7 +77,7 @@ class CombineGlobalPhasesPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the combination of global phase gates pass."""
         pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([CombineGlobalPhasesPattern()]),
+            CombineGlobalPhasesPattern(),
             apply_recursively=False,
         ).rewrite_module(module)
 
