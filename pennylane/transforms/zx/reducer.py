@@ -24,7 +24,7 @@ from .converter import from_zx, to_zx
 has_pyzx = True
 try:
     import pyzx
-except ImportError:
+except ModuleNotFoundError:
     has_pyzx = False
 
 
