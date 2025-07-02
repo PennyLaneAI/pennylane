@@ -4,6 +4,7 @@ import numpy as np
 import math
 
 from time import time
+import prettytable
 
 import bliss
 import orbital_optimization as oo
@@ -295,12 +296,18 @@ def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11
 	TIMES_ARR.append(time())
 	if verbose:
 		print(f"Finished optimizing all methods after {TIMES_ARR[-1] - TIMES_ARR[-2]:.2f} seconds!\n\n\n")
-		for ii in range(tot_methods):
-			print(f"Method {method_final_list[ii]} uses {qubits_list[ii]} qubits and {resources_list[ii].clean_gate_counts["T"]:.2e} T-gates with {one_norms_list[ii]:.2e} one-norm and {hardness_heuristic_list[ii]:.2e} cost heuristic")
-
+	
 	min_cost = min(hardness_heuristic_list)
 	min_index = hardness_heuristic_list.index(min_cost)
 
+	ptable = prettytable.PrettyTable()
+	ptable.field_names = ["Method", "One-norm", "Qubits", "T-gates", "Cost heuristic"]
+	prows = []
+	for ii in range(tot_methods):
+		prows.append([method_final_list[ii], f"{one_norms_list[ii]:.3f}", qubits_list[ii], f"{resources_list[ii].clean_gate_counts["T"]:.2e}", f"{hardness_heuristic_list[ii]:.2e}"])
+	ptable.add_rows(prows)
+
+	print(ptable)
 	best_method = method_final_list[min_index]
 	best_resources = resources_list[min_index]
 	best_one_norm = one_norms_list[min_index]
