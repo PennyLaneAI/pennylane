@@ -30,8 +30,8 @@ from .api import compiler_transform
 class CombineGlobalPhasesPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods
-    """RewritePattern for removing ~:class:`~pennylane.GlobalPhase` gates in the circuit (if exists) and adding
-    at the end of list of operations with its phase being a total global phase computed as the algebraic sum of
+    """RewritePattern for removing ~:class:`~pennylane.GlobalPhase` gates in the circuit (if exists) and update
+    the last global phase gate with its phase being a total global phase computed as the algebraic sum of
     all global phases in the original circuit."""
 
     # pylint: disable=no-self-use

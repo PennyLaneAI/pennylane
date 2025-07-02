@@ -6,6 +6,11 @@
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
+* A combine global phase pass has been added to the xDSL Python compiler integration.
+  Note that current implementation updates the last global phase gate of each region 
+  of code, which means global phase gates can not be moved across control flow regions.
+  [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
