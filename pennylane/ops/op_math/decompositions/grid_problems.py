@@ -590,7 +590,6 @@ class GridIterator:
         en, _ = e1.normalize()  # Normalize the epsilon-region.
         grid_op = EllipseState(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
 
-        int_s, init_k = [ZOmega(d=1)], [k]  # Fallback solution.
         guess_solutions = (  # Solutions for the trivial cases.
             ZOmega(a=-1),
             ZOmega(b=-1),
@@ -600,6 +599,15 @@ class GridIterator:
             ZOmega(d=-1),
         )
 
+        for sol in guess_solutions:
+            complx_sol = complex(sol)
+            dot_prod = self.zval[0] * complx_sol.real + self.zval[1] * complx_sol.imag
+            norm_zsqrt_two = abs(float(sol.norm().to_sqrt_two()))
+            if norm_zsqrt_two <= 1:
+                if dot_prod >= self.target:
+                    yield sol, 0
+
+        int_s, init_k = [], []  # Fallback solution.
         for ix in range(self.max_trials):
             # Update the radius of the unit disk.
             radius = 2**-k
@@ -610,7 +618,7 @@ class GridIterator:
             state = EllipseState(e1, e2_).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
             try:
-                for solution in chain(guess_solutions, potential_solutions):
+                for solution in potential_solutions:
                     # Normalize the solution and obtain the scaling exponent of sqrt(2).
                     scaled_sol, kf = (grid_op * solution).normalize()
 
@@ -643,7 +651,7 @@ class GridIterator:
             except (ValueError, ZeroDivisionError):  # pragma: no cover
                 break
 
-        for s, k in zip(int_s, init_k):
+        for s, k in zip(int_s + [ZOmega(d=1)], init_k + [0]):
             yield s, k
 
     def solve_two_dim_problem(self, state: EllipseState, num_points: int = 800) -> Iterable[ZOmega]:
