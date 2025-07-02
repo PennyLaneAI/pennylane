@@ -474,7 +474,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('rs'\) decompositions",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('gridsynth'\) decompositions",
         ):
             decomposed_qfunc()
 
