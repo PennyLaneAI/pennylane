@@ -772,6 +772,20 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_register_lookup_out_of_range(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[4];
+            """
+        )
+
+        with pytest.raises(IndexError, match="list index out of range"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "qubit-registers-lookup"}
+            )
+
     def test_qubit_registers(self):
         # parse the QASM program
         ast = parse(
