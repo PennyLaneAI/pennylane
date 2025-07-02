@@ -9,7 +9,7 @@ def extract_cost(resource_object):
 
 	return T_num, num_qubits
 
-heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Q3", "Q500"]
+heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Qcube", "Q500", "Qalpha"]
 linear_heuristics = ["T", "Q", "full_T", "full_Q", "linear_mix"]
 '''
 Cost heuristics and what they do:
@@ -20,18 +20,27 @@ Cost heuristics and what they do:
 	- linear_mix: minimize alpha*T + (1-alpha)*Q
 		- T: linear_mix for alpha = 0.95
 		- Q: linear_mix for alpha = 0.05
-	- Q3: minimize (Q**3) * T
+	- Qcube: minimize (Q**3) * T
+	- Q500: minimize T-gates with 500 qubit budget
+	- Qalpha: minimize T-gates with alpha qubits budget (alpha passed as keyword)
 '''
 def cost_heuristic(T, Q, heuristic, **kwargs):
-	if heuristic == "Q3":
+	if heuristic == "Qcube":
 		if "alpha" in kwargs:
 			alpha = kwargs["alpha"]
 		else:
 			alpha = 10
 		return T * ((alpha*Q)**3)
 
-	if heuristic == "Q500":
-		if Q < 500:
+	if heuristic == "Q500" or heuristic == "Qalpha":
+		if heuristic == "Q500":
+			alpha = 500
+		else:
+			if "alpha" in kwargs:
+				alpha = kwargs["alpha"]
+			else:
+				alpha = 500
+		if Q < alpha:
 			return Q+T
 		else:
 			return Q*1e10 + T
@@ -60,7 +69,7 @@ def resource_cost(resource_object, heuristic, **kwargs):
 
 	return cost_heuristic(T, Q, heuristic, **kwargs)
 
-def resource_optimizer(resource_func, *ranges, heuristic="Q3", verbose=True, **kwargs):
+def resource_optimizer(resource_func, *ranges, heuristic="full_Q", verbose=True, **kwargs):
 	'''
 	For a function resource_func which for a set of N parameters returns a resource object, finds the best combination
 	of parameters for each in the specified possible ranges according to the optimization heuristic
