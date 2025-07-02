@@ -601,7 +601,7 @@ class QuantumScript:
         return self._trainable_params
 
     @trainable_params.setter
-    def trainable_params(self, param_indices: list[int]):
+    def trainable_params(self, param_indices: list[int] | set[int]):
         """Store the indices of parameters that support differentiability.
 
         Args:
