@@ -21,13 +21,13 @@ from pennylane.workflow import QNode
 has_catalyst = True
 try:
     import catalyst
-except ImportError:
+except ModuleNotFoundError:
     has_catalyst = False
 
 has_jax = True
 try:
     import jax
-except ImportError:
+except ModuleNotFoundError:
     has_jax = False
 
 
@@ -212,30 +212,30 @@ class QNGOptimizerQJIT:
         """Return the gradient of the QNode objective function at the given point. The method is implemented to dispatch
         to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
 
-        Raise an ``ImportError`` if the required package is not installed.
+        Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.grad(qnode)(params, **kwargs)
-            raise ImportError("Catalyst is required.")  # pragma: no cover
+            raise ModuleNotFoundError("Catalyst is required.")  # pragma: no cover
         if has_jax:
             return jax.grad(qnode)(params, **kwargs)
-        raise ImportError("Jax is required.")  # pragma: no cover
+        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
         """Return the value and the gradient of the QNode objective function at the given point. The method is implemented
         to dispatch to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
 
-        Raise an ``ImportError`` if the required package is not installed.
+        Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """
         if active_compiler() == "catalyst":
             if has_catalyst:
                 return catalyst.value_and_grad(qnode)(params, **kwargs)
-            raise ImportError("Catalyst is required.")  # pragma: no cover
+            raise ModuleNotFoundError("Catalyst is required.")  # pragma: no cover
         if has_jax:
             return jax.value_and_grad(qnode)(params, **kwargs)
-        raise ImportError("Jax is required.")  # pragma: no cover
+        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         """Compute the metric tensor of the QNode objective function at the given point using the method specified
