@@ -433,10 +433,10 @@ class Context:
         """
         # we want wires declared in outer scopes to be available
         context = {
-            "vars": outer_context.vars,  # same namespace
+            "vars": copy.deepcopy(outer_context.vars),  # same namespace
             "wire_map": {},
-            "wires": outer_context.wires,
-            "registers": outer_context.registers,
+            "wires": copy.deepcopy(outer_context.wires),
+            "registers": copy.deepcopy(outer_context.registers),
             "name": name,
             # we want subroutines declared in the global scope to be available
             "scopes": {
