@@ -595,11 +595,27 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_declare_register(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit[2] q;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Qubit registers are not yet supported, "
+            "please declare each qubit individually.",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-register"})
+
     def test_retrieve_wire(self):
         # parse the QASM
         ast = parse(
             """
-            qubit[0] q;
+            qubit q;
             let s = q;
             """,
             permissive=True,
@@ -1071,7 +1087,7 @@ class TestGates:
             """
             qubit q0;
             qubit q1;
-            qubit[1] q2;
+            qubit q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,
