@@ -291,7 +291,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
 def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     r"""Generates the `FermionOperator <https://github.com/quantumlib/OpenFermion/blob/master/docs/
-    tutorials/intro_to_openfermion.ipynb>`_ representing a given two-particle operator
+    tutorials/intro_to_openfermion.ipynb>`__ representing a given two-particle operator
     required to build many-body qubit observables.
 
     Second quantized two-particle operators are expanded in the basis of single-particle
