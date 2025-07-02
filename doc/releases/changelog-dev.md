@@ -603,6 +603,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.PauliError` now accepts Pauli strings that include the identity operator.
+  [(#7760)](https://github.com/PennyLaneAI/pennylane/pull/7760)
+
 * Caching with finite shots now always warns about the lack of expected noise.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
