@@ -20,6 +20,7 @@ from itertools import product
 
 import pennylane as qml
 from pennylane.ops import Adjoint
+from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -360,9 +361,13 @@ class _CachedCallable:
                 self.decompose_fn = lru_cache(maxsize=cache_size)(
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
+            case "rs":
+                self.decompose_fn = lru_cache(maxsize=cache_size)(
+                    partial(rs_decomposition, epsilon=epsilon, **method_kwargs)
+                )
             case _:
                 raise NotImplementedError(
-                    f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
+                    f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('rs') decompositions, got {method}"
                 )
 
         self.method = method
@@ -414,11 +419,14 @@ def clifford_t_decomposition(
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
+    Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
+    can be used by setting the ``method`` to ``"rs"``.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
+            the Ross-Selinger algorithm can be used with ``"rs"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
@@ -432,11 +440,15 @@ def clifford_t_decomposition(
         **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
         where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
+    - Ross-Selinger decomposition --
+        **max_trials** (int) -- argument for the ``"rs"`` method, where the decomposition is performed using the
+        :func:`~.rs_decomposition` method.
+
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.sk_decomposition` for Solovay-Kitaev decomposition.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
