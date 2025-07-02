@@ -467,10 +467,10 @@ class Context:
             if res.val is not None:
                 return res
             raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
-        if name in self.wires:
-            return name
         if name in self.registers:
             return self.registers[name]
+        if name in self.wires:
+            return name
         if name in self.aliases:
             return self.aliases[name](self)  # evaluate the alias and de-reference
         if name in CONSTANTS:
@@ -1094,7 +1094,17 @@ class QasmInterpreter:
             func_context.context["return"] = None
 
             # bind subroutine arguments
-            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+            evald_args = [
+                (
+                    self.visit(raw_arg, context)
+                    if not (
+                        isinstance(raw_arg, Identifier)
+                        and _resolve_name(raw_arg) in (context.wires + list(context.registers))
+                    )
+                    else _resolve_name(raw_arg)
+                )
+                for raw_arg in node.arguments
+            ]
             for evald_arg, param in list(zip(evald_args, func_context.params)):
                 if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                     reg = False

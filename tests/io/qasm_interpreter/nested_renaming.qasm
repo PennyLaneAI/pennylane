@@ -15,3 +15,21 @@ def f1(qubit q1) {
 }
 
 f1(q[0]);
+
+qubit[2] p;
+
+def l3(qubit p2) {
+    h p2[1];
+}
+
+def l2(qubit p2) {
+    x p2[0];
+    l3(p2);
+}
+
+def l1(qubit p1) {
+    y p1[1];
+    l2(p1);
+}
+
+l1(p);

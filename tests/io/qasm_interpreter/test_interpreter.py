@@ -386,7 +386,14 @@ class TestSubroutine:
                 ast, context={"name": "nested-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [PauliY("q[0]"), PauliX("q[0]"), Hadamard("q[0]")]
+        assert q.queue == [
+            PauliY("q[0]"),
+            PauliX("q[0]"),
+            Hadamard("q[0]"),
+            PauliY("p[1]"),
+            PauliX("p[0]"),
+            Hadamard("p[1]"),
+        ]
 
     def test_repeated_calls(self):
         # parse the QASM
