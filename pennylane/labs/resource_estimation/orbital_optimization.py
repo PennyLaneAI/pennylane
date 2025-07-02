@@ -128,10 +128,10 @@ def full_optimization(obt, tbt, mixing_arr=np.linspace(0,1,num=11), num_steps=10
 			fin_obt = new_obt
 			fin_tbt = new_tbt
 
-	if verbose:
-		if mixing is None:
-			print(f"Orbital optimization routine was not able to improve one-norm, returning original tensors...")
-		else:
+	if opt_mixing is None:
+		print(f"Orbital optimization routine was not able to improve one-norm, returning original tensors...")
+	
+	if verbose and (opt_mixing is not None):
 			print(f"Orbital optimized 1-norm is {curr_one_norm} with mixing coefficient {opt_mixing}")
 
 
