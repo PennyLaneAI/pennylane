@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import math
 from copy import copy
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from itertools import chain
 from typing import Iterable
 
@@ -50,57 +50,50 @@ class Ellipse:
     Args:
         D (list[float, float, float]): The elements of the positive definite matrix.
         p (tuple[float, float]): The center of the ellipse.
-        axes (tuple[float, float]): The lengths of the semi-major and semi-minor axes.
     """
 
     def __init__(
         self,
         D: tuple[float, float, float],
         p: tuple[float, float] = (0, 0),
-        axes: tuple[float, float] = (0, 0),
     ):
         self.a, self.b, self.d = D
         self.p = p
-        self.axes = axes
         # a = eλ^{-z}, d = eλ^z, b^2 = e^2 - 1; (Eq. 31, arXiv:1403.2975)
+        # 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
         self.z = 0.5 * math.log2(self.d / self.a) / math.log2(_LAMBDA)
         self.e = math.sqrt(self.a * self.d)
-
-    @classmethod
-    def from_axes(cls, p: tuple[float, float], theta: float, axes: tuple[float, float]):
-        """Create an ellipse from its axes and center point."""
-        axes = tuple(ax + 1e-20 for ax in axes)  # Avoid division by zero.
-        a = (math.sin(theta) / axes[1]) ** 2 + (math.cos(theta) / axes[0]) ** 2
-        b = math.cos(theta) * math.sin(theta) * (1 / (axes[0]) ** 2 - 1 / (axes[1]) ** 2)
-        c = (math.sin(theta) / axes[0]) ** 2 + (math.cos(theta) / axes[1]) ** 2
-        return cls([a, b, c], p, axes)
 
     @classmethod
     def from_region(cls, theta: float, epsilon: float, k: int = 0):
         r"""Create an ellipse that bounds the region :math:`u | u \bullet z \geq 1 - \epsilon^2 / 2`,
         with :math:`u \in \frac{1}{\sqrt{2}^k} \mathbb{Z}[\omega]` and :math`z = \exp{-i\theta / 2}`.
         """
-        const = 1 - epsilon**2 / 2
-        shift = (1 - const) / 3
+        t = epsilon**2 / 2
         scale = (2 ** (k // 2)) * (_SQRT2 ** (k % 2))
-        semi_major = 2 * scale * shift
-        semi_minor = 2 * scale * math.sqrt((const + 0.5 * epsilon**2) * epsilon**2 / 3)
-        x, y = scale * (const + shift) * math.cos(theta), scale * (const + shift) * math.sin(theta)
-        return cls.from_axes((x, y), theta, (semi_major, semi_minor))
+
+        a, b = scale * t, scale * epsilon
+
+        a2, b2 = 1 / a**2, 1 / b**2
+        d2 = a2 - b2
+
+        zx, zy = math.cos(theta), math.sin(theta)
+        a = d2 * zx * zx + b2
+        d = d2 * zy * zy + b2
+        b = d2 * zx * zy
+
+        const = 1 - t
+        p = (const * scale * zx, const * scale * zy)
+
+        return cls([a, b, d], p)
 
     def __repr__(self) -> str:
         """Return a string representation of the ellipse."""
-        return f"Ellipse(a={self.a}, b={self.b}, d={self.d}, p={self.p}, axes={self.axes})"
+        return f"Ellipse(a={self.a}, b={self.b}, d={self.d}, p={self.p})"
 
     def __eq__(self, other: "Ellipse") -> bool:
         """Check if the ellipses are equal."""
-        return (
-            self.a == other.a
-            and self.b == other.b
-            and self.d == other.d
-            and self.p == other.p
-            and self.axes == other.axes
-        )
+        return self.a == other.a and self.b == other.b and self.d == other.d and self.p == other.p
 
     @property
     def discriminant(self) -> float:
@@ -140,8 +133,7 @@ class Ellipse:
     def scale(self, scale: float) -> "Ellipse":
         """Scale the ellipse by a factor of scale."""
         D = (self.a * scale, self.b * scale, self.d * scale)
-        axes = (self.axes[0] * math.sqrt(scale), self.axes[1] * math.sqrt(scale))
-        return Ellipse(D, self.p, axes)
+        return Ellipse(D, self.p)
 
     def x_points(self, y: float) -> tuple[float, float]:
         """Compute the x-points of the ellipse for a given y-value."""
@@ -176,7 +168,7 @@ class Ellipse:
     def offset(self, offset: float) -> "Ellipse":
         """Return the ellipse shifted by the offset."""
         p_offset = (self.p[0] + offset, self.p[1] + offset)
-        return Ellipse((self.a, self.b, self.d), p_offset, self.axes)
+        return Ellipse((self.a, self.b, self.d), p_offset)
 
     def apply_grid_op(self, grid_op: GridOp) -> "Ellipse":
         """Apply a grid operation :math:`G` to the ellipse :math:`E` as :math:`G^T E G`."""
@@ -191,7 +183,7 @@ class Ellipse:
         p1, p2 = self.p
         gda, gdb, gdc, gdd = grid_op.inverse().flatten
 
-        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2), self.axes)
+        return Ellipse(D, (gda * p1 + gdb * p2, gdc * p1 + gdd * p2))
 
 
 class EllipseState:
@@ -214,13 +206,13 @@ class EllipseState:
         """Return a string representation of the state."""
         return f"EllipseState(e1={self.e1}, e2={self.e2})"
 
-    @property
+    @cached_property
     def skew(self) -> float:
         """Calculate the skew of the state."""
         # Uses Definition A.1 of arXiv:1403.2975
         return self.e1.b**2 + self.e2.b**2
 
-    @property
+    @cached_property
     def bias(self) -> float:
         """Calculate the bias of the state."""
         # Uses Definition A.1 of arXiv:1403.2975
@@ -244,16 +236,15 @@ class EllipseState:
         # Uses Definition A.3 of arXiv:1403.2975
         return EllipseState(self.e1.apply_grid_op(grid_op), self.e2.apply_grid_op(grid_op.adj2()))
 
-    def apply_shift_op(self, k: int) -> tuple[EllipseState, int]:
+    def apply_shift_op(self) -> tuple[EllipseState, int]:
         """Apply a shift operator to the state."""
         # Uses Definition A.6 and Lemma A.8 of arXiv:1403.2975
         k = int(math.floor((1 - self.bias) / 2))
-        pk_pow, nk_pow = _LAMBDA**k, _LAMBDA**-k
+        pk_pow, nk_pow = _LAMBDA ** (k), _LAMBDA ** (-k)
         e1, e2 = copy(self.e1), copy(self.e2)
         e1.a, e1.d, e1.z = e1.a * pk_pow, e1.d * nk_pow, e1.z - k
         e2.a, e2.d, e2.z = e2.a * nk_pow, e2.d * pk_pow, e2.z + k
         e2.b *= (-1) ** k
-        e1.e, e2.e = math.sqrt(e1.a * e1.d), math.sqrt(e2.a * e2.d)
         return EllipseState(e1, e2), k
 
     # pylint: disable=too-many-branches
@@ -269,47 +260,52 @@ class EllipseState:
         if any(not e.positive_semi_definite for e in (self.e1, self.e2)):  # pragma: no cover
             raise ValueError("Ellipse is not positive semi-definite")
 
-        state, k = copy(self), 0
+        sign, k = 1, 0
         grid_op = GridOp.from_string("I")
 
-        if abs(state.bias) > 1:
-            state, k = state.apply_shift_op(k)
-
-        if state.e2.b < 0:
+        if self.e2.b < 0:
             grid_op = grid_op * GridOp.from_string("Z")
 
-        if (state.e1.z + state.e2.z) < 0:
+        if (self.e1.z + self.e2.z) < 0:
+            sign *= -1  # Bookkeeping for the sign flip
             grid_op = grid_op * GridOp.from_string("X")
 
-        new_state = state.apply_grid_op(grid_op)
+        if abs(self.bias) > 2:
+            n = int(math.floor((1 - sign * self.bias) / 4))
+            grid_op = grid_op * (GridOp.from_string("U") ** n)
+
+        n_grid_op = GridOp.from_string("I")
+        new_state = self.apply_grid_op(grid_op)
+
+        if abs(new_state.bias) > 1:
+            new_state, k = new_state.apply_shift_op()
+
         e1, e2 = new_state.e1, new_state.e2
 
-        if e1.b >= 0:
-            if -0.8 <= e1.z <= 0.8 and -0.8 <= e2.z <= 0.8:
-                grid_op = grid_op * GridOp.from_string("R")
-            elif e1.z <= 0.3 and e2.z >= 0.8:
-                grid_op = grid_op * GridOp.from_string("K")
-            elif e1.z >= 0.3 and e2.z >= 0.3:
-                c = min(e1.z, e2.z)
-                n = int(max(1, math.floor((_LAMBDA**c) / 2)))
-                grid_op = grid_op * (GridOp.from_string("A") ** n)
-            elif e1.z >= 0.8 and e2.z <= 0.3:
-                grid_op = grid_op * GridOp.from_string("K").adj2()
-            else:  # pragma: no cover
-                raise ValueError(f"Skew couldn't be reduced for the state {state}")
+        if -0.8 <= e1.z <= 0.8 and -0.8 <= e2.z <= 0.8:
+            n_grid_op = n_grid_op * GridOp.from_string("R")
         else:
-            if e1.z >= -0.8 and e1.z <= 0.8 and e2.z >= -0.8 and e2.z <= 0.8:
-                grid_op = grid_op * GridOp.from_string("R")
-            elif e1.z >= -0.2 and e2.z >= -0.2:
-                c = min(e1.z, e2.z)
-                n = int(max(1, math.floor((_LAMBDA**c) / 2)))
-                grid_op = grid_op * (GridOp.from_string("B") ** n)
-            else:  # pragma: no cover
-                raise ValueError(f"Skew couldn't be reduced for the state {state}")
+            if e1.b >= 0:
+                if e1.z <= 0.3 and e2.z >= 0.8:
+                    n_grid_op = n_grid_op * GridOp.from_string("K")
+                elif e1.z >= 0.3 and e2.z >= 0.3:
+                    n = int(max(1, math.floor((_LAMBDA ** min(e1.z, e2.z)) / _SQRT2)))
+                    n_grid_op = n_grid_op * (GridOp.from_string("A") ** n)
+                elif e1.z >= 0.8 and e2.z <= 0.3:
+                    n_grid_op = n_grid_op * GridOp.from_string("K").adj2()
+                else:  # pragma: no cover
+                    raise ValueError(f"Skew couldn't be reduced for the state {new_state}")
+            else:
+                if e1.z >= -0.2 and e2.z >= -0.2:
+                    n = int(max(1, math.floor((_LAMBDA ** min(e1.z, e2.z)) / _SQRT2)))
+                    n_grid_op = n_grid_op * (GridOp.from_string("B") ** n)
+                else:  # pragma: no cover
+                    raise ValueError(f"Skew couldn't be reduced for the state {new_state}")
 
         if k != 0:
-            grid_op = grid_op.apply_shift_op(k)
+            n_grid_op = n_grid_op.apply_shift_op(k)
 
+        grid_op = grid_op * n_grid_op
         return grid_op, self.apply_grid_op(grid_op)
 
 
@@ -377,12 +373,15 @@ class GridOp:
 
     def __pow__(self, n: int) -> "GridOp":
         """Raise the grid operator to a power."""
-        if self == self.from_string("I"):  # Identity:
-            return self
+        if self == self.from_string("I") or n == 0:  # Identity:
+            return GridOp((1, 0), (0, 0), (0, 0), (1, 0))
         if self == self.from_string("A"):  # A
             return GridOp((1, 0), (-2 * n, 0), (0, 0), (1, 0))
         if self == self.from_string("B"):  # B
             return GridOp((1, 0), (0, 2 * n), (0, 0), (1, 0))
+        if self == self.from_string("U"):  # U
+            (c1, c2), c3 = (ZSqrtTwo(1, 1) ** abs(n)).flatten, (-1) ** (n < 0)
+            return GridOp((c3 * c1, 2 * c2), (0, 0), (0, 0), (-c3 * c1, 2 * c2))
 
         x, res = self, GridOp((1, 0), (0, 0), (0, 0), (1, 0))
         while n > 0:
@@ -528,15 +527,13 @@ class GridOp:
     def apply_shift_op(self, k: int) -> "GridOp":
         """Apply a shift operator to the grid operation based on Lemma A.9 of arXiv:1403.2975."""
         k, sign = abs(k), (-1) ** (k < 0)  # +1 if k > 0, -1 if k < 0
-        grid_op = self
-        for _ in range(k):
-            grid_op = GridOp(
-                (grid_op.a[1] + sign * grid_op.a[0], 2 * grid_op.a[0] + sign * grid_op.a[1]),
-                grid_op.b,
-                grid_op.c,
-                (grid_op.d[1] - sign * grid_op.d[0], 2 * grid_op.d[0] - sign * grid_op.d[1]),
-            )
-        return grid_op
+        s1, s2 = (ZSqrtTwo(1, 1) ** k).flatten
+        return GridOp(
+            (self.a[1] * s2 + sign * self.a[0] * s1, 2 * self.a[0] * s2 + sign * self.a[1] * s1),
+            self.b,
+            self.c,
+            (self.d[1] * s2 - sign * self.d[0] * s1, 2 * self.d[0] * s2 - sign * self.d[1] * s1),
+        )
 
 
 @lru_cache(maxsize=1)
@@ -544,10 +541,11 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
     """Generate a list of useful grid operations based on Fig 6 of arXiv:1403.2975."""
     return {
         "I": GridOp((1, 0), (0, 0), (0, 0), (1, 0)),
-        "R": GridOp((0, 1), (0, -1), (0, 1), (0, 1)),
         "A": GridOp((1, 0), (-2, 0), (0, 0), (1, 0)),
         "B": GridOp((1, 0), (0, 2), (0, 0), (1, 0)),
         "K": GridOp((-1, 1), (0, -1), (1, 1), (0, 1)),
+        "R": GridOp((0, 1), (0, -1), (0, 1), (0, 1)),
+        "U": GridOp((1, 2), (0, 0), (0, 0), (-1, 2)),
         "X": GridOp((0, 0), (1, 0), (1, 0), (0, 0)),
         "Z": GridOp((1, 0), (0, 0), (0, 0), (-1, 0)),
     }
@@ -567,7 +565,7 @@ class GridIterator:
     Args:
         theta (float): The angle of the grid problem.
         epsilon (float): The epsilon of the grid problem.
-        max_trials (int): The maximum number of iterations.
+        max_trials (int): The maximum number of iterations. Default is 20.
     """
 
     def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_trials: int = 20):
@@ -587,17 +585,10 @@ class GridIterator:
         # Warm start for an initial guess, where 14 is kmin for 1e-3.
         k, i_ = min(self.kmin, 14), 6  # Give 6 trials for warm start.
         e_, t_ = max(self.epsilon, 1e-3), min(self.target, 0.9999995)
-
         e1 = Ellipse.from_region(self.theta, e_, k)  # Ellipse for the epsilon-region.
-        e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(1, 1))  # Ellipse for the unit disk.
+        e2 = Ellipse((1, 0, 1), (0, 0))  # Ellipse for the unit disk.
         en, _ = e1.normalize()  # Normalize the epsilon-region.
         grid_op = EllipseState(en, e2).skew_grid_op()  # Skew grid operation for the epsilon-region.
-
-        if k == self.kmin:
-            g_ = grid_op
-        else:
-            en_, _ = Ellipse.from_region(self.theta, self.epsilon, k).normalize()
-            g_ = EllipseState(en_, e2).skew_grid_op()
 
         int_s, init_k = [ZOmega(d=1)], [k]  # Fallback solution.
         guess_solutions = (  # Solutions for the trivial cases.
@@ -611,10 +602,12 @@ class GridIterator:
 
         for ix in range(self.max_trials):
             # Update the radius of the unit disk.
-            radius = 2 ** (k // 2) * (math.sqrt(2) ** (k % 2))
-            e2 = Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
+            radius = 2**-k
+            e2_ = Ellipse(
+                (radius, 0, radius), (0, 0)
+            )  # Ellipse.from_axes(p=(0, 0), theta=0, axes=(radius, radius))
             # Apply the grid operation to the state and solve the two-dimensional grid problem.
-            state = EllipseState(e1, e2).apply_grid_op(grid_op)
+            state = EllipseState(e1, e2_).apply_grid_op(grid_op)
             potential_solutions = self.solve_two_dim_problem(state)
             try:
                 for solution in chain(guess_solutions, potential_solutions):
@@ -623,14 +616,15 @@ class GridIterator:
 
                     complx_sol = complex(scaled_sol)
                     sol_real, sol_imag = complx_sol.real, complx_sol.imag
-                    norm_zsqrt_two = float(scaled_sol.norm().to_sqrt_two())
 
                     k_ = k - kf  # Update the scaling exponent of sqrt(2).
                     dot_prod = (self.zval[0] * sol_real + self.zval[1] * sol_imag) / (
                         2 ** (k_ // 2) * (math.sqrt(2) ** (k_ % 2))
                     )
+
                     # Check if the solution is follows the constraints of the target-region.
-                    if abs(norm_zsqrt_two) <= 2**k_:
+                    norm_zsqrt_two = abs(float(scaled_sol.norm().to_sqrt_two()))
+                    if norm_zsqrt_two <= 2**k_:
                         if dot_prod >= self.target:
                             yield scaled_sol, k_
                         elif dot_prod >= t_:
@@ -638,21 +632,21 @@ class GridIterator:
                             init_k.append(k_)
 
                 if ix == i_:
-                    k, e_, grid_op, t_ = max(self.kmin, k + 1), self.epsilon, g_, t_ / 10
+                    k, e_, t_ = max(self.kmin, k + 1), self.epsilon, t_ / 10
+                    en_, _ = Ellipse.from_region(self.theta, e_, self.kmin).normalize()
+                    grid_op = EllipseState(en_, e2).skew_grid_op()
                 else:
                     k = k + 1
 
                 e1 = Ellipse.from_region(self.theta, e_, k)
 
-            except ValueError:  # pragma: no cover
+            except (ValueError, ZeroDivisionError):  # pragma: no cover
                 break
 
         for s, k in zip(int_s, init_k):
             yield s, k
 
-    def solve_two_dim_problem(
-        self, state: EllipseState, num_points: int = 1000
-    ) -> Iterable[ZOmega]:
+    def solve_two_dim_problem(self, state: EllipseState, num_points: int = 800) -> Iterable[ZOmega]:
         r"""Solve the grid problem for the state(E1, E2).
 
         The solutions :math:`u \in Z[\omega]` are such that :math:`u \in E1` and
@@ -782,7 +776,7 @@ class GridIterator:
 
         # Find the integer scaling factor for the x and y intervals, such that
         # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
-        k1, k2 = (int(math.floor(math.log2(d + 1e-20) / d_ + 1)) for d in (d1, d2))
+        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
         if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             bbox, k1, k2 = (bbox[2], bbox[3], bbox[0], bbox[1]), k2, k1
 
@@ -836,7 +830,7 @@ class GridIterator:
         f_adj2 = False  # Check if we need to apply the sqrt(2) conjugation.
         # Find the integer scaling factor for the x and y intervals, such that
         # \delta_{1/2} \cdot (\lambda - 1)^{k_{1/2}} < 1, where \lambda= 1/√2.
-        k1, k2 = (int(math.floor(math.log2(d + 1e-20) / d_ + 1)) for d in (d1, d2))
+        k1, k2 = (int(math.floor(math.log2(d) / d_ + 1)) for d in (d1, d2))
         if abs(k1) > abs(k2):  # If y-interval is wider than x-interval, swap.
             f_adj2, k1, k2 = True, k2, k1
             x0, x1, y0, y1 = y0, y1, x0, x1
