@@ -145,6 +145,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/adder.png
 
 .. gallery-item::
+    :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
+    :figure: _static/templates/arithmetic/semiadder.png
+
+.. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
     :figure: _static/templates/arithmetic/outadder.png
 
