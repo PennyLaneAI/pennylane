@@ -950,7 +950,7 @@ class QasmInterpreter:
                 (
                     self.visit(raw_arg, context)
                     if not (
-                        isinstance(raw_arg, Identifier)
+                        isinstance(raw_arg, ast.Identifier)
                         and _resolve_name(raw_arg) in (context.wires + list(context.registers))
                     )
                     else _resolve_name(raw_arg)
