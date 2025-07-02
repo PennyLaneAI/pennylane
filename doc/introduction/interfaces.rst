@@ -186,6 +186,18 @@ Check out the `JAXopt <https://github.com/google/jaxopt>`_ and the `Optax
 <https://optax.readthedocs.io/en/latest/>`_ packages to find optimizers for the
 :ref:`PennyLane JAX framework <jax_interf>`.
 
+For quantum-specific optimizers (not available in `Optax <https://optax.readthedocs.io/en/latest/>`_),
+PennyLane offers a built-in Jax-based implementation compatible with ``jax.jit`` and ``qml.qjit``.
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QNGOptimizerQJIT
+
+:html:`</div>`
+
 Gradients
 ---------
 
