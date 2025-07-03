@@ -165,10 +165,13 @@ def kron(*args, like=None, **kwargs):
 
     if like == "torch":
         # Extract all the devices for the incoming tensors
-        devs = list(map(attrgetter("device"), args))
-        # If two different devices found, choose the non-CPU device as the default
-        if devs[0] != devs[1]:
+        devs = set(map(attrgetter("device"), args))
+        devs = list(devs)
+        # If multiple devices found, choose the non-CPU device as the default
+        if len(devs) > 1:  # Assuming "cpu" and non-"cpu" are the only options
             dev = devs[0] if getattr(devs[0], "type") != "cpu" else devs[1]
+        else:
+            dev = devs[0]
         # Migrate the tensors to all be on the chosen device, if necessary
         mats = [np.asarray(arg, like="torch", device=dev) for arg in args]
         return np.kron(*mats)
