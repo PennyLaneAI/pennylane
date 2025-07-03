@@ -112,7 +112,7 @@ def _validate_level(
     )
 
 
-def _interpret_level_initial(
+def _get_user_transform_slice(
     level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
     num_user_transforms: int,
 ) -> slice:
@@ -143,7 +143,7 @@ def _interpret_level_initial(
     return level
 
 
-def _interpret_level_inner(
+def _get_inner_transform_slice(
     level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
     num_user_transforms: int,
     has_gradient_expand: bool,
@@ -461,7 +461,7 @@ def construct_batch(
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        level_slice_initial = _interpret_level_initial(
+        level_slice_initial = _get_user_transform_slice(
             level, num_user_transforms
         )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
         program = user_program[level_slice_initial]
@@ -499,7 +499,7 @@ def construct_batch(
         has_gradient_expand = bool(
             getattr(execution_config.gradient_method, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
-        level_slice_inner = _interpret_level_inner(
+        level_slice_inner = _get_inner_transform_slice(
             level,
             num_user_transforms,
             has_gradient_expand,
