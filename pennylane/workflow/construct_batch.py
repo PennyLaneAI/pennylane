@@ -182,10 +182,9 @@ def _interpret_level_inner(
         return slice(0, None)  # Include all remaining transforms
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
-    if isinstance(level, slice):
-        start = max(0, (level.start or 0) - num_user_transforms)
-        stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
-        return slice(start, stop, level.step)
+    start = max(0, (level.start or 0) - num_user_transforms)
+    stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
+    return slice(start, stop, level.step)
 
 
 def get_transform_program(
