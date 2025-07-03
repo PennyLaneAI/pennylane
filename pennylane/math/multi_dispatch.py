@@ -169,7 +169,7 @@ def kron(*args, like=None, **kwargs):
         devs = list(devs)
         # If multiple devices found, choose the non-CPU device as the default
         if len(devs) > 1:  # Assuming "cpu" and non-"cpu" are the only options
-            dev = devs[0] if getattr(devs[0], "type", "cpu") != "cpu" else devs[1]
+            dev = devs[0] if getattr(devs[0], "type", str(devs[0])) != "cpu" else devs[1]
         else:
             dev = devs[0]
         # Migrate the tensors to all be on the chosen device, if necessary
