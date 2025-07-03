@@ -870,8 +870,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
-  new `gradient_kwargs` keyword argument accordingly.
+* Support for gradient keyword arguments as additional `QNode` keyword arguments has been removed. 
+  Instead, they should be provided as a `dict` via the new `gradient_kwargs` keyword argument.
   [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
   [(#7782)](https://github.com/PennyLaneAI/pennylane/pull/7782)
 
