@@ -460,7 +460,7 @@ def construct_batch(
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 
-        if level_slice_initial.stop is not None and level_slice_initial.stop <= len(qnode.transform_program):
+        if level_slice_initial.stop is not None and level_slice_initial.stop <= num_user_transforms:
             # If the level slice is fully contained within user transforms, we can return early
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
