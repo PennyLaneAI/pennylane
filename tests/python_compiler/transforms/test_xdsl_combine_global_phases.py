@@ -162,6 +162,54 @@ class TestCombineGlobalPhasesPass:
         print(module)
         run_filecheck(program, module)
 
+    def test_combinable_ops_in_control_flow_for(self, run_filecheck):
+        """Test that combine global phases in a func without control flows."""
+        program = """
+            func.func @test_func(%n: i32, %arg0: f64, %arg1: f64) {
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[c0:%*]] = arith.constant 0 : i32
+                // CHECK: [[c1:%*]] = arith.constant 1 : i32
+                %0 = "test.op"() : () -> !quantum.bit
+                %c0 = arith.constant 0 : i32
+                %c1 = arith.constant 1 : i32
+                scf.for %i = %c0 to %n step %c1 {
+                    // CHECK: [[two0:%.*]] = arith.constant [[two0:2.*]] : f64
+                    %two0 = arith.constant 2 : f64
+                    // CHECK: [[arg02:%.*]] = arith.mulf [[arg0:%.*]], [[two0:%.*]] : f64
+                    %arg02 = arith.mulf %arg0, %two0 : f64
+                    // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
+                    %t0 = "test.op"() : () -> f64
+                    // CHECK: [[phi_sum:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    quantum.gphase %t0
+                    quantum.gphase %t0
+                }
+                // CHECK: [[phi_sum:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum:%.*]])
+                quantum.gphase %arg0
+                quantum.gphase %arg1
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                return
+            }
+        """
+
+        ctx = Context()
+        # Load scf.Scf dialects to ensure operations (scf.if) in the program str are registered.
+        ctx.load_dialect(scf.Scf)
+        # Load arith.Arith dialects to ensure operations (arith.constant, f64) in the program str are registered.
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
+
+        pipeline.apply(ctx, module)
+        print(module)
+        run_filecheck(program, module)
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
