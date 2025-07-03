@@ -110,11 +110,8 @@ def _interpret_level_initial(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
 
-    if level is None:
-        return slice(0, num_user_transforms)
-
-    if isinstance(level, int):
-        return slice(0, min(level, num_user_transforms))
+    if level is None isinstance(level, int):
+        return slice(0, level)
 
     # Handle slice objects - clamp to user transform bounds
     if isinstance(level, slice):
