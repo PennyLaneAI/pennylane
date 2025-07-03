@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def get_tape(angles, wires):
@@ -53,7 +54,7 @@ class TestSelectPauliRot:
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
@@ -162,6 +163,16 @@ class TestSelectPauliRot:
                 assert gate.batch_size == batch_dim
             for gate in dec[1::2]:
                 assert gate.name == "CNOT"
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    @pytest.mark.parametrize("axis", "XYZ")
+    def test_decomposition_new(self, n, axis):
+        """Tests that the decomposition of SelectPauliRot is correct with the new system."""
+
+        angles = np.random.random((2**n,))
+        op = qml.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
+        for rule in qml.list_decomps("SelectPauliRot"):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     def test_interface_jax(self):

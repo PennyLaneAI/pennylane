@@ -40,7 +40,7 @@ def test_assert_valid():
     """Tests that BasisState operators are valid"""
 
     op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
 
     def abstract_check(state):
         op = qml.BasisState(state, wires=[0, 1])
@@ -56,7 +56,7 @@ def test_assert_valid():
             for _op in tape.operations:
                 resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
                 actual_gate_counts[resource_rep] += 1
-            assert gate_counts == actual_gate_counts
+            assert all(_op in gate_counts for _op in actual_gate_counts)
 
             # Tests that the decomposition produces the same matrix
             op_matrix = qml.matrix(op)
@@ -169,7 +169,7 @@ class TestDecomposition:
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, normalize=True, wires=wires)
+            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=True)
             return qml.state()
 
         assert np.allclose(circuit(), state / 2)
@@ -276,7 +276,7 @@ class TestStateVector:
         """Tests that the state-vector provided must have norm equal to 1."""
 
         with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
-            _ = qml.StatePrep(vec, wires=[0, 1])
+            _ = qml.StatePrep(vec, wires=[0, 1], validate_norm=True)
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""

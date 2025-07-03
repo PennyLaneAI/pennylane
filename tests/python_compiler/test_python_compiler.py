@@ -14,18 +14,37 @@
 
 """Unit test module for pennylane/compiler/python_compiler/impl.py"""
 
+from dataclasses import dataclass
+
 # pylint: disable=wrong-import-position
 import pytest
 
 pytestmark = pytest.mark.external
 
-xdsl = pytest.importorskip("xdsl")
+catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 jaxlib = pytest.importorskip("jaxlib")
+xdsl = pytest.importorskip("xdsl")
 
+from catalyst import CompileError
+from xdsl import passes
+from xdsl.context import Context
+from xdsl.dialects import builtin, transform
+from xdsl.interpreters import Interpreter
 
-from pennylane.compiler.python_compiler.impl import Compiler
-from pennylane.compiler.python_compiler.jax_utils import jax_from_docstring, module
+from pennylane.compiler.python_compiler import Compiler
+from pennylane.compiler.python_compiler.jax_utils import (
+    jax_from_docstring,
+    module,
+    xdsl_from_docstring,
+)
+from pennylane.compiler.python_compiler.transforms.api import (
+    ApplyTransformSequence,
+    TransformFunctionsExt,
+    TransformInterpreterPass,
+    available_passes,
+    compiler_transform,
+)
 
 
 def test_compiler():
@@ -98,6 +117,92 @@ def test_generic_catalyst_program():
 
     retval = Compiler.run(program())
     assert isinstance(retval, jaxlib.mlir.ir.Module)
+
+
+def test_raises_error_when_pass_does_not_exists():
+    """Attempts to run pass "this-pass-does-not-exists" on an empty module.
+
+    This should raise an error
+    """
+
+    @xdsl_from_docstring
+    def empty_module():
+        """
+        builtin.module {}
+        """
+
+    @xdsl_from_docstring
+    def schedule_module():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "this-pass-does-not-exists" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
+            }
+          }
+        }
+        """
+
+    ctx = Context()
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(transform.Transform)
+    schedule = TransformInterpreterPass.find_transform_entry_point(
+        schedule_module(), "__transform_main"
+    )
+    interpreter = Interpreter(empty_module())
+    interpreter.register_implementations(TransformFunctionsExt(ctx, {}))
+    with pytest.raises(CompileError):
+        interpreter.call_op(schedule, (empty_module(),))
+
+
+def test_decorator():
+    """Test that the decorator has modified the available_passes dictionary"""
+
+    @dataclass(frozen=True)
+    class PrintModule(passes.ModulePass):
+        name = "print-module"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+            print("hello")
+
+    compiler_transform(PrintModule)
+    assert "print-module" in available_passes
+    assert available_passes["print-module"]() == PrintModule
+
+
+def test_integration_for_transform_interpreter(capsys):
+    """Test that a pass is run via the transform interpreter"""
+
+    @compiler_transform
+    @dataclass(frozen=True)
+    class _HelloWorld(passes.ModulePass):
+        name = "hello-world"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+            print("hello world")
+
+    @xdsl_from_docstring
+    def program():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "hello-world" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
+            }
+          }
+        }
+        """
+
+    ctx = xdsl.context.Context()
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(transform.Transform)
+
+    pipeline = xdsl.passes.PipelinePass((ApplyTransformSequence(),))
+    pipeline.apply(ctx, program())
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
 
 
 if __name__ == "__main__":

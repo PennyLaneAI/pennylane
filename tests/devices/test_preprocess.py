@@ -187,7 +187,7 @@ class TestValidateDeviceWires:
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
-        """Tests that if the wires are provided, measurements without wires take them gain them."""
+        """Tests that if the wires are provided, measurements without wires gain them."""
         tape1 = qml.tape.QuantumScript([qml.S("b")], [qml.state(), qml.probs()], shots=52)
 
         wires = qml.wires.Wires(["a", "b", "c"])
@@ -650,11 +650,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_with_sample_output(self, sample_kwargs, meas_transform):
+    def test_with_sample_output(self, sample_kwargs, meas_transform, seed):
         """Test that returning sample works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
@@ -712,11 +712,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
-    def test_multiple_measurements(self, meas_transform):
+    def test_multiple_measurements(self, meas_transform, seed):
         """Test the results of applying measurements_from_counts/measurements_from_samples with
         multiple measurements"""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @qml.qnode(dev)
         def basic_circuit(theta: float):

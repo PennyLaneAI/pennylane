@@ -29,6 +29,12 @@ from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .capture_measurements import (
+    create_measurement_mcm_primitive,
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+)
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -60,9 +66,9 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         name = cls._shortname or cls.__name__
-        cls._wires_primitive = qml.capture.create_measurement_wires_primitive(cls, name=name)
-        cls._obs_primitive = qml.capture.create_measurement_obs_primitive(cls, name=name)
-        cls._mcm_primitive = qml.capture.create_measurement_mcm_primitive(cls, name=name)
+        cls._wires_primitive = create_measurement_wires_primitive(cls, name=name)
+        cls._obs_primitive = create_measurement_obs_primitive(cls, name=name)
+        cls._mcm_primitive = create_measurement_mcm_primitive(cls, name=name)
 
     @classmethod
     def _primitive_bind_call(cls, obs=None, wires=None, eigvals=None, id=None, **kwargs):
@@ -487,11 +493,14 @@ class SampleMeasurement(MeasurementProcess):
 
     We can now execute it in a QNode:
 
-    >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-    >>> @qml.qnode(dev)
+    >>> from functools import partial
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @partial(qml.set_shots, shots=1000)
+    ... @qml.qnode(dev)
     ... def circuit():
     ...     qml.X(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+    ...
     >>> circuit()
     (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """

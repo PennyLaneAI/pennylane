@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 label_data = [
@@ -410,38 +411,50 @@ class TestIntegerComparator:
         with pytest.raises(ValueError, match=expected_error_message):
             qml.IntegerComparator.compute_decomposition(value, wires=wires, geq=geq)
 
-    def test_decomposition(self):
-        """Test operator's ``compute_decomposition()`` method."""
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2])
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        assert all(isinstance(op, qml.MultiControlledX) for op in tape1.operations)
+    @pytest.mark.parametrize("geq", [True, False])
+    @pytest.mark.parametrize("value", list(range(9)))
+    @pytest.mark.parametrize("initial_state", list(itertools.product([0, 1], repeat=3)))
+    def test_decomposition(self, value, geq, initial_state):
+        """Tests the decomposition of the IntegerComparator operator."""
 
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
-        assert all(isinstance(op, qml.MultiControlledX) for op in tape2.operations)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Projector(initial_state, wires=[0, 1, 2])
+            qml.IntegerComparator.compute_decomposition(value, wires=[0, 1, 2, 3], geq=geq)
+        tape = qml.tape.QuantumScript.from_queue(q)
 
-        num_wires = 3
-        num_workers = 1
-        dev = qml.device("default.qubit", wires=num_wires + num_workers)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Projector(initial_state, wires=[0, 1, 2])
+            val = int("".join(str(i) for i in initial_state), 2)
+            if (geq and val >= value) or (not geq and val < value):
+                qml.PauliX(3)
+        equivalent_tape = qml.tape.QuantumScript.from_queue(q)
 
-        @qml.qnode(dev)
-        def f(bitstring, tape, geq):
-            qml.BasisState(bitstring, wires=range(num_wires + num_workers))
-            qml.adjoint(qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq), lazy=False)
-            for op in tape.operations:
-                op.queue()
-            return qml.probs(wires=range(num_wires + num_workers))
+        matrix = qml.matrix(tape, wire_order=[0, 1, 2, 3])
+        equivalent_matrix = qml.matrix(equivalent_tape, wire_order=[0, 1, 2, 3])
+        assert qml.math.allclose(matrix, equivalent_matrix)
 
-        for tape, geq in zip([tape1, tape2], [True, False]):
-            u = np.array(
-                [
-                    f(np.array(b), tape, geq)
-                    for b in itertools.product(range(2), repeat=num_wires + num_workers)
-                ]
-            ).T
-            assert np.allclose(u, np.eye(2 ** (num_wires + num_workers)))
+    @pytest.mark.parametrize("geq", [True, False])
+    @pytest.mark.parametrize("value", list(range(9)))
+    def test_decomposition_qfuncs(self, value, geq):
+        """Tests the qfunc decompositions of the IntegerComparator operator."""
+        op = qml.IntegerComparator(value, wires=[0, 1, 2, 3], geq=geq)
+        for rule in qml.list_decomps(qml.IntegerComparator):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_graph_integration(self):
+        """Tests that the decomposition is correct under the new system."""
+
+        tape = qml.tape.QuantumScript([qml.IntegerComparator(42, wires=[0, 1, 2, 3, 4, 5, 6])])
+        [decomp], _ = qml.transforms.decompose(
+            tape,
+            gate_set={qml.X, qml.CNOT, qml.Hadamard, qml.T, "Adjoint(T)", qml.RX, qml.RY, qml.RZ},
+        )
+
+        mat = qml.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6])
+        expected_mat = qml.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6])
+        assert qml.math.allclose(mat, expected_mat)
 
     def test_decomposition_extraneous_value(self):
         """Test operator's ``compute_decomposition()`` method when ``value`` is such that
