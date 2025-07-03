@@ -15,6 +15,7 @@
 This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
+from copy import copy
 from functools import partial
 from typing import Optional, Union, overload
 
@@ -164,6 +165,9 @@ class TransformProgram:
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache
+
+    def __copy__(self):
+        return TransformProgram(self._transform_program, self.cotransform_cache)
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -499,3 +503,23 @@ class TransformProgram:
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
         return self.__call_tapes(*args, **kwargs)
+
+
+@TransformDispatcher.register
+def apply_to_program(obj: TransformProgram, transform: TransformDispatcher, *targs, **tkwargs):
+    program = copy(obj)
+
+    if transform.expand_transform:
+        program.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+    program.push_back(
+        TransformContainer(
+            transform.transform,
+            args=targs,
+            kwargs=tkwargs,
+            classical_cotransform=transform.classical_cotransform,
+            plxpr_transform=transform.plxpr_transform,
+            is_informative=transform.is_informative,
+            final_transform=transform.final_transform,
+        )
+    )
+    return program

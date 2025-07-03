@@ -352,7 +352,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
         with pytest.raises(TransformError, match=msg):
 
-            @dispatched_transform(targs)
+            @dispatched_transform(*targs)
             @qml.qnode(device=dev)
             def qnode_circuit(a):  # pylint:disable=unused-variable
                 """QNode circuit."""
@@ -419,7 +419,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == [0]
+        assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -427,7 +427,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         transform_container = qnode_transformed.transform_program.pop_front()
 
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
-        assert transform_container.args == [0]
+        assert transform_container.args == (0,)
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -597,7 +597,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         )
 
         # check that the custom qnode transform was called
-        assert history == [([], {"index": 0}), ([1], {})]
+        assert history == [((), {"index": 0}), ((1,), {})]
 
     @pytest.mark.parametrize(
         "fn, type_",

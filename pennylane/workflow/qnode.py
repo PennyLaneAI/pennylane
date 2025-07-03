@@ -929,3 +929,8 @@ def qnode(device, **kwargs):
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
+
+
+@TransformDispatcher.register
+def apply_to_qnode(obj: QNode, transform: TransformDispatcher, *targs, **tkwargs) -> QNode:
+    return transform._qnode_transform(obj, targs, tkwargs)

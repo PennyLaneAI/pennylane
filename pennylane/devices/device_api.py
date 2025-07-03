@@ -25,7 +25,12 @@ import pennylane as qml
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import (
+    TransformContainer,
+    TransformDispatcher,
+    TransformError,
+    TransformProgram,
+)
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -1053,3 +1058,87 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
         return "device"
 
     return "deferred"
+
+
+def _preprocess_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program, config = self.original_device.preprocess(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program, config
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
+    class TransformedDevice(type(original_device)):
+        """A transformed device with updated preprocess method."""
+
+        def __init__(self, original_device, transform, targs, tkwargs):
+            for key, value in original_device.__dict__.items():
+                self.__setattr__(key, value)
+            self.transform = transform
+            self.targs = targs
+            self.tkwargs = tkwargs
+            self._original_device = original_device
+
+        def __repr__(self):
+            return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+        def preprocess_transforms(
+            self,
+            execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        ):
+            """This function updates the original device transform program to be applied."""
+            program = self.original_device.preprocess_transforms(execution_config)
+            program.push_back(
+                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
+            )
+            return program
+
+        @property
+        def original_device(self):
+            """Return the original device."""
+            return self._original_device
+
+    return TransformedDevice(original_device, transform, targs, tkwargs)
+
+
+@TransformDispatcher.register
+def apply_to_device(obj: Device, transform, *targs, **tkwargs):
+    """Apply the transform on a device"""
+    if transform.expand_transform:
+        raise TransformError("Device transform does not support expand transforms.")
+    if transform.is_informative:
+        raise TransformError("Device transform does not support informative transforms.")
+    if transform.final_transform:
+        raise TransformError("Device transform does not support final transforms.")
+
+    if type(obj).preprocess != qml.devices.Device.preprocess:
+        return _preprocess_device(obj, transform.transform, targs, tkwargs)
+
+    return _preprocess_transforms_device(obj, transform.transform, targs, tkwargs)
