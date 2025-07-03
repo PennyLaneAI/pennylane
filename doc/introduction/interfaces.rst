@@ -397,12 +397,19 @@ Supported configurations
 
 .. raw:: html
 
-   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
    <script>
-     $(document).ready(function() {
-       $('.gr').parent().parent().addClass('gr-parent');
-       $('.rd').parent().parent().addClass('rd-parent');
-     });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.gr').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('gr-parent');
+            }
+        });
+        document.querySelectorAll('.rd').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('rd-parent');
+            }
+        });
+    });
    </script>
    <style>
        .gr-parent {background-color:#bbffbb}
