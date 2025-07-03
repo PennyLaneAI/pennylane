@@ -110,7 +110,7 @@ def _interpret_level_initial(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
 
-    if level is None isinstance(level, int):
+    if level is None or isinstance(level, int):
         return slice(0, level)
 
     # Handle slice objects - clamp to user transform bounds
@@ -121,18 +121,16 @@ def _interpret_level_initial(
     return level  # pragma: no cover
 
 
-# pylint: disable=too-many-return-statements
 def _interpret_level_inner(
     level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
     num_user_transforms: int,
     has_gradient_expand: bool,
-    has_final_transform: bool = False,
 ) -> slice:
     """Interpret the level specification for the inner transform slice.
 
     This function handles slicing into the remaining transforms (gradient + device)
-    after user transforms have already been applied. The returned slice is already
-    shifted to account for final transforms being moved to the end.
+    after user transforms have already been applied. The inner program starts
+    from index 0, so we need to adjust level specifications accordingly.
 
     Args:
         level: The level specification from user input
@@ -140,22 +138,14 @@ def _interpret_level_inner(
         has_gradient_expand: Whether gradient expansion transform exists
 
     Returns:
-        slice: The slice to apply to the remaining transform program (already shifted)
+        slice: The slice to apply to the remaining transform program
     """
-    # Calculate the shift needed to account for final transforms
-    shift_len = num_user_transforms
-    
-    def _shift(i):
-        return i - shift_len if i is not None else i
-
-    start = max(0, num_user_transforms)
     if level in ("top", "user"):
-        raise ValueError("We should not be able to hit this logical branch")
+        return slice(0, 0)  # No additional transforms needed
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
-        stop = num_user_transforms + end_idx - int(has_final_transform)
-        return slice(0, _shift(stop))
+        return slice(0, end_idx)  # Include only gradient expansion if it exists
 
     if level == "device":
         return slice(0, None)  # Include all remaining transforms
@@ -165,15 +155,23 @@ def _interpret_level_inner(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
         )
 
-    if level is None or isinstance(level, int):
-        return slice(0, _shift(level))  # Include all remaining transforms
+    if isinstance(level, int):
+        # For integer levels, we need to figure out where we are relative to the total
+        if level <= num_user_transforms:
+            return slice(0, 0)  # Already handled by user transforms
+        else:
+            # Include additional transforms up to the requested level
+            inner_level = level - num_user_transforms
+            return slice(0, inner_level)
+
+    if level is None:
+        return slice(0, None)  # Include all remaining transforms
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
     if isinstance(level, slice):
-        start = max(start, level.start) if level.start is not None else start
-        stop = level.stop
-
-        return slice(_shift(start), _shift(stop), level.step)
+        start = max(0, (level.start or 0) - num_user_transforms)
+        stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
+        return slice(start, stop, level.step)
 
     return level  # pragma: no cover
 
@@ -463,7 +461,14 @@ def construct_batch(
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 
-        if level_slice_initial.stop is not None and level_slice_initial.stop <= num_user_transforms:
+        if (
+            level_slice_initial.stop is not None
+            and level_slice_initial.stop <= num_user_transforms
+            and (
+                level in ("top", "user")
+                or (isinstance(level, int) and level <= num_user_transforms)
+            )
+        ):
             # If the level slice is fully contained within user transforms, we can return early
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
@@ -499,7 +504,6 @@ def construct_batch(
             level,
             num_user_transforms,
             has_gradient_expand,
-            qnode.transform_program.has_final_transform,
         )
         resolved_program = full_transform_program[level_slice_inner]
 
