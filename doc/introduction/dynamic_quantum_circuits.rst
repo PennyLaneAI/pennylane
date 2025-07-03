@@ -245,19 +245,19 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.gr').forEach(function(element) {
             if (element.parentElement && element.parentElement.parentElement) {
-            element.parentElement.parentElement.classList.add('gr-parent');
+                element.parentElement.parentElement.classList.add('gr-parent');
             }
         });
 
         document.querySelectorAll('.or').forEach(function(element) {
             if (element.parentElement && element.parentElement.parentElement) {
-            element.parentElement.parentElement.classList.add('or-parent');
+                element.parentElement.parentElement.classList.add('or-parent');
             }
         });
 
         document.querySelectorAll('.rd').forEach(function(element) {
             if (element.parentElement && element.parentElement.parentElement) {
-            element.parentElement.parentElement.classList.add('rd-parent');
+                element.parentElement.parentElement.classList.add('rd-parent');
             }
         });
     });
