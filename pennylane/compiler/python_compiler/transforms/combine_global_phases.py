@@ -18,8 +18,7 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, scf
-from xdsl.dialects.func import ReturnOp
+from xdsl.dialects import arith, builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
@@ -37,7 +36,7 @@ class CombineGlobalPhasesPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | ForOp | WhileOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ, cell-var-from-loop
         """Implementation of rewriting Op that may contain operations corresponding to
         GlobalPhase oprations."""
 
@@ -64,7 +63,6 @@ class CombineGlobalPhasesPattern(
 
             prev.operands[0].replace_by_if(phi_sum, lambda use: use.operation == prev)
             rewriter.notify_op_modified(prev)
-        return
 
 
 @dataclass(frozen=True)
