@@ -78,7 +78,7 @@ class TestIO:
             ),
         ):
             QasmInterpreter().interpret(
-                ast, context={"name": "missing-input", "wire_map": None}, theta=0.2, phi=0.1
+                ast, context={"name": "wrong-input", "wire_map": None}, theta=0.2, phi=0.1
             )
 
     def test_missing_input(self):
