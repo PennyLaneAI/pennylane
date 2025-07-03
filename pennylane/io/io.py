@@ -863,48 +863,52 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Returns:
         dict: the context resulting from the execution.
 
-    >>> import pennylane as qml
-    >>> dev = qml.device("default.qubit", wires=[0, 1])
-    >>> @qml.qnode(dev)
-    >>> def my_circuit():
-    ...     qml.from_qasm3(
-    ...         '''
-    ...         qubit q0;
-    ...         qubit q1;
-    ...         qubit q2;
-    ...         float theta = 0.2;
-    ...         int power = 2;
-    ...
-    ...         ry(theta / 2) q0;
-    ...         rx(theta) q1;
-    ...         pow(power) @ x q0;
-    ...
-    ...         def random(qubit q) -> bit
-    ...         {
-    ...             bit b = "0";
-    ...             h q;
-    ...             measure q -> b;
-    ...             return b;
-    ...         }
-    ...
-    ...         bit m = random(q2);
-    ...
-    ...         if (m) {
-    ...             int i = 0;
-    ...             while (i < 5) {
-    ...                 i = i + 1;
-    ...                 rz(i) q1;
-    ...                 if (m) {
-    ...                     break;
-    ...                 }
-    ...             }
-    ...         } else {
-    ...             x q0;
-    ...             end;
-    ...         }
-    ...         ''',
-    ...         {'q0': 0, 'q1': 1, 'q2': 2})
-    ...     return qml.expval(qml.Z(0))
+    .. code-block:: python
+
+        >>> import pennylane as qml
+        >>> dev = qml.device("default.qubit", wires=[0, 1])
+        >>> @qml.qnode(dev)
+        >>> def my_circuit():
+        ...     qml.from_qasm3(
+        ...         '''
+        ...         qubit q0;
+        ...         qubit q1;
+        ...         qubit q2;
+        ...
+        ...         float theta = 0.2;
+        ...         int power = 2;
+        ...
+        ...         ry(theta / 2) q0;
+        ...         rx(theta) q1;
+        ...         pow(power) @ x q0;
+        ...
+        ...         def random(qubit q) -> bit
+        ...         {
+        ...             bit b = "0";
+        ...             h q;
+        ...             measure q -> b;
+        ...             return b;
+        ...         }
+        ...
+        ...         bit m = random(q2);
+        ...
+        ...         if (m) {
+        ...             int i = 0;
+        ...             while (i < 5) {
+        ...                 i = i + 1;
+        ...                 rz(i) q1;
+        ...                 if (m) {
+        ...                     break;
+        ...                 }
+        ...             }
+        ...         } else {
+        ...             x q0;
+        ...             end;
+        ...         }
+        ...         ''',
+        ...         {'q0': 0, 'q1': 1, 'q2': 2})
+        ...     return qml.expval(qml.Z(0))
+
     >>> print(qml.draw(my_circuit)())
     0: ──RY(0.10)──X²────────────┤  <Z>
     1: ──RX(0.20)───────RZ(1.00)─┤
