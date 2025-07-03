@@ -102,6 +102,8 @@ class Adder(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_x_wires", "mod"}
+
     def __init__(
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
