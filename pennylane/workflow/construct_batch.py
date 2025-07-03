@@ -458,11 +458,11 @@ def construct_batch(
             level, num_user_transforms
         )  # This should be fine, since the case where `has_gradient_expand==True` only increase 1 to the end of level slice
         program = user_program[level_slice_initial]
-        if _is_within_user_bounds(level, num_user_transforms):
-            # If the level slice is fully contained within user transforms, we can return early
-            return program((initial_tape,))
-
         user_transformed_tapes, user_post_processing = program((initial_tape,))
+
+        if initial_level_slice.stop is not None and level_slice_initial.stop <= len(qnode.transform_program):
+            # If the level slice is fully contained within user transforms, we can return early
+            return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
         # The new config process we would like to use.
         mcm_config = qml.devices.MCMConfig(
