@@ -65,6 +65,16 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
+    def test_bad_other_key(self):
+        """Test a value error is raised if a bad, unrecognized key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"not recognized."):
+            get_transform_program(circuit, level=["bah"])
+
     def test_get_transform_program_diff_method_transform(self):
         """Tests for the transform program when the diff_method is a transform."""
 
