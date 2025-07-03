@@ -371,7 +371,7 @@ def construct_batch(
             @qml.transforms.undo_swaps
             @qml.transforms.merge_rotations
             @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device('default.qubit'), diff_method="parameter-shift", shifts=np.pi / 4)
+            @qml.qnode(qml.device('default.qubit'), diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
             def circuit(x):
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
                 qml.RX(x, wires=0)
@@ -385,15 +385,15 @@ def construct_batch(
 
         >>> batch, fn = construct_batch(circuit, level="device")(1.23)
         >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[1]),
-         RX(tensor(2., requires_grad=True), wires=[0]),
+        [RY(1.0, wires=[1]),
+         RX(2.0, wires=[0]),
          expval(X(0) + Y(0))]
 
         These tapes can be natively executed by the device. However, with non-backprop devices the parameters
         will need to be converted to NumPy with :func:`~.convert_to_numpy_parameters`.
 
         >>> fn(dev.execute(batch))
-        (tensor(-0.90929743, requires_grad=True),)
+        (np.float64(-0.9092974268256817),)
 
         Or what the parameter shift gradient transform will be applied to:
 
