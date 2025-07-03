@@ -181,9 +181,9 @@ class TestCompressedResourceOp:
 
             @property
             def resource_params(self) -> dict:
-                return {"foo": [1, 2, 3], "bar": 4}
+                return {"foo": [1, 2, 3], "bar": [1, 2, [3, 4, 5]]}
 
-        op = CompressedResourceOp(CustomOp, {"foo": [1, 2, 3], "bar": 4})
+        op = CompressedResourceOp(CustomOp, {"foo": [1, 2, 3], "bar": [1, 2, [3, 4, 5]]})
         assert isinstance(hash(op), int)
 
     def test_same_params_same_hash(self):
