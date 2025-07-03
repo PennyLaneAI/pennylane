@@ -138,9 +138,12 @@ class TestTorchDevice:
         """
         dev = qml.device("default.qubit")
         p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
+        U_in = qml.matrix(qml.RZ(0.9, 0))
 
         @qml.qnode(dev)
         def circuit(x):
+            qml.QubitUnitary(U_in, wires=0)
+            qml.Hadamard(0)
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
