@@ -150,7 +150,7 @@ def _interpret_level_inner(
 
     start = max(0, num_user_transforms)
     if level in ("top", "user"):
-        return slice(_shift(start), _shift(0))  # No additional transforms needed
+        raise ValueError("We should not be able to hit this logical branch")
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
