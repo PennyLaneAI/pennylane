@@ -696,7 +696,7 @@ class QasmInterpreter:
             context (dict): the current context.
         """
         wire = self.visit(node.qubits, context)
-        measure(context.wire_map[wire] if wire in context.wire_map else wire, reset=True)
+        measure(context.wire_map.get(wire, wire), reset=True)
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
