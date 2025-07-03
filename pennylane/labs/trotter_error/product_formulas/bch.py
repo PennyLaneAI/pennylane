@@ -20,7 +20,7 @@ from collections import defaultdict
 from collections.abc import Hashable
 from functools import cache
 from itertools import permutations, product
-from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def bch_expansion(
-    product_formula: ProductFormula, order: int
+    product_formula: ProductFormula, order: int, group_sums: bool = False
 ) -> List[Dict[Tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
@@ -65,7 +65,11 @@ def bch_expansion(
                   ('C', 'A', 'C'): (-0.08333333333333333+0j),
                   ('C', 'B', 'C'): (-0.08333333333333333+0j)})]
     """
-    return _drop_zeros(_bch_expansion(product_formula, order, {}))
+    return (
+        _group_sums(_drop_zeros(_bch_expansion(product_formula, order, {})))
+        if group_sums
+        else _drop_zeros(_bch_expansion(product_formula, order, {}))
+    )
 
 
 def _bch_expansion(
@@ -478,7 +482,7 @@ def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Has
 
 
 def _drop_zeros(
-    term_dicts: List[Dict[Tuple[Hashable], float]],
+    term_dicts: List[Dict[Tuple[Hashable], complex]],
 ) -> List[Dict[Tuple[Hashable], float]]:
     """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:
@@ -491,3 +495,9 @@ def _drop_zeros(
             del terms[commutator]
 
     return term_dicts
+
+
+def _group_sums(
+    term_dicts: List[Dict[Tuple[Hashable], complex]],
+) -> List[Dict[Tuple[Hashable | Set], complex]]:
+    grouped_dicts = []
