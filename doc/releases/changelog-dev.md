@@ -640,6 +640,15 @@
   update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
+* Refactored the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
+  Now, user transforms including final transforms like `param_shift` and `metric_tensor` are
+  always applied before gradient determination and device preprocessing, matching the
+  execution pipeline. The gradient method is now determined after all user transforms
+  have been applied, mirroring the logic in `execute`. This change ensures that transform
+  slicing and execution are always in sync, and fixes several subtle bugs with transform
+  application at different workflow levels.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
@@ -1085,9 +1094,6 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
-
-* Adjust workflow helper function `construct_batch` to be consistent with `set_shots` and other user transforms, following similar logic as `execute`.
-  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
 
 * The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
   to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
