@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import functools
 from collections.abc import Sequence
+from operator import attrgetter
 
 # pylint: disable=wrong-import-order
 import numpy as onp
@@ -163,9 +164,16 @@ def kron(*args, like=None, **kwargs):
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
 
     if like == "torch":
-        mats = [
-            np.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg for arg in args
-        ]
+        # Extract all the devices for the incoming tensors
+        devs = set(map(attrgetter("device"), args))
+        devs = list(devs)
+        # If multiple devices found, choose the non-CPU device as the default
+        if len(devs) > 1:  # Assuming "cpu" and non-"cpu" are the only options
+            dev = devs[0] if getattr(devs[0], "type", str(devs[0])) != "cpu" else devs[1]
+        else:
+            dev = devs[0]
+        # Migrate the tensors to all be on the chosen device, if necessary
+        mats = [np.asarray(arg, like="torch", device=dev) for arg in args]
         return np.kron(*mats)
 
     return np.kron(*args, like=like, **kwargs)
