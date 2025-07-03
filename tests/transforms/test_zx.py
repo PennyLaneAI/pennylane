@@ -682,3 +682,176 @@ class TestConvertersZX:
         g = circuit()
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)
+
+
+class TestReducerZX:
+
+    @pytest.mark.parametrize(
+        "gate",
+        (
+            # 1-qubit hermitian gates
+            qml.Identity(wires=0),
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=0),
+            qml.PauliZ(wires=0),
+            qml.Hadamard(wires=0),
+            # 2-qubit hermitian gates
+            qml.CNOT(wires=[0, 1]),
+            qml.CY(wires=[0, 1]),
+            qml.CZ(wires=[0, 1]),
+            qml.CH(wires=[0, 1]),
+            qml.SWAP(wires=[0, 1]),
+        ),
+    )
+    def test_hermitian_gates_cancellation(self, gate):
+        ops = [gate, gate]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == []
+
+    @pytest.mark.parametrize(
+        "num_gates, expected_ops",
+        (
+            (1, [qml.S(0)]),
+            (2, [qml.Z(0)]),
+            (4, []),
+        ),
+    )
+    def test_S_gate_simplification(self, num_gates, expected_ops):
+        ops = [qml.S(0)] * num_gates
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == expected_ops
+
+    @pytest.mark.parametrize(
+        "num_gates, expected_ops",
+        (
+            (1, [qml.T(0)]),
+            (2, [qml.S(0)]),
+            (4, [qml.Z(0)]),
+            (8, []),
+        ),
+    )
+    def test_T_gate_simplification(self, num_gates, expected_ops):
+        ops = [qml.T(0)] * num_gates
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert new_qs.operations == expected_ops
+
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
+        ),
+    )
+    def test_rx_rotation_gates(self, params):
+        ops = [qml.RX(angle, wires=0) for angle in params]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert len(new_qs.operations) == 3
+
+        rot = new_qs.operations[1]
+        assert new_qs.operations[0] == qml.H(0)
+        assert isinstance(rot, qml.RZ)
+        assert new_qs.operations[2] == qml.H(0)
+
+        new_angle = rot.parameters[0]
+        # if the expected total angle is negative add 2π
+        exp_angle = np.sum(params)
+        if exp_angle < 0:
+            exp_angle += 2 * np.pi
+        assert np.isclose(new_angle, exp_angle)
+
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
+        ),
+    )
+    def test_ry_rotation_gates(self, params):
+        ops = [qml.RY(angle, wires=0) for angle in params]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert len(new_qs.operations) == 6
+
+        rot = new_qs.operations[3]
+        assert new_qs.operations[0] == qml.H(0)
+        assert new_qs.operations[1] == qml.S(0)
+        assert new_qs.operations[2] == qml.H(0)
+        assert isinstance(rot, qml.RZ)
+        assert new_qs.operations[4] == qml.H(0)
+        assert new_qs.operations[5] == qml.S(0)
+
+        new_angle = rot.parameters[0] - np.pi / 2
+        # if the expected total angle is negative add 2π
+        exp_angle = np.sum(params)
+        if exp_angle < 0:
+            exp_angle += 2 * np.pi
+        assert np.isclose(new_angle, exp_angle)
+
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (1.7, 0.0),
+            (3.1, -0.5),
+            (0.1, 0.9, -2.8),
+        ),
+    )
+    def test_rz_rotation_gates(self, params):
+        ops = [qml.RZ(angle, wires=0) for angle in params]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+
+        assert len(new_qs.operations) == 1
+
+        rot = new_qs.operations[0]
+        assert isinstance(rot, qml.RZ)
+
+        new_angle = rot.parameters[0]
+        # if the expected total angle is negative add 2π
+        exp_angle = np.sum(params)
+        if exp_angle < 0:
+            exp_angle += 2 * np.pi
+        assert np.isclose(new_angle, exp_angle)
+
+    def test_qnode_state_equivalence(self):
+        num_wires = 3
+        device = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(device)
+        def original_circ(x, y):
+            for i in range(num_wires):
+                qml.Hadamard(wires=i)
+            qml.T(wires=0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.T(wires=0)
+            qml.RX(x, wires=1)
+            qml.S(wires=2)
+            qml.RX(y, wires=1)
+            qml.CNOT(wires=[1, 2])
+            return qml.state()
+
+        reduced_circ = qml.transforms.reduce_zx_calculus(original_circ)
+
+        params = [3.2, -2.2]
+        state1 = original_circ(*params)
+        state2 = reduced_circ(*params)
+
+        assert np.allclose(state1, state2)

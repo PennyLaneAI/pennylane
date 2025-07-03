@@ -55,6 +55,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.decompose
     ~transforms.combine_global_phases
+    ~transforms.reduce_zx_calculus
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -345,6 +346,6 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
+from .zx import to_zx, from_zx, reduce_zx_calculus
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
