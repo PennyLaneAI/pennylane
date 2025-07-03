@@ -464,3 +464,11 @@ class TestResourceQROM:
             )
             == expected_res
         )
+
+
+class TestResourceQubitUnitary:
+    pass
+
+
+class TestResourceSelectPauliRot:
+    pass
