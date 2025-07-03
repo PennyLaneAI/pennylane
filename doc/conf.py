@@ -110,6 +110,11 @@ author = "Xanadu Inc."
 
 add_module_names = False
 
+html_sidebars = {
+   '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
+   'using/windows': ['windows-sidebar.html', 'searchbox.html'],
+}
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
