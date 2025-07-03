@@ -1,0 +1,2 @@
+qubit q;
+reset q;

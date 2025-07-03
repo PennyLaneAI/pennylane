@@ -228,6 +228,7 @@
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
+  [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
 
   ```python
   import pennylane as qml
@@ -745,6 +746,14 @@
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
 
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
+
+* The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
+  Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The imports of dependencies introduced by ``labs`` functionalities have been modified such that
@@ -1080,6 +1089,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Adjust workflow helper function `construct_batch` to be consistent with `set_shots` and other user transforms, following similar logic as `execute`.
   [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
 
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
+  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+  ``tree-traversal`` supports analytic mode.
+  [(#7490)](https://github.com/PennyLaneAI/pennylane/pull/7490)
+
 * Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
@@ -1231,6 +1245,9 @@ may move operations across a `Snapshot`.
 * Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
+
+* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
 
 * Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
   to reflect supported devices and usage in analytic simulations,
