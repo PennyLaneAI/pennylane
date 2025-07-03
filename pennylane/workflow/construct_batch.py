@@ -162,9 +162,6 @@ def _interpret_level_inner(
     Returns:
         slice: The slice to apply to the remaining transform program
     """
-    if level in ("top", "user"):
-        return slice(0, 0)  # No additional transforms needed
-
     if level == "gradient":
         end_idx = int(has_gradient_expand)
         return slice(0, end_idx)  # Include only gradient expansion if it exists
