@@ -1101,6 +1101,9 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
+  [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
+
 * Fixes `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same operation occurs multiple
   times in the circuit.
   [(#7757)](https://github.com/PennyLaneAI/pennylane/pull/7757)
