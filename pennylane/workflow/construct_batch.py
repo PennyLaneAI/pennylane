@@ -83,7 +83,7 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
-def _level_sanity_check(
+def _validate_level(
     level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
 ) -> None:
     """Check that the level specification is valid.
@@ -293,7 +293,7 @@ def get_transform_program(
         TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
 
     """
-    _level_sanity_check(level)
+    _validate_level(level)
     if gradient_fn == "unset":
         config = qml.workflow.construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
@@ -436,7 +436,7 @@ def construct_batch(
          expval(X(0) + Y(0))]
 
     """
-    _level_sanity_check(level)
+    _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     has_shots_param = "shots" in inspect.signature(qnode.func).parameters
     default_shots = qnode._shots  # pylint:disable=protected-access
