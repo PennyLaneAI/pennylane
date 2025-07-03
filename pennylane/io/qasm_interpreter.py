@@ -443,6 +443,9 @@ class QasmInterpreter:
             context (dict): The initial context populated with the name of the program (the outermost scope).
             inputs (dict): Additional inputs to the OpenQASM 3.0 program.
 
+        Raises:
+            ValueError: If the wrong parameters are provided in **inputs.
+
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
