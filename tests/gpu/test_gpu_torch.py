@@ -19,15 +19,15 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.gpu
-pytestmark = pytest.mark.torch
+pytestmark_gpu = pytest.mark.gpu
+pytestmark_torch = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
 torch_cuda = pytest.importorskip("torch.cuda")
 
 
 @pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
-class TestTorchDevice:
+class TestTorchGPUDevice:
     """Test GPU with cuda for Torch device."""
 
     def test_device_to_cuda(self):
