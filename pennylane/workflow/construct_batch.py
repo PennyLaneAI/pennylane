@@ -84,7 +84,7 @@ def _get_full_transform_program(
 
 
 def _interpret_level_initial(
-    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None],
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
     num_user_transforms: int,
 ) -> slice:
     """Interpret the level specification for the initial user transform slice.
