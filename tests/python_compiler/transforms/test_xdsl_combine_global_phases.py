@@ -37,9 +37,9 @@ class TestCombineGlobalPhasesPass:
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK: [[phi_sum:%.*]] = arith.addf [[arg1:%.*]], [[arg0:%.*]] : f64
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 quantum.gphase %arg0
                 quantum.gphase %arg1
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 %2 = quantum.custom "RX"() %0 : !quantum.bit
                 return
             }
@@ -62,29 +62,26 @@ class TestCombineGlobalPhasesPass:
             func.func @test_func(%cond: i32, %arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[ret:%.*]] = scf.if [[cond:%.*]] -> (f64) {
-                // [[two:%.*]] = arith.constant [[two:2.*]] : f64
-                // [[arg02:%.*]] = arith.mulf [[arg0:%.*]], [[two:%.*]] : f64
-                // scf.yield [[arg02:%.*]] : f64
-                //} else {
-                // [[%two_1:%.*]] = arith.constant [[two_1:2.*]] : f64
-                // [[arg12:%.*]] = arith.mulf [[arg1:%.*]], [[two_1:%.*]] : f64
-                // scf.yield [[arg12:%.*]] : f64
-                // }
-                // CHECK: [[phi_sum:%.*]] = arith.addf [[ret:%.*]], [[arg0:%.*]] : f64
-                // CHECK: quantum.gphase([[phi_sum:%.*]])
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 quantum.gphase %arg0
                 %ret = scf.if %cond -> (f64) {
+                    // CHECK: [[two:%.*]] = arith.constant [[two:2.*]] : f64
                     %two = arith.constant 2 : f64
+                    // CHECK: [[arg02:%.*]] = arith.mulf [[arg0:%.*]], [[two:%.*]] : f64
                     %arg0x2 = arith.mulf %arg0, %two : f64
+                    // CHECK: scf.yield [[arg02:%.*]] : f64
                     scf.yield %arg0x2 : f64
                 } else {
-                    %two = arith.constant 2 : f64
-                    %arg1x2 = arith.mulf %arg1, %two : f64
+                    // CHECK: [[two_1:%.*]] = arith.constant [[two_1:2.*]] : f64
+                    %two_1 = arith.constant 2 : f64
+                    // CHECK: [[arg12:%.*]] = arith.mulf [[arg1:%.*]], [[two_1:%.*]] : f64
+                    %arg1x2 = arith.mulf %arg1, %two_1 : f64
+                    // CHECK: scf.yield [[arg12:%.*]] : f64
                     scf.yield %arg1x2 : f64
                 }
+                // CHECK: [[phi_sum:%.*]] = arith.addf [[ret:%.*]], [[arg0:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum:%.*]]) :
                 quantum.gphase %ret
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 %2 = quantum.custom "RX"() %0 : !quantum.bit
                 return
             }
@@ -112,36 +109,36 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 // CHECK: [[ret:%.*]] = scf.if [[cond:%.*]] -> (f64) {
-                // [[two:%.*]] = arith.constant [[two:%2.*]] : f64
-                // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
-                // [[arg0x2:%.*]] = arith.mulf [[arg0:%.*]], [[two:%.*]] : f64
-                // [[phi_sum:%.+]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
-                // quantum.gphase [[phi_sum]]
-                // scf.yield [[arg0x2:%.*]] : f64
-                //} else {
-                // [[%two1:%.*]] = arith.constant [[two1:%2.*]] : f64
-                // [[arg1x2:%.*]] = arith.mulf [[arg1:%.*]], [[two1:%.*]] : f64
-                // quantum.gphase([[arg1x2:%.*]])
-                // scf.yield [[arg1x2:%.*]] : f64
-                // }
+                %ret = scf.if %cond -> (f64) {
+                    // CHECK: [[two0:%.*]] = arith.constant [[two0:2.*]] : f64
+                    %two0 = arith.constant 2 : f64
+                    // CHECK: [[arg02:%.*]] = arith.mulf [[arg0:%.*]], [[two0:%.*]] : f64
+                    %arg02 = arith.mulf %arg0, %two0 : f64
+                    // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
+                    %t0 = "test.op"() : () -> f64
+                    // CHECK: [[phi_sum:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    quantum.gphase %t0
+                    quantum.gphase %t0
+                    // CHECK: scf.yield [[arg02:%.*]] : f64
+                    scf.yield %arg02 : f64
+                    // CHECK: } else {
+                } else {
+                    // CHECK: [[two1:%.*]] = arith.constant [[two1:2.*]] : f64
+                    %two1 = arith.constant 2 : f64
+                    // CHECK: [[arg12:%.*]] = arith.mulf [[arg1:%.*]], [[two1:%.*]] : f64
+                    %arg1x2 = arith.mulf %arg1, %two1 : f64
+                    // CHECK: quantum.gphase([[arg12:%.*]])
+                    quantum.gphase %arg1x2
+                    // CHECK: scf.yield [[arg12:%.*]] : f64
+                    scf.yield %arg1x2 : f64
+                    // CHECK: }
+                }
                 // CHECK: [[phi_sum:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %ret = scf.if %cond -> (f64) {
-                    %two0 = arith.constant 2 : f64
-                    %arg0x2 = arith.mulf %arg0, %two0 : f64
-                    %t0 = "test.op"() : () -> f64
-                    quantum.gphase %t0
-                    quantum.gphase %t0
-                    scf.yield %arg0x2 : f64
-                } else {
-                    %two1 = arith.constant 2 : f64
-                    %arg1x2 = arith.mulf %arg1, %two1 : f64
-                    quantum.gphase %arg1x2
-                    scf.yield %arg1x2 : f64
-                }
                 quantum.gphase %arg0
                 quantum.gphase %arg1
+                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
                 %2 = quantum.custom "RX"() %0 : !quantum.bit
                 return
             }
@@ -160,6 +157,7 @@ class TestCombineGlobalPhasesPass:
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
         pipeline.apply(ctx, module)
+        print(module)
         run_filecheck(program, module)
 
 
