@@ -1,10 +1,10 @@
 qubit q0;
 qubit anc;
 
-def random(qubit q0) -> bit {
+def random(qubit q) -> bit {
   bit b = "0";
-  h q0;
-  measure q0 -> b;
+  h q;
+  measure q -> b;
   return b;
 }
 

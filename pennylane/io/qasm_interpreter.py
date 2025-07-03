@@ -464,7 +464,8 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         name = _resolve_name(node.target)  # str or Identifier
-        res = measure(self.visit(node.measure.qubit, context))
+        wire = self.visit(node.measure.qubit, context)
+        res = measure(context.wire_map[wire] if wire in context.wire_map else wire)
         context.vars[name].val = res
         context.vars[name].line = node.span.start_line
         return res
@@ -694,7 +695,8 @@ class QasmInterpreter:
             node (QASMNode): the quantum reset node.
             context (dict): the current context.
         """
-        measure(self.visit(node.qubits, context), reset=True)
+        wire = self.visit(node.qubits, context)
+        measure(context.wire_map[wire] if wire in context.wire_map else wire, reset=True)
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
