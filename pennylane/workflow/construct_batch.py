@@ -131,18 +131,16 @@ def _interpret_level_initial(
     if level == "top":
         return slice(0, 0)
 
-    if level in ("user", "device", "gradient"):
+    if level == "user":
         return slice(0, num_user_transforms)
+
+    if level in ("device", "gradient"):
+        return slice(0, None)
 
     if level is None or isinstance(level, int):
         return slice(0, level)
 
-    # Handle slice objects - clamp to user transform bounds
-    if isinstance(level, slice):
-        start = level.start if level.start is not None else 0
-        return slice(start, level.stop, level.step)
-
-    return level  # pragma: no cover
+    return level
 
 
 def _interpret_level_inner(
@@ -476,14 +474,7 @@ def construct_batch(
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 
-        if (
-            level_slice_initial.stop is not None
-            and level_slice_initial.stop <= num_user_transforms
-            and (
-                level in ("top", "user")
-                or (isinstance(level, int) and level <= num_user_transforms)
-            )
-        ):
+        if level_slice_initial.stop is not None and level_slice_initial.stop <= num_user_transforms:
             # If the level slice is fully contained within user transforms, we can return early
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
