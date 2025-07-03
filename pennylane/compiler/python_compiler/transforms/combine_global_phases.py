@@ -41,31 +41,6 @@ class CombineGlobalPhasesPattern(
     ):  # pylint: disable=arguments-differ
         """Implementation of rewriting Op that may contain operations corresponding to
         GlobalPhase oprations."""
-        if isinstance(root, WhileOp):
-            for region in root.regions:
-                for block in region.blocks:
-                    phi = None
-                    global_phases = []
-                    for op in block.ops:
-                        if isinstance(op, GlobalPhaseOp):
-                            global_phases.append(op)
-
-                    if len(global_phases) < 2:
-                        continue
-                    prev = global_phases[0]
-                    phi_sum = prev.operands[0]
-                    for current in global_phases[1:]:
-                        phi = current.operands[0]
-                        addOp = arith.AddfOp(phi, phi_sum)
-                        rewriter.insert_op(addOp, InsertPoint.before(current))
-                        phi_sum = addOp.result
-
-                        rewriter.erase_op(prev)
-                        prev = current
-
-                    prev.operands[0].replace_by_if(phi_sum, lambda use: use.operation == prev)
-                    rewriter.notify_op_modified(prev)
-            return
 
         for region in root.regions:
             phi = None
