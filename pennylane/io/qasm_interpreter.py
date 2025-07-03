@@ -465,7 +465,7 @@ class QasmInterpreter:
         """
         name = _resolve_name(node.target)  # str or Identifier
         wire = self.visit(node.measure.qubit, context)
-        res = measure(context.wire_map[wire] if wire in context.wire_map else wire)
+        res = measure(context.wire_map.get(wire, wire))
         context.vars[name].val = res
         context.vars[name].line = node.span.start_line
         return res
