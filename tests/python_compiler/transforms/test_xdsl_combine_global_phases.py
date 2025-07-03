@@ -159,7 +159,6 @@ class TestCombineGlobalPhasesPass:
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
         pipeline.apply(ctx, module)
-        print(module)
         run_filecheck(program, module)
 
     def test_combinable_ops_in_control_flow_for(self, run_filecheck):
@@ -207,7 +206,6 @@ class TestCombineGlobalPhasesPass:
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
         pipeline.apply(ctx, module)
-        print(module)
         run_filecheck(program, module)
 
     def test_combinable_ops_in_control_flow_while(self, run_filecheck):
@@ -259,7 +257,6 @@ class TestCombineGlobalPhasesPass:
         pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
         pipeline.apply(ctx, module)
-        print(module)
         run_filecheck(program, module)
 
 
