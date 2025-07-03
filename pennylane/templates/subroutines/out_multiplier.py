@@ -306,7 +306,7 @@ def _out_multiplier_decomposition_resources(num_output_wires, num_x_wires, num_y
             base_params={
                 "base": qml.PhaseAdder,
                 "base_params": {"num_x_wires": qft_wires, "mod": mod},
-                "num_control_wires": num_y_wires,
+                "num_control_wires": num_x_wires,
             },
             num_control_wires=num_y_wires,
         ): 1,
