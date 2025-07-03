@@ -134,28 +134,35 @@ def _interpret_level_inner(
     """Interpret the level specification for the inner transform slice.
 
     This function handles slicing into the remaining transforms (gradient + device)
-    after user transforms have already been applied.
+    after user transforms have already been applied. The returned slice is already
+    shifted to account for final transforms being moved to the end.
 
     Args:
         level: The level specification from user input
         num_user_transforms: Number of user transforms (already applied)
         has_gradient_expand: Whether gradient expansion transform exists
+        has_final_transform: Whether there's a final transform that gets moved to the end
 
     Returns:
-        slice: The slice to apply to the remaining transform program
+        slice: The slice to apply to the remaining transform program (already shifted)
     """
+    # Calculate the shift needed to account for final transforms
+    shift_len = num_user_transforms - int(has_final_transform)
+    
+    def _shift(i):
+        return i - shift_len if i is not None else i
+
     start = max(0, num_user_transforms)
     if level in ("top", "user"):
-        return slice(start, 0)  # No additional transforms needed
+        return slice(_shift(start), _shift(0))  # No additional transforms needed
 
     if level == "gradient":
         end_idx = int(has_gradient_expand)
-        return slice(
-            start, num_user_transforms + end_idx - int(has_final_transform)
-        )  # if it has final, then in the end we will see an extra user transform, e.g. param_shift
+        stop = num_user_transforms + end_idx - int(has_final_transform)
+        return slice(_shift(start), _shift(stop))
 
     if level == "device":
-        return slice(start, None)  # Include all remaining transforms
+        return slice(_shift(start), None)  # Include all remaining transforms
 
     if isinstance(level, str):  # pragma: no cover
         raise ValueError(
@@ -163,14 +170,14 @@ def _interpret_level_inner(
         )
 
     if level is None or isinstance(level, int):
-        return slice(start, level)  # Include all remaining transforms
+        return slice(_shift(start), _shift(level))  # Include all remaining transforms
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
     if isinstance(level, slice):
         start = max(start, level.start) if level.start is not None else start
         stop = level.stop
 
-        return slice(start, stop, level.step)
+        return slice(_shift(start), _shift(stop), level.step)
 
     return level  # pragma: no cover
 
@@ -498,15 +505,6 @@ def construct_batch(
             has_gradient_expand,
             qnode.transform_program.has_final_transform,
         )
-        shift_len = num_user_transforms - int(qnode.transform_program.has_final_transform)
-
-        def _shift(i):
-            return i - shift_len if i else i
-
-        new_start = _shift(level_slice_inner.start)
-        new_stop = _shift(level_slice_inner.stop)
-
-        level_slice_inner = slice(new_start, new_stop, level_slice_inner.step)
         resolved_program = full_transform_program[level_slice_inner]
 
         batch, remaining_post_processing = resolved_program(
