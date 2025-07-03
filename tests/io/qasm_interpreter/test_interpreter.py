@@ -62,6 +62,25 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestIO:
 
+    def test_wrong_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=escape(
+                f"Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+            ),
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "missing-input", "wire_map": None}, theta=0.2, phi=0.1
+            )
+
     def test_missing_input(self):
         ast = parse(
             """

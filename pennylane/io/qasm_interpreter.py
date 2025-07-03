@@ -401,6 +401,7 @@ class QasmInterpreter:
         Initializes the QASM interpreter.
         """
         self.inputs = {}
+        self.found_inputs = []
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
@@ -458,6 +459,12 @@ class QasmInterpreter:
                         self.visit(item, context)
         except EndProgram:
             pass
+
+        if len(self.found_inputs) != len(inputs):
+            raise ValueError(
+                f"Got the wrong input parameters {list(inputs.keys())} to QASM, expecting {self.found_inputs}."
+            )
+
         return context
 
     @visit.register(ast.QuantumMeasurementStatement)
@@ -807,6 +814,7 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         name = _resolve_name(node.identifier)
+        self.found_inputs.append(name)
         if name in self.inputs:
             context.vars[name] = Variable(
                 node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
