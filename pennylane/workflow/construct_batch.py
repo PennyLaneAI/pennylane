@@ -173,13 +173,10 @@ def _interpret_level_inner(
         return slice(0, None)  # Include all remaining transforms
 
     if isinstance(level, int):
-        # For integer levels, we need to figure out where we are relative to the total
-        if level <= num_user_transforms:
-            return slice(0, 0)  # Already handled by user transforms
-        else:
-            # Include additional transforms up to the requested level
-            inner_level = level - num_user_transforms
-            return slice(0, inner_level)
+        # Include additional transforms up to the requested level
+        # (levels <= num_user_transforms are handled by early exit)
+        inner_level = level - num_user_transforms
+        return slice(0, inner_level)
 
     if level is None:
         return slice(0, None)  # Include all remaining transforms
