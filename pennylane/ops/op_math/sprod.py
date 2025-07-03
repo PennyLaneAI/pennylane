@@ -168,7 +168,10 @@ class SProd(ScalarSymbolicOp):
             else format(qml.math.toarray(self.scalar), f".{decimals}f")
         )
         base_cache = {"matrices": cache["matrices"]} if cache and "matrices" in cache else None
-        default_label = f"{scalar_val}*{self.base.label(decimals=decimals, cache=base_cache)}"
+        if isinstance(self.base, qml.ops.CompositeOp):
+            default_label = f"{scalar_val}*({self.base.label(decimals=decimals, cache=base_cache)})"
+        else:
+            default_label = f"{scalar_val}*{self.base.label(decimals=decimals, cache=base_cache)}"
         if cache is None or not isinstance(cache.get("large_ops", None), list):
             return default_label
         for i, (obs, _) in enumerate(cache["large_ops"]):
