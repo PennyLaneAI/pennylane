@@ -228,6 +228,7 @@
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
+  [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
 
   ```python
   import pennylane as qml
@@ -1084,6 +1085,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
+
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
+  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+  ``tree-traversal`` supports analytic mode.
+  [(#7490)](https://github.com/PennyLaneAI/pennylane/pull/7490)
 
 * Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
