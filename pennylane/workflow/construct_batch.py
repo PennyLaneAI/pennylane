@@ -489,9 +489,8 @@ def construct_batch(
         )
         full_transform_program = outer_transform_program + inner_transform_program
 
-        gradient_fn = execution_config.gradient_method
         has_gradient_expand = bool(
-            getattr(gradient_fn, "expand_transform", False)
+            getattr(execution_config.gradient_method, "expand_transform", False)
         )  # Note that it could exist as None which is still False, but can't use hasattr on it.
         level_slice_inner = _interpret_level_inner(
             level,
