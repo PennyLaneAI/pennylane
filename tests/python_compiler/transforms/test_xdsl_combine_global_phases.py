@@ -128,7 +128,9 @@ class TestCombineGlobalPhasesPass:
                     %two1 = arith.constant 2 : f64
                     // CHECK: [[arg12:%.*]] = arith.mulf [[arg1:%.*]], [[two1:%.*]] : f64
                     %arg1x2 = arith.mulf %arg1, %two1 : f64
-                    // CHECK: quantum.gphase([[arg12:%.*]])
+                    // CHECK: [[phi_sum:%.*]] = arith.addf [[arg1x2:%.*]], [[arg1x2:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    quantum.gphase %arg1x2
                     quantum.gphase %arg1x2
                     // CHECK: scf.yield [[arg12:%.*]] : f64
                     scf.yield %arg1x2 : f64
