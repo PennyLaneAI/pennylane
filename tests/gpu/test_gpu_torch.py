@@ -45,7 +45,6 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -67,7 +66,6 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -88,7 +86,6 @@ class TestTorchDevice:
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         assert res.is_cuda
-        assert "cuda" in dev._torch_device
 
     def test_resets(self):
         """Asserts reverts to cpu after execution on gpu"""
@@ -104,7 +101,6 @@ class TestTorchDevice:
 
         tape1 = qml.tape.QuantumScript.from_queue(q1)
         res1 = dev.execute(tape1)
-        assert "cuda" in dev._torch_device
         assert res1.is_cuda
 
         with qml.queuing.AnnotatedQueue() as q2:
@@ -113,7 +109,6 @@ class TestTorchDevice:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         res2 = dev.execute(tape2)
-        assert dev._torch_device == "cpu"
         assert not res2.is_cuda
 
     def test_integration(self):
@@ -133,30 +128,24 @@ class TestTorchDevice:
         res = circ(x, y)
         assert res.is_cuda
 
-        assert "cuda" in circ.device._torch_device
         res.backward()
         assert x.grad.is_cuda
 
-    @pytest.mark.parametrize("init_device, par_device", [("cpu", "cuda"), ("cuda", "cpu")])
-    def test_different_devices_creation_and_parameters_warn(self, init_device, par_device):
-        """Test that a warning is raised if the Torch device specified on
-        PennyLane device creation differs from the Torch device of gate
-        parameters.
+    @pytest.mark.parametrize("par_device", ["cuda", "cpu"])
+    def test_matrix_conversion(self, par_device):
+        """Test that the matrix conversion functionality of the QNode works with
+        data on the host or the device.
         """
-        dev = qml.device("default.qubit", wires=1, torch_device=init_device)
-
+        dev = qml.device("default.qubit")
         p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        with pytest.warns(
-            UserWarning,
-            match=f"Torch device {init_device} specified upon PennyLane device creation does not match",
-        ):
-            circuit(p)
+        U = qml.matrix(circuit, wire_order=[0])(p)
+        assert U.device.type == par_device
 
     def test_amplitude_embedding(self):
         """Test that the padding capability of amplitude embedding works with
