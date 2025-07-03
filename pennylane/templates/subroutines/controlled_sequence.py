@@ -103,7 +103,7 @@ class ControlledSequence(SymbolicOp, Operation):
     def resource_params(self) -> dict:
         params = {
             "base": self.hyperparameters["base"],
-            "base_params": self.hyperparameters["base"].resource_params(),
+            "base_params": self.hyperparameters["base"].resource_params,
             "num_control_wires": len(self.hyperparameters["control_wires"]),
         }
         return params
@@ -220,8 +220,7 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
     powers_of_two = [2**i for i in range(num_control_wires)]
 
     for z in powers_of_two[::-1]:
-        resources[
-            pow_resource_rep(
+        rep = pow_resource_rep(
                 base_class=qml.ctrl,
                 base_params={
                     "base_class": base,
@@ -233,7 +232,10 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
                 },
                 z=z,
             )
-        ] = 1
+        if rep not in resources:
+            resources[rep] = 1
+        else:
+            resources[rep] += 1
 
     return resources
 
