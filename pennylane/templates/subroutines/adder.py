@@ -14,6 +14,7 @@
 """
 Contains the Adder template.
 """
+from pennylane.decomposition import resource_rep, adjoint_resource_rep, register_resources, add_decomps
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -135,6 +136,13 @@ class Adder(Operation):
         super().__init__(wires=all_wires, id=id)
 
     @property
+    def resource_params(self) -> dict:
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "mod": self.hyperparameters["mod"],
+        }
+
+    @property
     def num_params(self):
         return 0
 
@@ -204,3 +212,35 @@ class Adder(Operation):
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list
+
+
+def _adder_decomposition_resources(num_x_wires, mod) -> dict:
+
+    if mod == 2 ** num_x_wires:
+        qft_wires = num_x_wires
+    else:
+        qft_wires = 1 + num_x_wires
+
+    return {
+        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        resource_rep(qml.PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_adder_decomposition_resources)
+def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+    if mod == 2 ** len(x_wires):
+        qft_wires = x_wires
+        work_wire = ()
+    else:
+        qft_wires = work_wires[:1] + x_wires
+        work_wire = work_wires[1:]
+
+    qml.QFT(qft_wires)
+    qml.PhaseAdder(k, qft_wires, mod, work_wire)
+    qml.adjoint(qml.QFT)(qft_wires)
+
+
+add_decomps(Adder, _adder_decomposition)
