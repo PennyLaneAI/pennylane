@@ -83,6 +83,35 @@ def _get_full_transform_program(
     return program + qnode.device.preprocess_transforms(config)
 
 
+def _level_sanity_check(
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
+) -> None:
+    """Check that the level specification is valid.
+
+    Args:
+        level: The level specification from user input
+
+    Raises:
+        ValueError: If the level is not recognized
+    """
+    if level is None or isinstance(level, int):
+        return
+
+    if isinstance(level, str):
+        if level not in ("top", "user", "device", "gradient"):
+            raise ValueError(
+                f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
+            )
+        return
+
+    if isinstance(level, slice):
+        return
+
+    raise ValueError(
+        f"level {level} not recognized. Acceptable types are None, int, str, and slice."
+    )
+
+
 def _interpret_level_initial(
     level: Optional[Literal["top", "user", "device", "gradient"] | int | slice],
     num_user_transforms: int,
@@ -104,11 +133,6 @@ def _interpret_level_initial(
 
     if level in ("user", "device", "gradient"):
         return slice(0, num_user_transforms)
-
-    if isinstance(level, str):  # pragma: no cover
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-        )
 
     if level is None or isinstance(level, int):
         return slice(0, level)
@@ -150,11 +174,6 @@ def _interpret_level_inner(
     if level == "device":
         return slice(0, None)  # Include all remaining transforms
 
-    if isinstance(level, str):  # pragma: no cover
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-        )
-
     if isinstance(level, int):
         # For integer levels, we need to figure out where we are relative to the total
         if level <= num_user_transforms:
@@ -172,8 +191,6 @@ def _interpret_level_inner(
         start = max(0, (level.start or 0) - num_user_transforms)
         stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
         return slice(start, stop, level.step)
-
-    return level  # pragma: no cover
 
 
 def get_transform_program(
@@ -285,6 +302,7 @@ def get_transform_program(
         TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
 
     """
+    _level_sanity_check(level)
     if gradient_fn == "unset":
         config = qml.workflow.construct_execution_config(qnode, resolve=False)()
         # pylint: disable = protected-access
@@ -314,10 +332,6 @@ def get_transform_program(
         readd_final_transform = True
 
         level = num_user + 1 if has_gradient_expand else num_user
-    elif isinstance(level, str):
-        raise ValueError(
-            f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
-        )
 
     if level is None or isinstance(level, int):
         level = slice(0, level)
@@ -431,6 +445,7 @@ def construct_batch(
          expval(X(0) + Y(0))]
 
     """
+    _level_sanity_check(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     has_shots_param = "shots" in inspect.signature(qnode.func).parameters
     default_shots = qnode._shots  # pylint:disable=protected-access
