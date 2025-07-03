@@ -30,9 +30,8 @@ from .api import compiler_transform
 class CombineGlobalPhasesPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods
-    """RewritePattern for removing ~:class:`~pennylane.GlobalPhase` gates in the circuit (if exists) and update
-    the last global phase gate with its phase being a total global phase computed as the algebraic sum of
-    all global phases in the original circuit."""
+    """RewritePattern for combining all ~:class:`~pennylane.GlobalPhase` gates within the same region
+    at the last global phase gate."""
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -70,13 +69,13 @@ class CombineGlobalPhasesPattern(
 
 @dataclass(frozen=True)
 class CombineGlobalPhasesPass(passes.ModulePass):
-    """Pass for combining global phase gates."""
+    """Pass for combining global phase gates to the last global phase gates in the region."""
 
     name = "combine-global-phases"
 
     # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
-        """Apply the combination of global phase gates pass."""
+        """Apply the combination of global phase gates to the last global phase gates in the region pass."""
         pattern_rewriter.PatternRewriteWalker(
             CombineGlobalPhasesPattern(),
             apply_recursively=False,
