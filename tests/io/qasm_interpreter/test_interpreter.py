@@ -3,6 +3,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
 from re import escape
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -32,8 +33,13 @@ from pennylane import (
     S,
     T,
     Toffoli,
+    device,
+    measure,
+    probs,
+    qnode,
     queuing,
 )
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -46,10 +52,147 @@ try:
     from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
         QasmInterpreter,
+        Variable,
         preprocess_operands,
     )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+@pytest.mark.external
+class TestMeasurementReset:
+
+    def test_condition_on_measurement(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        with pytest.raises(
+            ValueError, match="Mid circuit measurement outcomes can not be used as conditions"
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "cond_meas", "wire_map": None})
+
+    def test_combine_processing_functions(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        results = {
+            "res_1": None,
+            "res_2": None,
+            "res_3": None,
+        }
+
+        @qnode(device("default.qubit", wires=[0, 1, 2]))
+        def add_meas(results):
+            m1 = measure(0)
+            m2 = measure(1)
+            m = m1 + m2
+            results["res_1"] = m1.processing_fn(1)
+            results["res_2"] = m2.processing_fn(2)
+            results["res_3"] = m.processing_fn(1, 2)
+            return probs(0)
+
+        context = QasmInterpreter().interpret(ast, context={"name": "add_meas", "wire_map": None})
+
+        add_meas(results)
+
+        assert results["res_1"] == context.vars["c"].val.processing_fn(1) == 1
+        assert results["res_2"] == context.vars["d"].val.processing_fn(2) == 2
+        assert results["res_3"] == context.vars["res"].val.processing_fn(1, 2) == 3
+
+    def test_resets(self):
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
+
+        assert isinstance(q.queue[0], MidMeasureMP)
+        assert q.queue[0].wires == Wires(["q"])
+        assert q.queue[0].reset
+
+    def test_post_processing_measurement(self, mocker):
+        import pennylane
+
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
+        )
+
+        # setup mocks
+        eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
+
+        mock_one = MagicMock(return_value=1)
+        mock_zero = MagicMock(return_value=0)
+
+        vars = {
+            "c": Variable(
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_one), -1, 0, False
+            ),
+            "d": Variable(
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_zero), -1, 0, False
+            ),
+        }
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "post_processing", "wire_map": None, "vars": vars}
+        )
+
+        # ops on MeasurementValues should yield MeasurementValues
+        assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert isinstance(context["vars"]["d"].val, MeasurementValue)
+
+        # the right ops should have been called
+
+        # Note: we can't compare MeasurementValues using __eq__ as they don't have a truthiness,
+        # __eq__ returns a MeasurementValue
+        def compare_measurement_values(mv_1: MeasurementValue[T], mv_2: MeasurementValue[T]):
+            res_1 = mv_1.processing_fn()
+            res_2 = mv_2.processing_fn()
+            meas_1 = mv_1.measurements
+            meas_2 = mv_2.measurements
+            return res_1 == res_2 and meas_1 == meas_2
+
+        # first call
+        curr_call = 0
+        # c = c + 1;
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[curr_call].args[0]
+        )
+        assert eval_binary.call_args_list[curr_call].args[1:] == ("+", 1, 4)
+
+        # second call
+        curr_call += 1
+        # c = d / c;
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[curr_call].args[0]
+        )
+        assert eval_binary.call_args_list[curr_call].args[1] == "/"
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], (lambda: mock_one() + 1)),
+            eval_binary.call_args_list[curr_call].args[2],
+        )
+        assert eval_binary.call_args_list[curr_call].args[3] == 5
+
+    def test_measurement(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "measurements", "wire_map": None}
+        )
+
+        assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert isinstance(context["vars"]["d"].val, MeasurementValue)
 
 
 @pytest.mark.external
@@ -299,7 +442,8 @@ class TestSubroutine:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
 
-        assert q.queue == [Hadamard("q0")]
+        assert q.queue[0] == Hadamard("q0")
+        assert isinstance(q.queue[1], MidMeasureMP)
 
 
 @pytest.mark.external
@@ -689,6 +833,22 @@ class TestVariables:
 
         with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
+
+    def test_unsupported_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0;
+            const duration l = duration(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Unable to cast float to DurationType: Unsupported cast type DurationType",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
 
     def test_cannot_cast(self):
         # parse the QASM program
