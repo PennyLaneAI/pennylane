@@ -113,7 +113,7 @@ class TestMeasurementReset:
             QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
 
         assert isinstance(q.queue[0], MidMeasureMP)
-        assert q.queue[0].wires == Wires(["qubits"])
+        assert q.queue[0].wires == Wires(["q"])
         assert q.queue[0].reset
 
     def test_post_processing_measurement(self, mocker):
