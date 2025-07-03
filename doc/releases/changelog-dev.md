@@ -873,6 +873,7 @@
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
   new `gradient_kwargs` keyword argument accordingly.
   [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
+  [(#7782)](https://github.com/PennyLaneAI/pennylane/pull/7782)
 
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
   when `max_diff > 1`.
