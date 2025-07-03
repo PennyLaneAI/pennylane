@@ -185,7 +185,9 @@ def _get_inner_transform_slice(
 
 
 def get_transform_program(
-    qnode: QNode, level=None, gradient_fn="unset"
+    qnode: QNode,
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = None,
+    gradient_fn="unset",
 ) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
