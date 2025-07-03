@@ -53,6 +53,140 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestControlFlow:
+
+    def test_nested_control_flow(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_control_flow.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-control-flow", "wire_map": None}
+            )
+
+        assert q.queue == [
+            # first we have PauliX 5 times in the first loop within the first nested if
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            # next we have PauliZ from the while loop within the first case of the switch
+            PauliZ("q0"),
+            # finally we have the repeated pattern XYY four times from the nested for loops at the bottom
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+        ]
+
+    def test_nested_end(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "nested-end", "wire_map": None})
+
+        assert q.queue == [PauliX("q0")]
+
+    def test_loops(self):
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "loops", "wire_map": None})
+
+        assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]] + [
+            RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]
+        ] + [
+            RZ(0.1, wires=["q0"]) for _ in range(6)
+        ] + [
+            PauliY("q0") for _ in range(6)
+        ] + [
+            PauliZ("q0") for _ in range(5)
+        ] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [
+            PauliZ("q0")
+        ]
+
+    def test_switch(self):
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "switch", "wire_map": None})
+
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
+
+    def test_if_else(self, mocker):
+        from pennylane import ops
+
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+        )
+
+        # setup mocks
+        cond = mocker.spy(ops, "cond")
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "if_else", "wire_map": None})
+
+        # assertions
+        assert cond.call_count == 3
+
+        assert q.queue == [PauliX("q0"), PauliY("q0")]
+
+    def test_end_statement(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            ch q0, q1;
+            cx q1, q0;
+            end;
+            cy q0, q1;
+            cz q1, q0;
+            swap q0, q1;
+            """,
+            permissive=True,
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
+
+        assert q.queue == [
+            CH(wires=["q0", "q1"]),
+            CNOT(wires=["q1", "q0"]),
+        ]
+
+
+@pytest.mark.external
 class TestSubroutine:
 
     def test_scoping_const(self):
@@ -461,11 +595,27 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_declare_register(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit[2] q;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Qubit registers are not yet supported, "
+            "please declare each qubit individually.",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-register"})
+
     def test_retrieve_wire(self):
         # parse the QASM
         ast = parse(
             """
-            qubit[0] q;
+            qubit q;
             let s = q;
             """,
             permissive=True,
@@ -523,12 +673,7 @@ class TestVariables:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
-        assert q.queue == [
-            RX(1, "q0"),
-            RX(2, "q0"),
-            RX(0, "q0"),
-            RX(2, "q0"),
-        ]
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"]), PauliY("q0")]
 
     def test_uninitialized_var(self):
 
@@ -716,29 +861,22 @@ class TestGates:
 
         assert q.queue == [Identity("0q"), Hadamard("2q"), PauliX("1q"), PauliY("2q")]
 
-    def test_end_statement(self):
-        # parse the QASM program
+    def test_updating_variables(self):
+        # parse the QASM
         ast = parse(
-            """
-            qubit q0;
-            qubit q1;
-            ch q0, q1;
-            cx q1, q0;
-            end;
-            cy q0, q1;
-            cz q1, q0;
-            swap q0, q1;
-            """,
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
-        # execute the callable
+        # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
-            CH(wires=["q0", "q1"]),
-            CNOT(wires=["q1", "q0"]),
+            PauliX("q0"),
+            PauliY("q0"),
+            RX(0.1, "q0"),
+            PauliY("q0"),
         ]
 
     def test_mod_with_declared_param(self):
@@ -785,19 +923,15 @@ class TestGates:
         # parse the QASM program
         ast = parse(
             """
-            bit b;
-            qubit q0;
-            float theta = 0.2;
-            rx(theta) q0;
-            measure q0 -> b;
+            include "stdgates.inc";
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction QuantumMeasurementStatement was "
-            "encountered on line 6, in unsupported-error.",
+            match="An unsupported QASM instruction Include was encountered "
+            "on line 2, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
@@ -953,7 +1087,7 @@ class TestGates:
             """
             qubit q0;
             qubit q1;
-            qubit[1] q2;
+            qubit q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,

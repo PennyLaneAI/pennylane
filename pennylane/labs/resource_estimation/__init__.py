@@ -22,6 +22,7 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
+
 Resource Estimation Base Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -30,207 +31,191 @@ Resource Estimation Base Classes:
 
     ~Resources
     ~ResourceOperator
+    ~CompressedResourceOp
+    ~GateCount
 
-Operators
-~~~~~~~~~
+Resource Estimation Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourceCCZ
-    ~ResourceCH
-    ~ResourceCNOT
-    ~ResourceControlledPhaseShift
-    ~ResourceCRot
-    ~ResourceCRX
-    ~ResourceCRY
-    ~ResourceCRZ
-    ~ResourceCSWAP
-    ~ResourceCY
-    ~ResourceCZ
-    ~ResourceDoubleExcitation
-    ~ResourceDoubleExcitationMinus
-    ~ResourceDoubleExcitationPlus
-    ~ResourceFermionicSWAP
-    ~ResourceGlobalPhase
-    ~ResourceHadamard
-    ~ResourceIdentity
-    ~ResourceIsingXX
-    ~ResourceIsingXY
-    ~ResourceIsingYY
-    ~ResourceIsingZZ
-    ~ResourceMultiControlledX
-    ~ResourceMultiRZ
-    ~ResourceOrbitalRotation
-    ~ResourcePauliRot
-    ~ResourcePhaseShift
-    ~ResourcePSWAP
-    ~ResourceRot
-    ~ResourceRX
-    ~ResourceRY
-    ~ResourceRZ
-    ~ResourceS
-    ~ResourceSingleExcitation
-    ~ResourceSingleExcitationMinus
-    ~ResourceSingleExcitationPlus
-    ~ResourceSWAP
-    ~ResourceT
-    ~ResourceToffoli
-    ~ResourceX
-    ~ResourceY
-    ~ResourceZ
+    ~estimate_resources
+    ~resource_rep
+    ~set_decomp
+    ~set_adj_decomp
+    ~set_ctrl_decomp
+    ~set_pow_decomp
 
-Symbolic Operators
-~~~~~~~~~~~~~~~~~~
+Qubit Management Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~QubitManager
+    ~AllocWires
+    ~FreeWires
+
+Arithmetic Operators:
+~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
     ~ResourceAdjoint
+    ~ResourceChangeBasisOp
     ~ResourceControlled
-    ~ResourceExp
     ~ResourcePow
     ~ResourceProd
 
-Templates
-~~~~~~~~~
+Operators:
+~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourceAmplitudeAmplification
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceS
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceRot
+    ~ResourcePhaseShift
+    ~ResourceSWAP
+    ~ResourceCH
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceCSWAP
+    ~ResourceCCZ
+    ~ResourceCNOT
+    ~ResourceToffoli
+    ~ResourceMultiControlledX
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCRot
+    ~ResourceControlledPhaseShift
+    ~ResourceTempAND
+    ~ResourceMultiRZ
+    ~ResourcePauliRot
+    ~ResourceIsingXX
+    ~ResourceIsingYY
+    ~ResourceIsingXY
+    ~ResourceIsingZZ
+    ~ResourcePSWAP
+    ~ResourceSingleExcitation
+
+Templates:
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceOutOfPlaceSquare
+    ~ResourcePhaseGradient
+    ~ResourceOutMultiplier
+    ~ResourceSemiAdder
     ~ResourceBasisRotation
-    ~ResourcePrepSelPrep
-    ~ResourceQFT
-    ~ResourceQPE
-    ~ResourceQuantumPhaseEstimation
-    ~ResourceQubitization
-    ~ResourceQROM
-    ~ResourceReflection
     ~ResourceSelect
-    ~ResourceTrotterProduct
-    ~ResourceTrotterizedQfunc
-    ~resource_trotterize
-    ~ResourceControlledSequence
-    ~ResourceModExp
-    ~ResourceMultiplier
-    ~ResourcePhaseAdder
+    ~ResourceQROM
+    ~ResourceTrotterCDF
+    ~ResourceTrotterTHC
+    ~ResourceTrotterVibrational
+    ~ResourceTrotterVibronic
+    ~ResourceQubitizeTHC
 
-State Preparation Templates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceBasisState
-    ~ResourceStatePrep
-    ~ResourceSuperposition
-    ~ResourceMottonenStatePreparation
-
-Tracking Resources
-~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~get_resources
-
-Resource Object Functions:
+Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~add_in_series
-    ~add_in_parallel
-    ~mul_in_series
-    ~mul_in_parallel
-    ~substitute
+    ~CompactHamiltonian
+
 """
 
-from .resource_operator import ResourceOperator, ResourcesNotDefined
-from .resource_tracking import DefaultGateSet, get_resources, resource_config
-
-from .resource_container import (
+from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .resources_base import Resources
+from .resource_operator import (
     CompressedResourceOp,
-    Resources,
-    add_in_series,
-    add_in_parallel,
-    mul_in_series,
-    mul_in_parallel,
-    substitute,
+    ResourceOperator,
+    ResourcesNotDefined,
+    resource_rep,
+    set_adj_decomp,
+    set_ctrl_decomp,
+    set_decomp,
+    set_pow_decomp,
+    GateCount,
 )
-
+from .resource_mapping import map_to_resource_op
+from .resource_tracking import (
+    StandardGateSet,
+    DefaultGateSet,
+    resource_config,
+    estimate_resources,
+)
 from .ops import (
-    ResourceAdjoint,
-    ResourceCCZ,
-    ResourceCH,
-    ResourceCNOT,
-    ResourceControlled,
-    ResourceControlledPhaseShift,
-    ResourceCRot,
-    ResourceCRX,
-    ResourceCRY,
-    ResourceCRZ,
-    ResourceCSWAP,
-    ResourceCY,
-    ResourceCZ,
-    ResourceDoubleExcitation,
-    ResourceDoubleExcitationMinus,
-    ResourceDoubleExcitationPlus,
-    ResourceExp,
-    ResourceFermionicSWAP,
-    ResourceGlobalPhase,
     ResourceHadamard,
-    ResourceIdentity,
-    ResourceIsingXX,
-    ResourceIsingXY,
-    ResourceIsingYY,
-    ResourceIsingZZ,
-    ResourceMultiControlledX,
-    ResourceMultiRZ,
-    ResourceOrbitalRotation,
-    ResourcePauliRot,
-    ResourcePow,
-    ResourcePSWAP,
-    ResourcePhaseShift,
-    ResourceProd,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
     ResourceS,
-    ResourceSingleExcitation,
-    ResourceSingleExcitationMinus,
-    ResourceSingleExcitationPlus,
-    ResourceSWAP,
-    ResourceT,
-    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceT,
+    ResourcePhaseShift,
+    ResourceGlobalPhase,
+    ResourceRot,
+    ResourceIdentity,
+    ResourceSWAP,
+    ResourceCH,
+    ResourceCY,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCNOT,
+    ResourceToffoli,
+    ResourceMultiControlledX,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCRot,
+    ResourceControlledPhaseShift,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceIsingXX,
+    ResourceIsingYY,
+    ResourceIsingXY,
+    ResourceIsingZZ,
+    ResourcePSWAP,
+    ResourceTempAND,
+    ResourceSingleExcitation,
+    ResourceAdjoint,
+    ResourceControlled,
+    ResourceProd,
+    ResourceChangeBasisOp,
+    ResourcePow,
 )
-
 from .templates import (
-    ResourceControlledSequence,
-    ResourceModExp,
-    ResourceMultiplier,
-    ResourcePhaseAdder,
+    ResourceOutOfPlaceSquare,
+    ResourcePhaseGradient,
+    ResourceOutMultiplier,
+    ResourceSemiAdder,
     ResourceBasisRotation,
-    ResourcePrepSelPrep,
-    ResourceQFT,
-    ResourceQPE,
-    ResourceQuantumPhaseEstimation,
-    ResourceQubitization,
-    ResourceQROM,
-    ResourceReflection,
     ResourceSelect,
-    ResourceStatePrep,
-    ResourceTrotterProduct,
-    ResourceTrotterizedQfunc,
-    resource_trotterize,
-    ResourceMottonenStatePreparation,
-    ResourceSuperposition,
-    ResourceAmplitudeAmplification,
-    ResourceBasisState,
+    ResourceQROM,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    CompactHamiltonian,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+    ResourceQubitizeTHC,
 )

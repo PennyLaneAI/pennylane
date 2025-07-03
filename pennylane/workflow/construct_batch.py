@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function extracting the tapes at postprocessing at any stage of a transform program."""
+
+from __future__ import annotations
+
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal, Optional
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import PostprocessingFn
 
 from ._setup_transform_program import _setup_transform_program
-from .qnode import QNode, _make_execution_config
+from .qnode import _make_execution_config
 from .resolution import _resolve_execution_config
+
+if TYPE_CHECKING:
+    from pennylane.qnn.torch import TorchLayer
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import PostprocessingFn
+
+    from .qnode import QNode
 
 
 def null_postprocessing(results):
@@ -52,7 +60,7 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     def wrapped_expand_fn(tape, *args, **kwargs):
         return (expand_fn(tape, *args, **kwargs),), null_postprocessing
 
-    return qml.transform(wrapped_expand_fn)
+    return qml.transforms.transform(wrapped_expand_fn)
 
 
 def _get_full_transform_program(
@@ -171,7 +179,7 @@ def _interpret_level_inner(
 
 
 def get_transform_program(
-    qnode: "QNode", level=None, gradient_fn="unset"
+    qnode: QNode, level=None, gradient_fn="unset"
 ) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
@@ -325,8 +333,8 @@ def get_transform_program(
 
 
 def construct_batch(
-    qnode: Union[QNode, "qml.qnn.TorchLayer"],
-    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
+    qnode: QNode | TorchLayer,
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
