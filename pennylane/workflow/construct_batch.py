@@ -138,13 +138,12 @@ def _interpret_level_inner(
         level: The level specification from user input
         num_user_transforms: Number of user transforms (already applied)
         has_gradient_expand: Whether gradient expansion transform exists
-        has_final_transform: Whether there's a final transform that gets moved to the end
 
     Returns:
         slice: The slice to apply to the remaining transform program (already shifted)
     """
     # Calculate the shift needed to account for final transforms
-    shift_len = num_user_transforms - int(has_final_transform)
+    shift_len = num_user_transforms
     
     def _shift(i):
         return i - shift_len if i is not None else i
@@ -156,10 +155,10 @@ def _interpret_level_inner(
     if level == "gradient":
         end_idx = int(has_gradient_expand)
         stop = num_user_transforms + end_idx - int(has_final_transform)
-        return slice(_shift(start), _shift(stop))
+        return slice(0, _shift(stop))
 
     if level == "device":
-        return slice(_shift(start), None)  # Include all remaining transforms
+        return slice(0, None)  # Include all remaining transforms
 
     if isinstance(level, str):  # pragma: no cover
         raise ValueError(
@@ -167,7 +166,7 @@ def _interpret_level_inner(
         )
 
     if level is None or isinstance(level, int):
-        return slice(_shift(start), _shift(level))  # Include all remaining transforms
+        return slice(0, _shift(level))  # Include all remaining transforms
 
     # Handle slice objects - adjust for the fact that user transforms are already applied
     if isinstance(level, slice):
