@@ -602,6 +602,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.evolve` now errors out if the first argument is not a valid type.
+  [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
+
 * `qml.PauliError` now accepts Pauli strings that include the identity operator.
   [(#7760)](https://github.com/PennyLaneAI/pennylane/pull/7760)
 
