@@ -142,7 +142,7 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_output_wires", "mod"}
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
 
     def __init__(
         self,
