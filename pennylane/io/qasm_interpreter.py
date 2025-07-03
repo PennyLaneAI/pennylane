@@ -1092,19 +1092,20 @@ class QasmInterpreter:
         """
         arg = self.visit(node.argument, context)
         try:
-            if isinstance(node.type, ast.IntType):
-                ret = int(arg)
-            elif isinstance(node.type, ast.UintType):
-                ret = uint(arg)
-            elif isinstance(node.type, ast.FloatType):
-                ret = float(arg)
-            elif isinstance(node.type, ast.ComplexType):
-                ret = complex(arg)
-            elif isinstance(node.type, ast.BoolType):
-                ret = bool(arg)
-            # TODO: durations, angles, etc.
-            else:
-                raise TypeError(f"Unsupported cast type {node.type.__class__.__name__}")
+            match node.type.__class__:
+                case ast.IntType:
+                    ret = int(arg)
+                case ast.UintType:
+                    ret = uint(arg)
+                case ast.FloatType:
+                    ret = float(arg)
+                case ast.ComplexType:
+                    ret = complex(arg)
+                case ast.BoolType:
+                    ret = bool(arg)
+                case _:
+                    # TODO: durations, angles, etc.
+                    raise TypeError(f"Unsupported cast type {node.type.__class__.__name__}")
         except TypeError as e:
             raise TypeError(
                 f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}"
