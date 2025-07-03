@@ -460,7 +460,7 @@ def construct_batch(
         program = user_program[level_slice_initial]
         user_transformed_tapes, user_post_processing = program((initial_tape,))
 
-        if initial_level_slice.stop is not None and level_slice_initial.stop <= len(qnode.transform_program):
+        if level_slice_initial.stop is not None and level_slice_initial.stop <= len(qnode.transform_program):
             # If the level slice is fully contained within user transforms, we can return early
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
@@ -522,46 +522,3 @@ def construct_batch(
         return batch, combined_post_processing
 
     return batch_constructor
-
-
-def _is_within_user_bounds(level, num_user: int) -> bool:
-    """Check if the original level specification only requires user transforms.
-
-    This determines whether we can return early after applying user transforms,
-    or if we need to continue with gradient/device transforms.
-
-    Args:
-        level: The original level specification from user input
-        num_user: Number of user transforms
-
-    Returns:
-        bool: True if we can return early (only user transforms needed)
-    """
-    # Case 1: level is "user" - only user transforms needed
-    if level == "user":
-        return True
-
-    # Case 2: level is "device", "gradient", or None - need more than user transforms
-    if level in ("device", "gradient") or level is None:
-        return False
-
-    # Case 3: level is "top" or 0 - only need empty/minimal transforms
-    if level in ("top", 0):
-        return True
-
-    # Case 4: level is int - check if it's within user bounds
-    if isinstance(level, int):
-        return 0 <= level <= num_user
-
-    # Case 5: level is slice - check if slice is fully contained within user bounds
-    if isinstance(level, slice):
-        if level.stop is None or level.stop < 0:
-            # similar as level is None; negative means we need more information from gradients
-            return False
-        if level.start > level.stop:
-            # If start is greater than stop, it's an empty slice
-            return True
-        return level.stop <= num_user and level.start >= 0
-
-    # Default case - if we don't recognize the level type, assume we need more
-    return False
