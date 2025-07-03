@@ -746,6 +746,14 @@
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
 
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
+
+* The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
+  Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The imports of dependencies introduced by ``labs`` functionalities have been modified such that
@@ -1229,6 +1237,9 @@ may move operations across a `Snapshot`.
 * Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
+
+* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
 
 * Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
   to reflect supported devices and usage in analytic simulations,
