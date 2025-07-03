@@ -147,7 +147,7 @@ def _interpret_level_inner(
     Returns:
         slice: The slice to apply to the remaining transform program
     """
-    start = max(0, num_user_transforms) - int(has_final_transform)
+    start = max(0, num_user_transforms)
     if level in ("top", "user"):
         return slice(start, 0)  # No additional transforms needed
 
