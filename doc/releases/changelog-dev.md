@@ -6,6 +6,11 @@
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
+* The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
+  have been reduced to fewer rotations and/or (CNOT|CZ|CY) gates. This leads to lower circuit cost
+  when decomposing these gates, both when focusing on two-qubit gates or on non-Clifford gates.
+  [(#7771)](https://github.com/PennyLaneAI/pennylane/pull/7771)
+
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
   auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
@@ -596,6 +601,9 @@
 
 
 <h4>Other improvements</h4>
+
+* `qml.evolve` now errors out if the first argument is not a valid type.
+  [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
 
 * `qml.PauliError` now accepts Pauli strings that include the identity operator.
   [(#7760)](https://github.com/PennyLaneAI/pennylane/pull/7760)
