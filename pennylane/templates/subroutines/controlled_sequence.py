@@ -71,6 +71,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
     grad_method = None
 
+    resource_keys = {"base", "num_control_wires"}
+
     def _flatten(self):
         return (self.base,), (self.control,)
 
@@ -87,9 +89,22 @@ class ControlledSequence(SymbolicOp, Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["base"] = base
 
+        if hasattr(base, "resource_keys"):
+            self.resource_keys.update(base.resource_keys)
+
         self._name = "ControlledSequence"
 
         super().__init__(base, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        params = {
+            "num_control_wires": len(self.hyperparameters["control_wires"]),
+        }
+        params.update(
+            self.hyperparameters["base"].resource_params()
+        )
+        return params
 
     @property
     def hash(self):
@@ -194,3 +209,14 @@ class ControlledSequence(SymbolicOp, Operation):
             ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
+
+
+def _cntl_seq_decomposition_resources(base, **kwargs) -> dict:
+
+    powers_of_two = [2**i for i in range(kwargs["num_control_wires"])]
+
+    return {
+        resource_rep(kwargs["base"], num_wires=qft_wires): kwargs["num_control_wires"],
+        resource_rep(qml.PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
