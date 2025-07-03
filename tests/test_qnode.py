@@ -232,7 +232,7 @@ class TestValidation:
     def test_invalid_gradient_kwarg_warning(self):
         """Test that a warning is raised for an invalid gradient keyword argument"""
         dev = qml.device("default.qubit", wires=1)
-        expected_warning = "Unrecognized gradient keyword argument\(s\): {'invalid_kwarg'}"
+        expected_warning = r"Unrecognized gradient keyword argument\(s\): {'invalid_kwarg'}"
 
         with pytest.warns(UserWarning, match=expected_warning):
             QNode(dummyfunc, dev, gradient_kwargs={"invalid_kwarg": 1})
