@@ -179,6 +179,25 @@ class TestIO:
         assert context["return"]["v"].val == 2.2
         assert isinstance(context["return"]["b"].val, MeasurementValue)
 
+    def test_wrong_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=escape(
+                "Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+            ),
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "wrong-input", "wire_map": None}, theta=0.2, phi=0.1
+            )
+
     def test_missing_input(self):
         ast = parse(
             """
@@ -1483,7 +1502,7 @@ class TestGates:
             """
             qubit q0;
             qubit q1;
-            qubit[1] q2;
+            qubit q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,
