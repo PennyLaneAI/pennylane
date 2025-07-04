@@ -14,9 +14,13 @@
 """
 Contains the Adder template.
 """
-from pennylane.decomposition import resource_rep, adjoint_resource_rep, register_resources, add_decomps
-
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -218,7 +222,7 @@ class Adder(Operation):
 
 def _adder_decomposition_resources(num_x_wires, mod) -> dict:
 
-    if mod == 2 ** num_x_wires:
+    if mod == 2**num_x_wires:
         qft_wires = num_x_wires
     else:
         qft_wires = 1 + num_x_wires
