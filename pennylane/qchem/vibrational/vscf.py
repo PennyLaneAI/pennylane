@@ -159,14 +159,17 @@ def vscf(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6, tol=1e-8, max
     r"""Performs the VSCF calculation.
 
     Args:
-        h_integrals (list(TensorLike[float])): list containing Hamiltonian integral matrices
-        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
-            Default value is the maximum number of modals per mode.
-        cutoff (float): threshold value for including matrix elements into operator.
-        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+        h_integrals (list(TensorLike[float])): A list of Hamiltonian integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes.
+            Supported coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        modals (list[int]): A list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals per vibrational mode.
+        cutoff (float): The threshold value for including matrix elements into operator. Default is calculated based on `cutoff_ratio`.
+        cutoff_ratio (float): The ratio for discarding elements with respect to the biggest element in the integrals.
             Default value is ``1e-6``.
-        tol (float): convergence tolerance for vscf calculation
-        max_iters (int): maximum number of iterations for vscf to converge
+        tol (float): The convergence tolerance for the VSCF calculation.
+        max_iters (int): maximum number of iterations for the VSCF calculations to converge
 
     Returns:
         tuple: A tuple of the following:
@@ -182,6 +185,19 @@ def vscf(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6, tol=1e-8, max
     >>> vscf_energy,_ = qml.qchem.vscf(h_integrals=[h1])
     >>> print(vscf_energy)
     0.009361240406957813
+
+    .. details::
+        :title: Usage Details
+
+        The ``h_integral`` tensor must have one of these dimensions:
+
+        - 1-mode coupled integrals: `(n, m, m)`
+        - 2-mode coupled integrals: `(n, n, m, m, m, m)`
+        - 3-mode coupled integrals: `(n, n, n, m, m, m, m, m, m)`
+
+        where ``n`` is the number of vibrational modes in the molecule and ``m`` represents the number
+        of modals.
+
 
     """
 
@@ -416,20 +432,24 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
-        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3 coupled vibrational modes.
-            Look at the Usage Details for more information.
-        d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3 coupled vibrational modes.
-            Look at the Usage Details for more information.
-        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
-            Default value is the maximum number of modals.
-        cutoff (float): threshold value for including matrix elements into operator
-        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+        h_integrals (list(TensorLike[float])): A list of Hamiltonian integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes.
+            Supported coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        d_integrals (list[TensorLike[float]]): A list of dipole integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes. Supported
+            coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        modals (list[int]): A list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals per vibrational mode.
+        cutoff (float): The threshold value for including matrix elements into operator. Default is calculated based on `cutoff_ratio`.
+        cutoff_ratio (float): The ratio for discarding elements with respect to the biggest element in the integrals.
             Default value is ``1e-6``.
 
     Returns:
         tuple: a tuple containing:
-            - list[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
-            - list[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
+            - list[TensorLike[float]]: A list of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
+            - list[TensorLike[float]]: A list of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
 
         ``None`` is returned if ``d_integrals`` is ``None``.
 
@@ -465,7 +485,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
         The ``d_integral`` tensor must have one of these dimensions:
 
-        - 1-mode coupled integrals: `(3, n, m)`
+        - 1-mode coupled integrals: `(3, n, m, m)`
         - 2-mode coupled integrals: `(3, n, n, m, m, m, m)`
         - 3-mode coupled integrals: `(3, n, n, n, m, m, m, m, m, m)`
 
