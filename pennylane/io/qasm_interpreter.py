@@ -1,6 +1,7 @@
 """
 This submodule contains the interpreter for OpenQASM 3.0.
 """
+
 import copy
 import functools
 from dataclasses import dataclass
@@ -230,12 +231,12 @@ class Context:
             node (QuantumGateDefinition): the custom quantum gate definition.
         """
         self.scopes["custom_gates"][node.name.name] = Context(
-                {
+            {
                 "vars": {k: v for k, v in self.vars.items() if v.constant},
                 "wire_map": {},
                 "body": node.body,
                 "params": [_resolve_name(param) for param in node.arguments]
-                          + [_resolve_name(qubit) for qubit in node.qubits],
+                + [_resolve_name(qubit) for qubit in node.qubits],
                 "wires": copy.deepcopy(self.wires),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
@@ -262,7 +263,10 @@ class Context:
                 "wires": copy.deepcopy(self.wires),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
-                "scopes": {"subroutines": self.scopes["subroutines"], "custom_gates": self.scopes["custom_gates"],},
+                "scopes": {
+                    "subroutines": self.scopes["subroutines"],
+                    "custom_gates": self.scopes["custom_gates"],
+                },
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
