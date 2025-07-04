@@ -813,14 +813,13 @@ class QasmInterpreter:
         """
         if node.io_identifier == ast.IOKeyword.input:
             name = _resolve_name(node.identifier)
-            if name in self.inputs:
-                context.vars[name] = Variable(
-                    node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
-                )
-            else:
+            if name not in self.inputs:
                 raise ValueError(
                     f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
                 )
+            context.vars[name] = Variable(
+                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+            )
         elif node.io_identifier == ast.IOKeyword.output:
             name = _resolve_name(node.identifier)
             context.vars[name] = Variable(
