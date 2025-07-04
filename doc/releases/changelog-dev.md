@@ -221,6 +221,7 @@
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
   [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
+  [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
   The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
   Consider this simple circuit:
