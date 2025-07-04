@@ -906,7 +906,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
                     end;
                 }
                 ''',
-                {'q0': 0, 'q1': 1, 'q2': 2})
+                {'q0': 0, 'q1': 1, 'q2': 2}
+            )()
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(my_circuit)())
