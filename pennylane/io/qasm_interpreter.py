@@ -460,7 +460,7 @@ class QasmInterpreter:
         Registers a quantum measurement statement.
 
         Args:
-            node (QuantumMeasurementStatement): the quantum measurement statement to register.
+            node (QuantumMeasurement): the quantum measurement to interpret
             context (Context): the current context.
         """
         wire = self.visit(node.qubit, context)
