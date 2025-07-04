@@ -478,11 +478,12 @@ class QasmInterpreter:
             node (QuantumMeasurementStatement): the quantum measurement statement to register.
             context (Context): the current context.
         """
-        name = _resolve_name(node.target)  # str or Identifier
         wire = self.visit(node.measure.qubit, context)
         res = measure(context.wire_map.get(wire, wire))
-        context.vars[name].val = res
-        context.vars[name].line = node.span.start_line
+        if node.target is not None:
+            name = _resolve_name(node.target)  # str or Identifier
+            context.vars[name].val = res
+            context.vars[name].line = node.span.start_line
         return res
 
     @visit.register(ast.BreakStatement)
