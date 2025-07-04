@@ -118,8 +118,8 @@ class TestCombineGlobalPhasesPass:
                     %arg02 = arith.mulf %arg0, %two0 : f64
                     // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
                     %t0 = "test.op"() : () -> f64
-                    // CHECK: [[phi_sum:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
-                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    // CHECK: [[phi_sum_0:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum_0:%.*]])
                     quantum.gphase %t0
                     quantum.gphase %t0
                     // CHECK: scf.yield [[arg02:%.*]] : f64
@@ -130,16 +130,16 @@ class TestCombineGlobalPhasesPass:
                     %two1 = arith.constant 2 : f64
                     // CHECK: [[arg12:%.*]] = arith.mulf [[arg1:%.*]], [[two1:%.*]] : f64
                     %arg1x2 = arith.mulf %arg1, %two1 : f64
-                    // CHECK: [[phi_sum:%.*]] = arith.addf [[arg1x2:%.*]], [[arg1x2:%.*]] : f64
-                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    // CHECK: [[phi_sum_1:%.*]] = arith.addf [[arg1x2:%.*]], [[arg1x2:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum_1:%.*]])
                     quantum.gphase %arg1x2
                     quantum.gphase %arg1x2
                     // CHECK: scf.yield [[arg12:%.*]] : f64
                     scf.yield %arg1x2 : f64
                     // CHECK: }
                 }
-                // CHECK: [[phi_sum:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
-                // CHECK: quantum.gphase([[phi_sum:%.*]])
+                // CHECK: [[phi_sum_2:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum_2:%.*]])
                 quantum.gphase %arg0
                 quantum.gphase %arg1
                 // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
@@ -182,13 +182,13 @@ class TestCombineGlobalPhasesPass:
                     %arg02 = arith.mulf %arg0, %two0 : f64
                     // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
                     %t0 = "test.op"() : () -> f64
-                    // CHECK: [[phi_sum:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
-                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    // CHECK: [[phi_sum_0:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum_0:%.*]])
                     quantum.gphase %t0
                     quantum.gphase %t0
                 }
-                // CHECK: [[phi_sum:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
-                // CHECK: quantum.gphase([[phi_sum:%.*]])
+                // CHECK: [[phi_sum_1:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum_1:%.*]])
                 quantum.gphase %arg0
                 quantum.gphase %arg1
                 // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
@@ -234,14 +234,14 @@ class TestCombineGlobalPhasesPass:
                     %arg02 = arith.mulf %arg0, %two0 : f64
                     // CHECK: [[t0:%.*]] = "test.op"() : () -> f64
                     %t0 = "test.op"() : () -> f64
-                    // CHECK: [[phi_sum:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
-                    // CHECK: quantum.gphase([[phi_sum:%.*]])
+                    // CHECK: [[phi_sum_0:%.*]] = arith.addf [[t0:%.*]], [[t0:%.*]] : f64
+                    // CHECK: quantum.gphase([[phi_sum_0:%.*]])
                     quantum.gphase %t0
                     quantum.gphase %t0
                     scf.yield %next_i : i32
                 }
-                // CHECK: [[phi_sum:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
-                // CHECK: quantum.gphase([[phi_sum:%.*]]) :
+                // CHECK: [[phi_sum_1:%.*]] = arith.addf [[arg0:%.*]], [[arg1:%.*]] : f64
+                // CHECK: quantum.gphase([[phi_sum_1:%.*]]) :
                 quantum.gphase %arg0
                 quantum.gphase %arg1
                 // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
