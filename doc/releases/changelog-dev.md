@@ -235,7 +235,7 @@
 
       return qml.expval(qml.Z(0))
 
-  rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
+  rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
   x, y = 0.12, 0.34
