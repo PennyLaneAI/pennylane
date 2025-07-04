@@ -453,7 +453,7 @@ class QasmInterpreter:
         return context
 
     @visit.register(ast.QuantumMeasurement)
-    def visit_quantum_measurement_statement(
+    def visit_quantum_measurement(
         self, node: ast.QuantumMeasurementStatement, context: Context
     ):
         """
