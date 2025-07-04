@@ -145,3 +145,32 @@ def test_vscf_integrals(h_data, h2s_result, modals, cutoff):
         assert np.allclose(h, h2s_result[idx])
 
     assert result_dip is None
+
+
+@pytest.mark.parametrize(
+    ("h_data"),
+    [
+        (h_data_h2s),
+    ],
+)
+def test_modal_error_vscf(h_data):
+    r"""Test that an error is raised if number of modals provided is incorrect"""
+
+    with pytest.raises(
+        ValueError,
+        match="Number of maximum modals cannot be greater than the modals for unrotated integrals.",
+    ):
+        vibrational.vscf_integrals(h_integrals=h_data, modals=[5, 5, 5])
+
+
+@pytest.mark.parametrize(
+    ("h_data"),
+    [
+        (h_data_h2s),
+    ],
+)
+def test_vscf_default(h_data):
+    r"""Test that an error is raised if number of modals provided is incorrect"""
+
+    energy_vscf, _ = vibrational.vscf(h_integrals=h_data)
+    assert np.isclose(energy_vscf, 0.015052583)
