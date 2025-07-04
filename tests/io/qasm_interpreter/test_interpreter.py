@@ -2,6 +2,9 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
+from re import escape
+from unittest.mock import MagicMock
+
 import pytest
 
 from pennylane import (
@@ -30,8 +33,13 @@ from pennylane import (
     S,
     T,
     Toffoli,
+    device,
+    measure,
+    probs,
+    qnode,
     queuing,
 )
+from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
@@ -41,31 +49,893 @@ try:
 
     from openqasm3.parser import parse
 
-    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+    from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
+        Context,
+        QasmInterpreter,
+        Variable,
+        preprocess_operands,
+    )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
 
 @pytest.mark.external
-class TestInterpreter:
+class TestMeasurementReset:
 
-    def test_raises_on_unsupported_param_types(self):
+    def test_condition_on_measurement(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        with pytest.raises(
+            ValueError, match="Mid circuit measurement outcomes can not be used as conditions"
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "cond_meas", "wire_map": None})
+
+    def test_combine_processing_functions(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        results = {
+            "res_1": None,
+            "res_2": None,
+            "res_3": None,
+        }
+
+        @qnode(device("default.qubit", wires=[0, 1, 2]))
+        def add_meas(results):
+            m1 = measure(0)
+            m2 = measure(1)
+            m = m1 + m2
+            results["res_1"] = m1.processing_fn(1)
+            results["res_2"] = m2.processing_fn(2)
+            results["res_3"] = m.processing_fn(1, 2)
+            return probs(0)
+
+        context = QasmInterpreter().interpret(ast, context={"name": "add_meas", "wire_map": None})
+
+        add_meas(results)
+
+        assert results["res_1"] == context.vars["c"].val.processing_fn(1) == 1
+        assert results["res_2"] == context.vars["d"].val.processing_fn(2) == 2
+        assert results["res_3"] == context.vars["res"].val.processing_fn(1, 2) == 3
+
+    def test_resets(self):
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
+
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "post_processing", "wire_map": None}
+            )
+
+        assert isinstance(q.queue[0], MidMeasureMP)
+        assert q.queue[0].wires == Wires(["q"])
+        assert q.queue[0].reset
+        assert context.vars["a"].val.wires == Wires(["q"])
+
+    def test_post_processing_measurement(self, mocker):
+        import pennylane
+
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
+        )
+
+        # setup mocks
+        eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
+
+        mock_one = MagicMock(return_value=1)
+        mock_zero = MagicMock(return_value=0)
+
+        vars = {
+            "c": Variable(
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_one), -1, 0, False
+            ),
+            "d": Variable(
+                "MeasurementValue", MeasurementValue([PauliX(0)], mock_zero), -1, 0, False
+            ),
+        }
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "post_processing", "wire_map": None, "vars": vars}
+        )
+
+        # ops on MeasurementValues should yield MeasurementValues
+        assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert isinstance(context["vars"]["d"].val, MeasurementValue)
+
+        # the right ops should have been called
+
+        # Note: we can't compare MeasurementValues using __eq__ as they don't have a truthiness,
+        # __eq__ returns a MeasurementValue
+        def compare_measurement_values(mv_1: MeasurementValue[T], mv_2: MeasurementValue[T]):
+            res_1 = mv_1.processing_fn()
+            res_2 = mv_2.processing_fn()
+            meas_1 = mv_1.measurements
+            meas_2 = mv_2.measurements
+            return res_1 == res_2 and meas_1 == meas_2
+
+        # first call
+        curr_call = 0
+        # c = c + 1;
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], mock_one), eval_binary.call_args_list[curr_call].args[0]
+        )
+        assert eval_binary.call_args_list[curr_call].args[1:] == ("+", 1, 4)
+
+        # second call
+        curr_call += 1
+        # c = d / c;
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], mock_zero), eval_binary.call_args_list[curr_call].args[0]
+        )
+        assert eval_binary.call_args_list[curr_call].args[1] == "/"
+        assert compare_measurement_values(
+            MeasurementValue([PauliX(0)], (lambda: mock_one() + 1)),
+            eval_binary.call_args_list[curr_call].args[2],
+        )
+        assert eval_binary.call_args_list[curr_call].args[3] == 5
+
+    def test_measurement(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "measurements", "wire_map": None}
+        )
+
+        assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert context["vars"]["c"].val.wires == Wires(["q0"])
+        assert isinstance(context["vars"]["d"].val, MeasurementValue)
+        assert context["vars"]["d"].val.wires == Wires(["q0"])
+
+
+@pytest.mark.external
+class TestControlFlow:
+
+    def test_nested_control_flow(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_control_flow.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-control-flow", "wire_map": None}
+            )
+
+        assert q.queue == [
+            # first we have PauliX 5 times in the first loop within the first nested if
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            PauliX("q0"),
+            # next we have PauliZ from the while loop within the first case of the switch
+            PauliZ("q0"),
+            # finally we have the repeated pattern XYY four times from the nested for loops at the bottom
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+            PauliX("q0"),
+            PauliY("q0"),
+            PauliY("q0"),
+        ]
+
+    def test_nested_end(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "nested-end", "wire_map": None})
+
+        assert q.queue == [PauliX("q0")]
+
+    def test_loops(self):
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "loops", "wire_map": None})
+
+        assert q.queue == [PauliZ("q0")] + [PauliX("q0") for _ in range(10)] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]] + [
+            RY(phi, wires=["q0"]) for phi in [1.2, -3.4, 0.5, 9.8]
+        ] + [
+            RZ(0.1, wires=["q0"]) for _ in range(6)
+        ] + [
+            PauliY("q0") for _ in range(6)
+        ] + [
+            PauliZ("q0") for _ in range(5)
+        ] + [
+            RX(phi, wires=["q0"]) for phi in range(4294967296, 4294967306)
+        ] + [
+            PauliZ("q0")
+        ]
+
+    def test_switch(self):
+
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "switch", "wire_map": None})
+
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
+
+    def test_if_else(self, mocker):
+        from pennylane import ops
+
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
+        )
+
+        # setup mocks
+        cond = mocker.spy(ops, "cond")
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "if_else", "wire_map": None})
+
+        # assertions
+        assert cond.call_count == 3
+
+        assert q.queue == [PauliX("q0"), PauliY("q0")]
+
+    def test_end_statement(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            qubit q1;
+            ch q0, q1;
+            cx q1, q0;
+            end;
+            cy q0, q1;
+            cz q1, q0;
+            swap q0, q1;
+            """,
+            permissive=True,
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
+
+        assert q.queue == [
+            CH(wires=["q0", "q1"]),
+            CNOT(wires=["q1", "q0"]),
+        ]
+
+
+@pytest.mark.external
+class TestSubroutine:
+
+    def test_scoping_const(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "nested-subroutines", "wire_map": None}
+        )
+
+        assert context.vars["a"].val == 0.5
+        assert context.vars["c"].val == 2
+        assert context.vars["d"].val == 2.5
+
+    def test_nested_renaming(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/nested_renaming.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "nested-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [PauliY("q0"), PauliX("q0"), Hadamard("q0")]
+
+    def test_repeated_calls(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "repeated-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(2, "q0"),
+            RY(0.5, "q0"),
+            RX(11, "q0"),
+            RY(0.5, "q0"),
+        ]
+
+    def test_subroutine_not_defined(self):
+        ast = parse(
+            """
+            undefined_subroutine();
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            NameError,
+            match="Reference to subroutine undefined_subroutine not "
+            "available in calling namespace on line 2.",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "undefined-subroutine", "wire_map": None}
+            )
+
+    def test_stand_alone_call_of_subroutine(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "standalone-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0")]
+
+    def test_complex_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "complex-subroutines", "wire_map": None}
+            )
+
+        assert q.queue == [Hadamard("q0"), PauliY("q0"), Hadamard("q0"), RX(0.1, "q0")]
+        assert context.vars["c"].val == 0
+
+    def test_subroutines(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "subroutines", "wire_map": None})
+
+        assert q.queue[0] == Hadamard("q0")
+        assert isinstance(q.queue[1], MidMeasureMP)
+
+
+@pytest.mark.external
+class TestExpressions:
+
+    def test_different_unary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "unary-exprs"}
+        )
+
+        # unary expressions
+        assert context.vars["a"].val == -1
+        assert context.vars["b"].val == ~2
+        assert context.vars["c"].val == (not False)
+
+    def test_different_binary_exprs(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "binary-exprs"}
+        )
+
+        # comparison expressions
+        assert context.vars["a"].val == (0 == 1)
+        assert context.vars["b"].val == (0 != 1)
+        assert context.vars["c"].val == (0 > 1)
+        assert context.vars["d"].val == (0 < 1)
+        assert context.vars["e"].val == (0 >= 1)
+        assert context.vars["f"].val == (0 <= 1)
+
+        # bitwise operations
+        assert context.vars["g"].val == 2 >> 1
+        assert context.vars["h"].val == 2 << 1
+        assert context.vars["i"].val == 2 | 1
+        assert context.vars["j"].val == 2 ^ 1
+        assert context.vars["k"].val == 2 & 1
+
+        # arithmetic operators
+        assert context.vars["m"].val == 3 + 2
+        assert context.vars["o"].val == 3 - 2
+        assert context.vars["p"].val == 3 * 2
+        assert context.vars["q"].val == 3**2
+        assert context.vars["n"].val == 3 / 2
+        assert context.vars["s"].val == 3 % 2
+
+        # boolean operators
+        assert context.vars["t"].val == (True or False)
+        assert context.vars["u"].val == (True and False)
+
+    def test_different_assignments(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "assignment-exprs"}
+        )
+        assert context.vars["a"].val == 1
+        assert context.vars["b"].val == 1 + 2
+        assert context.vars["c"].val == 2 - 3
+        assert context.vars["d"].val == 3 * 4
+        assert context.vars["e"].val == 4 / 5
+        assert context.vars["f"].val == (True and True)
+        assert context.vars["g"].val == (True or False)
+        assert context.vars["i"].val == 2 ^ 9
+        assert context.vars["j"].val == 2 << 10
+        assert context.vars["k"].val == 3 >> 1
+        assert context.vars["l"].val == 5 % 2
+        assert context.vars["m"].val == 6**13
+
+    def test_nested_expr(self):
         # parse the QASM
         ast = parse(
             """
             qubit q0;
-            int p = 1;
+            int p = 3 + 3;
             pow(p * 2) @ x q0;
+            pow(p * (2 + 1)) @ x q0;
+            pow((8.0 - 0.0) * (2.0 + 1)) @ x q0;
+            """,
+            permissive=True,
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "expression-implemented"}
+            )
+
+        assert q.queue == [
+            PauliX("q0") ** 12,
+            PauliX("q0") ** 18,
+            PauliX("q0") ** 24,
+        ]
+
+    def test_bare_expression(self):
+        # parse the QASM
+        ast = parse(
+            """
+            bit[8] a = "1001";
+            a << 1;
+            let b = a;
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "expression-visit"}
+        )
+
+        # exprs are not in-place modifiers without an assignment
+        assert context.aliases["b"](context).val == 9
+
+    operands = [
+        0.0,
+        0.1,
+        -0.1,
+        5.0,
+        99999.99,
+        -9999.99,
+        0,
+        1,
+        -1,
+        10,
+        -10,
+        -99999,
+        99999,
+        "0.0",
+        "0.1",
+        "-0.1",
+        "5.0",
+        "99999.99",
+        "-9999.99",
+        "0",
+        "1",
+        "-1",
+        "10",
+        "-10",
+        "-99999",
+        "99999",
+    ]
+
+    @pytest.mark.parametrize("operand", operands)
+    def test_preprocess_operands(self, operand):
+        if isinstance(operand, float):
+            assert isinstance(preprocess_operands(operand), float)
+        elif isinstance(operand, int):
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.isdigit():
+            assert isinstance(preprocess_operands(operand), int)
+        elif operand.replace(".", "").isnumeric():
+            assert isinstance(preprocess_operands(operand), float)
+
+
+@pytest.mark.external
+class TestVariables:
+
+    def test_retrieve_non_existent_attr(self):
+        context = Context({"wire_map": None, "name": "retrieve-non-existent-attr"})
+
+        with pytest.raises(
+            KeyError,
+            match=r"No attribute potato on Context and no potato key found "
+            r"on context retrieve-non-existent-attr",
+        ):
+            print(context.potato)
+
+    def test_bad_alias(self):
+        # parse the QASM
+        ast = parse(
+            """
+            let k = j;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to alias an undeclared variable j in bad-alias"
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-alias"}
+            )
+            context.aliases["k"](context)
+
+    def test_ref_undeclared_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable theta in undeclared-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "undeclared-var"})
+
+    def test_ref_uninitialized_var_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            const float phi = theta + 1.0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
+    def test_ref_uninitialized_alias_in_expr(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            let alpha = theta;
+            const float phi = alpha;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-var"})
+
+    def test_alias(self):
+        ast = parse(
+            """
+            bit[6] register = "011011";
+            let alias = register[0:5];
+            bool z = alias[0] + "1";
+            bit single = "0";
+            let single_alias = single;
+            bool x = single_alias + "0";
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "aliases"})
+        assert context.aliases["alias"](context) == "01101"
+        assert context.vars["z"].val == 1
+        assert context.vars["x"].val == 0
+
+    def test_variables(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "advanced-vars"}
+        )
+
+        # static vars
+        assert context.vars["f"].val == 3.2
+        assert context.vars["g"].val == 3
+        assert context.vars["h"].val == 2
+        assert context.vars["k"].val == 3
+
+        # dynamic vars
+        assert context.vars["l"].val
+        assert context.vars["m"].val == (3.14159 / 2) * 3.3
+        assert context.vars["a"].val == 3.3333333
+        assert context.aliases["alias"](context) == "01101"
+
+    def test_updating_constant(self):
+        # parse the QASM
+        ast = parse(
+            """
+            const int i = 2;
+            i = 3;
             """,
             permissive=True,
         )
         with pytest.raises(
-            NotImplementedError,
-            match="Unable to handle BinaryExpression at this time",
+            ValueError,
+            match="Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
+
+    def test_declare_register(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit[2] q;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Qubit registers are not yet supported, "
+            "please declare each qubit individually.",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-register"})
+
+    def test_retrieve_wire(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q;
+            let s = q;
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(
+            ast, context={"wire_map": None, "name": "qubit-retrieve"}
+        )
+
+        assert context.aliases["s"](context) == "q"
+
+    def test_retrieve_uninitialized_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float theta;
+            float phi;
+            phi = theta;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta"):
             QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "expression-not-implemented"}
+                ast, context={"wire_map": None, "name": "ref-uninitialized-var"}
             )
+
+    def test_classical_variables(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
+
+        assert context.vars["i"].val == 4
+        assert context.vars["j"].val == 4
+        assert context.vars["c"].val == 0
+        assert context.vars["k"].val == 4
+        assert context.vars["neg"].val == -4
+        assert context.vars["comp"].val == 3.5j + 2.5
+        assert context.aliases["arr_alias"](context) == [0.0, 1.0]
+        assert context.aliases["literal_alias"](context) == 0.0
+
+    def test_updating_variables(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
+
+        assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"]), PauliY("q0")]
+
+    def test_uninitialized_var(self):
+
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit q0;
+            float theta;
+            rx(theta) q0;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(ValueError, match="Attempt to reference uninitialized parameter theta!"):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
+
+    def test_unsupported_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0;
+            const duration l = duration(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Unable to cast float to DurationType: Unsupported cast type DurationType",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
+
+    def test_cannot_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            complex k = 3.0 + 2.0im;
+            const uint l = uint(k);
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match=escape(
+                "Unable to cast complex to UintType: int() argument must be a string, "
+                "a bytes-like object or a real number, not 'complex'"
+            ),
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cannot-cast"})
+
+    def test_cast(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            float i = 3.0;
+            const uint j = int(i);
+            float k = 3.0;
+            const complex l = complex(k);
+            int m = 1;
+            float n = float(m);
+            bool o = bool(m);
+            """,
+            permissive=True,
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "cast"})
+
+        assert isinstance(context.vars["j"].val, int)
+        assert isinstance(context.vars["l"].val, complex)
+        assert isinstance(context.vars["n"].val, float)
+        assert isinstance(context.vars["o"].val, bool)
+
+    def test_update_non_existent_var(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            p = 1;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError, match="Attempt to use undeclared variable p in non-existent-var"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "non-existent-var"})
+
+    def test_invalid_index(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit q0;
+            const float[2] arr = {0.0, 1.0};
+            const float[2] arr_two = {0.0, 1.0};
+            const [float[2]] index = {arr, arr_two};
+            let slice = arr[index];
+            """,
+            permissive=True,
+        )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError,
+            match="Array index does not evaluate to a single RangeDefinition or Literal at line 6.",
+        ):
+            context = QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "bad-index"}
+            )
+            context.aliases["slice"](context)
+
+
+@pytest.mark.external
+class TestGates:
 
     def test_nested_modifiers(self):
         # parse the QASM program
@@ -156,29 +1026,22 @@ class TestInterpreter:
 
         assert q.queue == [Identity("0q"), Hadamard("2q"), PauliX("1q"), PauliY("2q")]
 
-    def test_end_statement(self):
-        # parse the QASM program
+    def test_updating_variables(self):
+        # parse the QASM
         ast = parse(
-            """
-            qubit q0;
-            qubit q1;
-            ch q0, q1;
-            cx q1, q0;
-            end;
-            cy q0, q1;
-            cz q1, q0;
-            swap q0, q1;
-            """,
+            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
             permissive=True,
         )
 
-        # execute the callable
+        # run the program
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "end-early"})
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "updating-vars"})
 
         assert q.queue == [
-            CH(wires=["q0", "q1"]),
-            CNOT(wires=["q1", "q0"]),
+            PauliX("q0"),
+            PauliY("q0"),
+            RX(0.1, "q0"),
+            PauliY("q0"),
         ]
 
     def test_mod_with_declared_param(self):
@@ -208,14 +1071,15 @@ class TestInterpreter:
         ast = parse(
             """
             qubit q0;
+            float phi;
             rx(phi) q0;
             """,
             permissive=True,
         )
 
         with pytest.raises(
-            NameError,
-            match="Undeclared variable phi encountered in QASM.",
+            ValueError,
+            match="Attempt to reference uninitialized parameter phi!",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "name-error"})
 
@@ -224,18 +1088,15 @@ class TestInterpreter:
         # parse the QASM program
         ast = parse(
             """
-            bit b;
-            qubit q0;
-            float theta = 0.2;
-            rx(theta) q0;
-            measure q0 -> b;
+            include "stdgates.inc";
             """,
             permissive=True,
         )
 
         with pytest.raises(
             NotImplementedError,
-            match="An unsupported QASM instruction was encountered: QuantumMeasurementStatement",
+            match="An unsupported QASM instruction Include was encountered "
+            "on line 2, in unsupported-error.",
         ):
             QasmInterpreter().interpret(
                 ast, context={"wire_map": None, "name": "unsupported-error"}
@@ -254,7 +1115,9 @@ class TestInterpreter:
 
         with pytest.raises(
             NameError,
-            match=r"Attempt to reference wire\(s\): \['q0'\] that have not been declared in uninit-qubit",
+            match=escape(
+                "Attempt to reference wire(s): {'q0'} that have not been declared in uninit-qubit"
+            ),
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-qubit"})
 
@@ -290,21 +1153,6 @@ class TestInterpreter:
             TypeError, match=r"Missing required argument\(s\) for parameterized gate rx"
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "missing-param"})
-
-    def test_uninitialized_var(self):
-
-        # parse the QASM program
-        ast = parse(
-            """
-            qubit q0;
-            float theta;
-            rx(theta) q0;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(NameError, match="Attempt to reference uninitialized parameter theta!"):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "uninit-param"})
 
     def test_parses_simple_qasm(self):
 
@@ -355,8 +1203,6 @@ class TestInterpreter:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "two-qubit-gates"})
@@ -385,8 +1231,6 @@ class TestInterpreter:
             permissive=True,
         )
 
-        # setup mocks
-
         # execute the callable
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(
@@ -408,14 +1252,12 @@ class TestInterpreter:
             """
             qubit q0;
             qubit q1;
-            qubit[1] q2;
+            qubit q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -444,8 +1286,6 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -486,8 +1326,6 @@ class TestInterpreter:
             """,
             permissive=True,
         )
-
-        # setup mocks
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
