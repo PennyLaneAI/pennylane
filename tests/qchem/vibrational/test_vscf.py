@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational import vscf
+from pennylane.qchem.vibrational import vscf, vscf_integrals
 
 # pylint: disable=protected-access
 
@@ -105,7 +105,7 @@ def test_modal_error(h_data):
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
-    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
+    vib_energy, rot_matrix = vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
     assert np.isclose(vib_energy, h2s_result["energy"])
     assert np.allclose(rot_matrix, h2s_result["u_mat"])
 
@@ -118,7 +118,7 @@ def test_vscf_calculation(h_data, h2s_result):
 )
 def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
     r"""Test that correct rotated Hamiltonian and dipole is produced."""
-    result_h, result_dip = vscf.vscf_integrals(h_data, dip_data, modals=[3, 3, 3], cutoff=1e-8)
+    result_h, result_dip = vscf_integrals(h_data, dip_data, modals=[3, 3, 3], cutoff=1e-8)
 
     expected_h = h2s_result["h_data"]
     expected_dip = h2s_result["dip_data"]
@@ -139,9 +139,38 @@ def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
 )
 def test_vscf_integrals(h_data, h2s_result, modals, cutoff):
     r"""Test that correct rotated Hamiltonian is produced."""
-    result_h, result_dip = vscf.vscf_integrals(h_data, modals=modals, cutoff=cutoff)
+    result_h, result_dip = vscf_integrals(h_data, modals=modals, cutoff=cutoff)
 
     for idx, h in enumerate(result_h):
         assert np.allclose(h, h2s_result[idx])
 
     assert result_dip is None
+
+
+@pytest.mark.parametrize(
+    ("h_data"),
+    [
+        (h_data_h2s),
+    ],
+)
+def test_modal_error_vscf(h_data):
+    r"""Test that an error is raised if number of modals provided is incorrect"""
+
+    with pytest.raises(
+        ValueError,
+        match="Number of maximum modals cannot be greater than the modals for unrotated integrals.",
+    ):
+        vibrational.vscf(h_integrals=h_data, modals=[5, 5, 5])
+
+
+@pytest.mark.parametrize(
+    ("h_data"),
+    [
+        (h_data_h2s),
+    ],
+)
+def test_vscf_default(h_data):
+    r"""Test that an error is raised if number of modals provided is incorrect"""
+
+    energy_vscf, _ = vibrational.vscf(h_integrals=h_data)
+    assert np.isclose(energy_vscf, 0.015052583)

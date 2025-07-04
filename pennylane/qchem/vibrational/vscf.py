@@ -155,24 +155,67 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     return np.sum(e0s)
 
 
-def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
+def vscf(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6, tol=1e-8, max_iters=10000):
     r"""Performs the VSCF calculation.
 
     Args:
-        h_integrals (list(TensorLike[float])): list containing Hamiltonian integral matrices
-        modals (list(int)): list containing the maximum number of modals to consider for each mode
-        cutoff (float): threshold value for including matrix elements into operator.
-        tol (float): convergence tolerance for vscf calculation
-        max_iters (int): maximum number of iterations for vscf to converge
+        h_integrals (list(TensorLike[float])): A list of Hamiltonian integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes.
+            Supported coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        modals (list[int]): A list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals per vibrational mode.
+        cutoff (float): The threshold value for including matrix elements into operator. Default is calculated based on `cutoff_ratio`.
+        cutoff_ratio (float): The ratio for discarding elements with respect to the biggest element in the integrals.
+            Default value is ``1e-6``.
+        tol (float): The convergence tolerance for the VSCF calculation.
+        max_iters (int): maximum number of iterations for the VSCF calculations to converge
 
     Returns:
         tuple: A tuple of the following:
             - float: vscf energy
             - list[TensorLike[float]]: list of rotation matrices for all vibrational modes
 
+    **Example**
+
+    >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
+    ...                 [0.00233724, 0.02958449, 0.00675431, 0.0021936],
+    ...                 [0.0007408,  0.00675431, 0.0506012,  0.01280986],
+    ...                 [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
+    >>> vscf_energy,_ = qml.qchem.vscf(h_integrals=[h1])
+    >>> print(vscf_energy)
+    0.009361240406957813
+
+    .. details::
+        :title: Usage Details
+
+        The ``h_integral`` tensor must have one of these dimensions:
+
+        - 1-mode coupled integrals: `(n, m, m)`
+        - 2-mode coupled integrals: `(n, n, m, m, m, m)`
+        - 3-mode coupled integrals: `(n, n, n, m, m, m, m, m, m)`
+
+        where ``n`` is the number of vibrational modes in the molecule and ``m`` represents the number
+        of modals.
+
+
     """
 
     nmodes = np.shape(h_integrals[0])[0]
+    imax = np.shape(h_integrals[0])[1]
+    max_modals = nmodes * [imax]
+    if modals is None:
+        modals = max_modals
+    else:
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
+        imax = np.max(modals)
+
+    if cutoff is None:
+        max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
+        cutoff = max_val * cutoff_ratio
 
     active_ham_terms, active_mode_terms, active_num = _find_active_terms(
         h_integrals, modals, cutoff
@@ -389,20 +432,24 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
-        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3 coupled vibrational modes.
-            Look at the Usage Details for more information.
-        d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3 coupled vibrational modes.
-            Look at the Usage Details for more information.
-        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
-            Default value is the maximum number of modals.
-        cutoff (float): threshold value for including matrix elements into operator
-        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+        h_integrals (list(TensorLike[float])): A list of Hamiltonian integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes.
+            Supported coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        d_integrals (list[TensorLike[float]]): A list of dipole integral tensors. Each tensor
+            represents integrals for a specific coupling order of vibrational modes. Supported
+            coupling orders are up to 3 vibrational modes.
+            See :ref:`usage_details` for detailed information on expected tensor dimensions.
+        modals (list[int]): A list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals per vibrational mode.
+        cutoff (float): The threshold value for including matrix elements into operator. Default is calculated based on `cutoff_ratio`.
+        cutoff_ratio (float): The ratio for discarding elements with respect to the biggest element in the integrals.
             Default value is ``1e-6``.
 
     Returns:
         tuple: a tuple containing:
-            - list[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
-            - list[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
+            - list[TensorLike[float]]: A list of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
+            - list[TensorLike[float]]: A list of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
 
         ``None`` is returned if ``d_integrals`` is ``None``.
 
@@ -438,7 +485,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
         The ``d_integral`` tensor must have one of these dimensions:
 
-        - 1-mode coupled integrals: `(3, n, m)`
+        - 1-mode coupled integrals: `(3, n, m, m)`
         - 2-mode coupled integrals: `(3, n, n, m, m, m, m)`
         - 3-mode coupled integrals: `(3, n, n, n, m, m, m, m, m, m)`
 
@@ -475,7 +522,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
         cutoff = max_val * cutoff_ratio
 
-    _, mode_rots = _vscf(h_integrals, modals=max_modals, cutoff=cutoff)
+    _, mode_rots = vscf(h_integrals, modals=max_modals, cutoff=cutoff)
 
     h_data = _rotate_hamiltonian(h_integrals, mode_rots, modals)
 
