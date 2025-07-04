@@ -81,8 +81,8 @@ def test_epsilon_value_effect():
 def test_warm_start():
     """Test that warm start is working."""
     op = qml.RZ(math.pi / 8, 0)
-    decomp_with_error = rs_decomposition(op, 1e-10, max_trials=100)
-    decomp_less_error = rs_decomposition(op, 1e-3, max_trials=100)
+    decomp_with_error = rs_decomposition(op, 1e-10, max_search_trials=100)
+    decomp_less_error = rs_decomposition(op, 1e-3, max_search_trials=100)
     assert len(decomp_with_error) == len(decomp_less_error)
 
 
@@ -94,4 +94,4 @@ def test_exception():
         ValueError,
         match=r"Operator must be a RZ or PhaseShift gate",
     ):
-        rs_decomposition(op, epsilon=1e-4, max_trials=1)
+        rs_decomposition(op, epsilon=1e-4, max_search_trials=1)

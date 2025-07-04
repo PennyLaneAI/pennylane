@@ -212,7 +212,7 @@
 
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
-* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
+* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="gridsynth"`
   (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
   less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
   via :func:`~.ops.rs_decomposition` function.
@@ -220,6 +220,7 @@
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+  [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
 
   The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
   Consider this simple circuit:
@@ -237,18 +238,19 @@
   rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
+  x, y = 0.12, 0.34
   rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
   sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
   ```
 
-  Decomposing with `method="rs"` instead of `method="sk"` gives a significant reduction in overall 
+  Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
   gate counts, specifically the `qml.T` count:
 
   ```pycon
   >>> print(rs_specs.num_gates, sk_specs.num_gates)
-  267 48637
+  239 47942
   >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
-  104 8507
+  90 8044
   ```
 
 * Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
@@ -265,6 +267,7 @@
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
+  [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
 
   ```python
   import pennylane as qml
@@ -273,7 +276,7 @@
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})()
       return qml.expval(qml.Z(0))
   ```
 
@@ -535,6 +538,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7415)](https://github.com/PennyLaneAI/pennylane/pull/7415)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
@@ -694,7 +698,7 @@
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
-  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
