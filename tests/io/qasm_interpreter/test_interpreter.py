@@ -178,6 +178,25 @@ class TestIO:
         assert context["return"]["v"].val == 2.2
         assert isinstance(context["return"]["b"].val, MeasurementValue)
 
+    def test_wrong_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=escape(
+                "Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+            ),
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "wrong-input", "wire_map": None}, theta=0.2, phi=0.1
+            )
+
     def test_missing_input(self):
         ast = parse(
             """
@@ -270,7 +289,7 @@ class TestMeasurementReset:
             QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
 
         assert isinstance(q.queue[0], MidMeasureMP)
-        assert q.queue[0].wires == Wires(["qubits"])
+        assert q.queue[0].wires == Wires(["q"])
         assert q.queue[0].reset
 
     def test_post_processing_measurement(self, mocker):
@@ -896,11 +915,27 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_declare_register(self):
+        # parse the QASM
+        ast = parse(
+            """
+            qubit[2] q;
+            """,
+            permissive=True,
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Qubit registers are not yet supported, "
+            "please declare each qubit individually.",
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-register"})
+
     def test_retrieve_wire(self):
         # parse the QASM
         ast = parse(
             """
-            qubit[0] q;
+            qubit q;
             let s = q;
             """,
             permissive=True,
@@ -1404,7 +1439,7 @@ class TestGates:
             """
             qubit q0;
             qubit q1;
-            qubit[1] q2;
+            qubit q2;
             ccx q0, q2, q1;
             cswap q1, q2, q0;
             """,
