@@ -6,11 +6,10 @@
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
-* A combine global phase pass has been added to the xDSL Python compiler integration.
-  Note that current implementation can only combine all the global phase operations at
+* A combine-global-phase pass has been added to the xDSL Python compiler integration.
+  Note that the current implementation can only combine all the global phase operations at
   the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
   region.
-
   [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
 
 * The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
