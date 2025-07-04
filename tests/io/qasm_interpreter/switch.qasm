@@ -1,4 +1,4 @@
-qubit[1] q0;
+qubit q0;
 
 switch (1) {
     case 1 {
