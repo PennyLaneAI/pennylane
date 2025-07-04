@@ -454,7 +454,7 @@ class QasmInterpreter:
 
     @visit.register(ast.QuantumMeasurement)
     def visit_quantum_measurement(
-        self, node: ast.QuantumMeasurementStatement, context: Context
+        self, node: ast.QuantumMeasurement, context: Context
     ):
         """
         Registers a quantum measurement statement.
