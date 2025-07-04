@@ -37,8 +37,9 @@ class CombineGlobalPhasesPattern(
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | ForOp | WhileOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
-        """Implementation of rewriting Op that may contain operations corresponding to
-        GlobalPhase oprations."""
+        """Match and rewrite for the combine-global-phases pattern acting on functions or
+        control-flow blocks containing GlobalPhase operations.
+        """
 
         for region in root.regions:
             phi = None
