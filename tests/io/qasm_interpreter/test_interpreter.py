@@ -201,6 +201,7 @@ class TestMeasurementReset:
         assert isinstance(context["vars"]["e"].val, MeasurementValue)
         assert context["vars"]["e"].val.wires == Wires(["q0"])
 
+
 @pytest.mark.external
 class TestControlFlow:
 
