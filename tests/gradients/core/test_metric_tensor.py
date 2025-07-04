@@ -1650,3 +1650,16 @@ def test_get_aux_wire_with_unavailable_aux():
     device_wires = qml.wires.Wires([0, "one"])
     with pytest.raises(qml.wires.WireError, match="The requested auxiliary wire does not exist"):
         _get_aux_wire("two", tape, device_wires)
+
+
+def test_metric_tensor_repeated_parametrized_op():
+    """Test that metric tensor works when an operator is repeated."""
+    op = qml.RX(0.5, 0)
+    tape1 = qml.tape.QuantumScript([op, op], [qml.expval(qml.Z(0))])
+    tape2 = qml.tape.QuantumScript([op, qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
+
+    batch1, _ = qml.metric_tensor(tape1)
+    batch2, _ = qml.metric_tensor(tape2)
+
+    for t1, t2 in zip(batch1, batch2, strict=True):
+        qml.assert_equal(t1, t2)

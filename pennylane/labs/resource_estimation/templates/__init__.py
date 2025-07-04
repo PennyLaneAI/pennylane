@@ -22,3 +22,11 @@ from .subroutines import (
     ResourceSelect,
     ResourceQROM,
 )
+from .trotter import (
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+)
+from .qubitize import ResourceQubitizeTHC
+from .compact_hamiltonian import CompactHamiltonian
