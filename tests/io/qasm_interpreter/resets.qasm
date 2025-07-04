@@ -1,2 +1,2 @@
-qubit[10] qubits;
-reset qubits;
+qubit q;
+reset q;
