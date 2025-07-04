@@ -4,7 +4,48 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  @qml.qjit(autograph=True)
+  def workflow():
+      dev = qml.device("lightning.qubit", wires=2)
+  
+      @qml.qnode(dev)
+      def circuit(params):
+          qml.RX(params[0], wires=0)
+          qml.RY(params[1], wires=1)
+          return qml.expval(qml.Z(0) + qml.X(1))
+  
+      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  
+      params = jnp.array([0.1, 0.2])
+      state = opt.init(params)
+      for _ in range(100):
+          params, state = opt.step(circuit, params, state)
+  
+      return params
+  ```
+
+  ```pycon
+  >>> workflow()
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h4>State-of-the-art templates and decompositions 🐝</h4>
+
+* The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
+  have been reduced to fewer rotations and/or (CNOT|CZ|CY) gates. This leads to lower circuit cost
+  when decomposing these gates, both when focusing on two-qubit gates or on non-Clifford gates.
+  [(#7771)](https://github.com/PennyLaneAI/pennylane/pull/7771)
 
 * A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
   This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
@@ -223,6 +264,8 @@
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
+  [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
+  [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
 
   ```python
   import pennylane as qml
@@ -231,7 +274,7 @@
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})()
       return qml.expval(qml.Z(0))
   ```
 
@@ -597,6 +640,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.evolve` now errors out if the first argument is not a valid type.
+  [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
+
 * `qml.PauliError` now accepts Pauli strings that include the identity operator.
   [(#7760)](https://github.com/PennyLaneAI/pennylane/pull/7760)
 
@@ -736,6 +782,14 @@
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
+
+* The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
+  Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1073,6 +1127,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
+  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+  ``tree-traversal`` supports analytic mode.
+  [(#7490)](https://github.com/PennyLaneAI/pennylane/pull/7490)
+
 * Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
@@ -1082,6 +1141,9 @@ may move operations across a `Snapshot`.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
+  [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
 * Fixes `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same operation occurs multiple
   times in the circuit.
@@ -1224,6 +1286,9 @@ may move operations across a `Snapshot`.
 * Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
+
+* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
 
 * Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
   to reflect supported devices and usage in analytic simulations,
