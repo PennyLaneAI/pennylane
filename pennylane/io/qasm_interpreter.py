@@ -222,51 +222,6 @@ class Context:
             context["return"] = {}
         self.context = context
 
-    def init_loops_scope(self, node: ast.ForInLoop | ast.WhileLoop):
-        """
-        Inits the loops scope on the current context.
-
-        Args:
-            node (ForInLoop | WhileLoop): the loop node.
-        """
-        if "loops" not in self.scopes:
-            self.scopes["loops"] = dict()
-
-        # the namespace is shared with the outer scope, but we need to keep track of the gates separately
-        if isinstance(node, ast.WhileLoop):
-            self.scopes["loops"][f"while_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(self, f"while_{node.span.start_line}")
-            )
-
-        elif isinstance(node, ast.ForInLoop):
-            self.scopes["loops"][f"for_{node.span.start_line}"] = (
-                self.init_clause_in_same_namespace(self, f"for_{node.span.start_line}")
-            )
-
-    def init_switches_scope(self, node: QASMNode):
-        """
-        Inits the switches scope on the current context.
-
-        Args:
-            node (QASMNode): the switch node.
-        """
-        if "switches" not in self.scopes:
-            self.scopes["switches"] = dict()
-
-        self.scopes["switches"][f"switch_{node.span.start_line}"] = dict()
-
-    def init_branches_scope(self, node: QASMNode):
-        """
-        Inits the branches scope on the current context.
-
-        Args:
-            node (BranchingStatement): the branch node.
-        """
-        if "branches" not in self.scopes:
-            self.scopes["branches"] = dict()
-
-        self.scopes["branches"][f"branch_{node.span.start_line}"] = dict()
-
     def init_custom_gate_scope(self, node: ast.QuantumGateDefinition):
         """
         Initializes a context for a custom quantum gate.
@@ -274,15 +229,20 @@ class Context:
         Args:
             node (QuantumGateDefinition): the custom quantum gate definition.
         """
-        self.scopes["custom_gates"][node.name.name] = self.init_clause_in_same_namespace(
-            self, node.name.name
-        )
-        self.scopes["custom_gates"][node.name.name].update(
-            {
+        self.scopes["custom_gates"][node.name.name] = Context(
+                {
                 "vars": {k: v for k, v in self.vars.items() if v.constant},
+                "wire_map": {},
                 "body": node.body,
                 "params": [_resolve_name(param) for param in node.arguments]
-                + [_resolve_name(qubit) for qubit in node.qubits],
+                          + [_resolve_name(qubit) for qubit in node.qubits],
+                "wires": copy.deepcopy(self.wires),
+                "name": node.name.name,
+                # we want subroutines declared in the global scope to be available
+                "scopes": {
+                    "subroutines": self.scopes["subroutines"],
+                    "custom_gates": self.scopes["custom_gates"],
+                },
             }
         )
 
@@ -299,40 +259,14 @@ class Context:
             {
                 "vars": {k: v for k, v in self.vars.items() if v.constant},  # same namespace
                 "wire_map": {},
-                "wires": self.wires,
+                "wires": copy.deepcopy(self.wires),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
-                "scopes": {"subroutines": self.scopes["subroutines"]},
+                "scopes": {"subroutines": self.scopes["subroutines"], "custom_gates": self.scopes["custom_gates"],},
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
         )
-
-    @staticmethod
-    def init_clause_in_same_namespace(outer_context, name: str):
-        """
-        Initializes a clause that shares the namespace of the outer scope, but contains its own
-        set of gates, operations, expressions, logic, etc.
-        Args:
-            outer_context (Context): the context of the outer scope.
-            name (str): the name of the clause.
-        Returns:
-            dict: the inner context.
-        """
-        # we want wires declared in outer scopes to be available
-        context = {
-            "vars": copy.deepcopy(outer_context.vars),  # same namespace
-            "wire_map": {},
-            "wires": copy.deepcopy(outer_context.wires),
-            "name": name,
-            # we want subroutines declared in the global scope to be available
-            "scopes": {
-                "subroutines": outer_context.scopes["subroutines"],
-                "custom_gates": outer_context.scopes["custom_gates"],
-            },
-        }
-
-        return Context(context)
 
     def retrieve_variable(self, name: str):
         """
