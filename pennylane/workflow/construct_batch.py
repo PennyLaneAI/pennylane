@@ -446,7 +446,7 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        if "shots" in kwargs and qnode._shots_override_device: # pylint: disable=protected-access
+        if "shots" in kwargs and qnode._shots_override_device:  # pylint: disable=protected-access
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "
                 f"The transform will take precedence over 'shots={kwargs['shots']}.'",
