@@ -71,37 +71,6 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
 
-    Using the ``jax.jit`` decorator for the entire workflow is not recommended since it
-    may lead to a significative compilation time and no runtime benefits.
-    However, ``jax.jit`` can be used with the ``default.qubit`` device to just-in-time
-    compile the ``step`` (or ``step_and_cost``) method of the optimizer.
-    For example:
-
-    .. code-block:: python
-
-        import pennylane as qml
-        import jax.numpy as jnp
-        import jax
-        from functools import partial
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            return qml.expval(qml.Z(0) + qml.X(1))
-
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
-        step = jax.jit(partial(opt.step, circuit))
-
-        params = jnp.array([0.1, 0.2])
-        state = opt.init(params)
-        for _ in range(100):
-            params, state = step(params, state)
-
-    >>> params
-    Array([ 3.14159265, -1.57079633], dtype=float64)
 
     Keyword Args:
         stepsize=0.01 (float): the stepsize hyperparameter
