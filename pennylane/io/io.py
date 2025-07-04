@@ -869,6 +869,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     .. code-block:: python
 
         import pennylane as qml
+        
         dev = qml.device("default.qubit", wires=[0, 1, 2])
         @qml.qnode(dev)
         def my_circuit():
