@@ -195,36 +195,36 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :caption: API
    :hidden:
 
-   code/qml
-   code/qml_allocation
-   code/qml_bose
-   code/qml_compiler
-   code/qml_data
-   code/qml_decomposition
-   code/qml_debugging
-   code/qml_drawer
-   code/qml_fermi
-   code/qml_fourier
-   code/qml_gradients
-   code/qml_kernels
-   code/qml_labs
-   code/qml_liealg
-   code/qml_logging
-   code/qml_math
-   code/qml_noise
-   code/qml_numpy
-   code/qml_ops_op_math
-   code/qml_pauli
-   code/qml_pulse
-   code/qml_qcut
-   code/qml_resource
-   code/qml_shadows
-   code/qml_transforms
-   code/qml_qaoa
-   code/qml_qchem
-   code/qml_qnn
-   code/qml_spin
-   code/qml_io
+code/qml
+code/qml_allocation
+code/qml_bose
+code/qml_compiler
+code/qml_data
+code/qml_decomposition
+code/qml_debugging
+code/qml_drawer
+code/qml_fermi
+code/qml_fourier
+code/qml_gradients
+code/qml_io
+code/qml_kernels
+code/qml_labs
+code/qml_liealg
+code/qml_logging
+code/qml_math
+code/qml_noise
+code/qml_numpy
+code/qml_ops_op_math
+code/qml_pauli
+code/qml_pulse
+code/qml_qaoa
+code/qml_qchem
+code/qml_qcut
+code/qml_qnn
+code/qml_resource
+code/qml_shadows
+code/qml_spin
+code/qml_transforms
    
 .. toctree::
    :maxdepth: 1
