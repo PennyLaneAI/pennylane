@@ -95,7 +95,7 @@ def _validate_level(
     Raises:
         ValueError: If the level is not recognized
     """
-    if level is None or isinstance(level, int) or isinstance(level, slice):
+    if level is None or isinstance(level, (int, slice)):
         return
 
     if isinstance(level, str):
