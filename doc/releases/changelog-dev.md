@@ -212,7 +212,7 @@
 
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
-* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
+* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="gridsynth"`
   (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
   less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
   via :func:`~.ops.rs_decomposition` function.
@@ -220,6 +220,7 @@
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+  [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
 
   The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
   Consider this simple circuit:
@@ -237,18 +238,19 @@
   rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
+  x, y = 0.12, 0.34
   rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
   sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
   ```
 
-  Decomposing with `method="rs"` instead of `method="sk"` gives a significant reduction in overall 
+  Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
   gate counts, specifically the `qml.T` count:
 
   ```pycon
   >>> print(rs_specs.num_gates, sk_specs.num_gates)
-  267 48637
+  239 47942
   >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
-  104 8507
+  90 8044
   ```
 
 * Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
