@@ -14,7 +14,6 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
-import math
 from collections import Counter
 from collections.abc import Hashable
 from typing import Dict, List, Sequence, Tuple
