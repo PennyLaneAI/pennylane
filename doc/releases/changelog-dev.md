@@ -538,6 +538,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7415)](https://github.com/PennyLaneAI/pennylane/pull/7415)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
@@ -694,7 +695,7 @@
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
-  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
