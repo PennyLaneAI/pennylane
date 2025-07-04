@@ -226,7 +226,7 @@ class TestOpenQasm:
         visit = mocker.spy(QasmInterpreter, "interpret")
 
         # call the method
-        from_qasm3(circuit)
+        from_qasm3(circuit)()
 
         # assertions
         parse.assert_called_with(circuit, permissive=True)
