@@ -868,13 +868,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     .. code-block:: python
 
-        import pennylane as qml
-
-        dev = qml.device("default.qubit", wires=[0, 1, 2])
-        @qml.qnode(dev)
-        def my_circuit():
-            qml.from_qasm3(
-                '''
+        qasm_stirng = '''
                 qubit q0;
                 qubit q1;
                 qubit q2;
@@ -901,15 +895,23 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
                     while (i < 5) {
                         i = i + 1;
                         rz(i) q1;
-                        if (m) {
-                            break;
-                        }
+                        break;
                     }
                 } else {
                     x q0;
                     end;
                 }
-                ''',
+        '''
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+        @qml.qnode(dev)
+        def my_circuit():
+            qml.from_qasm3(
+                qasm_string,
                 {'q0': 0, 'q1': 1, 'q2': 2}
             )()
             return qml.expval(qml.Z(0))
