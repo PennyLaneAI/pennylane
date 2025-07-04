@@ -454,7 +454,11 @@ class TestConstructBatch:
                     qml.S(0)
                 return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(shots=2)
+        with pytest.warns(
+            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
+        ):
+            batch, fn = construct_batch(circuit, level=None)(shots=2)
+
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
             [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100

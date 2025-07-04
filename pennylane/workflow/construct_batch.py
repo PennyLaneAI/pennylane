@@ -16,7 +16,9 @@
 from __future__ import annotations
 
 import inspect
+import warnings
 from collections.abc import Callable
+from copy import copy
 from functools import wraps
 from typing import TYPE_CHECKING, Literal, Optional
 
@@ -445,7 +447,16 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        if has_shots_param:
+        # Same logic as in class QNode in qnode.py
+        # kwargs = copy(kwargs)
+        if "shots" in kwargs and qnode._shots_override_device:
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                f"The transform will take precedence over 'shots={kwargs['shots']}.'",
+                UserWarning,
+                stacklevel=2,
+            )
+        if has_shots_param or qnode._shots_override_device:  # QNode._shots precedency::
             shots = default_shots
         else:
             shots = kwargs.pop("shots", default_shots)
