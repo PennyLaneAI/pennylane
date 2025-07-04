@@ -21,12 +21,13 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import MeasurementValue
 
 has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.io import from_qasm3
+    from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
     from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
@@ -211,6 +212,23 @@ class TestOpenQasm:
     """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
     dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_return_from_qasm3(self):
+        circuit = """\
+            OPENQASM 3.0;
+            output bit b;
+            output float v;
+            qubit q0;
+            rx(1.2) q0;
+            measure q0 -> b;
+            v = 2.2;
+            """
+
+        # call the method
+        b, v = from_qasm3(circuit)  # the return order is the declaration order
+        assert isinstance(b, MeasurementValue)
+        assert v == 2.2
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_from_qasm3(self, mocker):
