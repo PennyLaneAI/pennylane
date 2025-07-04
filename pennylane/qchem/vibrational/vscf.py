@@ -155,13 +155,16 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     return np.sum(e0s)
 
 
-def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
+def vscf(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6, tol=1e-8, max_iters=10000):
     r"""Performs the VSCF calculation.
 
     Args:
         h_integrals (list(TensorLike[float])): list containing Hamiltonian integral matrices
-        modals (list(int)): list containing the maximum number of modals to consider for each mode
+        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
+            Default value is the maximum number of modals per mode.
         cutoff (float): threshold value for including matrix elements into operator.
+        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
+            Default value is ``1e-6``.    
         tol (float): convergence tolerance for vscf calculation
         max_iters (int): maximum number of iterations for vscf to converge
 
@@ -170,9 +173,33 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
             - float: vscf energy
             - list[TensorLike[float]]: list of rotation matrices for all vibrational modes
 
+    **Example**
+
+    >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
+    ...                 [0.00233724, 0.02958449, 0.00675431, 0.0021936],
+    ...                 [0.0007408,  0.00675431, 0.0506012,  0.01280986],
+    ...                 [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
+    >>> vscf_energy,_ = qml.qchem.vscf(h_integrals=[h1])
+    >>> print(vscf_energy)
+    0.009361240406957813
+
     """
 
     nmodes = np.shape(h_integrals[0])[0]
+    imax = np.shape(h_integrals[0])[1]
+    max_modals = nmodes * [imax]
+    if modals is None:
+        modals = max_modals
+    else:
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
+        imax = np.max(modals)
+
+    if cutoff is None:
+        max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
+        cutoff = max_val * cutoff_ratio
 
     active_ham_terms, active_mode_terms, active_num = _find_active_terms(
         h_integrals, modals, cutoff
@@ -475,7 +502,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         max_val = np.max([np.max(np.abs(H)) for H in h_integrals])
         cutoff = max_val * cutoff_ratio
 
-    _, mode_rots = _vscf(h_integrals, modals=max_modals, cutoff=cutoff)
+    _, mode_rots = vscf(h_integrals, modals=max_modals, cutoff=cutoff)
 
     h_data = _rotate_hamiltonian(h_integrals, mode_rots, modals)
 

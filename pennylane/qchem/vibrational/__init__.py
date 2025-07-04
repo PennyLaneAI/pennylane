@@ -21,4 +21,4 @@ from .localize_modes import localize_normal_modes
 from .pes_generator import vibrational_pes
 from .taylor_ham import taylor_bosonic, taylor_coeffs, taylor_dipole_coeffs, taylor_hamiltonian
 from .vibrational_class import VibrationalPES, optimize_geometry
-from .vscf import vscf_integrals
+from .vscf import vscf_integrals, vscf
