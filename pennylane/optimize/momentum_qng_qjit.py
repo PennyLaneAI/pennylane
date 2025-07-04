@@ -19,7 +19,7 @@ from .qng_qjit import QNGOptimizerQJIT
 
 
 class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the ``MomentumQNGOptimizer``,
+    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.MomentumQNGOptimizer`,
     a generalized Quantum Natural Gradient (QNG) optimizer considering a discrete-time Langevin equation
     with QNG force.
 
@@ -41,7 +41,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
     To make the optimization faster, the entire workflow can be just-in-time compiled using
-    the ``qml.qjit`` decorator:
+    the :func:`~.qjit` decorator:
 
     .. code-block:: python
 
@@ -104,8 +104,8 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
     Keyword Args:
-        stepsize=0.01 (float): the user-defined stepsize hyperparameter
-        momentum=0.9 (float): the user-defined momentum coefficient hyperparameter
+        stepsize=0.01 (float): the stepsize hyperparameter
+        momentum=0.9 (float): the momentum coefficient hyperparameter
         approx="block-diag" (str): approximation method for the metric tensor.
 
             - If ``None``, the full metric tensor is computed
