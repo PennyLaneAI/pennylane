@@ -868,7 +868,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
     .. code-block:: python
 
-        qasm_stirng = '''
+        qasm_string = '''
                 qubit q0;
                 qubit q1;
                 qubit q2;
