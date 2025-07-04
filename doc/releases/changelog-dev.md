@@ -1139,7 +1139,7 @@ may move operations across a `Snapshot`.
   This helps ensure contributors follow current standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
-* Alphabetized the module list in the documentation build to ensure consistent ordering. 
+* Alphabetized the API list in the documentation build to ensure consistent ordering. 
   [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
 
 <h3>Bug fixes 🐛</h3>
