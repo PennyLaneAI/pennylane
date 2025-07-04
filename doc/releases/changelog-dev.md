@@ -269,7 +269,7 @@
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
-
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   ```python
   import pennylane as qml
 
@@ -539,6 +539,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7415)](https://github.com/PennyLaneAI/pennylane/pull/7415)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
@@ -571,6 +572,7 @@
   the Christiansen representation. 
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
   [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
+  [(#7785)](https://github.com/PennyLaneAI/pennylane/pull/7785)
 
   The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
   be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
@@ -680,6 +682,15 @@
   update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
+* Updated the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
+  Now, user transforms including final transforms like `param_shift` and `metric_tensor` are
+  always applied before gradient determination and device preprocessing, matching the
+  execution pipeline. The gradient method is now determined after all user transforms
+  have been applied, mirroring the logic in `execute`. This change ensures that transform
+  slicing and execution are always in sync, and fixes several subtle bugs with transform
+  application at different workflow levels.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
@@ -695,7 +706,7 @@
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
-  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
  
 * An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
@@ -1308,6 +1319,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,

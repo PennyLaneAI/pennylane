@@ -198,6 +198,8 @@ class TestMeasurementReset:
         assert context["vars"]["c"].val.wires == Wires(["q0"])
         assert isinstance(context["vars"]["d"].val, MeasurementValue)
         assert context["vars"]["d"].val.wires == Wires(["q0"])
+        assert isinstance(context["vars"]["e"].val, MeasurementValue)
+        assert context["vars"]["e"].val.wires == Wires(["q0"])
 
 
 @pytest.mark.external
