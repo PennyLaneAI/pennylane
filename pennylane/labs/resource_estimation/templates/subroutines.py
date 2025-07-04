@@ -1144,17 +1144,16 @@ class ResourceQubitUnitary(ResourceOperator):
 
     Resources:
         The resources are defined by combining the two equalities in `Möttönen and Vartiainen
-        (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_, we can express an :math:`n`-
-        qubit unitary as four :math:`n - 1`-qubit unitaries and three multiplexed rotations
-        via (:class:`~.labs.resource_estimation.ResourceSelectPauliRot`). Specifically, the cost
+        (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , we can express an :math:`n`
+        qubit unitary as four :math:`n - 1` qubit unitaries and three multiplexed rotations
+        via ( :class:`~.labs.resource_estimation.ResourceSelectPauliRot` ). Specifically, the cost
         is given by:
 
         * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
 
-        * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT`s.
+        * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
 
         * 3-qubit unitary or more, the cost is given according to the reference above, recurrsively.
-
 
     .. seealso:: :class:`~.QubitUnitary`
 

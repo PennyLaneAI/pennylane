@@ -658,7 +658,7 @@ class TestResourceCRX:
     def test_resource_keys(self):
         """test that the resource keys are correct"""
         assert self.op.resource_keys == {"eps"}
-    
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
