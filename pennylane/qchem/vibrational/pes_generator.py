@@ -785,8 +785,8 @@ def vibrational_pes(
         processes.
 
         * ``serial``: This executor wraps Python standard library calls without support for
-          | multithreaded or multiprocess execution. Any calls to external libraries that utilize
-          | threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
+          multithreaded or multiprocess execution. Any calls to external libraries that utilize
+          threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
 
         * ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
           interface, and provides support for execution using multiple processes.
