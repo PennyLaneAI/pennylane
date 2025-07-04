@@ -1265,6 +1265,7 @@ class ResourceQubitUnitary(ResourceOperator):
                 {
                     "num_ctrl_wires": index,
                     "rotation_axis": "Z",
+                    "precision": precision,
                 },
             )
             multiplex_y = resource_rep(
@@ -1272,6 +1273,7 @@ class ResourceQubitUnitary(ResourceOperator):
                 {
                     "num_ctrl_wires": index,
                     "rotation_axis": "Y",
+                    "precision": precision,
                 },
             )
 

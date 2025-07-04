@@ -655,6 +655,10 @@ class TestResourceCRX:
 
     op = re.ResourceCRX(wires=[0, 1])
 
+    def test_resource_keys(self):
+        """test that the resource keys are correct"""
+        assert self.op.resource_keys == {"eps"}
+    
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
@@ -724,6 +728,10 @@ class TestResourceCRY:
 
     op = re.ResourceCRY(wires=[0, 1])
 
+    def test_resource_keys(self):
+        """test that the resource keys are correct"""
+        assert self.op.resource_keys == {"eps"}
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
 
@@ -790,6 +798,10 @@ class TestResourceCRZ:
     """Test the ResourceCRZ operation"""
 
     op = re.ResourceCRZ(wires=[0, 1])
+
+    def test_resource_keys(self):
+        """test that the resource keys are correct"""
+        assert self.op.resource_keys == {"eps"}
 
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
@@ -858,6 +870,10 @@ class TestResourceCRot:
 
     op = re.ResourceCRot(wires=[0, 1])
 
+    def test_resource_keys(self):
+        """test that the resource keys are correct"""
+        assert self.op.resource_keys == {"eps"}
+
     def test_resources(self):
         """Test that the resources method produces the expected resources."""
         expected_resources = [
@@ -922,6 +938,11 @@ class TestResourceCRot:
 
 class TestResourceControlledPhaseShift:
     """Test ResourceControlledPhaseShift"""
+
+    def test_resource_keys(self):
+        """test that the resource keys are correct"""
+        op = re.ResourceControlledPhaseShift()
+        assert op.resource_keys == {"eps"}
 
     def test_resources(self):
         """Test the resources method"""
