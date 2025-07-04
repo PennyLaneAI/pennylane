@@ -25,7 +25,9 @@ NON_PARAMETERIZED_GATES = {
     "Y": ops.PauliY,
     "Z": ops.PauliZ,
     "S": ops.S,
+    "SDG": lambda *args, **kwargs: ops.adjoint(ops.S(*args, **kwargs)),
     "T": ops.T,
+    "TDG": lambda *args, **kwargs: ops.adjoint(ops.T(*args, **kwargs)),
     "SX": ops.SX,
     "CX": ops.CNOT,
     "CY": ops.CY,
@@ -45,6 +47,9 @@ PARAMETERIZED_GATES = {
     "U1": ops.U1,
     "U2": ops.U2,
     "U3": ops.U3,
+    "CU": lambda theta, phi, delta, gamma, wires: ops.ctrl(
+        ops.GlobalPhase(gamma) @ ops.U3(theta, phi, delta, wires[1]), wires[0]
+    ),
     "CP": ops.CPhase,
     "CPHASE": ops.CPhase,
     "CRX": ops.CRX,
