@@ -571,7 +571,10 @@
     + 0.005239546276220405 * (Y(2) @ Y(3))
     + -0.037825316397333435 * Z(3)
   )
-  ```  
+  ```
+
+* Made :func:`qml.qchem.vscf` function public to access vscf energy and rotation matrices.
+  [(#7784)](https://github.com/PennyLaneAI/pennylane/pull/7784)
 
 <h4>Experimental FTQC module</h4>
 

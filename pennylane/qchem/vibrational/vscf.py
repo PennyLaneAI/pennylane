@@ -164,7 +164,7 @@ def vscf(h_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6, tol=1e-8, max
             Default value is the maximum number of modals per mode.
         cutoff (float): threshold value for including matrix elements into operator.
         cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals.
-            Default value is ``1e-6``.    
+            Default value is ``1e-6``.
         tol (float): convergence tolerance for vscf calculation
         max_iters (int): maximum number of iterations for vscf to converge
 
