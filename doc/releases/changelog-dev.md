@@ -377,6 +377,9 @@
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
+  * :class:`~.OutMultiplier`
+    [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
+
 * A new decomposition rule that uses a single work wire for decomposing multi-controlled operators is added.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
