@@ -269,7 +269,7 @@
   [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
-
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   ```python
   import pennylane as qml
 
