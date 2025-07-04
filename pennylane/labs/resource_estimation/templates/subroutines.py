@@ -1231,7 +1231,7 @@ class ResourceQubitUnitary(ResourceOperator):
 
             * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
 
-            * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT`s.
+            * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
 
             * 3-qubit unitary or more, the cost is given according to the reference above, recurrsively.
 
