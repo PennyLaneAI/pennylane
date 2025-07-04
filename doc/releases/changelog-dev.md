@@ -4,6 +4,42 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  @qml.qjit(autograph=True)
+  def workflow():
+      dev = qml.device("lightning.qubit", wires=2)
+  
+      @qml.qnode(dev)
+      def circuit(params):
+          qml.RX(params[0], wires=0)
+          qml.RY(params[1], wires=1)
+          return qml.expval(qml.Z(0) + qml.X(1))
+  
+      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  
+      params = jnp.array([0.1, 0.2])
+      state = opt.init(params)
+      for _ in range(100):
+          params, state = opt.step(circuit, params, state)
+  
+      return params
+  ```
+
+  ```pycon
+  >>> workflow()
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
 * The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
@@ -229,6 +265,7 @@
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
+  [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
 
   ```python
   import pennylane as qml
@@ -237,7 +274,7 @@
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})()
       return qml.expval(qml.Z(0))
   ```
 
