@@ -103,7 +103,9 @@ class TestCombineGlobalPhasesPass:
         run_filecheck(program, module)
 
     def test_combinable_ops_in_control_flow_if(self, run_filecheck):
-        """Test that combine global phases in a func without control flows."""
+        """Test that combines global phases in a func without control a flow.
+        Here the control flow is an `if` operation.
+        """
         program = """
             func.func @test_func(%cond: i32, %arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
@@ -162,7 +164,9 @@ class TestCombineGlobalPhasesPass:
         run_filecheck(program, module)
 
     def test_combinable_ops_in_control_flow_for(self, run_filecheck):
-        """Test that combine global phases in a func without control flows."""
+        """Test that combines global phases in a func with a control flow.
+        Here the control flow is a `for` operation.
+        """
         program = """
             func.func @test_func(%n: i32, %arg0: f64, %arg1: f64) {
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
