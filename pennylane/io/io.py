@@ -861,7 +861,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
-        dict: the context resulting from the execution.
+        function: A quantum function that will execute the program.
 
     .. code-block:: python
 
@@ -929,6 +929,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         raise ImportError(
             "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
         ) from e  # pragma: no cover
-    context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
-    return context
+    def interpret_function():
+        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+
+    return interpret_function

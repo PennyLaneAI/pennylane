@@ -110,11 +110,14 @@ class TestMeasurementReset:
         ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"name": "post_processing", "wire_map": None})
+            context = QasmInterpreter().interpret(
+                ast, context={"name": "post_processing", "wire_map": None}
+            )
 
         assert isinstance(q.queue[0], MidMeasureMP)
         assert q.queue[0].wires == Wires(["q"])
         assert q.queue[0].reset
+        assert context.vars["a"].val.wires == Wires(["q"])
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
@@ -192,7 +195,9 @@ class TestMeasurementReset:
         )
 
         assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert context["vars"]["c"].val.wires == Wires(["q0"])
         assert isinstance(context["vars"]["d"].val, MeasurementValue)
+        assert context["vars"]["d"].val.wires == Wires(["q0"])
 
 
 @pytest.mark.external
