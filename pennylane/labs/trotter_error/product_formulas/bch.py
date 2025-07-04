@@ -499,5 +499,19 @@ def _drop_zeros(
 
 def _group_sums(
     term_dicts: List[Dict[Tuple[Hashable], complex]],
-) -> List[Dict[Tuple[Hashable | Set], complex]]:
-    grouped_dicts = []
+) -> List[Tuple[Hashable | Set]]:
+    return [_group_sums_in_dict(term_dict) for term_dict in term_dicts]
+
+def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
+    grouped_comms = defaultdict(set)
+    for commutator, coeff in term_dict.items():
+        head, *tail = commutator
+        tail = tuple(tail)
+        grouped_comms[tail].add((head, coeff))
+
+    grouped_term_dict = []
+    for tail, head in grouped_comms.items():
+        commutator = (head, *tail)
+        grouped_term_dict.append(commutator)
+
+    return grouped_term_dict
