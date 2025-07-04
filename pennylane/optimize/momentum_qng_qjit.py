@@ -20,15 +20,129 @@ from .qng_qjit import QNGOptimizerQJIT
 
 
 class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
+    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the ``MomentumQNGOptimizer``,
+    a generalized Quantum Natural Gradient (QNG) optimizer considering a discrete-time Langevin equation
+    with QNG force.
+
+    For more theoretical details, see the :class:`~.MomentumQNGOptimizer` documentation.
+
+    .. note::
+
+        Please be aware of the following:
+
+            - As with ``MomentumQNGOptimizer``, ``MomentumQNGOptimizerQJIT`` supports a single QNode to encode the objective function.
+
+            - ``MomentumQNGOptimizerQJIT`` does not support any QNode with multiple arguments. A potential workaround
+              would be to combine all parameters into a single objective function argument.
+
+            - ``MomentumQNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
+              (e.g., ``2 * theta`` as a gate parameter).
+
+    **Example:**
+
+    Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
+    To make the optimization faster, the entire workflow can be just-in-time compiled using
+    the ``qml.qjit`` decorator:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import jax.numpy as jnp
+
+        @qml.qjit(autograph=True)
+        def workflow():
+            dev = qml.device("lightning.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=1)
+                return qml.expval(qml.Z(0) + qml.X(1))
+
+            opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+
+            params = jnp.array([0.1, 0.2])
+            state = opt.init(params)
+            for _ in range(100):
+                params, state = opt.step(circuit, params, state)
+
+            return params
+
+    >>> workflow()
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+
+    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
+
+    Using the ``jax.jit`` decorator for the entire workflow is not recommended since it
+    may lead to a significative compilation time and no runtime benefits.
+    However, ``jax.jit`` can be used with the ``default.qubit`` device to just-in-time
+    compile the ``step`` (or ``step_and_cost``) method of the optimizer.
+    For example:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import jax.numpy as jnp
+        import jax
+        from functools import partial
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return qml.expval(qml.Z(0) + qml.X(1))
+
+        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+        step = jax.jit(partial(opt.step, circuit))
+
+        params = jnp.array([0.1, 0.2])
+        state = opt.init(params)
+        for _ in range(100):
+            params, state = step(params, state)
+
+    >>> params
+    Array([ 3.14159265, -1.57079633], dtype=float64)
+
+    Keyword Args:
+        stepsize=0.01 (float): the user-defined stepsize hyperparameter
+        momentum=0.9 (float): the user-defined momentum coefficient hyperparameter
+        approx="block-diag" (str): approximation method for the metric tensor.
+
+            - If ``None``, the full metric tensor is computed
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly
+
+            - If ``"diag"``, the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``)
+
+        lam=0 (float): metric tensor regularization to be applied at each optimization step
+    """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
         super().__init__(stepsize, approx, lam)
         self.momentum = momentum
 
     def init(self, params):
+        """Return the initial state of the optimizer. This state is always initialized as an
+        array of zeros with the same shape and type of the given array of parameters.
+
+        Args:
+            params (array): QNode parameters
+
+        Returns:
+            array: initial state of the optimizer
+        """
+        # pylint:disable=no-self-use
         return math.zeros_like(params)
 
-    def apply_grad(self, mt, grad, params, state):
+    def _apply_grad(self, mt, grad, params, state):
+        """Update the optimizer's state and the array of parameters for a single optimization
+        step according to the Quantum Natural Gradient algorithm with momentum.
+        """
         mt = _reshape_and_regularize(mt, lam=self.lam)
         update = math.linalg.pinv(mt) @ grad
         state = self.momentum * state + self.stepsize * update
