@@ -440,8 +440,8 @@ def clifford_t_decomposition(
         **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
         where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
-    - Ross-Selinger decomposition --
-        **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"rs"`` method,
+    - Ross-Selinger (``gridsynth``) decomposition --
+        **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
         where the decomposition is performed using the :func:`~.rs_decomposition` method.
 
     Raises:

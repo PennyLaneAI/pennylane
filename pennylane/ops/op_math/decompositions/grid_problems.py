@@ -654,7 +654,9 @@ class GridIterator:
         for s, k in zip(int_s + [ZOmega(d=1)], init_k + [0]):
             yield s, k
 
-    def solve_two_dim_problem(self, state: EllipseState, num_points: int = 800) -> Iterable[ZOmega]:
+    def solve_two_dim_problem(
+        self, state: EllipseState, num_points: int = 1000
+    ) -> Iterable[ZOmega]:
         r"""Solve the grid problem for the state(E1, E2).
 
         The solutions :math:`u \in Z[\omega]` are such that :math:`u \in E1` and
@@ -663,8 +665,9 @@ class GridIterator:
         This is based on Proposition 5.21 and Theorem 5.18 of arXiv:1403.2975.
 
         Args:
-            state: The state of the grid problem.
-            num_points: The number of points to use to determine if the rectangle is wider than the other.
+            state: The state corresponding to the grid problem.
+            num_points: The number of points to use to determine if the rectangle is wider
+                than the other. Default is ``1000``.
 
         Returns:
             Iterable[ZOmega]: The list of solutions to the two dimensional grid problem.
