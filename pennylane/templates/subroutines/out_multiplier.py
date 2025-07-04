@@ -14,9 +14,13 @@
 """
 Contains the OutMultiplier template.
 """
-from pennylane.decomposition import resource_rep, adjoint_resource_rep, register_resources, add_decomps
-
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -291,9 +295,11 @@ class OutMultiplier(Operation):
         return op_list
 
 
-def _out_multiplier_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
+def _out_multiplier_decomposition_resources(
+    num_output_wires, num_x_wires, num_y_wires, mod
+) -> dict:
 
-    if mod != 2 ** num_output_wires:
+    if mod != 2**num_output_wires:
         qft_wires = num_output_wires + 1
     else:
         qft_wires = num_output_wires
@@ -316,7 +322,14 @@ def _out_multiplier_decomposition_resources(num_output_wires, num_x_wires, num_y
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_out_multiplier_decomposition_resources)
-def _out_multiplier_decomposition(x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _out_multiplier_decomposition(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    **__,
+):
     if mod != 2 ** len(output_wires):
         qft_output_wires = work_wires[:1] + output_wires
         work_wire = work_wires[1:]
@@ -331,5 +344,6 @@ def _out_multiplier_decomposition(x_wires: WiresLike, y_wires: WiresLike, output
         control=y_wires,
     )
     qml.adjoint(qml.QFT)(wires=qft_output_wires)
+
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)
