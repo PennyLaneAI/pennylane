@@ -160,7 +160,7 @@ def test_modal_error_vscf(h_data):
         ValueError,
         match="Number of maximum modals cannot be greater than the modals for unrotated integrals.",
     ):
-        vibrational.vscf_integrals(h_integrals=h_data, modals=[5, 5, 5])
+        vibrational.vscf(h_integrals=h_data, modals=[5, 5, 5])
 
 
 @pytest.mark.parametrize(
