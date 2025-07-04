@@ -39,8 +39,8 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
                 quantum.gphase %arg0
                 quantum.gphase %arg1
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
@@ -81,8 +81,8 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: [[phi_sum:%.*]] = arith.addf [[ret:%.*]], [[arg0:%.*]] : f64
                 // CHECK: quantum.gphase([[phi_sum:%.*]]) :
                 quantum.gphase %ret
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
@@ -140,8 +140,8 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
                 quantum.gphase %arg0
                 quantum.gphase %arg1
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
@@ -187,8 +187,8 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]])
                 quantum.gphase %arg0
                 quantum.gphase %arg1
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
@@ -240,8 +240,8 @@ class TestCombineGlobalPhasesPass:
                 // CHECK: quantum.gphase([[phi_sum:%.*]]) :
                 quantum.gphase %arg0
                 quantum.gphase %arg1
-                // CHECK: [[q1:%.*]] = quantum.custom "RX"() [[q0:%.*]] : !quantum.bit
-                %2 = quantum.custom "RX"() %0 : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                %2 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
