@@ -302,9 +302,7 @@
             while (i < 5) {
               i = i + 1;
               rz(i) q1;
-              if (m) {
-                break;
-              }
+              break;
             }
           }
           """,
