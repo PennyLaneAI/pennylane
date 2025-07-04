@@ -76,7 +76,7 @@ class CombineGlobalPhasesPass(passes.ModulePass):
 
     # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
-        """Apply the combination of global phase gates to the last global phase gates in the region pass."""
+        """Apply the combine-global-phases pass."""
         pattern_rewriter.PatternRewriteWalker(
             CombineGlobalPhasesPattern(),
             apply_recursively=False,
