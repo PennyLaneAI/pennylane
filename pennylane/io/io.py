@@ -863,6 +863,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Returns:
         function: A quantum function that will execute the program.
 
+
+    **Examples**
+    
     .. code-block:: python
 
         import pennylane as qml
