@@ -784,24 +784,24 @@ def vibrational_pes(
         The ``backend`` options allow to run calculations using multiple threads or multiple
         processes.
 
-        - ``serial`` : This executor wraps Python standard library calls without support for
+        * ``serial``: This executor wraps Python standard library calls without support for
             multithreaded or multiprocess execution. Any calls to external libraries that utilize
             threads, such as BLAS through numpy, can still use multithreaded calls at that layer.
 
-        - ``mp_pool`` : This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
+        * ``mp_pool``: This executor wraps Python standard library `multiprocessing.Pool <https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing.pool>`_
             interface, and provides support for execution using multiple processes.
 
-        - ``cf_procpool`` : This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
+        * ``cf_procpool``: This executor wraps Python standard library `concurrent.futures.ProcessPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#processpoolexecutor>`_
             interface, and provides support for execution using multiple processes.
 
-        - ``cf_threadpool`` : This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
+        * ``cf_threadpool``: This executor wraps Python standard library `concurrent.futures.ThreadPoolExecutor <https://docs.python.org/3/library/concurrent.futures.html#threadpoolexecutor>`_
             interface, and provides support for execution using multiple threads. The threading
             executor may not provide execution speed-ups for tasks when using a GIL-enabled Python.
 
-        - ``mpi4py_pool`` : This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
+        * ``mpi4py_pool``: This executor wraps the `mpi4py.futures.MPIPoolExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpipoolexecutor>`_
             class, and provides support for execution using multiple processes launched using MPI.
 
-        - ``mpi4py_comm`` : This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
+        * ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
             class, and provides support for execution using multiple processes launched using MPI.
     """
     with TemporaryDirectory() as tmpdir:
