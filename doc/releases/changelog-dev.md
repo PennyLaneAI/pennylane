@@ -824,6 +824,10 @@
   supporting compact hamiltonian development.
   [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
 
+* Added state of the art resources for the `ResourceSelectPauliRot` template and the
+  `ResourceQubitUnitary` templates.
+  [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
+
 * A new module :mod:`pennylane.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
   passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
   
