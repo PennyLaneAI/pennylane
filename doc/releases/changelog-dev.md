@@ -221,6 +221,7 @@
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
   [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
+  [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
   The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
   Consider this simple circuit:
@@ -235,7 +236,7 @@
 
       return qml.expval(qml.Z(0))
 
-  rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
+  rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
   x, y = 0.12, 0.34
@@ -261,29 +262,64 @@
 
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
-  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+  [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
+  [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
-
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.qubit", wires=[0, 1])
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})()
+      qml.from_qasm3(
+          """
+          qubit q0; 
+          qubit q1;
+          qubit q2;
+  
+          float theta = 0.2;
+          int power = 2;
+  
+          ry(theta / 2) q0; 
+          rx(theta) q1; 
+          pow(power) @ x q0;
+  
+          def random(qubit q) -> bit {
+            bit b = "0";
+            h q;
+            measure q -> b;
+            return b;
+          }
+  
+          bit m = random(q2);
+  
+          if (m) {
+            int i = 0;
+            while (i < 5) {
+              i = i + 1;
+              rz(i) q1;
+              break;
+            }
+          }
+          """,
+          {'q0': 0, 'q1': 1, 'q2': 2},
+      )()
       return qml.expval(qml.Z(0))
   ```
 
   ```pycon
   >>> print(qml.draw(my_circuit)())
-  0: ──RY(0.20)──X²─┤  <Z>
-  1: ──RX(1.00)─────┤  
+  0: ──RY(0.10)──X²────────────┤  <Z>
+  1: ──RX(0.20)───────RZ(1.00)─┤     
+  2: ──H─────────┤↗├──║────────┤     
+                  ╚═══╝      
   ```
   
   Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
@@ -571,6 +607,7 @@
   the Christiansen representation. 
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
   [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
+  [(#7785)](https://github.com/PennyLaneAI/pennylane/pull/7785)
 
   The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
   be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
@@ -679,6 +716,15 @@
   method, is now done *after* user transforms have been applied. This allows transforms to
   update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+
+* Updated the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
+  Now, user transforms including final transforms like `param_shift` and `metric_tensor` are
+  always applied before gradient determination and device preprocessing, matching the
+  execution pipeline. The gradient method is now determined after all user transforms
+  have been applied, mirroring the logic in `execute`. This change ensures that transform
+  slicing and execution are always in sync, and fixes several subtle bugs with transform
+  application at different workflow levels.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
 
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
@@ -1311,6 +1357,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
