@@ -29,7 +29,7 @@ from .api import compiler_transform
 class CombineGlobalPhasesPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods
-    """RewritePattern for combining all ~:class:`~pennylane.GlobalPhase` gates within the same region
+    """RewritePattern for combining all :class:`~pennylane.GlobalPhase` gates within the same region
     at the last global phase gate."""
 
     # pylint: disable=no-self-use
