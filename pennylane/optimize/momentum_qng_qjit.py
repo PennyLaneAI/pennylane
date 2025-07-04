@@ -16,10 +16,10 @@
 from pennylane import math
 from pennylane.optimize.qng import _reshape_and_regularize
 
-from .qng_jax import QNGOptimizerJax
+from .qng_qjit import QNGOptimizerQJIT
 
 
-class MomentumQNGOptimizerJax(QNGOptimizerJax):
+class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
         super().__init__(stepsize, approx, lam)

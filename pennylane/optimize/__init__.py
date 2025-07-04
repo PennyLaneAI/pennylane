@@ -52,6 +52,6 @@ __all__ = [
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",
     "SPSAOptimizer",
-    "QNGOptimizerQJIT",,
+    "QNGOptimizerQJIT",
     "MomentumQNGOptimizerQJIT",
 ]
