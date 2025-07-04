@@ -452,6 +452,21 @@ class QasmInterpreter:
             pass
         return context
 
+    @visit.register(ast.QuantumMeasurement)
+    def visit_quantum_measurement_statement(
+        self, node: ast.QuantumMeasurementStatement, context: Context
+    ):
+        """
+        Registers a quantum measurement statement.
+
+        Args:
+            node (QuantumMeasurementStatement): the quantum measurement statement to register.
+            context (Context): the current context.
+        """
+        wire = self.visit(node.qubit, context)
+        res = measure(context.wire_map.get(wire, wire))
+        return res
+
     @visit.register(ast.QuantumMeasurementStatement)
     def visit_quantum_measurement_statement(
         self, node: ast.QuantumMeasurementStatement, context: Context
