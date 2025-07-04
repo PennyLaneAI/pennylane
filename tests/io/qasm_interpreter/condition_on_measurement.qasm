@@ -1,5 +1,5 @@
-qubit[1] q0;
-qubit[1] ancilla;
+qubit q0;
+qubit ancilla;
 bit bits = "1";
 
 def random(qubit anc, qubit q) -> bit[2] {

@@ -1,5 +1,5 @@
 int i = 1;
-qubit[1] q0;
+qubit q0;
 
 switch (i) {
     case 1 {
