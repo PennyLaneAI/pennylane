@@ -134,10 +134,8 @@ class PlxprVisualizer(PlxprInterpreter):
                     ctrl_transform_prim,
                     adjoint_transform_prim,
                 ):
-                    print(primitive, "eqn one")
                     outvals = custom_handler(self, *invals, **eqn.params, eqn=eqn)
                 else:
-                    print(primitive)
                     outvals = custom_handler(self, *invals, **eqn.params)
 
             elif getattr(primitive, "prim_type", "") == "operator":
@@ -162,7 +160,10 @@ class PlxprVisualizer(PlxprInterpreter):
                 outvals = [outvals]
             for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval
-                self._env_ascii[outvar] = self._convert_var_to_ascii(outvar)
+                # NOTE: If you would like to see some decompose support uncomment
+                # this line. However, it messes up the labelling for the measurement
+                # wires for some reason.
+                # self._env_ascii[outvar] = self._convert_var_to_ascii(outvar)
 
         # Read the final result of the Jaxpr from the environment
         outvals = []
@@ -275,7 +276,6 @@ class PlxprVisualizer(PlxprInterpreter):
                 flattened_func = partial(flat_f, **kwargs)
                 jaxpr = jax.make_jaxpr(expand_plxpr_transforms(flattened_func))(*args)
 
-            print(jaxpr)
             flat_args = jax.tree_util.tree_leaves(args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
             assert flat_f.out_tree
