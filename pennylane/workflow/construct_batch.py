@@ -94,7 +94,7 @@ def _validate_level(
     Raises:
         ValueError: If the level is not recognized
     """
-    if level is None or isinstance(level, int):
+    if level is None or isinstance(level, int) or isinstance(level, slice):
         return
 
     if isinstance(level, str):
@@ -102,9 +102,6 @@ def _validate_level(
             raise ValueError(
                 f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
             )
-        return
-
-    if isinstance(level, slice):
         return
 
     raise ValueError(

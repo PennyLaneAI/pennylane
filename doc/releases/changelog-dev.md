@@ -640,7 +640,7 @@
   update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
-* Refactored the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
+* Updated the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
   Now, user transforms including final transforms like `param_shift` and `metric_tensor` are
   always applied before gradient determination and device preprocessing, matching the
   execution pipeline. The gradient method is now determined after all user transforms
