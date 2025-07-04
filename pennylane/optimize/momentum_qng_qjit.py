@@ -14,7 +14,6 @@
 """Quantum natural gradient optimizer with momentum for Jax/Catalyst interface"""
 
 from pennylane import math
-from pennylane.optimize.qng import _reshape_and_regularize
 
 from .qng_qjit import QNGOptimizerQJIT
 
@@ -143,8 +142,10 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         """Update the optimizer's state and the array of parameters for a single optimization
         step according to the Quantum Natural Gradient algorithm with momentum.
         """
-        mt = _reshape_and_regularize(mt, lam=self.lam)
-        update = math.linalg.pinv(mt) @ grad
+        shape = math.shape(grad)
+        grad_flat = math.flatten(grad)
+        update_flat = math.linalg.pinv(mt) @ grad_flat
+        update = math.reshape(update_flat, shape)
         state = self.momentum * state + self.stepsize * update
         new_params = params - state
         return new_params, state
