@@ -865,7 +865,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
 
 
     **Examples**
-    
+
     .. code-block:: python
 
         import pennylane as qml
