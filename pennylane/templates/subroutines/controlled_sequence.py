@@ -102,7 +102,7 @@ class ControlledSequence(SymbolicOp, Operation):
     @property
     def resource_params(self) -> dict:
         params = {
-            "base": self.hyperparameters["base"],
+            "base": self.hyperparameters["base"].__class__,
             "base_params": self.hyperparameters["base"].resource_params,
             "num_control_wires": len(self.hyperparameters["control_wires"]),
         }
