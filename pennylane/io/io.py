@@ -897,9 +897,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
                         rz(i) q1;
                         break;
                     }
-                } else {
-                    x q0;
-                    end;
                 }
         '''
 
