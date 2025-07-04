@@ -17,8 +17,6 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 
-from functools import partial
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
