@@ -14,6 +14,7 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
+import math
 from collections import Counter
 from collections.abc import Hashable
 from typing import Dict, List, Sequence, Tuple
@@ -101,7 +102,7 @@ def _insert_fragments(
     )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
@@ -171,18 +172,20 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    bch = bch_expansion(product_formula(1j * timestep), order)
-    commutators = {
-        commutator: coeff for comm_dict in bch[1:] for commutator, coeff in comm_dict.items()
-    }
+    commutators = [
+        x
+        for xs in bch_expansion(product_formula(1j * timestep), order, group_sums=True)[1:]
+        for x in xs
+    ]
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
             new_state = _AdditiveIdentity()
-            for commutator, coeff in commutators.items():
-                new_state += coeff * _apply_commutator(commutator, fragments, state)
+            for commutator in commutators:
+                new_state += _apply_commutator(commutator, fragments, state)
+
             expectations.append(state.dot(new_state))
 
         return expectations
@@ -203,11 +206,8 @@ def perturbation_error(
         for state in states:
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
-                    _apply_commutator_coeff,
-                    [
-                        (commutator, coeff, fragments, state)
-                        for commutator, coeff in commutators.items()
-                    ],
+                    _apply_commutator,
+                    [(commutator, fragments, state) for commutator in commutators],
                 )
 
             new_state = _AdditiveIdentity()
@@ -225,8 +225,8 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     new_state = _AdditiveIdentity()
-    for commutator, coeff in commutators.items():
-        new_state += coeff * _apply_commutator(commutator, fragments, state)
+    for commutator in commutators:
+        new_state += _apply_commutator(commutator, fragments, state)
 
     return state.dot(new_state)
 
@@ -240,28 +240,19 @@ def _apply_commutator(
 
     for term, coeff in _op_list(commutator).items():
         tmp_state = copy.copy(state)
-        for frag in reversed([fragments[x] for x in term]):
+        for frag in reversed(term):
+            if isinstance(frag, frozenset):
+                frag = sum(
+                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+                )
+            else:
+                frag = fragments[frag]
+
             tmp_state = frag.apply(tmp_state)
 
         new_state += coeff * tmp_state
 
     return new_state
-
-
-def _apply_commutator_coeff(
-    commutator: Tuple[Hashable], coeff, fragments: Dict[Hashable, Fragment], state: AbstractState
-) -> AbstractState:
-    """Returns the state obtained from applying ``commutator`` to ``state`` and multiplying by the scalar ``coeff``."""
-
-    new_state = _AdditiveIdentity()
-
-    for term, co in _op_list(commutator).items():
-        tmp_state = None
-        for frag in reversed([fragments[x] for x in term]):
-            tmp_state = frag.apply(tmp_state) if tmp_state is not None else frag.apply(state)
-        new_state += co * tmp_state
-
-    return coeff * new_state
 
 
 def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:

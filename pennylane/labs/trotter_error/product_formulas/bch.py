@@ -502,6 +502,7 @@ def _group_sums(
 ) -> List[Tuple[Hashable | Set]]:
     return [_group_sums_in_dict(term_dict) for term_dict in term_dicts]
 
+
 def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
@@ -509,9 +510,9 @@ def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple
         tail = tuple(tail)
         grouped_comms[tail].add((head, coeff))
 
-    grouped_term_dict = []
+    grouped_term_list = []
     for tail, head in grouped_comms.items():
-        commutator = (head, *tail)
-        grouped_term_dict.append(commutator)
+        commutator = (frozenset(head), *tail)
+        grouped_term_list.append(commutator)
 
-    return grouped_term_dict
+    return grouped_term_list
