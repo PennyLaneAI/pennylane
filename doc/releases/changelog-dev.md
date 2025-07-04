@@ -1138,6 +1138,9 @@ may move operations across a `Snapshot`.
   This helps ensure contributors follow current standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
+* Alphabetized the module list in the documentation build to ensure consistent ordering. 
+  [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
