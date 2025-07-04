@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity_Adder():
@@ -203,6 +204,17 @@ class TestAdder:
 
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("mod", [7, 8])
+    def test_decomposition_new(self, mod):
+        """Tests the decomposition rule implemented with the new system."""
+
+        k = 4
+        x_wires = [2, 3, 4]
+        work_wires = [0, 1]
+        op = qml.Adder(k, x_wires, mod, work_wires)
+        for rule in qml.list_decomps(qml.Adder):
+            _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
