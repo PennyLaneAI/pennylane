@@ -74,7 +74,7 @@ class TestIO:
         with pytest.raises(
             ValueError,
             match=escape(
-                f"Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+                "Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
             ),
         ):
             QasmInterpreter().interpret(
