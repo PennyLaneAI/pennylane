@@ -70,7 +70,6 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     >>> workflow()
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
-    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
 
     Using the ``jax.jit`` decorator for the entire workflow is not recommended since it
     may lead to a significative compilation time and no runtime benefits.
