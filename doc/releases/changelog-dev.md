@@ -868,6 +868,10 @@
   and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
   [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
 
+* `Sum`, `Prod`, `SProd`, and `LinearCombination` are now represented by a reference in the text
+  drawer, with a longer label printed underneath.
+  [(#7279)](https://github.com/PennyLaneAI/pennylane/pull/7279)
+
 <h3>Breaking changes 💔</h3>
 
 * Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the

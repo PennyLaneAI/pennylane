@@ -805,7 +805,7 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = "0: ──H─┤ ╭<𝓗(1.00,1.00,1.00)>\n2: ────┤ ╰<𝓗(1.00,1.00,1.00)>"
+        expected = "0: ──H─┤ ╭<H0>\n2: ────┤ ╰<H0>\nH0 = (1.00*Z)+(1.00*Y)+(1.00*Z)"
         assert res == expected
 
     def test_multiple_expvals(self):
