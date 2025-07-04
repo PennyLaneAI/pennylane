@@ -492,6 +492,7 @@ class QasmInterpreter:
         """
         self.inputs = {}
         self.outputs = []
+        self.found_inputs = []
 
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
@@ -533,6 +534,9 @@ class QasmInterpreter:
             context (dict): The initial context populated with the name of the program (the outermost scope).
             inputs (dict): Additional inputs to the OpenQASM 3.0 program.
 
+        Raises:
+            ValueError: If the wrong parameters are provided in **inputs.
+
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
@@ -549,6 +553,11 @@ class QasmInterpreter:
                         self.visit(item, context)
         except EndProgram:
             pass
+
+        if len(self.found_inputs) != len(inputs):
+            raise ValueError(
+                f"Got the wrong input parameters {list(inputs.keys())} to QASM, expecting {self.found_inputs}."
+            )
 
         for output in self.outputs:
             context["return"][output] = context.retrieve_variable(output)
@@ -937,14 +946,14 @@ class QasmInterpreter:
         """
         if node.io_identifier == ast.IOKeyword.input:
             name = _resolve_name(node.identifier)
-            if name in self.inputs:
-                context.vars[name] = Variable(
-                    node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
-                )
-            else:
+            self.found_inputs.append(name)
+            if name not in self.inputs:
                 raise ValueError(
                     f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
                 )
+            context.vars[name] = Variable(
+                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+            )
         elif node.io_identifier == ast.IOKeyword.output:
             name = _resolve_name(node.identifier)
             context.vars[name] = Variable(
@@ -979,7 +988,14 @@ class QasmInterpreter:
         Args:
             node (QASMNode): The QubitDeclaration QASMNode.
             context (Context): The current context.
+
+        Raises:
+            TypeError: if it is a qubit register declaration.
         """
+        if node.size is not None:
+            raise TypeError(
+                "Qubit registers are not yet supported, please declare each qubit individually."
+            )
         context.wires.append(node.qubit.name)
 
     @visit.register(ast.ClassicalAssignment)
@@ -1287,19 +1303,20 @@ class QasmInterpreter:
         """
         arg = self.visit(node.argument, context)
         try:
-            if isinstance(node.type, ast.IntType):
-                ret = int(arg)
-            elif isinstance(node.type, ast.UintType):
-                ret = uint(arg)
-            elif isinstance(node.type, ast.FloatType):
-                ret = float(arg)
-            elif isinstance(node.type, ast.ComplexType):
-                ret = complex(arg)
-            elif isinstance(node.type, ast.BoolType):
-                ret = bool(arg)
-            # TODO: durations, angles, etc.
-            else:
-                raise TypeError(f"Unsupported cast type {node.type.__class__.__name__}")
+            match node.type.__class__:
+                case ast.IntType:
+                    ret = int(arg)
+                case ast.UintType:
+                    ret = uint(arg)
+                case ast.FloatType:
+                    ret = float(arg)
+                case ast.ComplexType:
+                    ret = complex(arg)
+                case ast.BoolType:
+                    ret = bool(arg)
+                case _:
+                    # TODO: durations, angles, etc.
+                    raise TypeError(f"Unsupported cast type {node.type.__class__.__name__}")
         except TypeError as e:
             raise TypeError(
                 f"Unable to cast {arg.__class__.__name__} to {node.type.__class__.__name__}: {str(e)}"
