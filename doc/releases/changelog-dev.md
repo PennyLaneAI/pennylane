@@ -606,6 +606,7 @@
   the Christiansen representation. 
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
   [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
+  [(#7785)](https://github.com/PennyLaneAI/pennylane/pull/7785)
 
   The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
   be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
@@ -1352,6 +1353,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
