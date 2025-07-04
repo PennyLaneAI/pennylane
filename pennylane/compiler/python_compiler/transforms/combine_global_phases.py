@@ -68,7 +68,9 @@ class CombineGlobalPhasesPattern(
 
 @dataclass(frozen=True)
 class CombineGlobalPhasesPass(passes.ModulePass):
-    """Pass for combining global phase gates to the last global phase gates in the region."""
+    """Pass that combines all global phases within a region into the last global phase operation
+    within the region.
+    """
 
     name = "combine-global-phases"
 
