@@ -72,10 +72,12 @@ def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=
         epsilon (float): The maximum permissible error.
 
     Keyword Args:
-        max_search_trials (int): The maximum number of attempts to find a solution while performing the grid search according to
-            the Algorithm 7.6, in the `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
-        max_factoring_trials (int): The maximum number of attempts to find a prime factor while performing the factoring to solve
-            the Diophantine equation for the solution found in the grid search. Default is ``1000``.
+        max_search_trials (int): The maximum number of attempts to find a solution
+            while performing the grid search according to the Algorithm 7.6.1, in the
+            `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
+        max_factoring_trials (int): The maximum number of attempts to find a prime factor
+            while performing the factoring to solve the Diophantine equation (Algorithm 7.6.2b)
+            for the solution found in the grid search. Default is ``1000``.
 
     Returns:
         list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
