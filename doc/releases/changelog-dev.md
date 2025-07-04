@@ -642,6 +642,12 @@
 
 <h4>Other improvements</h4>
 
+* A combine-global-phase pass has been added to the xDSL Python compiler integration.
+  Note that the current implementation can only combine all the global phase operations at
+  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
+  region.
+  [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
+
 * `qml.evolve` now errors out if the first argument is not a valid type.
   [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
 

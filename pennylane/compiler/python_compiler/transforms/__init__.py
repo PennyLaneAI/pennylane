@@ -15,8 +15,11 @@
 
 from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
+from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
 
 __all__ = [
+    "combine_global_phases_pass",
+    "CombineGlobalPhasesPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "merge_rotations_pass",
