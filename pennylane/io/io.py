@@ -853,7 +853,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         subroutines, variables, control flow, measurements and ``end`` statements are all supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
-        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
+        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
         for directions.
 
     Args:
