@@ -83,6 +83,7 @@ from .tapering import (
     taper_operation,
 )
 from .vibrational import (
+    PolarizablePES,
     VibrationalPES,
     christiansen_bosonic,
     christiansen_dipole,
@@ -91,6 +92,7 @@ from .vibrational import (
     christiansen_integrals_dipole,
     localize_normal_modes,
     optimize_geometry,
+    polarizable_pes,
     taylor_bosonic,
     taylor_coeffs,
     taylor_dipole_coeffs,
