@@ -1422,6 +1422,7 @@ class ResourceCRX(ResourceOperator):
     [(2 x CNOT), (2 x RZ), (2 x Hadamard)]
     """
 
+    resource_keys = {"eps"}
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1571,6 +1572,7 @@ class ResourceCRY(ResourceOperator):
     [(2 x CNOT), (2 x RY)]
     """
 
+    resource_keys = {"eps"}
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1718,6 +1720,7 @@ class ResourceCRZ(ResourceOperator):
     [(2 x CNOT), (2 x RZ)]
     """
 
+    resource_keys = {"eps"}
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -1873,6 +1876,7 @@ class ResourceCRot(ResourceOperator):
     [(2 x CNOT), (3 x RZ), (2 x RY)]
     """
 
+    resource_keys = {"eps"}
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:
@@ -2031,6 +2035,7 @@ class ResourceControlledPhaseShift(ResourceOperator):
     [(2 x CNOT), (3 x RZ)]
     """
 
+    resource_keys = {"eps"}
     num_wires = 2
 
     def __init__(self, eps=None, wires=None) -> None:

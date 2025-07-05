@@ -125,6 +125,8 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSelectPauliRot
+    ~ResourceQubitUnitary
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -212,6 +214,8 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceQubitUnitary,
+    ResourceSelectPauliRot,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
