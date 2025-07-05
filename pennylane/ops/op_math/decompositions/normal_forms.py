@@ -15,9 +15,10 @@
 
 from copy import deepcopy
 from functools import lru_cache
+from math import pi as PI
 
 import pennylane as qml
-from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega
+from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
 
 
 @lru_cache
@@ -151,32 +152,33 @@ def _ma_normal_form(
         decomposition.extend(op_gate)
         g_phase += op_phase
 
-        if parity_vec == (2, 2, 0):
+        if parity_vec == (2, 2, 0):  # T
             c = c * ZOmega(c=1)
             rep_bits.append(0)
-        elif parity_vec == (0, 2, 2):
+        elif parity_vec == (0, 2, 2):  # HT
+            a, c, k = ZOmega(b=-1) * (a + c), ZOmega(a=-1) * (a - c), k + 1
+            rep_bits.append(0)
+        else:  # SHT
             ic = ZOmega(b=1) * c
             a, c, k = ZOmega(c=-1) * (a + ic), ZOmega(b=-1) * (a - ic), k + 1
             rep_bits.append(1)
-        else:
-            a, c, k = ZOmega(b=-1) * (a + c), ZOmega(a=-1) * (a - c), k + 1
-            rep_bits.append(0)
 
     cl_index = -1
-    for clifford_index, (clifford_gate, clifford_data) in enumerate(clifford_so3s.items()):
-        if clifford_data[0] == so3_op:
-            decomposition.extend(clifford_gate)
+    for clifford_index, (clifford_ops, clifford_so3) in enumerate(clifford_so3s.items()):
+        if clifford_so3 == so3_op:
             cl_index = clifford_index
-            for clf_gate in clifford_gate:
-                su2, gp = clifford_su2s[clf_gate]
+            for clf_op in clifford_ops:
+                decomposition.append(clf_op)
+                su2, gp = clifford_su2s[clf_op]
                 a, c, k = su2.a * a + su2.b * c, su2.c * a + su2.d * c, k + su2.k
                 g_phase -= gp
             break
 
-    # su2mat = op.matrix
-    # g1 = complex(a) * np.sqrt(2) ** -k * qml.GlobalPhase(g_phase * np.pi).matrix()[0][0]
-    # complex(su2mat.a) / complex(a) * _SQRT2 ** -(su2mat.k - k)
-    # dydmat.ndarray[0][0] / g1
+    # Extract the global phase from the decomposition from the
+    # tracked elements (`a` and `c`) of the Dyadic matrix.
+    su2mat = op.matrix
+    g_angle = -qml.math.angle(complex(su2mat.a) / complex(a) * _SQRT2 ** (k - su2mat.k))
+    g_phase = g_angle / PI - g_phase
 
     if not compressed:
         return decomposition, g_phase

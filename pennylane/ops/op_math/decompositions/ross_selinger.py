@@ -63,10 +63,6 @@ def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=
 
     This algorithm produces a decomposition with :math:`O(3\text{log}_2(1/\epsilon)) + O(\text{log}_2(\text{log}_2(1/\epsilon)))` operations.
 
-    .. note::
-        Currently, the global phase :math:`\theta` returned by the decomposition might differ from the
-        true global phase :math:`\theta^{*}` by an additive factor of :math:`\pi`.
-
     Args:
         op (~pennylane.RZ | ~pennylane.PhaseShift): A :class:`~.RZ` or :class:`~.PhaseShift` gate operation.
         epsilon (float): The maximum permissible error.
@@ -102,7 +98,7 @@ def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=
         matrix_rs = qml.prod(*reversed(ops)).matrix()
 
     When the function is run for a sufficient ``max_search_trials``, the output gate sequence
-    should implement the same operation approximately, up to a global phase.
+    should implement the same operation approximately, up to an :math:`\epsilon`-error.
 
     >>> qml.math.allclose(op.matrix(), matrix_rs, atol=1e-3)
     True
