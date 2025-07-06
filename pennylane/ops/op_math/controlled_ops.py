@@ -1700,7 +1700,7 @@ class CSX(ControlledOp):
         super().__init__(base, wires[:1], id=id)
 
     def adjoint(self):
-        return CNOT(self.wires)
+        return CNOT(self.wires) + CSX(self.wires)
 
     @property
     def has_decomposition(self):
