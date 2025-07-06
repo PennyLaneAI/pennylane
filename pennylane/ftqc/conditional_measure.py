@@ -55,10 +55,12 @@ def cond_measure(
 
         import pennylane as qml
         from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x, measure_y
+        from functools import partial
 
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3)
 
         @diagonalize_mcms
+        @partial(qml.set_shots, shots=1000)
         @qml.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
             qml.RY(x, 0)

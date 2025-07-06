@@ -17,7 +17,7 @@ not depend on any parameters.
 """
 from collections.abc import Hashable
 
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
+# pylint: disable=arguments-differ
 from copy import copy
 from typing import Literal, Optional, Sequence, Union
 
@@ -124,8 +124,10 @@ class WireCut(Operation):
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
+    def compute_decomposition(wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
@@ -176,6 +178,12 @@ class Snapshot(Operation):
 
         shots (Literal["workflow"], None, int, Sequence[int]): shots to use for the snapshot.
             ``"workflow"`` indicates the same number of shots as for the final measurement.
+
+    .. warning::
+
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms
+        (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
+        As a result, the captured state may differ from the original intent.
 
     **Example**
 

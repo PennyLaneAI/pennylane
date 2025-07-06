@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -4563,7 +4564,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.param_shift(circuit, argnum=argnums)(x, y)
@@ -4588,6 +4589,41 @@ class TestJaxArgnums:
 
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
         expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+
+    def test_single_probs(self, argnums, interface):
+        """Test for single probs."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs()
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
+
+        c_x, s_x = np.cos(x / 2), np.sin(x / 2)
+        c_y, s_y = np.cos(y / 2), np.sin(y / 2)
+        sqrt_probs = np.array([c_x * c_y, c_x * s_y, s_x * s_y, s_x * c_y])
+        dsqrt_probs_0 = 0.5 * np.array([-s_x * c_y, -s_x * s_y, c_x * s_y, c_x * c_y])
+        dsqrt_probs_0[:, 1] = 0.0  # Second parameter in x is not being used
+        dsqrt_probs_1 = 0.5 * np.array([-c_x * s_y, c_x * c_y, s_x * c_y, -s_x * s_y])[:, 0]
+        expected_0 = 2 * sqrt_probs * dsqrt_probs_0
+        expected_1 = 2 * sqrt_probs[:, 0] * dsqrt_probs_1
 
         if argnums == [0]:
             assert np.allclose(res, expected_0)

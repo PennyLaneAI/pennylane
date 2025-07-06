@@ -15,20 +15,17 @@
 Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
+from __future__ import annotations
 
 import inspect
 import logging
-from typing import Callable, Literal, Optional, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional
 
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.concurrency.executors import RemoteExec
-from pennylane.math import Interface, InterfaceLike
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.typing import ResultBatch
-from pennylane.workflow.resolution import SupportedDiffMethods
+from pennylane.math.interface_utils import Interface
+from pennylane.transforms.core import TransformProgram
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -38,23 +35,33 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# pylint: disable=too-many-arguments
+if TYPE_CHECKING:
+    from pennylane.concurrency.executors import ExecBackends
+    from pennylane.devices import Device, LegacyDevice
+    from pennylane.math import InterfaceLike
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformDispatcher
+    from pennylane.typing import ResultBatch
+    from pennylane.workflow.qnode import SupportedDeviceAPIs
+    from pennylane.workflow.resolution import SupportedDiffMethods
+
+
 def execute(
     tapes: QuantumScriptBatch,
-    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
+    device: SupportedDeviceAPIs,
+    diff_method: Optional[Callable | SupportedDiffMethods | TransformDispatcher] = None,
     interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
-    transform_program: TransformProgram = None,
-    grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache] = True,
+    grad_on_execution: bool | Literal["best"] = "best",
+    cache: Optional[bool | dict | Cache | Literal["auto"]] = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: Union[bool, None] = False,
-    postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-    mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-    gradient_kwargs: dict = None,
-    executor_backend: Optional[RemoteExec] = None,
+    device_vjp: Optional[bool] = False,
+    postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
+    mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
+    gradient_kwargs: Optional[dict] = None,
+    transform_program: Optional[TransformProgram] = None,
+    executor_backend: Optional[ExecBackends | str] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -63,7 +70,7 @@ def execute(
         device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        diff_method (None, str, TransformDispatcher): The gradient transform function to use
+        diff_method (Optional[str | TransformDispatcher]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
@@ -75,8 +82,13 @@ def execute(
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
-            a significant reduction in quantum evaluations during gradient computations.
+        cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
+            ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
+            a reduction in quantum evaluations during higher order gradient computations.
+            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
+            execution. If ``False``, no caching is used. You may also pass your own cache
+            to be used; this can be any object that implements the special methods
+            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
         cachesize (int): the size of the cache.
         max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
             the maximum number of derivatives to support. Increasing this value allows
@@ -84,17 +96,17 @@ def execute(
             (classical) computational overhead during the backward pass.
         device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+        postselect_mode (Optional[str]): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. Default is ``None``.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+        mcm_method (Optional[str]): Strategy to use when executing circuits with mid-circuit measurements.
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+        gradient_kwargs (Optional[dict]): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        executor_backend (RemoteExec, None): concurrent task-based executor for function dispatch.
+        executor_backend (Optional[str | ExecBackends]): concurrent task-based executor for function dispatch.
             If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
 
 
@@ -186,7 +198,16 @@ def execute(
     if not tapes:
         return ()
 
-    ### Specifying and preprocessing variables ####
+    ### Apply the user transforms ####
+    transform_program = transform_program or TransformProgram()
+    tapes, user_post_processing = transform_program(tapes)
+    if transform_program.is_informative:
+        return user_post_processing(tapes)
+
+    if not tapes:
+        return user_post_processing(())
+
+    ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
 
@@ -200,18 +221,14 @@ def execute(
         derivative_order=max_diff,
         executor_backend=executor_backend,
     )
-    config = _resolve_execution_config(config, device, tapes, transform_program=transform_program)
+    config = _resolve_execution_config(config, device, tapes)
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
-    transform_program, inner_transform = _setup_transform_program(
-        transform_program, device, config, cache, cachesize
-    )
+    outer_transform, inner_transform = _setup_transform_program(device, config, cache, cachesize)
 
     #### Executing the configured setup #####
-    tapes, post_processing = transform_program(tapes)
+    tapes, outer_post_processing = outer_transform(tapes)
 
-    if transform_program.is_informative:
-        return post_processing(tapes)
+    assert not outer_transform.is_informative, "should only contain device preprocessing"
 
     results = run(tapes, device, config, inner_transform)
-    return post_processing(results)
+    return user_post_processing(outer_post_processing(results))

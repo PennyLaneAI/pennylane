@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+from __future__ import annotations
+
 import functools
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.math import Interface
 
-from .construct_tape import construct_tape
 from .resolution import _resolve_execution_config
 
+if TYPE_CHECKING:
+    from .qnode import QNode
 
-def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
+
+def construct_execution_config(qnode: QNode, resolve: bool = True):
     """Constructs the execution configuration of a QNode instance.
 
     Args:
@@ -102,13 +107,17 @@ def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
             gradient_keyword_arguments=qnode.gradient_kwargs,
             mcm_config=mcm_config,
         )
-
         if resolve:
-            tape = construct_tape(qnode, level=0)(*args, **kwargs)
-            # pylint:disable=protected-access
-            config = _resolve_execution_config(
-                config, qnode.device, (tape,), qnode._transform_program
-            )
+            if type(qnode).__name__ == "TorchLayer":
+                # avoid triggering import of torch if its not needed.
+                x = args[0]
+                kwargs = {
+                    **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
+                }
+            shots = kwargs.pop("shots", None)
+            tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            batch, _ = qnode.transform_program((tape,))
+            config = _resolve_execution_config(config, qnode.device, batch)
 
         return config
 

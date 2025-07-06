@@ -601,7 +601,7 @@ class QuantumScript:
         return self._trainable_params
 
     @trainable_params.setter
-    def trainable_params(self, param_indices: list[int]):
+    def trainable_params(self, param_indices: list[int] | set[int]):
         """Store the indices of parameters that support differentiability.
 
         Args:
@@ -740,7 +740,6 @@ class QuantumScript:
         >>> newer_qscript.get_parameters()
         [-0.1, 0.2, 0.5]
         """
-        # pylint: disable=no-member
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -1245,7 +1244,7 @@ class QuantumScript:
             operations += self.diagonalizing_gates
 
         # decompose the queue
-        # pylint: disable=no-member
+
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
             depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
@@ -1307,7 +1306,8 @@ class QuantumScript:
         The standard order is defined by the operator wires being increasing
         integers starting at zero, to match array indices. If there are any
         measurement wires that are not in any operations, those will be mapped
-        to higher values.
+        to higher values. If there are any work wires that are not used in
+        any operations or measurements, those will be mapped to higher values.
 
         **Example:**
 
@@ -1327,19 +1327,45 @@ class QuantumScript:
         >>> circuit.map_to_standard_wires() is circuit
         True
 
+        Work wires that are not used in operations or measurements are mapped to the last
+        positions in the circuit:
+
+        >>> mcx = qml.MultiControlledX([1, 4, "b", 2], work_wires=[0, 6])
+        >>> circuit = qml.tape.QuantumScript([mcx], [qml.probs(wires=[2, 3, 6])])
+        >>> mapped_circuit = circuit.map_to_standard_wires()
+        >>> mapped_circuit.circuit
+        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[True, True, True]),
+         probs(wires=[3, 4, 5])]
+        >>> mapped_circuit[0].work_wires
+        Wires([6, 5])
         """
+        wire_map = self._get_standard_wire_map()
+        if wire_map is None:
+            return self
+        tapes, fn = qml.map_wires(self, wire_map)
+        return fn(tapes)
+
+    def _get_standard_wire_map(self) -> dict:
+        """Helper function to produce the wire map for map_to_standard_wires."""
         op_wires = Wires.all_wires(op.wires for op in self.operations)
+        work_wires = Wires.all_wires(getattr(op, "work_wires", []) for op in self.operations)
         meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
         num_op_wires = len(op_wires)
         meas_only_wires = set(meas_wires) - set(op_wires)
-        if set(op_wires) == set(range(num_op_wires)) and meas_only_wires == set(
-            range(num_op_wires, num_op_wires + len(meas_only_wires))
+        num_op_meas_wires = num_op_wires + len(meas_only_wires)
+        work_only_wires = set(work_wires) - set(op_wires) - meas_only_wires
+        # If the op wires are consecutive integers, followed by measurement-only wires, followed
+        # by work-only wires, we do not perform a mapping, signaled by returning `None`.
+        if (
+            set(op_wires) == set(range(num_op_wires))
+            and meas_only_wires == set(range(num_op_wires, num_op_wires + len(meas_only_wires)))
+            and work_only_wires
+            == set(range(num_op_meas_wires, num_op_meas_wires + len(work_only_wires)))
         ):
-            return self
+            return None
 
-        wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}
-        tapes, fn = qml.map_wires(self, wire_map)
-        return fn(tapes)
+        wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires + work_only_wires)}
+        return wire_map
 
 
 # ParamSpec is used to preserve the exact signature of the input function `fn`

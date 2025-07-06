@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -216,26 +216,34 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
-# pylint:disable=access-member-before-definition,global-statement
+# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
-from typing import Any, Callable, Literal, Optional, Union
+from functools import lru_cache
+from typing import Any, Callable, Literal, Optional, Type, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane.capture import ABCCaptureMeta, create_operator_primitive
+from pennylane import capture
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.math import expand_matrix
+from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
+
+has_jax = True
+try:
+    import jax
+
+except ImportError:
+    has_jax = False
 
 # =============================================================================
 # Errors
@@ -338,7 +346,6 @@ class _WiresEnum(IntEnum):
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -371,6 +378,109 @@ def classproperty(func) -> ClassPropertyDescriptor:
 
 
 # =============================================================================
+# Capture operators infrastructure
+# =============================================================================
+
+
+@lru_cache  # construct the first time lazily
+def _get_abstract_operator() -> type:
+    """Create an AbstractOperator once in a way protected from lack of a jax install."""
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+
+    class AbstractOperator(jax.core.AbstractValue):
+        """An operator captured into plxpr."""
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractOperator)
+
+        def __hash__(self):
+            return hash("AbstractOperator")
+
+        @staticmethod
+        def _matmul(*args):
+            return qml.prod(*args)
+
+        @staticmethod
+        def _mul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _rmul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _add(a, b):
+            return qml.sum(a, b)
+
+        @staticmethod
+        def _pow(a, b):
+            return qml.pow(a, b)
+
+    return AbstractOperator
+
+
+def create_operator_primitive(
+    operator_type: Type["qml.operation.Operator"],
+) -> Optional["jax.extend.core.Primitive"]:
+    """Create a primitive corresponding to an operator type.
+
+    Called when defining any :class:`~.Operator` subclass, and is used to set the
+    ``Operator._primitive`` class property.
+
+    Args:
+        operator_type (type): a subclass of qml.operation.Operator
+
+    Returns:
+        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        ``None`` is returned if jax is not available.
+
+    """
+    if not has_jax:
+        return None
+
+    primitive = capture.QmlPrimitive(operator_type.__name__)
+    primitive.prim_type = "operator"
+
+    @primitive.def_impl
+    def _(*args, **kwargs):
+        if "n_wires" not in kwargs:
+            return type.__call__(operator_type, *args, **kwargs)
+        n_wires = kwargs.pop("n_wires")
+
+        split = None if n_wires == 0 else -n_wires
+        # need to convert array values into integers
+        # for plxpr, all wires must be integers
+        # could be abstract when using tracing evaluation in interpreter
+        wire_args = args[split:] if split else ()
+        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
+
+    abstract_type = _get_abstract_operator()
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        return abstract_type()
+
+    return primitive
+
+
+# =============================================================================
 # Base Operator class
 # =============================================================================
 
@@ -389,13 +499,13 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 FlatPytree = tuple[Iterable[Any], Hashable]
 
 
-class Operator(abc.ABC, metaclass=ABCCaptureMeta):
+class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -703,8 +813,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
 
-        import jax  # pylint: disable=import-outside-toplevel
-
         array_types = (jax.numpy.ndarray, np.ndarray)
         iterable_wires_types = (
             list,
@@ -788,9 +896,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.hash
 
     @staticmethod
-    def compute_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> TensorLike:  # pylint:disable=unused-argument
+    def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -853,7 +959,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_sparse_matrix(
         *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
-    ) -> spmatrix:  # pylint:disable=unused-argument
+    ) -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1110,7 +1216,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         wires: Optional[WiresLike] = None,
         id: Optional[str] = None,
     ):
-        # pylint: disable=too-many-branches
 
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
@@ -1182,7 +1287,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qml.math.ndim` fail.
-            if any(qml.math.is_abstract(p) for p in params):
+            if any(is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
                 return
@@ -1459,7 +1564,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_diagonalizing_gates(
         *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
-    ) -> list["Operator"]:  # pylint: disable=unused-argument
+    ) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1502,7 +1607,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_generator(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined generator.
@@ -1523,7 +1628,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         we get the generator
 
         >>> U.generator()
-          0.5 * Y(0) + Z(0) @ X(1)
+        0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
@@ -1542,14 +1647,14 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I
-        # Hence we define 0 and 1 special cases here.
+        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []
-        if z == 1:
+        if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qml.apply(self)]
-            return [copy.copy(self)]
+                return [qml.apply(self) for _ in range(z)]
+            return [copy.copy(self) for _ in range(z)]
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
@@ -1571,7 +1676,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return "_ops"
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_adjoint(cls) -> bool:
         r"""Bool: Whether or not the Operator can compute its own adjoint.
@@ -1613,7 +1718,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
-    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+    def simplify(self) -> "Operator":
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
@@ -1935,13 +2040,9 @@ class Channel(Operation, abc.ABC):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(
-        *params, **hyperparams
-    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
+    def compute_kraus_matrices(*params, **hyperparams) -> list[np.ndarray]:
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -2123,8 +2224,6 @@ class CVOperation(CV, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @classproperty
     def supports_parameter_shift(self):
         """Returns True iff the CV Operation supports the parameter-shift differentiation method.
@@ -2165,7 +2264,7 @@ class CVOperation(CV, Operation):
         for c, _a, s in param_shift:
             # evaluate the transform at the shifted parameter values
             p[idx] = _a * original_p_idx + s
-            U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+            U = self._heisenberg_rep(p)
 
             if pd is None:
                 pd = c * U
@@ -2208,7 +2307,7 @@ class CVOperation(CV, Operation):
                 p[0] = np.linalg.inv(p[0])
             except np.linalg.LinAlgError:
                 p[0] = -p[0]  # negate first parameter
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
 
         # not defined?
         if U is None:
@@ -2252,7 +2351,6 @@ class CVObservable(CV, Operator):
         """Avoids queuing the observable."""
         return self
 
-    # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
     def heisenberg_obs(self, wire_order):
@@ -2273,7 +2371,7 @@ class CVObservable(CV, Operator):
             array[float]: :math:`q`
         """
         p = self.parameters
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
         return self.heisenberg_expand(U, wire_order)
 
 
@@ -2282,7 +2380,6 @@ class StatePrepBase(Operation):
 
     grad_method = None
 
-    # pylint:disable=too-few-public-methods
     @abc.abstractmethod
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """
@@ -2426,7 +2523,7 @@ def has_unitary_gen(obj):
         PennyLaneDeprecationWarning,
     )
     # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
-    return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
+    return obj in qml.ops.qubit.attributes.has_unitary_generator
 
 
 @qml.BooleanFn

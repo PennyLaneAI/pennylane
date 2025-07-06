@@ -33,6 +33,7 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
@@ -128,7 +129,7 @@ class TestPrivateHelpers:
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
         op = NoMatNoDecompOp("a")
-        with pytest.raises(qml.DeviceError, match=r"not supported with abc and does"):
+        with pytest.raises(DeviceError, match=r"not supported with abc and does"):
             tuple(
                 _operator_decomposition_gen(
                     op, lambda op: op.has_matrix, self.decomposer, name="abc"
@@ -144,7 +145,7 @@ def test_no_sampling():
     assert batch[0] is tape1
 
     tape2 = qml.tape.QuantumScript(shots=2)
-    with pytest.raises(qml.DeviceError, match="Finite shots are not supported with abc"):
+    with pytest.raises(DeviceError, match="Finite shots are not supported with abc"):
         no_sampling(tape2, name="abc")
 
 
@@ -166,7 +167,7 @@ def test_validate_adjoint_trainable_params_obs_warning():
 def test_validate_adjoint_trainable_params_state_prep_error():
     """Tests error raised for validate_adjoint_trainable_params with trainable state-preps."""
     tape = qml.tape.QuantumScript([qml.StatePrep(qml.numpy.array([1.0, 0.0]), wires=[0])])
-    with pytest.raises(qml.QuantumFunctionError, match="Differentiating with respect to"):
+    with pytest.raises(QuantumFunctionError, match="Differentiating with respect to"):
         validate_adjoint_trainable_params(tape)
 
 
@@ -186,7 +187,7 @@ class TestValidateDeviceWires:
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
-        """Tests that if the wires are provided, measurements without wires take them gain them."""
+        """Tests that if the wires are provided, measurements without wires gain them."""
         tape1 = qml.tape.QuantumScript([qml.S("b")], [qml.state(), qml.probs()], shots=52)
 
         wires = qml.wires.Wires(["a", "b", "c"])
@@ -245,7 +246,7 @@ class TestDecomposeValidation:
         """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(qml.DeviceError, match="not supported with abc"):
+        with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):
@@ -259,7 +260,7 @@ class TestDecomposeValidation:
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
-        with pytest.raises(qml.DeviceError, match=r"Reached recursion limit trying to decompose"):
+        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
@@ -289,7 +290,7 @@ class TestValidateObservables:
         tape = QuantumScript(
             ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
         )
-        with pytest.raises(qml.DeviceError, match=r"not supported on abc"):
+        with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
     def test_invalid_tensor_observable(self):
@@ -298,7 +299,7 @@ class TestValidateObservables:
             ops=[qml.PauliX(0), qml.PauliY(1)],
             measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
-        with pytest.raises(qml.DeviceError, match="not supported on device"):
+        with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
 
@@ -349,7 +350,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=None)
 
         msg = "not accepted for analytic simulation on device"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             validate_measurements(tape)
 
     @pytest.mark.parametrize(
@@ -365,7 +366,7 @@ class TestValidateMeasurements:
         tape = QuantumScript([], measurements, shots=100)
 
         msg = "not accepted with finite shots on device"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             validate_measurements(tape, lambda obj: True)
 
 
@@ -511,7 +512,7 @@ class TestMidCircuitMeasurements:
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="dynamic_one_shot is only supported with finite shots.",
         ):
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
@@ -649,11 +650,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_with_sample_output(self, sample_kwargs, meas_transform):
+    def test_with_sample_output(self, sample_kwargs, meas_transform, seed):
         """Test that returning sample works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
@@ -711,11 +712,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
-    def test_multiple_measurements(self, meas_transform):
+    def test_multiple_measurements(self, meas_transform, seed):
         """Test the results of applying measurements_from_counts/measurements_from_samples with
         multiple measurements"""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @qml.qnode(dev)
         def basic_circuit(theta: float):

@@ -553,7 +553,7 @@ def mol_data(identifier, identifier_type="name"):
     """
 
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import pubchempy as pcp
     except ImportError as Error:
         raise ImportError(

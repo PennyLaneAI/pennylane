@@ -61,10 +61,16 @@ class TestControlledQubitUnitary:
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
 
-    def test_flatten_unflatten(self):
-        """Test that the operation can be flattened and unflattened"""
-        op = qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3))
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
+            qml.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3, 4)),
+        ],
+    )
+    def test_standard_validity(self, op):
+        """Test that the operation is valid."""
+        qml.ops.functions.assert_valid(op, skip_differentiation=True, heuristic_resources=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
