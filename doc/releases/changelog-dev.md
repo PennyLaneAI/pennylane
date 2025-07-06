@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Added a new controlled square root gate called `CSX` to the `qml.ops` module. 
+  This gate is a controlled version of the square root of the X gate, which is useful in quantum algorithms.
+  [(#7422)](https://github.com/PennyLaneAI/pennylane/pull/7422)
+
+* Added a new square root swap gate called `SQSWAP` to the `qml.ops` module. 
+  This gate is a controlled version of the square root of the swap gate, which is useful in quantum algorithms.
+  [(#7422)](https://github.com/PennyLaneAI/pennylane/pull/7422)
+  
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
