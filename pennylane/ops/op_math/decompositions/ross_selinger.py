@@ -40,6 +40,29 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
         theta -= math.pi * 4
     abs_theta = abs(theta)
 
+    PI_8 = math.pi / 8
+    div_ = round(abs_theta / PI_8, 12)
+    ivl_ = int(div_)
+    mod_ = round(abs(ivl_ * PI_8 - abs_theta), 12)
+
+    if div_ == ivl_ and mod_ == 0.0 and ivl_ % 2 == 1.0:
+        scale_vals = (
+            [
+                (ZOmega(d=1), ZOmega(d=1)),
+                (ZOmega(b=-1), ZOmega(c=1)),
+                (ZOmega(d=-1), ZOmega(b=1)),
+                (ZOmega(b=1), ZOmega(a=1)),
+            ]
+            if sign == -1
+            else [
+                (ZOmega(b=1), ZOmega(b=1)),
+                (ZOmega(d=-1), ZOmega(d=1)),
+                (ZOmega(b=-1), ZOmega(b=-1)),
+                (ZOmega(d=1), ZOmega(d=-1)),
+            ]
+        )
+        return (sign, ivl_), scale_vals[ivl_ // 2]
+
     if pi_vals[0] <= abs_theta < pi_vals[1]:  # pi/4 <= |theta| < 3pi/4
         return -sign * math.pi / 2, ZOmega(b=sign)
 
@@ -114,19 +137,26 @@ def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=
         # Get the implemented angle with the domain correction and scaling factor for it.
         angle = -op.data[0] / 2
         shift, scale = _domain_correction(angle)
-
-        # Get the grid problem for the angle.
-        u_solutions = GridIterator(angle + shift, epsilon, max_trials=max_search_trials)
+        interface = qml.math.get_interface(angle)
+        phase = 0.0 if isinstance(op, qml.RZ) else angle
 
         u, t, k = ZOmega(d=1), ZOmega(), 0
-        for u_sol, k_val in u_solutions:
-            xi = ZSqrtTwo(2**k_val) - u_sol.norm().to_sqrt_two()
-            if (t_sol := _solve_diophantine(xi, max_trials=max_factoring_trials)) is not None:
-                u, t, k = u_sol * scale, t_sol * scale, k_val
-                break
+        if not isinstance(scale, ZOmega):  # Get solution for the ± (2k + 1) . PI / 4 case.
+            t_mat = DyadicMatrix(u, t, t, ZOmega(c=1)) @ DyadicMatrix(scale[0], t, t, u)
+            dyd_mat = t_mat * scale[1]
+            phase += math.pi / 8 if shift[0] == -1 else (8 - shift[1]) * math.pi / 8
+
+        else:  # Get the solution from the grid search solver.
+            u_solutions = GridIterator(angle + shift, epsilon, max_trials=max_search_trials)
+            for u_sol, k_val in u_solutions:
+                xi = ZSqrtTwo(2**k_val) - u_sol.norm().to_sqrt_two()
+                if (t_sol := _solve_diophantine(xi, max_trials=max_factoring_trials)) is not None:
+                    u, t, k = u_sol * scale, t_sol * scale, k_val
+                    break
+
+            dyd_mat = DyadicMatrix(u, -t.conj(), t, u.conj(), k=k)
 
         # Get the normal form of the decomposition.
-        dyd_mat = DyadicMatrix(u, -t.conj(), t, u.conj(), k=k)
         so3_mat = SO3Matrix(dyd_mat)
         decomposition, g_phase = _ma_normal_form(so3_mat)
 
@@ -144,9 +174,6 @@ def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=
             _ = [qml.apply(op) for op in new_tape.operations]
 
     # TODO: Improve the global phase information to the decomposition.
-    interface = qml.math.get_interface(angle)
-    phase = 0.0 if isinstance(op, qml.RZ) else angle
-
     phase += qml.math.mod(g_phase, 2) * math.pi
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
