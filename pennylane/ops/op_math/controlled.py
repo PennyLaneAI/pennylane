@@ -1130,6 +1130,7 @@ def base_to_custom_ctrl_op():
         (qml.RX, 1): qml.CRX,
         (qml.RY, 1): qml.CRY,
         (qml.RZ, 1): qml.CRZ,
+        (qml.SX, 1): qml.CSX,
         (qml.Rot, 1): qml.CRot,
         (qml.PhaseShift, 1): qml.ControlledPhaseShift,
     }
