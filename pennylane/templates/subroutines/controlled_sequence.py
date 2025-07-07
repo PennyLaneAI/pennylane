@@ -221,17 +221,17 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
 
     for z in powers_of_two[::-1]:
         rep = pow_resource_rep(
-                base_class=qml.ctrl,
-                base_params={
-                    "base_class": base,
-                    "base_params": base_params,
-                    "num_control_wires": 1,
-                    "num_zero_control_values": 0,
-                    "num_work_wires": 0,
-                    "work_wire_type": "dirty",
-                },
-                z=z,
-            )
+            base_class=qml.ctrl,
+            base_params={
+                "base_class": base,
+                "base_params": base_params,
+                "num_control_wires": 1,
+                "num_zero_control_values": 0,
+                "num_work_wires": 0,
+                "work_wire_type": "dirty",
+            },
+            z=z,
+        )
         if rep not in resources:
             resources[rep] = 1
         else:
