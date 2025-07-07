@@ -25,12 +25,7 @@ import pennylane as qml
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
-from pennylane.transforms.core import (
-    TransformContainer,
-    TransformDispatcher,
-    TransformError,
-    TransformProgram,
-)
+from pennylane.transforms.core import TransformDispatcher, TransformError, TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -1081,9 +1076,7 @@ def _preprocess_device(original_device, transform, targs, tkwargs):
         ):
             """This function updates the original device transform program to be applied."""
             program, config = self.original_device.preprocess(execution_config)
-            program.push_back(
-                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
-            )
+            program = self.transform(program, *self.targs, **self.tkwargs)
             return program, config
 
         @property
@@ -1115,9 +1108,7 @@ def _preprocess_transforms_device(original_device, transform, targs, tkwargs):
         ):
             """This function updates the original device transform program to be applied."""
             program = self.original_device.preprocess_transforms(execution_config)
-            program.push_back(
-                TransformContainer(self.transform, args=self.targs, kwargs=self.tkwargs)
-            )
+            program = self.transform(program, *self.targs, **self.tkwargs)
             return program
 
         @property
