@@ -411,7 +411,7 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
-        ${{ needs.default-dependency-versions.outputs.catalyst-jax-version }}
+        jax==0.6.2
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
