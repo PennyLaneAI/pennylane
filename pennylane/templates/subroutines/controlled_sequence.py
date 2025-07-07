@@ -16,8 +16,6 @@ Contains the ControlledSequence template.
 """
 from copy import copy
 
-from pennylane.ops import Controlled
-
 import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
@@ -245,7 +243,7 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_cntl_seq_decomposition_resources)
-def _cntl_seq_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
+def _cntl_seq_decomposition(*_, base=None, control_wires=None, **__):
     powers_of_two = [2**i for i in range(len(control_wires))]
 
     @qml.for_loop(len(powers_of_two) - 1, -1, -1)
