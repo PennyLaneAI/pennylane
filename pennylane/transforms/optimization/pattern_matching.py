@@ -1527,8 +1527,13 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
     def __init__(
-        self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None, allow_phase=False
-    ):
+        self,
+        max_matches,
+        circuit_dag,
+        template_dag,
+        custom_quantum_cost=None,
+        allow_phase=False,
+    ):  # pylint: disable=too-many-arguments
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
