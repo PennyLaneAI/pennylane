@@ -12,10 +12,10 @@ from hyperoptimization import resource_optimizer, resource_cost, cost_heuristic
 
 from templates.compact_hamiltonian import CompactHamiltonian
 
-from templates.ac import norms_ac_groups
-from templates.LCU_decomps import sparse_matrix, double_factorization, compressed_double_factorization, l4
-from templates.optimization import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm
-from templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli, ResourcePrepAC, ResourceSelectAC
+from pennylane.labs.resource_estimation.templates.ac import norms_ac_groups
+from pennylane.labs.resource_estimation.templates.LCU_decomps import sparse_matrix, double_factorization, compressed_double_factorization, l4
+from pennylane.labs.resource_estimation.templates.optimization import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm
+from pennylane.labs.resource_estimation.templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli, ResourcePrepAC, ResourceSelectAC
 
 from cow_print import cow_print
 
@@ -211,7 +211,7 @@ def optimize_method(obt, tbt, method, eta, compact_ham_kwargs={}, alpha=0.95, he
 
 	return opt_resources, one_norm, opt_params
 
-def find_optimum(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
+def qcow(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compact_ham_kwargs={}, alpha=0.95, heuristic="full_Q", verbose=True, **kwargs):
 	TIMES_ARR = [time()]
 
 	num_methods = len(method_list)

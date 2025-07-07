@@ -200,3 +200,5 @@ from .templates import (
     ResourcePrepAC,
     ResourceSelectAC,
 )
+
+from .wrappers import qcow
