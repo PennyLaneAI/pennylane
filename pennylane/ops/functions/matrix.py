@@ -15,15 +15,14 @@
 This module contains the qml.matrix function.
 """
 from functools import partial
-from typing import Union
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.exceptions import TransformError
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.typing import PostprocessingFn, TensorLike
+from pennylane.tape import QuantumScript
+from pennylane.typing import TensorLike
 
 
 def catalyst_qjit(qnode):
@@ -32,7 +31,7 @@ def catalyst_qjit(qnode):
 
 
 @partial(transform, is_informative=True)
-def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
+def matrix(op, wire_order=None) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
@@ -222,7 +221,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
 
 @matrix.register
-def _matrix_of_op(_, op: Operator, wire_order=None):
+def _matrix_of_op(op: Operator, _, wire_order=None):
     # Starting from now, op is an Operator
     # Validate wire_order
     if wire_order and not set(op.wires).issubset(wire_order):
@@ -243,7 +242,7 @@ def _matrix_of_op(_, op: Operator, wire_order=None):
 
 @matrix.register(PauliWord)
 @matrix.register(PauliSentence)
-def _apply_to_pauliword_or_sentence(op: PauliWord | PauliSentence, wire_order=None):
+def _apply_to_pauliword_or_sentence(op: PauliWord | PauliSentence, _, wire_order=None):
     if wire_order is None and len(op.wires) > 1:
         raise ValueError(
             "wire_order is required by qml.matrix() for PauliWords "
@@ -253,8 +252,7 @@ def _apply_to_pauliword_or_sentence(op: PauliWord | PauliSentence, wire_order=No
 
 
 @matrix.register(qml.QNode)
-def _apply_to_qnode(qnode: qml.QNode, wire_order=None):
-
+def _apply_to_qnode(qnode: qml.QNode, _, wire_order=None):
     if wire_order is None:
         if qnode.device.wires is None:
             raise ValueError(

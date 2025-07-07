@@ -931,6 +931,12 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-@TransformDispatcher.register
-def apply_to_qnode(obj: QNode, transform: TransformDispatcher, *targs, **tkwargs) -> QNode:
-    return transform._qnode_transform(obj, targs, tkwargs)
+# pylint: disable=protected-access
+@TransformDispatcher.generic_register
+def apply_transform_to_qnode(self, obj: QNode, *targs, **tkwargs) -> QNode:
+    """The default behavior for applying a transform to a QNode."""
+    if self._custom_qnode_transform:
+        return self._custom_qnode_transform(self, obj, targs, tkwargs)
+    new_qnode = copy.copy(obj)
+    new_qnode._transform_program = self(new_qnode.transform_program, *targs, **tkwargs)
+    return new_qnode

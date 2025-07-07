@@ -505,8 +505,8 @@ class TransformProgram:
         return self.__call_tapes(*args, **kwargs)
 
 
-@TransformDispatcher.register
-def apply_to_program(obj: TransformProgram, transform: TransformDispatcher, *targs, **tkwargs):
+@TransformDispatcher.generic_register
+def _apply_to_program(obj: TransformProgram, transform: TransformDispatcher, *targs, **tkwargs):
     program = copy(obj)
 
     if transform.expand_transform:
