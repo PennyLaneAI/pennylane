@@ -311,9 +311,9 @@ class TestDecomposeGraphEnabled:
         ]
 
 
-@pytest.mark.jax
+@pytest.mark.capture
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_graph_decomposition", "enable_disable_plxpr")
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_decompose_qnode():
     """Tests that the decompose transform works with a QNode."""
 

@@ -22,7 +22,7 @@ from malt.core import converter
 import pennylane as qml
 from pennylane import grad, jacobian, measure
 
-pytestmark = pytest.mark.jax
+pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 
@@ -42,13 +42,6 @@ from pennylane.capture.autograph.transformer import (
 check_cache = TRANSFORMER.has_cache
 
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestPennyLaneTransformer:
@@ -313,6 +306,8 @@ class TestIntegration:
         def circ():
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
+
+        print(qml.capture.enabled())
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
