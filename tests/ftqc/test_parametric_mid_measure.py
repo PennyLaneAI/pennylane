@@ -514,23 +514,23 @@ class TestMeasureFunctions:
             return qml.expval(qml.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
-        captured_measurement = str(plxpr.eqns[0])
+        captured_measurement = plxpr.eqns[0]
 
-        # measurement is captured as epxected
-        assert "measure_in_basis" in captured_measurement
-        assert f"plane={plane}" in captured_measurement
-        assert f"postselect={postselect}" in captured_measurement
-        assert f"reset={reset}" in captured_measurement
+        # measurement is captured as expected
+        assert "measure_in_basis" == captured_measurement.primitive.name
+        assert plane == captured_measurement.params["plane"]
+        assert postselect == captured_measurement.params["postselect"]
+        assert reset == captured_measurement.params["reset"]
 
         # parameters held in invars
-        assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
-        assert jax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
+        assert jax.numpy.isclose(angle, captured_measurement.invars[0].val)
+        assert jax.numpy.isclose(wire, captured_measurement.invars[1].val)
 
         # measurement value is assigned and passed forward
-        conditional = str(plxpr.eqns[1])
-        assert "cond" in conditional
-        assert captured_measurement[:8] == "a:bool[]"
-        assert "lambda ; a:i64[]" in conditional
+        assert "cond" in plxpr.eqns[1].primitive.name
+        assert captured_measurement.outvars[0].aval.dtype == "bool"
+        assert plxpr.eqns[1].invars[0].aval.dtype == "bool"
+        assert plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval.dtype == "int64"
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -560,13 +560,13 @@ class TestMeasureFunctions:
             return qml.expval(qml.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
-        captured_measurement = str(plxpr.eqns[0])
+        captured_measurement = plxpr.eqns[0]
 
         # measurement is captured as expected
-        assert "measure_in_basis" in captured_measurement
-        assert f"plane={plane}" in captured_measurement
-        assert f"postselect={postselect}" in captured_measurement
-        assert f"reset={reset}" in captured_measurement
+        assert "measure_in_basis" == captured_measurement.primitive.name
+        assert plane == captured_measurement.params["plane"]
+        assert postselect == captured_measurement.params["postselect"]
+        assert reset == captured_measurement.params["reset"]
 
         # dynamic parameters held in invars for numpy, and consts for jax
         if "jax" in angle_type:
@@ -578,10 +578,10 @@ class TestMeasureFunctions:
         assert jax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
-        conditional = str(plxpr.eqns[1])
-        assert "cond" in conditional
-        assert captured_measurement[:8] == "a:bool[]"
-        assert "lambda ; a:i64[]" in conditional
+        assert "cond" in plxpr.eqns[1].primitive.name
+        assert captured_measurement.outvars[0].aval.dtype == "bool"
+        assert plxpr.eqns[1].invars[0].aval.dtype == "bool"
+        assert plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval.dtype == "int64"
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")

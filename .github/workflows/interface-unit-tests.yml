@@ -494,6 +494,7 @@ jobs:
       additional_pip_packages: |
         pyzx matplotlib stim quimb==1.11.0 mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.38 filecheck
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
+        jax==0.6.0 jaxlib==0.6.0
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
