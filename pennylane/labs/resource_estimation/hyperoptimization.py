@@ -9,7 +9,7 @@ def extract_cost(resource_object):
 
 	return T_num, num_qubits
 
-heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Qcube", "Q500", "Qalpha"]
+heuristic_list = ["T", "Q", "full_T", "full_Q", "linear_mix", "Qcube", "Q500", "Qalpha", "Qpow", "PowSum"]
 linear_heuristics = ["T", "Q", "full_T", "full_Q", "linear_mix"]
 '''
 Cost heuristics and what they do:
@@ -22,7 +22,9 @@ Cost heuristics and what they do:
 		- Q: linear_mix for alpha = 0.05
 	- Qcube: minimize (Q**3) * T
 	- Q500: minimize T-gates with 500 qubit budget
-	- Qalpha: minimize T-gates with alpha qubits budget (alpha passed as keyword)
+	- Qalpha: minimize T-gates with alpha qubits budget (alpha passed as kwarg)
+	- Qpow: minimize (Q**alpha) * T (alpha passed as kwarg)
+	- PowSum: minimize (Q**alpha) + T (alpha passed as kwarg)
 '''
 def cost_heuristic(T, Q, heuristic, **kwargs):
 	if heuristic == "Qcube":
@@ -31,6 +33,18 @@ def cost_heuristic(T, Q, heuristic, **kwargs):
 		else:
 			alpha = 10
 		return T * ((alpha*Q)**3)
+	if heuristic == "Qpow":
+		if "alpha" in kwargs:
+			alpha = kwargs["alpha"]
+		else:
+			alpha = 3
+		return T * (Q**alpha)
+	if heuristic == "PowSum":
+		if "alpha" in kwargs:
+			alpha = kwargs["alpha"]
+		else:
+			alpha = 3
+		return T + (Q**alpha)
 
 	if heuristic == "Q500" or heuristic == "Qalpha":
 		if heuristic == "Q500":
