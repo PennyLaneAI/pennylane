@@ -954,6 +954,9 @@
   parts of the algorithm.
   [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
 
+* Optimization for :func`pertrubation_error` which groups commutators by linearity.
+  [(#7790)][https://github.com/PennyLaneAI/pennylane/pull/7790]
+
 * Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
   and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
@@ -1189,6 +1192,9 @@ may move operations across a `Snapshot`.
 * In the :doc:`/development/guide/documentation` page, removed references to the outdated Sphinx and unsupported Python 3.8 version. 
   This helps ensure contributors follow current standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
+
+* Alphabetized the API list in the documentation build to ensure consistent ordering. 
+  [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
 
 <h3>Bug fixes 🐛</h3>
 
