@@ -131,7 +131,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
             op, quantum.NamedObsOp
         ), f"Expected a quantum.NamedObsOp but got {type(op).__name__}"
 
-        if not op.type.data == "PauliZ":
+        if op.type.data != "PauliZ":
             raise NotImplementedError(
                 f"Observable '{op.type.data}' used as input to measurement operation is not "
                 f"supported for the measurements_from_samples transform; currently only the "
