@@ -26,7 +26,8 @@ from pennylane.ops.op_math.decompositions.ross_selinger import _domain_correctio
     ("angle", "result"),
     [
         (math.pi / 3, (-math.pi / 2, ZOmega(b=1))),
-        (math.pi / 8, (0.0, ZOmega(d=1))),
+        (math.pi / 8, ((1.0, 1), (ZOmega(b=1), ZOmega(b=1)))),
+        (-3 * math.pi / 8, ((-1.0, 3), (ZOmega(b=-1), ZOmega(c=1)))),
         (math.pi / 2, (-math.pi / 2, ZOmega(b=1))),
         (5 * math.pi / 3, (-3 * math.pi / 2, ZOmega(b=-1))),
         (3 * math.pi / 2, (-3 * math.pi / 2, ZOmega(b=-1))),
@@ -36,7 +37,7 @@ from pennylane.ops.op_math.decompositions.ross_selinger import _domain_correctio
 def test_domain_correction(angle, result):
     """Test the functionality to create domain correction"""
     shift, scale = _domain_correction(angle)
-    assert qml.math.isclose(shift, result[0])
+    assert qml.math.allclose(shift, result[0])
     assert scale == result[1]
 
 
