@@ -173,6 +173,7 @@ class TestMethods:
         for rule in qml.list_decomps(qml.ControlledSequence):
             _test_decomposition_rule(op, rule)
 
+
 class TestIntegration:
     """Tests that the ControlledSequence is executable and differentiable in a QNode context"""
 
