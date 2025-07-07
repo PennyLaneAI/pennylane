@@ -16,6 +16,11 @@ on:
         description: The version of JAX to use for testing
         required: false
         type: string
+        default: '0.6.2'
+      catalyst_jax_version:
+        description: The version of JAX to use for testing
+        required: false
+        type: string
         default: '0.6.0'
       tensorflow_version:
         description: The version of TensorFlow to use for testing
@@ -31,6 +36,9 @@ on:
       jax-version:
         description: The version of JAX to use
         value: ${{ jobs.default-dependency-versions.outputs.jax-version }}
+      catalyst-jax-version:
+        description: The version of JAX to use
+        value: ${{ jobs.default-dependency-versions.outputs.catalyst-jax-version }}
       tensorflow-version:
         description: The version of TensorFlow to use
         value: ${{ jobs.default-dependency-versions.outputs.tensorflow-version }}
@@ -52,6 +60,10 @@ jobs:
       - name: Default JAX Version
         id: jax
         run: echo "version=${{ inputs.jax_version }}" >> $GITHUB_OUTPUT
+
+      - name: Default Catalyst JAX Version
+        id: jax
+        run: echo "version=${{ inputs.catalyst_jax_version }}" >> $GITHUB_OUTPUT
       
       - name: Default Tensorflow Version
         id: tensorflow
