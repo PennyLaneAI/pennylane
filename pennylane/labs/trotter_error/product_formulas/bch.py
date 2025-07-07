@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def bch_expansion(
-    product_formula: ProductFormula, order: int, group_sums: bool = False
+    product_formula: ProductFormula, order: int
 ) -> List[Dict[Tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
@@ -65,11 +65,7 @@ def bch_expansion(
                   ('C', 'A', 'C'): (-0.08333333333333333+0j),
                   ('C', 'B', 'C'): (-0.08333333333333333+0j)})]
     """
-    return (
-        _group_sums(_drop_zeros(_bch_expansion(product_formula, order, {})))
-        if group_sums
-        else _drop_zeros(_bch_expansion(product_formula, order, {}))
-    )
+    return _drop_zeros(_bch_expansion(product_formula, order, {}))
 
 
 def _bch_expansion(
@@ -495,24 +491,3 @@ def _drop_zeros(
             del terms[commutator]
 
     return term_dicts
-
-
-def _group_sums(
-    term_dicts: List[Dict[Tuple[Hashable], complex]],
-) -> List[Tuple[Hashable | Set]]:
-    return [_group_sums_in_dict(term_dict) for term_dict in term_dicts]
-
-
-def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
-    grouped_comms = defaultdict(set)
-    for commutator, coeff in term_dict.items():
-        head, *tail = commutator
-        tail = tuple(tail)
-        grouped_comms[tail].add((head, coeff))
-
-    grouped_term_list = []
-    for tail, head in grouped_comms.items():
-        commutator = (frozenset(head), *tail)
-        grouped_term_list.append(commutator)
-
-    return grouped_term_list

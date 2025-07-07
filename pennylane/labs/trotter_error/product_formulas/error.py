@@ -14,9 +14,9 @@
 """Functions for retreiving effective error from fragments"""
 
 import copy
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Hashable
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Set, Tuple
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -171,11 +171,7 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    commutators = [
-        x
-        for xs in bch_expansion(product_formula(1j * timestep), order, group_sums=True)[1:]
-        for x in xs
-    ]
+    commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
@@ -273,3 +269,24 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     ops1.update(ops2)
 
     return ops1
+
+
+def _group_sums(
+    term_dicts: List[Dict[Tuple[Hashable], complex]],
+) -> List[Tuple[Hashable | Set]]:
+    """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
+    two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
+    """
+    return [
+        x for xs in [_group_sums_in_dict(term_dict) for term_dict in term_dicts[1:]] for x in xs
+    ]
+
+
+def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
+    grouped_comms = defaultdict(set)
+    for commutator, coeff in term_dict.items():
+        head, *tail = commutator
+        tail = tuple(tail)
+        grouped_comms[tail].add((head, coeff))
+
+    return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
