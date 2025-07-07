@@ -506,20 +506,20 @@ class TransformProgram:
 
 
 @TransformDispatcher.generic_register
-def _apply_to_program(obj: TransformProgram, transform: TransformDispatcher, *targs, **tkwargs):
+def _apply_to_program(self, obj: TransformProgram, *targs, **tkwargs):
     program = copy(obj)
 
-    if transform.expand_transform:
-        program.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+    if self.expand_transform:
+        program.push_back(TransformContainer(self.expand_transform, targs, tkwargs))
     program.push_back(
         TransformContainer(
-            transform.transform,
+            self.transform,
             args=targs,
             kwargs=tkwargs,
-            classical_cotransform=transform.classical_cotransform,
-            plxpr_transform=transform.plxpr_transform,
-            is_informative=transform.is_informative,
-            final_transform=transform.final_transform,
+            classical_cotransform=self.classical_cotransform,
+            plxpr_transform=self.plxpr_transform,
+            is_informative=self.is_informative,
+            final_transform=self.final_transform,
         )
     )
     return program
