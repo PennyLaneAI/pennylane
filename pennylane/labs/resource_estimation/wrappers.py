@@ -6,18 +6,18 @@ import math
 from time import time
 import prettytable
 
-import bliss
-import orbital_optimization as oo
-from hyperoptimization import resource_optimizer, resource_cost, cost_heuristic
+import pennylane.labs.resource_estimation.bliss as bliss
+import pennylane.labs.resource_estimation.orbital_optimization as oo
+from pennylane.labs.resource_estimation.hyperoptimization import resource_optimizer, resource_cost, cost_heuristic
 
-from templates.compact_hamiltonian import CompactHamiltonian
+from pennylane.labs.resource_estimation.templates.compact_hamiltonian import CompactHamiltonian
 
 from pennylane.labs.resource_estimation.templates.ac import norms_ac_groups
 from pennylane.labs.resource_estimation.templates.LCU_decomps import sparse_matrix, double_factorization, compressed_double_factorization, l4
 from pennylane.labs.resource_estimation.templates.optimization import optax_lbfgs_opt_thc_l2reg_enhanced, thc_one_norm
 from pennylane.labs.resource_estimation.templates.thc import ResourceSelectTHC, ResourcePrepTHC, ResourcePrepCDF, ResourceSelectCDF, ResourcePrepSparsePauli, ResourceSelectSparsePauli, ResourcePrepAC, ResourceSelectAC
 
-from cow_print import cow_print
+from pennylane.labs.resource_estimation.cow_print import cow_print
 
 CustomGateSet = {
     "X",
