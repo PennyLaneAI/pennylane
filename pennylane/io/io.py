@@ -934,7 +934,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         ) from e  # pragma: no cover
     except Exception as e:
         raise SyntaxError(
-            "Something went wrong when parsing the provided OpenQASM 3.0 code. "
+            f"Something went wrong when parsing the provided OpenQASM 3.0 code. "
             f"Please ensure the code is valid OpenQASM 3.0 syntax. {str(e)}",
         ) from e
 
