@@ -113,6 +113,7 @@ add_module_names = False
 html_sidebars = {
    '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
    'using/windows': ['windows-sidebar.html', 'searchbox.html'],
+   "secondary_sidebar_items": ["page-toc"],
 }
 
 # The version info for the project you're documenting, acts as replacement for
