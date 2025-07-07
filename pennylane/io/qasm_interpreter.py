@@ -1051,7 +1051,6 @@ class QasmInterpreter:
         Raises:
             TypeError: if it is a qubit register declaration.
         """
-<<<<<<< HEAD
         if node.size is not None and isinstance(self.visit(node.size, context), int):
             context.registers[node.qubit.name] = []
             for i in range(self.visit(node.size, context)):
