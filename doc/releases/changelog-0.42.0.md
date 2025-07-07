@@ -4,65 +4,30 @@
 
 <h3>New features since last release</h3>
 
-* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
-  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
-  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
-  
-  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
-  :class:`~.QNGOptimizer` with an Optax-like interface:
-
-  ```python
-  import pennylane as qml
-  import jax.numpy as jnp
-
-  @qml.qjit(autograph=True)
-  def workflow():
-      dev = qml.device("lightning.qubit", wires=2)
-  
-      @qml.qnode(dev)
-      def circuit(params):
-          qml.RX(params[0], wires=0)
-          qml.RY(params[1], wires=1)
-          return qml.expval(qml.Z(0) + qml.X(1))
-  
-      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
-  
-      params = jnp.array([0.1, 0.2])
-      state = opt.init(params)
-      for _ in range(100):
-          params, state = opt.step(circuit, params, state)
-  
-      return params
-  ```
-
-  ```pycon
-  >>> workflow()
-  Array([ 3.14159265, -1.57079633], dtype=float64)
-  ```
-
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
-* The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
-  have been reduced to fewer rotations and/or (CNOT|CZ|CY) gates. This leads to lower circuit cost
-  when decomposing these gates, both when focusing on two-qubit gates or on non-Clifford gates.
-  [(#7771)](https://github.com/PennyLaneAI/pennylane/pull/7771)
-
-* A new decomposition based on *unary iteration* has been added to :class:`qml.Select`.
-  This decomposition reduces the :class:`T` count significantly, and uses :math:`c-1`
-  auxiliary wires for a :class:`qml.Select` operation with :math:`c` control wires.
-  Unary iteration leverages these auxiliary wires to store intermediate values for reuse
-  among the different multi-controlled operators, avoiding unnecessary recomputation.
-  Check out the documentation for a thorough explanation.
+* A new decomposition based on *unary iteration* has been added to :class:`~.Select` based on 
+  [arXiv:1805.03662](https://arxiv.org/pdf/1805.03662). This state-of-the-art decomposition reduces 
+  the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires, where :math:`c` is the 
+  number of control wires.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
 
-* A new template :class:`~.TemporaryAND` has been added. The  :class:`~.TemporaryAND` (a.k.a.  :class:`~.Elbow`)
-  operation is a three-qubit gate equivalent to an ``AND``, or reversible :class:`~pennylane.Toffoli`, gate
-  that leverages extra information about the target wire to enable more efficient circuit decompositions.
-  The ``TemporaryAND`` assumes the target qubit to be initialized in ``|0〉``, while the ``Adjoint(TemporaryAND)`` assumes the target output to be ``|0〉``.
-  For more details, see Fig. 4 in `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
-  :class:`~.TemporaryAND` is useful for an efficient decomposition of the :class:`~.Select` template, for example. 
+  Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
+  different multi-controlled operators, avoiding unnecessary recomputation. This new decomposition
+  for :class:`~.Select` is best explained and illustrated in its documentation—go check it out for 
+  more information!
+
+* A new template called :class:`~.TemporaryAND` has been added. :class:`~.TemporaryAND` enables more 
+  efficient circuit decompositions, like in the newest decomposition of the :class:`~.Select` 
+  template, for example.
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
+
+  The :class:`~.TemporaryAND` operation is a three-qubit gate equivalent to an ``AND`` operation 
+  (or a reversible :class:`~.Toffoli`): it assumes that the target qubit is initialized in the 
+  ``|0〉`` state, while ``Adjoint(TemporaryAND)`` assumes the target qubit will be output into the 
+  ``|0〉`` state. For more details, see Fig. 4 in 
+  [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
 
   ```python
   dev = qml.device("default.qubit", shots=1)
@@ -72,11 +37,12 @@
       qml.X(0) # |1000⟩
       qml.X(1) # |1100⟩
       # The target wire is in state |0>, so we can apply TemporaryAND
-      qml.TemporaryAND([0,1,2]) # |1110⟩
-      qml.CNOT([2,3]) # |1111⟩
-      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied, so we can apply adjoint(TemporaryAND)
-      qml.adjoint(qml.TemporaryAND([0,1,2])) # |1101⟩
-      return qml.sample(wires=[0,1,2,3])
+      qml.TemporaryAND([0, 1, 2]) # |1110⟩
+      qml.CNOT([2, 3]) # |1111⟩
+      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied
+      # so we can apply adjoint(TemporaryAND)
+      qml.adjoint(qml.TemporaryAND([0, 1, 2])) # |1101⟩
+      return qml.sample(wires=[0, 1, 2, 3])
   ```
   
   ```pycon
@@ -84,15 +50,19 @@
   [1 1 0 1]
   ```
 
-* A new template :class:`~.SemiAdder` has been added, allowing for quantum-quantum in-place addition.
-  This operator performs the plain addition of two integers in the computational basis.
+* A new template called :class:`~.SemiAdder` has been added, which provides state-of-the-art 
+  resource-efficiency (less `T` gates) when performing addition on a quantum computer.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
+
+  Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs plain 
+  addition of two integers in the computational basis. Here is an example of performing `3 + 4 = 7`
+  with 5 additional work wires:
 
   ```python
   x = 3
   y = 4
 
-  wires = qml.registers({"x":3, "y":6, "work":5})
+  wires = qml.registers({"x": 3, "y": 6, "work": 5})
 
   dev = qml.device("default.qubit", shots=1)
 
@@ -105,14 +75,22 @@
   ```
   
   ```pycon
-  >>> print(circuit())
+  >>> print(circuit()) 
   [0 0 0 1 1 1]
   ```
 
-* A new template called :class:`~.SelectPauliRot` that applies a sequence of uniformly controlled rotations to a target qubit 
-  is now available. This operator appears frequently in unitary decomposition and block encoding techniques. 
+  The result `[0 0 0 1 1 1]` is the binary representation of `3 + 4 = 7`.
+
+* A new template called :class:`~.SelectPauliRot` is available, which applies a sequence of 
+  uniformly controlled rotations on a target qubit. This operator appears frequently in unitary 
+  decompositions and block-encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
   [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
+
+  As input, :class:`~.SelectPauliRot` requires the `angles` of rotation to be applied to the target 
+  qubit for each control register configuration, the `control_wires`, the `target_wire`, and the 
+  axis of rotation (`rot_axis`) for which each rotation is performed (the default is the `"Z"` 
+  axis).
 
   ```python
   angles = np.array([1.0, 2.0, 3.0, 4.0])
@@ -126,15 +104,23 @@
         angles,
         control_wires=wires["control"],
         target_wire=wires["target"],
-        rot_axis="Y")
+        rot_axis="Z"
+      )
       return qml.state()
   ```
   
   ```pycon
-  >>> print(circuit())
-  [0.87758256+0.j 0.47942554+0.j 0.        +0.j 0.        +0.j
-   0.        +0.j 0.        +0.j 0.        +0.j 0.        +0.j]
+  >>> print(qml.draw(circuit, level="device")())
+  0: ─────────────────────────╭●───────────────╭●─┤ ╭State
+  1: ───────────╭●────────────│──╭●────────────│──┤ ├State
+  2: ──RZ(2.50)─╰X──RZ(-0.50)─╰X─╰X──RZ(-1.00)─╰X─┤ ╰State
   ```
+
+* The decompositions of :class:`~.SingleExcitation`, :class:`~.SingleExcitationMinus` and 
+  :class:`~.SingleExcitationPlus` have been made more efficient by reducing the number of rotations 
+  gates and ``CNOT``, ``CZ``, and ``CY`` gates (where applicable). This leads to lower circuit depth 
+  when decomposing these gates.
+  [(#7771)](https://github.com/PennyLaneAI/pennylane/pull/7771)
 
 <h4>QSVT & QSP angle solver for large polynomials 🕸️</h4>
 
@@ -357,6 +343,44 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+<h4>A quantum optimizer that works with QJIT</h4>
+
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  @qml.qjit(autograph=True)
+  def workflow():
+      dev = qml.device("lightning.qubit", wires=2)
+  
+      @qml.qnode(dev)
+      def circuit(params):
+          qml.RX(params[0], wires=0)
+          qml.RY(params[1], wires=1)
+          return qml.expval(qml.Z(0) + qml.X(1))
+  
+      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  
+      params = jnp.array([0.1, 0.2])
+      state = opt.init(params)
+      for _ in range(100):
+          params, state = opt.step(circuit, params, state)
+  
+      return params
+  ```
+
+  ```pycon
+  >>> workflow()
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
@@ -676,7 +700,6 @@
 * The `RotXZX` operation is added to the `ftqc` module to support definition of a universal
   gate-set that can be translated to the MBQC formalism.
   [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
-
 
 <h4>Other improvements</h4>
 
