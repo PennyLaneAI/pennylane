@@ -1130,6 +1130,6 @@ def apply_to_device(self, obj: Device, *targs, **tkwargs):
         raise TransformError("Device transform does not support final transforms.")
 
     if type(obj).preprocess != qml.devices.Device.preprocess:
-        return _preprocess_device(obj, self.transform, targs, tkwargs)
+        return _preprocess_device(obj, self, targs, tkwargs)
 
-    return _preprocess_transforms_device(obj, self.transform, targs, tkwargs)
+    return _preprocess_transforms_device(obj, self, targs, tkwargs)
