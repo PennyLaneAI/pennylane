@@ -853,7 +853,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         subroutines, variables, control flow, measurements and ``end`` statements are all supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
-        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3/>`
+        environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
         for directions.
 
     Args:
@@ -861,17 +861,63 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         qubit_mapping Optional[dict]:  the mapping from OpenQASM 3.0 qubit names to PennyLane wires.
 
     Returns:
-        dict: the context resulting from the execution.
+        function: A quantum function that will execute the program.
 
-    >>> import pennylane as qml
-    >>> dev = qml.device("default.qubit", wires=[0, 1])
-    >>> @qml.qnode(dev)
-    >>> def my_circuit():
-    ...     qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
-    ...     return qml.expval(qml.Z(0))
+
+    **Examples**
+
+    .. code-block:: python
+
+        qasm_string = '''
+                qubit q0;
+                qubit q1;
+                qubit q2;
+
+                float theta = 0.2;
+                int power = 2;
+
+                ry(theta / 2) q0;
+                rx(theta) q1;
+                pow(power) @ x q0;
+
+                def random(qubit q) -> bit
+                {
+                    bit b = "0";
+                    h q;
+                    measure q -> b;
+                    return b;
+                }
+
+                bit m = random(q2);
+
+                if (m) {
+                    int i = 0;
+                    while (i < 5) {
+                        i = i + 1;
+                        rz(i) q1;
+                        break;
+                    }
+                }
+        '''
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+        @qml.qnode(dev)
+        def my_circuit():
+            qml.from_qasm3(
+                qasm_string,
+                {'q0': 0, 'q1': 1, 'q2': 2}
+            )()
+            return qml.expval(qml.Z(0))
+
     >>> print(qml.draw(my_circuit)())
-    0: ──RY(0.20)──X²─┤  <Z>
-    1: ──RX(1.00)─────┤
+    0: ──RY(0.10)──X²────────────┤  <Z>
+    1: ──RX(0.20)───────RZ(1.00)─┤
+    2: ──H─────────┤↗├──║────────┤
+                    ╚═══╝
     """
     if not has_openqasm:  # pragma: no cover
         raise ImportWarning(
@@ -886,6 +932,8 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         raise ImportError(
             "antlr4-python3-runtime is required to interpret openqasm3 in addition to the openqasm3 package"
         ) from e  # pragma: no cover
-    context = QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
 
-    return context
+    def interpret_function():
+        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+
+    return interpret_function
