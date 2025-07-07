@@ -4,6 +4,42 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
+  natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
+  [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
+  
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  :class:`~.QNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  @qml.qjit(autograph=True)
+  def workflow():
+      dev = qml.device("lightning.qubit", wires=2)
+  
+      @qml.qnode(dev)
+      def circuit(params):
+          qml.RX(params[0], wires=0)
+          qml.RY(params[1], wires=1)
+          return qml.expval(qml.Z(0) + qml.X(1))
+  
+      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+  
+      params = jnp.array([0.1, 0.2])
+      state = opt.init(params)
+      for _ in range(100):
+          params, state = opt.step(circuit, params, state)
+  
+      return params
+  ```
+
+  ```pycon
+  >>> workflow()
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
 * The decompositions of `SingleExcitation`, `SingleExcitationMinus` and `SingleExcitationPlus`
@@ -176,7 +212,7 @@
 
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
-* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="rs"`
+* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="gridsynth"`
   (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
   less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
   via :func:`~.ops.rs_decomposition` function.
@@ -184,6 +220,8 @@
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+  [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
+  [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
   The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
   Consider this simple circuit:
@@ -198,21 +236,22 @@
 
       return qml.expval(qml.Z(0))
 
-  rs_circuit = qml.clifford_t_decomposition(circuit, method="rs")
+  rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
+  x, y = 0.12, 0.34
   rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
   sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
   ```
 
-  Decomposing with `method="rs"` instead of `method="sk"` gives a significant reduction in overall 
+  Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
   gate counts, specifically the `qml.T` count:
 
   ```pycon
   >>> print(rs_specs.num_gates, sk_specs.num_gates)
-  267 48637
+  239 47942
   >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
-  104 8507
+  90 8044
   ```
 
 * Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
@@ -223,27 +262,64 @@
 
 * A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
-  [(#7432)](https://github.com/PennyLaneAI/pennylane/pull/7432)
+  [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
   [(#7593)](https://github.com/PennyLaneAI/pennylane/pull/7593)
   [(#7498)](https://github.com/PennyLaneAI/pennylane/pull/7498)
-
+  [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
+  [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
+  [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.qubit", wires=[0, 1])
+  dev = qml.device("default.qubit", wires=[0, 1, 2])
   
   @qml.qnode(dev)
   def my_circuit():
-      qml.from_qasm3("qubit q0; qubit q1; ry(0.2) q0; rx(1.0) q1; pow(2) @ x q0;", {'q0': 0, 'q1': 1})
+      qml.from_qasm3(
+          """
+          qubit q0; 
+          qubit q1;
+          qubit q2;
+  
+          float theta = 0.2;
+          int power = 2;
+  
+          ry(theta / 2) q0; 
+          rx(theta) q1; 
+          pow(power) @ x q0;
+  
+          def random(qubit q) -> bit {
+            bit b = "0";
+            h q;
+            measure q -> b;
+            return b;
+          }
+  
+          bit m = random(q2);
+  
+          if (m) {
+            int i = 0;
+            while (i < 5) {
+              i = i + 1;
+              rz(i) q1;
+              break;
+            }
+          }
+          """,
+          {'q0': 0, 'q1': 1, 'q2': 2},
+      )()
       return qml.expval(qml.Z(0))
   ```
 
   ```pycon
   >>> print(qml.draw(my_circuit)())
-  0: ──RY(0.20)──X²─┤  <Z>
-  1: ──RX(1.00)─────┤  
+  0: ──RY(0.10)──X²────────────┤  <Z>
+  1: ──RX(0.20)───────RZ(1.00)─┤     
+  2: ──H─────────┤↗├──║────────┤     
+                  ╚═══╝      
   ```
   
   Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
@@ -498,6 +574,7 @@
 * A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
+  [(#7415)](https://github.com/PennyLaneAI/pennylane/pull/7415)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
@@ -530,6 +607,7 @@
   the Christiansen representation. 
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
   [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
+  [(#7785)](https://github.com/PennyLaneAI/pennylane/pull/7785)
 
   The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
   be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
@@ -602,6 +680,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.evolve` now errors out if the first argument is not a valid type.
+  [(#7768)](https://github.com/PennyLaneAI/pennylane/pull/7768)
+
 * `qml.PauliError` now accepts Pauli strings that include the identity operator.
   [(#7760)](https://github.com/PennyLaneAI/pennylane/pull/7760)
 
@@ -636,6 +717,15 @@
   update the shots and change measurement processes with fewer issues.
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
 
+* Updated the workflow helper function `construct_batch` to follow the same logic as `qml.execute`.
+  Now, user transforms including final transforms like `param_shift` and `metric_tensor` are
+  always applied before gradient determination and device preprocessing, matching the
+  execution pipeline. The gradient method is now determined after all user transforms
+  have been applied, mirroring the logic in `execute`. This change ensures that transform
+  slicing and execution are always in sync, and fixes several subtle bugs with transform
+  application at different workflow levels.
+  [(#7461)](https://github.com/PennyLaneAI/pennylane/pull/7461)
+
 * The decomposition of `DiagonalQubitUnitary` has been updated to a recursive decomposition
   into a smaller `DiagonalQubitUnitary` and a `SelectPauliRot` operation. This is a known
   decomposition [Theorem 7 in Shende et al.](https://arxiv.org/abs/quant-ph/0406176)
@@ -651,7 +741,7 @@
 * An xDSL `qml.compiler.python_compiler.transforms.IterativeCancelInversesPass` pass for applying `cancel_inverses`
   iteratively to an xDSL module has been added for the experimental xDSL Python compiler integration. This pass is
   optimized to cancel self-inverse operations iteratively to cancel nested self-inverse operations.
-  [(#7364)](https://github.com/PennyLaneAI/pennylane/pull/7364)
+  [(#7363)](https://github.com/PennyLaneAI/pennylane/pull/7363)
   [(#7595)](https://github.com/PennyLaneAI/pennylane/pull/7595)
 
 * An xDSL `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass` pass has been
@@ -747,6 +837,14 @@
   [(#7417)](https://github.com/PennyLaneAI/pennylane/pull/7417)
 
 * Updated documentation check to remove duplicate docstring references. [(#7453)](https://github.com/PennyLaneAI/pennylane/pull/7453)
+
+* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
+
+* The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
+  Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -856,6 +954,9 @@
   module for better performance by using a task-based executor to parallelize the computationally heavy
   parts of the algorithm.
   [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
+
+* Optimization for :func`pertrubation_error` which groups commutators by linearity.
+  [(#7790)][https://github.com/PennyLaneAI/pennylane/pull/7790]
 
 * Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
@@ -1080,6 +1181,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
+  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+  ``tree-traversal`` supports analytic mode.
+  [(#7490)](https://github.com/PennyLaneAI/pennylane/pull/7490)
+
 * Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
 may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
@@ -1088,7 +1194,13 @@ may move operations across a `Snapshot`.
   This helps ensure contributors follow current standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
+* Alphabetized the API list in the documentation build to ensure consistent ordering. 
+  [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
+  [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
 * Fixes `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same operation occurs multiple
   times in the circuit.
@@ -1232,6 +1344,9 @@ may move operations across a `Snapshot`.
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
+* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+  [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
 * Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
   to reflect supported devices and usage in analytic simulations,
   in the :doc:`/introduction/dynamic_quantum_circuits` page.
@@ -1251,6 +1366,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
