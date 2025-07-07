@@ -155,6 +155,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
             args[0].custom_qnode_transform = lambda x: x
+            args[0].register = lambda x: x
+
             return args[0]
 
         return super().__new__(cls)
