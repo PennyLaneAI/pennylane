@@ -60,10 +60,6 @@ jobs:
       - name: Default JAX Version
         id: jax
         run: echo "version=${{ inputs.jax_version }}" >> $GITHUB_OUTPUT
-
-      - name: Default Catalyst JAX Version
-        id: jax
-        run: echo "version=${{ inputs.catalyst_jax_version }}" >> $GITHUB_OUTPUT
       
       - name: Default Tensorflow Version
         id: tensorflow
