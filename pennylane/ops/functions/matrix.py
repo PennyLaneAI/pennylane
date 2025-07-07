@@ -190,6 +190,7 @@ def matrix(op, wire_order=None) -> TensorLike:
             raise ValueError(error_base_str + " with more than one wire.")
         if len(op.wires) == 0:
             raise ValueError(error_base_str + " without wires.")
+        wire_order = op.wires  # only one wire
 
     if wire_order and not set(op.wires).issubset(wire_order):
         raise TransformError(

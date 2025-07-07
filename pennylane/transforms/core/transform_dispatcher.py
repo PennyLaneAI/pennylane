@@ -126,6 +126,12 @@ def specific_apply_transform(obj, transform, *targs, **tkwargs):
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
 
+def _dummy_register(obj):
+    if isinstance(obj, type):
+        return lambda arg: arg
+    return obj
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -155,7 +161,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
             args[0].custom_qnode_transform = lambda x: x
-            args[0].register = lambda x: x
+            args[0].register = _dummy_register
 
             return args[0]
 
