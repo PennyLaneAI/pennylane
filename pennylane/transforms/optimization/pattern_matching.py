@@ -33,7 +33,7 @@ from pennylane.wires import Wires
 
 @transform
 def pattern_matching_optimization(
-    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
+    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None, allow_phase=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
@@ -212,7 +212,7 @@ def pattern_matching_optimization(
             raise QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
-        if not np.allclose(
+        if not allow_phase and not np.allclose(
             qml.matrix(pattern, wire_order=pattern.wires), np.eye(2**pattern.num_wires)
         ):
             raise QuantumFunctionError("Pattern is not valid, it does not implement identity.")
@@ -231,7 +231,7 @@ def pattern_matching_optimization(
         if max_matches:
             # Initialize the optimization by substitution of the different matches
             substitution = TemplateSubstitution(
-                max_matches, circuit_dag, pattern_dag, custom_quantum_cost
+                max_matches, circuit_dag, pattern_dag, custom_quantum_cost, allow_phase
             )
             substitution.substitution()
             already_sub = []
@@ -1526,7 +1526,14 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
-    def __init__(self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None):
+    def __init__(
+        self,
+        max_matches,
+        circuit_dag,
+        template_dag,
+        custom_quantum_cost=None,
+        allow_phase=False,
+    ):  # pylint: disable=too-many-arguments
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
@@ -1542,6 +1549,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
 
         self.substitution_list = []
         self.unmatched_list = []
+        self.allow_phase = allow_phase
 
         if custom_quantum_cost is not None:
             self.quantum_cost = dict(custom_quantum_cost)
@@ -1598,20 +1606,27 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
             bool: True if the quantum cost is reduced
         """
         cost_left = 0
-        for i in left:
-            if self.template_dag.get_node(i).op.name != "MultiControlledX":
-                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+
+        def _calculate_cost(cost, index):
+            if self.template_dag.get_node(index).op.name != "MultiControlledX":
+                cost += self.quantum_cost[self.template_dag.get_node(index).op.name]
+            elif len(self.template_dag.get_node(index).op.control_wires) >= 4 and self.allow_phase:
+                # special case possible due to phase trick, approx. MultiControlledX cost == MultiControlledH cost
+                cost += 9 * (
+                    2 * 4 * (2 + len(self.template_dag.get_node(index).op.control_wires) - 4) ** 2
+                )
             else:
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
-                cost_left += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
+                cost += 2 * 4 * len(self.template_dag.get_node(index).op.control_wires) ** 2
+            return cost
+
+        for i in left:
+            cost_left = _calculate_cost(cost_left, i)
 
         cost_right = 0
         for j in right:
-            if self.template_dag.get_node(j).op.name != "MultiControlledX":
-                cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
-            else:
-                cost_right += 2 * 4 * len(self.template_dag.get_node(j).op.control_wires) ** 2
+            cost_right = _calculate_cost(cost_right, j)
 
         return cost_left > cost_right
 
