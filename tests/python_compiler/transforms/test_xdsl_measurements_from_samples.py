@@ -149,8 +149,8 @@ class TestMeasurementsFromSamplesPass:
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
 
-                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.reg
-                %2 = "test.op"() : () -> !quantum.reg
+                // CHECK: [[q0:%.+]] = "test.op"() <{nqubits_attr = 1 : i64}> : () -> !quantum.reg
+                %2 = "test.op"() <{nqubits_attr = 1 : i64}> : () -> !quantum.reg
 
                 // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[q0]] : !quantum.obs
                 %3 = quantum.compbasis qreg %2 : !quantum.obs
@@ -242,6 +242,196 @@ class TestMeasurementsFromSamplesPass:
                 func.return %4, %counts : tensor<2xi64>, tensor<2xi64>
             }
             // CHECK-LABEL: func.func public @counts_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_2_wire_expval(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 2-wire circuit terminating with an expval(Z)
+        measurement on each wire.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %2 = "test.op"() : () -> !quantum.bit
+
+                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
+                %3 = "test.op"() : () -> !quantum.bit
+
+                // CHECK-NOT: quantum.namedobs
+                %4 = quantum.namedobs %2[PauliZ] : !quantum.obs
+                %5 = quantum.namedobs %3[PauliZ] : !quantum.obs
+
+                // CHECK: [[obs0:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
+                // CHECK: [[samples0:%.+]] = quantum.sample [[obs0]] : tensor<1x1xf64>
+                // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[obs1:%.+]] = quantum.compbasis qubits [[q1]] : !quantum.obs
+                // CHECK: [[samples1:%.+]] = quantum.sample [[obs1]] : tensor<1x1xf64>
+                // CHECK: [[c1:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[res0:%.+]] = func.call @expval_from_samples.tensor.1x1xf64([[samples0]], [[c0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK: [[res1:%.+]] = func.call @expval_from_samples.tensor.1x1xf64([[samples1]], [[c1]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK-NOT: quantum.expval
+                %6 = quantum.expval %4 : f64
+                %7 = "tensor.from_elements"(%6) : (f64) -> tensor<f64>
+                %8 = quantum.expval %5 : f64
+                %9 = "tensor.from_elements"(%8) : (f64) -> tensor<f64>
+
+                // CHECK: func.return [[res0]], [[res1]] : tensor<f64>, tensor<f64>
+                func.return %7, %9 : tensor<f64>, tensor<f64>
+            }
+            // CHECK-LABEL: func.func public @expval_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_2_wire_var(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 2-wire circuit terminating with a var(Z)
+        measurement on each wire.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                %2 = "test.op"() : () -> !quantum.bit
+
+                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
+                %3 = "test.op"() : () -> !quantum.bit
+
+                // CHECK-NOT: quantum.namedobs
+                %4 = quantum.namedobs %2[PauliZ] : !quantum.obs
+                %5 = quantum.namedobs %3[PauliZ] : !quantum.obs
+
+                // CHECK: [[obs0:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
+                // CHECK: [[samples0:%.+]] = quantum.sample [[obs0]] : tensor<1x1xf64>
+                // CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[obs1:%.+]] = quantum.compbasis qubits [[q1]] : !quantum.obs
+                // CHECK: [[samples1:%.+]] = quantum.sample [[obs1]] : tensor<1x1xf64>
+                // CHECK: [[c1:%.+]] = arith.constant dense<0> : tensor<i64>
+                // CHECK: [[res0:%.+]] = func.call @var_from_samples.tensor.1x1xf64([[samples0]], [[c0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK: [[res1:%.+]] = func.call @var_from_samples.tensor.1x1xf64([[samples1]], [[c1]]) :
+                // CHECK-SAME: (tensor<1x1xf64>, tensor<i64>) -> tensor<f64>
+                // CHECK-NOT: quantum.var
+                %6 = quantum.var %4 : f64
+                %7 = "tensor.from_elements"(%6) : (f64) -> tensor<f64>
+                %8 = quantum.var %5 : f64
+                %9 = "tensor.from_elements"(%8) : (f64) -> tensor<f64>
+
+                // CHECK: func.return [[res0]], [[res1]] : tensor<f64>, tensor<f64>
+                func.return %7, %9 : tensor<f64>, tensor<f64>
+            }
+            // CHECK-LABEL: func.func public @var_from_samples.tensor.1x1xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_2_wire_probs_global(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 2-wire circuit terminating with a "global"
+        probs measurement (one that implicitly acts on all wires).
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                // CHECK: [[qreg:%.+]] = {{.*}}quantum.alloc{{.*}} : () -> !quantum.reg
+                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+
+                // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[qreg]] : !quantum.obs
+                %3 = quantum.compbasis qreg %2 : !quantum.obs
+
+                // CHECK: [[samples:%.+]] = quantum.sample [[compbasis]] : tensor<1x2xf64>
+                // CHECK: [[res:%.+]] = func.call @probs_from_samples.tensor.1x2xf64([[samples]]) :
+                // CHECK-SAME: (tensor<1x2xf64>) -> tensor<4xf64>
+                // CHECK-NOT: quantum.probs
+                %4 = quantum.probs %3 : tensor<4xf64>
+
+                // CHECK: func.return [[res]] : tensor<4xf64>
+                func.return %4 : tensor<4xf64>
+            }
+            // CHECK-LABEL: func.func public @probs_from_samples.tensor.1x2xf64
+        }
+        """
+
+        ctx, pipeline = context_and_pipeline
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_2_wire_probs_per_wire(self, context_and_pipeline, run_filecheck):
+        """Test the measurements-from-samples pass on a 2-wire circuit terminating with separate
+        probs measurements per wire.
+        """
+        program = """
+        builtin.module @module_circuit {
+            // CHECK-LABEL: circuit
+            func.func public @circuit() -> (tensor<f64>) {
+                %0 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %1 = tensor.extract %0[] : tensor<i64>
+                quantum.device shots(%1) ["", "", ""]
+
+                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+
+                // CHECK: [[q0:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 0{{.*}} -> !quantum.bit
+                %3 = "quantum.extract"(%2) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+
+                // CHECK: [[compbasis0:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
+                %4 = quantum.compbasis qubits %3 : !quantum.obs
+
+                // CHECK: [[samples0:%.+]] = quantum.sample [[compbasis0]] : tensor<1x1xf64>
+                // CHECK: [[res0:%.+]] = func.call @probs_from_samples.tensor.1x1xf64([[samples0]]) :
+                // CHECK-SAME: (tensor<1x1xf64>) -> tensor<2xf64>
+                // CHECK-NOT: quantum.probs
+                %5 = quantum.probs %4 : tensor<2xf64>
+
+                // CHECK: [[q1:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 1{{.*}} -> !quantum.bit
+                %6 = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+
+                // CHECK: [[compbasis1:%.+]] = quantum.compbasis qubits [[q1]] : !quantum.obs
+                %7 = quantum.compbasis qubits %6 : !quantum.obs
+
+                // CHECK: [[samples1:%.+]] = quantum.sample [[compbasis1]] : tensor<1x1xf64>
+                // CHECK: [[res1:%.+]] = func.call @probs_from_samples.tensor.1x1xf64([[samples1]]) :
+                // CHECK-SAME: (tensor<1x1xf64>) -> tensor<2xf64>
+                // CHECK-NOT: quantum.probs
+                %8 = quantum.probs %7 : tensor<2xf64>
+
+                // CHECK: func.return [[res0]], [[res1]] : tensor<2xf64>, tensor<2xf64>
+                func.return %5, %8 : tensor<2xf64>, tensor<2xf64>
+            }
+            // CHECK-LABEL: func.func public @probs_from_samples.tensor
         }
         """
 
@@ -360,7 +550,7 @@ class TestMeasurementsFromSamplesExecution:
         ],
     )
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def test_1_wire_mp_with_obs(self, shots, initial_op, mp, obs, expected_res):
+    def test_exec_1_wire_mp_with_obs(self, shots, initial_op, mp, obs, expected_res):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         measurements that require an observable (i.e. expval and var).
         """
@@ -392,7 +582,7 @@ class TestMeasurementsFromSamplesExecution:
             (qml.X, [0.0, 1.0]),
         ],
     )
-    def test_1_wire_probs(self, shots, initial_op, expected_res):
+    def test_exec_1_wire_probs(self, shots, initial_op, expected_res):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         probs measurements.
         """
@@ -431,7 +621,7 @@ class TestMeasurementsFromSamplesExecution:
             (qml.X, {"0": 0, "1": 10}),
         ],
     )
-    def test_1_wire_counts(self, shots, initial_op, expected_res):
+    def test_exec_1_wire_counts(self, shots, initial_op, expected_res):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         counts measurements.
         """
@@ -466,7 +656,7 @@ class TestMeasurementsFromSamplesExecution:
             (qml.X, 1),
         ],
     )
-    def test_1_wire_sample(self, shots, initial_op, expected_res_base):
+    def test_exec_1_wire_sample(self, shots, initial_op, expected_res_base):
         """Test the measurements_from_samples transform on a device with a single wire and terminal
         sample measurements.
 
@@ -508,8 +698,8 @@ class TestMeasurementsFromSamplesExecution:
         ],
     )
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def test_2_wires_with_obs_separate(self, shots, initial_ops, mp, obs, expected_res):
-        """Test the measurements_from_samples transform on a device with a single wire and terminal
+    def test_exec_2_wire_with_obs_separate(self, shots, initial_ops, mp, obs, expected_res):
+        """Test the measurements_from_samples transform on a device with two wires and terminal
         measurements that require an observable (i.e. expval and var).
 
         In this test, the terminal measurements are performed separately per wire.
@@ -552,8 +742,8 @@ class TestMeasurementsFromSamplesExecution:
             ((qml.X, qml.X), qml.var, 0.0),
         ],
     )
-    def test_2_wires_with_obs_combined(self, shots, initial_ops, mp, expected_res):
-        """Test the measurements_from_samples transform on a device with a single wire and terminal
+    def test_exec_2_wire_with_obs_combined(self, shots, initial_ops, mp, expected_res):
+        """Test the measurements_from_samples transform on a device with two wires and terminal
         measurements that require an observable (i.e. expval and var).
 
         In this test, the terminal measurements are performed on the combination of both wires.
@@ -574,13 +764,85 @@ class TestMeasurementsFromSamplesExecution:
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
+        assert expected_res == circuit_compiled()
+
+    # -------------------------------------------------------------------------------------------- #
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("shots", [1, 2])
+    @pytest.mark.parametrize(
+        "initial_ops, expected_res",
+        [
+            ((qml.I, qml.I), [1.0, 0.0, 0.0, 0.0]),
+            ((qml.I, qml.X), [0.0, 1.0, 0.0, 0.0]),
+            ((qml.X, qml.I), [0.0, 0.0, 1.0, 0.0]),
+            ((qml.X, qml.X), [0.0, 0.0, 0.0, 1.0]),
+        ],
+    )
+    def test_exec_2_wire_probs_global(self, shots, initial_ops, expected_res):
+        """Test the measurements_from_samples transform on a device with two wires and a terminal,
+        "global" probs measurements (one that implicitly acts on all wires).
+        """
+        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit_ref():
+            initial_ops[0](wires=0)
+            initial_ops[1](wires=1)
+            return qml.probs()
+
+        assert np.array_equal(
+            expected_res, circuit_ref()
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            measurements_from_samples_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
         assert np.array_equal(expected_res, circuit_compiled())
 
-        assert expected_res == circuit_compiled()
+    # -------------------------------------------------------------------------------------------- #
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize("shots", [1, 2])
+    @pytest.mark.parametrize(
+        "initial_ops, expected_res",
+        [
+            ((qml.I, qml.I), ([1.0, 0.0], [1.0, 0.0])),
+            ((qml.I, qml.X), ([1.0, 0.0], [0.0, 1.0])),
+            ((qml.X, qml.I), ([0.0, 1.0], [1.0, 0.0])),
+            ((qml.X, qml.X), ([0.0, 1.0], [0.0, 1.0])),
+        ],
+    )
+    def test_exec_2_wire_probs_per_wire(self, shots, initial_ops, expected_res):
+        """Test the measurements_from_samples transform on a device with two wires and a terminal,
+        "global" probs measurements (one that implicitly acts on all wires).
+        """
+        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit_ref():
+            initial_ops[0](wires=0)
+            initial_ops[1](wires=1)
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        assert np.array_equal(
+            expected_res, circuit_ref()
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            measurements_from_samples_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
+        assert np.array_equal(expected_res, circuit_compiled())
+
+    # -------------------------------------------------------------------------------------------- #
 
     @pytest.mark.xfail(reason="Dynamic shots not supported")
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_expval_dynamic_shots(self):
+    def test_exec_expval_dynamic_shots(self):
         """Test the measurements_from_samples transform where the number of shots is dynamic.
 
         This use case is not currently supported.

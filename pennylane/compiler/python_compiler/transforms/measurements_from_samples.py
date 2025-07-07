@@ -13,10 +13,27 @@
 # limitations under the License.
 
 """This module contains the implementation of the measurements_from_samples transform,
-written using xDSL."""
+written using xDSL.
+
+Known Limitations
+-----------------
+
+  * Only measurements in the computational basis (or where the observable is a Pauli Z op) are
+    currently supported; for arbitrary observables we require an equivalent compilation pass of the
+    diagonalize_measurements transform.
+  * The compilation pass assumes a static number of shots.
+  * Usage patterns that are not yet supported with program capture are also not supported in the
+    compilation pass. For example, operator arithmetic is not currently supported, such as
+    qml.expval(qml.Y(0) @ qml.X(1)).
+  * qml.counts() is not supported since the return type/shape is different in PennyLane and Catalyst.
+    See https://docs.pennylane.ai/projects/catalyst/en/stable/dev/quick_start.html#measurements
+    for more information.
+"""
 
 from abc import abstractmethod
 from dataclasses import dataclass
+from itertools import islice
+from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -154,7 +171,10 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
     @staticmethod
     def insert_sample_op(
-        compbasis_op: quantum.ComputationalBasisOp, shots: int, rewriter: PatternRewriter
+        compbasis_op: quantum.ComputationalBasisOp,
+        shots: int,
+        n_qubits: int,
+        rewriter: PatternRewriter,
     ) -> quantum.SampleOp:
         """Create and insert a sample op (quantum.SampleOp).
 
@@ -166,6 +186,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         Args:
             compbasis_op (quantum.ComputationalBasisOp): The computational-basis op used as the
                 input operand to the sample op.
+            shots (int): Number of shots (to set the shape of the sample op returned array).
+            n_qubits (int): Number of qubits (to set the shape of the sample op returned array).
             rewriter (PatternRewriter): The xDSL pattern rewriter.
 
         Returns:
@@ -176,10 +198,9 @@ class MeasurementsFromSamplesPattern(RewritePattern):
             f"{type(compbasis_op).__name__}"
         )
 
-        # TODO: this assumes MP acts on 1 wire, what if there are more?
         sample_op = quantum.SampleOp(
             operands=[compbasis_op.results[0], None, None],
-            result_types=[builtin.TensorType(builtin.Float64Type(), [shots, 1])],
+            result_types=[builtin.TensorType(builtin.Float64Type(), [shots, n_qubits])],
         )
         rewriter.insert_op(sample_op, insertion_point=InsertPoint.after(compbasis_op))
 
@@ -208,42 +229,58 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         return None
 
     @classmethod
-    def get_postprocessing_func_from_module_and_insert(
-        cls, postprocessing_module: builtin.ModuleOp, name: str, matched_op: ir.Operation
+    def get_postprocessing_funcs_from_module_and_insert(
+        cls,
+        postprocessing_module: builtin.ModuleOp,
+        matched_op: ir.Operation,
+        name: Optional[str] = None,
     ) -> func.FuncOp:
-        """Get the post-processing FuncOp with the given `name` from the given
-        `postprocessing_module` and inserts it immediately after the FuncOp (in the same block) that
-        contains `matched_op`.
+        """Get the post-processing FuncOp from `postprocessing_module` (and any helper functions
+        also contained in `postprocessing_module`) and insert it (them) immediately after the FuncOp
+        (in the same block) that contains `matched_op`.
 
         The post-processing function recovers the original measurement process result from the
-        samples array.
+        samples array. This post-postprocessing function is optionally renamed to `name`, if given.
 
         Args:
             postprocessing_module (builtin.ModuleOp): The MLIR module containing the post-processing
                 FuncOp.
-            name (str): The name of the post-processing FuncOp.
             matched_op (Operation): The reference op, the parent of which is used as the
                 reference point when inserting the post-processing FuncOp. This is usually the op
                 matched in the call to match_and_rewrite().
+            name (str, optional): The name to assign to the post-processing FuncOp, if given.
 
         Returns:
             func.FuncOp: The inserted post-processing FuncOp.
         """
-        func_op = matched_op.parent_op()
+        parent_func_op = matched_op.parent_op()
 
-        assert isinstance(func_op, func.FuncOp), (
+        assert isinstance(parent_func_op, func.FuncOp), (
             f"Expected parent of matched op '{matched_op}' to be a func.FuncOp, but got "
-            f"{type(func_op).__name__}"
+            f"{type(parent_func_op).__name__}"
         )
 
-        postprocessing_func_op = cls._get_postprocessing_func_op_clone_from_module(
-            postprocessing_module
+        # This first op in `postprocessing_module` is the "main" post-processing function
+        postprocessing_func_op = postprocessing_module.body.ops.first.clone()
+        assert isinstance(postprocessing_func_op, func.FuncOp), (
+            f"Expected the first operator of `postprocessing_module` to be a func.FuncOp but "
+            f"got {type(postprocessing_func_op).__name__}"
         )
 
         # The function name from jax.jit is 'main'; rename it here
-        postprocessing_func_op.sym_name = builtin.StringAttr(data=name)
+        if name is not None:
+            postprocessing_func_op.sym_name = builtin.StringAttr(data=name)
 
-        func_op.parent.insert_op_after(postprocessing_func_op, func_op)
+        parent_block = parent_func_op.parent
+        parent_block.insert_op_after(postprocessing_func_op, parent_func_op)
+
+        # Get and insert helper functions, if any
+        if len(postprocessing_module.body.ops) > 1:
+            prev_op = postprocessing_func_op
+            for _op in islice(postprocessing_module.body.ops, 1, None):
+                helper_op = _op.clone()
+                parent_block.insert_op_after(helper_op, prev_op)
+                prev_op = helper_op
 
         return postprocessing_func_op
 
@@ -296,15 +333,66 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         Returns:
             arith.ConstantOp: The created constant op.
         """
-        int_attr = builtin.IntegerAttr(value, value_type=value_type)
         constant_int_op = arith.ConstantOp(
-            builtin.DenseIntOrFPElementsAttr.create_dense_int(
-                type=builtin.TensorType(int_attr.type, shape=()), data=int_attr
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.IntegerType(value_type), shape=()), data=(value,)
             )
         )
         rewriter.insert_op(constant_int_op, insertion_point=insert_point)
 
         return constant_int_op
+
+    @staticmethod
+    def get_n_qubits_from_qreg(qreg: ir.SSAValue):
+        """Get the number of qubits from a qreg SSA value.
+
+        This method walks back through the SSA graph from the qreg until it reaches its root
+        quantum.alloc op, or alloc-like op (with possibly zero or more quantum.insert ops
+        in-between), from which the number of qubits is extracted.
+
+        An op is "alloc-like" if it has an 'nqubits_attr' attribute.
+
+        Args:
+            qreg (ir.SSAValue): The qreg SSA value.
+        """
+        assert isinstance(qreg, ir.SSAValue) and isinstance(qreg.type, quantum.QuregType), (
+            f"Expected `qreg` to be an SSAValue with type quantum.QuregType, but got " f"{qreg}"
+        )
+
+        def _walk_back_to_alloc_op(
+            insert_or_alloc_op: quantum.AllocOp | quantum.InsertOp,
+        ) -> quantum.AllocOp:
+            """Recursively walk back from a quantum.insert op to its root quantum.alloc op or
+            alloc-like op.
+
+            Once found, return the quantum.alloc op.
+            """
+            if (
+                isinstance(insert_or_alloc_op, quantum.AllocOp)
+                or insert_or_alloc_op.properties.get("nqubits_attr") is not None
+            ):
+                return insert_or_alloc_op
+
+            if isinstance(insert_or_alloc_op, quantum.InsertOp):
+                return _walk_back_to_alloc_op(insert_or_alloc_op.operands[0].owner)
+
+            assert False, (
+                f"Expected either a quantum.AllocOp or quantum.InsertOp op, but got "
+                f"{type(insert_or_alloc_op).__name__}"
+            )
+
+        alloc_op = _walk_back_to_alloc_op(qreg.owner)
+
+        nqubits_attr = alloc_op.properties.get("nqubits_attr")
+        assert nqubits_attr is not None, (
+            "Unable to determine number of qubits from alloc op; " "missing property 'nqubits_attr'"
+        )
+
+        n_qubits = nqubits_attr.value.data
+
+        assert n_qubits is not None, "Unable to determine number of qubits from qreg SSA value"
+
+        return n_qubits
 
 
 class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
@@ -324,7 +412,7 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
         observable_op = self.get_observable_op(matched_op)
         in_qubit = observable_op.operands[0]
         compbasis_op = self.insert_compbasis_op(in_qubit, observable_op, rewriter)
-        sample_op = self.insert_sample_op(compbasis_op, self._shots, rewriter)
+        sample_op = self.insert_sample_op(compbasis_op, self._shots, 1, rewriter)
 
         # Insert the post-processing function into current module or get handle to it if already
         # inserted
@@ -353,8 +441,8 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
                 jax.core.ShapedArray([self._shots, 1], float), 0
             )
 
-            postprocessing_func_op = self.get_postprocessing_func_from_module_and_insert(
-                postprocessing_module, postprocessing_func_name, matched_op
+            postprocessing_func_op = self.get_postprocessing_funcs_from_module_and_insert(
+                postprocessing_module, matched_op, postprocessing_func_name
             )
 
         # Insert the op that specifies which column in samples array to access
@@ -373,10 +461,8 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
 
         # The op to replace is not expval/var op itself, but the tensor.from_elements op that follows
         op_to_replace = list(matched_op.results[0].uses)[0].operation
-        op_to_replace_name_attr = op_to_replace.attributes.get("op_name__")
-        assert (
-            op_to_replace_name_attr is not None
-            and op_to_replace_name_attr.data == "tensor.from_elements"
+        assert isinstance(
+            op_to_replace, tensor.FromElementsOp
         ), f"Expected to replace a tensor.from_elements op but got {type(op_to_replace).__name__}"
         rewriter.replace_op(op_to_replace, postprocessing_func_call_op)
 
@@ -389,9 +475,6 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
     """A rewrite pattern for the ``measurements_from_samples`` transform that matches and rewrites
     ``qml.probs()`` operations.
 
-    ..
-        TODO: This pattern assumes probs only acts on a single wire, which is too restrictive.
-
     Args:
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
@@ -401,11 +484,23 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
     def match_and_rewrite(self, probs_op: quantum.ProbsOp, rewriter: PatternRewriter, /):
         """Match and rewrite for quantum.ProbsOp."""
         compbasis_op = probs_op.operands[0].owner
-        sample_op = self.insert_sample_op(compbasis_op, self._shots, rewriter)
+
+        n_qubits = None
+        if compbasis_op.qreg is not None:
+            n_qubits = self.get_n_qubits_from_qreg(compbasis_op.qreg)
+
+        elif not compbasis_op.qubits == ():
+            n_qubits = len(compbasis_op.qubits)
+
+        assert (
+            n_qubits is not None
+        ), "Unable to determine number of qubits from quantum.compbasis op"
+
+        sample_op = self.insert_sample_op(compbasis_op, self._shots, n_qubits, rewriter)
 
         # Insert the post-processing function into current module or
         # get handle to it if already inserted
-        postprocessing_func_name = f"probs_from_samples.tensor.{self._shots}x1xf64"
+        postprocessing_func_name = f"probs_from_samples.tensor.{self._shots}x{n_qubits}xf64"
 
         postprocessing_func_op = self.get_postprocessing_func_op_from_block_by_name(
             probs_op.parent_op().parent, postprocessing_func_name
@@ -416,18 +511,18 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
             # shape (shots, wire) be dynamic and given as SSA values?
             # Same goes for the column/wire indices (the second argument).
             postprocessing_module = _postprocessing_probs(
-                jax.core.ShapedArray([self._shots, 1], float)
+                jax.core.ShapedArray([self._shots, n_qubits], float)
             )
 
-            postprocessing_func_op = self.get_postprocessing_func_from_module_and_insert(
-                postprocessing_module, postprocessing_func_name, probs_op
+            postprocessing_func_op = self.get_postprocessing_funcs_from_module_and_insert(
+                postprocessing_module, probs_op, postprocessing_func_name
             )
 
         # Insert the call to the post-processing function
         postprocessing_func_call_op = func.CallOp(
             callee=builtin.FlatSymbolRefAttr(postprocessing_func_op.sym_name),
             arguments=[sample_op.results[0]],
-            return_types=[builtin.TensorType(builtin.Float64Type(), shape=(2,))],
+            return_types=[builtin.TensorType(builtin.Float64Type(), shape=(2**n_qubits,))],
         )
 
         rewriter.replace_matched_op(postprocessing_func_call_op)
@@ -520,7 +615,7 @@ def _get_static_shots_value_from_first_device_op(module: builtin.ModuleOp) -> in
         shots_value_attribute is not None
     ), "Cannot get number of shots; the constant op has no 'value' attribute"
 
-    shots_int_values = shots_value_attribute.get_int_values()
+    shots_int_values = shots_value_attribute.get_values()
     assert len(shots_int_values) == 1, f"Expected a single shots value, got {len(shots_int_values)}"
 
     return shots_int_values[0]
@@ -563,11 +658,7 @@ def _postprocessing_var(samples, column):
     Returns:
         jax.core.ShapedArray: The variance for each requested column.
     """
-    # We have to compute the variance manually here, rather than using jnp.var.
-    # The reason is that jnp.var does not get lowered (for some reason) and is left as a call to an
-    # undefined `_var` function in the generated module.
-    a = 1.0 - 2.0 * samples[:, column]
-    return jnp.sum((a - jnp.mean(a)) ** 2, axis=0) / a.shape[0]
+    return jnp.var(1.0 - 2.0 * samples[:, column], axis=0)
 
 
 @xdsl_module
@@ -577,14 +668,25 @@ def _postprocessing_probs(samples):
 
     This function assumes that the samples are in the computational basis (0s and 1s).
 
-    ..
-        TODO: This function assumes probs is only acting on one wire!
-
     Args:
         samples (jax.core.ShapedArray): Array of samples, with shape (shots, wires).
     """
-    n_samples = samples.size
-    probs_0 = jnp.sum(samples == 0) / n_samples
-    probs_1 = jnp.sum(samples == 1) / n_samples
+    n_samples = samples.shape[0]
+    n_wires = samples.shape[1]
 
-    return jnp.array([probs_0, probs_1], dtype=float)
+    # Convert samples from a list of 0, 1 integers to base 10 representation
+    powers_of_two = 2 ** jnp.arange(n_wires)[::-1]
+    indices = samples @ powers_of_two
+    dim = 2**n_wires
+
+    # This block is effectively equivalent to `jnp.bincount(indices.astype(int), length=dim)`.
+    # However, we are currently not able to use jnp.bincount with Catalyst because after lowering,
+    # it contains a stablehlo.scatter op with <indices_are_sorted = false, unique_indices = false>,
+    # which we currently do not support.
+    # If Catalyst PR https://github.com/PennyLaneAI/catalyst/pull/1849 is merged, then we should be
+    # able to use bincount.
+    counts = jnp.zeros(dim, dtype=int)
+    for i in indices.astype(int):
+        counts = counts.at[i].add(1)
+
+    return counts / n_samples
