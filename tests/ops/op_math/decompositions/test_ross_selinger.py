@@ -45,9 +45,11 @@ def test_domain_correction(angle, result):
     ("op", "epsilon"),
     [
         (qml.RZ(math.pi / 42, wires=[1]), 1e-4),
+        (qml.RZ(5 * math.pi / 4, wires=[1]), 1e-5),
         (qml.PhaseShift(math.pi / 7, wires=["a"]), 1e-3),
         (qml.RZ(math.pi / 3, wires=[1]), 1e-5),
         (qml.RZ(-math.pi / 3, wires=[1]), 1e-3),
+        (qml.RZ(-math.pi / 4, wires=[1]), 1e-4),
         (qml.PhaseShift(-math.pi / 6, wires=[0]), 1e-3),
         (qml.RZ(-math.pi / 5, wires=[0]), 1e-4),
         (qml.RZ(-math.pi / 7, wires=[1]), 1e-4),
