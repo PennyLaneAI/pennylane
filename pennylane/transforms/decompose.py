@@ -426,6 +426,7 @@ def decompose(
         with no defined decomposition is encountered during decomposition, it will be left in the
         circuit even if it does not belong in the target gate set. In this case, a ``UserWarning``
         will be raised. To suppress this warning, simply add the operator to the gate set.
+        When ``qml.decomposition.enabled_graph()``, PennyLane errors out with a ``DecompositionError``.
 
     .. seealso::
 
