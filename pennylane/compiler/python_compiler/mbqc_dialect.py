@@ -23,7 +23,7 @@ catalyst/mlir/include/MBQC/IR/MBQCDialect.td file in the catalyst repository.
 
 from typing import Optional, TypeAlias
 
-from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType
+from xdsl.dialects.builtin import Float64Type, IntegerAttr, IntegerType
 from xdsl.ir import Dialect, EnumAttribute, Operation, SSAValue
 from xdsl.irdl import (
     BaseAttr,
