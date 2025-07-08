@@ -201,8 +201,8 @@ class DynamicRegister(Wires):
 
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
-    """Dynamically allocates new wires in-line or as a context manager, which also safely deallocates the
-    new wires upon exiting the context.
+    """Dynamically allocates new wires in-line,
+    or as a context manager which also safely deallocates the new wires upon exiting the context.
 
     .. warning:: 
         This feature is experimental, and any workflows that include calls to ``allocate`` cannot be 
