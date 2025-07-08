@@ -153,14 +153,14 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         def c():
             qml.H(0)
 
-            wires = qml.allocate(1, require_zeros=True)
+            wires = qml.allocation.allocate(1, require_zeros=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.deallocate(wires, restored=True)
+            qml.allocation.deallocate(wires)
 
-            new_wires = qml.allocate(1)
+            new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
-            qml.deallocate(new_wires)
+            qml.allocation.deallocate(new_wires)
 
     >>> print(qml.draw(c, level="user")())
                 0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
