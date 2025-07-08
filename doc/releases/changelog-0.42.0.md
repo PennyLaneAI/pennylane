@@ -150,6 +150,7 @@
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+  [(#7814)](https://github.com/PennyLaneAI/pennylane/pull/7814)
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
