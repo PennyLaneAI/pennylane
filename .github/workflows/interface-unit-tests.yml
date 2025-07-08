@@ -406,7 +406,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
-      job_name: ${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      job_name: ${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-capture-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
