@@ -109,7 +109,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
             op (quantum.ExpvalOp | quantum.VarianceOp): The op that uses the observable op.
 
         Returns:
-            quantum.NamedObsOp: The observable
+            quantum.NamedObsOp: The observable op.
         """
         observable_op = op.operands[0].owner
         cls._validate_observable_op(observable_op)
@@ -124,12 +124,11 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         implementation of the measurements-from-samples transform.
 
         Raises:
-            NotImplementedError: If the observable is a quantum.NamedObsOp and is anything but a
-            PauliZ.
+            NotImplementedError: If the observable is anything but a PauliZ quantum.NamedObsOp.
         """
         assert isinstance(
             op, quantum.NamedObsOp
-        ), f"Expected a quantum.NamedObsOp but got {type(op).__name__}"
+        ), f"Expected `op` to be a quantum.NamedObsOp, but got {type(op).__name__}"
 
         if op.type.data != "PauliZ":
             raise NotImplementedError(
@@ -149,8 +148,8 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
         Args:
             in_qubit (SSAValue): The SSA value used as input to the computational-basis op.
-            ref_op (Operation): The reference op before which the quantum.ComputationalBasisOp
-                is inserted.
+            ref_op (Operation): The reference op before which the quantum.ComputationalBasisOp is
+                inserted.
             rewriter (PatternRewriter): The xDSL pattern rewriter.
 
         Returns:
@@ -158,7 +157,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         """
         assert isinstance(in_qubit, ir.SSAValue) and isinstance(in_qubit.type, quantum.QubitType), (
             f"Expected `in_qubit` to be an SSAValue with type quantum.QubitType, but got "
-            f"{in_qubit}"
+            f"{type(in_qubit).__name__}"
         )
 
         # The input operands are [[qubit, ...], qreg]
@@ -179,7 +178,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         """Create and insert a sample op (quantum.SampleOp).
 
         The type of the returned samples array is currently restricted to be static, with shape
-        (shots, wires=1).
+        (shots, n_qubits).
 
         The sample op is inserted after the supplied `compbasis_op`.
 
@@ -215,7 +214,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         If the block does not contain a FuncOp with the matching name, returns None.
 
         Args:
-            block (ir.Block): The MLIR block to search.
+            block (Block): The xDSL block to search.
             name (str): The name of the post-processing FuncOp.
 
         Returns:
@@ -285,35 +284,6 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         return postprocessing_func_op
 
     @staticmethod
-    def _get_postprocessing_func_op_clone_from_module(module: builtin.ModuleOp) -> func.FuncOp:
-        """Get a clone of the post-processing FuncOp from the given `module`.
-
-        Helper function to ``_get_postprocessing_func_from_module_and_insert()``.
-
-        This function assumes the module contains only a single op, which is the FuncOp representing
-        the post-processing function. This module typically comes from an inlined xDSL module, e.g.
-        from a jax.jit() block or a text block containing MLIR operations.
-
-        Args:
-            module (builtin.ModuleOp): The MLIR module containing the post-processing FuncOp.
-
-        Returns:
-            func.FuncOp: The post-processing FuncOp.
-        """
-        assert isinstance(
-            module, builtin.ModuleOp
-        ), f"Expected `module` to be a builtin.ModuleOp, but got {type(module).__name__}"
-
-        postprocessing_func_op = module.body.ops.first
-        assert isinstance(postprocessing_func_op, func.FuncOp), (
-            f"Expected the first operator of `postprocessing_module` to be a func.FuncOp but "
-            f"got {type(postprocessing_func_op).__name__}"
-        )
-
-        # Need to clone since original postprocessing_func_op is attached to the jax.jit module
-        return postprocessing_func_op.clone()
-
-    @staticmethod
     def insert_constant_int_op(
         value: int,
         insert_point: InsertPoint,
@@ -353,10 +323,11 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         An op is "alloc-like" if it has an 'nqubits_attr' attribute.
 
         Args:
-            qreg (ir.SSAValue): The qreg SSA value.
+            qreg (SSAValue): The qreg SSA value.
         """
         assert isinstance(qreg, ir.SSAValue) and isinstance(qreg.type, quantum.QuregType), (
-            f"Expected `qreg` to be an SSAValue with type quantum.QuregType, but got " f"{qreg}"
+            f"Expected `qreg` to be an SSAValue with type quantum.QuregType, but got "
+            f"{type(qreg).__name__}"
         )
 
         def _walk_back_to_alloc_op(
@@ -442,7 +413,7 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
                 postprocessing_module, matched_op, postprocessing_func_name
             )
 
-        # Insert the op that specifies which column in samples array to access
+        # Insert the op that specifies which column in the samples array to access.
         # TODO: This also assumes MP acts on a single wire (hence we always use column 0 of the
         # samples here); what if MP acts on multiple wires?
         column_index_op = self.insert_constant_int_op(
@@ -456,11 +427,11 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
             return_types=[builtin.TensorType(builtin.Float64Type(), shape=())],
         )
 
-        # The op to replace is not expval/var op itself, but the tensor.from_elements op that follows
+        # The op to replace is not the expval/var op itself, but the tensor.from_elements op that follows
         op_to_replace = list(matched_op.results[0].uses)[0].operation
         assert isinstance(
             op_to_replace, tensor.FromElementsOp
-        ), f"Expected to replace a tensor.from_elements op but got {type(op_to_replace).__name__}"
+        ), f"Expected to replace a tensor.from_elements op, but got {type(op_to_replace).__name__}"
         rewriter.replace_op(op_to_replace, postprocessing_func_call_op)
 
         # Finally, erase the expval/var op and its associated observable op

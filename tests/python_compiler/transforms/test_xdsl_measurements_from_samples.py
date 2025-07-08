@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the Python compiler `measurements_from_samples` transform."""
+"""Unit and integration tests for the Python compiler `measurements_from_samples` transform."""
 
 # pylint: disable=wrong-import-position
 
@@ -431,7 +431,7 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK: func.return [[res0]], [[res1]] : tensor<2xf64>, tensor<2xf64>
                 func.return %5, %8 : tensor<2xf64>, tensor<2xf64>
             }
-            // CHECK-LABEL: func.func public @probs_from_samples.tensor
+            // CHECK-LABEL: func.func public @probs_from_samples.tensor.1x1xf64
         }
         """
 
@@ -646,7 +646,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
@@ -662,8 +661,6 @@ class TestMeasurementsFromSamplesExecution:
 
         In this case, the measurements_from_samples pass should effectively be a no-op.
         """
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
         dev = qml.device("lightning.qubit", wires=1, shots=shots)
 
         @qml.qnode(dev)
@@ -676,7 +673,7 @@ class TestMeasurementsFromSamplesExecution:
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
-        expected_res = expected_res_base * jnp.ones(shape=(shots, 1), dtype=int)
+        expected_res = expected_res_base * np.ones(shape=(shots, 1), dtype=int)
 
         assert np.array_equal(expected_res, circuit_compiled())
 
