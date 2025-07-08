@@ -13,6 +13,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The matrix factorization into Givens rotations in :func:`~.math.decomposition.givens_decomposition`
+  has been updated to skip redundant diagonal sign factors for real-valued, i.e., orthogonal,
+  rotation matrices. Only a single diagonal sign factor is required in case the matrix has
+  determinant :math:`-1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
