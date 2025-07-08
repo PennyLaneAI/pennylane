@@ -14,8 +14,14 @@
 """
 Contains the OutPoly template.
 """
-
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -262,6 +268,8 @@ class OutPoly(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_work_wires", "mod", "coeffs_list"}
+
     def __init__(
         self,
         polynomial_function,
@@ -340,6 +348,14 @@ class OutPoly(Operation):
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(*data, **hyperparams_dict)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "mod": self.hyperparameters["mod"],
+            "coeffs_list": self.hyperparameters["coeffs_list"],
+        }
 
     def map_wires(self, wire_map: dict):
 
@@ -444,3 +460,92 @@ class OutPoly(Operation):
         list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))
 
         return list_ops
+
+
+def _out_poly_decomposition_resources(num_work_wires, mod, coeffs_list) -> dict:
+    num_output_adder_mod = 2 if num_work_wires else 1
+
+    resources = {
+        resource_rep(qml.QFT, num_wires=num_output_adder_mod): 1,
+    }
+
+    coeffs_dic = dict(coeffs_list)
+
+    for item, coeff in coeffs_dic.items():
+
+        if not 1 in item:
+            rep = resource_rep(qml.PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
+            if rep in resources:
+                resources[rep] += 1
+            else:
+                resources[rep] = 1
+        else:
+            num_controls = sum([1 for bit in item if bit == 1])
+
+            ctrl_phase_rep = controlled_resource_rep(
+                base_class=qml.PhaseAdder,
+                base_params={"num_x_wires": num_output_adder_mod, "mod": mod},
+                num_control_wires=num_controls,
+                num_zero_control_values=0,
+                num_work_wires=int(num_work_wires > 0),
+                work_wire_type="dirty",
+            )
+            if ctrl_phase_rep in resources:
+                resources[ctrl_phase_rep] += 1
+            else:
+                resources[ctrl_phase_rep] = 1
+
+    resources[adjoint_resource_rep(qml.QFT, {"num_wires": num_output_adder_mod})] = 1
+
+    return resources
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_out_poly_decomposition_resources)
+def _out_poly_decomposition(
+    polynomial_function,
+    input_registers,
+    output_wires: WiresLike,
+    mod=None,
+    work_wires: WiresLike = (),
+    **kwargs,
+):  # pylint: disable=unused-argument, arguments-differ
+    registers_wires = [*input_registers, output_wires]
+
+    if len(work_wires) == 0:
+        work_wires = [(), ()]
+
+    list_ops = []
+
+    output_adder_mod = (
+        [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
+    )
+
+    list_ops.append(qml.QFT(wires=output_adder_mod))
+
+    coeffs_dic = dict(kwargs["coeffs_list"])
+
+    all_wires_input = sum([*registers_wires[:-1]], start=[])
+
+    for item, coeff in coeffs_dic.items():
+
+        if not 1 in item:
+            # Add the constant term
+            qml.PhaseAdder(int(coeff), output_adder_mod)
+        else:
+            controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
+
+            qml.ctrl(
+                qml.PhaseAdder(
+                    int(coeff) % mod,
+                    output_adder_mod,
+                    work_wire=work_wires[1],
+                    mod=mod,
+                ),
+                control=controls,
+            )
+
+    qml.adjoint(qml.QFT)(wires=output_adder_mod)
+
+
+add_decomps(OutPoly, _out_poly_decomposition)
