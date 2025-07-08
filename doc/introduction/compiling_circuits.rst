@@ -460,6 +460,8 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
 .. code-block:: python
 
+    qml.decomposition.enable_graph()
+
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
     def my_cnot(wires, **__):
         qml.H(wires=wires[1])
