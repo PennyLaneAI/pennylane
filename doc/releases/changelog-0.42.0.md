@@ -271,8 +271,6 @@
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
-  [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
-
   ```python
   import pennylane as qml
 

@@ -213,21 +213,6 @@ class TestOpenQasm:
     dev = qml.device("default.qubit", wires=2, shots=100)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
-    def test_invalid_qasm3(self):
-        circuit = """\
-            OPENQASM 3.0;
-            qubit q0;
-            bit output = "0";
-            rz(0.9) q0;
-            measure q0 -> output;
-            """
-
-        with pytest.raises(
-            SyntaxError, match="Something went wrong when parsing the provided OpenQASM 3.0 code"
-        ):
-            from_qasm3(circuit)()
-
-    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_from_qasm3(self, mocker):
         circuit = """\
             OPENQASM 3.0;
