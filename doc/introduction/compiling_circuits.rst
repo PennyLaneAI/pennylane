@@ -251,9 +251,9 @@ With the Hadamard gate not in our gate set, it will be decomposed into allowed r
 gate operators.
 
 >>> print(qml.draw(circuit)())
-0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-1: ───────────────────────────────├●─┤     
-2: ───────────────────────────────╰X─┤ 
+0: ──RZ(1.57)─╭GlobalPhase(-0.79)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-0.79)─╭●─┤  <Z>
+1: ───────────├GlobalPhase(-0.79)─────────────────────├GlobalPhase(-0.79)─├●─┤     
+2: ───────────╰GlobalPhase(-0.79)─────────────────────╰GlobalPhase(-0.79)─╰X─┤     
 
 Using a gate rule
 *****************
