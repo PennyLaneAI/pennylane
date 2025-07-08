@@ -64,7 +64,11 @@ def test_all_attributes_names(attr):
 
 
 def test_assembly_format(run_filecheck):
-    """Test the assembly format of the mbqc ops"""
+    """Test the assembly format of the mbqc ops
+
+    ..
+        FIXME: There's a bug with the postselect parameter; currently debugging...
+    """
     program = r"""
     // CHECK: [[angle:%.+]] = arith.constant {{.+}} : f64
     %angle = arith.constant 3.141592653589793 : f64
@@ -80,6 +84,12 @@ def test_assembly_format(run_filecheck):
 
     // CHECK: [[res2:%.+]], [[new_q2:%.+]] = mbqc.measure_in_basis{{\s*}}[ZX, [[angle]]] [[qubit]] : i1, !quantum.bit
     %res2, %new_q2 = mbqc.measure_in_basis [ZX, %angle] %qubit : i1, !quantum.bit
+
+    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
+    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
+
+    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
+    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
     """
 
     ctx = xdsl.context.Context()
