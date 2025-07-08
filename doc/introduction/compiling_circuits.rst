@@ -104,8 +104,8 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane includes multiple transforms that take quantum functions and return new
-quantum functions of optimized circuits:
+PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple
+other PennyLane objects.
 
 :html:`<div class="summary-table">`
 
@@ -122,6 +122,7 @@ quantum functions of optimized circuits:
     ~pennylane.transforms.single_qubit_fusion
     ~pennylane.transforms.undo_swaps
     ~pennylane.transforms.decompose
+    ~pennylane.transforms.combine_global_phases
 
 :html:`</div>`
 
@@ -327,10 +328,12 @@ M0 =
 1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
 2: ──H─────────────────────────────────────────────────────────────────────────────────╰● ···
 3: ──H─────────────────────────────────────────────────────────────────────────────────── ···
+<BLANKLINE>
 0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
 1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
 2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
 3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
+<BLANKLINE>
 0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤  
 1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤  
 2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤  
