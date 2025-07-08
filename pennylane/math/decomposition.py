@@ -14,9 +14,16 @@
 
 """Utility functions for decompositions are available from ``qml.math.decomposition``."""
 
+import functools
+
 import numpy as np
 
 from pennylane import math
+
+try:
+    import jax
+except ModuleNotFoundError:  # pragma: no cover
+    ...
 
 
 def zyz_rotation_angles(U, return_global_phase=False):
@@ -298,7 +305,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     return unitary_matrix
 
 
-def _givens_matrix(a, b, left=True, tol=1e-8):
+def _givens_matrix_core(a, b, left=True, tol=1e-8):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -345,10 +352,83 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     phase = math.where(abs_b < tol, 1.0, (1.0 * b * math.conj(a)) / (aprod + 1e-15))
     phase = math.where(abs_a < tol, 1.0, phase)
 
+    if interface_a == "jax":
+        return jax.lax.cond(
+            left,
+            lambda phase, cosine, sine: math.array(
+                [[phase * cosine, -sine], [phase * sine, cosine]], like=interface
+            ),
+            lambda phase, cosine, sine: math.array(
+                [[phase * sine, cosine], [-phase * cosine, sine]], like=interface
+            ),
+            phase,
+            cosine,
+            sine,
+        )
+
     if left:
         return math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
 
     return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
+
+
+@functools.lru_cache
+def _givens_matrix_jax():
+
+    @jax.jit
+    def givens_matrix_jax(a, b, left=True, tol=1e-8):
+        return _givens_matrix_core(a, b, left=left, tol=tol)
+
+    return givens_matrix_jax
+
+
+def _givens_matrix(a, b, left=True, tol=1e-8):
+    interface = math.get_interface(a)
+    if interface != "jax":
+        return _givens_matrix_core(a, b, left=left, tol=tol)
+    return _givens_matrix_jax()(a, b, left=left, tol=tol)
+
+
+def __right_givens(indices, unitary, N, j):
+    interface = math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
+    unitary = _set_unitary_matrix(
+        unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+    )
+    return unitary, math.conj(grot_mat)
+
+
+@jax.jit
+def __right_givens_jax(indices, unitary, N, j):
+    return __right_givens(indices, unitary, N, j)
+
+
+def _right_givens(indices, unitary, N, j):
+    like = math.get_interface(unitary)
+    if like == "jax":
+        return __right_givens_jax(indices, unitary, N, j)
+    return __right_givens(indices, unitary, N, j)
+
+
+def __left_givens(indices, unitary, j):
+    interface = math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
+    unitary = _set_unitary_matrix(
+        unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+    )
+    return unitary, grot_mat
+
+
+@jax.jit
+def __left_givens_jax(indices, unitary, j):
+    return __left_givens(indices, unitary, j)
+
+
+def _left_givens(indices, unitary, j):
+    like = math.get_interface(unitary)
+    if like == "jax":
+        return __left_givens_jax(indices, unitary, j)
+    return __left_givens(indices, unitary, j)
 
 
 # pylint: disable=too-many-branches
@@ -453,18 +533,12 @@ def givens_decomposition(unitary):
         if i % 2:
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
-                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary = _set_unitary_matrix(
-                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
-                )
-                right_givens.append((math.conj(grot_mat), indices))
+                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j)
+                right_givens.append((grot_mat_conj, indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary = _set_unitary_matrix(
-                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
-                )
+                unitary, grot_mat = _left_givens(indices, unitary, j)
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
