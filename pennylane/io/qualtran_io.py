@@ -1179,7 +1179,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
         TypeError: operator must be an instance of :class:`~.Operation`.
 
     .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to 
-    their Qualtran equivalents
+        their Qualtran equivalents
 
     **Example**
 
