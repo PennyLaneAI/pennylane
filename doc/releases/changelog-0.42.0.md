@@ -249,7 +249,7 @@ TODO
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
+* A new function called :func:`qml.from_qasm3 <pennylane.from_qasm3>` has been added, which converts OpenQASM 3.0 circuits into quantum functions
   that can be subsequently loaded into QNodes and executed. 
   [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
@@ -312,10 +312,10 @@ TODO
   ```
   
   Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
+  please consult the documentation for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and 
   `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
-* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+* A new function called :func:`qml.to_openqasm <pennylane.to_openqasm>` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
   Consider this simple circuit in PennyLane:
@@ -330,7 +330,7 @@ TODO
       return qml.sample()
   ```
 
-  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
+  This can be easily converted to OpenQASM 2.0 with :func:`qml.to_openqasm <pennylane.to_openqasm>`:
   ```pycon
   >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
   >>> print(openqasm_circ)
