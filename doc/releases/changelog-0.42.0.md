@@ -143,24 +143,51 @@
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane circuits into equivalent
   [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
-  This function allows
-  * Wrapping PennyLane circuits and operations to give them Qualtran features
+  This function can be used in the following ways:
+  * Wrap PennyLane circuits and operations to give them Qualtran features like obtaining 
+    [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) and
+    drawing a [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html):
   
-  ```python
-  import pennylane as qml
-  #define a Quantum Phase Estimation circuit
-  control_wires = [2, 3]
-  estimation_wires = [4, 5, 6, 7, 8, 9]
+  ```pycon
+  >>> def circuit():
+  ...    qml.X(0)
+  ...    qml.Y(1)
+  ...    qml.Z(2)
 
-  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+  >>> cbloq = qml.to_bloq(circuit)
+  >>> type(cbloq)
+  pennylane.io.qualtran_io.ToBloq
+  >>> cbloq.bloq_counts()
+  {XGate(): 1, ZGate(): 1, YGate(): 1}
+  ```
 
-  op = qml.QuantumPhaseEstimation(
-      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
-  )
-
-  * Smart default mapping of PennyLane circuits and operations to specific Qualtran Bloqs
+  * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs:
+  ```pycon
+  >>> import pennylane as qml
+  >>> PL_op = qml.X(0)
+  >>> qualtran_op = qml.to_bloq(PL_op)
+  >>> type(qualtran_op)
+  qualtran.bloqs.basic_gates.x_basis.XGate
+  ```
   * Custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs
-  * 
+  ```pycon
+  >>> def circuit():
+  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
+  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
+  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
+
+  >>> PL_op = qml.QubitUnitary([[0,1],[1,0]], wires=0)
+
+  >>> from qualtran.bloqs.basic_gates import XGate
+  >>> qualtran_op = XGate()
+
+  >>> custom_map = {
+  ...  PL_op: qualtran_op}
+
+  >>> bloq = qml.to_bloq(circuit, custom_mapping=custom_map)
+  >>> bloq.bloq_counts()
+  {XGate(): 3}
+  ```
   It requires one input and takes in two optional inputs:
 
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
@@ -170,7 +197,6 @@
 
   ```python
   import pennylane as qml
-  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
 
   control_wires = [2, 3]
   estimation_wires = [4, 5, 6, 7, 8, 9]
@@ -181,9 +207,6 @@
       qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
   )
 
-  cbloq = qml.to_bloq(op).decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
-  show_bloq(cbloq)
   ```
 
   Let's define a custom mapping instead.
