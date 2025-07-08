@@ -238,7 +238,7 @@ a pre-defined set of gates:
     from functools import partial
 
     dev = qml.device('default.qubit')
-    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
+    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ, qml.GlobalPhase}
 
     @partial(decompose, gate_set=allowed_gates)
     @qml.qnode(dev)
