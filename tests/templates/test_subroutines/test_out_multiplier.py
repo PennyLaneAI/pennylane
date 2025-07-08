@@ -241,16 +241,27 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
-    def test_decomposition_new(self):
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        [
+            (
+                [0, 1, 2],
+                [3, 5],
+                [6, 8],
+                3,
+                [9, 10],
+            ),
+            (
+                [0, 1, 2],
+                [3, 6],
+                [5, 8],
+                4,
+                [9, 10],
+            ),
+        ],
+    )
+    def test_decomposition_new(self, x_wires, y_wires, output_wires, mod, work_wires):
         """Tests the decomposition rule implemented with the new system."""
-
-        x_wires, y_wires, output_wires, mod, work_wires = (
-            [0, 1, 2],
-            [3, 5],
-            [6, 8],
-            3,
-            [9, 10],
-        )
         op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for rule in qml.list_decomps(qml.OutMultiplier):
             _test_decomposition_rule(op, rule)
