@@ -10,6 +10,11 @@
 
 <h3>Deprecations 👋</h3>
 
+<h3>Internal changes ⚙️</h3>
+
+* Update pattern matching for release candidate branch in `rc_sync.yml` to conform with new standards.
+  [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
