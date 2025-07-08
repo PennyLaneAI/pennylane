@@ -146,6 +146,11 @@ class QNGOptimizer(GradientDescentOptimizer):
         See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
+    .. seealso::
+
+        See the :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible
+        implementation of the same Quantum Natural Optimizer algorithm.
+
     Keyword Args:
         stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
         approx (str): Which approximation of the metric tensor to compute.
