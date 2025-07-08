@@ -191,7 +191,7 @@ class NullQubit(Device):
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file.
-            The filename will match "__pennylane_resources_data_*.json" where the glob is a timestamp in nanoseconds 
+            The filename will match ``__pennylane_resources_data_*.json`` where the glob is a timestamp in nanoseconds 
             since UNIX EPOCH. This argument is experimental and subject to change.
     **Example:**
 
