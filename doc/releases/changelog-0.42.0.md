@@ -2,9 +2,6 @@
 
 # Release 0.42.0 (current release)
 
-TODO
-[Add a note about Python 3.10 being deprecated in this release, v0.43 will not support it]
-
 <h3>New features since last release</h3>
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
@@ -135,12 +132,37 @@ TODO
 
 <h4>Qualtran integration 🔗</h4>
 
-* It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
+* It's now possible to convert PennyLane circuits and operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/)
+  circuits and Bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. This integration
+  enables a new way to estimate the resource requirements of PennyLane quantum circuits via Qualtran's
+  abstractions and tools. 
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+
   
-  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
+  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane circuits into equivalent
+  [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
+  This function allows
+  * Wrapping PennyLane circuits and operations to give them Qualtran features
+  
+  ```python
+  import pennylane as qml
+  #define a Quantum Phase Estimation circuit
+  control_wires = [2, 3]
+  estimation_wires = [4, 5, 6, 7, 8, 9]
+
+  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
+
+  op = qml.QuantumPhaseEstimation(
+      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
+  )
+
+  * Smart default mapping of PennyLane circuits and operations to specific Qualtran Bloqs
+  * Custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs
+  * 
+  It requires one input and takes in two optional inputs:
+
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
   * ``map_ops (bool)``: Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when ``False``. Default is ``True``.
   * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
@@ -1035,6 +1057,7 @@ TODO
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
+* Python 3.10 has been deprecated and will no longer be supported in v0.43. Please update to a newer Python version to continue using PennyLane beyond this release.
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
