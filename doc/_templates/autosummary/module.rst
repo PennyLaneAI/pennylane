@@ -7,7 +7,7 @@
    .. rubric:: Classes
 
    .. autosummary::
-      :toctree:
+      :toctree: api
 
    {% for item in classes %}
       {{ item }}
@@ -20,7 +20,7 @@
    .. rubric:: Functions
 
    .. autosummary::
-      :toctree:
+      :toctree: api
 
    {% for item in functions %}
       {{ item }}
