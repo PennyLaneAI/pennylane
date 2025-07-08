@@ -194,6 +194,7 @@ class NullQubit(Device):
             The filename will match ``__pennylane_resources_data_*.json`` where the wildcard (asterisk) is replaced by
             the timestamp of when execution began in nanoseconds since Unix EPOCH. This argument is experimental and
             subject to change.
+            
     **Example:**
 
     .. code-block:: python
