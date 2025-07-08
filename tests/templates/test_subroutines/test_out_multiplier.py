@@ -260,7 +260,9 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_decomposition_new(self, x_wires, y_wires, output_wires, mod, work_wires):
+    def test_decomposition_new(
+        self, x_wires, y_wires, output_wires, mod, work_wires
+    ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for rule in qml.list_decomps(qml.OutMultiplier):
