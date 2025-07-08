@@ -18,7 +18,7 @@ on:
         type: string
         default: '0.6.2'
       catalyst_jax_version:
-        description: The version of JAX to use for testing
+        description: The version of JAX to use for testing along with Catalyst
         required: false
         type: string
         default: '0.6.0'
@@ -37,7 +37,7 @@ on:
         description: The version of JAX to use
         value: ${{ jobs.default-dependency-versions.outputs.jax-version }}
       catalyst-jax-version:
-        description: The version of JAX to use
+        description: The version of JAX to use along with Catalyst
         value: ${{ jobs.default-dependency-versions.outputs.catalyst-jax-version }}
       tensorflow-version:
         description: The version of TensorFlow to use

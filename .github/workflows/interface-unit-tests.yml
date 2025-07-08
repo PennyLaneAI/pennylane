@@ -157,7 +157,7 @@ jobs:
             "torch-tests": ["3.10", "3.12"],
             "tf-tests": ["3.10", "3.12"],
             "jax-tests": ["3.10", "3.12"],
-            "jax-tests": ["3.10", "3.12"],
+            "capture-jax-tests": ["3.10", "3.12"],
             "all-interfaces-tests": ["3.10"],
             "external-libraries-tests": ["3.10"],
             "qcut-tests": ["3.10"],
@@ -392,14 +392,14 @@ jobs:
       fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).capture-jax-tests
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         group: [1]
         python-version: >-
           ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
+            fromJSON(needs.setup-ci-load.outputs.python-version).capture-jax-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'capture-jax-tests') }}
