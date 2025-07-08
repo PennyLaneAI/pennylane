@@ -365,10 +365,9 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
     and the phases are guaranteed to be 1 or -1.
     This function goes through the last `N-1` nearest-neighbour Givens rotations added
     in the diagonalization. They are the last ones in `left_givens` (`right_givens`) if `N` is
-    odd (even). For each of these rotations, we do the following, depending on the
-    phases on the affected matrix indices. Here we denote by `idx0` the matrix index that will
-    not be affected by any subsequent Givens rotation, and by `idx1` the matrix index that
-    also will be affected by the following rotation.
+    odd (even). For each of these rotations, we denote the matrix index `idx0` (`idx1`) that will (not)
+    be affected by any subsequent Givens rotation. Then, depending on the phases for these indices,
+    we do the following:
 
     - If both phases are 1, do nothing.
     - If both phases are -1, absorb them in the rotation by multiplying it with -np.eye(2).
