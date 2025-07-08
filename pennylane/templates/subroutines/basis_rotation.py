@@ -42,6 +42,8 @@ def _adjust_determinant(matrix, wires):
 
 
 def _isrealobj(obj):
+    if not math.is_abstract(obj) and math.allclose(math.imag(obj), 0.0):
+        obj = math.real(obj)
     return not math.get_dtype_name(obj).startswith("complex")
 
 
@@ -127,19 +129,25 @@ class BasisRotation(Operation):
         :title: Theory
         :href: theory-basis-rotation
 
-        The overall effect of :math:`U(u)` can be viewed as performing a transformation from one basis to a new basis
-        that is defined by the linear combination of fermionic ladder operators:
+        The basis rotation performed by ``BasisRotation`` implements a transformation
+        in the qubit Hilbert space that corresponds to a simple basis change of
+        fermionic creation operators, translated to qubits via the Jordan-Wigner mapping.
 
-        .. math::
-
-            U(u) a_p^\dagger = b_p^\dagger,
-
-        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively.
-        The operators :math:`a_p^\dagger` and :math:`b_p^\dagger` are related to each other by the following equation:
+        The old fermionic creation operators :math:`a_p^\dagger` and the new creation
+        operators :math:`b_p^\dagger` are related to each other by the following equation:
 
         .. math::
 
             b_p^\dagger = \sum_{q}u_{pq} a_q^\dagger.
+
+        The effect of :math:`U(u)`, the rotation in qubit Hilbert space, then is
+
+        .. math::
+
+            U(u) A_p^\dagger U(u)^\dagger = B_p^\dagger,
+
+        where :math:`A_p^\dagger` and :math:`B_p^\dagger` are the original and transformed
+        creation operators under the Jordan-Wigner transformation, respectively.
 
         The rotation is irreducibly represented as a unitary :math:`N\times N` matrix :math:`u`,
         which can be factorized into nearest-neighbour Givens rotations and individual phase

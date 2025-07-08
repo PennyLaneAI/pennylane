@@ -348,10 +348,11 @@ def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
         return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
 
     aprod = math.nan_to_num(abs_b * abs_a)
-    phase = math.where(abs_b < tol, 1.0, (1.0 * b * math.conj(a)) / (aprod + 1e-15))
+    phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
     phase = math.where(abs_a < tol, 1.0, phase)
+
     if left:
-        return math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
+        cosine, sine = -sine, cosine
 
     return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
 
@@ -377,22 +378,26 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
     - If the phases are `idx, idx1` are `1, -1`, commute the phase through the rotation, causing
       it to transpose.
 
+    This can be simplified to two independent moves:
+    - If the first phase is -1, absorb two phases in the rotation
+    - If the second phase is -1, commute a phase on index `idx1` through the rotation, transposing it.
+
     The phases with -1 are guaranteed to come in an even number, so that this procedure will
     end up with modified rotations and the identity as phase matrix.
     """
-    last_rotations = left_givens if N % 2 else right_givens
+    mod = N % 2
+    last_rotations = left_givens if mod else right_givens
     for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
         grot_mat, (i, j) = last_rotations[k]
-        idx0, idx1 = (j, i) if N % 2 else (i, j)
+        idx0, idx1 = (j, i) if mod else (i, j)
         if phases[idx0, idx0] < 0:
             phases = _set_unitary_matrix(phases, (i, i), -phases[i, i], like=interface)
             phases = _set_unitary_matrix(phases, (j, j), -phases[j, j], like=interface)
-            if phases[idx1, idx1] < 0:
-                last_rotations[k] = (grot_mat.T * (-1.0), (i, j))
-            else:
-                last_rotations[k] = (grot_mat * (-1.0), (i, j))
-        elif phases[idx1, idx1] < 0:
-            last_rotations[k] = (grot_mat.T, (i, j))
+            grot_mat = -grot_mat
+        if phases[idx1, idx1] < 0:
+            grot_mat = grot_mat.T
+
+        last_rotations[k] = (grot_mat, (i, j))
 
     left_givens = [(mat.T, indices) for mat, indices in left_givens]
     return math.diag(phases), left_givens + list(reversed(right_givens))
@@ -412,11 +417,18 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
     """
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = math.diag(math.diag(unitary)[math.array([i, j])])
-        decomp_mat = math.conj(grot_mat).T @ sphase_mat
-        givens_mat = _givens_matrix(*decomp_mat[1, :].T)
-        nphase_mat = decomp_mat @ givens_mat.T
-        for diag_idx, diag_val in zip([(i, i), (j, j)], math.diag(nphase_mat)):
+        # Manually compute new Givens matrix and new phase when commuting a phase through.
+        abs_s = math.abs(grot_mat[1, 0])
+        abs_c = math.abs(grot_mat[0, 0])
+        first_col = unitary[j, j] * math.conj(unitary[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
+        givens_mat = math.array(
+            [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
+        )
+        nphase_diag = [
+            -math.conj(grot_mat[1, 0]) / abs_s * unitary[j, j],
+            grot_mat[1, 1] / abs_c * unitary[j, j],
+        ]
+        for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag):
             unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
