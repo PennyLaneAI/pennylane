@@ -396,7 +396,6 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).capture-jax-tests
