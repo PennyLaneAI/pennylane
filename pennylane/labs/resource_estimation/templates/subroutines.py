@@ -1190,7 +1190,8 @@ class ResourceQubitUnitary(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
-                * precision (Union[float, None], optional): The precision used when preparing the single qubit rotations used to prepare the entries of the qubit unitary.
+                * precision (Union[float, None], optional): The precision used when preparing the
+                single qubit rotations used to prepare the entries of the qubit unitary.
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
@@ -1211,9 +1212,7 @@ class ResourceQubitUnitary(ResourceOperator):
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def default_resource_decomp(
-        cls, num_wires, precision=None, **kwargs
-    ) -> list[GateCount]:
+    def default_resource_decomp(cls, num_wires, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
