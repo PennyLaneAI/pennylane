@@ -2,6 +2,9 @@
 
 # Release 0.42.0 (current release)
 
+TODO
+[Add a note about Python 3.10 being deprecated in this release, v0.43 will not support it]
+
 <h3>New features since last release</h3>
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
