@@ -220,7 +220,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
 .. warning::
 
     When collecting statistics for a sequence of mid-circuit measurements, the
-    sequence must not contain arithmetic expressions.
+    sequence must not contain arithmetic combinations of more than one measurement.
 
 .. _simulation_techniques:
 
