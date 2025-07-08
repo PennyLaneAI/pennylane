@@ -1178,7 +1178,8 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
     Raises:
         TypeError: operator must be an instance of :class:`~.Operation`.
 
-    .. seealso:: :func:`~.to_bloq`
+    .. seealso:: :func:`~.to_bloq` for the recommended way to convert from PennyLane objects to 
+    their Qualtran equivalents
 
     **Example**
 
@@ -1383,7 +1384,7 @@ def to_bloq(circuit, map_ops: bool = True, custom_mapping: dict = None, **kwargs
         Bloq: The Qualtran Bloq that corresponds to the given circuit or :class:`~.Operation` and
         options.
 
-    .. seealso:: :class:`~.ToBloq`
+    .. seealso:: :class:`~.ToBloq` for the Bloq objects created when no Qualtran equivalent is found
 
     **Example**
 
