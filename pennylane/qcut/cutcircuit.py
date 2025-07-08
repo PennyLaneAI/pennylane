@@ -439,9 +439,9 @@ def cut_circuit(
     )
 
 
-@cut_circuit.register(QNode)
-def _qnode_transform(self, qnode: QNode, *targs, **tkwargs):
+@cut_circuit.register
+def _qnode_transform(qnode: QNode, transform_obj, *targs, **tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.generic_apply_transform(qnode, *targs, **tkwargs)
+    return transform_obj.generic_apply_transform(qnode, *targs, **tkwargs)
