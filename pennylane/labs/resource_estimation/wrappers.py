@@ -304,7 +304,7 @@ def qcow(obt, tbt, eta, method_list, mixing_arr = np.linspace(0,1,num=11), compa
 	ptable.field_names = ["Method", "One-norm", "Qubits", "T-gates", "Cost heuristic"]
 	prows = []
 	for ii in range(tot_methods):
-		prows.append([method_final_list[ii], f"{one_norms_list[ii]:.3f}", qubits_list[ii], f"{resources_list[ii].clean_gate_counts["T"]:.2e}", f"{hardness_heuristic_list[ii]:.2e}"])
+		prows.append([method_final_list[ii], f"{one_norms_list[ii]:.3f}", qubits_list[ii], f"""{resources_list[ii].clean_gate_counts["T"]:.2e}""", f"{hardness_heuristic_list[ii]:.2e}"])
 	ptable.add_rows(prows)
 
 	print(ptable)
