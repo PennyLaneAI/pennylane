@@ -376,6 +376,9 @@
 
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
+  
+  * :class:`~.OutAdder`
+    [(#7780)](https://github.com/PennyLaneAI/pennylane/pull/7780)
 
   * :class:`~.OutMultiplier`
     [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
