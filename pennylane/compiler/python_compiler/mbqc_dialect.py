@@ -52,6 +52,7 @@ class MeasurementPlaneEnum(StrEnum):
 @irdl_attr_definition
 class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum]):
     """Planes in the Bloch sphere representation with support for arbitrary-basis measurements"""
+    # pylint: disable=too-few-public-methods
 
     name = "mbqc.measurement_plane"
 
@@ -59,6 +60,7 @@ class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum]):
 @irdl_op_definition
 class MeasureInBasisOp(IRDLOperation):
     """A parametric single-qubit projective measurement in an arbitrary basis."""
+    # pylint: disable=too-few-public-methods
 
     name = "mbqc.measure_in_basis"
 
