@@ -262,4 +262,4 @@ def _apply_to_qnode(qnode: qml.QNode, _, wire_order=None):
             )
         wire_order = qnode.device.wires
 
-    return matrix.default_qnode_transform(qnode, (), {"wire_order": wire_order})
+    return matrix.generic_apply_transform(qnode, wire_order=wire_order)
