@@ -361,7 +361,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
 
         def _walk_back_to_alloc_op(
             insert_or_alloc_op: quantum.AllocOp | quantum.InsertOp,
-        ) -> quantum.AllocOp:
+        ) -> quantum.AllocOp | None:
             """Recursively walk back from a quantum.insert op to its root quantum.alloc op or
             alloc-like op.
 
@@ -376,20 +376,17 @@ class MeasurementsFromSamplesPattern(RewritePattern):
             if isinstance(insert_or_alloc_op, quantum.InsertOp):
                 return _walk_back_to_alloc_op(insert_or_alloc_op.operands[0].owner)
 
-            assert False, (
-                f"Expected either a quantum.AllocOp or quantum.InsertOp op, but got "
-                f"{type(insert_or_alloc_op).__name__}"
-            )
+            return None
 
         alloc_op = _walk_back_to_alloc_op(qreg.owner)
+        assert alloc_op is not None, "Unable to walk back from qreg to alloc op"
 
         nqubits_attr = alloc_op.properties.get("nqubits_attr")
-        assert nqubits_attr is not None, (
-            "Unable to determine number of qubits from alloc op; " "missing property 'nqubits_attr'"
-        )
+        assert (
+            nqubits_attr is not None
+        ), "Unable to determine number of qubits from alloc op; missing property 'nqubits_attr'"
 
         n_qubits = nqubits_attr.value.data
-
         assert n_qubits is not None, "Unable to determine number of qubits from qreg SSA value"
 
         return n_qubits
