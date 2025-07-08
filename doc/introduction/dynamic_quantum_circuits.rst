@@ -418,7 +418,7 @@ cost.
     
     * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
     
-    and currently does not support just-in-time (JIT) compilation.
+    Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
 
 .. _mcm_config:
 
