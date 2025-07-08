@@ -19,6 +19,11 @@
 
 <h3>Documentation 📝</h3>
 
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
