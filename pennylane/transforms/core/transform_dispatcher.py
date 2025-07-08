@@ -567,7 +567,8 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 
 
 @TransformDispatcher.generic_register
-def _apply_to_callable(self, obj: Callable, *targs, **tkwargs):
+def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
+    """Apply a transform to a Callable object."""
     if capture.enabled():
         return _capture_apply(obj, self, *targs, **tkwargs)
 

@@ -35,6 +35,7 @@ from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core.transform_dispatcher import apply_to_callable
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -939,4 +940,6 @@ def apply_transform_to_qnode(self, obj: QNode, *targs, **tkwargs) -> QNode:
         return self._custom_qnode_transform(self, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)
     new_qnode._transform_program = self(new_qnode.transform_program, *targs, **tkwargs)
+    if qml.capture.enabled():
+        return apply_to_callable(self, new_qnode, *targs, **tkwargs)
     return new_qnode
