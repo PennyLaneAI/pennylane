@@ -23,7 +23,7 @@ be installed alongside PennyLane:
 * `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.41
 * `requests <https://github.com/psf/requests>`_
 * `typing_extensions <https://github.com/python/typing_extensions>`_
-* `packaging <https://github.com/pypa/packaging>`_\
+* `packaging <https://github.com/pypa/packaging>`_
 * `diastatic-malt <https://github.com/PennyLaneAI/diastatic-malt>`_
 
 The following Python packages are optional:
