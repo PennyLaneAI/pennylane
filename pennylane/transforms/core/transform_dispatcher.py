@@ -560,6 +560,7 @@ def _apply_to_callable(self, obj: Callable, *targs, **tkwargs):
             qfunc_output = obj(*args, **kwargs)
 
         tape = qml.tape.QuantumScript.from_queue(q)
+
         with QueuingManager.stop_recording():
             transformed_tapes, processing_fn = self.transform(tape, *targs, **tkwargs)
 
@@ -597,7 +598,9 @@ def _apply_to_callable(self, obj: Callable, *targs, **tkwargs):
 @TransformDispatcher.generic_register
 def _apply_to_sequence(self, obj: Sequence, *targs, **tkwargs):
     if not all(isinstance(t, QuantumScript) for t in obj):
-        raise ValueError("Can only apply transform to sequences of QuantumScript.")
+        raise TransformError(
+            f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
+        )
     execution_tapes = []
     batch_fns = []
     tape_counts = []

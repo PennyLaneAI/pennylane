@@ -510,7 +510,12 @@ def _apply_to_program(self, obj: TransformProgram, *targs, **tkwargs):
     program = copy(obj)
 
     if self.expand_transform:
-        program.push_back(TransformContainer(self.expand_transform, targs, tkwargs))
+        # pylint: disable=protected-access
+        program.push_back(
+            TransformContainer(
+                self.expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
+            )
+        )
     program.push_back(
         TransformContainer(
             self.transform,
