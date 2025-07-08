@@ -64,10 +64,16 @@ def test_all_attributes_names(attr):
 
 
 def test_assembly_format(run_filecheck):
-    """Test the assembly format of the mbqc ops
+    """Test the assembly format of the mbqc ops.
 
-    ..
-        FIXME: There's a bug with the postselect parameter; currently debugging...
+    NOTE: There is an upstream xDSL bug that prevents us from specifying the postselect value as
+    either 0 or 1, e.g.:
+
+        mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
+                                                             ^
+
+    which results in `ParseError: Expected 2 result types but found 0`. For now, we have to use
+    `postselect false` and `postselect true`.
     """
     program = r"""
     // CHECK: [[angle:%.+]] = arith.constant {{.+}} : f64
@@ -85,11 +91,11 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[res2:%.+]], [[new_q2:%.+]] = mbqc.measure_in_basis{{\s*}}[ZX, [[angle]]] [[qubit]] : i1, !quantum.bit
     %res2, %new_q2 = mbqc.measure_in_basis [ZX, %angle] %qubit : i1, !quantum.bit
 
-    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
-    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
+    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect false : i1, !quantum.bit
+    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect false : i1, !quantum.bit
 
-    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
-    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
+    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect true : i1, !quantum.bit
+    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect true : i1, !quantum.bit
     """
 
     ctx = xdsl.context.Context()

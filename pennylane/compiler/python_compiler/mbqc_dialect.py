@@ -65,7 +65,18 @@ class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum]):
 
 @irdl_op_definition
 class MeasureInBasisOp(IRDLOperation):
-    """A parametric single-qubit projective measurement in an arbitrary basis."""
+    """A parametric single-qubit projective measurement in an arbitrary basis.
+
+    ..
+        NOTE: There is an upstream xDSL bug that prevents us from specifying the postselect value as
+        either 0 or 1, e.g.:
+
+            mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
+                                                                 ^
+
+        which results in `ParseError: Expected 2 result types but found 0`. For now, we have to use
+        `postselect false` and `postselect true`.
+    """
 
     # pylint: disable=too-few-public-methods
 
