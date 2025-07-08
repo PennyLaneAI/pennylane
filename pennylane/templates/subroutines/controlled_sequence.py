@@ -226,10 +226,7 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
             base_params=controlled_rep.params,
             z=z,
         )
-        if rep not in resources:
-            resources[rep] = 1
-        else:
-            resources[rep] += 1
+        resources[rep] = 1
 
     return resources
 
