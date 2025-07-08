@@ -1197,7 +1197,7 @@ class ResourceQubitUnitary(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires, precision) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -1213,14 +1213,14 @@ class ResourceQubitUnitary(ResourceOperator):
     @classmethod
     def default_resource_decomp(
         cls, num_wires, precision=None, **kwargs
-    ) -> Dict[CompressedResourceOp, int]:
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
             precision (Union[float, None], optional): The precision used when preparing the single
-                qubit rotations used to prepare the entries of the qubit unitary.
+                qubit rotations used to synthesize the n-qubit unitary.
 
         Resources:
             The resources are defined by combining the two equalities in `Möttönen and Vartiainen
@@ -1233,7 +1233,7 @@ class ResourceQubitUnitary(ResourceOperator):
 
             * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
 
-            * 3-qubit unitary or more, the cost is given according to the reference above, recurrsively.
+            * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -1423,7 +1423,7 @@ class ResourceSelectPauliRot(ResourceOperator):
 
         Resources:
             The resources are obtained from the construction scheme given in `O'Brien and Sünderhauf
-            (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources are
+            (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources
             use two :code:`~.labs.resource_estimation.ResourceQROM`'s to digitally load and unload
             the phase angles up to some precision. These are then applied using a single controlled
             :code:`~.labs.resource_estimation.ResourceSemiAdder`.
