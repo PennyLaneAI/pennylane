@@ -23,11 +23,20 @@ starting from the catalyst/mlir/include/MBQC/IR/MBQCOps.td file in the catalyst 
 
 # pylint: disable=too-few-public-methods
 
+from enum import auto
+
 # pragma: no cover
 from typing import Sequence, TypeAlias
 
 from xdsl.dialects.builtin import AnyAttr, BaseAttr, Float64Type, IntegerAttr, IntegerType
-from xdsl.ir import Dialect, Operation, ParametrizedAttribute, SSAValue
+from xdsl.ir import (
+    Dialect,
+    EnumAttribute,
+    Operation,
+    SpacedOpaqueSyntaxAttribute,
+    SSAValue,
+    StrEnum,
+)
 from xdsl.irdl import (
     EqAttrConstraint,
     IRDLOperation,
@@ -45,9 +54,19 @@ from pennylane.compiler.python_compiler.quantum_dialect import QubitType
 QubitSSAValue: TypeAlias = SSAValue[QubitType]
 
 
+class MeasurementPlane(StrEnum):
+    """Supported measurement plane"""
+
+    XY = auto()
+    YZ = auto()
+    ZX = auto()
+
+
 @irdl_attr_definition
-class MeasurementPlaneAttr(ParametrizedAttribute):
-    """Planes in the Bloch sphere representation with support for arbitrary-basis measurements"""
+class MeasurementPlaneAttr(EnumAttribute[MeasurementPlane], SpacedOpaqueSyntaxAttribute):
+    """Planes in the Bloch sphere representation with support for arbitrary-basis measurements.
+    This class is adapted from the xDSL unit [tests](https://github.com/xdslproject/xdsl/blob/263c32272acf8fa95d0b128be6a7e144bd12dd2f/tests/irdl/test_declarative_assembly_format.py#L3248)
+    """
 
     name = "mbqc.measurement_plane"
 
@@ -64,9 +83,9 @@ class MeasureInBasisOp(IRDLOperation):
 
     in_qubit = operand_def(QubitType())
 
-    plane = prop_def(BaseAttr(MeasurementPlaneAttr))
-
     angle = operand_def(EqAttrConstraint(Float64Type()))
+
+    plane = prop_def(BaseAttr(MeasurementPlaneAttr))
 
     postselect = opt_prop_def(AnyAttr())
 
@@ -75,7 +94,11 @@ class MeasureInBasisOp(IRDLOperation):
     out_qubit = result_def(QubitType())
 
     def __init__(
-        self, in_qubit: QubitSSAValue | Operation, plane: , angle: , postselect: int | IntegerAttr | None = None
+        self,
+        in_qubit: QubitSSAValue | Operation,
+        plane: MeasurementPlaneAttr,
+        angle: float | SSAValue[Float64Type],
+        postselect: int | IntegerAttr | None = None,
     ):
         if isinstance(postselect, int):
             postselect = IntegerAttr.from_int_and_width(postselect, 32)
@@ -84,9 +107,12 @@ class MeasureInBasisOp(IRDLOperation):
             properties = {}
         else:
             properties = {"postselect": postselect}
+        properties["plane"] = plane
 
         super().__init__(
-            operands=(in_qubit, angle), properties=properties, result_types=(IntegerType(1), QubitType())
+            operands=(in_qubit, angle),
+            properties=properties,
+            result_types=(IntegerType(1), QubitType()),
         )
 
     def verify_(self):
