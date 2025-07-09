@@ -25,6 +25,7 @@ pytestmark = pytest.mark.external
 
 from xdsl.dialects import arith, builtin, test
 
+from pennylane.compiler.python_compiler import mbqc_dialect as mbqc
 from pennylane.compiler.python_compiler.mbqc_dialect import MBQCDialect
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
 
@@ -64,17 +65,7 @@ def test_all_attributes_names(attr):
 
 
 def test_assembly_format(run_filecheck):
-    """Test the assembly format of the mbqc ops.
-
-    NOTE: There is an upstream xDSL bug that prevents us from specifying the postselect value as
-    either 0 or 1, e.g.:
-
-        mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
-                                                             ^
-
-    which results in `ParseError: Expected 2 result types but found 0`. For now, we have to use
-    `postselect false` and `postselect true`.
-    """
+    """Test the assembly format of the mbqc ops."""
     program = r"""
     // CHECK: [[angle:%.+]] = arith.constant {{.+}} : f64
     %angle = arith.constant 3.141592653589793 : f64
@@ -91,11 +82,11 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[res2:%.+]], [[new_q2:%.+]] = mbqc.measure_in_basis{{\s*}}[ZX, [[angle]]] [[qubit]] : i1, !quantum.bit
     %res2, %new_q2 = mbqc.measure_in_basis [ZX, %angle] %qubit : i1, !quantum.bit
 
-    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect false : i1, !quantum.bit
-    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect false : i1, !quantum.bit
+    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
+    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
 
-    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect true : i1, !quantum.bit
-    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect true : i1, !quantum.bit
+    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
+    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
     """
 
     ctx = xdsl.context.Context()
@@ -109,3 +100,35 @@ def test_assembly_format(run_filecheck):
     module = xdsl.parser.Parser(ctx, program).parse_module()
 
     run_filecheck(program, module)
+
+
+@pytest.mark.parametrize("plane,", ["XY", "YZ", "ZX"])
+@pytest.mark.parametrize("postselect", ["", "postselect 0", "postselect 1"])
+def test_measure_in_basis_properties(plane, postselect):
+    """Test the parsing of the mbqc.measure_in_basis op's properties."""
+    program = rf"""
+    %angle = arith.constant 3.141592653589793 : f64
+    %qubit = "test.op"() : () -> !quantum.bit
+
+    %mres, %out_qubit = mbqc.measure_in_basis [{plane}, %angle] %qubit {postselect} : i1, !quantum.bit
+    """
+
+    ctx = xdsl.context.Context()
+
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(arith.Arith)
+    ctx.load_dialect(test.Test)
+    ctx.load_dialect(QuantumDialect)
+    ctx.load_dialect(MBQCDialect)
+
+    module = xdsl.parser.Parser(ctx, program).parse_module()
+
+    measure_in_basis_op: mbqc.MeasureInBasisOp = module.ops.last
+
+    assert isinstance(measure_in_basis_op, mbqc.MeasureInBasisOp)
+    assert measure_in_basis_op.properties["plane"].data == plane
+
+    if postselect:
+        assert measure_in_basis_op.properties["postselect"].value.data == int(postselect[-1])
+    else:
+        assert measure_in_basis_op.properties.get("postselect") is None

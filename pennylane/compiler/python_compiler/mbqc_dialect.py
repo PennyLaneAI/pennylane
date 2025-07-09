@@ -23,11 +23,9 @@ catalyst/mlir/include/MBQC/IR/MBQCDialect.td file in the catalyst repository.
 
 from typing import Optional, TypeAlias
 
-from xdsl.dialects.builtin import Float64Type, IntegerAttr, IntegerType
+from xdsl.dialects.builtin import I32, Float64Type, IntegerAttr, IntegerType
 from xdsl.ir import Dialect, EnumAttribute, Operation, SSAValue
 from xdsl.irdl import (
-    BaseAttr,
-    EqAttrConstraint,
     IRDLOperation,
     irdl_attr_definition,
     irdl_op_definition,
@@ -65,34 +63,23 @@ class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum]):
 
 @irdl_op_definition
 class MeasureInBasisOp(IRDLOperation):
-    """A parametric single-qubit projective measurement in an arbitrary basis.
-
-    ..
-        NOTE: There is an upstream xDSL bug that prevents us from specifying the postselect value as
-        either 0 or 1, e.g.:
-
-            mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
-                                                                 ^
-
-        which results in `ParseError: Expected 2 result types but found 0`. For now, we have to use
-        `postselect false` and `postselect true`.
-    """
+    """A parametric single-qubit projective measurement in an arbitrary basis."""
 
     # pylint: disable=too-few-public-methods
 
     name = "mbqc.measure_in_basis"
 
-    in_qubit = operand_def(BaseAttr(QubitType))
+    in_qubit = operand_def(QubitType)
 
-    plane = prop_def(BaseAttr(MeasurementPlaneAttr))
+    plane = prop_def(MeasurementPlaneAttr)
 
-    angle = operand_def(EqAttrConstraint(Float64Type()))
+    angle = operand_def(Float64Type())
 
-    postselect = opt_prop_def(IntegerType(32))
+    postselect = opt_prop_def(IntegerAttr[I32])
 
-    mres = result_def(EqAttrConstraint(IntegerType(1)))
+    mres = result_def(IntegerType(1))
 
-    out_qubit = result_def(BaseAttr(QubitType))
+    out_qubit = result_def(QubitType)
 
     assembly_format = """
             `[` $plane `,` $angle `]` $in_qubit (`postselect` $postselect^)? attr-dict `:` type(results)
