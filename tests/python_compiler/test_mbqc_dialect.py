@@ -24,6 +24,7 @@ filecheck = pytest.importorskip("filecheck")
 pytestmark = pytest.mark.external
 
 from xdsl.dialects import arith, builtin, test
+from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler import mbqc_dialect as mbqc
 from pennylane.compiler.python_compiler.mbqc_dialect import MBQCDialect
@@ -102,33 +103,64 @@ def test_assembly_format(run_filecheck):
     run_filecheck(program, module)
 
 
-@pytest.mark.parametrize("plane,", ["XY", "YZ", "ZX"])
-@pytest.mark.parametrize("postselect", ["", "postselect 0", "postselect 1"])
-def test_measure_in_basis_properties(plane, postselect):
-    """Test the parsing of the mbqc.measure_in_basis op's properties."""
-    program = rf"""
-    %angle = arith.constant 3.141592653589793 : f64
-    %qubit = "test.op"() : () -> !quantum.bit
+class TestMeasureInBasisOp:
+    """Unit tests for the mbqc.measure_in_basis op."""
 
-    %mres, %out_qubit = mbqc.measure_in_basis [{plane}, %angle] %qubit {postselect} : i1, !quantum.bit
-    """
+    @pytest.mark.parametrize("plane,", ["XY", "YZ", "ZX"])
+    @pytest.mark.parametrize("postselect", ["", "postselect 0", "postselect 1"])
+    def test_measure_in_basis_properties(self, plane, postselect):
+        """Test the parsing of the mbqc.measure_in_basis op's properties."""
+        program = rf"""
+        %angle = arith.constant 3.141592653589793 : f64
+        %qubit = "test.op"() : () -> !quantum.bit
 
-    ctx = xdsl.context.Context()
+        %mres, %out_qubit = mbqc.measure_in_basis [{plane}, %angle] %qubit {postselect} : i1, !quantum.bit
+        """
 
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(arith.Arith)
-    ctx.load_dialect(test.Test)
-    ctx.load_dialect(QuantumDialect)
-    ctx.load_dialect(MBQCDialect)
+        ctx = xdsl.context.Context()
 
-    module = xdsl.parser.Parser(ctx, program).parse_module()
+        ctx.load_dialect(builtin.Builtin)
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(QuantumDialect)
+        ctx.load_dialect(MBQCDialect)
 
-    measure_in_basis_op: mbqc.MeasureInBasisOp = module.ops.last
+        module = xdsl.parser.Parser(ctx, program).parse_module()
 
-    assert isinstance(measure_in_basis_op, mbqc.MeasureInBasisOp)
-    assert measure_in_basis_op.properties["plane"].data == plane
+        measure_in_basis_op: mbqc.MeasureInBasisOp = module.ops.last
+        assert isinstance(measure_in_basis_op, mbqc.MeasureInBasisOp)
 
-    if postselect:
-        assert measure_in_basis_op.properties["postselect"].value.data == int(postselect[-1])
-    else:
-        assert measure_in_basis_op.properties.get("postselect") is None
+        assert measure_in_basis_op.properties["plane"].data == plane
+
+        if postselect:
+            assert measure_in_basis_op.properties["postselect"].value.data == int(postselect[-1])
+        else:
+            assert measure_in_basis_op.properties.get("postselect") is None
+
+    @pytest.mark.parametrize("postselect", [-1, 2])
+    def test_invalid_postselect_raises_on_verify(self, postselect):
+        """Test that using an invalid postselect value (a value other than 0 or 1) raises a
+        VerifyException during verification."""
+
+        program = rf"""
+        %angle = arith.constant 3.141592653589793 : f64
+        %qubit = "test.op"() : () -> !quantum.bit
+
+        %mres, %out_qubit = mbqc.measure_in_basis [XY, %angle] %qubit postselect {postselect} : i1, !quantum.bit
+        """
+
+        ctx = xdsl.context.Context()
+
+        ctx.load_dialect(builtin.Builtin)
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(QuantumDialect)
+        ctx.load_dialect(MBQCDialect)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+
+        measure_in_basis_op: mbqc.MeasureInBasisOp = module.ops.last
+        assert isinstance(measure_in_basis_op, mbqc.MeasureInBasisOp)
+
+        with pytest.raises(VerifyException, match="'postselect' must be 0 or 1"):
+            measure_in_basis_op.verify_()
