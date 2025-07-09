@@ -352,7 +352,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8):
     phase = math.where(abs_b < tol, 1.0, (1.0 * b * math.conj(a)) / (aprod + 1e-15))
     phase = math.where(abs_a < tol, 1.0, phase)
 
-    if interface_a == "jax":
+    if interface == "jax":
         return jax.lax.cond(
             left,
             lambda phase, cosine, sine: math.array(
