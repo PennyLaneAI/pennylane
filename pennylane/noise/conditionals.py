@@ -23,8 +23,8 @@ from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
 from pennylane.operation import Operation
 from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
-from pennylane.ops.functions import simplify
-from pennylane.queuing import QueuingManager, apply
+from pennylane.ops.functions import map_wires, simplify
+from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
@@ -758,11 +758,8 @@ def partial_wires(operation, *args, **kwargs):
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)
 
         if is_mappable and operation.wires is not None:
-            with QueuingManager.stop_recording():
-                mapped_op = operation.map_wires(dict(zip(operation.wires, op_args.pop("wires"))))
-            if QueuingManager.recording():
-                apply(mapped_op)
-            return mapped_op
+            wire_map = dict(zip(operation.wires, op_args.pop("wires")))
+            return map_wires(operation, wire_map, queue=QueuingManager.recording())
 
         if "wires" not in parameters or (
             "MeasFunc" in op_type and any(x in op_args for x in ["obs", "H"])
