@@ -54,8 +54,9 @@ try:
         Context,
         QasmInterpreter,
         Variable,
-        preprocess_operands, _rotate,
-)
+        _rotate,
+        preprocess_operands,
+    )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
 
@@ -66,46 +67,22 @@ class TestBuiltIns:
     TO_ROTATE = [
         # 0001 -> 0010
         (
-            Variable(
-                ty="BitType",
-                val=1,
-                size=4,
-                line=0,
-                constant=False,
-                scope="global"
-            ),
+            Variable(ty="BitType", val=1, size=4, line=0, constant=False, scope="global"),
             3,
             "right",
-            2
+            2,
         ),
         # 1010 -> 0101
         (
-            Variable(
-                ty="IntType",
-                val=10,
-                size=-1,
-                line=0,
-                constant=False,
-                scope="global"
-            ),
+            Variable(ty="IntType", val=10, size=-1, line=0, constant=False, scope="global"),
             1,
             "left",
-            5
+            5,
         ),
         # 1011 -> 0111
-        (
-            11,
-            1,
-            "left",
-            7
-        ),
+        (11, 1, "left", 7),
         # 1011 -> 1101
-        (
-            11,
-            1,
-            "right",
-            13
-        ),
+        (11, 1, "right", 13),
     ]
 
     @pytest.mark.parametrize("to_rotate, distance, direction, expected", TO_ROTATE)
