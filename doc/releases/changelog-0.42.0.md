@@ -124,13 +124,16 @@
 
 <h4>QSVT & QSP angle solver for large polynomials 🕸️</h4>
 
-Effortlessly perform QSVT and QSP with polynomials of large degrees, using our new iterative angle solver.
+Effortlessly perform QSVT and QSP with polynomials of large degrees, using our new iterative angle 
+solver.
 
-* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
-  designed for angle computation for polynomials with degrees larger than 1000.
+* A new iterative angle solver for QSVT and QSP is available in the 
+  :func:`poly_to_angles <pennylane.poly_to_angles>` function, designed for angle computation for 
+  polynomials with degrees larger than 1000.
   [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
 
-  Simply set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function to use it.
+  Simply set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` 
+  function to use it.
 
   ```python
   import pennylane as qml
@@ -147,7 +150,8 @@ Effortlessly perform QSVT and QSP with polynomials of large degrees, using our n
   [-4.72195208  1.59759022  1.12953398  1.12953403  1.59759046 -0.00956271]
   ```
 
-  This functionality can also be accessed directly from :func:`qml.qsvt <pennylane.qsvt>` with the same keyword argument:
+  This functionality can also be accessed directly from :func:`qml.qsvt <pennylane.qsvt>` with the 
+  same keyword argument:
 
   ```python
   # P(x) = -x + 0.5 x^3 + 0.5 x^5
@@ -288,10 +292,10 @@ Effortlessly perform QSVT and QSP with polynomials of large degrees, using our n
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-PennyLane now offers improved support for [OpenQASM](https://openqasm.com/).
+PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.com/).
 
-* Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 circuits
-  into quantum functions which can then be loaded into QNodes and executed.
+* Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 
+  circuits into quantum functions which can then be loaded into QNodes and executed.
   [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
@@ -357,10 +361,12 @@ PennyLane now offers improved support for [OpenQASM](https://openqasm.com/).
   for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and `'openqasm3[parser]'`
   in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
-* The new :func:`qml.to_openqasm <pennylane.to_openqasm>` function enables conversion of PennyLane circuits to OpenQASM 2.0 programs.
+* The new :func:`qml.to_openqasm <pennylane.to_openqasm>` function enables conversion of PennyLane 
+  circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
   Consider this simple circuit in PennyLane:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=100)
 
@@ -373,6 +379,7 @@ PennyLane now offers improved support for [OpenQASM](https://openqasm.com/).
   ```
 
   This can be easily converted to OpenQASM 2.0 with :func:`qml.to_openqasm <pennylane.to_openqasm>`:
+  
   ```pycon
   >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
   >>> print(openqasm_circ)
