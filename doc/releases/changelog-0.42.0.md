@@ -271,6 +271,8 @@
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
+  [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
+
   ```python
   import pennylane as qml
 
@@ -677,6 +679,7 @@
   gate-set that can be translated to the MBQC formalism.
   [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
+
 <h4>Other improvements</h4>
 
 * `qml.evolve` now errors out if the first argument is not a valid type.
@@ -838,12 +841,6 @@
 * The decomposition of `qml.BasisState` with capture and the graph-based decomposition system enabled is more efficient. 
   Additionally, the resource params of `qml.BasisState` is simplified to the number of wires.
   [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
-
-* A new experimental `allocation` module has been added, which contains functionality for dynamically 
-  allocating wires with :func:`~.allocate` and manually deallocating them with :func:`~.deallocate`. 
-  [(#7704)](https://github.com/PennyLaneAI/pennylane/pull/7704)
-  [(#7710)](https://github.com/PennyLaneAI/pennylane/pull/7710)
-  [(#7726)](https://github.com/PennyLaneAI/pennylane/pull/7726)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
