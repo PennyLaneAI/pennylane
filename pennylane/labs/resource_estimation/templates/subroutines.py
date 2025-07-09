@@ -94,8 +94,8 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
-        r"""Returns a list representing the resources of the operator. Each object in the list
-        represents a gate and the number of times it occurs in the circuit.
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
 
         Args:
             register_size (int): the size of the input register
@@ -282,8 +282,8 @@ class ResourceOutMultiplier(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, a_num_qubits, b_num_qubits, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. Each object in the list
-        represents a gate and the number of times it occurs in the circuit.
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
 
         Args:
             a_num_qubits (int): the size of the first input register
@@ -380,8 +380,8 @@ class ResourceSemiAdder(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, max_register_size, **kwargs):
-        r"""Returns a list representing the resources of the operator. Each object in the list
-        represents a gate and the number of times it occurs in the circuit.
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -519,8 +519,8 @@ class ResourceBasisRotation(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, dim_N, **kwargs) -> list[GateCount]:
-        r"""Returns a list representing the resources of the operator. Each object in the list
-        represents a gate and the number of times it occurs in the circuit.
+        r"""Returns a dictionary representing the resources of the operator. The
+        keys are the operators and the associated values are the counts.
 
         Args:
             dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
@@ -1191,7 +1191,7 @@ class ResourceQubitUnitary(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
                 * precision (Union[float, None], optional): The precision used when preparing the
-                single qubit rotations used to prepare the entries of the qubit unitary.
+                    single qubit rotations used to prepare the entries of the qubit unitary.
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
