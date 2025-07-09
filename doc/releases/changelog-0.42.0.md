@@ -383,7 +383,7 @@
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
-* With graph-based decomposition enabled with :func:`~.decomposition.enable_graph`, the 
+* With graph-based decomposition enabled via :func:`~.decomposition.enable_graph`, the 
   :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, 
   allowing for preferential treatment of certain gates in a target `gate_set` over others.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
@@ -705,7 +705,7 @@
   [(#7219)](https://github.com/PennyLaneAI/pennylane/pull/7219)
   [(#7368)](https://github.com/PennyLaneAI/pennylane/pull/7368)
 
-* Functions called `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` that arerelated to `xz`-encoding 
+* Functions called `pauli_to_xz`, `xz_to_pauli` and `pauli_prod` that are related to `xz`-encoding 
   have been added to the `ftqc` module.
   [(#7433)](https://github.com/PennyLaneAI/pennylane/pull/7433)
 
@@ -716,7 +716,7 @@
   [(#7586)](https://github.com/PennyLaneAI/pennylane/pull/7586)
 
 * The `RotXZX` operation has been added to the `ftqc` module to support the definition of a 
-  universal gate-set that can be translated to the MBQC formalism.
+  universal gate set that can be translated to the MBQC formalism.
   [(#7271)](https://github.com/PennyLaneAI/pennylane/pull/7271)
 
 <h4>Other improvements</h4>
