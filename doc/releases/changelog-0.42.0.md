@@ -132,57 +132,66 @@
 
 <h4>Qualtran integration 🔗</h4>
 
-* It's now possible to convert PennyLane circuits and operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/)
-  circuits and Bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. This integration
-  enables a new way to estimate the resource requirements of PennyLane quantum circuits via Qualtran's
-  abstractions and tools. 
+* It's now possible to convert PennyLane circuits and operators to 
+  [Qualtran](https://qualtran.readthedocs.io/en/latest/) circuits and Bloqs with the new 
+  :func:`qml.to_bloq <pennylane.to_bloq>` function. This integration enables a new way to estimate 
+  the resource requirements of PennyLane quantum circuits via Qualtran's abstractions and tools. 
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
 
-  The :func:`qml.to_bloq <pennylane.to_bloq>` function translates PennyLane circuits (qfuncs or QNodes) and operations into equivalent
+  The :func:`qml.to_bloq <pennylane.to_bloq>` function translates PennyLane circuits (qfuncs or 
+  QNodes) and operations into equivalent
   [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
 
   This function can be used in the following ways:
 
-  * Wrap PennyLane circuits and operations to give them Qualtran features like obtaining
-    [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) and
-    drawing a [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html), but preserve the original PennyLane decomposition. This is done by setting `map_ops` to False:
+  * Wrap PennyLane circuits and operations to give them Qualtran features, like obtaining
+    [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) 
+    and drawing a 
+    [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html), but 
+    preserve the original PennyLane decomposition. This is done by setting `map_ops` to `False`, 
+    which instead wraps operations as a :class:`~.ToBloq`:
   
     ```pycon
     >>> def circuit():
-    ...    qml.X(0)
-    ...    qml.Y(1)
-    ...    qml.Z(2)
-
-    >>> cbloq = qml.to_bloq(circuit)
+    ...     qml.X(0)
+    ...     qml.Y(1)
+    ...     qml.Z(2)
+    ...
+    >>> cbloq = qml.to_bloq(circuit, map_ops=False)
     >>> type(cbloq)
     pennylane.io.qualtran_io.ToBloq
     >>> cbloq.bloq_counts()
     {XGate(): 1, ZGate(): 1, YGate(): 1}
     ```
 
-  * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs by setting `map_ops=True` or leaving the default value:
+  * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs by setting 
+    `map_ops=True` (the default value):
+
     ```pycon
     >>> PL_op = qml.X(0)
     >>> qualtran_op = qml.to_bloq(PL_op)
     >>> type(qualtran_op)
     qualtran.bloqs.basic_gates.x_basis.XGate
     ```
-  * Use custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs by setting a `custom_mapping` dictionary:
+
+  * Use custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs by 
+    setting a `custom_mapping` dictionary:
+
+    ```python
+    from qualtran.bloqs.basic_gates import XGate
+
+    def circuit():
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+    ```
+
     ```pycon
-    >>> def circuit():
-    ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-    ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-    ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-
     >>> PL_op = qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-
-    >>> from qualtran.bloqs.basic_gates import XGate
     >>> qualtran_op = XGate()
-
     >>> custom_map = {PL_op: qualtran_op}
-
     >>> bloq = qml.to_bloq(circuit, custom_mapping=custom_map)
     >>> bloq.bloq_counts()
     {XGate(): 3}
@@ -192,8 +201,8 @@
 
 * The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
   also known as Gridsynth, can now be accessed in :func:`~.clifford_t_decomposition` by setting
-  `method="gridsynth"`. This is a new Clifford-T decomposition method that can produce
-  orders of magnitue fewer gates than by using `method="sk"` (Solovay-Kitaev algorithm). 
+  `method="gridsynth"`. This is a new Clifford-T decomposition method that can produce orders of 
+  magnitue fewer gates than using `method="sk"` (Solovay-Kitaev algorithm). 
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
@@ -213,16 +222,15 @@
       qml.RY(0.34, 0)
 
       return qml.expval(qml.Z(0))
-
-  gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
-  sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
-
-  gridsynth_specs = qml.specs(rs_circuit)()["resources"]
-  sk_specs = qml.specs(sk_circuit)()["resources"]
   ```
 
+  We can inspect the gate counts resulting from both decomposition methods with :func:`~.specs`:
 
   ```pycon
+  >>> gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
+  >>> sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
+  >>> gridsynth_specs = qml.specs(rs_circuit)()["resources"]
+  >>> sk_specs = qml.specs(sk_circuit)()["resources"]
   >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
   239 47942
   >>> print(gridsynth_specs.gate_types['T'], sk_specs.gate_types['T'])
