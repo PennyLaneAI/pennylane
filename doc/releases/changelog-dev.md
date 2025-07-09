@@ -24,6 +24,10 @@
     * :class:`~.OutPoly`
       [(#7822)](https://github.com/PennyLaneAI/pennylane/pull/7822)
 
+    * :class:`~.Multiplier`
+      [(#7834)](https://github.com/PennyLaneAI/pennylane/pull/7834)
+    
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
