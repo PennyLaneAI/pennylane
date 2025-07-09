@@ -1189,9 +1189,9 @@ class ResourceQubitUnitary(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of qubits the operation acts upon
-                * precision (Union[float, None], optional): The precision used when preparing the
-                    single qubit rotations used to prepare the entries of the qubit unitary.
+            * num_wires (int): the number of qubits the operation acts upon
+            * precision (Union[float, None], optional): The precision used when preparing the
+              single qubit rotations used to prepare the entries of the qubit unitary.
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
@@ -1337,9 +1337,9 @@ class ResourceSelectPauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * rotation_axis (str): the rotation axis used in the multiplexer
-                * num_ctrl_wires (int): the number of control wires of the multiplexer
-                * precision (float): the precision used in the single qubit rotations
+            * rotation_axis (str): the rotation axis used in the multiplexer
+            * num_ctrl_wires (int): the number of control wires of the multiplexer
+            * precision (float): the precision used in the single qubit rotations
         """
         return {
             "num_ctrl_wires": self.num_ctrl_wires,
