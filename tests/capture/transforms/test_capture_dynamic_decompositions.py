@@ -28,7 +28,7 @@ from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, w
 from pennylane.operation import Operation
 from pennylane.transforms.decompose import DecomposeInterpreter
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
