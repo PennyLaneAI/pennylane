@@ -1348,6 +1348,9 @@ may move operations across a `Snapshot`.
   in the :doc:`/introduction/dynamic_quantum_circuits` page.
   [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
+* Fixes a bug where an operation wrapped in `partial_wires` does not get queued.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
