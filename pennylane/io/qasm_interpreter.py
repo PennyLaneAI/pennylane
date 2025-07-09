@@ -855,9 +855,9 @@ class QasmInterpreter:
         # custom gates do not return a value
 
     @visit.register(ast.FunctionCall)
-    def visit_function_call(
+    def visit_function_call(  # pylint: disable=inconsistent-return-statements
         self, node: ast.FunctionCall, context: Context
-    ):  # pylint: disable=inconsistent-return-statements
+    ):
         """
         Registers a function call. The node must refer to a subroutine that has been defined and
         is available in the current scope.
