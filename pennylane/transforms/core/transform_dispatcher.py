@@ -224,6 +224,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         """
         return self._apply_transform.register
 
+    # pylint: disable=no-self-use
     @functools.singledispatchmethod
     def generic_apply_transform(self, obj, *targs, **tkwargs):
         """generic_apply_transform(obj, *targs, **tkwargs)
@@ -255,58 +256,57 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             "https://docs.pennylane.ai/en/stable/development/deprecations.html#completed-deprecation-cycles",
         )
 
-    generic_register = generic_apply_transform.register
-    """Returns a decorator for registering a default application behavior for a transform for a new class.
+    @classmethod
+    def generic_register(cls, arg=None):
+        """Returns a decorator for registering a default application behavior for a transform for a new class.
 
-    Suppose I had a special class:
-
-    .. code-block:: python
-
-        class Subroutine:
-
-            def __repr__(self):
-                return f"<Subroutine: {self.ops}>"
-
-            def __init__(self, ops):
-                self.ops = ops
-
-    I can register the application of a transform to ``Subroutine`` by doing:
-
-    .. code-block:: python
-
-        from pennylane.transforms.core import TransformDispatcher
-
-        @TransformDispatcher.generic_register
-        def apply_to_subroutine(self, obj: Subroutine, *targs, **tkwargs):
-            tape = qml.tape.QuantumScript(obj.ops)
-            batch, _ = self(tape, *targs, **tkwargs)
-            return Subroutine(batch[0].operations)
-
-    >>> qml.transforms.cancel_inverses(Subroutine([qml.Y(0), qml.X(0), qml.X(0)]))
-    <Subroutine: [Y(0)]>
-
-    .. warning::
-
-        This function maps to the ``register`` method of a ``functools.singledispatchmethod`` object.
-        In order to keep this working correctly, ``self`` *must* be the name of the first argument, and it
-        *must not* have a type hint.
+        Given a special new class, we can register how transforms should apply to them via:
 
         .. code-block:: python
 
-            def apply_to_subroutine(self: TransformDispatcher, obj: Subroutine, *targs, **tkwargs)
+            class Subroutine:
 
-            def apply_to_subroutine(transform, obj: Subroutine, *targs, **tkwargs)
+                def __repr__(self):
+                    return f"<Subroutine: {self.ops}>"
 
-        will not work. The type can also be explicitly provided like:
+                def __init__(self, ops):
+                    self.ops = ops
 
-        .. code-block:: python
+            from pennylane.transforms.core import TransformDispatcher
 
-            @TransformDispatcher.generic_register(Subroutine)
+            @TransformDispatcher.generic_register
             def apply_to_subroutine(self, obj: Subroutine, *targs, **tkwargs):
+                tape = qml.tape.QuantumScript(obj.ops)
+                batch, _ = self(tape, *targs, **tkwargs)
+                return Subroutine(batch[0].operations)
 
-        to more explicitly force registration for a given type.
+        >>> qml.transforms.cancel_inverses(Subroutine([qml.Y(0), qml.X(0), qml.X(0)]))
+        <Subroutine: [Y(0)]>
 
-    """
+        .. warning::
+
+            This function maps to the ``register`` method of a ``functools.singledispatchmethod`` object.
+            In order to keep this working correctly, ``self`` *must* be the name of the first argument, and it
+            *must not* have a type hint.
+
+            .. code-block:: python
+
+                def apply_to_subroutine(self: TransformDispatcher, obj: Subroutine, *targs, **tkwargs)
+
+                def apply_to_subroutine(transform, obj: Subroutine, *targs, **tkwargs)
+
+            will not work. The type can also be explicitly provided like:
+
+            .. code-block:: python
+
+                @TransformDispatcher.generic_register(Subroutine)
+                def apply_to_subroutine(self, obj: Subroutine, *targs, **tkwargs):
+
+            to more explicitly force registration for a given type.
+
+        """
+
+        return cls.generic_apply_transform.register(arg)  # pylint: disable=no-member
 
     def __call__(self, obj, *targs, **tkwargs):
         return self._apply_transform(obj, self, *targs, **tkwargs)
@@ -569,6 +569,13 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 @TransformDispatcher.generic_register
 def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
     """Apply a transform to a Callable object."""
+    if obj.__class__.__name__ == "QJIT":
+        raise TransformError(
+            "Functions that are wrapped / decorated with qjit cannot subsequently be"
+            f" transformed with a PennyLane transform (attempted {self})."
+            f" For the desired affect, ensure that qjit is applied after {self}."
+        )
+
     if capture.enabled():
         return _capture_apply(obj, self, *targs, **tkwargs)
 

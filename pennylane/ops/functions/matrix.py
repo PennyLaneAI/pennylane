@@ -14,7 +14,9 @@
 """
 This module contains the qml.matrix function.
 """
+from collections.abc import Callable
 from functools import partial
+from typing import Any, ParamSpec, overload
 
 import pennylane as qml
 from pennylane import transform
@@ -30,8 +32,17 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
+P = ParamSpec("P")
+
+
+@overload
+def matrix(
+    op: Operator | PauliWord | PauliSentence | QuantumScript, wire_order=None
+) -> TensorLike: ...
+@overload
+def matrix(op: Callable[P, Any], wire_order=None) -> Callable[P, TensorLike]: ...
 @partial(transform, is_informative=True)
-def matrix(op, wire_order=None) -> TensorLike:
+def matrix(op, wire_order=None):
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
@@ -219,6 +230,13 @@ def matrix(op, wire_order=None) -> TensorLike:
         return result
 
     return [op], processing_fn
+
+
+@matrix.register
+def _apply_to_callable(op: Callable, _, wire_order=None):
+    if catalyst_qjit(op):
+        op = op.user_function
+    return matrix.generic_apply_transform(op, wire_order=wire_order)
 
 
 @matrix.register
