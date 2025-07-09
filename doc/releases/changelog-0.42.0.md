@@ -246,10 +246,10 @@
 
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
-* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="gridsynth"`
-  (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
-  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
-  via :func:`~.ops.rs_decomposition` function.
+* The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
+  also known as Gridsynth, can now be accessed in :func:`~.clifford_t_decomposition` by setting
+  `method="gridsynth"`. This is a new Clifford-T decomposition method that can produce
+  orders of magnitue fewer gates than the previous `method="sk"` (Solovay-Kitaev algorithm). 
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
@@ -257,25 +257,24 @@
   [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
   [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
-  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
-  Consider this simple circuit:
+  In the following example, decomposing with `method="gridsynth"` instead of `method="sk"` gives a
+  significant reduction in overall gate counts, specifically the `qml.T` count:
 
   ```python
   @qml.qnode(qml.device("lightning.qubit", wires=2))
-  def circuit(x, y):
+  def circuit():
 
-      qml.RX(x, 0)
+      qml.RX(0.12, 0)
       qml.CNOT([0, 1])
-      qml.RY(y, 0)
+      qml.RY(0.34, 0)
 
       return qml.expval(qml.Z(0))
 
   rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
-  x, y = 0.12, 0.34
-  rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
-  sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
+  rs_specs = qml.specs(rs_circuit)()["resources"]
+  sk_specs = qml.specs(sk_circuit)()["resources"]
   ```
 
   Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
