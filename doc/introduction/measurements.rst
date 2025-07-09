@@ -83,11 +83,13 @@ by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
 
+    from functools import partial
     import pennylane as qml
     from pennylane import numpy as np
 
-    dev = qml.device("default.qubit", wires=2, shots=1000)
+    dev = qml.device("default.qubit", wires=2)
 
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -146,8 +148,11 @@ The previous example will be modified as follows:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2, shots=1000)
+    from functools import partial
 
+    dev = qml.device("default.qubit", wires=2)
+
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -163,8 +168,9 @@ Similarly, if the observable is not provided, the count of the observed computat
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2, shots=1000)
+    dev = qml.device("default.qubit", wires=2)
 
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -183,8 +189,9 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2, shots=1000)
+    dev = qml.device("default.qubit", wires=2)
 
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit():
         qml.Hadamard(wires=0)
@@ -255,14 +262,14 @@ number of shots.
 For simulators like ``default.qubit``, finite shots will be simulated if
 we set ``shots`` to a positive integer.
 
-The shot number can be changed on the device itself, or temporarily altered
-by the ``shots`` keyword argument when executing the QNode:
-
+The shot number can be changed using the :func:`~.pennylane.set_shots` decorator, which
+can also be directly applied to a QNode.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1, shots=10)
+    dev = qml.device("default.qubit", wires=1)
 
+    @partial(qml.set_shots, shots=10)
     @qml.qnode(dev)
     def circuit(x, y):
         qml.RX(x, wires=0)
@@ -273,7 +280,7 @@ by the ``shots`` keyword argument when executing the QNode:
     result = circuit(0.54, 0.1)
 
     # execute the QNode again, now using 1 shot
-    result = circuit(0.54, 0.1, shots=1)
+    result = qml.set_shots(circuit, shots=1)(0.54, 0.1)
 
 
 With an increasing number of shots, the average over
@@ -294,18 +301,18 @@ circuit:
 
 Running the simulator with ``shots=None`` returns the exact expectation.
 
->>> circuit(shots=None)
+>>> qml.set_shots(circuit, shots=None)()
 0.0
 
 Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
->>> circuit(shots=10)
+>>> qml.set_shots(circuit, shots=10)()
 0.2
 
->>> circuit(shots=1000)
+>>> qml.set_shots(circuit, shots=1000)()
 -0.062
 
->>> circuit(shots=100000)
+>>> qml.set_shots(circuit, shots=100000)()
 0.00056
 
 The result converges to the exact expectation.
