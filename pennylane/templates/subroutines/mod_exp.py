@@ -15,6 +15,7 @@
 Contains the ModExp template.
 """
 import numpy as np
+from pennylane.decomposition import resource_rep
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -230,3 +231,20 @@ class ModExp(Operation):
             )
         )
         return op_list
+
+
+def _mod_exp_decomposition_resources(
+    num_x_wires, num_output_wires, base, mod, num_work_wires
+) -> dict:
+    return {
+        resource_rep(
+            qml.ControlledSequence,
+            base=qml.ControlledSequence,
+            base_params={
+                "base": qml.PhaseAdder,
+                "base_params": {"num_x_wires": qft_wires, "mod": mod},
+                "num_control_wires": num_x_wires,
+            },
+            num_control_wires=num_x_wires,
+        ): 1,
+    }
