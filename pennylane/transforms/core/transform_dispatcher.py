@@ -125,7 +125,8 @@ def specific_apply_transform(obj, transform, *targs, **tkwargs):
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
 
-def _dummy_register(obj):
+# pragma: no-cover
+def _dummy_register(obj): # just used for sphinx
     if isinstance(obj, type):
         return lambda arg: arg
     return obj

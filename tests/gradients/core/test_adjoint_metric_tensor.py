@@ -424,7 +424,6 @@ class TestAdjointMetricTensorQNode:
             return qml.expval(qml.PauliZ(0))
 
         qn = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))
-        print(qn.transform_program)
 
         mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
