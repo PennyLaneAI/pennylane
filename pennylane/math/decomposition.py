@@ -22,6 +22,7 @@ from pennylane import math
 
 try:
     import jax
+    import jax.numpy as jnp
 except ModuleNotFoundError:  # pragma: no cover
     ...
 
@@ -384,9 +385,9 @@ def _givens_matrix_jax():
 
 def _givens_matrix(a, b, left=True, tol=1e-8):
     interface = math.get_interface(a)
-    if interface != "jax":
-        return _givens_matrix_core(a, b, left=left, tol=tol)
-    return _givens_matrix_jax()(a, b, left=left, tol=tol)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _givens_matrix_jax()(a, b, left=left, tol=tol)
+    return _givens_matrix_core(a, b, left=left, tol=tol)
 
 
 def _right_givens_core(indices, unitary, N, j):
@@ -410,9 +411,9 @@ def _right_givens_jax():
 
 def _right_givens(indices, unitary, N, j):
     interface = math.get_interface(unitary)
-    if interface != "jax":
-        return _right_givens_core(indices, unitary, N, j)
-    return _right_givens_jax()(indices, unitary, N, j)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _right_givens_jax()(indices, unitary, N, j)
+    return _right_givens_core(indices, unitary, N, j)
 
 
 def _left_givens_core(indices, unitary, j):
@@ -436,9 +437,9 @@ def _left_givens_jax():
 
 def _left_givens(indices, unitary, j):
     interface = math.get_interface(unitary)
-    if interface != "jax":
-        return _left_givens_core(indices, unitary, j)
-    return _left_givens_jax()(indices, unitary, j)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _left_givens_jax()(indices, unitary, j)
+    return _left_givens_core(indices, unitary, j)
 
 
 # pylint: disable=too-many-branches
