@@ -277,9 +277,7 @@ def _group_sums(
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
     two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
-    return [
-        x for xs in [_group_sums_in_dict(term_dict) for term_dict in term_dicts[1:]] for x in xs
-    ]
+    return _group_sums_in_dict(term_dicts[-1]) # hardcoded fix to ignore lower order commutators
 
 
 def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
