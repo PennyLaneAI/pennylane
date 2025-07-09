@@ -2,9 +2,6 @@
 
 # Release 0.42.0 (current release)
 
-TODO
-[Add a note about Python 3.10 being deprecated in this release, v0.43 will not support it]
-
 <h3>New features since last release</h3>
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
@@ -1035,6 +1032,9 @@ TODO
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead,
 please consult the :doc:`deprecations and removals page </development/deprecations>`.
+
+* Python 3.10 is deprecated and support will be removed in v0.43.
+  [(#TODO)](https://github.com/PennyLaneAI/pennylane/pull/TODO)
 
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
