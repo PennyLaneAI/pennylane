@@ -931,77 +931,76 @@
 * A base class called `qml.labs.ResourceOperator` has been added which will be used to implement all 
   quantum operators for resource estimation.
   [(#7399)](https://github.com/PennyLaneAI/pennylane/pull/7399)
+  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
+  [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
+  [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
+  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
+  [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
+  [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
 
 * A new function called `qml.labs.estimate_resources` has been added which will be used to perform 
   resource estimation on circuits, `qml.labs.ResourceOperator`, and `qml.labs.Resources` objects.
   [(#7407)](https://github.com/PennyLaneAI/pennylane/pull/7407)
 
-* A new template called `qml.labs.ResourceOperator` has been added which will be used to perform 
-  resource estimation for non-parametric single qubit gates.
-  [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
-
-* Added the `qml.labs.ResourceOperator` templates which will be used to perform resource
-  estimation for parametric single qubit gates.
-  [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
-
-* Added the `qml.labs.ResourceOperator` templates which will be used to perform resource
-  estimation for controlled gates.
-  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
-
-* Added the `qml.labs.ResourceOperator` templates which will be used to perform resource
-  estimation for symbolic operators of gates.
-  [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
-
-* Added the `qml.labs.ResourceOperator` templates which will be used to perform resource
-  estimation for multi-qubit parametic gates.
-  [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
-
-* Added the `qml.labs.resource_estimation.CompactHamiltonian` to unblock the need to pass full
-  Hamiltonian
-  Added `qml.labs.resource_estimation.ResourceTrotterCDF`, and `qml.labs.resource_estimation.ResourceTrotterTHC`
-  templates which will be used to perform resource estimation for trotterization of CDF and THC Hamiltonians respectively.
+* A new class called `qml.labs.resource_estimation.CompactHamiltonian` has been added to unblock the 
+  need to pass a full Hamiltonian for the purposes of resource estimation. In addition, similar 
+  templates called `qml.labs.resource_estimation.ResourceTrotterCDF` and 
+  `qml.labs.resource_estimation.ResourceTrotterTHC`
+  have been added, which will be used to perform resource estimation for trotterization of CDF and 
+  THC Hamiltonians, respectively.
   [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
 
-* Added the `qml.labs.ResourceQubitize` template which can be used to perform resource
-  estimation for qubitization of THC Hamiltonian.
+* A new template called `qml.labs.ResourceQubitize` has beena added which can be used to perform 
+  resource estimation for qubitization of the THC Hamiltonian.
   [(#7730)](https://github.com/PennyLaneAI/pennylane/pull/7730)
 
-* Added `qml.labs.resource_estimation.ResourceTrotterVibrational` and `qml.labs.resource_estimation.ResourceTrotterVibronic`
-  templates which can be used to perform resource estimation for trotterization of vibrational and vibronic Hamiltonians respectively.
+* Two new templates called `qml.labs.resource_estimation.ResourceTrotterVibrational` and 
+  `qml.labs.resource_estimation.ResourceTrotterVibronic` have been added to perform resource 
+  estimation for trotterization of vibrational and vibronic Hamiltonians, respectively.
   [(#7720)](https://github.com/PennyLaneAI/pennylane/pull/7720)
 
-* Added `qml.labs.ResourceOperator` templates for various algorithms required for 
-  supporting compact hamiltonian development.
+* Several new templates for various algorithms required for supporting compact Hamiltonian 
+  development and resource estimation have been added: `qml.ResourceOutOfPlaceSquare`, 
+  `qml.ResourcePhaseGradient`, `qml.ResourceOutMultiplier`, `qml.ResourceSemiAdder`, 
+  `qml.ResourceSemiAdder`, `qml.ResourceBasisRotation`, `qml.ResourceSelect`, and 
+  `qml.ResourceQROM`.
   [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
 
-* A new module :mod:`qml.labs.zxopt <pennylane.labs.zxopt>` provides access to the basic optimization
-  passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane circuits.
-  
-    * :func:`basic_optimization <pennylane.labs.zxopt.basic_optimization>` performs peephole optimizations on the circuit and is a useful subroutine for other optimization passes.
-    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` optimizes [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
-    * :func:`full_reduce <pennylane.labs.zxopt.full_reduce>` can optimize arbitrary PennyLane circuits and follows the pipeline described in the [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
-    * :func:`todd <pennylane.labs.zxopt.todd>` performs Third Order Duplicate and Destroy (`TODD <https://arxiv.org/abs/1712.01557>`__) via phase polynomials and reduces T gate counts.
-
+* A new module called :mod:`qml.labs.zxopt <pennylane.labs.zxopt>` has been added to provide access 
+  to the basic optimization passes from [pyzx](https://pyzx.readthedocs.io/en/latest/) for PennyLane 
+  circuits.
   [(#7471)](https://github.com/PennyLaneAI/pennylane/pull/7471)
+  
+    * :func:`basic_optimization <pennylane.labs.zxopt.basic_optimization>` performs peephole 
+      optimizations on the circuit and is a useful subroutine for other optimization passes.
+    * :func:`full_optimize <pennylane.labs.zxopt.full_optimize>` optimizes 
+      [(Clifford + T)](https://pennylane.ai/compilation/clifford-t-gate-set) circuits.
+    * :func:`full_reduce <pennylane.labs.zxopt.full_reduce>` can optimize arbitrary PennyLane 
+      circuits and follows the pipeline described in the 
+      [the pyzx docs](https://pyzx.readthedocs.io/en/latest/simplify.html).
+    * :func:`todd <pennylane.labs.zxopt.todd>` performs Third Order Duplicate and Destroy 
+      (`TODD <https://arxiv.org/abs/1712.01557>`__) via phase polynomials and reduces T gate counts.
 
-* New functionality is added to create and manipulate product formulas in the `trotter_error` module.
+* New functionality has been added to create and manipulate product formulas in the `trotter_error` 
+  module.
   [(#7224)](https://github.com/PennyLaneAI/pennylane/pull/7224)
  
-    * :class:`ProductFormula <pennylane.labs.trotter_error.ProductFormula` allows users to create custom product formulas.
-    * :func:`bch_expansion <pennylane.labs.trotter_error.bch_expansion` computes the Baker-Campbell-Hausdorff  expansion of a product formula.
-    * :func:`effective_hamiltonian <pennylane.labs.trotter_error.effective_hamiltonian` computes the effective Hamiltonian of a product formula.
+    * :class:`ProductFormula <pennylane.labs.trotter_error.ProductFormula` allows users to create 
+      custom product formulas.
+    * :func:`bch_expansion <pennylane.labs.trotter_error.bch_expansion` computes the 
+      Baker-Campbell-Hausdorff  expansion of a product formula.
+    * :func:`effective_hamiltonian <pennylane.labs.trotter_error.effective_hamiltonian` computes the 
+      effective Hamiltonian of a product formula.
 
-* Optimized the :func:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>`
-  module for better performance by using a task-based executor to parallelize the computationally heavy
-  parts of the algorithm.
+* The :func:`perturbation_error <pennylane.labs.trotter_error.perturbation_error>` has been 
+  optimized for better performance by grouping commutators by linearity and by using a task-based 
+  executor to parallelize the computationally heavy parts of the algorithm.
   [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
-
-* Optimization for :func`pertrubation_error` which groups commutators by linearity.
   [(#7790)][https://github.com/PennyLaneAI/pennylane/pull/7790]
 
-* Fixed missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
+* Missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
-  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>`.
+  and :class:`qml.ParticleConservingU2 <pennylane.ParticleConservingU2>` have been fixed.
   [(#7628)](https://github.com/PennyLaneAI/pennylane/pull/7628)
 
 <h3>Breaking changes 💔</h3>
