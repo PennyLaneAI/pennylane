@@ -270,24 +270,25 @@
 
       return qml.expval(qml.Z(0))
 
-  rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
+  gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
 
-  rs_specs = qml.specs(rs_circuit)()["resources"]
+  gridsynth_specs = qml.specs(rs_circuit)()["resources"]
   sk_specs = qml.specs(sk_circuit)()["resources"]
   ```
 
-  Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
-  gate counts, specifically the `qml.T` count:
+  Printing the overall gate counts and T gate counts shows a two order of magnitude decrease when
+  using `method='gridsynth'` vs `method='sk'`:
 
   ```pycon
-  >>> print(rs_specs.num_gates, sk_specs.num_gates)
+  >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
   239 47942
-  >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
+  >>> print(gridsynth_specs.gate_types['T'], sk_specs.gate_types['T'])
   90 8044
   ```
 
-* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
+* This release also improves the speed of the `qml.clifford_t_decomposition` transform by
+  introducing caching support and changing the
   default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
   [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
 
