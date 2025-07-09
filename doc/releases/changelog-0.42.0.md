@@ -2,6 +2,8 @@
 
 # Release 0.42.0 (current release)
 
+[TODO: add mention of x86 drop for Mac] - For mac x86, suggest using PL 0.41.0, catalyst 0.11.0, lightning 0.41.0 and jax 0.4.28 
+
 <h3>New features since last release</h3>
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
@@ -1081,6 +1083,7 @@
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
 * Python 3.10 has been deprecated and will no longer be supported in v0.43. Please update to a newer Python version to continue using PennyLane beyond this release.
+* 
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
