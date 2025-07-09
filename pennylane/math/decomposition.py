@@ -399,7 +399,7 @@ def _right_givens_core(indices, unitary, N, j):
 
 
 @functools.lru_cache
-def _right_givens_jax(indices, unitary, N, j):
+def _right_givens_jax():
 
     @jax.jit
     def _right_givens_jax(indices, unitary, N, j):
@@ -412,7 +412,7 @@ def _right_givens(indices, unitary, N, j):
     interface = math.get_interface(unitary)
     if interface != "jax":
         return _right_givens_core(indices, unitary, N, j)
-    return _right_givens_jax(indices, unitary, N, j)
+    return _right_givens_jax()(indices, unitary, N, j)
 
 
 def _left_givens_core(indices, unitary, j):
@@ -425,7 +425,7 @@ def _left_givens_core(indices, unitary, j):
 
 
 @functools.lru_cache
-def _left_givens_jax(indices, unitary, j):
+def _left_givens_jax():
 
     @jax.jit
     def _left_givens_jax(indices, unitary, j):
@@ -438,7 +438,7 @@ def _left_givens(indices, unitary, j):
     interface = math.get_interface(unitary)
     if interface != "jax":
         return _left_givens_core(indices, unitary, j)
-    return _left_givens_jax(indices, unitary, j)
+    return _left_givens_jax()(indices, unitary, j)
 
 
 # pylint: disable=too-many-branches
