@@ -111,9 +111,9 @@ author = "Xanadu Inc."
 add_module_names = False
 
 html_sidebars = {
-   '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
-   'using/windows': ['windows-sidebar.html', 'searchbox.html'],
-   "secondary_sidebar_items": ["page-toc"],
+   '**': ['localtoc.html'],
+   'using/windows': ['localtoc.html'],
+#    "secondary_sidebar_items": ["page-toc"],
 }
 
 # The version info for the project you're documenting, acts as replacement for
@@ -260,7 +260,7 @@ html_extra_path = ["robots.txt"]
 htmlhelp_basename = "PennyLanedoc"
 
 # -- Xanadu theme ---------------------------------------------------------
-html_theme = "pennylane"
+html_theme = "xanadu"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
