@@ -33,9 +33,7 @@ def set_shots(
     Args:
         qnode (QNode): The QNode to transform.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
-            number of shots (or a shots vector) that the transformed circuit will execute. This
-            specification will override any shot values previously associated with the device or
-            provided to the QNode during execution.
+            number of shots (or a shots vector) that the transformed circuit will execute.
 
     Returns:
         QNode: The transformed QNode with the specified shots.
