@@ -40,7 +40,7 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 _INSTANCES_TO_TEST = [
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
-    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True, "heuristic_resources": True}),
     (
         qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
         {"skip_differentiation": True, "heuristic_resources": True},

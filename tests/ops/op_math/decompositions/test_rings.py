@@ -138,6 +138,7 @@ class TestZOmega:
         assert z1.parity() == 0 and z2.parity() == 0  # Both z1 and z2 have even parity
         assert z2.norm() == abs(complex(z2)) * abs(complex(z2.conj()))
         assert (z1 - ZOmega(a=2, b=2, c=2)).to_sqrt_two() == ZSqrtTwo(a=4, b=1)
+        assert 1 - ZOmega() == ZOmega(d=1)
 
     def test_arithmetic_errors(self):
         """Test that arithmetic operations raise errors for invalid types."""
