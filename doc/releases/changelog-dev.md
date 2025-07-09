@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* An xDSL `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass` pass has been
+* A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass` has been
   added for the experimental xDSL Python compiler integration. This pass replaces all terminal
   measurements in a program with a single :func:`pennylane.sample` measurement, and adds
   postprocessing instructions to recover the original measurement.
