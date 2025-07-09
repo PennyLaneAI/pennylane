@@ -140,7 +140,6 @@
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
 
-  
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane circuits into equivalent
   [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
   This function can be used in the following ways:
@@ -163,40 +162,39 @@
 
   * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs:
   ```pycon
-  >>> import pennylane as qml
   >>> PL_op = qml.X(0)
   >>> qualtran_op = qml.to_bloq(PL_op)
   >>> type(qualtran_op)
   qualtran.bloqs.basic_gates.x_basis.XGate
   ```
-  * Custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs
+  * Custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs:
   ```pycon
   >>> def circuit():
-  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
-  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
-  ...    qml.QubitUnitary([[0,1],[1,0]], wires=0)
+  ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+  ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+  ...    qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
 
-  >>> PL_op = qml.QubitUnitary([[0,1],[1,0]], wires=0)
+  >>> PL_op = qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
 
   >>> from qualtran.bloqs.basic_gates import XGate
   >>> qualtran_op = XGate()
 
-  >>> custom_map = {
-  ...  PL_op: qualtran_op}
+  >>> custom_map = {PL_op: qualtran_op}
 
   >>> bloq = qml.to_bloq(circuit, custom_mapping=custom_map)
   >>> bloq.bloq_counts()
   {XGate(): 3}
   ```
+  
   It requires one input and takes in two optional inputs:
 
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
   * ``map_ops (bool)``: Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when ``False``. Default is ``True``.
-  * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
+  * ``custom_mapping`` (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
+
   The following example converts a PennyLane Operator into a Qualtran Bloq:
 
   ```python
-  import pennylane as qml
 
   control_wires = [2, 3]
   estimation_wires = [4, 5, 6, 7, 8, 9]
@@ -249,7 +247,7 @@
 * The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
   also known as Gridsynth, can now be accessed in :func:`~.clifford_t_decomposition` by setting
   `method="gridsynth"`. This is a new Clifford-T decomposition method that can produce
-  orders of magnitue fewer gates than the previous `method="sk"` (Solovay-Kitaev algorithm). 
+  orders of magnitue fewer gates than by using `method="sk"` (Solovay-Kitaev algorithm). 
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
@@ -277,8 +275,6 @@
   sk_specs = qml.specs(sk_circuit)()["resources"]
   ```
 
-  Printing the overall gate counts and T gate counts shows a two order of magnitude decrease when
-  using `method='gridsynth'` vs `method='sk'`:
 
   ```pycon
   >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
