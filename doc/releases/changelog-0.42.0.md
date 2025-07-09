@@ -734,6 +734,12 @@
   increasing the performance of using `qml.execute` for standard executions.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
+* `null.qubit` can now support an optional `track_resources` argument which allows it to record which 
+  gates are executed.
+  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
+  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
+
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
   [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
@@ -1005,24 +1011,27 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please use the
-  new `gradient_kwargs` keyword argument accordingly.
+* Support for gradient keyword arguments as QNode keyword arguments has been removed. Instead please 
+  use the new `gradient_kwargs` keyword argument accordingly.
   [(#7648)](https://github.com/PennyLaneAI/pennylane/pull/7648)
 
-* The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
-  when `max_diff > 1`.
+* The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns 
+  on caching when `max_diff > 1`.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
-* A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
-  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates
-  even if 2 CNOTs would suffice theoretically.
+* A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`. It 
+  ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 
+  CNOTs would suffice theoretically.
   [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
-* The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
+* The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for 
+  type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
 
-* The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`__ or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
+* The `KerasLayer` class in `qml.qnn.keras` has been removed because Keras 2 is no longer actively 
+  maintained. Please consider using a different machine learning framework, like 
+  `PyTorch <demos/tutorial_qnn_module_torch>`__ or 
+  `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`__.
   [(#7320)](https://github.com/PennyLaneAI/pennylane/pull/7320)
 
 * The `qml.gradients.hamiltonian_grad` function has been removed because this gradient recipe is no
@@ -1058,65 +1067,71 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Python 3.10 support is deprecated and support will be removed in v0.43. Please upgrade to Python 
   3.11 or newer.
 
-* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and 
+  `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from 
+  the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
   [(#7508)](https://github.com/PennyLaneAI/pennylane/pull/7508)
   [(#7603)](https://github.com/PennyLaneAI/pennylane/pull/7603)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been deprecated, as
-  pennylane now depends on the more general `Operator` interface instead. The
+  PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
   [(#7316)](https://github.com/PennyLaneAI/pennylane/pull/7316)
 
-* The boolean functions provided in `pennylane.operation` are deprecated. See the :doc:`deprecations page </development/deprecations>` 
-  for equivalent code to use instead. These include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`,
-  `has_nopar`, `has_unitary_gen`, `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+* The boolean functions provided in `qml.operation` are deprecated. See the 
+  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
+  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
+  `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
   [(#7319)](https://github.com/PennyLaneAI/pennylane/pull/7319)
 
-* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. To indicate that
-  an operator can act on any number of wires, `Operator.num_wires = None` should be used instead. This is the default
-  and does not need to be overwritten unless the operator developer wants to add wire number validation.
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` are deprecated. 
+  To indicate that an operator can act on any number of wires, `Operator.num_wires = None` should be 
+  used instead. This is the default and does not need to be overwritten unless the operator 
+  developer wants to add wire number validation.
   [(#7313)](https://github.com/PennyLaneAI/pennylane/pull/7313)
 
-* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use 
+  :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7323)](https://github.com/PennyLaneAI/pennylane/pull/7323)
 
 <h3>Internal changes ⚙️</h3>
 
-* Move private code in the `TransformProgram` onto the `CotransformCache` class.
+* Private code in the `TransformProgram` has been moved to the `CotransformCache` class.
   [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
 
-* Improve type hinting in the `workflow` module.
+* Type hinting in the `workflow` module has been improved.
   [(#7745)](https://github.com/PennyLaneAI/pennylane/pull/7745)
 
-* Unpin `mitiq` in CI.
+* `mitiq` has been unpinned in the CI.
   [(#7742)](https://github.com/PennyLaneAI/pennylane/pull/7742)
 
 * The `qml.measurements.Shots` class can now handle abstract numbers of shots.
   [(#7729)](https://github.com/PennyLaneAI/pennylane/pull/7729)
 
-* Update `jax` and `tensorflow` dependencies for `doc` builds.
+* The `jax` and `tensorflow` dependencies for `doc` builds has been updated.
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
-* `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file 
-  to match the expected binary distribution format naming conventions.
+* `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file  to match the expected 
+  binary distribution format naming conventions.
   [(#7689)](https://github.com/PennyLaneAI/pennylane/pull/7689)
 
 * The `qml.compiler.python_compiler` submodule has been restructured.
   [(#7645)](https://github.com/PennyLaneAI/pennylane/pull/7645)
 
-* Move program capture code closer to where it is used.
+* Program capture code has been moved closer to where it is used.
   [(#7608)](https://github.com/PennyLaneAI/pennylane/pull/7608)
 
-* Tests using `OpenFermion` in `tests/qchem` do not fail with NumPy>=2.0.0 any more.
+* Tests using `OpenFermion` in `tests/qchem` no longer fail with NumPy>=2.0.0.
   [(#7626)](https://github.com/PennyLaneAI/pennylane/pull/7626)
 
-* Move `givens_decomposition` and private helpers from `qchem` to `math` module.
+* The `givens_decomposition` function and private helpers from `qchem` have been moved to the `math` 
+  module.
   [(#7545)](https://github.com/PennyLaneAI/pennylane/pull/7545)
 
-* Enforce module dependencies in `pennylane` using `tach`.
+* Module dependencies in `pennylane` using `tach` have been enforced.
   [(#7185)](https://github.com/PennyLaneAI/pennylane/pull/7185)
   [(#7416)](https://github.com/PennyLaneAI/pennylane/pull/7416)
   [(#7418)](https://github.com/PennyLaneAI/pennylane/pull/7418)
@@ -1129,86 +1144,90 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
   [(#7743)](https://github.com/PennyLaneAI/pennylane/pull/7743)
 
-* With program capture enabled, mcm method validation now happens on execution rather than setup.
+* With program capture enabled, MCM method validation now happens on execution rather than setup.
   [(#7475)](https://github.com/PennyLaneAI/pennylane/pull/7475)
 
-* Add `.git-blame-ignore-revs` file to the PennyLane repository. This file will allow specifying commits that should
-  be ignored in the output of `git blame`. For example, this can be useful when a single commit includes bulk reformatting.
+* A `.git-blame-ignore-revs` file has been added to the PennyLane repository. This file will allow 
+  specifying commits that should be ignored in the output of `git blame`. For example, this can be 
+  useful when a single commit includes bulk reformatting.
   [(#7507)](https://github.com/PennyLaneAI/pennylane/pull/7507)
 
-* Add a `.gitattributes` file to standardize LF as the end-of-line character for the PennyLane
-  repository.
+* A `.gitattributes` file has been added to standardize LF as the end-of-line character for the 
+  PennyLane repository.
   [(#7502)](https://github.com/PennyLaneAI/pennylane/pull/7502)
 
-* `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of `preprocess`.
+* `DefaultQubit` now implements `preprocess_transforms` and `setup_execution_config` instead of 
+  `preprocess`.
   [(#7468)](https://github.com/PennyLaneAI/pennylane/pull/7468)
 
-* Fix subset of `pylint` errors in the `tests` folder.
+* A subset of `pylint` errors have been fixed in the `tests` folder.
   [(#7446)](https://github.com/PennyLaneAI/pennylane/pull/7446)
 
-* Remove and reduce excessively expensive test cases in `tests/templates/test_subroutines/` that do not add value.
+* Excessively expensive test cases that do not add value in `tests/templates/test_subroutines/` have 
+  been reduced or removed.
   [(#7436)](https://github.com/PennyLaneAI/pennylane/pull/7436)
 
-* Stop using `pytest-timeout` in the PennyLane CI/CD pipeline.
+* `pytest-timeout` is no longer used in the PennyLane CI/CD pipeline.
   [(#7451)](https://github.com/PennyLaneAI/pennylane/pull/7451)
 
 * A `RuntimeWarning` raised when using versions of JAX > 0.4.28 has been removed.
   [(#7398)](https://github.com/PennyLaneAI/pennylane/pull/7398)
 
-* Wheel releases for PennyLane now follow the `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` guidelines more closely.
+* Wheel releases for PennyLane now follow the 
+  `PyPA binary-distribution format <https://packaging.python.org/en/latest/specifications/binary-distribution-format/>_` 
+  guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
-
-* `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
-  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
-  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
-  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
 
-* Test suites in `tests/transforms/test_defer_measurement.py` use analytic mocker devices to test numeric results.
+* Test suites in `tests/transforms/test_defer_measurement.py` now use analytic mocker devices to 
+  test numeric results.
   [(#7329)](https://github.com/PennyLaneAI/pennylane/pull/7329)
 
-* Add new `pennylane.exceptions` module for custom errors and warnings.
+* A new `pennylane.exceptions` module has been added for custom errors and warnings.
   [(#7205)](https://github.com/PennyLaneAI/pennylane/pull/7205)
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
 
-* Clean up `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` to be explicit in what they import. 
+* Several `__init__.py` files in `math`, `ops`, `qaoa`, `tape` and `templates` have been cleaned up 
+  to be explicit in what they import. 
   [(#7200)](https://github.com/PennyLaneAI/pennylane/pull/7200)
   
 * The `Tracker` class has been moved into the `devices` module.
   [(#7281)](https://github.com/PennyLaneAI/pennylane/pull/7281)
 
-* Moved functions that calculate rotation angles for unitary decompositions into an internal
-  module `qml.math.decomposition`
+* Functions that calculate rotation angles for unitary decompositions have been moved into an 
+  internal module called `qml.math.decomposition`.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* Fixed a failing integration test for `qml.QDrift`  which multiplied the operators of the decomposition incorrectly to evolve the state.
+* Fixed a failing integration test for `qml.QDrift` which multiplied the operators of the 
+  decomposition incorrectly to evolve the state.
   [(#7621)](https://github.com/PennyLaneAI/pennylane/pull/7621)
 
-* The decomposition test in `assert_valid` no longer checks the matrix of the decomposition if the operator
-  does not define a matrix representation.
+* The decomposition test in `assert_valid` no longer checks the matrix of the decomposition if the 
+  operator does not define a matrix representation.
   [(#7655)](https://github.com/PennyLaneAI/pennylane/pull/7655)
 
 <h3>Documentation 📝</h3>
 
-* The functions in `qml.qchem.vibrational` are updated to include additional information about the 
-  theory and input arguments.
+* The functions in `qml.qchem.vibrational` have been updated to include additional information about 
+  the theory and input arguments.
   [(#6918)](https://github.com/PennyLaneAI/pennylane/pull/6918)
 
 * The usage examples for `qml.decomposition.DecompositionGraph` have been updated.
   [(#7692)](https://github.com/PennyLaneAI/pennylane/pull/7692)
 
-* The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include
-  additional supported lightning devices: `lightning.kokkos` and `lightning.gpu`.
+* The entry in the :doc:`/news/program_capture_sharp_bits` has been updated to include additional 
+  supported lightning devices (`lightning.kokkos` and `lightning.gpu`).
   [(#7674)](https://github.com/PennyLaneAI/pennylane/pull/7674)
 
-* Updated the circuit drawing for `qml.Select` to include two commonly used symbols for 
-  Select-applying, or multiplexing, an operator. Added a similar drawing for `qml.SelectPauliRot`.
+* The circuit drawings for `qml.Select` and `qml.SelectPauliRot` have been updated to include two 
+  commonly used symbols for Select-applying, or -multiplexing, an operator. 
   [(#7464)](https://github.com/PennyLaneAI/pennylane/pull/7464)
   
-* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated; non-native transforms being applied
-  to QNodes wherein operators have dynamic wires can lead to incorrect results.
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for transforms has been updated; 
+  non-native transforms being applied to QNodes wherein operators have dynamic wires can lead to 
+  incorrect results.
   [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
 
 * Fixed the wrong `theta` to `phi` in :class:`~pennylane.IsingXY`.
@@ -1218,26 +1237,27 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   circuit drawings now render in a way that's easier to read.
   [(#7419)](https://github.com/PennyLaneAI/pennylane/pull/7419)
 
-* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with Catalyst 
-  has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now compatible 
-  with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for enabling and
-  disabling program capture.
+* The entry in the :doc:`/news/program_capture_sharp_bits` page for using program capture with 
+  Catalyst has been updated. Instead of using ``qjit(experimental_capture=True)``, Catalyst is now 
+  compatible with the global toggles ``qml.capture.enable()`` and ``qml.capture.disable()`` for 
+  enabling and disabling program capture.
   [(#7298)](https://github.com/PennyLaneAI/pennylane/pull/7298)
 
-* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been updated 
-  to correct an error regarding analytic mode support for the ``tree-traversal`` method. 
+* The simulation technique table in the :doc:`/introduction/dynamic_quantum_circuits` page has been 
+  updated to correct an error regarding analytic mode support for the ``tree-traversal`` method; 
   ``tree-traversal`` supports analytic mode.
   [(#7490)](https://github.com/PennyLaneAI/pennylane/pull/7490)
 
-* Added a warning to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying that compilation transforms 
-may move operations across a `Snapshot`.
+* A warning has been added to the documentation for `qml.snapshots` and `qml.Snapshot`, clarifying 
+  that compilation transforms may move operations across a `Snapshot`.
   [(#7746)](https://github.com/PennyLaneAI/pennylane/pull/7746)
 
-* In the :doc:`/development/guide/documentation` page, removed references to the outdated Sphinx and unsupported Python 3.8 version. 
-  This helps ensure contributors follow current standards and avoid compatibility issues.
+* In the :doc:`/development/guide/documentation` page, references to the outdated Sphinx and 
+  unsupported Python versions have been updated. This helps ensure contributors follow current 
+  standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
-* Alphabetized the API list in the documentation build to ensure consistent ordering. 
+* The API list in the documentation has been alphabetized to ensure consistent ordering. 
   [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
 
 <h3>Bug fixes 🐛</h3>
