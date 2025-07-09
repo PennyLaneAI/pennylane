@@ -394,6 +394,11 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 <h3>Improvements 🛠</h3>
 
+* A new decomposition for two-qubit unitaries has been implemented in :func:`~.ops.two_qubit_decomposition`.
+  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 CNOTs
+  would suffice theoretically.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
+
 <h4>A quantum optimizer that works with QJIT</h4>
 
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
@@ -1039,11 +1044,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns on caching
   when `max_diff > 1`.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
-
-* A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`.
-  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates
-  even if 2 CNOTs would suffice theoretically.
-  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for type checking instead.
   [(#7322)](https://github.com/PennyLaneAI/pennylane/pull/7322)
