@@ -389,7 +389,7 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     return _givens_matrix_jax()(a, b, left=left, tol=tol)
 
 
-def __right_givens(indices, unitary, N, j):
+def _right_givens_core(indices, unitary, N, j):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
     unitary = _set_unitary_matrix(
@@ -398,19 +398,24 @@ def __right_givens(indices, unitary, N, j):
     return unitary, math.conj(grot_mat)
 
 
-@jax.jit
-def __right_givens_jax(indices, unitary, N, j):
-    return __right_givens(indices, unitary, N, j)
+@functools.lru_cache
+def _right_givens_jax(indices, unitary, N, j):
+
+    @jax.jit
+    def _right_givens_jax(indices, unitary, N, j):
+        return _right_givens_core(indices, unitary, N, j)
+
+    return _right_givens_jax
 
 
 def _right_givens(indices, unitary, N, j):
-    like = math.get_interface(unitary)
-    if like == "jax":
-        return __right_givens_jax(indices, unitary, N, j)
-    return __right_givens(indices, unitary, N, j)
+    interface = math.get_interface(unitary)
+    if interface != "jax":
+        return _right_givens_core(indices, unitary, N, j)
+    return _right_givens_jax(indices, unitary, N, j)
 
 
-def __left_givens(indices, unitary, j):
+def _left_givens_core(indices, unitary, j):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
     unitary = _set_unitary_matrix(
@@ -419,16 +424,21 @@ def __left_givens(indices, unitary, j):
     return unitary, grot_mat
 
 
-@jax.jit
-def __left_givens_jax(indices, unitary, j):
-    return __left_givens(indices, unitary, j)
+@functools.lru_cache
+def _left_givens_jax(indices, unitary, j):
+
+    @jax.jit
+    def _left_givens_jax(indices, unitary, j):
+        return _left_givens_core(indices, unitary, j)
+
+    return _left_givens_jax
 
 
 def _left_givens(indices, unitary, j):
-    like = math.get_interface(unitary)
-    if like == "jax":
-        return __left_givens_jax(indices, unitary, j)
-    return __left_givens(indices, unitary, j)
+    interface = math.get_interface(unitary)
+    if interface != "jax":
+        return _left_givens_core(indices, unitary, j)
+    return _left_givens_jax(indices, unitary, j)
 
 
 # pylint: disable=too-many-branches
