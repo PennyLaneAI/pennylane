@@ -268,7 +268,7 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_work_wires", "mod", "coeffs_list"}
+    resource_keys = {"num_output_wires", "num_work_wires", "mod", "coeffs_list"}
 
     def __init__(
         self,
@@ -352,6 +352,7 @@ class OutPoly(Operation):
     @property
     def resource_params(self) -> dict:
         return {
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
             "mod": self.hyperparameters["mod"],
             "coeffs_list": self.hyperparameters["coeffs_list"],
@@ -462,8 +463,8 @@ class OutPoly(Operation):
         return list_ops
 
 
-def _out_poly_decomposition_resources(num_work_wires, mod, coeffs_list) -> dict:
-    num_output_adder_mod = 2 if num_work_wires else 1
+def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
+    num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
     resources = {
         resource_rep(qml.QFT, num_wires=num_output_adder_mod): 1,
