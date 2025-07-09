@@ -246,8 +246,11 @@
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-* A new function called :func:`qml.from_qasm3 <pennylane.from_qasm3>` has been added, which converts OpenQASM 3.0 circuits into quantum functions
-  that can be subsequently loaded into QNodes and executed. 
+PennyLane now offers improved support for [OpenQASM](https://openqasm.com/),
+including the ability to convert between PennyLane and OpenQASM circuits.
+
+* Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 circuits
+  into quantum functions which can then be loaded into QNodes and executed.
   [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
@@ -257,6 +260,7 @@
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
+  
   ```python
   import pennylane as qml
 
@@ -308,11 +312,11 @@
                   ╚═══╝      
   ```
   
-  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and 
-  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
+  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, please consult the documentation
+  for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and `'openqasm3[parser]'`
+  in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
-* A new function called :func:`qml.to_openqasm <pennylane.to_openqasm>` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+* The new :func:`qml.to_openqasm <pennylane.to_openqasm>` function enables conversion of PennyLane circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
   Consider this simple circuit in PennyLane:
