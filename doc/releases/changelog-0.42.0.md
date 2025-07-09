@@ -124,11 +124,53 @@
 
 <h4>QSVT & QSP angle solver for large polynomials 🕸️</h4>
 
+Effortlessly perform QSVT and QSP with polynomials of large degrees, using our new iterative angle solver.
+
 * A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
   allowing angle computation for polynomials of large degrees (> 1000).
-  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
-  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
   [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
+
+  Simply set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function to use it.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  # P(x) = x - 0.5 x^3 + 0.25 x^5
+  poly = np.array([0, 1.0, 0, -1/2, 0, 1/4])
+
+  qsvt_angles = qml.poly_to_angles(poly, "QSVT", angle_solver="iterative")
+  ```
+
+  ```pycon
+  >>> print(qsvt_angles)
+  [-4.72195208  1.59759022  1.12953398  1.12953403  1.59759046 -0.00956271]
+  ```
+
+  This functionality can also be accessed directly from :func:`qml.qsvt <pennylane.qsvt>`:
+
+  ```python
+  # P(x) = -x + 0.5 x^3 + 0.5 x^5
+  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
+
+  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
+
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep", angle_solver="iterative")
+      return qml.state()
+
+  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
+  ```
+
+  ```pycon
+  >>> print(matrix[:4, :4].real)
+  [[-0.16253996  0.         -0.37925991  0.        ]
+   [ 0.         -0.16253996  0.          0.37925991]
+   [-0.37925991  0.          0.16253996  0.        ]
+   [ 0.          0.37925991  0.          0.16253996]]
+  ```
 
 <h4>Qualtran integration 🔗</h4>
 
