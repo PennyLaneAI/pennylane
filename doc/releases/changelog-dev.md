@@ -17,9 +17,12 @@
   
     * :class:`~.OutAdder`
       [(#7780)](https://github.com/PennyLaneAI/pennylane/pull/7780)
-  
+
     * :class:`~.OutMultiplier`
       [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
+
+    * :class:`~.OutPoly`
+      [(#7822)](https://github.com/PennyLaneAI/pennylane/pull/7822)
 
 <h3>Breaking changes 💔</h3>
 
