@@ -61,7 +61,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestBuiltIns:
+class TestBuiltIns:  # pylint: disable=too-few-public-methods
 
     def test_constants(self):
         ast = parse(
