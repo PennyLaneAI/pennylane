@@ -288,8 +288,7 @@ Effortlessly perform QSVT and QSP with polynomials of large degrees, using our n
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-PennyLane now offers improved support for [OpenQASM](https://openqasm.com/),
-including the ability to convert between PennyLane and OpenQASM circuits.
+PennyLane now offers improved support for [OpenQASM](https://openqasm.com/).
 
 * Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 circuits
   into quantum functions which can then be loaded into QNodes and executed.
