@@ -201,8 +201,8 @@
 
 * The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
   also known as Gridsynth, can now be accessed in :func:`~.clifford_t_decomposition` by setting
-  `method="gridsynth"`. This is a new Clifford-T decomposition method that can produce orders of 
-  magnitue fewer gates than using `method="sk"` (Solovay-Kitaev algorithm). 
+  `method="gridsynth"`. This is a newer Clifford-T decomposition method that can produce orders of 
+  magnitude fewer gates than using `method="sk"` (Solovay-Kitaev algorithm). 
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
