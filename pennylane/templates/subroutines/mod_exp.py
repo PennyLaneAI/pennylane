@@ -17,6 +17,7 @@ Contains the ModExp template.
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -113,6 +114,8 @@ class ModExp(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_x_wires", "num_output_wires", "mod", "num_work_wires"}
+
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
@@ -154,6 +157,15 @@ class ModExp(Operation):
         self.hyperparameters["base"] = base
         self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
+            "mod": self.hyperparameters["mod"],
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+        }
 
     @property
     def num_params(self):
@@ -230,3 +242,28 @@ class ModExp(Operation):
             )
         )
         return op_list
+
+
+def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+    return {
+        resource_rep(
+            qml.ControlledSequence,
+            base=qml.Multiplier,
+            base_params={
+                "num_x_wires": num_output_wires,
+                "num_work_wires": num_work_wires,
+                "mod": mod,
+            },
+            num_control_wires=num_x_wires,
+        ): 1,
+    }
+
+
+@register_resources(_mod_exp_decomposition_resources)
+def _mod_exp_decomposition(
+    x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__
+):
+    qml.ControlledSequence(qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+
+
+add_decomps(ModExp, _mod_exp_decomposition)

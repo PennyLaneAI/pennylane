@@ -27,6 +27,8 @@
     * :class:`~.Multiplier`
       [(#7834)](https://github.com/PennyLaneAI/pennylane/pull/7834)
     
+    * :class:`~.ModExp`
+      [(#7836)](https://github.com/PennyLaneAI/pennylane/pull/7836)
 
 <h3>Breaking changes 💔</h3>
 
