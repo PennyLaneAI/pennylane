@@ -2,13 +2,11 @@
 
 # Release 0.42.0 (current release)
 
-[TODO: add mention of x86 drop for Mac] - For mac x86, suggest using PL 0.41.0, catalyst 0.11.0, lightning 0.41.0 and jax 0.4.28 
-
 <h3>New features since last release</h3>
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
-* A new decomposition based on *unary iteration* has been added to :class:`~.Select` based on 
+* A new decomposition using *unary iteration* has been added to :class:`~.Select` based on 
   [arXiv:1805.03662](https://arxiv.org/pdf/1805.03662). This state-of-the-art decomposition reduces 
   the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires, where :math:`c` is the 
   number of control wires.
@@ -16,9 +14,9 @@
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
 
   Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
-  different multi-controlled operators, avoiding unnecessary recomputation. This new decomposition
-  for :class:`~.Select` is best explained and illustrated in its documentation—go check it out for 
-  more information!
+  different multi-controlled operators, avoiding unnecessary recomputation. Go check out the  
+  *Unary iterator decomposition* section in the :class:`~.Select` documentation for more 
+  information!
 
 * A new template called :class:`~.TemporaryAND` has been added. :class:`~.TemporaryAND` enables more 
   efficient circuit decompositions, like in the newest decomposition of the :class:`~.Select` 
@@ -1082,8 +1080,16 @@
 
 Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
-* Python 3.10 has been deprecated and will no longer be supported in v0.43. Please update to a newer Python version to continue using PennyLane beyond this release.
-* 
+* Python 3.10 support is deprecated and support will be removed in v0.43. Please upgrade to Python 
+  3.11 or newer.
+
+* Support for Mac x86 has been removed. This includes Macs running on Intel processors.
+  This is because 
+  [JAX has also dropped support for it since 0.5.0](https://github.com/jax-ml/jax/blob/main/CHANGELOG.md#jax-050-jan-17-2025),
+  with the rationale being that such machines are becoming increasingly scarce. If support for Mac x86 
+  platforms is still desired, please install Catalyst v0.11.0, PennyLane v0.41.0, PennyLane-Lightning 
+  v0.41.0, and JAX v0.4.28.
+  
 * Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
