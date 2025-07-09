@@ -1189,9 +1189,9 @@ class ResourceQubitUnitary(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * num_wires (int): the number of qubits the operation acts upon
-            * precision (Union[float, None], optional): The precision used when preparing the
-              single qubit rotations used to prepare the entries of the qubit unitary.
+                * num_wires (int): the number of qubits the operation acts upon
+                * precision (Union[float, None], optional): The precision used when preparing the
+                  single qubit rotations used to prepare the entries of the qubit unitary.
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
