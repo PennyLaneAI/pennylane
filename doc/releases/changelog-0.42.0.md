@@ -124,84 +124,131 @@
 
 <h4>QSVT & QSP angle solver for large polynomials 🕸️</h4>
 
-* A new iterative angle solver for QSVT and QSP is available in the :func:`poly_to_angles <pennylane.poly_to_angles>` function,
-  allowing angle computation for polynomials of large degrees (> 1000).
-  Set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` function
-  (or from the :func:`qsvt <pennylane.qsvt>` function!) to use it.
+Effortlessly perform QSVT and QSP with polynomials of large degrees, using our new iterative angle 
+solver.
+
+* A new iterative angle solver for QSVT and QSP is available in the 
+  :func:`poly_to_angles <pennylane.poly_to_angles>` function, designed for angle computation for 
+  polynomials with degrees larger than 1000.
   [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
 
-<h4>Qualtran integration 🔗</h4>
-
-* It's now possible to convert PennyLane operators to [Qualtran](https://qualtran.readthedocs.io/en/latest/) bloqs with the new :func:`qml.to_bloq <pennylane.to_bloq>` function. 
-  [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
-  [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
-  [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
-  
-  :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
-  * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
-  * ``map_ops (bool)``: Whether to map operations to a Qualtran Bloq. Operations are wrapped as a ``ToBloq`` when ``False``. Default is ``True``.
-  * custom_mapping (dict): Dictionary to specify a mapping between a PennyLane operator and a Qualtran Bloq. A default mapping is used if not defined.
-  The following example converts a PennyLane Operator into a Qualtran Bloq:
+  Simply set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` 
+  function to use it.
 
   ```python
   import pennylane as qml
-  from qualtran.drawing import get_musical_score_data, draw_musical_score, show_bloq
+  import numpy as np
 
-  control_wires = [2, 3]
-  estimation_wires = [4, 5, 6, 7, 8, 9]
+  # P(x) = x - 0.5 x^3 + 0.25 x^5
+  poly = np.array([0, 1.0, 0, -1/2, 0, 1/4])
 
-  H = -0.4 * qml.Z(0) + 0.3 * qml.Z(1) + 0.4 * qml.Z(0) @ qml.Z(1)
-
-  op = qml.QuantumPhaseEstimation(
-      qml.Qubitization(H, control_wires), estimation_wires=estimation_wires
-  )
-
-  cbloq = qml.to_bloq(op).decompose_bloq()
-  fig, ax = draw_musical_score(get_musical_score_data(cbloq))
-  show_bloq(cbloq)
+  qsvt_angles = qml.poly_to_angles(poly, "QSVT", angle_solver="iterative")
   ```
 
-  Let's define a custom mapping instead.
+  ```pycon
+  >>> print(qsvt_angles)
+  [-4.72195208  1.59759022  1.12953398  1.12953403  1.59759046 -0.00956271]
+  ```
+
+  This functionality can also be accessed directly from :func:`qml.qsvt <pennylane.qsvt>` with the 
+  same keyword argument:
 
   ```python
-  from qualtran.bloqs.phase_estimation import LPResourceState
-  from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+  # P(x) = -x + 0.5 x^3 + 0.5 x^5
+  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
 
-  custom_map = {
-    op: TextbookQPE(
-        unitary=qml.to_bloq(qml.Qubitization(H, control_wires)), 
-        ctrl_state_prep=LPResourceState(len(estimation_wires))
-    )
-  }
+  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
 
-  cbloq = qml.to_bloq(op, map_ops=True, custom_mapping=custom_map).decompose_bloq()
-  draw_musical_score(get_musical_score_data(cbloq))
-  show_bloq(cbloq)
+  dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit():
+      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep", angle_solver="iterative")
+      return qml.state()
+
+  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
   ```
 
-  Alternatively, rather than map directly to a Qualtran Bloq, we can preserve the original
-  PennyLane decomposition by setting `map_ops` to False.
-
-  ```python
-  op_wrapped_as_bloq = qml.to_bloq(op, map_ops=False)
-  cbloq = op_wrapped_as_bloq.decompose_bloq()
-  draw_musical_score(get_musical_score_data(cbloq))
-  show_bloq(cbloq)
-
-  # We can also leverage Qualtran features to get resource counts and call graphs, among other things
-  from qualtran.drawing import show_call_graph, show_counts_sigma  
-
-  graph, sigma = qml.to_bloq(op, map_ops=True).call_graph()
-  show_call_graph(graph)
-  show_counts_sigma(sigma)
+  ```pycon
+  >>> print(matrix[:4, :4].real)
+  [[-0.16253996  0.         -0.37925991  0.        ]
+   [ 0.         -0.16253996  0.          0.37925991]
+   [-0.37925991  0.          0.16253996  0.        ]
+   [ 0.          0.37925991  0.          0.16253996]]
   ```
+
+<h4>Qualtran integration 🔗</h4>
+
+* It's now possible to convert PennyLane circuits and operators to 
+  [Qualtran](https://qualtran.readthedocs.io/en/latest/) circuits and Bloqs with the new 
+  :func:`qml.to_bloq <pennylane.to_bloq>` function. This integration enables a new way to estimate 
+  the resource requirements of PennyLane quantum circuits via Qualtran's abstractions and tools. 
+  [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
+  [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
+  [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+
+  The :func:`qml.to_bloq <pennylane.to_bloq>` function translates PennyLane circuits (qfuncs or 
+  QNodes) and operations into equivalent
+  [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
+
+  This function can be used in the following ways:
+
+  * Wrap PennyLane circuits and operations to give them Qualtran features, like obtaining
+    [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) 
+    and drawing a 
+    [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html), but 
+    preserve the original PennyLane decomposition. This is done by setting `map_ops` to `False`, 
+    which instead wraps operations as a :class:`~.ToBloq`:
+  
+    ```pycon
+    >>> def circuit():
+    ...     qml.X(0)
+    ...     qml.Y(1)
+    ...     qml.Z(2)
+    ...
+    >>> cbloq = qml.to_bloq(circuit, map_ops=False)
+    >>> type(cbloq)
+    pennylane.io.qualtran_io.ToBloq
+    >>> cbloq.bloq_counts()
+    {XGate(): 1, ZGate(): 1, YGate(): 1}
+    ```
+
+  * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs by setting 
+    `map_ops=True` (the default value):
+
+    ```pycon
+    >>> PL_op = qml.X(0)
+    >>> qualtran_op = qml.to_bloq(PL_op)
+    >>> type(qualtran_op)
+    qualtran.bloqs.basic_gates.x_basis.XGate
+    ```
+
+  * Use custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs by 
+    setting a `custom_mapping` dictionary:
+
+    ```python
+    from qualtran.bloqs.basic_gates import XGate
+
+    def circuit():
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+    ```
+
+    ```pycon
+    >>> PL_op = qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
+    >>> qualtran_op = XGate()
+    >>> custom_map = {PL_op: qualtran_op}
+    >>> bloq = qml.to_bloq(circuit, custom_mapping=custom_map)
+    >>> bloq.bloq_counts()
+    {XGate(): 3}
+    ```
 
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
-* A new decomposition method for :func:`~.clifford_t_decomposition` is now available with `method="gridsynth"`
-  (the [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975)) that produces orders of magnitude
-  less gates than `method="sk"` (the Solovay-Kitaev algorithm) in many cases. It is directly accessible
-  via :func:`~.ops.rs_decomposition` function.
+* The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
+  also known as Gridsynth, can now be accessed in :func:`~.clifford_t_decomposition` by setting
+  `method="gridsynth"`. This is a newer Clifford-T decomposition method that can produce orders of 
+  magnitude fewer gates than using `method="sk"` (Solovay-Kitaev algorithm). 
   [(#7588)](https://github.com/PennyLaneAI/pennylane/pull/7588)
   [(#7641)](https://github.com/PennyLaneAI/pennylane/pull/7641)
   [(#7611)](https://github.com/PennyLaneAI/pennylane/pull/7611)
@@ -209,45 +256,44 @@
   [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
   [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
-  The Ross-Selinger algorithm can drastically outperform the Solovay-Kitaev algorithm in many cases.
-  Consider this simple circuit:
+  In the following example, decomposing with `method="gridsynth"` instead of `method="sk"` gives a
+  significant reduction in overall gate counts, specifically the `qml.T` count:
 
   ```python
   @qml.qnode(qml.device("lightning.qubit", wires=2))
-  def circuit(x, y):
+  def circuit():
 
-      qml.RX(x, 0)
+      qml.RX(0.12, 0)
       qml.CNOT([0, 1])
-      qml.RY(y, 0)
+      qml.RY(0.34, 0)
 
       return qml.expval(qml.Z(0))
-
-  rs_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
-  sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
-
-  x, y = 0.12, 0.34
-  rs_specs = qml.specs(rs_circuit)(x, y)["resources"]
-  sk_specs = qml.specs(sk_circuit)(x, y)["resources"]
   ```
 
-  Decomposing with `method="gridsynth"` instead of `method="sk"` gives a significant reduction in overall 
-  gate counts, specifically the `qml.T` count:
+  We can inspect the gate counts resulting from both decomposition methods with :func:`~.specs`:
 
   ```pycon
-  >>> print(rs_specs.num_gates, sk_specs.num_gates)
+  >>> gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
+  >>> sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
+  >>> gridsynth_specs = qml.specs(rs_circuit)()["resources"]
+  >>> sk_specs = qml.specs(sk_circuit)()["resources"]
+  >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
   239 47942
-  >>> print(rs_specs.gate_types['T'], sk_specs.gate_types['T'])
+  >>> print(gridsynth_specs.gate_types['T'], sk_specs.gate_types['T'])
   90 8044
   ```
 
-* Improved performance for `qml.clifford_t_decomposition` transform by introducing caching support and changed the
-  default basis set of `qml.ops.sk_decomposition` to `(H, S, T)`, resulting in shorter decomposition sequences.
+* This release also improves the speed of the `qml.clifford_t_decomposition` transform by
+  implementing caching and changing the default basis set of `qml.ops.sk_decomposition`
+  to `(H, S, T)`, resulting in shorter decomposition sequences.
   [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-* A new function called :func:`qml.from_qasm3` has been added, which converts OpenQASM 3.0 circuits into quantum functions
-  that can be subsequently loaded into QNodes and executed. 
+PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.com/).
+
+* Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 
+  circuits into quantum functions which can then be loaded into QNodes and executed.
   [(#7495)](https://github.com/PennyLaneAI/pennylane/pull/7495)
   [(#7486)](https://github.com/PennyLaneAI/pennylane/pull/7486)
   [(#7488)](https://github.com/PennyLaneAI/pennylane/pull/7488)
@@ -257,6 +303,7 @@
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
+  
   ```python
   import pennylane as qml
 
@@ -308,14 +355,16 @@
                   ╚═══╝      
   ```
   
-  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3` and ensure that you have installed `openqasm3` and 
-  `'openqasm3[parser]'` in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
+  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, please consult the documentation
+  for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and `'openqasm3[parser]'`
+  in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
 
-* A new function called `qml.to_openqasm` has been added, which allows for converting PennyLane circuits to OpenQASM 2.0 programs.
+* The new :func:`qml.to_openqasm <pennylane.to_openqasm>` function enables conversion of PennyLane 
+  circuits to OpenQASM 2.0 programs.
   [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
 
   Consider this simple circuit in PennyLane:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=100)
 
@@ -327,7 +376,8 @@
       return qml.sample()
   ```
 
-  This can be easily converted to OpenQASM 2.0 with `qml.to_openqasm`:
+  This can be easily converted to OpenQASM 2.0 with :func:`qml.to_openqasm <pennylane.to_openqasm>`:
+  
   ```pycon
   >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
   >>> print(openqasm_circ)
@@ -462,11 +512,12 @@
   * :class:`~.MultiControlledX`
     [(#7405)](https://github.com/PennyLaneAI/pennylane/pull/7405)
 
-  * :class:`~.ops.Exp`. 
+  * :class:`~.ops.Exp` 
     [(#7489)](https://github.com/PennyLaneAI/pennylane/pull/7489)
     Specifically, the following decompositions have been added:
-    * Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
-    * Decomposition to a :class:`~.PauliRot` when the base is a single-term Pauli word.
+    
+    - Suzuki-Trotter decomposition when the `num_steps` keyword argument is specified.
+    - Decomposition to a :class:`~.PauliRot` when the base is a single-term Pauli word.
 
   * :class:`~.PCPhase`
     [(#7591)](https://github.com/PennyLaneAI/pennylane/pull/7591)
@@ -1062,14 +1113,20 @@
 
 <h3>Deprecations 👋</h3>
 
-Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead, Please consult the :doc:`deprecations and removals page </development/deprecations>`.
+Here's a list of deprecations made this release. For a more detailed breakdown of deprecations and alternative code to use instead,
+please consult the :doc:`deprecations and removals page </development/deprecations>`.
 
 * Python 3.10 support is deprecated and support will be removed in v0.43. Please upgrade to Python 
   3.11 or newer.
 
-* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and 
-  `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from 
-  the new `exceptions` module.
+* Support for Mac x86 has been removed. This includes Macs running on Intel processors.
+  This is because 
+  [JAX has also dropped support for it since 0.5.0](https://github.com/jax-ml/jax/blob/main/CHANGELOG.md#jax-050-jan-17-2025),
+  with the rationale being that such machines are becoming increasingly scarce. If support for Mac x86 
+  platforms is still desired, please install Catalyst v0.11.0, PennyLane v0.41.0, PennyLane-Lightning 
+  v0.41.0, and JAX v0.4.28.
+  
+* Top-level access to `DeviceError`, `PennyLaneDeprecationWarning`, `QuantumFunctionError` and `ExperimentalWarning` have been deprecated and will be removed in v0.43. Please import them from the new `exceptions` module.
   [(#7292)](https://github.com/PennyLaneAI/pennylane/pull/7292)
   [(#7477)](https://github.com/PennyLaneAI/pennylane/pull/7477)
   [(#7508)](https://github.com/PennyLaneAI/pennylane/pull/7508)
