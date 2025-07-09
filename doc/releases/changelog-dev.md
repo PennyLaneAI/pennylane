@@ -16,6 +16,12 @@
 
 <h3>Deprecations 👋</h3>
 
+<h3>Internal changes ⚙️</h3>
+
+* Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
+  [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
+  [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
