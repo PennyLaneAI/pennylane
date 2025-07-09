@@ -28,8 +28,9 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 from typing import Sequence, TypeAlias
 
 from xdsl.dialects.builtin import (
+    I32,
+    I64,
     AnyAttr,
-    BaseAttr,
     Float64Type,
     IntegerAttr,
     IntegerType,
@@ -52,7 +53,6 @@ from xdsl.ir import (
 from xdsl.irdl import (
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
-    EqAttrConstraint,
     IRDLOperation,
     irdl_attr_definition,
     irdl_op_definition,
@@ -138,9 +138,9 @@ class AdjointOp(IRDLOperation):
         `(` $qreg `)` attr-dict `:` type(operands) $region
     """
 
-    qreg = operand_def(BaseAttr(QuregType))
+    qreg = operand_def(QuregType)
 
-    out_qreg = result_def(BaseAttr(QuregType))
+    out_qreg = result_def(QuregType)
 
     region = region_def("single_block")
 
@@ -164,9 +164,9 @@ class AllocOp(IRDLOperation):
 
     nqubits = opt_operand_def(i64)
 
-    nqubits_attr = opt_prop_def(IntegerAttr)
+    nqubits_attr = opt_prop_def(IntegerAttr[I64])
 
-    qreg = result_def(BaseAttr(QuregType))
+    qreg = result_def(QuregType)
 
     def __init__(self, nqubits):
         if isinstance(nqubits, int):
@@ -202,11 +202,11 @@ class ComputationalBasisOp(IRDLOperation):
 
     irdl_options = [AttrSizedOperandSegments(as_property=True)]
 
-    qubits = var_operand_def(BaseAttr(QubitType))
+    qubits = var_operand_def(QubitType)
 
-    qreg = opt_operand_def(BaseAttr(QuregType))
+    qreg = opt_operand_def(QuregType)
 
-    obs = result_def(BaseAttr(ObservableType))
+    obs = result_def(ObservableType)
 
 
 @irdl_op_definition
@@ -226,9 +226,9 @@ class CountsOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    dynamic_shape = opt_operand_def(IntegerType(64))
 
     in_eigvals = opt_operand_def(AnyAttr())
 
@@ -259,21 +259,21 @@ class CustomOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    params = var_operand_def(EqAttrConstraint(Float64Type()))
+    params = var_operand_def(Float64Type())
 
-    in_qubits = var_operand_def(BaseAttr(QubitType))
+    in_qubits = var_operand_def(QubitType)
 
-    gate_name = prop_def(BaseAttr(StringAttr))
+    gate_name = prop_def(StringAttr)
 
-    adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
+    adjoint = opt_prop_def(UnitAttr())
 
-    in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
+    in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(EqAttrConstraint(IntegerType(1)))
+    in_ctrl_values = var_operand_def(IntegerType(1))
 
-    out_qubits = var_result_def(BaseAttr(QubitType))
+    out_qubits = var_result_def(QubitType)
 
-    out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
+    out_ctrl_qubits = var_result_def(QubitType)
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -333,7 +333,7 @@ class DeallocOp(IRDLOperation):
         $qreg attr-dict `:` type(operands)
     """
 
-    qreg = operand_def(BaseAttr(QuregType))
+    qreg = operand_def(QuregType)
 
     def __init__(self, qreg: QuregSSAValue | Operation):
         super().__init__(operands=(qreg,))
@@ -349,13 +349,13 @@ class DeviceInitOp(IRDLOperation):
         (`shots` `(` $shots^ `)`)? `[` $lib `,` $device_name `,` $kwargs `]` attr-dict
     """
 
-    shots = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    shots = opt_operand_def(IntegerType(64))
 
-    lib = prop_def(BaseAttr(StringAttr))
+    lib = prop_def(StringAttr)
 
-    device_name = prop_def(BaseAttr(StringAttr))
+    device_name = prop_def(StringAttr)
 
-    kwargs = prop_def(BaseAttr(StringAttr))
+    kwargs = prop_def(StringAttr)
 
 
 @irdl_op_definition
@@ -375,9 +375,9 @@ class ExpvalOp(IRDLOperation):
 
     assembly_format = "$obs attr-dict `:` type(results)"
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    expval = result_def(EqAttrConstraint(Float64Type()))
+    expval = result_def(Float64Type())
 
     def __init__(self, obs: ObservableSSAValue | Operation):
         super().__init__(operands=(obs,), result_types=(Float64Type(),))
@@ -393,13 +393,13 @@ class ExtractOp(IRDLOperation):
     #        $qreg `[` ($idx^):($idx_attr)? `]` attr-dict `:` type($qreg) `->` type(results)
     #    """
 
-    qreg = operand_def(BaseAttr(QuregType))
+    qreg = operand_def(QuregType)
 
-    idx = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    idx = opt_operand_def(IntegerType(64))
 
     idx_attr = opt_prop_def(AnyAttr())
 
-    qubit = result_def(BaseAttr(QubitType))
+    qubit = result_def(QubitType)
 
     def __init__(
         self,
@@ -447,15 +447,15 @@ class GlobalPhaseOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    params = operand_def(EqAttrConstraint(Float64Type()))
+    params = operand_def(Float64Type())
 
-    adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
+    adjoint = opt_prop_def(UnitAttr())
 
-    in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
+    in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(EqAttrConstraint(IntegerType(1)))
+    in_ctrl_values = var_operand_def(IntegerType(1))
 
-    out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
+    out_ctrl_qubits = var_result_def(QubitType)
 
 
 @irdl_op_definition
@@ -470,9 +470,9 @@ class HamiltonianOp(IRDLOperation):
 
     coeffs = operand_def(AnyAttr())
 
-    terms = var_operand_def(BaseAttr(ObservableType))
+    terms = var_operand_def(ObservableType)
 
-    obs = result_def(BaseAttr(ObservableType))
+    obs = result_def(ObservableType)
 
 
 @irdl_op_definition
@@ -487,9 +487,9 @@ class HermitianOp(IRDLOperation):
 
     matrix = operand_def(AnyAttr())
 
-    qubits = var_operand_def(BaseAttr(QubitType))
+    qubits = var_operand_def(QubitType)
 
-    obs = result_def(BaseAttr(ObservableType))
+    obs = result_def(ObservableType)
 
 
 @irdl_op_definition
@@ -511,15 +511,15 @@ class InsertOp(IRDLOperation):
     #        $in_qreg `[` ($idx^):($idx_attr)? `]` `,` $qubit attr-dict `:` type($in_qreg) `,` type($qubit)
     #    """
 
-    in_qreg = operand_def(BaseAttr(QuregType))
+    in_qreg = operand_def(QuregType)
 
-    idx = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    idx = opt_operand_def(IntegerType(64))
 
     idx_attr = opt_prop_def(AnyAttr())
 
-    qubit = operand_def(BaseAttr(QubitType))
+    qubit = operand_def(QubitType)
 
-    out_qreg = result_def(BaseAttr(QuregType))
+    out_qreg = result_def(QuregType)
 
     def __init__(
         self,
@@ -550,13 +550,13 @@ class MeasureOp(IRDLOperation):
         $in_qubit (`postselect` $postselect^)? attr-dict `:` type(results)
     """
 
-    in_qubit = operand_def(BaseAttr(QubitType))
+    in_qubit = operand_def(QubitType)
 
-    postselect = opt_prop_def(IntegerType(32))
+    postselect = opt_prop_def(IntegerAttr[I32])
 
-    mres = result_def(EqAttrConstraint(IntegerType(1)))
+    mres = result_def(IntegerType(1))
 
-    out_qubit = result_def(BaseAttr(QubitType))
+    out_qubit = result_def(QubitType)
 
     def __init__(
         self, in_qubit: QubitSSAValue | Operation, postselect: int | IntegerAttr | None = None
@@ -602,19 +602,19 @@ class MultiRZOp(IRDLOperation):
         AttrSizedResultSegments(as_property=True),
     ]
 
-    theta = operand_def(EqAttrConstraint(Float64Type()))
+    theta = operand_def(Float64Type())
 
-    in_qubits = var_operand_def(BaseAttr(QubitType))
+    in_qubits = var_operand_def(QubitType)
 
-    adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
+    adjoint = opt_prop_def(UnitAttr())
 
-    in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
+    in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(EqAttrConstraint(IntegerType(1)))
+    in_ctrl_values = var_operand_def(IntegerType(1))
 
-    out_qubits = var_result_def(BaseAttr(QubitType))
+    out_qubits = var_result_def(QubitType)
 
-    out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
+    out_ctrl_qubits = var_result_def(QubitType)
 
 
 @irdl_op_definition
@@ -627,11 +627,11 @@ class NamedObsOp(IRDLOperation):
         $qubit `[` $type `]` attr-dict  `:` type(results)
     """
 
-    qubit = operand_def(BaseAttr(QubitType))
+    qubit = operand_def(QubitType)
 
-    type = prop_def(BaseAttr(NamedObservableAttr))
+    type = prop_def(NamedObservableAttr)
 
-    obs = result_def(BaseAttr(ObservableType))
+    obs = result_def(ObservableType)
 
     def __init__(self, qubit: QubitSSAValue | Operation, obs_type: NamedObservableAttr):
         super().__init__(
@@ -653,9 +653,9 @@ class ProbsOp(IRDLOperation):
 
     irdl_options = [AttrSizedOperandSegments(as_property=True)]
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    dynamic_shape = opt_operand_def(IntegerType(64))
 
     state_in = opt_operand_def(AnyAttr())
 
@@ -684,17 +684,17 @@ class QubitUnitaryOp(IRDLOperation):
 
     matrix = operand_def(AnyAttr())
 
-    in_qubits = var_operand_def(BaseAttr(QubitType))
+    in_qubits = var_operand_def(QubitType)
 
-    adjoint = opt_prop_def(EqAttrConstraint(UnitAttr()))
+    adjoint = opt_prop_def(UnitAttr())
 
-    in_ctrl_qubits = var_operand_def(BaseAttr(QubitType))
+    in_ctrl_qubits = var_operand_def(QubitType)
 
-    in_ctrl_values = var_operand_def(EqAttrConstraint(IntegerType(1)))
+    in_ctrl_values = var_operand_def(IntegerType(1))
 
-    out_qubits = var_result_def(BaseAttr(QubitType))
+    out_qubits = var_result_def(QubitType)
 
-    out_ctrl_qubits = var_result_def(BaseAttr(QubitType))
+    out_ctrl_qubits = var_result_def(QubitType)
 
 
 @irdl_op_definition
@@ -711,9 +711,9 @@ class SampleOp(IRDLOperation):
 
     irdl_options = [AttrSizedOperandSegments(as_property=True)]
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    dynamic_shape = var_operand_def(EqAttrConstraint(IntegerType(64)))
+    dynamic_shape = var_operand_def(IntegerType(64))
 
     in_data = opt_operand_def(AnyAttr())
 
@@ -732,9 +732,9 @@ class SetBasisStateOp(IRDLOperation):
 
     basis_state = operand_def(AnyAttr())
 
-    in_qubits = var_operand_def(BaseAttr(QubitType))
+    in_qubits = var_operand_def(QubitType)
 
-    out_qubits = var_result_def(BaseAttr(QubitType))
+    out_qubits = var_result_def(QubitType)
 
 
 @irdl_op_definition
@@ -749,9 +749,9 @@ class SetStateOp(IRDLOperation):
 
     in_state = operand_def(AnyAttr())
 
-    in_qubits = var_operand_def(BaseAttr(QubitType))
+    in_qubits = var_operand_def(QubitType)
 
-    out_qubits = var_result_def(BaseAttr(QubitType))
+    out_qubits = var_result_def(QubitType)
 
 
 @irdl_op_definition
@@ -768,9 +768,9 @@ class StateOp(IRDLOperation):
 
     irdl_options = [AttrSizedOperandSegments(as_property=True)]
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    dynamic_shape = opt_operand_def(EqAttrConstraint(IntegerType(64)))
+    dynamic_shape = opt_operand_def(IntegerType(64))
 
     state_in = opt_operand_def(AnyAttr())
 
@@ -787,9 +787,9 @@ class TensorOp(IRDLOperation):
         $terms attr-dict `:` type(results)
     """
 
-    terms = var_operand_def(BaseAttr(ObservableType))
+    terms = var_operand_def(ObservableType)
 
-    obs = result_def(BaseAttr(ObservableType))
+    obs = result_def(ObservableType)
 
 
 @irdl_op_definition
@@ -802,9 +802,9 @@ class VarianceOp(IRDLOperation):
         $obs attr-dict `:` type(results)
     """
 
-    obs = operand_def(BaseAttr(ObservableType))
+    obs = operand_def(ObservableType)
 
-    variance = result_def(EqAttrConstraint(Float64Type()))
+    variance = result_def(Float64Type())
 
 
 @irdl_op_definition
@@ -817,7 +817,7 @@ class YieldOp(IRDLOperation):
         attr-dict ($retvals^ `:` type($retvals))?
     """
 
-    retvals = var_operand_def(BaseAttr(QuregType))
+    retvals = var_operand_def(QuregType)
 
 
 QuantumDialect = Dialect(
