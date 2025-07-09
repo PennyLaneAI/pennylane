@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     while_loop_prim,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class SimplifyInterpreter(PlxprInterpreter):
