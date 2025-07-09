@@ -1210,6 +1210,11 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Documentation 📝</h3>
 
+* The documentation for mid-circuit measurements using the Tree Traversal algorithm has been updated
+  to reflect supported devices and usage in analytic simulations (see the 
+  :doc:`/introduction/dynamic_quantum_circuits` page).
+  [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
+
 * The functions in `qml.qchem.vibrational` have been updated to include additional information about 
   the theory and input arguments.
   [(#6918)](https://github.com/PennyLaneAI/pennylane/pull/6918)
@@ -1257,6 +1262,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   standards and avoid compatibility issues.
   [(#7479)](https://github.com/PennyLaneAI/pennylane/pull/7479)
 
+* The documentation of `qml.pulse.drive` has been updated and corrected.
+  [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
+
 * The API list in the documentation has been alphabetized to ensure consistent ordering. 
   [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
 
@@ -1266,25 +1274,26 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   don't have shared wires, providing a deterministic output.
   [(#7328)](https://github.com/PennyLaneAI/pennylane/pull/7328)
 
-* Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
+* Fixed broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for 
+  parametric tensors.
   [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
-* Fixes `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same operation occurs multiple
-  times in the circuit.
+* Fixed `CircuitGraph.iterate_parametrized_layers`, and thus `metric_tensor`, when the same 
+  operation occurs multiple times in the circuit.
   [(#7757)](https://github.com/PennyLaneAI/pennylane/pull/7757)
 
-* Fixes a bug with transforms that require the classical Jacobian applied to QNodes, where only
-  some arguments are trainable and an intermediate transform does not preserve trainability information.
+* Fixed a bug with transforms that require the classical Jacobian applied to QNodes, where only
+  some arguments are trainable and an intermediate transform does not preserve trainability 
+  information.
   [(#7345)](https://github.com/PennyLaneAI/pennylane/pull/7345)
 
-* The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` inputs
-  when specifying the angle, due to the given hashing policy. The implementation was updated to ensure
-  correct hashing behavior for `float`, `numpy.array`, and `jax.numpy.array` inputs.
+* The `qml.ftqc.ParametricMidMeasureMP` class was unable to accept data from `jax.numpy.array` 
+  inputs when specifying the angle, due to the given hashing policy. The implementation was updated 
+  to ensure correct hashing behavior for `float`, `numpy.array`, and `jax.numpy.array` inputs.
   [(#7693)](https://github.com/PennyLaneAI/pennylane/pull/7693)
 
-* A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously
-  inconsistent mapping for these wires has been resolved, ensuring accurate assignment during
-  drawing.
+* A bug in `qml.draw_mpl` for circuits with work wires has been fixed. The previously inconsistent 
+  mapping for these wires has been resolved, ensuring accurate assignment during drawing.
   [(#7668)](https://github.com/PennyLaneAI/pennylane/pull/7668)
 
 * A bug in `ops.op_math.Prod.simplify()` has been fixed that led to global phases being discarded
@@ -1292,52 +1301,51 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   up to a global phase _and_ there is no Pauli representation of the product operator.
   [(#7671)](https://github.com/PennyLaneAI/pennylane/pull/7671)
 
-* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires argument is now
-  interpreted as a single wire (i.e. `wires=[m]`). This is different from the previous interpretation of `wires=range(m)`.
+* The behaviour of the `qml.FlipSign` operation has been fixed: passing an integer `m` as the wires 
+  argument is now interpreted as a single wire (i.e. `wires=[m]`). This is different from the 
+  previous interpretation of `wires=range(m)`. 
   Also, the `qml.FlipSign.wires` attribute is now returning the correct `Wires` object as for all other operations in PennyLane.
   [(#7647)](https://github.com/PennyLaneAI/pennylane/pull/7647)
 
 * `qml.equal` now works with `qml.PauliError`s.
   [(#7618)](https://github.com/PennyLaneAI/pennylane/pull/7618)
 
-* The `qml.transforms.cancel_inverses` transform can be used with `jax.jit`.
+* The `qml.transforms.cancel_inverses` transform can now be used with `jax.jit`.
   [(#7487)](https://github.com/PennyLaneAI/pennylane/pull/7487)
 
-* `qml.StatePrep` does not validate the norm of statevectors any more, default to `False` during initialization.
+* `qml.StatePrep` no longer validates the norm of statevectors.
   [(#7615)](https://github.com/PennyLaneAI/pennylane/pull/7615)
 
-* `qml.PhaseShift` operation is now working correctly with a batch size of 1.
+* The `qml.PhaseShift` operation is now working correctly with a batch size of 1.
   [(#7622)](https://github.com/PennyLaneAI/pennylane/pull/7622)
 
-* `qml.metric_tensor` can now be calculated with catalyst.
+* `qml.metric_tensor` can now be calculated with Catalyst present.
   [(#7528)](https://github.com/PennyLaneAI/pennylane/pull/7528)
 
 * The mapping to standard wires (consecutive integers) of `qml.tape.QuantumScript` has been fixed
   to correctly consider work wires that are not used otherwise in the circuit.
   [(#7581)](https://github.com/PennyLaneAI/pennylane/pull/7581)
 
-* Fixed a bug where certain transforms with a native program capture implementation give incorrect results when
-  dynamic wires were present in the circuit. The affected transforms were:
-  * :func:`~pennylane.transforms.cancel_inverses`
-  * :func:`~pennylane.transforms.merge_rotations`
-  * :func:`~pennylane.transforms.single_qubit_fusion`
-  * :func:`~pennylane.transforms.merge_amplitude_embedding`
+* Fixed a bug where certain transforms with a native program capture implementation give incorrect 
+  results when dynamic wires were present in the circuit. The affected transforms were:
+  * :func:`~.transforms.cancel_inverses`
+  * :func:`~.transforms.merge_rotations`
+  * :func:`~.transforms.single_qubit_fusion`
+  * :func:`~.transforms.merge_amplitude_embedding`
   [(#7426)](https://github.com/PennyLaneAI/pennylane/pull/7426)
 
-* The `Operator.pow` method has been fixed to raise to the power of 2 the qutrit operators `~.TShift`, `~.TClock`, and `~.TAdd`.
+* The `Operator.pow` method has been fixed to raise to the power of 2 the qutrit operators 
+  `~.TShift`, `~.TClock`, and `~.TAdd`.
   [(#7505)](https://github.com/PennyLaneAI/pennylane/pull/7505)
 
-* The queuing behavior of the controlled of a controlled operation is fixed.
+* The queuing behavior of the controlled of a controlled operation has been fixed.
   [(#7532)](https://github.com/PennyLaneAI/pennylane/pull/7532)
 
-* A new decomposition was implemented for two-qubit `QubitUnitary` operators in `two_qubit_decomposition`
-  based on a type-AI Cartan decomposition. It fixes previously faulty edge cases for unitaries
-  that require 2 or 3 CNOT gates. Now, 3 CNOTs are used for both cases, using one more
-  CNOT than theoretically required in the former case.
+* A new decomposition was implemented for two-qubit `QubitUnitary` operators in 
+  `two_qubit_decomposition` based on a type-AI Cartan decomposition. It fixes previously faulty edge 
+  cases for unitaries that require 2 or 3 CNOT gates. Now, 3 CNOTs are used for both cases, using 
+  one more CNOT than theoretically required in the former case.
   [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
-
-* The documentation of `qml.pulse.drive` has been updated and corrected.
-  [(#7459)](https://github.com/PennyLaneAI/pennylane/pull/7459)
 
 * Fixed a bug in `to_openfermion` where identity qubit-to-wires mapping was not obeyed.
   [(#7332)](https://github.com/PennyLaneAI/pennylane/pull/7332)
@@ -1346,32 +1354,37 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7377)](https://github.com/PennyLaneAI/pennylane/pull/7377)
 
 * Usage of NumPy in `default.mixed` source code has been converted to `qml.math` to avoid
-  unnecessary dependency on NumPy and to fix a bug that caused an error when using `default.mixed` with PyTorch and GPUs.
+  unnecessary dependency on NumPy and to fix a bug that caused an error when using `default.mixed` 
+  with PyTorch and GPUs.
   [(#7384)](https://github.com/PennyLaneAI/pennylane/pull/7384)
 
-* With program capture enabled (`qml.capture.enable()`), `QSVT` no treats abstract values as metadata.
+* With program capture enabled (`qml.capture.enable()`), `QSVT` no longer treats abstract values as 
+  metadata.
   [(#7360)](https://github.com/PennyLaneAI/pennylane/pull/7360)
 
-* A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements (`mcm_method="deferred"`).
+* A fix was made to `default.qubit` to allow for using `qml.Snapshot` with defer-measurements 
+  (`mcm_method="deferred"`).
   [(#7335)](https://github.com/PennyLaneAI/pennylane/pull/7335)
 
-* Fixes the repr for empty `Prod` and `Sum` instances to better communicate the existence of an empty instance.
+* Fixed the repr for empty `Prod` and `Sum` instances to better communicate the existence of an 
+  empty instance.
   [(#7346)](https://github.com/PennyLaneAI/pennylane/pull/7346)
 
-* Fixes a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
+* Fixed a bug where circuit execution fails with ``BlockEncode`` initialized with sparse matrices.
   [(#7285)](https://github.com/PennyLaneAI/pennylane/pull/7285)
 
-* Adds an informative error if `qml.cond` is used with an abstract condition with
-  jitting on `default.qubit` if capture is enabled.
+* An informative error message has been added if `qml.cond` is used with an abstract condition with
+  jitting on `default.qubit` when program capture is enabled.
   [(#7314)](https://github.com/PennyLaneAI/pennylane/pull/7314)
 
-* Fixes a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with ``default.mixed``.
+* Fixed a bug where using a ``StatePrep`` operation with `batch_size=1` did not work with 
+  ``default.mixed``.
   [(#7280)](https://github.com/PennyLaneAI/pennylane/pull/7280)
 
 * Gradient transforms can now be used in conjunction with batch transforms with all interfaces.
   [(#7287)](https://github.com/PennyLaneAI/pennylane/pull/7287)
 
-* Fixes a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
+* Fixed a bug where the global phase was not being added in the ``QubitUnitary`` decomposition.  
   [(#7244)](https://github.com/PennyLaneAI/pennylane/pull/7244)
   [(#7270)](https://github.com/PennyLaneAI/pennylane/pull/7270)
 
@@ -1385,21 +1398,23 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 * Fixed coverage of `qml.liealg.CII` and `qml.liealg.AIII`.
   [(#7291)](https://github.com/PennyLaneAI/pennylane/pull/7291)
 
-* Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is enabled.
+* Fixed a bug where the phase is used as the wire label for a `qml.GlobalPhase` when capture is 
+  enabled.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
-* Fixed a bug that caused `CountsMP.process_counts` to return results in the computational basis, even if
-  an observable was specified.
+* Fixed a bug that caused `CountsMP.process_counts` to return results in the computational basis, 
+  even if an observable was specified.
   [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
 
-* Fixed a bug that caused `SamplesMP.process_counts` used with an observable to return a list of eigenvalues 
-  for each individual operation in the observable, instead of the overall result.
+* Fixed a bug that caused `SamplesMP.process_counts` used with an observable to return a list of 
+  eigenvalues for each individual operation in the observable, instead of the overall result.
   [(#7342)](https://github.com/PennyLaneAI/pennylane/pull/7342)
 
-* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special matrices.
+* Fixed a bug where `two_qubit_decomposition` provides an incorrect decomposition for some special 
+  matrices.
   [(#7340)](https://github.com/PennyLaneAI/pennylane/pull/7340)
 
-* Fixes a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
+* Fixed a bug where the powers of `qml.ISWAP` and `qml.SISWAP` were decomposed incorrectly.
   [(#7361)](https://github.com/PennyLaneAI/pennylane/pull/7361)
 
 * Returning `MeasurementValue`s from the `ftqc` module's parametric mid-circuit measurements
@@ -1407,17 +1422,12 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   using `diagonalize_mcms`.
   [(#7387)](https://github.com/PennyLaneAI/pennylane/pull/7387)
 
-* Fixes a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
+* Fixed a bug where the :func:`~.transforms.single_qubit_fusion` transform produces a tape that is
   off from the original tape by a global phase.
   [(#7619)](https://github.com/PennyLaneAI/pennylane/pull/7619)
 
-* Fixes a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
+* Fixed a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
   [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
-
-* Updated documentation for mid-circuit measurements using the Tree Traversal algorithm
-  to reflect supported devices and usage in analytic simulations,
-  in the :doc:`/introduction/dynamic_quantum_circuits` page.
-  [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
 <h3>Contributors ✍️</h3>
 
