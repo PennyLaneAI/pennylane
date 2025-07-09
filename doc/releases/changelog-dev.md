@@ -15,6 +15,9 @@
     * :class:`~.ControlledSequence`
       [(#7787)](https://github.com/PennyLaneAI/pennylane/pull/7787)
   
+    * :class:`~.OutAdder`
+      [(#7780)](https://github.com/PennyLaneAI/pennylane/pull/7780)
+  
     * :class:`~.OutMultiplier`
       [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
 
