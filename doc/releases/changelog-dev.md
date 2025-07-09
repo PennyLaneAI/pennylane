@@ -16,8 +16,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update pattern matching for release candidate branch in `rc_sync.yml` to conform with new standards.
+* Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
+  [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
 <h3>Documentation 📝</h3>
 
