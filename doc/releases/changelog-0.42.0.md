@@ -1349,7 +1349,7 @@ may move operations across a `Snapshot`.
   [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
 * Fixes a bug where an operation wrapped in `partial_wires` does not get queued.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#7830)](https://github.com/PennyLaneAI/pennylane/pull/7830)
 
 <h3>Contributors ✍️</h3>
 
