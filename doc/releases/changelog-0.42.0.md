@@ -150,6 +150,7 @@
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+  [(#7814)](https://github.com/PennyLaneAI/pennylane/pull/7814)
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
@@ -1193,6 +1194,10 @@ may move operations across a `Snapshot`.
   [(#7792)](https://github.com/PennyLaneAI/pennylane/pull/7792)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where normalization in `qml.StatePrep` with `normalize=True` was skipped if
+  `validate_norm` is set to `False`.
+  [(#7835)](https://github.com/PennyLaneAI/pennylane/pull/7835) 
 
 * Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
   [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
