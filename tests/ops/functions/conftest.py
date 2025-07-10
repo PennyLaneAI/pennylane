@@ -105,9 +105,9 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qml.SelectPauliRot(
-            np.array([1.0, 2.0, 3.0, 4.0]), control_wires=[0, 1], target_wire=2, rot_axis="Y"
+            np.arange(2**3) + 1, control_wires=[0, 1, 2], target_wire=3, rot_axis="Y"
         ),
-        {"heuristic_resources": True},
+        {},
     ),
 ]
 """Valid operator instances that could not be auto-generated."""
