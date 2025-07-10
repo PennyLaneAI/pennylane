@@ -169,7 +169,7 @@ class LegacyDeviceFacade(Device):
 
     @property
     def tracker(self):
-        """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
+        """A :class:`~pennylane.Tracker` that can store information about device executions, shots, batches,
         intermediate results, or any additional device dependent information.
         """
         return self._device.tracker
