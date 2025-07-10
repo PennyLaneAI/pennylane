@@ -8,7 +8,7 @@
 
 * A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
   This state-of-the-art decomposition reduces the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires,
-  where :math:`c` is the number of control wires. 
+  where :math:`c` is the number of control wires of the `Select` operator.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
   [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
@@ -30,7 +30,7 @@
 
   To demonstrate the resource-efficiency of this new decomposition, let's use 
   :func:`~.transforms.decompose` to decompose an instance of :class:`~.Select` using the new unary iterator decomposition rule, and further decompose these gates into the Clifford+T gate set
-  using :func:`~.clifford_t_decomposition` so that we can count the amount of `T` gates required:
+  using :func:`~.clifford_t_decomposition` so that we can count the number of `T` gates required:
   
   ```python
   reg = qml.registers({"targ": 2, "control": 2, "work": 1})
@@ -58,7 +58,7 @@
   13
   ```
 
-  In contract, when the unary iterator decomposition is not used (when the graph-based decomposition
+  In contrast, when the unary iterator decomposition is not used (when the graph-based decomposition
   system is disabled), and `Select` is decomposed into Clifford+T gates, we end up with orders of 
   magnitude more `T` gates:
 
