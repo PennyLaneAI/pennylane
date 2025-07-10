@@ -163,6 +163,7 @@
   axis).
 
   ```python
+  import numpy as np
   angles = np.array([1.0, 2.0, 3.0, 4.0])
 
   wires = qml.registers({"control": 2, "target": 1})
@@ -231,7 +232,9 @@ solver.
   dev = qml.device("default.qubit")
   @qml.qnode(dev)
   def circuit():
-      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep", angle_solver="iterative")
+      qml.qsvt(
+          hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep", angle_solver="iterative"
+      )
       return qml.state()
 
   matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
@@ -264,7 +267,7 @@ solver.
     [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) 
     and drawing a 
     [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html), but 
-    preserve the original PennyLane decomposition. This is done by setting `map_ops` to `False`, 
+    preserve PennyLane's definition of the circuit/operator. This is done by setting `map_ops` to `False`, 
     which instead wraps operations as a :class:`~.ToBloq`:
   
     ```pycon
@@ -370,7 +373,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
-  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)  
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
 
   ```python
@@ -470,7 +473,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
   
-  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
+  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and :func:`qml.qjit <pennylane.qjit>`-compatible analogue to the existing 
   :class:`~.QNGOptimizer` with an Optax-like interface:
 
   ```python
