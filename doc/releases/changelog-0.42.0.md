@@ -893,8 +893,12 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
   ```python
-  dev = qml.device("default.qubit", wires=2, shots=10)
+  import pennylane as qml
+  from functools import partial
 
+  dev = qml.device("default.qubit", wires=2)
+
+  @partial(qml.set_shots, shots=10)
   @qml.qnode(dev)
   def circuit():
       qml.Snapshot("sample", measurement=qml.sample(qml.X(0)), shots=5)
