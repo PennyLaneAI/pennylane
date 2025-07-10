@@ -98,8 +98,8 @@ class ResourceMultiRZ(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * num_wires (int): the number of qubits the operation acts upon
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * num_wires (int): the number of qubits the operation acts upon
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"num_wires": self.num_wires, "eps": self.eps}
 
@@ -342,8 +342,8 @@ class ResourcePauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * pauli_string (str): a string describing the pauli operators that define the rotation
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * pauli_string (str): a string describing the pauli operators that define the rotation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {
             "pauli_string": self.pauli_string,
@@ -611,7 +611,7 @@ class ResourceIsingXX(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"eps": self.eps}
 
@@ -800,7 +800,7 @@ class ResourceIsingYY(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"eps": self.eps}
 
@@ -987,7 +987,7 @@ class ResourceIsingXY(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"eps": self.eps}
 
@@ -1182,7 +1182,7 @@ class ResourceIsingZZ(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"eps": self.eps}
 
@@ -1365,7 +1365,7 @@ class ResourcePSWAP(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * eps (float): error threshold for clifford plus T decomposition of this operation
+                * eps (float): error threshold for clifford plus T decomposition of this operation
         """
         return {"eps": self.eps}
 

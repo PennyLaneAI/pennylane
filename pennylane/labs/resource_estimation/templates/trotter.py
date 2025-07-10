@@ -130,8 +130,8 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a compressed double factorized
-                  Hamiltonian to be approximately exponentiated
+                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a
+                  compressed double factorized Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
 
@@ -1067,14 +1067,14 @@ class ResourceTrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a real-space vibronic
-                  Hamiltonian to be approximately exponentiated
+                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a real-space
+                  vibronic Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
-                * phase_grad_precision (float): precision for the phase gradient calculation, default value is
-                  `1e-6`
-                * coeff_precision (float): precision for the loading of coefficients, default value is
-                  `1e-3`
+                * phase_grad_precision (float): precision for the phase gradient calculation, default
+                  value is `1e-6`
+                * coeff_precision (float): precision for the loading of coefficients, default value
+                  is `1e-3`
 
         """
         return {
