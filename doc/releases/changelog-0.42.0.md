@@ -1195,6 +1195,10 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where normalization in `qml.StatePrep` with `normalize=True` was skipped if
+  `validate_norm` is set to `False`.
+  [(#7835)](https://github.com/PennyLaneAI/pennylane/pull/7835) 
+
 * Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
   [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
