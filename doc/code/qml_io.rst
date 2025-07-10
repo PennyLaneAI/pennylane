@@ -33,4 +33,4 @@ Classes
     :toctree: api
 
     ~FromBloq
-    ~ToBloq
+    ~io.ToBloq
