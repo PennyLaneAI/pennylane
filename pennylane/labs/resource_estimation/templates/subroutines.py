@@ -1419,7 +1419,7 @@ class ResourceSelectPauliRot(ResourceOperator):
         Resources:
             The resources are obtained from the construction scheme given in `O'Brien and Sünderhauf
             (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources
-            use two :code:`~.labs.resource_estimation.ResourceQROM`'s to digitally load and unload
+            use two :code:`~.labs.resource_estimation.ResourceQROM`s to digitally load and unload
             the phase angles up to some precision. These are then applied using a single controlled
             :code:`~.labs.resource_estimation.ResourceSemiAdder`.
 
