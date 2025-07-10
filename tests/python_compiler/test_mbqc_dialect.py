@@ -23,7 +23,7 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from xdsl.dialects import arith, builtin, test
+from xdsl.dialects import builtin, test
 from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler import mbqc_dialect as mbqc
