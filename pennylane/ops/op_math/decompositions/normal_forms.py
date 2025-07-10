@@ -81,12 +81,21 @@ def _parity_transforms() -> dict:
             - The SO(3) matrix representation of its inverse.
             - The PennyLane gate representation of the transformation.
             - The global phase scaled by :math:`\pi^{-1}` of the transformation.
+
+    Developer Notes:
+
+        - The following dictionary maps the keys in the Matsumoto-Amano normal form to their:
+            1. SO(3) matrix representation (useful for obtaining the parity vector)
+            2. SO(3) matrix representation of their inverse (useful of reversing the operation)
+            3. PennyLane gate representation (useful for capturing normal form output)
+            4. Global phase difference from PL operators scaled by :math:`\pi^{-1}` (read below).
+
+        - We use the exact matrix representation of the T-gate instead of its SU(2) representation,
+          as representing :math:`\exp(\pm i\pi/8)` in the `ZOmega` ring seems non trivial. We take
+          this into account when computing the global phase in (4), where we compute the global
+          phase by checking the difference between the PL-gates implementation of the keys from
+          the `DyadicMatrix` implementation.
     """
-    # The following dictionary maps the keys in the Matsumoto-Amano normal form to their:
-    # 1. SO(3) matrix representation (useful for obtaining the parity vector)
-    # 2. SO(3) matrix representation of their inverse (useful of reversing the operation)
-    # 3. PennyLane gate representation (useful for capturing normal form output)
-    # 4. Global phase difference from PL operators scaled by :math:`\pi^{-1}`.
     transform_ops = {
         "C": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1))),

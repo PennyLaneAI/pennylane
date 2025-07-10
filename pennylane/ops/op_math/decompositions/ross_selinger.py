@@ -41,10 +41,11 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     abs_theta = abs(theta)
 
     PI_8 = math.pi / 8
-    div_ = round(abs_theta / PI_8, 12)
-    ivl_ = int(div_)
-    mod_ = round(abs(ivl_ * PI_8 - abs_theta), 12)
+    div_ = round(abs_theta / PI_8, 12)  # Find and round the quotient
+    ivl_ = int(div_)  # Integer part of the quotient
+    mod_ = round(abs(ivl_ * PI_8 - abs_theta), 12)  # Find and round the remainder
 
+    # Check if abs_theta is an odd multiple of PI_8
     if div_ == ivl_ and mod_ == 0.0 and ivl_ % 2 == 1.0:
         scale_vals = (
             [
