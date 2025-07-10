@@ -26,9 +26,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes attributes and types in the quantum dialect.
+  This allows for types to be inferred correctly when parsing.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
