@@ -271,6 +271,8 @@
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
+  [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
+
   ```python
   import pennylane as qml
 
@@ -571,14 +573,14 @@
 
 <h4>Setting shots 🔁</h4>
 
-* A new QNode transform called :func:`~.transforms.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
+* A new QNode transform called :func:`~.workflow.set_shots` has been added to set or update the number of shots to be performed, overriding shots specified in the device.
   [(#7337)](https://github.com/PennyLaneAI/pennylane/pull/7337)
   [(#7358)](https://github.com/PennyLaneAI/pennylane/pull/7358)
   [(#7415)](https://github.com/PennyLaneAI/pennylane/pull/7415)
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
-  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+  The :func:`~.workflow.set_shots` transform can be used as a decorator:
 
   ```python
   @partial(qml.set_shots, shots=2)
@@ -1113,6 +1115,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
   [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
   [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
   [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
+  [(#7813)](https://github.com/PennyLaneAI/pennylane/pull/7813)
 
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)

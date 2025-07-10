@@ -450,7 +450,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
   .. code-block:: python3
 
-      dev = qml.device("default.qubit", wires=3, shots=10)
+      dev = qml.device("default.qubit", wires=3)
 
       def circ():
           qml.Hadamard(0)
@@ -459,6 +459,8 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
       fill_shots = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="fill-shots")
       hw_like = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      fill_shots = qml.set_shots(fill_shots, shots=10)
+      hw_like = qml.set_shots(hw_like, shots=10)
 
   .. code-block:: pycon
 
