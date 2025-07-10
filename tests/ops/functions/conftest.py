@@ -103,6 +103,12 @@ _INSTANCES_TO_TEST = [
         ),
         {"skip_pickle": True},
     ),
+    (
+        qml.SelectPauliRot(
+            np.array([1.0, 2.0, 3.0, 4.0]), control_wires=[0, 1], target_wire=2, rot_axis="Y"
+        ),
+        {"heuristic_resources": True},
+    ),
 ]
 """Valid operator instances that could not be auto-generated."""
 
