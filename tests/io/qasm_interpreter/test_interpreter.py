@@ -831,6 +831,81 @@ class TestExpressions:
 
 
 @pytest.mark.external
+class TestRegisters:
+
+    def test_unsupported_register_index(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[1, 2];
+            """
+        )
+
+        with pytest.raises(NotImplementedError, match="Only a single Expression"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "qubit-registers-index"}
+            )
+
+    def test_register_lookup_out_of_range(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[4];
+            """
+        )
+
+        with pytest.raises(IndexError, match="list index out of range"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "qubit-registers-lookup"}
+            )
+
+    def test_qubit_registers(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            int offset = 1;
+            qubit[3] q;
+            id q[0 + offset];
+            h q[2];
+            x q[1 + offset];
+            y q[2];
+            z q[0];
+            s q[2];
+            sdg q[2];
+            t q[1];
+            tdg q[1];
+            sx q[0];
+            ctrl @ id q[0], q[1];
+            inv @ h q[2 - offset];
+            pow(2) @ t q[1];
+            """,
+            permissive=True,
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-registers"})
+
+        assert q.queue == [
+            Identity("q[1]"),
+            Hadamard("q[2]"),
+            PauliX("q[2]"),
+            PauliY("q[2]"),
+            PauliZ("q[0]"),
+            S("q[2]"),
+            Adjoint(S("q[2]")),
+            T("q[1]"),
+            Adjoint(T("q[1]")),
+            SX("q[0]"),
+            Controlled(Identity("q[1]"), control_wires=["q[0]"]),
+            Adjoint(Hadamard("q[1]")),
+            T("q[1]") ** 2,
+        ]
+
+
+@pytest.mark.external
 class TestVariables:
 
     def test_retrieve_non_existent_attr(self):
@@ -959,77 +1034,6 @@ class TestVariables:
             match="Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
-
-    def test_unsupported_register_index(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            qubit[3] q;
-            id q[1, 2];
-            """
-        )
-
-        with pytest.raises(NotImplementedError, match="Only a single Expression"):
-            QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "qubit-registers-index"}
-            )
-
-    def test_register_lookup_out_of_range(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            qubit[3] q;
-            id q[4];
-            """
-        )
-
-        with pytest.raises(IndexError, match="list index out of range"):
-            QasmInterpreter().interpret(
-                ast, context={"wire_map": None, "name": "qubit-registers-lookup"}
-            )
-
-    def test_qubit_registers(self):
-        # parse the QASM program
-        ast = parse(
-            """
-            int offset = 1;
-            qubit[3] q;
-            id q[0 + offset];
-            h q[2];
-            x q[1 + offset];
-            y q[2];
-            z q[0];
-            s q[2];
-            sdg q[2];
-            t q[1];
-            tdg q[1];
-            sx q[0];
-            ctrl @ id q[0], q[1];
-            inv @ h q[2 - offset];
-            pow(2) @ t q[1];
-            """,
-            permissive=True,
-        )
-
-        # execute the callable
-        with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-registers"})
-
-        assert q.queue == [
-            Identity("q[1]"),
-            Hadamard("q[2]"),
-            PauliX("q[2]"),
-            PauliY("q[2]"),
-            PauliZ("q[0]"),
-            S("q[2]"),
-            Adjoint(S("q[2]")),
-            T("q[1]"),
-            Adjoint(T("q[1]")),
-            SX("q[0]"),
-            Controlled(Identity("q[1]"), control_wires=["q[0]"]),
-            Adjoint(Hadamard("q[1]")),
-            T("q[1]") ** 2,
-        ]
 
     def test_retrieve_wire(self):
         # parse the QASM
