@@ -939,6 +939,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
         ) from e
 
     def interpret_function():
-        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map}, **kwargs)
 
     return interpret_function
