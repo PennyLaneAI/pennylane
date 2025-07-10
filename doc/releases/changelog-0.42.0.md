@@ -1038,7 +1038,7 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
-* Jax jit the `givens_matrix` for BasisRotation decomposition.
+* Jits the `givens_matrix` computation from `BasisRotation` when it is within a jit context, which significantly reduces the program size and compilation time of workflows.
   [(#7823)](https://github.com/PennyLaneAI/pennylane/pull/7823)
 
 * Move private code in the `TransformProgram` onto the `CotransformCache` class.
