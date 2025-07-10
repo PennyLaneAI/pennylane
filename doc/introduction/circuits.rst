@@ -246,7 +246,7 @@ For example:
     result = circuit(0.543)
 
 Shots
-~~~~~
+-----
 
 The shots is an integer that defines how many times the circuit should be evaluated (or "sampled")
 to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
