@@ -54,6 +54,8 @@ try:
         Context,
         QasmInterpreter,
         Variable,
+        _get_bit_type_val,
+        _rotate,
         preprocess_operands,
     )
 except (ModuleNotFoundError, ImportError) as import_error:
@@ -62,6 +64,102 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestBuiltIns:  # pylint: disable=too-few-public-methods
+
+    VALID_BIT_TYPE_VAL = [
+        ## Valid
+        # BitType
+        Variable(
+            ty="BitType",
+            val=5,
+            size=3,
+            line=0,
+            constant=True,
+        ),
+        # IntType
+        Variable(
+            ty="IntType",
+            val=5,
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # Int
+        5,
+    ]
+
+    @pytest.mark.parametrize("valid", VALID_BIT_TYPE_VAL)
+    def test_valid_get_bit_type_val(self, valid):
+        assert _get_bit_type_val(valid) == "101"
+
+    INVALID_BIT_TYPE_VAL = [
+        ## Invalid
+        # StringType
+        Variable(
+            ty="StringType",
+            val="string",
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # String
+        "string",
+    ]
+
+    @pytest.mark.parametrize("invalid", INVALID_BIT_TYPE_VAL)
+    def test_invalid_get_bit_type_val(self, invalid):
+        with pytest.raises(TypeError, match="Cannot convert"):
+            _get_bit_type_val(invalid)
+
+    TO_ROTATE = [
+        # 0001 -> 0010
+        (
+            Variable(ty="BitType", val=1, size=4, line=0, constant=False, scope="global"),
+            3,
+            "right",
+            2,
+        ),
+        # 1010 -> 0101
+        (
+            Variable(ty="IntType", val=10, size=-1, line=0, constant=False, scope="global"),
+            1,
+            "left",
+            5,
+        ),
+        # 1011 -> 0111
+        (11, 1, "left", 7),
+        # 1011 -> 1101
+        (11, 1, "right", 13),
+    ]
+
+    @pytest.mark.parametrize("to_rotate, distance, direction, expected", TO_ROTATE)
+    def test_rotate(self, to_rotate, distance, direction, expected):
+        assert _rotate(to_rotate, distance, direction) == expected
+
+    def test_functions(self):
+        ast = parse(
+            open("tests/io/qasm_interpreter/functions.qasm", mode="r").read(), permissive=True
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "functions", "wire_map": None})
+
+        assert context.vars["a"].val == np.arccos(np.pi / 4)
+        assert context.vars["b"].val == np.arcsin(np.pi / 10)
+        assert context.vars["c"].val == np.arctan(np.pi / 3)
+        assert context.vars["d"].val == np.ceil(0.8)
+        assert context.vars["e"].val == np.cos(np.pi)
+        assert context.vars["f"].val == np.exp(0.2)
+        assert context.vars["g"].val == np.floor(1.1)
+        assert context.vars["h"].val == np.log(2)
+        assert context.vars["i"].val == np.mod(3, 2)
+        assert context.vars["j"].val == 2
+        assert context.vars["l"].val == 7
+        assert context.vars["m"].val == 13
+        assert context.vars["n"].val == np.sin(np.pi)
+        assert context.vars["o"].val == np.sqrt(2)
+        assert context.vars["p"].val == np.tan(np.pi / 3)
+        assert context.vars["q"].val == 7
+        assert context.vars["r"].val == 13
+        assert context.vars["s"].val == 7
 
     def test_constants(self):
         ast = parse(
