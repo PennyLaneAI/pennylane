@@ -226,7 +226,7 @@ class TestOpenQasm:
             """
 
         # call the method
-        b, v = from_qasm3(circuit)  # the return order is the declaration order
+        b, v = from_qasm3(circuit)()  # the return order is the declaration order
         assert isinstance(b, MeasurementValue)
         assert v == 2.2
 
