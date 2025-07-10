@@ -20,7 +20,7 @@ be installed alongside PennyLane:
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
 * `cachetools <https://github.com/tkem/cachetools>`_
-* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.41
+* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
 * `requests <https://github.com/psf/requests>`_
 * `typing_extensions <https://github.com/python/typing_extensions>`_
 * `packaging <https://github.com/pypa/packaging>`_
