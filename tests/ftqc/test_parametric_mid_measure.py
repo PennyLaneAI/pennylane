@@ -464,8 +464,7 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
     )
@@ -496,8 +495,7 @@ class TestMeasureFunctions:
         assert isinstance(mp, MidMeasureMP)
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
     )
@@ -532,8 +530,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
@@ -583,8 +580,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func, kwargs",
         [
