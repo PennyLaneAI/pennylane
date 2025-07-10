@@ -229,17 +229,16 @@ solver.
 
 * It's now possible to convert PennyLane circuits and operators to 
   [Qualtran](https://qualtran.readthedocs.io/en/latest/) circuits and Bloqs with the new 
-  :func:`qml.to_bloq <pennylane.to_bloq>` function. This integration enables a new way to estimate 
+  :func:`qml.to_bloq <pennylane.to_bloq>` function. This function translates PennyLane circuits (qfuncs or 
+  QNodes) and operations into equivalent
+  [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library), 
+  enabling a new way to estimate 
   the resource requirements of PennyLane quantum circuits via Qualtran's abstractions and tools. 
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
 
-  The :func:`qml.to_bloq <pennylane.to_bloq>` function translates PennyLane circuits (qfuncs or 
-  QNodes) and operations into equivalent
-  [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
-
-  This function can be used in the following ways:
+  :func:`qml.to_bloq <pennylane.to_bloq>` can be used in the following ways:
 
   * Wrap PennyLane circuits and operations to give them Qualtran features, like obtaining
     [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) 
