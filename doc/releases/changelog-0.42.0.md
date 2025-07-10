@@ -17,8 +17,8 @@
   different multi-controlled operators, avoiding unnecessary recomputation and leading to more 
   efficient decompositions to elementary gates. 
   
-  This state-of-the-art decomposition rule for :class:`~.Select` is available with the graph-based
-  decomposition system enabled via :func:`~.decomposition.enable_graph`:
+  This state-of-the-art decomposition rule for :class:`~.Select` is available when the graph-based
+  decomposition system is enabled via :func:`~.decomposition.enable_graph`:
 
   ```python
   import pennylane as qml
@@ -64,7 +64,7 @@
   efficient circuit decompositions, such as the newest decomposition of the :class:`~.Select` template.
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
 
-  The :class:`~.TemporaryAND` operation is a three-qubit gate equivalent to an ``AND`` operation 
+  The :class:`~.TemporaryAND` operation is a three-qubit gate equivalent to a logical ``AND`` operation 
   (or a reversible :class:`~.Toffoli`): it assumes that the target qubit is initialized in the 
   ``|0〉`` state, while ``Adjoint(TemporaryAND)`` assumes the target qubit will be output into the 
   ``|0〉`` state. For more details, see Fig. 4 in [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
@@ -96,7 +96,7 @@
   ```
 
 * A new template called :class:`~.SemiAdder` has been added, which provides state-of-the-art 
-  resource-efficiency (less `T` gates) when performing addition on a quantum computer.
+  resource-efficiency (fewer :class:`~.T` gates) when performing addition on a quantum computer.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
 
   Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs the plain 
@@ -128,7 +128,7 @@
   [0 0 0 1 1 1]
   ```
 
-  The result `[0 0 0 1 1 1]` is the binary representation of `3 + 4 = 7`.
+  The result `[0 0 0 1 1 1]` is the binary representation of `7`.
 
 * A new template called :class:`~.SelectPauliRot` is available, which applies a sequence of 
   uniformly controlled rotations on a target qubit. This operator appears frequently in unitary 
