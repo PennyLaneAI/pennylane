@@ -12,7 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains the implementation of the diagonalize_measurements transform,
-written using xDSL."""
+written using xDSL.
+
+
+Known Limitations
+-----------------
+  * Only observables PauliX, PauliY, PauliZ and Identity are currently supported when using this transform.
+  * Usage patterns that are not yet supported with program capture are also not supported in the
+    compilation pass. For example, operator arithmetic is not currently supported, such as
+    qml.expval(qml.Y(0) @ qml.X(1)).
+  * The current implementation does not allow for support for observables with parametrized diagonalizing gates
+    (for example, qml.H(0).diagonalizing_gates())
+  * Unlike the current tape-based implementation of the transform, it doesn't allow for diagonalization of a subset
+    of observables.
+  * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
+  and wires (rather than the PauliZ observable) is not currently supported.
+"""
 
 from dataclasses import dataclass
 
@@ -25,20 +40,14 @@ from pennylane import ops as pl_ops
 from ..quantum_dialect import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
 from .api import compiler_transform
 
-# ToDo:
-# add comment listing current ToDos/ shortcomings
-# try to diagonalize H based on how parameters are handled in GlobalPhase PR
-# also allow identity
-# clean up how we iterate through things here
 
-
-def _diagonalize(op: NamedObsOp) -> bool:
-    """Whether or not to diagonalize a given observable."""
-    if op.type.data in ("PauliZ", "Identity"):
+def _diagonalize(obs: NamedObsOp) -> bool:
+    """Whether to diagonalize a given observable."""
+    if obs.type.data in ("PauliZ", "Identity"):
         return False
-    if op.type.data in ("PauliX", "PauliY"):
+    if obs.type.data in ("PauliX", "PauliY"):
         return True
-    raise NotImplementedError(f"{op} is not supported for diagonalization")
+    raise NotImplementedError(f"Observable {obs.type.data} is not supported for diagonalization")
 
 
 def _diagonalizing_gates(obs: NamedObsOp):
