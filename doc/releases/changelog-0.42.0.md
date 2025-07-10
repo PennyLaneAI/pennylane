@@ -1038,6 +1038,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Jax jit the `givens_matrix` for BasisRotation decomposition.
+  [(#7823)](https://github.com/PennyLaneAI/pennylane/pull/7823)
+
 * Move private code in the `TransformProgram` onto the `CotransformCache` class.
   [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
 
@@ -1369,8 +1372,10 @@ Simone Gasperini,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Austin Huang,
 Anton Naim Ibrahim,
+Erick Ochoa Lopez,
 William Maxwell
 Luis Alfredo Nuñez Meneses
 Oumarou Oumarou,
