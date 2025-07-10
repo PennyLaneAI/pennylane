@@ -824,10 +824,11 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   gates.
   [(#7370)](https://github.com/PennyLaneAI/pennylane/pull/7370)
  
-* An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been 
-  introduced. This is similar to 
+* An experimental integration for a Python compiler using [xDSL](https://xdsl.dev/index) has been introduced.
+  This is similar to 
   [Catalyst's MLIR dialects](https://docs.pennylane.ai/projects/catalyst/en/stable/dev/dialects.html#mlir-dialects-in-catalyst), 
-  but it is coded in Python instead of C++.
+  but it is coded in Python instead of C++. Compiler passes written using xDSL can be registered as 
+  compatible passes via the `@compiler_transform` decorator.
   [(#7509)](https://github.com/PennyLaneAI/pennylane/pull/7509)
   [(#7357)](https://github.com/PennyLaneAI/pennylane/pull/7357)
   [(#7367)](https://github.com/PennyLaneAI/pennylane/pull/7367)
