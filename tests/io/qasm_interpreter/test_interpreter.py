@@ -106,7 +106,7 @@ class TestBuiltIns:  # pylint: disable=too-few-public-methods
     ]
 
     @pytest.mark.parametrize("invalid", INVALID_BIT_TYPE_VAL)
-    def test_valid_get_bit_type_val(self, invalid):
+    def test_invalid_get_bit_type_val(self, invalid):
         with pytest.raises(TypeError, match="Cannot convert"):
             _get_bit_type_val(invalid)
 
