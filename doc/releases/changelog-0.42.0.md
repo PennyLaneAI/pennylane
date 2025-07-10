@@ -6,8 +6,8 @@
 
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
-* A new decomposition using *unary iteration* has been added to :class:`~.Select` based on 
-  [arXiv:1805.03662](https://arxiv.org/pdf/1805.03662). This state-of-the-art decomposition reduces 
+* A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
+  This state-of-the-art decomposition reduces 
   the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires, where :math:`c` is the 
   number of control wires.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
@@ -977,7 +977,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7394)](https://github.com/PennyLaneAI/pennylane/pull/7394)
 
 * `qml.labs.QubitManager`, `qml.labs.AllocWires`, and `qml.labs.FreeWires` classes have been added 
-  to track and manage auxilliary qubits.
+  to track and manage auxiliary qubits.
   [(#7404)](https://github.com/PennyLaneAI/pennylane/pull/7404)
 
 * A new function called `qml.labs.map_to_resource_op` has been added to map PennyLane Operations to 
@@ -1014,7 +1014,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   THC Hamiltonians, respectively.
   [(#7705)](https://github.com/PennyLaneAI/pennylane/pull/7705)
 
-* A new template called `qml.labs.ResourceQubitize` has beena added which can be used to perform 
+* A new template called `qml.labs.ResourceQubitize` has been added which can be used to perform 
   resource estimation for qubitization of the THC Hamiltonian.
   [(#7730)](https://github.com/PennyLaneAI/pennylane/pull/7730)
 
@@ -1170,7 +1170,7 @@ please consult the :doc:`deprecations and removals page </development/deprecatio
 * The `qml.measurements.Shots` class can now handle abstract numbers of shots.
   [(#7729)](https://github.com/PennyLaneAI/pennylane/pull/7729)
 
-* The `jax` and `tensorflow` dependencies for `doc` builds has been updated.
+* The `jax` and `tensorflow` dependencies for `doc` builds have been updated.
   [(#7667)](https://github.com/PennyLaneAI/pennylane/pull/7667)
 
 * `Pennylane` has been renamed to `pennylane` in the `pyproject.toml` file  to match the expected 
