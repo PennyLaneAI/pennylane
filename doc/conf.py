@@ -259,7 +259,7 @@ html_extra_path = ["robots.txt"]
 htmlhelp_basename = "PennyLanedoc"
 
 # -- Xanadu theme ---------------------------------------------------------
-html_theme = "pennylane"
+html_theme = "xanadu"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
