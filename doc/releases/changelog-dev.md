@@ -28,6 +28,7 @@
 
 * Fixes attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
+  [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
 <h3>Contributors ✍️</h3>
 
