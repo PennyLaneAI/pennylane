@@ -137,11 +137,11 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     Upon freeing quantum memory, that memory is available to be allocated thereafter.
 
     .. warning::
-
-        This feature is experimental and is not available on any device yet.
+        This feature is experimental, and any workflows that include calls to ``deallocate`` cannot
+        be executed on any device.
 
     Args:
-        wires (DynamicWire, Wires, Sequence[DynamicWire]): One or more dynamic wires.
+        wires (DynamicWire, Wires, Sequence[DynamicWire]): one or more dynamic wires.
 
     .. seealso:: :func:`~.allocate`
 
@@ -150,35 +150,27 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
         def c():
             qml.H(0)
 
-            wires = qml.allocation.allocate(1, require_zeros=True)
+            wires = qml.allocation.allocate(1, require_zeros=True, restored=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
-            qml.allocation.deallocate(wires, restored=True)
+            qml.allocation.deallocate(wires)
 
             new_wires = qml.allocation.allocate(1)
             qml.SWAP((0, new_wires[0]))
             qml.allocation.deallocate(new_wires)
 
-            return qml.probs(wires=0)
-
-
-    >>> print(qml.draw(c, level="user")())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+    >>> print(qml.draw(c)())
+                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
-    >>> print(qml.draw(c, level="device")())
-    0: ──H─╭●─╭●─╭SWAP─┤  Probs
-    1: ────╰X─╰X─╰SWAP─┤
 
-
-    Here two dynamic wires are allocated in the circuit originally. When we are determining
+    Here, two dynamic wires are allocated in the circuit originally. When we are determining
     what concrete values to use for dynamic wires, we can see that the first dynamic wire is already
-    deallocated back into the zero state. This allows us to use it for the second allocation used in the ``SWAP``
-    gate as well.
+    deallocated back into the zero state. This allows us to use it for the second allocation used in
+    the ``SWAP`` gate.
 
     """
     if capture_enabled():
@@ -206,27 +198,48 @@ class DynamicRegister(Wires):
 
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
-    """Dynamically allocates new wires in-line or as a context manager, which also safely deallocates the
-    new wires upon exiting the context.
+    """Dynamically allocates new wires in-line,
+    or as a context manager which also safely deallocates the new wires upon exiting the context.
 
     .. warning::
-
-        This feature is experimental and is not possible on any device yet.
+        This feature is experimental, and any workflows that include calls to ``allocate`` cannot be
+        executed on any device.
 
     Args:
-        num_wires (int): the number of dynamic wires to allocate.
+        num_wires (int): the number of wires to dynamically allocate.
 
     Keyword Args:
-        require_zeros (bool): whether or not the wires must start in the ``0`` state
-        restored (bool): whether or not the wires are returned to the same state they started in.
+        require_zeros (bool):
+            specifies whether to allocate ``num_wires`` in the all-zeros state (``True``) or in any
+            arbitrary state (``False``). The default value is ``require_zeros=True``.
+
+        restored (bool):
+            whether or not the dynamically allocated wires are returned to the same state they started
+            in. ``restored=True`` indicates that the user promises to restore the dynamically allocated
+            memory to its original state before :func:`~.deallocate` is called. ``restored=False`` indicates
+            that the user does not promise to restore the dynamically allocated memory before :func:`~.deallocate`
+            is called. The default value is ``False``.
+
+    Returns:
+        DynamicRegister: an object, behaving similarly to ``Wires``, that represents the dynamically
+        allocated memory.
+
+    .. note::
+        The ``allocate`` function should be used with :func:`~.deallocate` if it is not used as a context
+        manager.
+
+    .. seealso::
+        :func:`~.deallocate`
 
     This function can be used as a context manager with automatic deallocation (preferred) or with manual
     deallocation via :func:`~.deallocate`.
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit', wires=("a", "b")))
         def c():
+            qml.H("a")
+            qml.H("b")
+
             with qml.allocation.allocate(2, require_zeros=True, restored=False) as wires:
                 qml.CNOT(wires)
 
@@ -234,22 +247,13 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
             qml.IsingXX(0.5, wires)
             qml.allocation.deallocate(wires)
 
-            return qml.probs()
-
-
-    >>> print(qml.draw(c, level="user")())
-    <DynamicWire>: ─╭Allocate─╭●─────────────╭Deallocate─┤  Probs
-    <DynamicWire>: ─╰Allocate─╰X─────────────╰Deallocate─┤  Probs
-    <DynamicWire>: ─╭Allocate─╭IsingXX(0.50)─╭Deallocate─┤  Probs
-    <DynamicWire>: ─╰Allocate─╰IsingXX(0.50)─╰Deallocate─┤  Probs
-    >>> print(qml.draw(c, level="device")())
-    a: ─╭●──┤↗│  │0⟩─╭IsingXX(0.50)─┤ ╭Probs
-    b: ─╰X──┤↗│  │0⟩─╰IsingXX(0.50)─┤ ╰Probs
-
-    The initial circuit has the ``DynamicWire``'s present, but when executing on the device, those are converted into
-    the device wires ``("a", "b")``. As the wires are not reset to their original state when deallocated, they are reset
-    before being re-used again in the second block.
-
+    >>> print(qml.draw(c)())
+                a: ──H───────────────────────────────────┤
+                b: ──H───────────────────────────────────┤
+    <DynamicWire>: ─╭Allocate─╭●─────────────╭Deallocate─┤
+    <DynamicWire>: ─╰Allocate─╰X─────────────╰Deallocate─┤
+    <DynamicWire>: ─╭Allocate─╭IsingXX(0.50)─╭Deallocate─┤
+    <DynamicWire>: ─╰Allocate─╰IsingXX(0.50)─╰Deallocate─┤
     """
     if capture_enabled():
         wires = allocate_prim.bind(
