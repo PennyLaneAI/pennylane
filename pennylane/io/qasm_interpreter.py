@@ -474,6 +474,19 @@ class QasmInterpreter:
 
         return context
 
+    @visit.register(ast.QuantumMeasurement)
+    def visit_quantum_measurement(self, node: ast.QuantumMeasurement, context: Context):
+        """
+        Registers a quantum measurement statement.
+
+        Args:
+            node (QuantumMeasurement): the quantum measurement to interpret
+            context (Context): the current context.
+        """
+        wire = self.visit(node.qubit, context)
+        res = measure(context.wire_map.get(wire, wire))
+        return res
+
     @visit.register(ast.QuantumMeasurementStatement)
     def visit_quantum_measurement_statement(
         self, node: ast.QuantumMeasurementStatement, context: Context
@@ -485,10 +498,12 @@ class QasmInterpreter:
             node (QuantumMeasurementStatement): the quantum measurement statement to register.
             context (Context): the current context.
         """
-        name = _resolve_name(node.target)  # str or Identifier
-        res = measure(self.visit(node.measure.qubit, context))
-        context.vars[name].val = res
-        context.vars[name].line = node.span.start_line
+        wire = self.visit(node.measure.qubit, context)
+        res = measure(context.wire_map.get(wire, wire))
+        if node.target is not None:
+            name = _resolve_name(node.target)  # str or Identifier
+            context.vars[name].val = res
+            context.vars[name].line = node.span.start_line
         return res
 
     @visit.register(ast.BreakStatement)
@@ -716,7 +731,8 @@ class QasmInterpreter:
             node (QASMNode): the quantum reset node.
             context (dict): the current context.
         """
-        measure(self.visit(node.qubits, context), reset=True)
+        wire = self.visit(node.qubits, context)
+        measure(context.wire_map.get(wire, wire), reset=True)
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
