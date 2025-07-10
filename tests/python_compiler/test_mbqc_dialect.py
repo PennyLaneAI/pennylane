@@ -74,20 +74,20 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[qubit:%.+]] = "test.op"() : () -> !quantum.bit
     %qubit = "test.op"() : () -> !quantum.bit
 
-    // CHECK: [[res0:%.+]], [[new_q0:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] : i1, !quantum.bit
-    %res0, %new_q0 = mbqc.measure_in_basis [XY, %angle] %qubit : i1, !quantum.bit
+    // CHECK: [[mres0:%.+]], [[out_qubit0:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] : i1, !quantum.bit
+    %mres0, %out_qubit0 = mbqc.measure_in_basis [XY, %angle] %qubit : i1, !quantum.bit
 
-    // CHECK: [[res1:%.+]], [[new_q1:%.+]] = mbqc.measure_in_basis{{\s*}}[YZ, [[angle]]] [[qubit]] : i1, !quantum.bit
-    %res1, %new_q1 = mbqc.measure_in_basis [YZ, %angle] %qubit : i1, !quantum.bit
+    // CHECK: [[mres1:%.+]], [[out_qubit1:%.+]] = mbqc.measure_in_basis{{\s*}}[YZ, [[angle]]] [[qubit]] : i1, !quantum.bit
+    %mres1, %out_qubit1 = mbqc.measure_in_basis [YZ, %angle] %qubit : i1, !quantum.bit
 
-    // CHECK: [[res2:%.+]], [[new_q2:%.+]] = mbqc.measure_in_basis{{\s*}}[ZX, [[angle]]] [[qubit]] : i1, !quantum.bit
-    %res2, %new_q2 = mbqc.measure_in_basis [ZX, %angle] %qubit : i1, !quantum.bit
+    // CHECK: [[mres2:%.+]], [[out_qubit2:%.+]] = mbqc.measure_in_basis{{\s*}}[ZX, [[angle]]] [[qubit]] : i1, !quantum.bit
+    %mres2, %out_qubit2 = mbqc.measure_in_basis [ZX, %angle] %qubit : i1, !quantum.bit
 
-    // CHECK: [[res3:%.+]], [[new_q3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
-    %res3, %new_q3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
+    // CHECK: [[mres3:%.+]], [[out_qubit3:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
+    %mres3, %out_qubit3 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 0 : i1, !quantum.bit
 
-    // CHECK: [[res4:%.+]], [[new_q4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
-    %res4, %new_q4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
+    // CHECK: [[mres4:%.+]], [[out_qubit4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
+    %mres4, %out_qubit4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
     """
 
     ctx = xdsl.context.Context()
