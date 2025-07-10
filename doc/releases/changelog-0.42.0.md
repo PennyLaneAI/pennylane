@@ -70,7 +70,6 @@
   ``|0〉`` state. For more details, see Fig. 4 in [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
 
   ```python
-  import pennylane as qml
   from functools import partial
 
   dev = qml.device("default.qubit")
@@ -104,7 +103,6 @@
   with 5 additional work wires:
 
   ```python
-  import pennylane as qml
   from functools import partial
 
   x = 3
@@ -185,7 +183,6 @@ solver.
   function to use it.
 
   ```python
-  import pennylane as qml
   import numpy as np
 
   # P(x) = x - 0.5 x^3 + 0.25 x^5
@@ -354,8 +351,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
 
   ```python
-  import pennylane as qml
-
   dev = qml.device("default.qubit", wires=[0, 1, 2])
   
   @qml.qnode(dev)
@@ -415,7 +410,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   Consider this simple circuit in PennyLane:
 
   ```python
-  import pennylane as qml
   from functools import partial
 
   dev = qml.device("default.qubit", wires=2)
@@ -767,7 +761,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   :func:`christiansen_integrals_dipole` functions.
 
   ```python
-  import pennylane as qml
   import numpy as np
 
   symbols  = ['H', 'F']
@@ -946,7 +939,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
 
   ```python
-  import pennylane as qml
   from functools import partial
 
   dev = qml.device("default.qubit", wires=2)
