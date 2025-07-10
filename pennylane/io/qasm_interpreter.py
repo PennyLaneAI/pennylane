@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Iterable
 
+import numpy as np
 from numpy import uint
 from openqasm3 import ast
 from openqasm3.visitor import QASMNode
@@ -49,6 +50,15 @@ PARAMETERIZED_GATES = {
     "CRX": ops.CRX,
     "CRY": ops.CRY,
     "CRZ": ops.CRZ,
+}
+
+CONSTANTS = {
+    "π": np.pi,
+    "τ": np.pi * 2,
+    "ℇ": np.e,
+    "pi": np.pi,
+    "tau": np.pi * 2,
+    "e": np.e,
 }
 
 
@@ -296,6 +306,8 @@ class Context:
             return name
         if name in self.aliases:
             return self.aliases[name](self)  # evaluate the alias and de-reference
+        if name in CONSTANTS:
+            return CONSTANTS[name]
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
