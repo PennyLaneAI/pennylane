@@ -68,8 +68,8 @@ def test_all_attributes_names(attr):
 def test_assembly_format(run_filecheck):
     """Test the assembly format of the mbqc ops."""
     program = r"""
-    // CHECK: [[angle:%.+]] = arith.constant {{.+}} : f64
-    %angle = arith.constant 3.141592653589793 : f64
+    // CHECK: [[angle:%.+]] = "test.op"() : () -> f64
+    %angle = "test.op"() : () -> f64
 
     // CHECK: [[qubit:%.+]] = "test.op"() : () -> !quantum.bit
     %qubit = "test.op"() : () -> !quantum.bit
@@ -93,7 +93,6 @@ def test_assembly_format(run_filecheck):
     ctx = xdsl.context.Context()
 
     ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(arith.Arith)
     ctx.load_dialect(test.Test)
     ctx.load_dialect(QuantumDialect)
     ctx.load_dialect(MBQCDialect)
@@ -111,7 +110,7 @@ class TestMeasureInBasisOp:
     def test_measure_in_basis_properties(self, plane, postselect):
         """Test the parsing of the mbqc.measure_in_basis op's properties."""
         program = rf"""
-        %angle = arith.constant 3.141592653589793 : f64
+        %angle = "test.op"() : () -> f64
         %qubit = "test.op"() : () -> !quantum.bit
 
         %mres, %out_qubit = mbqc.measure_in_basis [{plane}, %angle] %qubit {postselect} : i1, !quantum.bit
@@ -120,7 +119,6 @@ class TestMeasureInBasisOp:
         ctx = xdsl.context.Context()
 
         ctx.load_dialect(builtin.Builtin)
-        ctx.load_dialect(arith.Arith)
         ctx.load_dialect(test.Test)
         ctx.load_dialect(QuantumDialect)
         ctx.load_dialect(MBQCDialect)
@@ -143,7 +141,7 @@ class TestMeasureInBasisOp:
         VerifyException during verification."""
 
         program = rf"""
-        %angle = arith.constant 3.141592653589793 : f64
+        %angle = "test.op"() : () -> f64
         %qubit = "test.op"() : () -> !quantum.bit
 
         %mres, %out_qubit = mbqc.measure_in_basis [XY, %angle] %qubit postselect {postselect} : i1, !quantum.bit
@@ -152,7 +150,6 @@ class TestMeasureInBasisOp:
         ctx = xdsl.context.Context()
 
         ctx.load_dialect(builtin.Builtin)
-        ctx.load_dialect(arith.Arith)
         ctx.load_dialect(test.Test)
         ctx.load_dialect(QuantumDialect)
         ctx.load_dialect(MBQCDialect)
