@@ -159,6 +159,7 @@ class TestBuiltIns:  # pylint: disable=too-few-public-methods
         assert context.vars["p"].val == np.tan(np.pi / 3)
         assert context.vars["q"].val == 7
         assert context.vars["r"].val == 13
+        assert context.vars["s"].val == 7
 
     def test_constants(self):
         ast = parse(
