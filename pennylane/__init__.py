@@ -117,7 +117,6 @@ from pennylane.io import (
     from_qasm3,
     to_bloq,
 )
-from pennylane.io.qualtran_io import *
 from pennylane.transforms import (
     transform,
     batch_params,
