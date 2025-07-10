@@ -54,6 +54,7 @@ try:
         Context,
         QasmInterpreter,
         Variable,
+        _get_bit_type_val,
         _rotate,
         preprocess_operands,
     )
@@ -63,6 +64,51 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 @pytest.mark.external
 class TestBuiltIns:  # pylint: disable=too-few-public-methods
+
+    VALID_BIT_TYPE_VAL = [
+        ## Valid
+        # BitType
+        Variable(
+            ty="BitType",
+            val=5,
+            size=3,
+            line=0,
+            constant=True,
+        ),
+        # IntType
+        Variable(
+            ty="IntType",
+            val=5,
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # Int
+        5,
+    ]
+
+    @pytest.mark.parametrize("valid", VALID_BIT_TYPE_VAL)
+    def test_valid_get_bit_type_val(self, valid):
+        assert _get_bit_type_val(valid) == "101"
+
+    INVALID_BIT_TYPE_VAL = [
+        ## Invalid
+        # StringType
+        Variable(
+            ty="StringType",
+            val="string",
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # String
+        "string",
+    ]
+
+    @pytest.mark.parametrize("invalid", INVALID_BIT_TYPE_VAL)
+    def test_valid_get_bit_type_val(self, invalid):
+        with pytest.raises(TypeError, match="Cannot convert"):
+            _get_bit_type_val(invalid)
 
     TO_ROTATE = [
         # 0001 -> 0010
