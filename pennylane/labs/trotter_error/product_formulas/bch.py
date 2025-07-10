@@ -478,7 +478,7 @@ def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Has
 
 
 def _drop_zeros(
-    term_dicts: List[Dict[Tuple[Hashable], float]],
+    term_dicts: List[Dict[Tuple[Hashable], complex]],
 ) -> List[Dict[Tuple[Hashable], float]]:
     """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:

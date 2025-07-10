@@ -582,6 +582,19 @@ class QasmInterpreter:
 
         return context
 
+    @visit.register(ast.QuantumMeasurement)
+    def visit_quantum_measurement(self, node: ast.QuantumMeasurement, context: Context):
+        """
+        Registers a quantum measurement statement.
+
+        Args:
+            node (QuantumMeasurement): the quantum measurement to interpret
+            context (Context): the current context.
+        """
+        wire = self.visit(node.qubit, context)
+        res = measure(context.wire_map.get(wire, wire))
+        return res
+
     @visit.register(ast.QuantumMeasurementStatement)
     def visit_quantum_measurement_statement(
         self, node: ast.QuantumMeasurementStatement, context: Context
@@ -593,10 +606,15 @@ class QasmInterpreter:
             node (QuantumMeasurementStatement): the quantum measurement statement to register.
             context (Context): the current context.
         """
-        name = _resolve_name(node.target)  # str or Identifier
-        res = measure(self.visit(node.measure.qubit, context))
-        context.vars[name].val = res
-        context.vars[name].line = node.span.start_line
+        wires = self.visit(node.measure.qubit, context)
+        if not isinstance(wires, list):
+            res = measure(context.wire_map.get(wires, wires))
+        else:
+            res = [measure(context.wire_map.get(wire, wire)) for wire in wires]
+        if node.target is not None:
+            name = _resolve_name(node.target)  # str or Identifier
+            context.vars[name].val = res
+            context.vars[name].line = node.span.start_line
         return res
 
     @visit.register(ast.BreakStatement)
@@ -824,12 +842,12 @@ class QasmInterpreter:
             node (QASMNode): the quantum reset node.
             context (dict): the current context.
         """
-        qubits = self.visit(node.qubits, context)
-        if isinstance(qubits, list):
-            for qubit in qubits:
-                measure(qubit, reset=True)
+        wires = self.visit(node.qubits, context)
+        if isinstance(wires, list):
+            for wire in wires:
+                measure(context.wire_map.get(wire, wire), reset=True)
         else:
-            measure(self.visit(node.qubits, context), reset=True)
+            measure(context.wire_map.get(wires, wires), reset=True)
 
     def execute_custom_gate(self, node: ast.QuantumGate, context: Context):
         """

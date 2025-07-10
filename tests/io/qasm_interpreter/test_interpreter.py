@@ -55,6 +55,7 @@ try:
         Context,
         QasmInterpreter,
         Variable,
+        _get_bit_type_val,
         _rotate,
         preprocess_operands,
     )
@@ -63,7 +64,52 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestBuiltIns:
+class TestBuiltIns:  # pylint: disable=too-few-public-methods
+
+    VALID_BIT_TYPE_VAL = [
+        ## Valid
+        # BitType
+        Variable(
+            ty="BitType",
+            val=5,
+            size=3,
+            line=0,
+            constant=True,
+        ),
+        # IntType
+        Variable(
+            ty="IntType",
+            val=5,
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # Int
+        5,
+    ]
+
+    @pytest.mark.parametrize("valid", VALID_BIT_TYPE_VAL)
+    def test_valid_get_bit_type_val(self, valid):
+        assert _get_bit_type_val(valid) == "101"
+
+    INVALID_BIT_TYPE_VAL = [
+        ## Invalid
+        # StringType
+        Variable(
+            ty="StringType",
+            val="string",
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # String
+        "string",
+    ]
+
+    @pytest.mark.parametrize("invalid", INVALID_BIT_TYPE_VAL)
+    def test_invalid_get_bit_type_val(self, invalid):
+        with pytest.raises(TypeError, match="Cannot convert"):
+            _get_bit_type_val(invalid)
 
     TO_ROTATE = [
         # 0001 -> 0010
@@ -264,12 +310,13 @@ class TestMeasurementReset:
         ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
-            QasmInterpreter().interpret(ast, context={"name": "resets", "wire_map": None})
+            context = QasmInterpreter().interpret(ast, context={"name": "resets", "wire_map": None})
 
         for i in range(10):
             assert isinstance(q.queue[i], MidMeasureMP)
-            assert q.queue[i].wires == Wires([f"qubits[{i}]"])
+            assert q.queue[i].wires == Wires([f"q[{i}]"])
             assert q.queue[i].reset
+            assert context.vars["a"].val[i].wires == Wires([f"q[{i}]"])
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
@@ -347,7 +394,11 @@ class TestMeasurementReset:
         )
 
         assert isinstance(context["vars"]["c"].val, MeasurementValue)
+        assert context["vars"]["c"].val.wires == Wires(["q0"])
         assert isinstance(context["vars"]["d"].val, MeasurementValue)
+        assert context["vars"]["d"].val.wires == Wires(["q0"])
+        assert isinstance(context["vars"]["e"].val, MeasurementValue)
+        assert context["vars"]["e"].val.wires == Wires(["q0"])
 
 
 @pytest.mark.external
