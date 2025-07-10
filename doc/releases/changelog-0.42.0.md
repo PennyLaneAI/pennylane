@@ -7,7 +7,8 @@
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
-  
+  [(#7845)](https://github.com/PennyLaneAI/pennylane/pull/7845)
+
   The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
   :class:`~.QNGOptimizer` with an Optax-like interface:
 
@@ -1199,6 +1200,9 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes `SelectPauliRot._flatten` and `TemporaryAND._primitve_bind_call`.
+  [(#7843)](https://github.com/PennyLaneAI/pennylane/pull/7843)
+
 * Fixes a bug where normalization in `qml.StatePrep` with `normalize=True` was skipped if
   `validate_norm` is set to `False`.
   [(#7835)](https://github.com/PennyLaneAI/pennylane/pull/7835) 
@@ -1355,6 +1359,9 @@ may move operations across a `Snapshot`.
   to reflect supported devices and usage in analytic simulations,
   in the :doc:`/introduction/dynamic_quantum_circuits` page.
   [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
+
+* Fixes a bug where an operation wrapped in `partial_wires` does not get queued.
+  [(#7830)](https://github.com/PennyLaneAI/pennylane/pull/7830)
 
 <h3>Contributors ✍️</h3>
 
