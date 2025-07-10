@@ -226,9 +226,23 @@ class TestOpenQasm:
             """
 
         # call the method
-        b, v = from_qasm3(circuit)  # the return order is the declaration order
+        b, v = from_qasm3(circuit)()  # the return order is the declaration order
         assert isinstance(b, MeasurementValue)
         assert v == 2.2
+
+    def test_invalid_qasm3(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            bit output = "0";
+            rz(0.9) q0;
+            measure q0 -> output;
+            """
+
+        with pytest.raises(
+            SyntaxError, match="Something went wrong when parsing the provided OpenQASM 3.0 code"
+        ):
+            from_qasm3(circuit)()
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_from_qasm3(self, mocker):
@@ -244,7 +258,7 @@ class TestOpenQasm:
         visit = mocker.spy(QasmInterpreter, "interpret")
 
         # call the method
-        from_qasm3(circuit)
+        from_qasm3(circuit)()
 
         # assertions
         parse.assert_called_with(circuit, permissive=True)

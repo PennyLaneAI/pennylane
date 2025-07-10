@@ -17,7 +17,7 @@ This module tests the default qubit interpreter.
 import pytest
 
 jax = pytest.importorskip("jax")
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 

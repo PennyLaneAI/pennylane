@@ -48,7 +48,7 @@ def test_error_is_raised_with_capture_disabled(autograph):
         _ = make_plxpr(circ)(1.2)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestMakePLxPR:
     """Tests the basic make_plxpr functionality"""
 
@@ -152,7 +152,7 @@ class TestMakePLxPR:
         isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestAutoGraphIntegration:
     """Test autograph integration for converting Python control flow into native PennyLane
     `cond`, `for_loop` and `while_loop`. Note that autograph defaults to True in make_plxpr."""
