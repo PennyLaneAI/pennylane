@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+<h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
+
+* Added state of the art resources for the `ResourceSelectPauliRot` template and the
+  `ResourceQubitUnitary` templates.
+  [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -25,3 +31,4 @@
 This release contains contributions from (in alphabetical order):
 
 Andrija Paurevic,
+Jay Soni,
