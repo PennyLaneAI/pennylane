@@ -52,7 +52,7 @@
   resource-efficiency (less `T` gates) when performing addition on a quantum computer.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
 
-  Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs plain 
+  Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs the plain 
   addition of two integers in the computational basis. Here is an example of performing `3 + 4 = 7`
   with 5 additional work wires:
 
@@ -86,8 +86,8 @@
   [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
 
   As input, :class:`~.SelectPauliRot` requires the `angles` of rotation to be applied to the target 
-  qubit for each control register configuration, the `control_wires`, the `target_wire`, and the 
-  axis of rotation (`rot_axis`) for which each rotation is performed (the default is the `"Z"` 
+  qubit for each control register configuration, as well as the `control_wires`, the `target_wire`,
+  and the axis of rotation (`rot_axis`) for which each rotation is performed (the default is the `"Z"` 
   axis).
 
   ```python
