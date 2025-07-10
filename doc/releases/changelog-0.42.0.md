@@ -351,8 +351,9 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7469)](https://github.com/PennyLaneAI/pennylane/pull/7469)
   [(#7543)](https://github.com/PennyLaneAI/pennylane/pull/7543)
   [(#7783)](https://github.com/PennyLaneAI/pennylane/pull/7783)
-  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
-  
+  [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)  
+  [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
+
   ```python
   import pennylane as qml
 
@@ -728,7 +729,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
-  The :func:`~.transforms.set_shots` transform can be used as a decorator:
+  The :func:`~.workflow.set_shots` transform can be used as a decorator:
 
   ```python
   @partial(qml.set_shots, shots=2)
