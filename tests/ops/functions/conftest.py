@@ -105,7 +105,21 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qml.SelectPauliRot(
-            np.arange(2**3) + 1, control_wires=[0, 1, 2], target_wire=3, rot_axis="Y"
+            np.array(
+                [
+                    0.69307448,
+                    0.2574346,
+                    0.84850003,
+                    0.06706336,
+                    0.33502536,
+                    0.79254386,
+                    0.76929339,
+                    0.66070049,
+                ]
+            ),
+            control_wires=[0, 1, 2],
+            target_wire=3,
+            rot_axis="Y",
         ),
         {},
     ),
