@@ -163,7 +163,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             qml.allocation.deallocate(new_wires)
 
     >>> print(qml.draw(c)())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  Probs
+                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤
     <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
     <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
 
