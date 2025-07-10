@@ -15,7 +15,8 @@
 
   Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
   different multi-controlled operators, avoiding unnecessary recomputation and leading to more 
-  efficient decompositions to elementary gates. 
+  efficient decompositions to elementary gates. This decomposition uses a template called
+  :class:`~.TemporaryAND`, which was also added in this release (see the next changelog entry).
   
   This state-of-the-art decomposition rule for :class:`~.Select` is available when the graph-based
   decomposition system is enabled via :func:`~.decomposition.enable_graph`:
@@ -38,7 +39,7 @@
   dev = qml.device('default.qubit')
   ops = [qml.X(targ[0]), qml.X(targ[1]), qml.Y(targ[0]), qml.SWAP(targ)]
 
-  @partial(qml.clifford_t_decomposition, method="gridsynth")
+  @qml.clifford_t_decomposition
   @partial(qml.transforms.decompose, gate_set={
           qml.X, qml.CNOT, qml.TemporaryAND, "Adjoint(TemporaryAND)", "CY", "CSWAP"
       }
@@ -55,6 +56,28 @@
   16
   >>> print(unary_specs['resources'].gate_types["Adjoint(T)"])
   13
+  ```
+
+  In contract, when the unary iterator decomposition is not used (when the graph-based decomposition
+  system is disabled), and `Select` is decomposed into Clifford+T gates, we end up with orders of 
+  magnitude more `T` gates:
+
+  ```python
+  qml.decomposition.disable_graph()
+
+  @qml.clifford_t_decomposition
+  @qml.qnode(dev)
+  def circuit():
+      qml.Select(ops, control=control, work_wires=work)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> no_unary_specs = qml.specs(circuit)()
+  >>> print(no_unary_specs['resources'].gate_types["T"])
+  108134
+  >>> print(no_unary_specs['resources'].gate_types["Adjoint(T)"])
+  108109
   ```
 
   Go check out the *Unary iterator decomposition* section in the :class:`~.Select` documentation for 
