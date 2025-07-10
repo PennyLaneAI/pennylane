@@ -1236,6 +1236,12 @@ please consult the :doc:`deprecations and removals page </development/deprecatio
   guidelines more closely.
   [(#7382)](https://github.com/PennyLaneAI/pennylane/pull/7382)
 
+* `null.qubit` can now support an optional `track_resources` argument which allows it to record which gates are executed.
+  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
+  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
+  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
+  [(#7813)](https://github.com/PennyLaneAI/pennylane/pull/7813)
+
 * A new internal module, `qml.concurrency`, is added to support internal use of multiprocess and multithreaded execution of workloads. This also migrates the use of `concurrent.futures` in `default.qubit` to this new design.
   [(#7303)](https://github.com/PennyLaneAI/pennylane/pull/7303)
 
