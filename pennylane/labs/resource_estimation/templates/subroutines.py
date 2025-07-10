@@ -1161,19 +1161,15 @@ class ResourceQubitUnitary(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mltplxr = plre.ResourceSelectPauliRot(
-    ...     rotation_axis = "Y",
-    ...     num_ctrl_wires = 4,
-    ...     precision = 1e-3,
-    ... )
-    >>> print(plre.estimate_resources(mltplxr, plre.StandardGateSet))
+    >>> qu = plre.ResourceQubitUnitary(num_wires=3)
+    >>> print(plre.estimate_resources(qu, gate_set))
     --- Resources: ---
-     Total qubits: 5
-     Total gates : 32
+     Total qubits: 3
+     Total gates : 52
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 5
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
      Gate breakdown:
-      {'RY': 16, 'CNOT': 16}
+      {'RZ': 24, 'CNOT': 24, 'RY': 4}
     """
 
     resource_keys = {"num_wires", "precision"}
