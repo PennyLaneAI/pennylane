@@ -7,7 +7,8 @@
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
-  
+  [(#7845)](https://github.com/PennyLaneAI/pennylane/pull/7845)
+
   The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
   :class:`~.QNGOptimizer` with an Optax-like interface:
 
