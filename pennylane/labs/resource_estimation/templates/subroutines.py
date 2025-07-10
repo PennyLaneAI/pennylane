@@ -1139,7 +1139,7 @@ class ResourceQubitUnitary(ResourceOperator):
     Args:
         num_wires (int): the number of qubits the operation acts upon
         precision (Union[float, None], optional): The precision used when preparing the single qubit
-            rotations used to prepare the entries of the qubit unitary.
+            rotations used to synthesize the n-qubit unitary.
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -1153,7 +1153,7 @@ class ResourceQubitUnitary(ResourceOperator):
 
         * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
 
-        * 3-qubit unitary or more, the cost is given according to the reference above, recurrsively.
+        * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
     .. seealso:: :class:`~.QubitUnitary`
 
@@ -1191,7 +1191,7 @@ class ResourceQubitUnitary(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of qubits the operation acts upon
                 * precision (Union[float, None], optional): The precision used when preparing the
-                  single qubit rotations used to prepare the entries of the qubit unitary.
+                  single qubit rotations used to synthesize the n-qubit unitary.
         """
         return {"num_wires": self.num_wires, "precision": self.precision}
 
@@ -1203,7 +1203,7 @@ class ResourceQubitUnitary(ResourceOperator):
         Args:
             num_wires (int): the number of qubits the operation acts upon
             precision (Union[float, None], optional): The precision used when preparing the single
-                qubit rotations used to prepare the entries of the qubit unitary.
+                qubit rotations used to synthesize the n-qubit unitary.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -1350,7 +1350,7 @@ class ResourceSelectPauliRot(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_ctrl_wires, rotation_axis, precision=None):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             rotation_axis (str): the rotation axis used in the multiplexer
