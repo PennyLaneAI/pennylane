@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
+  measurement-based quantum-computing instructions in the xDSL framework.
+  [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -30,5 +34,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Joey Carter,
 Andrija Paurevic,
 Jay Soni,
