@@ -15,5 +15,7 @@ const float o = sqrt(2);
 const int by_three = pi / 3;
 const float p = tan(by_three);
 const bit[3] bits = "1011";
+const int int_bits = 11;
 const int q = rotl("1011", 1);
 const int r = rotr(bits, 1);
+const int s = rotl(int_bits, 1);
