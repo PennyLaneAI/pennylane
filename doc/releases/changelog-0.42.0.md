@@ -58,28 +58,6 @@
   13
   ```
 
-  In contrast, when the unary iterator decomposition is not used (when the graph-based decomposition
-  system is disabled), and `Select` is decomposed into Clifford+T gates, we end up with orders of 
-  magnitude more `T` gates:
-
-  ```python
-  qml.decomposition.disable_graph()
-
-  @qml.clifford_t_decomposition
-  @qml.qnode(dev)
-  def circuit():
-      qml.Select(ops, control=control, work_wires=work)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> no_unary_specs = qml.specs(circuit)()
-  >>> print(no_unary_specs['resources'].gate_types["T"])
-  108134
-  >>> print(no_unary_specs['resources'].gate_types["Adjoint(T)"])
-  108109
-  ```
-
   Go check out the *Unary iterator decomposition* section in the :class:`~.Select` documentation for 
   more information!
 
