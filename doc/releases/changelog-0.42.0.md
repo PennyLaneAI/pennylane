@@ -302,7 +302,7 @@ solver.
   [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
   In the following example, decomposing with `method="gridsynth"` instead of `method="sk"` gives a
-  significant reduction in overall gate counts, specifically the `qml.T` count:
+  significant reduction in overall gate counts, specifically the :class:`~.T` count:
 
   ```python
   @qml.qnode(qml.device("lightning.qubit", wires=2))
