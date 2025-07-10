@@ -32,7 +32,7 @@ except ModuleNotFoundError:
 
 
 class QNGOptimizerQJIT:
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the ``QNGOptimizer``,
+    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
     a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
     the optimization space based on the Fubini-Study metric tensor.
 

@@ -806,10 +806,7 @@ class PCPhase(Operation):
         3: ──GlobalPhase(-1.23)────────────├○───────────┤
         4: ──GlobalPhase(-1.23)──X─────────╰Rϕ(2.46)──X─┤
 
-        A detailed description of the algorithm and integer decomposition subroutine
-        is provided in ``pennylane/ops/qubit/pcphase_decomposition.md`` and
-        ``pennylane/math/decomp_int_to_powers_of_two.md``. In the following
-        we provide a detailed example for illustration purposes.
+        In the following we provide a detailed example for illustration purposes.
 
         **Detailed example**
 
