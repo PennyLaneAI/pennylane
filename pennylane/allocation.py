@@ -153,7 +153,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         def c():
             qml.H(0)
 
-            wires = qml.allocation.allocate(1, require_zeros=True)
+            wires = qml.allocation.allocate(1, require_zeros=True, restored=True)
             qml.CNOT((0, wires[0]))
             qml.CNOT((0, wires[0]))
             qml.allocation.deallocate(wires)
@@ -228,7 +228,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
         The ``allocate`` function should be used with :func:`~.deallocate` if it is not used as a context
         manager.
 
-    .. see-also::
+    .. seealso::
         :func:`~.deallocate`
 
     This function can be used as a context manager with automatic deallocation (preferred) or with manual
