@@ -241,8 +241,10 @@ class ZOmega:
     def __sub__(self, other):
         return self + (-other)
 
+    def __rsub__(self, other):
+        return other + (-self)
+
     __radd__ = __add__
-    __rsub__ = __sub__
     __rmul__ = __mul__
 
     def __neg__(self: ZOmega) -> ZOmega:
