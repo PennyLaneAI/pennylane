@@ -110,10 +110,10 @@ author = "Xanadu Inc."
 
 add_module_names = False
 
-html_sidebars = {
-   '**': ['localtoc.html'],
-   'globaltoc_maxdepth': 2,
-}
+# html_sidebars = {
+#    '**': ['localtoc.html'],
+#    'globaltoc_maxdepth': 2,
+# }
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
