@@ -18,7 +18,7 @@
   efficient decompositions to elementary gates. This decomposition uses a template called
   :class:`~.TemporaryAND`, which was also added in this release (see the next changelog entry).
   
-  This state-of-the-art decomposition rule for :class:`~.Select` is available when the graph-based
+  This decomposition rule for :class:`~.Select` is available when the graph-based
   decomposition system is enabled via :func:`~.decomposition.enable_graph`:
 
   ```python
