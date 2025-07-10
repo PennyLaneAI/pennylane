@@ -1378,10 +1378,10 @@ class ResourceSelectPauliRot(ResourceOperator):
 
         Resources:
             The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
-            (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources are
-            given as :math:`2^{n}` instances of the :code:`CNOT` gate and :math:`2^{n}` instances
-            of the single qubit rotation gate (:code:`RX`, :code:`RY` or :code:`RZ`) depending on the
-            :code:`rotation_axis`.
+            (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources
+            for an :math:`n` qubit unitary are given as :math:`2^{n}` instances of the :code:`CNOT`
+            gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
+            :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
