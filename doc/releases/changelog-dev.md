@@ -15,6 +15,7 @@
   [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
+  [(#7767)](https://github.com/PennyLaneAI/pennylane/pull/7767)
 
 <h3>Improvements 🛠</h3>
 
