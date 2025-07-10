@@ -960,6 +960,20 @@ class TestVariables:
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
 
+    def test_unsupported_register_index(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[1, 2];
+            """
+        )
+
+        with pytest.raises(NotImplementedError, match="Only a single Expression"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "qubit-registers-index"}
+            )
+
     def test_register_lookup_out_of_range(self):
         # parse the QASM program
         ast = parse(
