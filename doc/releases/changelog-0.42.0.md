@@ -51,7 +51,7 @@
   ```
 
   ```pycon
-  >>> unary_iter_specs = qml.specs(circuit)()
+  >>> unary_specs = qml.specs(circuit)()
   >>> print(unary_specs['resources'].gate_types["T"])
   16
   >>> print(unary_specs['resources'].gate_types["Adjoint(T)"])
