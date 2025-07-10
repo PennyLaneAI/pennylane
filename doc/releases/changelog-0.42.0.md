@@ -394,11 +394,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 <h3>Improvements 🛠</h3>
 
-* A new decomposition for two-qubit unitaries has been implemented in :func:`~.ops.two_qubit_decomposition`.
-  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 CNOTs
-  would suffice theoretically.
-  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
-
 <h4>A quantum optimizer that works with QJIT</h4>
 
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
@@ -658,6 +653,11 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   decomposes into single-qubit `QubitUnitary` gates. This allows the graph-based decomposition 
   system to further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
+
+* A new decomposition for two-qubit unitaries has been implemented in :func:`~.ops.two_qubit_decomposition`.
+  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 CNOTs
+  would suffice theoretically.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
   `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
