@@ -1040,6 +1040,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Jits the `givens_matrix` computation from `BasisRotation` when it is within a jit context, which significantly reduces the program size and compilation time of workflows.
+  [(#7823)](https://github.com/PennyLaneAI/pennylane/pull/7823)
+
 * Move private code in the `TransformProgram` onto the `CotransformCache` class.
   [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
 
@@ -1377,10 +1380,12 @@ Simone Gasperini,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Austin Huang,
 Anton Naim Ibrahim,
-William Maxwell
-Luis Alfredo Nuñez Meneses
+Erick Ochoa Lopez,
+William Maxwell,
+Luis Alfredo Nuñez Meneses,
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
