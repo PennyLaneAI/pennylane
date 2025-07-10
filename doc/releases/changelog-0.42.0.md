@@ -7,9 +7,8 @@
 <h4>State-of-the-art templates and decompositions 🐝</h4>
 
 * A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
-  This state-of-the-art decomposition reduces 
-  the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires, where :math:`c` is the 
-  number of control wires.
+  This state-of-the-art decomposition reduces the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires,
+  where :math:`c` is the number of control wires.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
   [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
@@ -20,15 +19,13 @@
   information!
 
 * A new template called :class:`~.TemporaryAND` has been added. :class:`~.TemporaryAND` enables more 
-  efficient circuit decompositions, like in the newest decomposition of the :class:`~.Select` 
-  template, for example.
+  efficient circuit decompositions, such as the newest decomposition of the :class:`~.Select` template.
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
 
   The :class:`~.TemporaryAND` operation is a three-qubit gate equivalent to an ``AND`` operation 
   (or a reversible :class:`~.Toffoli`): it assumes that the target qubit is initialized in the 
   ``|0〉`` state, while ``Adjoint(TemporaryAND)`` assumes the target qubit will be output into the 
-  ``|0〉`` state. For more details, see Fig. 4 in 
-  [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
+  ``|0〉`` state. For more details, see Fig. 4 in [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
 
   ```python
   dev = qml.device("default.qubit", shots=1)
