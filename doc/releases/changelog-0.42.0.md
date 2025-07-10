@@ -8,15 +8,57 @@
 
 * A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
   This state-of-the-art decomposition reduces the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires,
-  where :math:`c` is the number of control wires.
+  where :math:`c` is the number of control wires. 
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
   [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
 
   Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
-  different multi-controlled operators, avoiding unnecessary recomputation. Go check out the  
-  *Unary iterator decomposition* section in the :class:`~.Select` documentation for more 
-  information!
+  different multi-controlled operators, avoiding unnecessary recomputation and leading to more 
+  efficient decompositions to elementary gates. 
+  
+  This state-of-the-art decomposition rule for :class:`~.Select` is available with the graph-based
+  decomposition system enabled via :func:`~.decomposition.enable_graph`:
+
+  ```python
+  import pennylane as qml
+  from functools import partial
+
+  qml.decomposition.enable_graph()
+  ```
+
+  To demonstrate the resource-efficiency of this new decomposition, let's use 
+  :func:`~.transforms.decompose` to decompose an instance of :class:`~.Select` using the new unary iterator decomposition rule, and further decompose these gates into the Clifford+T gate set
+  using :func:`~.clifford_t_decomposition` so that we can count the amount of `T` gates required:
+  
+  ```python
+  reg = qml.registers({"targ": 2, "control": 2, "work": 1})
+  targ, control, work = (reg[k] for k in reg.keys())
+
+  dev = qml.device('default.qubit')
+  ops = [qml.X(targ[0]), qml.X(targ[1]), qml.Y(targ[0]), qml.SWAP(targ)]
+
+  @partial(qml.clifford_t_decomposition, method="gridsynth")
+  @partial(qml.transforms.decompose, gate_set={
+          qml.X, qml.CNOT, qml.TemporaryAND, "Adjoint(TemporaryAND)", "CY", "CSWAP"
+      }
+  )
+  @qml.qnode(dev)
+  def circuit():
+      qml.Select(ops, control=control, work_wires=work)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> unary_iter_specs = qml.specs(circuit)()
+  >>> print(unary_specs['resources'].gate_types["T"])
+  16
+  >>> print(unary_specs['resources'].gate_types["Adjoint(T)"])
+  13
+  ```
+
+  Go check out the *Unary iterator decomposition* section in the :class:`~.Select` documentation for 
+  more information!
 
 * A new template called :class:`~.TemporaryAND` has been added. :class:`~.TemporaryAND` enables more 
   efficient circuit decompositions, such as the newest decomposition of the :class:`~.Select` template.
