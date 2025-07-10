@@ -423,8 +423,6 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))
-
         mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
         if isinstance(mt, tuple):
