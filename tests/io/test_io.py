@@ -214,7 +214,6 @@ class TestOpenQasm:
     dev = qml.device("default.qubit", wires=2, shots=100)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
-
     def test_return_from_qasm3(self):
         circuit = """\
             OPENQASM 3.0;
