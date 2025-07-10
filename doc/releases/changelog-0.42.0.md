@@ -654,6 +654,11 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   system to further decompose single-qubit unitary gates more flexibly using different rotations.
   [(#7211)](https://github.com/PennyLaneAI/pennylane/pull/7211)
 
+* A new decomposition for two-qubit unitaries has been implemented in :func:`~.ops.two_qubit_decomposition`.
+  It ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 CNOTs
+  would suffice theoretically.
+  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
+
 * The `gate_set` argument of :func:`~.transforms.decompose` now accepts `"X"`, `"Y"`, `"Z"`, `"H"`, 
   `"I"` as aliases for `"PauliX"`, `"PauliY"`, `"PauliZ"`, `"Hadamard"`, and `"Identity"`. These 
   aliases are also recognized as part of symbolic operators. For example, `"Adjoint(H)"` is now 
@@ -1070,11 +1075,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 * The default value of `cache` is now `"auto"` with `qml.execute`. Like `QNode`, `"auto"` only turns 
   on caching when `max_diff > 1`.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
-
-* A new decomposition for two-qubit unitaries was implemented in `two_qubit_decomposition`. It 
-  ensures the correctness of the decomposition in some edge cases but uses 3 CNOT gates even if 2 
-  CNOTs would suffice theoretically.
-  [(#7474)](https://github.com/PennyLaneAI/pennylane/pull/7474)
 
 * The `return_type` property of `MeasurementProcess` has been removed. Please use `isinstance` for 
   type checking instead.
