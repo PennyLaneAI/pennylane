@@ -12,6 +12,7 @@
   number of control wires.
   [(#7623)](https://github.com/PennyLaneAI/pennylane/pull/7623)
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
+  [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
 
   Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
   different multi-controlled operators, avoiding unnecessary recomputation. Go check out the  
@@ -1492,6 +1493,9 @@ please consult the :doc:`deprecations and removals page </development/deprecatio
 
 * Fixed a bug where an error is raised from the decomposition graph when the resource params of an operator contains lists.
   [(#7722)](https://github.com/PennyLaneAI/pennylane/pull/7722)
+
+* Fixed a bug with the new `Select` decomposition based on unary iteration. There was an erroneous `print` statement.
+  [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
 
 <h3>Contributors ✍️</h3>
 
