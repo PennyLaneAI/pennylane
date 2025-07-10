@@ -782,7 +782,6 @@
 * Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
   iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
   matrices much more performant.
-  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
   [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
