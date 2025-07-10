@@ -265,7 +265,7 @@ class CustomOp(IRDLOperation):
 
     gate_name = prop_def(StringAttr)
 
-    adjoint = opt_prop_def(UnitAttr())
+    adjoint = opt_prop_def(UnitAttr)
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
@@ -449,7 +449,7 @@ class GlobalPhaseOp(IRDLOperation):
 
     params = operand_def(Float64Type())
 
-    adjoint = opt_prop_def(UnitAttr())
+    adjoint = opt_prop_def(UnitAttr)
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
@@ -606,7 +606,7 @@ class MultiRZOp(IRDLOperation):
 
     in_qubits = var_operand_def(QubitType)
 
-    adjoint = opt_prop_def(UnitAttr())
+    adjoint = opt_prop_def(UnitAttr)
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
@@ -686,7 +686,7 @@ class QubitUnitaryOp(IRDLOperation):
 
     in_qubits = var_operand_def(QubitType)
 
-    adjoint = opt_prop_def(UnitAttr())
+    adjoint = opt_prop_def(UnitAttr)
 
     in_ctrl_qubits = var_operand_def(QubitType)
 
