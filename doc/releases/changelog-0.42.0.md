@@ -1376,8 +1376,8 @@ Joseph Lee,
 Austin Huang,
 Anton Naim Ibrahim,
 Erick Ochoa Lopez,
-William Maxwell
-Luis Alfredo Nuñez Meneses
+William Maxwell,
+Luis Alfredo Nuñez Meneses,
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
