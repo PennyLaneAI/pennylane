@@ -22,6 +22,7 @@ dev_names = (
     "lightning.qubit",
 )
 
+
 class TestBasics:
     """Test basic properties of the MomentumQNGOptimizerQJIT."""
 
