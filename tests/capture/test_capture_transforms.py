@@ -28,7 +28,7 @@ from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, w
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.core import TransformError, TransformProgram, transform
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @transform

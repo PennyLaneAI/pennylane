@@ -20,7 +20,7 @@ from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.exceptions import DeviceError
 
 jax = pytest.importorskip("jax")
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestPreprocess:

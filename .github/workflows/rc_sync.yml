@@ -29,11 +29,23 @@ jobs:
         with:
           ref: master
 
+      # Sets up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Ensure setuptools is up-to-date for pyproject.toml processing
+      - name: Install latest setuptools 
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+
       # Check for the existence of an rc branch for the current PennyLane version
       - name: Check for rc branch
         run: |
           VERSION=$(python setup.py --version)
-          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev[0-9]*}"
+          IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
           RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
           if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_ENV
@@ -71,4 +83,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh pr create --title "Daily rc sync to master" --body "" --reviewer "PietropaoloFrisoni,albi3ro"
+          gh pr create --title "Daily rc sync to master" --body "" --reviewer "andrijapau,albi3ro"

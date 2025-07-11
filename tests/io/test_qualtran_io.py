@@ -34,7 +34,7 @@ def test_to_bloq_error():
         import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
-            qml.ToBloq(qml.H(0))
+            qml.io.ToBloq(qml.H(0))
 
         with pytest.raises(ImportError, match="The `to_bloq` function requires Qualtran "):
             qml.to_bloq(qml.H(0))
@@ -383,18 +383,18 @@ class TestToBloq:
         def circuit():
             qml.H(0)
 
-        assert qml.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
-        assert qml.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.ToBloq(qml.H(0)).__str__() == "PLHadamard"
+        assert qml.io.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
+        assert qml.io.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
+        assert qml.io.ToBloq(qml.H(0)).__str__() == "PLHadamard"
         with pytest.raises(TypeError, match="Input must be either an instance of"):
-            qml.ToBloq("123")
+            qml.io.ToBloq("123")
 
     def test_equivalence(self):
         """Tests that ToBloq's __eq__ functions as expected"""
 
-        assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
-        assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
-        assert qml.ToBloq(qml.H(0)) != "Hadamard"
+        assert qml.io.ToBloq(qml.H(0)) == qml.io.ToBloq(qml.H(0))
+        assert qml.io.ToBloq(qml.H(0)) != qml.io.ToBloq(qml.H(1))
+        assert qml.io.ToBloq(qml.H(0)) != "Hadamard"
 
     def test_allocate_and_free(self):
         """Tests that ToBloq functions on a FromBloq that has ghost wires"""
