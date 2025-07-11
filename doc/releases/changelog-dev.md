@@ -39,6 +39,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Seeded tests for the `split_to_single_terms` transformation.
+  [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
+
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
