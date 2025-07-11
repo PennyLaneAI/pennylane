@@ -795,7 +795,22 @@ class InitializeOp(IRDLOperation):
 
 @irdl_op_definition
 class InsertOp(IRDLOperation):
-    """Update the qubit value of a register."""
+    """Update the qubit value of a register.
+
+    Args:
+        in_qreg (SSAValue): Input quantum register that will contain the inserted qubit.
+        idx (SSAValue): The index in which to insert the qubit. Possibly unknown at compile time.
+        idx_attr (IntegerAttr): The index in which to insert the qubits. Known at compile time.
+        qubit (SSAValue): The qubit to store at position given by the index.
+
+    Results:
+        out_qreg (SSAValue): The updated quantum register.
+
+    .. note::
+
+        The value of in_qreg should never be used again once it has been updated. All
+        future uses should refer to out_qreg.
+    """
 
     name = "quantum.insert"
 
@@ -834,7 +849,16 @@ class InsertOp(IRDLOperation):
 
 @irdl_op_definition
 class MeasureOp(IRDLOperation):
-    """A single-qubit projective measurement in the computational basis."""
+    """A single-qubit projective measurement in the computational basis.
+
+    Args:
+        in_qubit (SSAValue): The qubit to measured.
+        postselect (int | IntegerAttr | None): Either 0 or 1.
+
+    Results:
+        mres (SSAValue): The measurement result given as a boolean value.
+        out_qubit (SSAValue): The output qubit in either |0> or |1> state.
+    """
 
     name = "quantum.measure"
 
@@ -876,7 +900,26 @@ class MeasureOp(IRDLOperation):
 
 @irdl_op_definition
 class MultiRZOp(IRDLOperation):
-    """Apply an arbitrary multi Z rotation"""
+    """Apply an arbitrary multi Z rotation.
+
+    The `quantum.multirz` operation applies an arbitrary multi Z rotation to the state-vector.
+
+    Args:
+        theta (SSAValue): rotation angle
+        in_qubits (Sequence[SSAValue]): the set of qubits the operation acts on
+        in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+
+    Results:
+        out_qubits (Sequence[SSAValue]): The output qubits.
+        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+
+    .. note::
+
+        This operation is one of the few quantum operations that is not applied via
+        quantum.custom. The reason for this is that it needs to be handled in a special
+        way during the lowering due to its C function being variadic on the number of qubits.
+    """
 
     name = "quantum.multirz"
 
@@ -911,7 +954,24 @@ class MultiRZOp(IRDLOperation):
 
 @irdl_op_definition
 class NamedObsOp(IRDLOperation):
-    """Define a Named observable for use in measurements"""
+    """Define a Named observable for use in measurements.
+
+    The `quantum.namedobs` operation defines a quantum observable to be used by measurement
+    processes. The specific observable defined here represents one of 5 named observables
+    {Identity, PauliX, PauliY, PauliZ, Hadamard} on a qubit. The arguments are a qubit to
+    measure as well as an encoding operator for the qubit as an integer between 0-4.
+
+    **Example**
+
+    .. code-block:: mlir
+
+        func.func @foo(%q: !quantum.bit)
+        {
+            %res = quantum.namedobs %q[4] : !quantum.obs
+            func.return
+        }
+
+    """
 
     name = "quantum.namedobs"
 
