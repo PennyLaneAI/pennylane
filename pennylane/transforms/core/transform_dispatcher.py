@@ -588,7 +588,10 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
         tape = qml.tape.QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
-            transformed_tapes, processing_fn = self(tape, *targs, **tkwargs)
+            if self.is_informative:
+                transformed_tapes, processing_fn = self.transform(tape, *targs, **tkwargs)
+            else:
+                transformed_tapes, processing_fn = self(tape, *targs, **tkwargs)
 
         if len(transformed_tapes) != 1:
             raise TransformError(
