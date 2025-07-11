@@ -13,16 +13,11 @@
 # limitations under the License.
 """Private helper functions for converting RealspaceOperator objects to matrices"""
 
-from __future__ import annotations
 
 from functools import reduce
-from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy as sp
-
-if TYPE_CHECKING:
-    pass
 
 
 def _position_operator(
