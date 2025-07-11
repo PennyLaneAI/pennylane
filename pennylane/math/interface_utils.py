@@ -56,7 +56,7 @@ class Interface(Enum):
         return super().__hash__()
 
 
-InterfaceLike = Optional[str, Interface]
+InterfaceLike = Optional[str | Interface]
 
 
 INTERFACE_MAP = {
