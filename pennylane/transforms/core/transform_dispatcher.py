@@ -125,11 +125,11 @@ def specific_apply_transform(obj, transform, *targs, **tkwargs):
     return transform.generic_apply_transform(obj, *targs, **tkwargs)
 
 
-# pragma: no-cover
-def _dummy_register(obj): # just used for sphinx
-    if isinstance(obj, type):
-        return lambda arg: arg
-    return obj
+# pragma: no cover
+def _dummy_register(obj):  # just used for sphinx
+    if isinstance(obj, type):  # pragma: no cover
+        return lambda arg: arg  # pragma: no cover
+    return obj  # pragma: no cover
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -588,7 +588,7 @@ def apply_to_callable(self, obj: Callable, *targs, **tkwargs):
         tape = qml.tape.QuantumScript.from_queue(q)
 
         with QueuingManager.stop_recording():
-            transformed_tapes, processing_fn = self.transform(tape, *targs, **tkwargs)
+            transformed_tapes, processing_fn = self(tape, *targs, **tkwargs)
 
         if len(transformed_tapes) != 1:
             raise TransformError(
@@ -635,7 +635,7 @@ def _apply_to_sequence(self, obj: Sequence, *targs, **tkwargs):
         # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
-        new_tapes, fn = _apply_to_tape(self, t, *targs, **tkwargs)
+        new_tapes, fn = self(t, *targs, **tkwargs)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
