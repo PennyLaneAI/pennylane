@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.noise.add_noise import add_noise
 from pennylane.tape import QuantumScript
-from pennylane.transforms.add_noise import add_noise
 
 # pylint:disable = no-member
 

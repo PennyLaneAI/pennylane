@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
   and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 

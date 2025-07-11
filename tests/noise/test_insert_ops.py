@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.noise.insert_ops import insert
 from pennylane.tape import QuantumScript
-from pennylane.transforms.insert_ops import insert
 
 
 class TestInsert:
