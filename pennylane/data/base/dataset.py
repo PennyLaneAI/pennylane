@@ -20,7 +20,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, cast, get_origin
+from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, cast, get_origin
 
 # pylint doesn't think this exists
 from typing_extensions import dataclass_transform
@@ -271,7 +271,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     def read(
         self,
-        source: str | Path | "Dataset",
+        source: str | Union[Path, "Dataset"],
         attributes: Optional[Iterable[str]] = None,
         *,
         overwrite: bool = False,
@@ -296,7 +296,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     def write(
         self,
-        dest: str | Path | "Dataset",
+        dest: str | Union[Path, "Dataset"],
         mode: Literal["w", "w-", "a"] = "a",
         attributes: Optional[Iterable[str]] = None,
         *,

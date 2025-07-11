@@ -18,7 +18,7 @@ Contains types and functions for dataset parameters.
 import enum
 from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
-from typing import Any
+from typing import Any, Union
 
 
 class ParamArg(enum.Enum):
@@ -38,7 +38,7 @@ class ParamArg(enum.Enum):
         return frozenset(arg.value for arg in cls)
 
     @classmethod
-    def is_arg(cls, val: "ParamArg" | str) -> bool:
+    def is_arg(cls, val: Union["ParamArg", str]) -> bool:
         """Returns true if ``val`` is a ``ParamArg``, or one
         of its values."""
         return isinstance(val, ParamArg) or (isinstance(val, str) and val in cls.values())

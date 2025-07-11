@@ -223,7 +223,7 @@ import warnings
 from collections.abc import Hashable, Iterable
 from enum import IntEnum
 from functools import lru_cache
-from typing import Any, Callable, Literal, Optional, Type
+from typing import Any, Callable, Literal, Optional, Type, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -1726,7 +1726,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         return self
 
-    def __add__(self, other: "Operator" | TensorLike) -> "Operator":
+    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other, lazy=False)
@@ -1762,7 +1762,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The product operation between Operator objects."""
         return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
-    def __sub__(self, other: "Operator" | TensorLike) -> "Operator":
+    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return self + qml.s_prod(-1, other, lazy=False)
@@ -1770,7 +1770,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
-    def __rsub__(self, other: "Operator" | TensorLike):
+    def __rsub__(self, other: Union["Operator", TensorLike]):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
