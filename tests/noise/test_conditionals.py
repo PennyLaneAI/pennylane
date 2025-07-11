@@ -378,6 +378,21 @@ class TestNoiseFunctions:
         mp = qml.noise.partial_wires(qml.counts)(qml.X("light"))
         qml.assert_equal(mp, qml.counts(wires=["light"]))
 
+    def test_partial_wires_queuing(self):
+        """Test for checking partial_wires correctly queue operations"""
+
+        op1 = qml.X(2)
+        qs1 = qml.tape.make_qscript(qml.noise.partial_wires(qml.DepolarizingChannel, 0.01))
+        qs2 = qml.tape.make_qscript(qml.noise.partial_wires(qml.DepolarizingChannel(0.01, [0])))
+        assert qs1(op1).operations == qs2(op1).operations and len(qs1(op1).operations) == 1
+
+        op1 = qml.CNOT(["a", "b"])
+        d1, d2 = [-0.9486833] * 4, [-0.31622777] * 2
+        krs = [qml.math.diag(d1), qml.math.diag(d2, k=2) + qml.math.diag(d2, k=-2)]
+        qs1 = qml.tape.make_qscript(qml.noise.partial_wires(qml.QubitChannel, krs))
+        qs2 = qml.tape.make_qscript(qml.noise.partial_wires(qml.QubitChannel(krs, [0, 1])))
+        assert qs1(op1).operations == qs2(op1).operations and len(qs1(op1).operations) == 1
+
     def test_partial_wires_error(self):
         """Test for checking partial_wires raise correct error when args are given"""
 
