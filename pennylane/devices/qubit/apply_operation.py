@@ -732,7 +732,6 @@ def _evolve_state_vector_under_parametrized_evolution(
         H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
             operation.H,
             dense=operation.dense,
-            wire_order=list(np.arange(num_wires)),
         )
 
     def fun(y, t):
