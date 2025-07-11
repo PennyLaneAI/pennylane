@@ -15,8 +15,14 @@
 
 from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
+from .diagonalize_measurements import (
+    DiagonalizeFinalMeasurementsPass,
+    diagonalize_measurements_pass,
+)
 
 __all__ = [
+    "diagonalize_measurements_pass",
+    "DiagonalizeFinalMeasurementsPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "merge_rotations_pass",
