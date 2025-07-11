@@ -23,11 +23,10 @@ from copy import copy
 from typing import Optional
 
 import pennylane as qml
+from pennylane import capture, math
+from pennylane.exceptions import TransformError
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
-
-
-class TransformError(Exception):
-    """Raised when there is an error with the transform logic."""
 
 
 def _create_plxpr_fallback_transform(tape_transform):
@@ -41,7 +40,7 @@ def _create_plxpr_fallback_transform(tape_transform):
 
         def wrapper(*inner_args):
             tape = qml.tape.plxpr_to_tape(jaxpr, consts, *inner_args)
-            with qml.capture.pause():
+            with capture.pause():
                 tapes, _ = tape_transform(tape, *targs, **tkwargs)
 
             if len(tapes) > 1:
@@ -62,7 +61,7 @@ def _create_plxpr_fallback_transform(tape_transform):
 
             return tuple(out)
 
-        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(args)
         return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
 
     return plxpr_fallback_transform
@@ -258,8 +257,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 return processing_fn(transformed_tapes)
             return transformed_tapes, processing_fn
 
-        if isinstance(obj, qml.QNode):
-            if qml.capture.enabled():
+        if isinstance(obj, qml.workflow.QNode):
+            if capture.enabled():
                 new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
                 return self._capture_callable_transform(new_qnode, targs, tkwargs)
             return self._qnode_transform(obj, targs, tkwargs)
@@ -275,7 +274,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
         if callable(obj):
-            if qml.capture.enabled():
+            if capture.enabled():
                 return self._capture_callable_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
@@ -396,7 +395,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
 
-            flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
+            flat_qfunc = capture.flatfn.FlatFn(qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
             flat_args = jax.tree_util.tree_leaves(args)
 
@@ -427,11 +426,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
-            with qml.queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            with qml.QueuingManager.stop_recording():
+            with QueuingManager.stop_recording():
                 transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
@@ -446,7 +445,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 return processing_fn(transformed_tapes)
 
             for op in transformed_tape.circuit:
-                qml.apply(op)
+                apply(op)
 
             mps = transformed_tape.measurements
 
@@ -459,8 +458,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if isinstance(qfunc_output, (tuple, list)):
                 return type(qfunc_output)(mps)
 
-            interface = qml.math.get_interface(qfunc_output)
-            return qml.math.asarray(mps, like=interface)
+            interface = math.get_interface(qfunc_output)
+            return math.asarray(mps, like=interface)
 
         return qfunc_transformed
 
@@ -635,7 +634,7 @@ def _create_transform_primitive(name):
     ):  # pylint: disable=unused-argument
         args = all_args[args_slice]
         consts = all_args[consts_slice]
-        return qml.capture.eval_jaxpr(inner_jaxpr, consts, *args)
+        return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):

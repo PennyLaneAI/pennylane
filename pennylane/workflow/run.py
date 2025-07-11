@@ -14,17 +14,15 @@
 """
 This module contains a developer focused execution function for internal executions
 """
+from __future__ import annotations
 
 from dataclasses import replace
 from functools import partial
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformProgram
-from pennylane.typing import ResultBatch
 from pennylane.workflow import _cache_transform
 
 from .jacobian_products import (
@@ -35,7 +33,12 @@ from .jacobian_products import (
     TransformJacobianProducts,
 )
 
-ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformProgram
+    from pennylane.typing import ResultBatch
+
+    ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 def _construct_tf_autograph_pipeline(

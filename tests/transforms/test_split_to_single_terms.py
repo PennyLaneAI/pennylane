@@ -292,13 +292,13 @@ class TestIntegration:
             ),
         ],
     )
-    def test_single_expval(self, shots, params, expected_results):
+    def test_single_expval(self, shots, params, expected_results, seed):
         """Tests that a QNode with a single expval measurement is executed correctly"""
 
         coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         obs = single_term_obs_list + [qml.I()]  # test constant offset
 
-        dev = NoTermsDevice(wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -364,10 +364,10 @@ class TestIntegration:
             ),
         ],
     )
-    def test_multiple_expval(self, shots, params, expected_results):
+    def test_multiple_expval(self, shots, params, expected_results, seed):
         """Tests that a QNode with multiple expval measurements is executed correctly"""
 
-        dev = NoTermsDevice(wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
 
         obs_list = complex_obs_list
 
@@ -430,10 +430,10 @@ class TestIntegration:
             ),
         ],
     )
-    def test_mixed_measurement_types(self, shots, params, expected_results):
+    def test_mixed_measurement_types(self, shots, params, expected_results, seed):
         """Tests that a QNode with mixed measurement types is executed correctly"""
 
-        dev = NoTermsDevice(wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
 
         obs_list = complex_obs_list
 
@@ -494,11 +494,11 @@ class TestIntegration:
             assert qml.math.allclose(expval_res, expected_results, atol=0.05)
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
-    def test_sum_with_only_identity(self, shots):
+    def test_sum_with_only_identity(self, shots, seed):
         """Tests that split_to_single_terms can handle Identity observables (these
         are treated separately as offsets in the transform)"""
 
-        dev = NoTermsDevice(wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
 
         @split_to_single_terms
@@ -510,11 +510,11 @@ class TestIntegration:
         assert qml.math.allclose(res, 1.5 + 2.5)
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
-    def test_sum_with_identity_and_observable(self, shots):
+    def test_sum_with_identity_and_observable(self, shots, seed):
         """Tests that split_to_single_terms can handle a combination Identity observables (these
         are treated separately as offsets in the transform) and other observables"""
 
-        dev = NoTermsDevice(wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots, seed=seed)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.Y(0)])
 
         @split_to_single_terms
@@ -547,12 +547,12 @@ class TestDifferentiability:
     """Tests the differentiability of the ``split_to_single_terms`` transform"""
 
     @pytest.mark.autograd
-    def test_trainable_hamiltonian_autograd(self):
+    def test_trainable_hamiltonian_autograd(self, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable"""
 
         import pennylane.numpy as pnp
 
-        dev = NoTermsDevice(wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
 
         @split_to_single_terms
         @qml.qnode(dev)
@@ -568,13 +568,13 @@ class TestDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
-    def test_trainable_hamiltonian_jax(self, use_jit):
+    def test_trainable_hamiltonian_jax(self, use_jit, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable with jax"""
 
         import jax
         import jax.numpy as jnp
 
-        dev = NoTermsDevice(wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
 
         @partial(split_to_single_terms)
         @qml.qnode(dev)
@@ -592,13 +592,13 @@ class TestDifferentiability:
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.torch
-    def test_trainable_hamiltonian_torch(self):
+    def test_trainable_hamiltonian_torch(self, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable with torch"""
 
         import torch
         from torch.autograd.functional import jacobian
 
-        dev = NoTermsDevice(wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
 
         @split_to_single_terms
         @qml.qnode(dev)
@@ -613,12 +613,12 @@ class TestDifferentiability:
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.tf
-    def test_trainable_hamiltonian_tensorflow(self):
+    def test_trainable_hamiltonian_tensorflow(self, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
 
         import tensorflow as tf
 
-        dev = NoTermsDevice(wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000, seed=seed)
 
         @qml.qnode(dev)
         def circuit(coeff1, coeff2):

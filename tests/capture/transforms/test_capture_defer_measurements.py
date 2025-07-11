@@ -29,8 +29,7 @@ from pennylane.transforms.defer_measurements import (
 from pennylane.wires import Wires
 
 pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.capture,
     pytest.mark.integration,
 ]
 
@@ -675,7 +674,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         collector = CollectOpsandMeas()
-        collector.eval(inner_jaxpr, [], *jaxpr.consts, x)
+        collector.eval(inner_jaxpr, jaxpr.consts, x)
 
         ops = collector.state["ops"]
         expected_ops = [
@@ -727,10 +726,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
         qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
 
         collector = CollectOpsandMeas()
-        if postselect is None:
-            collector.eval(qfunc_jaxpr, [], x)
-        else:
-            collector.eval(qfunc_jaxpr, [], qml.math.array([postselect]), x)
+        collector.eval(qfunc_jaxpr, jaxpr.consts, x)
 
         ops = collector.state["ops"]
         expected_ops = [qml.RX(x, 0), qml.CNOT([0, 3]), qml.CRX(x, [3, 0])]
