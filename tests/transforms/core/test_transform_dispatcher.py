@@ -85,7 +85,7 @@ def no_tape_sequence_transform(tape: QuantumScript) -> tuple[QuantumScript, Post
 
 def no_callable_return(tape: QuantumScript) -> tuple[QuantumScriptBatch, QuantumScript]:
     """Transform without callable return."""
-    return list(tape), tape
+    return [tape], tape
 
 
 non_valid_transforms = [
@@ -806,3 +806,52 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
+
+    @pytest.mark.parametrize("as_batch", (True, False))
+    def test_chained_tape_transform(self, as_batch):
+        """Test that two transforms can be applied one after another on a tape."""
+
+        def postprocessing1(results):
+            return tuple(2 * r for r in results)
+
+        @qml.transform
+        def transform1(tape):
+            batch = tuple(tape.copy(measurements=[m]) for m in tape.measurements)
+            return batch, postprocessing1
+
+        def postprocessing2(results):
+            return results[0] + 3
+
+        @qml.transform
+        def transform2(tape):
+            return (tape.copy(ops=tape.operations[:1]),), postprocessing2
+
+        def postprocessing3(results):
+            return 4 * results[0]
+
+        @qml.transform
+        def transform3(tape):
+            return (tape.copy(ops=2 * tape.operations),), postprocessing3
+
+        mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Z(0))]
+        tape = qml.tape.QuantumScript([qml.X(0), qml.X(1), qml.X(2)], mps)
+
+        if as_batch:
+            input = (tape,)
+        else:
+            input = tape
+        batch, fn = transform3(transform2(transform1(input)))
+
+        in_res = (1, 2, 3)
+
+        def _f(r):
+            return 2 * (4 * r + 3)
+
+        expected_res = tuple(_f(r) for r in in_res)
+        if as_batch:
+            assert fn(in_res) == (expected_res,)
+        else:
+            assert fn(in_res) == expected_res
+        for mp, t in zip(mps, batch):
+            expected = qml.tape.QuantumScript([qml.X(0), qml.X(0)], [mp])
+            qml.assert_equal(t, expected)
