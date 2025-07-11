@@ -38,6 +38,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Seeded tests for the `split_to_single_terms` transformation.
+  [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
+
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
@@ -46,11 +49,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes attributes and types in the quantum dialect.
+  This allows for types to be inferred correctly when parsing.
+  [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
