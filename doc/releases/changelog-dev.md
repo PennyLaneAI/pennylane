@@ -4,6 +4,11 @@
 
 <h3>New features since last release</h3>
 
+* Quantum just-in-time compilation to optimize parameterized hybrid workflows: the :class:`~.MomentumQNGOptimizerQJIT`
+  has been added to offer a `jax.jit`- and `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer`
+  with an Optax-like interface.
+  [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
+
 <h3>Improvements 🛠</h3>
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
@@ -59,6 +64,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Simone Gasperini,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
