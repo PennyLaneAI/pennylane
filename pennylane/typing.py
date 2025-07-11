@@ -126,4 +126,4 @@ ResultBatch = Sequence[Result]
 PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
-JSON = Optional[int | str | bool | list["JSON"] | dict[str | "JSON"]]
+JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
