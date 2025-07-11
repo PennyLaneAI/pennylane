@@ -14,7 +14,7 @@
 """Contains DatasetAttribute definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
-from typing import Generic, Type, TypeVar, Union, cast
+from typing import Generic, Type, TypeVar, cast
 
 import numpy as np
 from scipy.sparse import (
@@ -37,10 +37,10 @@ from scipy.sparse import (
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 
-SparseArray = Union[bsr_array, coo_array, csc_array, csr_array, dia_array, dok_array, lil_array]
-SparseMatrix = Union[
-    bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
-]
+SparseArray = bsr_array | coo_array | csc_array | csr_array | dia_array | dok_array | lil_array
+SparseMatrix = (
+    bsr_matrix | coo_matrix | csc_matrix | csr_matrix | dia_matrix | dok_matrix | lil_matrix
+)
 
 SparseT = TypeVar("SparseT", bound=SparseArray | SparseMatrix)
 

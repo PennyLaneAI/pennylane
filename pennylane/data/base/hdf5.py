@@ -15,7 +15,7 @@
 
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Literal, TypeVar, Union
+from typing import Literal, TypeVar
 from uuid import uuid4
 
 from numpy.typing import ArrayLike
@@ -26,7 +26,7 @@ from ._lazy_modules import fsspec, h5py
 HDF5Attrs = MutableMapping
 HDF5Array = ArrayLike
 HDF5Group = MutableMapping
-HDF5Any = Union[HDF5Array, HDF5Group]
+HDF5Any = HDF5Array | HDF5Group
 HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
 
 

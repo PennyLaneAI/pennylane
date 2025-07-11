@@ -18,7 +18,6 @@ import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
-from typing import Union
 
 import numpy as np
 
@@ -729,7 +728,7 @@ class Wires(Sequence):
         return Wires((set(_process(other)) ^ set(self.labels)))
 
 
-WiresLike = Union[Wires, Iterable[Hashable], Hashable]
+WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
