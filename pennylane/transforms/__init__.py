@@ -292,7 +292,6 @@ from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .combine_global_phases import combine_global_phases
 
-
 from .optimization import (
     cancel_inverses,
     commute_controlled,
