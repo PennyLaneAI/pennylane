@@ -28,6 +28,114 @@ from .utils import translate_op_alias
 
 
 @overload
+def require_work_wires(
+    num_work_wires: int | Callable[..., int], *, require_zeros: bool = True
+) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def require_work_wires(
+    num_work_wires: int | Callable[..., int], qfunc: Callable, require_zeros: bool = True
+) -> DecompositionRule: ...
+def require_work_wires(
+    num_work_wires: int | Callable[..., int],
+    qfunc: Optional[Callable] = None,
+    require_zeros: bool = True,
+) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
+    r"""Declares the number of work wires that the decomposition rule requires
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        performing decompositions is generally more resource-efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~.register_resources`.
+
+    Args:
+        num_work_wires (int or Callable): The number of work wires required to perform this
+            decomposition. This can be an integer or a function that takes the resource params
+            of an operator as input and returns an integer.
+        qfunc (Callable): The quantum function that implements the decomposition.
+
+    Keyword Args:
+        require_zeros (bool): Whether the work wires are required to be in the :math:`|0\rangle` state,
+            defaults to ``True``.
+
+    Returns:
+        DecompositionRule:
+            a data structure that represents a decomposition rule, which contains a PennyLane
+            quantum function representing the decomposition, and its resource function.
+
+    **Example**
+
+    This function can be used as a decorator to register the number of work wires used in a
+    quantum function that implements a decomposition rule.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.decomposition import adjoint_resource_rep
+        from pennylane.allocation import allocate
+
+        @qml.require_work_wires(2, require_zeros=True)
+        @qml.register_resources({
+            qml.CNOT: 9,
+            qml.Hadamard: 3,
+            qml.T: 2,
+            adjoint_resource_rep(qml.T): 2,
+            qml.S: 1,
+            qml.CZ: 1,
+        })
+        def _toffoli_with_work_wire(wires, **__):
+
+            c1 = wires[0]
+            c2 = wires[1]
+            target = wires[2]
+
+            with qml.allocation.allocate(2, require_zeros=True, restored=True) as work_wires:
+
+                aux1 = work_wires[0]
+                aux2 = work_wires[1]
+
+                def _cnots():
+                    qml.CNOT(c1, aux1)
+                    qml.H(aux2)
+                    qml.CNOT(aux2, c2)
+                    qml.CNOT(aux2, c1)
+                    qml.CNOT(c2, aux1)
+                    qml.CNOT(c2, aux1)
+
+                _cnots()
+                qml.adjoint(qml.T(c1))
+                qml.adjoint(qml.T(c2))
+                qml.T(aux1)
+                qml.T(aux2)
+                qml.adjoint(_cnots, lazy=False)()
+
+                qml.S(aux2)
+                qml.CNOT(aux2, target)
+                qml.H(aux2)
+
+                def _cz():
+                    qml.CZ(c1, c2)
+
+                m = qml.measure(aux2, reset=True)
+                qml.cond(m == 1, _cz)
+
+        qml.add_decomps(qml.Toffoli, _toffoli_with_work_wire)
+
+    """
+
+    def _decorator(_qfunc) -> DecompositionRule:
+        if not isinstance(_qfunc, DecompositionRule):
+            _qfunc = DecompositionRule(_qfunc)
+        _qfunc.set_work_wire_requirement(num_work_wires, require_zeros)
+        return _qfunc
+
+    return _decorator(qfunc) if qfunc else _decorator
+
+
+@overload
 def register_condition(condition: Callable) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def register_condition(condition: Callable, qfunc: Callable) -> DecompositionRule: ...
@@ -87,10 +195,10 @@ def register_condition(
     """
 
     def _decorator(_qfunc) -> DecompositionRule:
-        if isinstance(_qfunc, DecompositionRule):
-            _qfunc.set_condition(condition)
-            return _qfunc
-        return DecompositionRule(_qfunc, condition=condition)
+        if not isinstance(_qfunc, DecompositionRule):
+            _qfunc = DecompositionRule(_qfunc)
+        _qfunc.set_condition(condition)
+        return _qfunc
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -258,12 +366,7 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(
-        self,
-        func: Callable,
-        resources: Optional[Callable | dict] = None,
-        condition: Optional[Callable[..., bool]] = None,
-    ):
+    def __init__(self, func: Callable, resources: Optional[Callable | dict] = None):
 
         self._impl = func
 
@@ -281,8 +384,6 @@ class DecompositionRule:
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
-
-        self._condition = condition
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -323,6 +424,11 @@ class DecompositionRule:
             self._compute_resources = resource_fn
         else:
             self._compute_resources = resources
+
+    def set_work_wire_requirement(
+        self, num_work_wires: int | Callable, require_zeros: bool
+    ) -> None:
+        """Sets the work wire requirement for this decomposition rule"""
 
 
 def _auto_wrap(op_type):
