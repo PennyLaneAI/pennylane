@@ -12,9 +12,16 @@
   postprocessing instructions to recover the original measurement.
   [(#7620)](https://github.com/PennyLaneAI/pennylane/pull/7620)
 
+* A combine-global-phase pass has been added to the xDSL Python compiler integration.
+  Note that the current implementation can only combine all the global phase operations at
+  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
+  region.
+  [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
+
 * The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
+
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
