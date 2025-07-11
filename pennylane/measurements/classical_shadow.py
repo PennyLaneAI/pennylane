@@ -340,7 +340,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Args:
             state (Sequence[complex]): quantum state vector given as a rank-N tensor, where
-                each dim has size 2 and N is the number of wires.
+                each dimension has size 2 and N is the number of wires.
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
             shots (int): The number of shots
@@ -352,7 +352,8 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
-            the measured bits and the second represents the recipes used.
+            the measured bits and the second represents the recipes used. ``T`` is the number of shots,
+            and ``n`` is the number of qubits.
         """
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]

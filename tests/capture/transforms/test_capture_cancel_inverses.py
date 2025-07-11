@@ -35,7 +35,7 @@ from pennylane.transforms.optimization.cancel_inverses import (
     cancel_inverses_plxpr_to_plxpr,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 # pylint: disable=too-many-public-methods
