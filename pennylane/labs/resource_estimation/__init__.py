@@ -129,6 +129,8 @@ Templates:
     ~ResourceTwoBitCompare
     ~ResourceIntegerComparator
     ~ResourceRegisterComparator
+    ~ResourceSelectPauliRot
+    ~ResourceQubitUnitary
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -220,6 +222,8 @@ from .templates import (
     ResourceIntegerComparator,
     ResourceSingleQubitCompare,
     ResourceRegisterComparator,
+    ResourceQubitUnitary,
+    ResourceSelectPauliRot,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,

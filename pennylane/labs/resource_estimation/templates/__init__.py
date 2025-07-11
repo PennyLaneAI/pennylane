@@ -23,6 +23,8 @@ from .subroutines import (
     ResourceQROM,
     ResourceSelect,
     ResourceSemiAdder,
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
 )
 from .trotter import (
     ResourceTrotterCDF,
