@@ -49,15 +49,16 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     if pi_vals[2] <= abs_theta < pi_vals[3]:  # 5pi/4 <= |theta| < 7pi/4
         return -sign * 3 * math.pi / 2, ZOmega(b=-sign)
 
+    # TODO: Handle the |theta| == pi/4 case better.
     return 0.0, ZOmega(d=1)  # -pi/4 <= |theta| < pi/4 / 7pi/4 <= |theta| < 8pi/4
 
 
-def rs_decomposition(op, epsilon, *, max_trials=20):
+def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=1000):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
     This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
     phase shift rotation gate with :math:`\epsilon > 0` error. The procedure exits when the approximation error
-    becomes less than :math:`\epsilon`, or when ``max_trials`` attempts have been made for solution search.
+    becomes less than :math:`\epsilon`, or when ``max_search_trials`` attempts have been made for solution search.
     In the latter case, the approximation error could be :math:`\geq \epsilon`.
 
     This algorithm produces a decomposition with :math:`O(3\text{log}_2(1/\epsilon)) + O(\text{log}_2(\text{log}_2(1/\epsilon)))` operations.
@@ -71,8 +72,12 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         epsilon (float): The maximum permissible error.
 
     Keyword Args:
-        max_trials (int): The maximum number of attempts to find a solution while performing the grid search according to the the Algorithm 7.6,
-            in the `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
+        max_search_trials (int): The maximum number of attempts to find a solution
+            while performing the grid search according to the Algorithm 7.6.1, in the
+            `arXiv:1403.2975v3 <https://arxiv.org/abs/1403.2975>`_. Default is ``20``.
+        max_factoring_trials (int): The maximum number of attempts to find a prime factor
+            while performing the factoring to solve the Diophantine equation (Algorithm 7.6.2b)
+            for the solution found in the grid search. Default is ``1000``.
 
     Returns:
         list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
@@ -96,7 +101,7 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         # Get the approximate matrix from the ops
         matrix_rs = qml.prod(*reversed(ops)).matrix()
 
-    When the function is run for a sufficient ``max_trials``, the output gate sequence
+    When the function is run for a sufficient ``max_search_trials``, the output gate sequence
     should implement the same operation approximately, up to a global phase.
 
     >>> qml.math.allclose(op.matrix(), matrix_rs, atol=1e-3)
@@ -115,12 +120,12 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         shift, scale = _domain_correction(angle)
 
         # Get the grid problem for the angle.
-        u_solutions = GridIterator(angle + shift, epsilon, max_trials=max_trials)
+        u_solutions = GridIterator(angle + shift, epsilon, max_trials=max_search_trials)
 
         u, t, k = ZOmega(d=1), ZOmega(), 0
         for u_sol, k_val in u_solutions:
             xi = ZSqrtTwo(2**k_val) - u_sol.norm().to_sqrt_two()
-            if (t_sol := _solve_diophantine(xi)) is not None:
+            if (t_sol := _solve_diophantine(xi, max_trials=max_factoring_trials)) is not None:
                 u, t, k = u_sol * scale, t_sol * scale, k_val
                 break
 
@@ -142,9 +147,10 @@ def rs_decomposition(op, epsilon, *, max_trials=20):
         if queuing:
             _ = [qml.apply(op) for op in new_tape.operations]
 
-    # TODO: Add the global phase information to the decomposition.
+    # TODO: Improve the global phase information to the decomposition.
     interface = qml.math.get_interface(angle)
     phase = 0.0 if isinstance(op, qml.RZ) else angle
+
     phase += qml.math.mod(g_phase, 2) * math.pi
     global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 

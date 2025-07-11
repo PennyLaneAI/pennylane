@@ -14,6 +14,7 @@
 """PennyLane-xDSL transformations API."""
 
 from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inverses_pass
+from .measurements_from_samples import MeasurementsFromSamplesPass, measurements_from_samples_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
 
@@ -22,6 +23,8 @@ __all__ = [
     "CombineGlobalPhasesPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
+    "measurements_from_samples_pass",
+    "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
 ]
