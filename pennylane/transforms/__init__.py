@@ -351,4 +351,4 @@ def __getattr__(name):
 
         return getattr(noise, name)
 
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'") # pragma: no cover
