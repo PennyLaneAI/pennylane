@@ -332,11 +332,6 @@ solver.
   90 8044
   ```
 
-* This release also improves the speed of the `qml.clifford_t_decomposition` transform by
-  implementing caching and changing the default basis set of `qml.ops.sk_decomposition`
-  to `(H, S, T)`, resulting in shorter decomposition sequences.
-  [(#7454)](https://github.com/PennyLaneAI/pennylane/pull/7454)
-
 <h4>OpenQASM 🤝 PennyLane</h4>
 
 PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.com/).
