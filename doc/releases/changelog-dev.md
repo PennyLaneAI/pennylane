@@ -16,6 +16,10 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
+  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -40,6 +44,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Joey Carter,
 Andrija Paurevic,
 Jay Soni,
