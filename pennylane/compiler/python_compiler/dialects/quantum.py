@@ -993,7 +993,26 @@ class NamedObsOp(IRDLOperation):
 
 @irdl_op_definition
 class ProbsOp(IRDLOperation):
-    """Compute computational basis probabilities for the current state"""
+    """Compute computational basis probabilities for the current state.
+
+    The `quantum.probs` operation represents the measurement process of computing probabilities
+    for measurement outcomes in the computational basis for a set of qubits.
+    Marginal probabilities are supported, that is the provided qubits do not need to make up the
+    entire statevector.
+    The result array contains one element for each possible bitstring, i.e. 2^n where n is the
+    number of qubits.
+
+    **Example**
+
+    .. code-block:: mlir
+
+        func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit)
+        {
+            %probs = quantum.probs %q0, %q1 : tensor<4xf64>
+            func.return
+        }
+
+    """
 
     name = "quantum.probs"
 
@@ -1016,7 +1035,20 @@ class ProbsOp(IRDLOperation):
 
 @irdl_op_definition
 class QubitUnitaryOp(IRDLOperation):
-    """Apply an arbitrary fixed unitary matrix"""
+    """Apply an arbitrary fixed unitary matrix.
+
+    Args:
+        matrix (SSAValue): matrix to be applied
+        in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
+        adjoint (UnitAttr | bool | None): Denotes whether the operation is adjointed.
+            If a UnitAttr or True value is passed, then the operation is adjointed.
+        in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+
+    Returns:
+        out_qubits (Sequence[SSAValue]): The output qubits.
+        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+    """
 
     name = "quantum.unitary"
 
@@ -1051,7 +1083,45 @@ class QubitUnitaryOp(IRDLOperation):
 
 @irdl_op_definition
 class SampleOp(IRDLOperation):
-    """Sample eigenvalues from the given observable for the current state"""
+    """Sample eigenvalues from the given observable for the current state.
+
+    The `quantum.sample` operation represents the measurement process of sampling eigenvalues
+    from an observable on the current quantum state.
+
+    Args:
+        obs (SSAValue): an observable that must be defined by an operation in the local scope.
+
+    Results:
+        samples (SSAVAlue): The number of samples to draw is determined by the device shots argument in the device initialization operation in the local scope.
+
+
+    .. note::
+
+        The return value type depends on the type of observable provided. Computational
+        basis samples are returned as a 2D array of shape (shot number, number of qubits), with all
+        other obversables the output is a 1D array of lenth equal to the shot number.
+
+    .. note::
+
+        The in_data field is needed only after bufferization. It is an implementation detail that
+        transform writers are unlikely to be worried about.
+
+    **Example**
+
+    .. code-block:: mlir
+
+        func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit, %shots: i64)
+        {
+            quantum.device shots(%shots) ["rtd_lightning.so", "lightning.qubit", "{my_attr: my_attr_value}"]
+            %obs1 = quantum.compbasis %q0, %q1 : !quantum.obs
+            %samples = quantum.samples %obs1 : tensor<?xf64>
+
+            %obs2 = quantum.pauli %q0[3], %q1[1] : !quantum.obs
+            %samples2 = quantum.samples %obs2 : tensor<?x2xf64>
+
+            func.return
+        }
+    """
 
     name = "quantum.sample"
 
