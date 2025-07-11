@@ -522,7 +522,9 @@ class ParametrizedEvolution(Operation):
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         with jax.ensure_compile_time_eval():
-            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(self.H, dense=self.dense)
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                self.H, dense=self.dense, wire_order=self.wires
+            )
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
