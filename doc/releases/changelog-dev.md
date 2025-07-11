@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the decomposition of `MultiControlledX` with many clean auxiliary wires to leverage
+  `TemporaryAND` gates. This reduces the gate counts upon further decomposition.
+  [(#7859)](https://github.com/PennyLaneAI/pennylane/pull/7859)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -32,3 +36,4 @@ This release contains contributions from (in alphabetical order):
 
 Andrija Paurevic,
 Jay Soni,
+David Wierichs,
