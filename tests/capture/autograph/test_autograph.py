@@ -21,11 +21,6 @@ from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
-
-pytestmark = pytest.mark.capture
-
-jax = pytest.importorskip("jax")
-
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
@@ -35,6 +30,11 @@ from pennylane.capture.autograph.transformer import (
     autograph_source,
     run_autograph,
 )
+
+pytestmark = pytest.mark.capture
+
+jax = pytest.importorskip("jax")
+
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
