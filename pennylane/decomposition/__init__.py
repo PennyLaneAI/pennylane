@@ -59,6 +59,7 @@ Defining Decomposition Rules
 
     ~register_resources
     ~register_condition
+    ~require_work_wires
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
@@ -265,6 +266,7 @@ from .resources import (
 from .decomposition_rule import (
     register_resources,
     register_condition,
+    require_work_wires,
     DecompositionRule,
     add_decomps,
     list_decomps,

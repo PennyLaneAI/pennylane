@@ -26,6 +26,11 @@
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
+<h4>Resource-efficient decompositions 🔎</h4>
+
+* Added support for decomposition rules that dynamically allocate work wires.
+  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
