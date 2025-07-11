@@ -297,7 +297,7 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .add_noise import add_noise
+from ..noise.add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
@@ -306,10 +306,10 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
-from .insert_ops import insert
+from ..noise.insert_ops import insert
 from .combine_global_phases import combine_global_phases
 
-from .mitigate import (
+from ..noise.mitigate import (
     mitigate_with_zne,
     fold_global,
     poly_extrapolate,
