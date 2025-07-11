@@ -385,6 +385,10 @@ class DecompositionRule:
         else:
             self._compute_resources = resources
 
+        self._condition = None
+        self._num_work_wires = 0
+        self._work_wire_require_zeros = True
+
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
 
@@ -409,6 +413,14 @@ class DecompositionRule:
             return True
         return self._condition(*args, **kwargs)
 
+    def work_wire_requirements(self, *args, **kwargs) -> tuple[int, bool]:
+        """Returns the number of work wires required by this rule and whether
+        the work wires must be in the zeroed state"""
+        if isinstance(self._num_work_wires, Callable):
+            num_work_wires = self._num_work_wires(*args, **kwargs)
+            return num_work_wires, self._work_wire_require_zeros
+        return self._num_work_wires, self._work_wire_require_zeros
+
     def set_condition(self, condition: Callable[..., bool]) -> None:
         """Sets the condition for this decomposition rule."""
         self._condition = condition
@@ -429,6 +441,8 @@ class DecompositionRule:
         self, num_work_wires: int | Callable, require_zeros: bool
     ) -> None:
         """Sets the work wire requirement for this decomposition rule"""
+        self._num_work_wires = num_work_wires
+        self._work_wire_require_zeros = require_zeros
 
 
 def _auto_wrap(op_type):
