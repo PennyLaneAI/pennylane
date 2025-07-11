@@ -504,9 +504,9 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: Union[QuantumScript, QuantumScriptBatch],
+        circuits: QuantumScript | QuantumScriptBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))

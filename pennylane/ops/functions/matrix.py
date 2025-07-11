@@ -33,7 +33,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
+def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::

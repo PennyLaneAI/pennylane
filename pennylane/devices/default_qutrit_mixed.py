@@ -386,7 +386,7 @@ class DefaultQutritMixed(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

@@ -203,7 +203,7 @@ class MultiRZ(Operation):
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "MultiRZ":
@@ -894,7 +894,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         """Computes the operator raised to z."""
         phi = self.parameters[0]
         dim, _ = self.hyperparameters["dimension"]
@@ -1231,7 +1231,7 @@ class IsingXX(Operation):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingXX(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
@@ -1395,7 +1395,7 @@ class IsingYY(Operation):
         (phi,) = self.parameters
         return IsingYY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingYY":
@@ -1590,7 +1590,7 @@ class IsingZZ(Operation):
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
@@ -1813,7 +1813,7 @@ class IsingXY(Operation):
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[Operator]:
+    def pow(self, z: int | float) -> list[Operator]:
         return [IsingXY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
@@ -2206,7 +2206,7 @@ class CPhaseShift00(Operation):
     def adjoint(self) -> "CPhaseShift00":
         return CPhaseShift00(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> "CPhaseShift00":
+    def pow(self, z: int | float) -> "CPhaseShift00":
         return [CPhaseShift00(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2419,7 +2419,7 @@ class CPhaseShift01(Operation):
     def adjoint(self) -> "CPhaseShift01":
         return CPhaseShift01(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> "CPhaseShift01":
+    def pow(self, z: int | float) -> "CPhaseShift01":
         return [CPhaseShift01(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2629,7 +2629,7 @@ class CPhaseShift10(Operation):
     def adjoint(self) -> "CPhaseShift10":
         return CPhaseShift10(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         return [CPhaseShift10(self.data[0] * z, wires=self.wires)]
 
     @property

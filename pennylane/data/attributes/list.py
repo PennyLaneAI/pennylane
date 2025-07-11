@@ -60,7 +60,7 @@ class DatasetList(
         elements copied.."""
         return self.copy_value()
 
-    def insert(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
+    def insert(self, index: int, value: T | DatasetAttribute[HDF5Any, T, T]):
         """Implements the insert() method."""
         if index < 0:
             index = len(self) + index
@@ -103,7 +103,7 @@ class DatasetList(
     def __getitem__(self, index: int) -> T:
         pass
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: int | slice):
         if isinstance(index, slice):
             return [self[i] for i in range(len(self))[index]]
 
@@ -115,7 +115,7 @@ class DatasetList(
 
         return self._mapper[str(index)].get_value()
 
-    def __setitem__(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
+    def __setitem__(self, index: int, value: T | DatasetAttribute[HDF5Any, T, T]):
         if index < 0:
             index = len(self) + index
         if not 0 <= index < len(self):

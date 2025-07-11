@@ -318,7 +318,7 @@ class SparseHamiltonian(Observable):
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
 
-    def __mul__(self, value: Union[int, float]) -> "qml.SparseHamiltonian":
+    def __mul__(self, value: int | float) -> "qml.SparseHamiltonian":
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
         if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
@@ -496,7 +496,7 @@ class Projector(Observable):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 

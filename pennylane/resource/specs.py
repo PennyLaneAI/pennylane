@@ -24,8 +24,8 @@ def _get_absolute_import_path(fn):
 
 
 def specs(
-    qnode, level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient"
-) -> Callable[..., Union[list[dict[str, Any]], dict[str, Any]]]:
+    qnode, level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient"
+) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -163,7 +163,7 @@ def specs(
         2
     """
 
-    def specs_qnode(*args, **kwargs) -> Union[list[dict], dict]:
+    def specs_qnode(*args, **kwargs) -> list[dict] | dict:
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:

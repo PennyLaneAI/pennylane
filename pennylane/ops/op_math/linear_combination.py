@@ -398,7 +398,7 @@ class LinearCombination(Sum):
 
         return NotImplemented
 
-    def __add__(self, H: Union[numbers.Number, Operator]) -> Operator:
+    def __add__(self, H: numbers.Number | Operator) -> Operator:
         r"""The addition operation between a LinearCombination and an Operator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
@@ -432,7 +432,7 @@ class LinearCombination(Sum):
 
     __radd__ = __add__
 
-    def __mul__(self, a: Union[int, float, complex]) -> "LinearCombination":
+    def __mul__(self, a: int | float | complex) -> "LinearCombination":
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
@@ -443,9 +443,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def queue(
-        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
-    ):
+    def queue(self, context: qml.QueuingManager | qml.queuing.AnnotatedQueue = qml.QueuingManager):
         """Queues a ``qml.ops.LinearCombination`` instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:

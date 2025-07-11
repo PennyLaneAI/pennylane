@@ -217,7 +217,7 @@ class Hadamard(Observable, Operation):
         # H = RZ(\pi) RY(\pi/2) RZ(0)
         return [np.pi, np.pi / 2, 0.0]
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         return super().pow(z % 2)
 
 
@@ -477,7 +477,7 @@ class PauliX(Observable, Operation):
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SX(wires=self.wires)]
@@ -762,7 +762,7 @@ class PauliY(Observable, Operation):
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
 
-    def pow(self, z: Union[float, int]) -> list[qml.operation.Operator]:
+    def pow(self, z: float | int) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
     def _controlled(self, wire: WiresLike) -> "qml.CY":
@@ -1242,7 +1242,7 @@ class S(Operation):
         """
         return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         pow_map = {
             0: lambda op: [],
@@ -1411,7 +1411,7 @@ class T(Operation):
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
@@ -1575,7 +1575,7 @@ class SX(Operation):
             qml.GlobalPhase(-np.pi / 4, wires=wires),
         ]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         if z_mod4 == 2:
             return [X(wires=self.wires)]
@@ -1741,7 +1741,7 @@ class SWAP(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
     def adjoint(self) -> "SWAP":
@@ -1947,7 +1947,7 @@ class ECR(Operation):
     def adjoint(self) -> "ECR":
         return ECR(wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
 
@@ -2098,7 +2098,7 @@ class ISWAP(Operation):
             Hadamard(wires=wires[1]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         if abs(z_mod4 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
@@ -2290,7 +2290,7 @@ class SISWAP(Operation):
             SX(wires=wires[1]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod8 = z % 8
         if abs(z_mod8 - 2) < 1e-6:
             return [ISWAP(wires=self.wires)]

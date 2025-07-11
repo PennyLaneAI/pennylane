@@ -119,7 +119,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -289,7 +289,7 @@ def sample_state(
 
 
 def measure_with_samples(
-    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,

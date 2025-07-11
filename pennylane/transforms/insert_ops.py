@@ -54,9 +54,9 @@ def _check_position(position):
 @transform
 def insert(
     tape: QuantumScript,
-    op: Union[callable, Type[Operation]],
-    op_args: Union[tuple, float],
-    position: Union[str, list, Type[Operation]] = "all",
+    op: callable | Type[Operation],
+    op_args: tuple | float,
+    position: str | list | Type[Operation] = "all",
     before: bool = False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.

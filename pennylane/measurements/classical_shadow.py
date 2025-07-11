@@ -641,7 +641,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def __init__(
         self,
-        H: Union[Operator, Sequence],
+        H: Operator | Sequence,
         seed: Optional[int] = None,
         k: int = 1,
         id: Optional[str] = None,
@@ -655,7 +655,7 @@ class ShadowExpvalMP(MeasurementTransform):
     @classmethod
     def _primitive_bind_call(
         cls,
-        H: Union[Operator, Sequence],
+        H: Operator | Sequence,
         seed: Optional[int] = None,
         k: int = 1,
         **kwargs,

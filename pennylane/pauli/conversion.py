@@ -218,7 +218,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> Union[LinearCombination, PauliSentence]:
+) -> LinearCombination | PauliSentence:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:

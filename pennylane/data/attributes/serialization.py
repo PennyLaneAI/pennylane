@@ -39,7 +39,7 @@ def pytree_structure_dump(
 
 def pytree_structure_dump(
     root: PyTreeStructure, *, indent: Optional[int] = None, decode: bool = False
-) -> Union[bytes, str]:
+) -> bytes | str:
     """Convert Pytree structure ``root`` into JSON.
 
     A non-leaf structure is represented as a 3-element list. The first element will
@@ -82,7 +82,7 @@ def pytree_structure_dump(
     return data
 
 
-def pytree_structure_load(data: Union[str, bytes, bytearray]) -> PyTreeStructure:
+def pytree_structure_load(data: str | bytes | bytearray) -> PyTreeStructure:
     """Load a previously serialized Pytree structure.
 
     >>> from pennylane.pytrees.serialization import pytree_structure_dump

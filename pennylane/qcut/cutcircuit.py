@@ -38,7 +38,7 @@ def _cut_circuit_expand(
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
@@ -71,7 +71,7 @@ def _cut_circuit_expand(
 @partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
     tape: QuantumScript,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,

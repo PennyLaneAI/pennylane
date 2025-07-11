@@ -45,7 +45,7 @@ def draw(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -341,7 +341,7 @@ def _draw_qnode(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -386,7 +386,7 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode: Union[QNode, Callable],
+    qnode: QNode | Callable,
     wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
     decimals: Optional[int] = None,
@@ -394,7 +394,7 @@ def draw_mpl(
     *,
     max_length: Optional[int] = None,
     fig=None,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib

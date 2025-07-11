@@ -23,7 +23,7 @@ import pennylane as qml
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
+    wires: qml.wires.Wires | Iterable,
     prep_operation: qml.operation.StatePrepBase = None,
     like: str = None,
 ):

@@ -66,7 +66,7 @@ class DatasetDict(
 
         return self._mapper[__key].get_value()
 
-    def __setitem__(self, __key: str, __value: Union[T, DatasetAttribute[HDF5Any, T, T]]) -> None:
+    def __setitem__(self, __key: str, __value: T | DatasetAttribute[HDF5Any, T, T]) -> None:
         self._check_key(__key)
 
         if __key in self:

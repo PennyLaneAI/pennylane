@@ -292,7 +292,7 @@ class Shots:
                 lower_bound = upper_bound
 
 
-ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
+ShotsLike = Union[Shots, None, int, Sequence[int | tuple[int, int]]]
 
 
 def add_shots(s1: Shots, s2: Shots) -> Shots:

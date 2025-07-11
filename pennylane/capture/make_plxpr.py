@@ -27,9 +27,7 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-def make_plxpr(
-    func: Callable, static_argnums: Union[int, Sequence[int]] = (), autograph=True, **kwargs
-):
+def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autograph=True, **kwargs):
     r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
     the function with the given args.
 

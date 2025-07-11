@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 
 
 def jordan_wigner(
-    fermi_operator: Union[FermiWord, FermiSentence],
+    fermi_operator: FermiWord | FermiSentence,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Union[Operator, PauliSentence]:
+) -> Operator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -161,12 +161,12 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
 
 
 def parity_transform(
-    fermi_operator: Union[FermiWord, FermiSentence],
+    fermi_operator: FermiWord | FermiSentence,
     n: int,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Union[Operator, PauliSentence]:
+) -> Operator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
 
     .. note::
@@ -308,12 +308,12 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
 
 
 def bravyi_kitaev(
-    fermi_operator: Union[FermiWord, FermiSentence],
+    fermi_operator: FermiWord | FermiSentence,
     n: int,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
-) -> Union[Operator, PauliSentence]:
+) -> Operator | PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Bravyi-Kitaev mapping.
 
     .. note::

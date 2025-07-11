@@ -29,7 +29,7 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher
 def _batch_postprocessing(
     results: ResultBatch,
     individual_fns: list[PostprocessingFn],
-    slices: Union[list[slice], list[int]],
+    slices: list[slice] | list[int],
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 

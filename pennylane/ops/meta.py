@@ -228,7 +228,7 @@ class Snapshot(Operation):
         self,
         tag: Optional[str] = None,
         measurement=None,
-        shots: Union[Literal["workflow"], None, int, Sequence[int]] = "workflow",
+        shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
     ):
         if tag and not isinstance(tag, str):
             raise ValueError("Snapshot tags can only be of type 'str'")

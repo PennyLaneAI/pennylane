@@ -179,12 +179,12 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
 
-    def supports_operation(self, operation: Union[str, Operator]) -> bool:
+    def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
         operation_name = operation if isinstance(operation, str) else operation.name
         return bool(_get_supported_base_op(operation_name, self.operations))
 
-    def supports_observable(self, observable: Union[str, Operator]) -> bool:
+    def supports_observable(self, observable: str | Operator) -> bool:
         """Checks if the given observable is supported by name."""
         observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))

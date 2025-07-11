@@ -17,7 +17,7 @@ class lazy_module:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        module_name_or_module: Union[str, ModuleType],
+        module_name_or_module: str | ModuleType,
         import_exc: Optional[Exception] = None,
         post_import_cb: Optional[Callable[[ModuleType], None]] = None,
     ):

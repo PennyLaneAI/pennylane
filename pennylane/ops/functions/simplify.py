@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from pennylane.workflow import QNode
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
+def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Callable):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 

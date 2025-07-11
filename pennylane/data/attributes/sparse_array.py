@@ -42,7 +42,7 @@ SparseMatrix = Union[
     bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
 ]
 
-SparseT = TypeVar("SparseT", bound=Union[SparseArray, SparseMatrix])
+SparseT = TypeVar("SparseT", bound=SparseArray | SparseMatrix)
 
 
 class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, SparseT]):
@@ -64,7 +64,7 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
     @classmethod
     def consumes_types(
         cls,
-    ) -> tuple[Type[Union[SparseArray, SparseMatrix]], ...]:
+    ) -> tuple[Type[SparseArray | SparseMatrix], ...]:
         return (
             bsr_array,
             coo_array,
@@ -122,6 +122,6 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
 
     @classmethod
     @lru_cache(1)
-    def _supported_sparse_dict(cls) -> dict[str, Type[Union[SparseArray, SparseMatrix]]]:
+    def _supported_sparse_dict(cls) -> dict[str, Type[SparseArray | SparseMatrix]]:
         """Returns a dict mapping sparse array class names to the class."""
         return {op.__name__: op for op in cls.consumes_types()}

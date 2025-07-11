@@ -543,7 +543,7 @@ class QubitDevice(Device):
 
     def _measure(
         self,
-        measurement: Union[SampleMeasurement, StateMeasurement],
+        measurement: SampleMeasurement | StateMeasurement,
         shot_range=None,
         bin_size=None,
     ):

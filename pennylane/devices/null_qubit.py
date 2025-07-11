@@ -118,7 +118,7 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
 def _(
-    mp: Union[StateMP, ProbabilityMP],
+    mp: StateMP | ProbabilityMP,
     num_device_wires: int,
     shots: Optional[int],
     batch_size,
@@ -385,7 +385,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",

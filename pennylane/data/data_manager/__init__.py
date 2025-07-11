@@ -243,7 +243,7 @@ def load(  # pylint: disable=too-many-arguments
     num_threads: int = 50,
     block_size: int = 8388608,
     progress_bar: Optional[bool] = None,
-    **params: Union[ParamArg, str, list[str]],
+    **params: ParamArg | str | list[str],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see

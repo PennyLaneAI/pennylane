@@ -48,6 +48,6 @@ class QmlPrimitive(Primitive):
         return self._prim_type.value
 
     @prim_type.setter
-    def prim_type(self, value: Union[str, PrimitiveType]):
+    def prim_type(self, value: str | PrimitiveType):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)

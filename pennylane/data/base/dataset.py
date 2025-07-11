@@ -50,7 +50,7 @@ class Field(Generic[T]):
 
 
 def field(
-    attribute_type: Union[Type[DatasetAttribute[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
+    attribute_type: Type[DatasetAttribute[HDF5Any, T, Any]] | Literal[UNSET] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
     **kwargs,
@@ -195,7 +195,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     @classmethod
     def open(
         cls,
-        filepath: Union[str, Path],
+        filepath: str | Path,
         mode: Literal["w", "w-", "a", "r", "copy"] = "r",
     ) -> "Dataset":
         """Open existing dataset or create a new one at ``filepath``.
@@ -342,7 +342,7 @@ class Dataset(MapperMixin, _DatasetTransform):
             if "identifiers" not in self.info:
                 self.info["identifiers"] = identifiers or self.__identifiers__
 
-    def __setattr__(self, __name: str, __value: Union[Any, DatasetAttribute]) -> None:
+    def __setattr__(self, __name: str, __value: Any | DatasetAttribute) -> None:
         if __name.startswith("_") or __name in type(self).__dict__:
             object.__setattr__(self, __name, __value)
             return

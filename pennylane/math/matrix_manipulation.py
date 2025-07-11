@@ -26,7 +26,7 @@ from pennylane import math
 
 
 # pylint: disable=too-many-branches
-def expand_matrix(mat, wires: Union[Sequence, int], wire_order=None, sparse_format="csr"):
+def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="csr"):
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 

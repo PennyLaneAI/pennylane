@@ -263,7 +263,7 @@ def _get_plxpr_defer_measurements():
             self,
             primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
-            invals: Sequence[Union[MeasurementValue, Number]],
+            invals: Sequence[MeasurementValue | Number],
             params: dict,
         ) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing of the

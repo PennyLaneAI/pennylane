@@ -24,7 +24,7 @@ from .interface_utils import get_interface
 
 
 # pylint: disable=import-outside-toplevel
-def grad(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
+def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
     Args:
@@ -152,7 +152,7 @@ def _tensorflow_jac(f, argnums, args, kwargs):
 
 
 # pylint: disable=import-outside-toplevel
-def jacobian(f: Callable, argnums: Union[Sequence[int], int] = 0) -> Callable:
+def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the Jacobian in a jax-like manner for any interface.
 
     Args:

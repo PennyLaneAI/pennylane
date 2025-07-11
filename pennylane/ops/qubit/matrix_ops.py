@@ -139,7 +139,7 @@ class QubitUnitary(Operation):
 
     def __init__(
         self,
-        U: Union[TensorLike, csr_matrix],
+        U: TensorLike | csr_matrix,
         wires: WiresLike,
         id: Optional[str] = None,
         unitary_check: bool = False,
@@ -314,7 +314,7 @@ class QubitUnitary(Operation):
         # Note: it is necessary to explicitly cast back to csr, or it will become csc.
         return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         if self.has_sparse_matrix:
             mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)

@@ -57,7 +57,7 @@ def _cut_circuit_mc_expand(
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
@@ -75,7 +75,7 @@ def _cut_circuit_mc_expand(
 def cut_circuit_mc(
     tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,

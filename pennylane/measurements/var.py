@@ -27,7 +27,7 @@ from .mid_measure import MeasurementValue
 from .sample import SampleMP
 
 
-def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
+def var(op: Operator | MeasurementValue) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:

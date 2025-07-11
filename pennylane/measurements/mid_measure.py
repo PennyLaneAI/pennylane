@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess
 
 
-def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Optional[int] = None):
+def measure(wires: Hashable | Wires, reset: bool = False, postselect: Optional[int] = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -218,7 +218,7 @@ def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Opti
 
 
 def _measure_impl(
-    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+    wires: Hashable | Wires, reset: Optional[bool] = False, postselect: Optional[int] = None
 ):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)

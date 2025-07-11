@@ -439,9 +439,9 @@ class HardwarePulse:
             acts on
     """
 
-    amplitude: Union[float, Callable]
-    phase: Union[float, Callable]
-    frequency: Union[float, Callable]
+    amplitude: float | Callable
+    phase: float | Callable
+    frequency: float | Callable
     wires: list[Wires]
 
     def __post_init__(self):

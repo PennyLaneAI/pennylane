@@ -595,7 +595,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:

@@ -74,7 +74,7 @@ def _create_parametrized_mid_measure_primitive():
 
 
 def measure_arbitrary_basis(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     angle: float,
     plane: str,
     reset: bool = False,
@@ -187,7 +187,7 @@ def measure_arbitrary_basis(
 
 
 def measure_x(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
     postselect: Optional[int] = None,
 ):
@@ -236,7 +236,7 @@ def measure_x(
 
 
 def measure_y(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
     postselect: Optional[int] = None,
 ):
@@ -285,7 +285,7 @@ def measure_y(
 
 
 def measure_z(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
     postselect: Optional[int] = None,
 ):
@@ -318,7 +318,7 @@ def measure_z(
 
 
 def _measure_impl(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     measurement_class=MidMeasureMP,
     **kwargs,
 ):

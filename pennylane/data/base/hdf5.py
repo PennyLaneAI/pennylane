@@ -30,7 +30,7 @@ HDF5Any = Union[HDF5Array, HDF5Group]
 HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
 
 
-def open_group(path: Union[Path, str], mode: Literal["r", "w", "w-", "a"] = "r") -> HDF5Group:
+def open_group(path: Path | str, mode: Literal["r", "w", "w-", "a"] = "r") -> HDF5Group:
     """Creates or opens an HDF5 file at ``path`` and returns the root HDF5 group.
 
     Args:

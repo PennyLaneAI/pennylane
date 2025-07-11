@@ -144,7 +144,7 @@ class RX(Operation):
     def adjoint(self) -> "RX":
         return RX(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRX":
@@ -312,7 +312,7 @@ class RY(Operation):
     def adjoint(self) -> "RY":
         return RY(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRY":
@@ -515,7 +515,7 @@ class RZ(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRZ":
@@ -746,7 +746,7 @@ class PhaseShift(Operation):
     def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.ControlledPhaseShift":
@@ -1181,7 +1181,7 @@ class U1(Operation):
     def adjoint(self) -> "U1":
         return U1(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [U1(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "U1":

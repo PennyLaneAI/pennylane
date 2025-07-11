@@ -79,7 +79,7 @@ def Kpq(p, q, wire=None):
     return np.diag(np.concatenate([np.ones(p), -np.ones(q), np.ones(p), -np.ones(q)]))
 
 
-def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+def A(op: np.ndarray | PauliSentence | Operator, wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type A on
     :math:`\mathfrak{su}(n)\oplus \mathfrak{su}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -103,7 +103,7 @@ def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
     return DIII(op, wire)
 
 
-def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
+def AI(op: np.ndarray | PauliSentence | Operator) -> bool:
     r"""Canonical Cartan decomposition of type AI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -161,7 +161,7 @@ def _AI_op(op: Operator) -> bool:
     return _AI_ps(op.pauli_rep)
 
 
-def AII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+def AII(op: np.ndarray | PauliSentence | Operator, wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type AII, given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
 
     .. note:: Note that we work with Hermitian
@@ -226,7 +226,7 @@ def _AII_op(op: Operator, wire: Optional[int] = None) -> bool:
 
 
 def AIII(
-    op: Union[np.ndarray, PauliSentence, Operator],
+    op: np.ndarray | PauliSentence | Operator,
     p: int = None,
     q: int = None,
     wire: Optional[int] = None,
@@ -309,7 +309,7 @@ def _AIII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = N
     return _AIII_ps(op.pauli_rep, p, q, wire)
 
 
-def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+def BD(op: np.ndarray | PauliSentence | Operator, wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type BD on
     :math:`\mathfrak{so}(n)\oplus \mathfrak{so}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -334,7 +334,7 @@ def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = Non
 
 
 def BDI(
-    op: Union[np.ndarray, PauliSentence, Operator],
+    op: np.ndarray | PauliSentence | Operator,
     p: int = None,
     q: int = None,
     wire: Optional[int] = None,
@@ -368,7 +368,7 @@ def BDI(
     return AIII(op, p, q, wire)
 
 
-def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+def DIII(op: np.ndarray | PauliSentence | Operator, wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
 
     Args:
@@ -423,7 +423,7 @@ def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
     return _DIII_ps(op.pauli_rep, wire)
 
 
-def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+def C(op: np.ndarray | PauliSentence | Operator, wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type C on
     :math:`\mathfrak{sp}(n)\oplus \mathfrak{sp}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -447,7 +447,7 @@ def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None
     return DIII(op, wire)
 
 
-def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
+def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
     r"""Canonical Cartan decomposition of type CI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -466,7 +466,7 @@ def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
 
 
 def CII(
-    op: Union[np.ndarray, PauliSentence, Operator],
+    op: np.ndarray | PauliSentence | Operator,
     p: int = None,
     q: int = None,
     wire: Optional[int] = None,
@@ -554,7 +554,7 @@ def _CII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = No
     return _CII_ps(op.pauli_rep, p, q, wire)
 
 
-def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
+def even_odd_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
     r"""The Even-Odd involution.
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
@@ -630,7 +630,7 @@ def _even_odd_involution_op(op: Operator):
 
 
 # dispatch to different input types
-def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
+def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan
     involution function. It is of type AI.
 

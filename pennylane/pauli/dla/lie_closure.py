@@ -27,14 +27,14 @@ from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
+) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
     .. warning:: :func:`~lie_closure` has moved to the :mod:`pennylane.liealg` module and can be called from there via ``qml.liealg.lie_closure`` or from the top level via ``qml.lie_closure``.

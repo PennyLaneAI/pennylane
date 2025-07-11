@@ -105,7 +105,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
 
 def qsvt(
-    A: Union[Operator, TensorLike],
+    A: Operator | TensorLike,
     poly: TensorLike,
     encoding_wires: Sequence,
     block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,

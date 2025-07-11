@@ -332,7 +332,7 @@ class TorchLayer(Module):
         self,
         qnode: QNode,
         weight_shapes: dict,
-        init_method: Union[Callable, dict[str, Union[Callable, Any]]] = None,
+        init_method: Callable | dict[str, Callable | Any] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
     ):
@@ -485,7 +485,7 @@ class TorchLayer(Module):
     def _init_weights(
         self,
         weight_shapes: dict[str, tuple],
-        init_method: Union[Callable, dict[str, Union[Callable, Any]], None],
+        init_method: Callable | dict[str, Callable | Any] | None,
     ):
         r"""Initialize and register the weights with the given init_method. If init_method is not
         specified, weights are randomly initialized from the uniform distribution on the interval

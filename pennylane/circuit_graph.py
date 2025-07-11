@@ -97,8 +97,8 @@ class CircuitGraph:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        ops: list[Union[Operator, MeasurementProcess]],
-        obs: list[Union[MeasurementProcess, Operator]],
+        ops: list[Operator | MeasurementProcess],
+        obs: list[MeasurementProcess | Operator],
         wires: Wires,
         par_info: Optional[list[dict]] = None,
         trainable_params: Optional[set[int]] = None,

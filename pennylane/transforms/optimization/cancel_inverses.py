@@ -32,7 +32,7 @@ from pennylane.wires import Wires
 from .optimization_utils import find_next_gate
 
 
-def _check_equality(items1: Union[TensorLike, Wires], items2: Union[TensorLike, Wires]) -> bool:
+def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> bool:
     """Checks if two data objects are equal, considering abstractness."""
 
     for d1, d2 in zip(items1, items2, strict=True):

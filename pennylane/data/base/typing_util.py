@@ -51,7 +51,7 @@ class UnsetType(Enum):
 UNSET = UnsetType.UNSET
 
 
-def get_type(type_or_obj: Union[object, Type]) -> Type:
+def get_type(type_or_obj: object | Type) -> Type:
     """Given an object or an object type, returns the underlying class.
 
     Examples:
@@ -77,7 +77,7 @@ def get_type(type_or_obj: Union[object, Type]) -> Type:
 
 
 @lru_cache
-def get_type_str(cls: Union[type, str, None]) -> str:  # pylint: disable=too-many-return-statements
+def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-return-statements
     """Return a string representing the type ``cls``.
 
     If cls is a built-in type, such as 'str', returns the unqualified

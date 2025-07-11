@@ -256,7 +256,7 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
     def label(
@@ -722,7 +722,7 @@ class DoubleExcitation(Operation):
             ],
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
@@ -1488,7 +1488,7 @@ class FermionicSWAP(Operation):
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
 
     def label(

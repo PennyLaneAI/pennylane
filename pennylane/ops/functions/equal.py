@@ -42,8 +42,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
-    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op1: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op2: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -158,8 +158,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript],
-    op2: Union[Operator, MeasurementProcess, QuantumScript],
+    op1: Operator | MeasurementProcess | QuantumScript,
+    op2: Operator | MeasurementProcess | QuantumScript,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -221,7 +221,7 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:
+) -> bool | str:
     if not isinstance(op2, type(op1)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
@@ -243,7 +243,7 @@ def _equal_dispatch(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:
+) -> bool | str:
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 

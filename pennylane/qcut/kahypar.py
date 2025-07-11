@@ -33,12 +33,12 @@ def kahypar_cut(
     graph: MultiDiGraph,
     num_fragments: int,
     imbalance: int = None,
-    edge_weights: list[Union[int, float]] = None,
-    node_weights: list[Union[int, float]] = None,
-    fragment_weights: list[Union[int, float]] = None,
+    edge_weights: list[int | float] = None,
+    node_weights: list[int | float] = None,
+    fragment_weights: list[int | float] = None,
     hyperwire_weight: int = 1,
     seed: int = None,
-    config_path: Union[str, Path] = None,
+    config_path: str | Path = None,
     trial: int = None,
     verbose: bool = False,
 ) -> list[tuple[Operation, Any]]:
@@ -169,7 +169,7 @@ def _graph_to_hmetis(
     graph: MultiDiGraph,
     hyperwire_weight: int = 0,
     edge_weights: Sequence[int] = None,
-) -> tuple[list[int], list[int], list[Union[int, float]]]:
+) -> tuple[list[int], list[int], list[int | float]]:
     """Converts a ``MultiDiGraph`` into the
     `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
     conforming to KaHyPar's calling signature.

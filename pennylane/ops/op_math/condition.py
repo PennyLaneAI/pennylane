@@ -312,7 +312,7 @@ class CondCallable:
 
 
 def cond(
-    condition: Union[MeasurementValue, bool],
+    condition: MeasurementValue | bool,
     true_fn: Optional[Callable] = None,
     false_fn: Optional[Callable] = None,
     elifs: Sequence = (),

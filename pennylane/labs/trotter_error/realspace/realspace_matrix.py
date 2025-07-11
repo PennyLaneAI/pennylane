@@ -147,7 +147,7 @@ class RealspaceMatrix(Fragment):
 
     def matrix(
         self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
-    ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
+    ) -> np.ndarray | sp.sparse.csr_matrix:
         """Return a matrix representation of the operator.
 
         Args:

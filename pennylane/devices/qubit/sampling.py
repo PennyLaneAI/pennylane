@@ -42,7 +42,7 @@ def jax_random_split(prng_key, num: int = 2):
     return split(prng_key, num=num)
 
 
-def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+def _group_measurements(mps: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP]):
     """
     Group the measurements such that:
       - measurements with pauli observables pairwise-commute in each group
@@ -204,7 +204,7 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -345,7 +345,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,

@@ -40,9 +40,9 @@ def ad(wire, d=2):
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    qubit_freq: Union[float, list],
+    qubit_freq: float | list,
     connections: list,
-    coupling: Union[float, list],
+    coupling: float | list,
     wires: list,
     anharmonicity=None,
     d=2,
@@ -227,9 +227,9 @@ class TransmonSettings:
     """
 
     connections: list
-    qubit_freq: Union[float, Callable]
-    coupling: Union[list, TensorLike, Callable]
-    anharmonicity: Union[float, Callable]
+    qubit_freq: float | Callable
+    coupling: list | TensorLike | Callable
+    anharmonicity: float | Callable
 
     def __eq__(self, other):
         return (

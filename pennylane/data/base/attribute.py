@@ -81,7 +81,7 @@ class AttributeInfo(MutableMapping):
         return self.get("py_type")
 
     @py_type.setter
-    def py_type(self, type_: Union[str, Type]):
+    def py_type(self, type_: str | Type):
         self["py_type"] = get_type_str(type_)
 
     @property
@@ -174,7 +174,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     @overload
     def __init__(
         self,
-        value: Union[InitValueType, Literal[UNSET]] = UNSET,
+        value: InitValueType | Literal[UNSET] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
         parent_and_key: Optional[tuple[HDF5Group, str]] = None,
@@ -201,7 +201,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
     def __init__(
         self,
-        value: Union[InitValueType, Literal[UNSET]] = UNSET,
+        value: InitValueType | Literal[UNSET] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
         bind: Optional[HDF5] = None,
@@ -243,7 +243,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
     def _value_init(
         self,
-        value: Union[InitValueType, Literal[UNSET]],
+        value: InitValueType | Literal[UNSET],
         info: Optional[AttributeInfo],
         parent_and_key: Optional[tuple[HDF5Group, str]],
     ):
@@ -275,7 +275,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         return self._bind
 
     @classmethod
-    def default_value(cls) -> Union[InitValueType, Literal[UNSET]]:
+    def default_value(cls) -> InitValueType | Literal[UNSET]:
         """Returns a valid default value for this type, or ``UNSET`` if this type
         must be initialized with a value."""
         return UNSET
@@ -445,7 +445,7 @@ def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
 
 
 def match_obj_type(
-    type_or_obj: Union[ValueType, Type[ValueType]],
+    type_or_obj: ValueType | Type[ValueType],
 ) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``

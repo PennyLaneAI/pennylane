@@ -397,7 +397,7 @@ def _get_measurements(
 def _qcut_expand_fn(
     tape: QuantumScript,
     max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
 ):
     """Expansion function for circuit cutting.
 

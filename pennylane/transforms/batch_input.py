@@ -28,7 +28,7 @@ from pennylane.typing import PostprocessingFn
 @transform
 def batch_input(
     tape: QuantumScript,
-    argnum: Union[Sequence[int], int],
+    argnum: Sequence[int] | int,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Transform a circuit to support an initial batch dimension for gate inputs.

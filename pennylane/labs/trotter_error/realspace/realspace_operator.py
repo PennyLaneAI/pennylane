@@ -64,7 +64,7 @@ class RealspaceOperator:
     """
 
     def __init__(
-        self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+        self, modes: int, ops: Sequence[str], coeffs: RealspaceCoeffs | np.ndarray | float
     ) -> RealspaceOperator:
 
         if coeffs.shape != (modes,) * len(ops):
@@ -78,7 +78,7 @@ class RealspaceOperator:
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.csr_array]:
+    ) -> np.ndarray | sp.sparse.csr_array:
         """Return a matrix representation of the operator.
 
         Args:
@@ -384,7 +384,7 @@ class RealspaceSum(Fragment):
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.cs_array]:
+    ) -> np.ndarray | sp.sparse.cs_array:
         """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:

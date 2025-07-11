@@ -27,7 +27,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Identity, LinearCombination, X, Y, Z
 
 
-def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tuple, int]:
+def edges_to_wires(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
@@ -81,7 +81,7 @@ def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tup
     )
 
 
-def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int, tuple]:
+def wires_to_edges(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> dict[int, tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
@@ -135,7 +135,7 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int
     )
 
 
-def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the cycle-mixer Hamiltonian.
 
     Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
@@ -231,7 +231,7 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) -> Operator:
+def _partial_cycle_mixer(graph: nx.DiGraph | rx.PyDiGraph, edge: tuple) -> Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
     For an edge :math:`(i, j)`, this function returns:
@@ -290,7 +290,7 @@ def _partial_cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple) ->
     return LinearCombination(coeffs, ops)
 
 
-def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Operator:
+def loss_hamiltonian(graph: nx.Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the loss Hamiltonian for the maximum-weighted cycle problem.
 
     We consider the problem of selecting a cycle from a graph that has the greatest product of edge
@@ -446,7 +446,7 @@ def _square_hamiltonian_terms(
     return squared_coeffs, squared_ops
 
 
-def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def out_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `out flow constraint <https://1qbit.com/whitepaper/arbitrage/>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -498,7 +498,7 @@ def out_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
+def net_flow_constraint(graph: nx.DiGraph | rx.PyDiGraph) -> Operator:
     r"""Calculates the `net flow constraint <https://doi.org/10.1080/0020739X.2010.526248>`__
     Hamiltonian for the maximum-weighted cycle problem.
 
@@ -551,9 +551,7 @@ def net_flow_constraint(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Operator:
     return hamiltonian
 
 
-def _inner_out_flow_constraint_hamiltonian(
-    graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Operator:
+def _inner_out_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the inner portion of the Hamiltonian in :func:`out_flow_constraint`.
     For a given :math:`i`, this function returns:
 
@@ -620,9 +618,7 @@ def _inner_out_flow_constraint_hamiltonian(
     return H
 
 
-def _inner_net_flow_constraint_hamiltonian(
-    graph: Union[nx.DiGraph, rx.PyDiGraph], node: int
-) -> Operator:
+def _inner_net_flow_constraint_hamiltonian(graph: nx.DiGraph | rx.PyDiGraph, node: int) -> Operator:
     r"""Calculates the squared inner portion of the Hamiltonian in :func:`net_flow_constraint`.
 
 

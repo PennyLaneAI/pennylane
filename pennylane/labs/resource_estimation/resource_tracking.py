@@ -75,13 +75,13 @@ resource_config = {
 
 
 def estimate_resources(
-    obj: Union[ResourceOperator, Callable, Resources, List],
+    obj: ResourceOperator | Callable | Resources | List,
     gate_set: Set = DefaultGateSet,
     config: Dict = resource_config,
-    work_wires: Union[int, Dict] = 0,
+    work_wires: int | Dict = 0,
     tight_budget: bool = False,
-    single_qubit_rotation_error: Union[float, None] = None,
-) -> Union[Resources, Callable]:
+    single_qubit_rotation_error: float | None = None,
+) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
 
@@ -150,12 +150,12 @@ def estimate_resources(
 
 @singledispatch
 def _estimate_resources(
-    obj: Union[ResourceOperator, Callable, Resources, List],
+    obj: ResourceOperator | Callable | Resources | List,
     gate_set: Set = DefaultGateSet,
     config: Dict = resource_config,
-    work_wires: Union[int, Dict] = 0,
+    work_wires: int | Dict = 0,
     tight_budget: bool = False,
-) -> Union[Resources, Callable]:
+) -> Resources | Callable:
     r"""Raise error if there is no implementation registered for the object type."""
 
     raise TypeError(
@@ -367,7 +367,7 @@ def _update_config_single_qubit_rot_error(config, error):
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
-    ops: Iterable[Union[Operation, ResourceOperator]],
+    ops: Iterable[Operation | ResourceOperator],
 ) -> List[CompressedResourceOp]:
     """Convert the sequence of operations to a list of compressed resource ops.
 

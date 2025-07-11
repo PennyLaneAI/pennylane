@@ -64,8 +64,8 @@ def _center_pauli_words(g, pauli):
 
 
 def center(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
-) -> list[Union[Operator, PauliSentence]]:
+    g: list[Operator | PauliWord | PauliSentence], pauli: bool = False
+) -> list[Operator | PauliSentence]:
     r"""
     Compute the center of a Lie algebra.
 

@@ -770,7 +770,7 @@ class ResourceProd(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[Union[ResourceOperator, Tuple[int, ResourceOperator]]],
+        res_ops: Iterable[ResourceOperator | Tuple[int, ResourceOperator]],
         wires=None,
     ) -> None:
 
@@ -956,7 +956,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         self,
         compute_op: ResourceOperator,
         base_op: ResourceOperator,
-        uncompute_op: Union[None, ResourceOperator] = None,
+        uncompute_op: None | ResourceOperator = None,
         wires=None,
     ) -> None:
         uncompute_op = uncompute_op or ResourceAdjoint(compute_op)

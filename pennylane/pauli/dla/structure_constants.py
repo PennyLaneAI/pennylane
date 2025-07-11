@@ -24,7 +24,7 @@ from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence, TensorLike]],
+    g: list[Operator | PauliWord | PauliSentence | TensorLike],
     pauli: bool = False,
     matrix: bool = False,
     is_orthogonal: bool = True,

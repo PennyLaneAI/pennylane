@@ -84,14 +84,14 @@ class CutStrategy:
     # pylint: disable=too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
-    devices: InitVar[Union[SupportedDeviceAPIs, Sequence[SupportedDeviceAPIs]]] = None
+    devices: InitVar[SupportedDeviceAPIs | Sequence[SupportedDeviceAPIs]] = None
 
     #: Number of wires for the largest available device.
     max_free_wires: int = None
     #: Number of wires for the smallest available device.
     min_free_wires: int = None
     #: The potential (range of) number of fragments for the partitioner to attempt.
-    num_fragments_probed: Union[int, Sequence[int]] = None
+    num_fragments_probed: int | Sequence[int] = None
     #: Maximum allowed circuit depth for the deepest available device.
     max_free_gates: int = None
     #: Maximum allowed circuit depth for the shallowest available device.

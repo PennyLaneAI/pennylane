@@ -372,7 +372,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, list[float]] = None,
+        t: float | list[float] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,

@@ -1087,7 +1087,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Optional[Union[int, _WiresEnum]] = None
+    num_wires: Optional[int | _WiresEnum] = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1496,7 +1496,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_keys(self) -> Union[set, frozenset]:  # pylint: disable=no-self-use
+    def resource_keys(self) -> set | frozenset:  # pylint: disable=no-self-use
         """The set of parameters that affects the resource requirement of the operator.
 
         All decomposition rules for this operator class are expected to have a resource function
@@ -1742,7 +1742,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Union[Callable, TensorLike]) -> "Operator":
+    def __mul__(self, other: Callable | TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
@@ -1956,7 +1956,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     @property
-    def parameter_frequencies(self) -> list[tuple[Union[float, int]]]:
+    def parameter_frequencies(self) -> list[tuple[float | int]]:
         r"""Returns the frequencies for each operator parameter with respect
         to an expectation value of the form
         :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.

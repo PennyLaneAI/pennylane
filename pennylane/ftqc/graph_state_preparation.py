@@ -185,7 +185,7 @@ class GraphStatePrep(Operation):
 
     def __init__(
         self,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
         wires: Optional[Wires] = None,
@@ -228,7 +228,7 @@ class GraphStatePrep(Operation):
     @staticmethod
     def compute_decomposition(
         wires: Wires,
-        graph: Union[nx.Graph, QubitGraph],
+        graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
     ):  # pylint: disable=arguments-differ

@@ -635,7 +635,7 @@ class QubitGraph:
         self._graph = nx.grid_2d_graph(m, n)
         self._initialize_all_nodes_as_qubit_graph()
 
-    def init_graph_nd_grid(self, dim: Union[list[int], tuple[int]]):
+    def init_graph_nd_grid(self, dim: list[int] | tuple[int]):
         """Initialize the QubitGraph's underlying qubits as an n-dimensional Cartesian grid of other
         QubitGraphs.
 

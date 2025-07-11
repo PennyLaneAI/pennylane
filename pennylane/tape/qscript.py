@@ -216,12 +216,12 @@ class QuantumScript:
         fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
 
-    def __iter__(self) -> Iterator[Union[Operator, MeasurementProcess]]:
+    def __iter__(self) -> Iterator[Operator | MeasurementProcess]:
         """Iterator[.Operator, .MeasurementProcess]: Return an iterator to the
         underlying quantum circuit object."""
         return iter(self.circuit)
 
-    def __getitem__(self, idx: int) -> Union[Operator, MeasurementProcess]:
+    def __getitem__(self, idx: int) -> Operator | MeasurementProcess:
         """Union[Operator, MeasurementProcess]: Return the indexed operator from underlying quantum
         circuit object."""
         return self.circuit[idx]
@@ -236,7 +236,7 @@ class QuantumScript:
     # ========================================================
 
     @property
-    def circuit(self) -> list[Union[Operator, MeasurementProcess]]:
+    def circuit(self) -> list[Operator | MeasurementProcess]:
         """Returns the underlying quantum circuit as a list of operations and measurements.
 
         The circuit is created with the assumptions that:
@@ -270,7 +270,7 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> list[Union[MeasurementProcess, Operator]]:
+    def observables(self) -> list[MeasurementProcess | Operator]:
         """Returns the observables on the quantum script.
 
         Returns:
@@ -456,7 +456,7 @@ class QuantumScript:
         return len(self.wires)
 
     @cached_property
-    def par_info(self) -> list[dict[str, Union[int, Operator]]]:
+    def par_info(self) -> list[dict[str, int | Operator]]:
         """Returns the parameter information of the operations and measurements in the quantum script.
 
         Returns:
@@ -789,7 +789,7 @@ class QuantumScript:
 
     def shape(
         self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
-    ) -> Union[tuple[int, ...], tuple[tuple[int, ...], ...]]:
+    ) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -835,7 +835,7 @@ class QuantumScript:
         return tuple(shape) if self.shots.has_partitioned_shots else shape[0]
 
     @property
-    def numeric_type(self) -> Union[type, tuple[type, ...]]:
+    def numeric_type(self) -> type | tuple[type, ...]:
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
@@ -959,7 +959,7 @@ class QuantumScript:
     def expand(
         self,
         depth: int = 1,
-        stop_at: Optional[Callable[[Union[Operation, MeasurementProcess]], bool]] = None,
+        stop_at: Optional[Callable[[Operation | MeasurementProcess], bool]] = None,
         expand_measurements: bool = False,
     ) -> "QuantumScript":
         """Expand all operations to a specific depth.

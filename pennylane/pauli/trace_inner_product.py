@@ -21,7 +21,7 @@ from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
-    A: Union[PauliSentence, Operator, TensorLike], B: Union[PauliSentence, Operator, TensorLike]
+    A: PauliSentence | Operator | TensorLike, B: PauliSentence | Operator | TensorLike
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 

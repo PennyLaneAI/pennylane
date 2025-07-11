@@ -27,7 +27,7 @@ from .sample import SampleMP
 
 
 def expval(
-    op: Union[Operator, MeasurementValue],
+    op: Operator | MeasurementValue,
 ):
     r"""Expectation value of the supplied observable.
 

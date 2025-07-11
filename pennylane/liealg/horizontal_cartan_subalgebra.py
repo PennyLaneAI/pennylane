@@ -389,8 +389,8 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
 
 
 def op_to_adjvec(
-    ops: Iterable[Union[PauliSentence, Operator, TensorLike]],
-    basis: Union[PauliSentence, Operator, TensorLike],
+    ops: Iterable[PauliSentence | Operator | TensorLike],
+    basis: PauliSentence | Operator | TensorLike,
     is_orthogonal: bool = True,
 ):
     r"""Decompose a batch of operators into a given operator basis.
@@ -514,7 +514,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     return math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
+def check_abelian(ops: List[PauliSentence | TensorLike | Operator]):
     r"""Helper function to check if all operators in ``ops`` commute, i.e., form an Abelian set of operators.
 
     .. warning:: This function is expensive to compute

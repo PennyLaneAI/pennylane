@@ -80,7 +80,7 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[Union[str, TransformDispatcher]] = None
+    gradient_method: Optional[str | TransformDispatcher] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
     gradient_keyword_arguments: Optional[dict] = None

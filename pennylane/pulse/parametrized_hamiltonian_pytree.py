@@ -32,8 +32,8 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    mat_fixed: Optional[Union[jnp.ndarray, sparse.BCSR]]
-    mats_parametrized: tuple[Union[jnp.ndarray, sparse.BCSR], ...]
+    mat_fixed: Optional[jnp.ndarray | sparse.BCSR]
+    mats_parametrized: tuple[jnp.ndarray | sparse.BCSR, ...]
     coeffs_parametrized: tuple[Callable]
     reorder_fn: Callable
 
@@ -119,7 +119,7 @@ class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
     coeffs: tuple[complex, ...]
-    mats: tuple[Union[jnp.ndarray, sparse.BCSR], ...]
+    mats: tuple[jnp.ndarray | sparse.BCSR, ...]
 
     @jax.jit
     def __matmul__(self, other):

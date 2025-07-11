@@ -24,7 +24,7 @@ from pennylane.queuing import QueuingManager
 
 
 def cond_measure(
-    condition: Union[MeasurementValue, bool],
+    condition: MeasurementValue | bool,
     true_fn: Callable,
     false_fn: Callable,
 ):

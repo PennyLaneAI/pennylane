@@ -355,7 +355,7 @@ class StatePrep(StatePrepBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        state: Union[TensorLike, csr_matrix],
+        state: TensorLike | csr_matrix,
         wires: WiresLike,
         pad_with=None,
         normalize=False,

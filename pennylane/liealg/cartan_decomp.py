@@ -22,8 +22,8 @@ from pennylane.typing import TensorLike
 
 
 def cartan_decomp(
-    g: List[Union[PauliSentence, Operator]], involution: callable
-) -> Tuple[List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]]:
+    g: List[PauliSentence | Operator], involution: callable
+) -> Tuple[List[PauliSentence | Operator], List[PauliSentence | Operator]]:
     r"""Compute the Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` of a Lie algebra :math:`\mathfrak{g}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
@@ -107,9 +107,9 @@ def cartan_decomp(
 
 
 def check_commutation_relation(
-    ops1: List[Union[PauliSentence, TensorLike]],
-    ops2: List[Union[PauliSentence, TensorLike]],
-    vspace: Union[PauliVSpace, List[Union[PauliSentence, TensorLike]]],
+    ops1: List[PauliSentence | TensorLike],
+    ops2: List[PauliSentence | TensorLike],
+    vspace: PauliVSpace | List[PauliSentence | TensorLike],
 ):
     r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
@@ -208,8 +208,8 @@ def _is_subspace(subspace, vspace):
 
 
 def check_cartan_decomp(
-    k: List[Union[PauliSentence, TensorLike]],
-    m: List[Union[PauliSentence, TensorLike]],
+    k: List[PauliSentence | TensorLike],
+    m: List[PauliSentence | TensorLike],
     verbose=True,
 ):
     r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}.`
