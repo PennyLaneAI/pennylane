@@ -52,7 +52,7 @@ from .utils import (
 # pylint: disable=too-many-positional-arguments
 def _cut_circuit_mc_expand(
     tape: QuantumScript,
-    classical_processing_fn: callable | None = None,
+    classical_processing_fn: Callable | None = None,
     max_depth: int = 1,
     shots: int | None = None,
     device_wires: Wires | None = None,
@@ -73,7 +73,7 @@ def _cut_circuit_mc_expand(
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
     tape: QuantumScript,
-    classical_processing_fn: callable | None = None,
+    classical_processing_fn: Callable | None = None,
     auto_cutter: bool | Callable = False,
     max_depth: int = 1,
     shots: int | None = None,
