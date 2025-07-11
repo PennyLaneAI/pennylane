@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -459,7 +459,7 @@ class DefaultTensor(Device):
 
     def _initial_quimb_circuit(
         self, wires: qml.wires.Wires, psi0=None
-    ) -> "qtn.CircuitMPS" | "qtn.Circuit":
+    ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
         """
         Initialize the quimb circuit according to the method chosen.
 

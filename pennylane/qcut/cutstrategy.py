@@ -25,7 +25,7 @@ from networkx import MultiDiGraph
 from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut
 
-SupportedDeviceAPIs = "qml.devices.LegacyDevice" | "qml.devices.Device"
+SupportedDeviceAPIs = Device | LegacyDevice
 
 
 @dataclass()

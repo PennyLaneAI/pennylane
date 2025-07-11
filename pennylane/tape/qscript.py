@@ -22,7 +22,7 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, ParamSpec, TypeVar
+from typing import Any, Optional, ParamSpec, TypeVar, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -788,7 +788,7 @@ class QuantumScript:
     # ========================================================
 
     def shape(
-        self, device: "qml.devices.Device" | "qml.devices.LegacyDevice"
+        self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
     ) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.

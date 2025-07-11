@@ -19,7 +19,7 @@ import math
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import chain
-from typing import Iterable
+from typing import Iterable, Union
 
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega, ZSqrtTwo
 
@@ -364,7 +364,7 @@ class GridOp:
         """Check if the grid operations are equal."""
         return self.a == other.a and self.b == other.b and self.c == other.c and self.d == other.d
 
-    def __mul__(self, other: "GridOp" | "ZOmega") -> "GridOp" | "ZOmega":
+    def __mul__(self, other: Union["GridOp", "ZOmega"]) -> Union["GridOp", "ZOmega"]:
         if isinstance(other, GridOp):
             return self._mul_grid_op(other)
         if isinstance(other, ZOmega):
