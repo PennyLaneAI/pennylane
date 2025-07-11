@@ -312,6 +312,7 @@ class CountsOp(IRDLOperation):
         counts: An array counting each eigenvalue.
 
     .. note::
+
         in_eigvals and in_counts will in general not be required when working
         with xDSL. This is due to an implementation detail in Catalyst.
         These inputs correspond to the input memory that will hold the output
@@ -365,7 +366,40 @@ class CountsOp(IRDLOperation):
 
 @irdl_op_definition
 class CustomOp(IRDLOperation):
-    """A generic quantum gate on n qubits with m floating point parameters."""
+    """A generic quantum gate on n qubits with m floating point parameters.
+
+    This operation represents an quantum operation acting on wires.
+    This operation may be adjointed, or may be controlled.
+
+    Args:
+        name (string | StringAttr): The operation's name. E.g., Hadamard.
+        params (Sequence[SSAValue]): The classical parameters.
+        in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
+        adjoint (UnitAttr | bool | None): Denotes whether the operation is adjointed.
+            If a UnitAttr or True value is passed, then the operation is adjointed.
+        in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+
+    Returns:
+        out_qubits (Sequence[SSAValue]): The output qubits.
+        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+
+    .. note::
+
+        We say that an operation is "controlled" if it has in_ctrl_qubits. Therefore a CNOT
+        operation is not controlled in this context.
+
+        The same number of in_ctrl_qubits and in_ctrl_values are required.
+
+        The semantics of these gates are given by the runtime.
+
+    **Example**
+
+    .. code-block:: mlir
+
+        %out_qubit = quantum.custom "RX"(%param) %in_qubit
+
+    """
 
     name = "quantum.custom"
 
