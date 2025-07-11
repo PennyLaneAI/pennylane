@@ -16,9 +16,10 @@ This submodule contains frequently used loss and cost functions.
 """
 import warnings
 
+from pennylane import measurements
+
 # pylint: disable=too-many-arguments
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane import measurements
 from pennylane.workflow.qnode import qnode
 
 
@@ -109,8 +110,8 @@ class SquaredErrorLoss:
             PennyLaneDeprecationWarning,
         )
 
-        @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
-        def qnode(params, **circuit_kwargs):
+        @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
+        def qn(params, **circuit_kwargs):
             ansatz(params, wires=device.wires, **circuit_kwargs)
             return [getattr(measurements, measure)(o) for o in observables]
 
