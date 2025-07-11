@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable, Hashable
 from inspect import signature
-from typing import Callable, Dict, Hashable, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 import numpy as np
 

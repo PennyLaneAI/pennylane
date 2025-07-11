@@ -15,7 +15,8 @@
 This module contains the commands for allocating and deallocating wires dynamically.
 """
 import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator

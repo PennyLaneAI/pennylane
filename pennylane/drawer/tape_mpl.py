@@ -22,8 +22,9 @@ images.  If you change the docstring examples, please update this file.
 from __future__ import annotations
 
 from collections import namedtuple
+from collections.abc import Sequence
 from functools import singledispatch
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Optional
 
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP

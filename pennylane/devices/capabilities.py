@@ -15,10 +15,11 @@
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 import tomlkit as toml
 

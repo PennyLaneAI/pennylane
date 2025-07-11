@@ -13,7 +13,8 @@
 # limitations under the License.
 """The realspace vibrational Hamiltonian"""
 
-from typing import List, Sequence
+from collections.abc import Sequence
+from typing import List
 
 import numpy as np
 

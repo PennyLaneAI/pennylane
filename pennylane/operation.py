@@ -220,10 +220,10 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from collections.abc import Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable
 from enum import IntEnum
 from functools import lru_cache
-from typing import Any, Callable, Literal, Optional, Type, Union
+from typing import Any, Literal, Optional, Type, Union
 
 import numpy as np
 from scipy.sparse import spmatrix

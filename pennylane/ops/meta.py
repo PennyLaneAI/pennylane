@@ -15,11 +15,11 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-from collections.abc import Hashable
+from collections.abc import Hashable, Sequence
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operation

@@ -13,9 +13,10 @@
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
 
+from collections.abc import Iterable
 from functools import reduce
 from itertools import combinations
-from typing import Iterable, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from scipy.linalg import sqrtm

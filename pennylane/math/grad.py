@@ -15,7 +15,8 @@
 This submodule defines grad and jacobian for differentiating circuits in an interface-independent way.
 """
 
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Union
 
 from pennylane._grad import grad as _autograd_grad
 from pennylane._grad import jacobian as _autograd_jacobian

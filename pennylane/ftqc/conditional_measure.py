@@ -14,8 +14,9 @@
 """
 Contains the condition transform.
 """
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Union
+from typing import Union
 
 from pennylane import capture
 from pennylane.measurements import MeasurementValue, MidMeasureMP

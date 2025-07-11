@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import warnings
 from collections import ChainMap
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
-from typing import Callable, Optional, Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionGraph

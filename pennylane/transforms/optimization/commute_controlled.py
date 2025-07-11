@@ -14,9 +14,10 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
+from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
-from typing import Optional, Sequence
+from typing import Optional
 
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch

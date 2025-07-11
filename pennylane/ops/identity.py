@@ -15,8 +15,8 @@
 This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
+from collections.abc import Sequence
 from functools import lru_cache
-from typing import Sequence
 
 from scipy import sparse
 

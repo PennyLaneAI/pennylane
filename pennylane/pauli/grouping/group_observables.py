@@ -16,10 +16,11 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 """
 
 from collections import defaultdict
+from collections.abc import Sequence
 from copy import copy
 from functools import cached_property
 from operator import itemgetter
-from typing import Literal, Optional, Sequence
+from typing import Literal, Optional
 
 import numpy as np
 import rustworkx as rx

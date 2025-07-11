@@ -13,7 +13,7 @@
 # limitations under the License.
 """Core API for registering xDSL transforms for use with PennyLane and Catalyst."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from catalyst.from_plxpr import register_transform
 from xdsl.passes import ModulePass

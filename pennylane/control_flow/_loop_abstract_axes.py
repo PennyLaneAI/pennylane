@@ -21,7 +21,8 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 """
 
 from collections import namedtuple
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from pennylane.typing import TensorLike
 

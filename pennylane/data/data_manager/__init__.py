@@ -22,7 +22,8 @@ from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Iterable, Mapping
 
 from requests import get, head
 

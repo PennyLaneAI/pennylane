@@ -16,8 +16,9 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 import functools
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Literal
+from typing import Literal
 
 # pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn

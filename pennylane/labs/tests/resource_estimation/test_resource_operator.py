@@ -15,8 +15,9 @@
 Test the base and abstract Resource class
 """
 from collections import defaultdict
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Hashable, List
+from typing import List
 
 import numpy as np
 import pytest

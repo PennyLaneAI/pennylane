@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from collections.abc import Hashable
+from collections.abc import Generator, Hashable, Sequence
 from functools import cache
 from itertools import permutations, product
-from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import numpy as np
 

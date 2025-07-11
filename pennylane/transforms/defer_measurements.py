@@ -13,9 +13,10 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+from collections.abc import Callable, Sequence
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Union
+from typing import Optional, Union
 from warnings import warn
 
 import pennylane as qml

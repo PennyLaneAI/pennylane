@@ -15,7 +15,8 @@
 
 from __future__ import annotations
 
-from typing import Dict, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Dict, Tuple
 
 import numpy as np
 from scipy.sparse import csr_array, identity, kron

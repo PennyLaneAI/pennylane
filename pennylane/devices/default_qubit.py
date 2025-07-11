@@ -17,10 +17,11 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import logging
 import warnings
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import numpy as np
 

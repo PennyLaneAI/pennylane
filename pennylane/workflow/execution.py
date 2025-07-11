@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Callable, Literal, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Literal, Optional
 
 from cachetools import Cache
 
