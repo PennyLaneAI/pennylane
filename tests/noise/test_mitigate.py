@@ -84,7 +84,9 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         folding_kwargs = {"Hello": "goodbye"}
 
-        mitigate_with_zne(tape, scale_factors, self.folding, self.extrapolate, folding_kwargs)
+        mitigate_with_zne(
+            tape, scale_factors, self.folding, self.extrapolate, folding_kwargs=folding_kwargs
+        )
 
         args = spy.call_args_list
 
