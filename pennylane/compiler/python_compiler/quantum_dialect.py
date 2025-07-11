@@ -76,7 +76,14 @@ from xdsl.utils.exceptions import VerifyException
 
 @irdl_attr_definition
 class ObservableType(ParametrizedAttribute, TypeAttribute):
-    """A quantum observable for use in measurements."""
+    """A quantum observable for use in measurements.
+
+    Operations that may return an observable are:
+    * quantum.compbasis
+    * quantum.hamiltonian
+    * quantum.hermitian
+    * quantum.named_observable
+    """
 
     name = "quantum.obs"
 
@@ -97,7 +104,10 @@ class QuregType(ParametrizedAttribute, TypeAttribute):
 
 @irdl_attr_definition
 class ResultType(ParametrizedAttribute, TypeAttribute):
-    """A quantum measurement result."""
+    """A quantum measurement result.
+
+    This is unused but define in Catalyst. May be scheduled for deletion.
+    """
 
     name = "quantum.res"
 
@@ -131,7 +141,57 @@ ObservableSSAValue: TypeAlias = SSAValue[ObservableType]
 
 @irdl_op_definition
 class AdjointOp(IRDLOperation):
-    """Calculate the adjoint of the enclosed operations"""
+    """Calculate the adjoint of the enclosed operations.
+
+    This operation takes as an input a quantum register and outputs
+    an updated quantum register. Its body may contain arbitrary
+    quantum operations, including nested adjoint operations.
+
+    Args:
+        qreg (QuregSSAValue | Operation): input quantum register. If it is an operation
+            then this operation must return a single value
+            and that value must be a quantum register.
+        region: operations that will be adjointed.
+
+    **Example**
+
+    The PennyLane operations
+
+    .. code-block:: python
+
+        qml.adjoint(qml.Hadamard(0))
+
+    are equivalent to
+
+    .. code-block:: mlir
+
+        %register_0 = quantum.alloc(1) : !quantum.reg
+        %register_3 = quantum.adjoint(%register_0) {
+
+        ^bb0(%register_1: !quantum.reg):
+          %qubit_0 = quantum.extract %register_1[0] : !quantum.bit
+          %qubit_1 = quantum.custom "Hadamard"() %qubit_0 : !quantum.bit
+          %qubit_2 = quantum.custom "S"() %qubit_1 : !quantum.bit
+          %register_2 = quantum.insert %register_1[0], %qubit_2 : !quantum.reg, !quantum.bit
+          quantum.yield %register_2
+        }
+
+    When the transformation `--adjoint-lowering` is applied, then the adjoint
+
+    .. code-block:: mlir
+
+        %register_0 = quantum.alloc(1) : !quantum.reg
+        %qubit_0 = quantum.extract %arg0[0] : !quantum.bit
+
+        // Notice that the order has been reversed.
+                      // notice the adj attribute V
+        %qubit_1 = quantum.custom "S"() %qubit_0 adj : !quantum.bit
+                             // notice the adj attribute V
+        %qubit_2 = quantum.custom "Hadamard"() %qubit_1 adj : !quantum.bit
+
+        %register_1 = quantum.insert %original_register[0], %qubit_2 : !quantum.reg, !quantum.bit
+
+    """
 
     name = "quantum.adjoint"
 
@@ -155,10 +215,20 @@ class AdjointOp(IRDLOperation):
 
 @irdl_op_definition
 class AllocOp(IRDLOperation):
-    """Allocate n qubits into a quantum register."""
+    """Allocate n qubits into a quantum register.
+
+    Args:
+        nqubits (int | IntegerAttr | SSAValue): Quantity of wires/qubits in the state vector.
+            If the value for `nqubits` is either an Python integer
+            or an IntegerAttr, then the number is known at compile time.
+            If it is an SSAValue, then it is likely that this value is
+            computed at runtime.
+
+    """
 
     name = "quantum.alloc"
 
+    # TODO: https://github.com/xdslproject/xdsl/pull/4295
     # assembly_format = """
     #        `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
     #    """
@@ -169,7 +239,7 @@ class AllocOp(IRDLOperation):
 
     qreg = result_def(QuregType)
 
-    def __init__(self, nqubits):
+    def __init__(self, nqubits: int | IntegerAttr | SSAValue):
         if isinstance(nqubits, int):
             nqubits = IntegerAttr.from_int_and_width(nqubits, 64)
 
@@ -193,7 +263,17 @@ class AllocOp(IRDLOperation):
 
 @irdl_op_definition
 class ComputationalBasisOp(IRDLOperation):
-    """Define a pseudo-obeservable of the computational basis for use in measurements"""
+    """Define a pseudo-obeservable of the computational basis for use in measurements.
+
+    Args:
+        qubits (Sequence[SSAValue] | None): Qubits that make up the computational basis.
+        qreg: (SSAValue | None): Quantum register that makes up the computational basis.
+
+    .. note::
+
+        Either qubits or qreg must be supplied.
+
+    """
 
     name = "quantum.compbasis"
 
@@ -209,10 +289,53 @@ class ComputationalBasisOp(IRDLOperation):
 
     obs = result_def(ObservableType)
 
+    # TODO: Add init to validate qubit or qreg was supplied
+
 
 @irdl_op_definition
 class CountsOp(IRDLOperation):
-    """Compute sample counts for the given observable for the current state"""
+    """Compute sample counts for the given observable for the current state.
+
+    The `quantum.counts` operation represents the measurement process of sampling eigenvalues
+    from an observable on the current quantum state and counting the frequency of each
+    eigenvalue.
+
+    Args:
+        obs (Observable): The only SSA argument is an observable that must be defined by an
+            operation in the local scope. from an observable on the current quantum state.
+            The number of samples to draw is determined by the device shots argument in the device
+            initialization operation in the local scope.
+
+    Returns:
+        eigvals: An array for the eigenvalues. These are the possible bitstrings one could measure
+            on the given qubits, encoded as (floating-point) integers.
+        counts: An array counting each eigenvalue.
+
+    .. note::
+        in_eigvals and in_counts will in general not be required when working
+        with xDSL. This is due to an implementation detail in Catalyst.
+        These inputs correspond to the input memory that will hold the output
+        eigvals and counts.
+
+    **Example**
+
+    .. code-block:: mlir
+
+        func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit, %shots: i64)
+        {
+            quantum.device shots(%shots) ["rtd_lightning.so", "lightning.qubit", "{my_attr: my_attr_value}"]
+            %obs = quantum.compbasis %q0, %q1 : !quantum.obs
+
+            // Notice two tensors with a single dimension being returned.
+            %counts = quantum.counts %obs : tensor<4xf64>, tensor<4xi64>
+
+            %obs2 = quantum.pauli %q0[3], %q1[1] : !quantum.obs
+            %counts2 = quantum.counts %obs2 : tensor<2xf64>, tensor<2xi64>
+
+            func.return
+        }
+
+    """
 
     name = "quantum.counts"
 
