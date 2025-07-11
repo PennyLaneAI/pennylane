@@ -12,7 +12,7 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 from collections.abc import Sequence
-from typing import NamedTuple, Union
+from typing import NamedTuple, Optional
 
 from pennylane import math
 
@@ -292,7 +292,7 @@ class Shots:
                 lower_bound = upper_bound
 
 
-ShotsLike = Union[Shots, None, int, Sequence[int | tuple[int, int]]]
+ShotsLike = Optional[Shots | int | Sequence[int | tuple[int | int]]]
 
 
 def add_shots(s1: Shots, s2: Shots) -> Shots:
