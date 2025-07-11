@@ -216,7 +216,7 @@ class TestAdder:
         for rule in qml.list_decomps(qml.Adder):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize("mod", [2, 3])
+    @pytest.mark.parametrize("mod", [2, 4])
     def test_controlled_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""
 
