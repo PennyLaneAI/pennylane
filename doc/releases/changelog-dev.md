@@ -35,6 +35,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Move custom exceptions into `exceptions.py`.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
+
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
