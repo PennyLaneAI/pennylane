@@ -216,10 +216,10 @@ Noise transforms
 .. autosummary::
     :toctree: api
 
-    ~add_noise
-    ~insert
-    ~mitigate_with_zne
-    ~fold_global
-    ~poly_extrapolate
-    ~richardson_extrapolate
-    ~exponential_extrapolate
+    ~noise.add_noise
+    ~noise.insert
+    ~noise.mitigate_with_zne
+    ~noise.fold_global
+    ~noise.poly_extrapolate
+    ~noise.richardson_extrapolate
+    ~noise.exponential_extrapolate
