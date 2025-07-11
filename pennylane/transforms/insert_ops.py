@@ -14,7 +14,7 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from types import FunctionType
 
 import pennylane as qml
@@ -53,7 +53,7 @@ def _check_position(position):
 @transform
 def insert(
     tape: QuantumScript,
-    op: callable | type[Operation],
+    op: Callable | type[Operation],
     op_args: tuple | float,
     position: str | list | type[Operation] = "all",
     before: bool = False,
