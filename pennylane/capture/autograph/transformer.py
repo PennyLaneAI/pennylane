@@ -29,7 +29,7 @@ from malt.impl.api import PyToPy
 
 import pennylane as qml
 
-from ...exceptions import AutoGraphError, AutoGraphWarning
+from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 from . import ag_primitives
 
 
