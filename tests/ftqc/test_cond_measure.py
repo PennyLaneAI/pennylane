@@ -177,8 +177,7 @@ class TestValidation:
             m = qml.measure(0)
             cond_measure(m, partial(measure_y, wires=0), partial(measure_x, wires=1))()
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_program_capture(self):
         """Test that program capture works as expected with cond_measure"""
         import jax
