@@ -21,7 +21,7 @@ from .transformer import (
     run_autograph,
 )
 
-from ...exceptions import AutoGraphWarning
+from pennylane.exceptions import AutoGraphWarning
 
 __all__ = (
     "autograph_source",
