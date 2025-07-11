@@ -35,7 +35,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Move custom exceptions into `exceptions.py`.
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
 * Seeded tests for the `split_to_single_terms` transformation.
