@@ -122,7 +122,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
             # Load devices
             dev_ideal = qml.device("default.mixed", wires=n_wires)
-            dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+            dev_noisy = qml.noise.insert(noise_gate, noise_strength)(dev_ideal)
 
             x = np.arange(6)
 
@@ -381,6 +381,7 @@ def mitigate_with_zne(
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
+    *,
     folding_kwargs: Optional[dict[str, Any]] = None,
     extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,

@@ -13,6 +13,14 @@
 # limitations under the License.
 """This module contains the functionality to work with noise models in PennyLane."""
 
-from .partial_wires import partial_wires
-from .conditionals import wires_in, wires_eq, op_in, op_eq, meas_eq
+from .conditionals import wires_in, wires_eq, op_in, op_eq, meas_eq, partial_wires
 from .noise_model import NoiseModel
+from .add_noise import add_noise
+from .insert_ops import insert
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)

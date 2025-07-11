@@ -22,7 +22,7 @@ from pennylane.tape import make_qscript
 from pennylane.transforms.core import TransformContainer, transform
 from pennylane.workflow import get_transform_program
 
-from .partial_wires import partial_wires
+from .conditionals import partial_wires
 
 
 # pylint: disable=too-many-branches

@@ -106,7 +106,7 @@ def insert(
 
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.transforms.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+        @partial(qml.noise.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -209,7 +209,7 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
+        >>> dev_noisy = qml.noise.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)

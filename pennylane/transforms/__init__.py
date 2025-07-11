@@ -86,19 +86,6 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
-
-Transforms for error mitigation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.mitigate_with_zne
-    ~transforms.fold_global
-    ~transforms.poly_extrapolate
-    ~transforms.richardson_extrapolate
-    ~transforms.exponential_extrapolate
-
 Other transforms
 ~~~~~~~~~~~~~~~~
 
@@ -111,8 +98,6 @@ preprocessing, getting information from a circuit, and more.
 
     ~batch_params
     ~batch_input
-    ~transforms.insert
-    ~transforms.add_noise
     ~defer_measurements
     ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
@@ -297,7 +282,6 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from ..noise.add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
@@ -306,16 +290,9 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
-from ..noise.insert_ops import insert
 from .combine_global_phases import combine_global_phases
 
-from ..noise.mitigate import (
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
+
 from .optimization import (
     cancel_inverses,
     commute_controlled,
