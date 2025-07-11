@@ -17,7 +17,7 @@ from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable, Union
+from typing import Iterable
 
 import numpy as np
 

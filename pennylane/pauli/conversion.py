@@ -17,7 +17,6 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract

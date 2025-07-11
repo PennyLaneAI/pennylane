@@ -164,7 +164,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
-from typing import Optional, Union
+from typing import Optional
 
 
 class QueuingError(Exception):
@@ -551,7 +551,7 @@ def apply(op, context=QueuingManager):
     return op
 
 
-ops_or_meas = Union["pennylane.operation.Operator", "pennylane.measurements.MeasurementProcess"]
+ops_or_meas = "pennylane.operation.Operator" | "pennylane.measurements.MeasurementProcess"
 
 
 # pylint: disable=protected-access

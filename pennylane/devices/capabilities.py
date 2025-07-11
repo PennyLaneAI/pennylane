@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 import tomlkit as toml
 

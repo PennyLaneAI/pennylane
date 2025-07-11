@@ -19,7 +19,6 @@ import itertools
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
-from typing import Union
 
 from scipy.sparse import kron as sparse_kron
 
@@ -366,7 +365,7 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     @handle_recursion_error
-    def simplify(self) -> Union["Prod", Sum]:
+    def simplify(self) -> "Prod" | Sum:
         r"""
         Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
         :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator

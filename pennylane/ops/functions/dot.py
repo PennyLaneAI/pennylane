@@ -18,7 +18,6 @@ a vector and a list of operators.
 
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator

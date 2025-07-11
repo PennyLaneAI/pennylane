@@ -19,7 +19,6 @@ import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Union
 
 import numpy as np
 

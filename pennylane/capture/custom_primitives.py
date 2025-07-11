@@ -19,7 +19,6 @@ This submodule offers custom primitives for the PennyLane capture module.
 # pylint: disable=abstract-method
 
 from enum import Enum
-from typing import Union
 
 from jax.extend.core import Primitive
 

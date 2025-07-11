@@ -19,7 +19,6 @@ This module contains the qml.bind_new_parameters function.
 import copy
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator

@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""This module contains the base class for qubit management"""
 
-from typing import Union
 
 import pennylane as qml
 

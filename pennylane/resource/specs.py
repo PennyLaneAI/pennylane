@@ -14,7 +14,7 @@
 """Code for resource estimation"""
 import inspect
 from copy import copy
-from typing import Any, Callable, Literal, Union
+from typing import Any, Callable, Literal
 
 import pennylane as qml
 

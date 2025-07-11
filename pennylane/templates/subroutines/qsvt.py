@@ -18,7 +18,7 @@ Contains the QSVT template and qsvt wrapper function.
 import copy
 import math
 from functools import reduce
-from typing import Literal, Sequence, Union
+from typing import Literal, Sequence
 
 import numpy as np
 import scipy

@@ -19,7 +19,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 # pylint: disable=arguments-differ,arguments-renamed
 
 from functools import lru_cache, partial
-from typing import Iterable, List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional
 
 import numpy as np
 from scipy.linalg import block_diag

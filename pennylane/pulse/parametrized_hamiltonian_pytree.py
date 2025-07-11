@@ -14,7 +14,7 @@
 """Module containing the ``JaxParametrizedHamiltonian`` class."""
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 import jax
 import jax.numpy as jnp

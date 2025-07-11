@@ -15,7 +15,6 @@
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Union
 
 import numpy as np
 

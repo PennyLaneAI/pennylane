@@ -16,7 +16,6 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
-from typing import Union
 
 import numpy as np
 

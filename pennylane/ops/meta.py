@@ -19,7 +19,7 @@ from collections.abc import Hashable
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Sequence
 
 import pennylane as qml
 from pennylane.operation import Operation

@@ -15,7 +15,6 @@
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
 import copy
-from typing import Union
 
 from scipy.linalg import fractional_matrix_power
 
@@ -390,7 +389,7 @@ class Pow(ScalarSymbolicOp):
             "The adjoint of Pow operators only is well-defined for integer powers."
         )
 
-    def simplify(self) -> Union["Pow", Identity]:
+    def simplify(self) -> "Pow" | Identity:
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()

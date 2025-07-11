@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dynamical Lie algebra functionality"""
-from typing import Iterable, Union
+from typing import Iterable
 
 import pennylane as qml
 from pennylane.operation import Operator

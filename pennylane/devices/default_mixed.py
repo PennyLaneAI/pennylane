@@ -22,7 +22,7 @@ import logging
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional, Union
+from typing import Optional
 
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate

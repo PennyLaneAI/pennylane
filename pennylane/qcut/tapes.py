@@ -18,7 +18,6 @@ Functions handling quantum tapes for circuit cutting, and their auxillary functi
 import copy
 from collections.abc import Callable, Sequence
 from itertools import product
-from typing import Union
 
 from networkx import MultiDiGraph
 

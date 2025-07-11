@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from copy import copy
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess

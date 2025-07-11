@@ -29,7 +29,6 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 # pylint: disable=unused-argument
 
 from functools import singledispatch
-from typing import Union
 
 from pennylane.measurements import (
     CountsMP,

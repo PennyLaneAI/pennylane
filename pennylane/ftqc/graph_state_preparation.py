@@ -14,7 +14,7 @@
 
 r"""This module contains the GraphStatePrep template."""
 
-from typing import Optional, Union
+from typing import Optional
 
 import networkx as nx
 

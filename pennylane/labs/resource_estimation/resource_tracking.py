@@ -16,7 +16,7 @@ import copy
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
-from typing import Dict, Iterable, List, Set, Union
+from typing import Dict, Iterable, List, Set
 
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op

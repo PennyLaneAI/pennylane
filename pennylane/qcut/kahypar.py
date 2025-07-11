@@ -19,7 +19,7 @@ Functions for partitioning a graph using KaHyPar.
 from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from networkx import MultiDiGraph

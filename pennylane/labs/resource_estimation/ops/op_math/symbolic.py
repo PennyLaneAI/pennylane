@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
 from functools import singledispatch
-from typing import Dict, Iterable, Tuple, Union
+from typing import Dict, Iterable, Tuple
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires

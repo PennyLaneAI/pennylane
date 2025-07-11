@@ -13,7 +13,7 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 from pennylane import math
 from pennylane.operation import Operator

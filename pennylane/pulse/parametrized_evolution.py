@@ -19,7 +19,6 @@ This file contains the ``ParametrizedEvolution`` operator.
 
 import warnings
 from collections.abc import Sequence
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operation

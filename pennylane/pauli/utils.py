@@ -22,7 +22,6 @@ representation of Pauli words and applications, see:
 """
 from functools import lru_cache, singledispatch
 from itertools import product
-from typing import Union
 
 import numpy as np
 

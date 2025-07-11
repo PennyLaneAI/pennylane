@@ -18,14 +18,14 @@ Class CutStrategy, for executing (large) circuits on available (comparably small
 import warnings
 from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
-from typing import Any, ClassVar, Union
+from typing import Any, ClassVar
 
 from networkx import MultiDiGraph
 
 from pennylane.devices import Device, LegacyDevice
 from pennylane.ops.meta import WireCut
 
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
+SupportedDeviceAPIs = "qml.devices.LegacyDevice" | "qml.devices.Device"
 
 
 @dataclass()

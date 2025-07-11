@@ -15,7 +15,7 @@
 
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence
 from warnings import warn
 
 import pennylane as qml

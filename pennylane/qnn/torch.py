@@ -20,7 +20,7 @@ import functools
 import inspect
 import math
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode

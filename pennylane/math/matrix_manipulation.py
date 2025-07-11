@@ -17,7 +17,7 @@
 import itertools
 import numbers
 from functools import reduce
-from typing import Callable, Iterable, Sequence, Union
+from typing import Callable, Iterable, Sequence
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron

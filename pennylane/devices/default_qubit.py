@@ -20,7 +20,7 @@ import warnings
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import numpy as np
 

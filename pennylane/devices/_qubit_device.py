@@ -26,7 +26,6 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 

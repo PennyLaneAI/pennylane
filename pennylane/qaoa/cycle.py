@@ -17,7 +17,6 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 # pylint: disable=unnecessary-comprehension, unnecessary-lambda-assignment
 import itertools
 from collections.abc import Iterable
-from typing import Union
 
 import networkx as nx
 import numpy as np

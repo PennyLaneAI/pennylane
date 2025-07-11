@@ -18,7 +18,7 @@ datasets bucket.
 
 from collections.abc import Iterable, Iterator, Mapping
 from pathlib import PurePosixPath
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional
 
 from .params import Description, ParamArg, ParamVal
 
@@ -31,7 +31,7 @@ class DataPath(PurePosixPath):
         return repr(str(self))
 
 
-class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
+class FolderMapView(Mapping[str, "FolderMapView" | DataPath]):
     """Provides a read-only view of the ``foldermap.json`` file in
     the datasets bucket. The folder map is a nested mapping of
     dataset parameters to their path, relative to the ``foldermap.json``
@@ -160,9 +160,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
 
         return done
 
-    def __getitem__(
-        self, __key: str | Literal[ParamArg.DEFAULT]
-    ) -> Union["FolderMapView", DataPath]:
+    def __getitem__(self, __key: str | Literal[ParamArg.DEFAULT]) -> "FolderMapView" | DataPath:
         """Gets the item with key. If key is ``ParamArg.DEFAULT``, return the
         item under the default parameter, or raise a ``ValueError`` if no
         default exists."""

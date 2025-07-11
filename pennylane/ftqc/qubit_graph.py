@@ -18,7 +18,7 @@ and defines the API to access and manipulate these data structures.
 
 import uuid
 import warnings
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import networkx as nx
 

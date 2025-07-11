@@ -14,7 +14,6 @@
 This module contains the deprecated Observable class to allow for deprecation warnings on access to the class.
 """
 import warnings
-from typing import Union
 
 import pennylane as qml
 
@@ -60,7 +59,7 @@ class Observable(Operator):
 
     def compare(
         self,
-        other: Union["Observable", "qml.ops.LinearCombination"],
+        other: "Observable" | "qml.ops.LinearCombination",
     ) -> bool:
         r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
 

@@ -16,7 +16,7 @@ of Dataset attributes."""
 
 
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Generic, Union
+from typing import Generic
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group

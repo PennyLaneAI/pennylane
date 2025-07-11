@@ -20,7 +20,6 @@ import warnings
 
 # pylint: disable=too-many-arguments,protected-access
 from copy import copy
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator

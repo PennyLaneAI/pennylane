@@ -18,7 +18,7 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
-from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
+from typing import Any, Callable, Iterator, SupportsIndex, Tuple
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api

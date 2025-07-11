@@ -15,7 +15,7 @@
 
 from functools import reduce
 from itertools import combinations
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 import numpy as np
 from scipy.linalg import sqrtm

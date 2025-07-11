@@ -15,7 +15,7 @@
 # pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
 import copy
 from itertools import combinations, combinations_with_replacement
-from typing import Iterable, List, Union
+from typing import Iterable, List
 
 from scipy.linalg import null_space, sqrtm
 

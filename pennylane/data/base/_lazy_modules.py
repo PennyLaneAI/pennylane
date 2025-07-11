@@ -3,7 +3,7 @@
 import importlib
 from collections.abc import Callable
 from types import ModuleType
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 _MISSING_MODULES_EXC = ImportError(
     "This feature requires the 'aiohttp', 'h5py' and 'fsspec' packages. "

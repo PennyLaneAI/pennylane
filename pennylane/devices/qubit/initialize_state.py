@@ -14,7 +14,6 @@
 """Functions to prepare a state."""
 
 from collections.abc import Iterable
-from typing import Union
 
 import numpy as np
 import scipy as sp

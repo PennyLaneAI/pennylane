@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
 import warnings
-from typing import Union
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning

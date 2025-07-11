@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import math
 from itertools import product
-from typing import Dict, Sequence, Tuple, Union
+from typing import Dict, Sequence, Tuple
 
 import numpy as np
 import scipy as sp

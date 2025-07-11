@@ -14,7 +14,6 @@
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 
 from functools import lru_cache, partial
-from typing import Union
 
 from pennylane.math import is_abstract
 from pennylane.operation import Operator

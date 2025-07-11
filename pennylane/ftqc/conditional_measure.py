@@ -15,7 +15,7 @@
 Contains the condition transform.
 """
 from functools import wraps
-from typing import Callable, Union
+from typing import Callable
 
 from pennylane import capture
 from pennylane.measurements import MeasurementValue, MidMeasureMP

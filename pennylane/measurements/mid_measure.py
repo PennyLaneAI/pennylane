@@ -17,7 +17,7 @@ This module contains the qml.measure measurement.
 import uuid
 from collections.abc import Hashable
 from functools import lru_cache
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, Optional, TypeVar
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError

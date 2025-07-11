@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
 from itertools import combinations, combinations_with_replacement
-from typing import Union
 
 import numpy as np
 

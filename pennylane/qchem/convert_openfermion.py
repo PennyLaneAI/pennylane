@@ -16,7 +16,6 @@ This module contains the functions for converting between OpenFermion and PennyL
 """
 
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane import numpy as np

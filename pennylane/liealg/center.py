@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
 from itertools import combinations
-from typing import Union
 
 import numpy as np
 from scipy.linalg import norm, null_space

@@ -16,7 +16,7 @@
 This module contains the qml.var measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Optional
 
 import pennylane as qml
 from pennylane.operation import Operator

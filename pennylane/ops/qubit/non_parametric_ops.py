@@ -19,7 +19,7 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from scipy import sparse

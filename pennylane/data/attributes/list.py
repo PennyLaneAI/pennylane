@@ -15,7 +15,7 @@
 types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
-from typing import Generic, Union, overload
+from typing import Generic, overload
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
