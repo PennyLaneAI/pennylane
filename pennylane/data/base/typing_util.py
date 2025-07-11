@@ -28,7 +28,7 @@ from typing import (
     get_origin,
 )
 
-JSON = Optional[str | int | bool | float | dict[str | Any] | list[Any]]
+JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
 
 # Generic type variable
 T = TypeVar("T")
