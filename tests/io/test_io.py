@@ -22,6 +22,15 @@ import pytest
 
 import pennylane as qml
 
+has_openqasm = True
+try:
+    import openqasm3
+
+    from pennylane.io.io import from_qasm3
+    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+except (ModuleNotFoundError, ImportError) as import_error:
+    has_openqasm = False
+
 
 class MockPluginConverter:
     """Mocks a real plugin converter entry point."""
@@ -197,10 +206,46 @@ class TestLoad:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
 
-class TestToOpenQasm:
-    """Test the qml.to_openqasm function."""
+@pytest.mark.external
+class TestOpenQasm:
+    """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
     dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_invalid_qasm3(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            bit output = "0";
+            rz(0.9) q0;
+            measure q0 -> output;
+            """
+
+        with pytest.raises(
+            SyntaxError, match="Something went wrong when parsing the provided OpenQASM 3.0 code"
+        ):
+            from_qasm3(circuit)()
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_from_qasm3(self, mocker):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            rx(1.2) q0;
+            rz(0.9) q0;
+            """
+
+        # setup mocks
+        parse = mocker.spy(openqasm3.parser, "parse")
+        visit = mocker.spy(QasmInterpreter, "interpret")
+
+        # call the method
+        from_qasm3(circuit)()
+
+        # assertions
+        parse.assert_called_with(circuit, permissive=True)
+        visit.assert_called_once()
 
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""

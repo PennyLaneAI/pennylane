@@ -22,7 +22,7 @@ from numpy.testing import assert_allclose
 import pennylane as qml
 from pennylane import while_loop
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
@@ -35,13 +35,6 @@ from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 
 check_cache = TRANSFORMER.has_cache
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestWhileLoops:

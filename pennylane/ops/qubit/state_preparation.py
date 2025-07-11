@@ -75,11 +75,11 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    resource_keys = {"state", "wires"}
+    resource_keys = {"num_wires"}
 
     @property
     def resource_params(self) -> dict:
-        return {"state": self.parameters[0], "wires": self.wires}
+        return {"num_wires": len(self.wires)}
 
     def __init__(self, state, wires: WiresLike, id=None):
 
@@ -185,30 +185,39 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(state, wires):
-    if not qml.math.is_abstract(state):
-        return {qml.X: len([wire for wire, basis in zip(wires, state, strict=True) if basis == 1])}
-    return {qml.PhaseShift: 2 * len(wires), qml.RX: len(wires)}
+def _basis_state_decomp_resources(num_wires):
+    # Represent one of the X gates as an RX and a GlobalPhase because RX is
+    # used when jax-jit is enabled without capture/qjit.
+    return {qml.X: num_wires - 1 or num_wires, qml.RX: 1, qml.GlobalPhase: 1}
 
 
 @register_resources(_basis_state_decomp_resources)
 def _basis_state_decomp(state, wires, **__):
-    if not qml.math.is_abstract(state):
-        for wire, basis in zip(wires, state, strict=True):
-            if basis == 1:
-                qml.X(wire)
-    else:
+
+    if qml.math.is_abstract(state) and not (qml.capture.enabled() or qml.compiler.active()):
+        # This branch is for supporting jax-jit without capture/qjit.
+        global_phase = 0.0
         for wire, basis in zip(wires, state):
-            qml.PhaseShift(basis * np.pi / 2, wire)
-            qml.RX(basis * np.pi, wire)
-            qml.PhaseShift(basis * np.pi / 2, wire)
+            qml.RX(basis * np.pi, wires=wire)
+            global_phase += basis * np.pi / 2
+        qml.GlobalPhase(-global_phase)
+        return
+
+    def _X(w):
+        qml.X(w)
+
+    @qml.for_loop(0, len(wires), 1)
+    def _loop(i):
+        qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
+
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(BasisState, _basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = True)
+    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = False)
     Prepare subsystems using a state vector in the computational basis.
 
     **Details:**
@@ -351,7 +360,7 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
-        validate_norm: bool = True,
+        validate_norm: bool = False,
     ):
         self.is_sparse = False
         if sp.sparse.issparse(state):
@@ -494,7 +503,7 @@ class StatePrep(StatePrepBase):
                 padding = math.convert_like(padding, state)
                 state = math.hstack([state, padding])
 
-        if not validate_norm:
+        if not (validate_norm or normalize):
             return state
 
         # normalize

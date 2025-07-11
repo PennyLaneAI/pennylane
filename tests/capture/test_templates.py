@@ -27,7 +27,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
@@ -176,6 +176,8 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
+    (qml.TemporaryAND, (), ({"wires": [0, 1, 2], "control_values": [0, 1]})),
+    (qml.TemporaryAND, ([0, 1, 2],), ({"control_values": [0, 1]})),
 ]
 
 
@@ -248,6 +250,7 @@ tested_modified_templates = [
     qml.QROM,
     qml.PhaseAdder,
     qml.Adder,
+    qml.SemiAdder,
     qml.Multiplier,
     qml.OutMultiplier,
     qml.OutAdder,
@@ -872,6 +875,39 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
+
+    def test_semiadder(self):
+        """Test the primitive bind call of SemiAdder."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "y_wires": [3, 4, 5],
+            "work_wires": [6, 7],
+        }
+
+        def qfunc():
+            qml.SemiAdder(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.SemiAdder._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.SemiAdder(**kwargs))
 
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""

@@ -90,6 +90,12 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         For devices that do not support snapshots (e.g QPUs, external plug-in simulators), be mindful of
         additional costs that you might incur due to the 1 separate execution/snapshot behaviour.
 
+    .. warning::
+
+        ``Snapshot`` captures the internal execution state at a point in the circuit, but compilation transforms
+        (e.g., ``combine_global_phases``, ``merge_rotations``) may reorder or modify operations across the snapshot.
+        As a result, the captured state may differ from the original intent.
+
     **Example**
 
     .. code-block:: python3
@@ -117,8 +123,10 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", shots=200, wires=2)
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=200)
         @qml.snapshots
         @qml.qnode(dev, interface=None)
         def circuit():
@@ -136,8 +144,9 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("lightning.qubit", shots=100, wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=200)
         @qml.snapshots
         @qml.qnode(dev)
         def circuit():

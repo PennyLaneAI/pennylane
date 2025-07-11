@@ -157,6 +157,7 @@ jobs:
             "torch-tests": ["3.10", "3.12"],
             "tf-tests": ["3.10", "3.12"],
             "jax-tests": ["3.10", "3.12"],
+            "capture-jax-tests": ["3.10", "3.12"],
             "all-interfaces-tests": ["3.10"],
             "external-libraries-tests": ["3.10"],
             "qcut-tests": ["3.10"],
@@ -375,11 +376,51 @@ jobs:
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: jax and not qcut and not finite-diff and not param-shift
+      pytest_markers: jax and not qcut and not finite-diff and not param-shift and not capture
       pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
+
+  capture-jax-tests:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - default-dependency-versions
+      - warnings-as-errors-setup
+    strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).capture-jax-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+         }}
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).capture-jax-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'capture-jax-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      job_name: ${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: core-interfaces-coverage-capture-jax-${{ matrix.python-version }}-${{ matrix.group }}
+      python_version: ${{ matrix.python-version }}
+      additional_pip_packages: |
+        ${{ needs.default-dependency-versions.outputs.catalyst-jax-version }}
+        ${{ inputs.additional_python_packages }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: capture and not qcut and not finite-diff and not param-shift
+      pytest_additional_args: --dist=loadscope ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_durations_file_path: '.github/durations/capture_jax_tests_durations.json'
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'capture_jax.txt' || '' }}
+
+
 
 
   core-tests:
@@ -492,9 +533,9 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran xdsl==0.38
+        pyzx matplotlib stim quimb==1.11.0 mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.44 filecheck
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
-        ${{ needs.default-dependency-versions.outputs.jax-version }}
+        ${{ needs.default-dependency-versions.outputs.catalyst-jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}

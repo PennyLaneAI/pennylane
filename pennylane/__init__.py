@@ -30,6 +30,7 @@ from pennylane.control_flow import for_loop, while_loop
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
+import pennylane.allocation
 import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
@@ -38,7 +39,6 @@ from pennylane.decomposition import (
     list_decomps,
     resource_rep,
 )
-import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
@@ -76,18 +76,6 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -114,7 +102,21 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -130,7 +132,6 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     clifford_t_decomposition,
     add_noise,
-    set_shots,
 )
 from pennylane.ops.functions import (
     dot,
@@ -183,6 +184,7 @@ import pennylane.spin
 
 import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -198,7 +200,7 @@ def __getattr__(name):
         warnings.warn(
             f"pennylane.{name} is no longer accessible at top-level \
                 and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.42.",
+                    Support for top-level access will be removed in v0.43.",
             pennylane.exceptions.PennyLaneDeprecationWarning,
         )
         return getattr(pennylane.exceptions, name)
