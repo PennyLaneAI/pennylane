@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Decomposition rules that can be accessed with the new graph-based decomposition system are
+  implemented. The following decompositions have been added:
+
+    * :class:`~.Adder`
+      [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -56,5 +62,6 @@ This release contains contributions from (in alphabetical order):
 
 Erick Ochoa,
 Joey Carter,
+Marcus Edwards,
 Andrija Paurevic,
 Jay Soni,
