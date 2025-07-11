@@ -19,7 +19,7 @@ and measurement samples using AnnotatedQueues.
 import copy
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
@@ -153,9 +153,11 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     def __init__(
         self,
         obs: Optional[
-            Operator
-            | "qml.measurements.MeasurementValue"
-            | Sequence["qml.measurements.MeasurementValue"]
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
         ] = None,
         wires: Optional[Wires] = None,
         eigvals: Optional[TensorLike] = None,
