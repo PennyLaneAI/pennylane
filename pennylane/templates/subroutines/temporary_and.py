@@ -105,10 +105,6 @@ class TemporaryAND(Operation):
     def _unflatten(cls, _, metadata):
         return cls(wires=metadata[0], control_values=metadata[1])
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
     @staticmethod
     @lru_cache()
     def compute_matrix(**kwargs):  # pylint: disable=arguments-differ
