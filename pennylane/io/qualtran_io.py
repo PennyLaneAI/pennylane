@@ -28,12 +28,8 @@ import pennylane.measurements as qmeas
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math
-from pennylane.operation import (
-    DecompositionUndefinedError,
-    MatrixUndefinedError,
-    Operation,
-    Operator,
-)
+from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript

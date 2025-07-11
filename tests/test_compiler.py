@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.compiler.compiler import CompileError
+from pennylane.exceptions import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 catalyst = pytest.importorskip("catalyst")

@@ -28,9 +28,10 @@ from scipy.special import factorial
 
 from pennylane import math, pytrees
 from pennylane.devices.preprocess import decompose
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

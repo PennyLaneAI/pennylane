@@ -23,8 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.exceptions import DeviceError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError, MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 

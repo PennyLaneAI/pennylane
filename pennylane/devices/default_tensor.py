@@ -34,7 +34,7 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -48,7 +48,6 @@ from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
-from pennylane.wires import WireError
 
 has_quimb = True
 

@@ -22,13 +22,13 @@ import numpy as np
 
 from pennylane import math
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
-    Operator,
     OperatorPropertyUndefined,
     ParameterFrequenciesUndefinedError,
 )
+from pennylane.measurements import ExpectationMP, VarianceMP, expval
+from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms

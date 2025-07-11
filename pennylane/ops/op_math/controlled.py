@@ -33,14 +33,12 @@ import pennylane as qml
 from pennylane import math
 from pennylane.compiler import compiler
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.operation import (
+from pennylane.exceptions import (
     GeneratorUndefinedError,
-    Operation,
-    Operator,
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
-    classproperty,
 )
+from pennylane.operation import Operation, Operator, classproperty
 from pennylane.wires import Wires, WiresLike
 
 from .decompositions.controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz

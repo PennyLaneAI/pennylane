@@ -27,6 +27,7 @@ from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
 
 import pennylane as qml
+from pennylane.exceptions import AutoGraphError
 
 has_jax = True
 try:
@@ -42,14 +43,6 @@ __all__ = [
     "while_stmt",
     "converted_call",
 ]
-
-
-class AutoGraphWarning(Warning):
-    """Warnings related to PennyLane's AutoGraph submodule."""
-
-
-class AutoGraphError(Exception):
-    """Errors related to PennyLane's AutoGraph submodule."""
 
 
 def _assert_results(results, var_names):

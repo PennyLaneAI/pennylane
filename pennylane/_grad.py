@@ -25,7 +25,7 @@ from autograd.wrap_util import unary_to_nary
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.compiler.compiler import CompileError
+from pennylane.exceptions import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
 

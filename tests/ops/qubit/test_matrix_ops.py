@@ -25,7 +25,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power

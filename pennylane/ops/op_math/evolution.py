@@ -19,7 +19,7 @@ from warnings import warn
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import GeneratorUndefinedError
+from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
 

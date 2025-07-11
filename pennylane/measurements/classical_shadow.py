@@ -22,10 +22,11 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import MeasurementShapeError
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform
+from .measurements import MeasurementTransform
 
 
 def shadow_expval(H, k=1, seed=None):

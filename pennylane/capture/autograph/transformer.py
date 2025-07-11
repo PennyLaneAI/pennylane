@@ -28,9 +28,9 @@ from malt.core import converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
+from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
 from . import ag_primitives
-from .ag_primitives import AutoGraphError, AutoGraphWarning
 
 
 class PennyLaneTransformer(PyToPy):
