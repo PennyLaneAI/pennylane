@@ -213,13 +213,15 @@ but are just located in different modules.
 Noise transforms
 ~~~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane.noise
+
 .. autosummary::
     :toctree: api
 
-    ~noise.add_noise
-    ~noise.insert
-    ~noise.mitigate_with_zne
-    ~noise.fold_global
-    ~noise.poly_extrapolate
-    ~noise.richardson_extrapolate
-    ~noise.exponential_extrapolate
+    ~add_noise
+    ~insert
+    ~mitigate_with_zne
+    ~fold_global
+    ~poly_extrapolate
+    ~richardson_extrapolate
+    ~exponential_extrapolate
