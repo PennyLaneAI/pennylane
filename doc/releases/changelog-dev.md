@@ -29,6 +29,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Upgraded the documentation for various methods and constants in the resource estimation module.
+  [(#7846)](https://github.com/PennyLaneAI/pennylane/pull/7846)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>

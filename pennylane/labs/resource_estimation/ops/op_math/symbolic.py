@@ -116,8 +116,8 @@ class ResourceAdjoint(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
-            that we want the adjoint of.
+                * base_cmpr_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator
+                  that we want the adjoint of.
 
         """
         return {"base_cmpr_op": self.base_op}
@@ -328,11 +328,11 @@ class ResourceControlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
-            operator to be controlled.
-            * num_ctrl_wires (int): the number of qubits the operation is controlled on
-            * num_ctrl_values (int): the number of control qubits, that are controlled when in the
-            :math:`|0\rangle` state
+                * base_cmpr_op (~.pennylane.labs.resource_estimation.CompressedResourceOp): The base
+                  operator to be controlled.
+                * num_ctrl_wires (int): the number of qubits the operation is controlled on
+                * num_ctrl_values (int): the number of control qubits, that are controlled when in the
+                  :math:`|0\rangle` state
         """
 
         return {
@@ -818,9 +818,9 @@ class ResourceProd(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
-            A sequence of tuples containing the operations, in the compressed representation, and
-            a count for how many times they are repeated corresponding to the factors in the product.
+                * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                  A sequence of tuples containing the operations, in the compressed representation, and
+                  a count for how many times they are repeated corresponding to the factors in the product.
         """
         return {"cmpr_factors_and_counts": self.cmpr_factors_and_counts}
 
@@ -999,12 +999,12 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the compute operation.
-            * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the base operation.
-            * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
-            to the uncompute operation.
+                * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the compute operation.
+                * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the base operation.
+                * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the uncompute operation.
 
         """
         return {

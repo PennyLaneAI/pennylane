@@ -94,8 +94,8 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             register_size (int): the size of the input register
@@ -282,8 +282,8 @@ class ResourceOutMultiplier(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, a_num_qubits, b_num_qubits, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             a_num_qubits (int): the size of the first input register
@@ -380,8 +380,8 @@ class ResourceSemiAdder(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, max_register_size, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             max_register_size (int): the size of the larger of the two registers being added together
@@ -519,8 +519,8 @@ class ResourceBasisRotation(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, dim_N, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
 
         Args:
             dim_N (int): The dimensions of the input :code:`unitary_matrix`. This is computed
@@ -1080,9 +1080,15 @@ class ResourceQROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-                * clean (bool, optional): Determine if allocated qubits should be reset after the computation (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): A natural number that determines if data will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Defaults to :code:`None`, which internally determines the optimal depth.
+                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
+                  Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
+                  dataset.
+                * clean (bool, optional): Determine if allocated qubits should be reset after the
+                  computation (at the cost of higher gate counts). Defaults to :code`True`.
+                * select_swap_depth (Union[int, None], optional): A natural number that
+                  determines if data will be loaded in parallel by adding more rows following
+                  Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Defaults
+                  to :code:`None`, which internally determines the optimal depth.
 
         """
 
@@ -1333,9 +1339,9 @@ class ResourceSelectPauliRot(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * rotation_axis (str): the rotation axis used in the multiplexer
-            * num_ctrl_wires (int): the number of control wires of the multiplexer
-            * precision (float): the precision used in the single qubit rotations
+                * rotation_axis (str): the rotation axis used in the multiplexer
+                * num_ctrl_wires (int): the number of control wires of the multiplexer
+                * precision (float): the precision used in the single qubit rotations
         """
         return {
             "num_ctrl_wires": self.num_ctrl_wires,
