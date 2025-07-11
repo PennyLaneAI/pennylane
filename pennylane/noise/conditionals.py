@@ -21,12 +21,13 @@ from inspect import isclass, signature
 from pennylane import math, measurements
 from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
+from pennylane.exceptions import WireError
 from pennylane.operation import Operation
 from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
 from pennylane.ops.functions import map_wires, simplify
 from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 # pylint: disable = too-many-branches
 

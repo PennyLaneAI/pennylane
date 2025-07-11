@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import WireError
 from pennylane.ops import channel
-from pennylane.wires import WireError
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])

@@ -24,7 +24,8 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
-from pennylane.operation import CVObservable, Operation, SparseMatrixUndefinedError
+from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.operation import CVObservable, Operation
 from pennylane.wires import WiresLike
 
 

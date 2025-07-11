@@ -95,7 +95,7 @@ del linalg
 del random
 
 from . import fft, linalg, random
-from .tensor import NonDifferentiableError
+from ..exceptions import NonDifferentiableError
 from .tensor import asarray as _asarray
 from .tensor import tensor
 

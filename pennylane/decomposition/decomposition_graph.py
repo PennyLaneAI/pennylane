@@ -33,6 +33,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.operation import Operator
 
+from ..exceptions import DecompositionError
 from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
@@ -51,7 +52,7 @@ from .symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-from .utils import DecompositionError, translate_op_alias
+from .utils import translate_op_alias
 
 
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes

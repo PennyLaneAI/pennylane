@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
 from pennylane.compiler import compiler
+from pennylane.exceptions import ConditionalTransformError
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -62,10 +63,6 @@ def _add_abstract_shapes(f):
         return *shapes, *out
 
     return new_f
-
-
-class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
 
 
 class Conditional(SymbolicOp, Operation):

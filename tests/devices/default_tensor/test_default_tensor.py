@@ -24,10 +24,9 @@ from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
 

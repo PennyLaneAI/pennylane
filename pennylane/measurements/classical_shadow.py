@@ -25,7 +25,8 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform
+from ..exceptions import MeasurementShapeError
+from .measurements import MeasurementTransform
 
 
 def shadow_expval(H, k=1, seed=None):

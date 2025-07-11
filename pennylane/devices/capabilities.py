@@ -23,14 +23,10 @@ from typing import Callable, Optional, Union
 import tomlkit as toml
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
 from pennylane.operation import Operator
 
 ALL_SUPPORTED_SCHEMAS = [3]
-
-
-class InvalidCapabilitiesError(Exception):
-    """Exception raised from invalid TOML files."""
 
 
 def load_toml_file(file_path: str) -> dict:

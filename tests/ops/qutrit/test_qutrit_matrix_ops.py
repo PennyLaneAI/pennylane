@@ -22,7 +22,7 @@ from gate_data import TSWAP
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(

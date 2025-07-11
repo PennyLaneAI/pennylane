@@ -21,7 +21,7 @@ from .transformer import (
     run_autograph,
 )
 
-from .ag_primitives import AutoGraphWarning
+from ...exceptions import AutoGraphWarning
 
 __all__ = (
     "autograph_source",

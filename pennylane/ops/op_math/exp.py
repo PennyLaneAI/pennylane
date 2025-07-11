@@ -27,14 +27,13 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
-    Operation,
-    Operator,
     OperatorPropertyUndefined,
     TermsUndefinedError,
 )
+from pennylane.operation import Operation, Operator
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
