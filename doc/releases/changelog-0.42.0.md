@@ -7,7 +7,8 @@
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
-  
+  [(#7845)](https://github.com/PennyLaneAI/pennylane/pull/7845)
+
   The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and `qml.qjit`-compatible analogue to the existing 
   :class:`~.QNGOptimizer` with an Optax-like interface:
 
@@ -150,6 +151,7 @@
   [(#7197)](https://github.com/PennyLaneAI/pennylane/pull/7197)
   [(#7604)](https://github.com/PennyLaneAI/pennylane/pull/7604)
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
+  [(#7814)](https://github.com/PennyLaneAI/pennylane/pull/7814)
   
   :func:`qml.to_bloq <pennylane.to_bloq>` translates PennyLane operators into equivalent [Qualtran bloqs](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library). It requires one input and takes in two optional inputs:
   * ``circuit (QNode| Qfunc | Operation)``: a PennyLane ``QNode``, ``Qfunc``, or operator to be wrapped as a Qualtran Bloq.
@@ -780,7 +782,6 @@
 * Classical shadows with mixed quantum states are now computed with a dedicated method that uses an
   iterative algorithm similar to the handling of shadows with state vectors. This makes shadows with density 
   matrices much more performant.
-  [(#6748)](https://github.com/PennyLaneAI/pennylane/pull/6748)
   [(#7458)](https://github.com/PennyLaneAI/pennylane/pull/7458)
 
 * Two new functions called :func:`~.math.convert_to_su2` and :func:`~.math.convert_to_su4` have been added to `qml.math`, which convert unitary matrices to SU(2) or SU(4), respectively, and optionally a global phase.
@@ -1038,6 +1039,9 @@ Here's a list of deprecations made this release. For a more detailed breakdown o
 
 <h3>Internal changes ⚙️</h3>
 
+* Jits the `givens_matrix` computation from `BasisRotation` when it is within a jit context, which significantly reduces the program size and compilation time of workflows.
+  [(#7823)](https://github.com/PennyLaneAI/pennylane/pull/7823)
+
 * Move private code in the `TransformProgram` onto the `CotransformCache` class.
   [(#7750)](https://github.com/PennyLaneAI/pennylane/pull/7750)
 
@@ -1195,6 +1199,13 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes `SelectPauliRot._flatten` and `TemporaryAND._primitve_bind_call`.
+  [(#7843)](https://github.com/PennyLaneAI/pennylane/pull/7843)
+
+* Fixes a bug where normalization in `qml.StatePrep` with `normalize=True` was skipped if
+  `validate_norm` is set to `False`.
+  [(#7835)](https://github.com/PennyLaneAI/pennylane/pull/7835) 
+
 * Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
   [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
@@ -1348,6 +1359,9 @@ may move operations across a `Snapshot`.
   in the :doc:`/introduction/dynamic_quantum_circuits` page.
   [(#7691)](https://github.com/PennyLaneAI/pennylane/pull/7691)
 
+* Fixes a bug where an operation wrapped in `partial_wires` does not get queued.
+  [(#7830)](https://github.com/PennyLaneAI/pennylane/pull/7830)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1365,10 +1379,12 @@ Simone Gasperini,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Joseph Lee,
 Austin Huang,
 Anton Naim Ibrahim,
-William Maxwell
-Luis Alfredo Nuñez Meneses
+Erick Ochoa Lopez,
+William Maxwell,
+Luis Alfredo Nuñez Meneses,
 Oumarou Oumarou,
 Lee J. O'Riordan,
 Mudit Pandey,
