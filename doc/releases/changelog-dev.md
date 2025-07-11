@@ -33,6 +33,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+  [(#)]()
+
 <h3>Internal changes ⚙️</h3>
 
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
