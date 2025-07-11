@@ -142,6 +142,18 @@ def test_givens_matrix_exceptions():
         _givens_matrix(a, b)
 
 
+@pytest.mark.jax
+def test_givens_matrix_jaxpr():
+    """Verify the JAXPR representation includes a function"""
+    import jax.numpy as jnp
+    from jax import make_jaxpr
+
+    a = jnp.array(1.2)
+    b = jnp.array(2.3)
+
+    assert "givens_matrix_jax" in str(make_jaxpr(_givens_matrix)(a, b))
+
+
 # pylint:disable = too-many-arguments
 @pytest.mark.parametrize(
     ("jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
