@@ -14,14 +14,14 @@
 r"""
 Contains the UCCSD template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-branches,too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 
 import numpy as np
 
 import pennylane as qml
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import BasisState
 from pennylane.wires import Wires
 
 
@@ -266,7 +266,7 @@ class UCCSD(Operation):
         """
         op_list = []
 
-        op_list.append(BasisState(init_state, wires=wires))
+        op_list.append(ops.BasisState(init_state, wires=wires))
 
         if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
             weights = qml.math.expand_dims(weights, 0)

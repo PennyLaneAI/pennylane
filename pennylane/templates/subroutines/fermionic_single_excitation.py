@@ -18,8 +18,8 @@ Contains the FermionicSingleExcitation template.
 import numpy as np
 
 import pennylane as qml
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
 class FermionicSingleExcitation(Operation):
@@ -160,44 +160,44 @@ class FermionicSingleExcitation(Operation):
         # Apply the first layer
 
         # U_1, U_2 acting on wires 'r' and 'p'
-        op_list.append(RX(-np.pi / 2, wires=r))
-        op_list.append(Hadamard(wires=p))
+        op_list.append(ops.RX(-np.pi / 2, wires=r))
+        op_list.append(ops.Hadamard(wires=p))
 
         # Applying CNOTs between wires 'r' and 'p'
         for cnot_wires in set_cnot_wires:
-            op_list.append(CNOT(wires=cnot_wires))
+            op_list.append(ops.CNOT(wires=cnot_wires))
 
         # Z rotation acting on wire 'p'
-        op_list.append(RZ(weight / 2, wires=p))
+        op_list.append(ops.RZ(weight / 2, wires=p))
 
         # Applying CNOTs in reverse order
         for cnot_wires in reversed(set_cnot_wires):
-            op_list.append(CNOT(wires=cnot_wires))
+            op_list.append(ops.CNOT(wires=cnot_wires))
 
         # U_1^+, U_2^+ acting on wires 'r' and 'p'
-        op_list.append(RX(np.pi / 2, wires=r))
-        op_list.append(Hadamard(wires=p))
+        op_list.append(ops.RX(np.pi / 2, wires=r))
+        op_list.append(ops.Hadamard(wires=p))
 
         # ------------------------------------------------------------------
         # Apply the second layer
 
         # U_1, U_2 acting on wires 'r' and 'p'
-        op_list.append(Hadamard(wires=r))
-        op_list.append(RX(-np.pi / 2, wires=p))
+        op_list.append(ops.Hadamard(wires=r))
+        op_list.append(ops.RX(-np.pi / 2, wires=p))
 
         # Applying CNOTs between wires 'r' and 'p'
         for cnot_wires in set_cnot_wires:
-            op_list.append(CNOT(wires=cnot_wires))
+            op_list.append(ops.CNOT(wires=cnot_wires))
 
         # Z rotation acting on wire 'p'
-        op_list.append(RZ(-weight / 2, wires=p))
+        op_list.append(ops.RZ(-weight / 2, wires=p))
 
         # Applying CNOTs in reverse order
         for cnot_wires in reversed(set_cnot_wires):
-            op_list.append(CNOT(wires=cnot_wires))
+            op_list.append(ops.CNOT(wires=cnot_wires))
 
         # U_1^+, U_2^+ acting on wires 'r' and 'p'
-        op_list.append(Hadamard(wires=r))
-        op_list.append(RX(np.pi / 2, wires=p))
+        op_list.append(ops.Hadamard(wires=r))
+        op_list.append(ops.RX(np.pi / 2, wires=p))
 
         return op_list

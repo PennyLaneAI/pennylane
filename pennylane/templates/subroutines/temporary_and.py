@@ -17,8 +17,8 @@ Contains the TemporaryAND template, which also is known as Elbow.
 
 from functools import lru_cache
 
-import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane import math, ops
+from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -143,7 +143,7 @@ class TemporaryAND(Operation):
         if control_values[1] == 0:
             mask ^= 2
 
-        result_matrix = qml.math.array(
+        result_matrix = math.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, -1j, 0, 0, 0, 0, 0, 0],
@@ -157,7 +157,7 @@ class TemporaryAND(Operation):
             dtype=complex,
         )
 
-        perm = qml.math.arange(8) ^ mask
+        perm = math.arange(8) ^ mask
         result_matrix = result_matrix[perm][:, perm]
 
         return result_matrix
@@ -199,22 +199,22 @@ class TemporaryAND(Operation):
 
         list_decomp = []
 
-        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
+        list_decomp.extend([ops.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         list_decomp += [
-            qml.Hadamard(wires=wires[2]),
-            qml.T(wires=wires[2]),
-            qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(qml.T(wires=wires[2])),
-            qml.CNOT(wires=[wires[0], wires[2]]),
-            qml.T(wires=wires[2]),
-            qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.adjoint(qml.T(wires=wires[2])),
-            qml.Hadamard(wires=wires[2]),
-            qml.adjoint(qml.S(wires=wires[2])),
+            ops.Hadamard(wires=wires[2]),
+            ops.T(wires=wires[2]),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.CNOT(wires=[wires[0], wires[2]]),
+            ops.T(wires=wires[2]),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.Hadamard(wires=wires[2]),
+            ops.adjoint(ops.S(wires=wires[2])),
         ]
 
-        list_decomp.extend([qml.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
+        list_decomp.extend([ops.X(wires[idx]) for idx in [0, 1] if control_values[idx] == 0])
 
         return list_decomp
 
@@ -222,12 +222,12 @@ class TemporaryAND(Operation):
 def _temporary_and_resources():
     number_xs = 4  # worst case scenario
     return {
-        qml.X: number_xs,
-        qml.Hadamard: 2,
-        qml.CNOT: 3,
-        qml.T: 2,
-        qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
-        qml.decomposition.adjoint_resource_rep(qml.S, {}): 1,
+        ops.X: number_xs,
+        ops.Hadamard: 2,
+        ops.CNOT: 3,
+        ops.T: 2,
+        adjoint_resource_rep(ops.T, {}): 2,
+        adjoint_resource_rep(ops.S, {}): 1,
     }
 
 
@@ -235,27 +235,27 @@ def _temporary_and_resources():
 def _temporary_and(wires: WiresLike, **kwargs):
     control_values = kwargs["control_values"]
     if control_values[0] == 0:
-        qml.X(wires[0])
+        ops.X(wires[0])
 
     if control_values[1] == 0:
-        qml.X(wires[1])
+        ops.X(wires[1])
 
-    qml.Hadamard(wires=wires[2])
-    qml.T(wires=wires[2])
-    qml.CNOT(wires=[wires[1], wires[2]])
-    qml.adjoint(qml.T(wires=wires[2]))
-    qml.CNOT(wires=[wires[0], wires[2]])
-    qml.T(wires=wires[2])
-    qml.CNOT(wires=[wires[1], wires[2]])
-    qml.adjoint(qml.T(wires=wires[2]))
-    qml.Hadamard(wires=wires[2])
-    qml.adjoint(qml.S(wires=wires[2]))
+    ops.Hadamard(wires=wires[2])
+    ops.T(wires=wires[2])
+    ops.CNOT(wires=[wires[1], wires[2]])
+    ops.adjoint(ops.T(wires=wires[2]))
+    ops.CNOT(wires=[wires[0], wires[2]])
+    ops.T(wires=wires[2])
+    ops.CNOT(wires=[wires[1], wires[2]])
+    ops.adjoint(ops.T(wires=wires[2]))
+    ops.Hadamard(wires=wires[2])
+    ops.adjoint(ops.S(wires=wires[2]))
 
     if control_values[0] == 0:
-        qml.X(wires[0])
+        ops.X(wires[0])
 
     if control_values[1] == 0:
-        qml.X(wires[1])
+        ops.X(wires[1])
 
 
 add_decomps(TemporaryAND, _temporary_and)

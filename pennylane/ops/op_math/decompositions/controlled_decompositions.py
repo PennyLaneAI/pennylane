@@ -18,6 +18,7 @@ from typing import Optional
 
 import numpy as np
 
+import pennylane as qml
 from pennylane import control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,
@@ -29,6 +30,8 @@ from pennylane.decomposition import (
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
+
+# from pennylane.templates.subroutines.temporary_and import TemporaryAND
 from pennylane.wires import Wires
 
 
@@ -416,12 +419,13 @@ def _decompose_mcx_with_many_workers_condition(num_control_wires, num_work_wires
 
 
 def _decompose_mcx_with_many_workers_resource(num_control_wires, work_wire_type, **__):
+    if work_wire_type == "dirty":
+        return {ops.Toffoli: 4 * (num_control_wires - 2)}
+
     return {
-        ops.Toffoli: (
-            4 * (num_control_wires - 2)
-            if work_wire_type == "dirty"
-            else 2 * (num_control_wires - 2) + 1
-        )
+        qml.TemporaryAND: num_control_wires - 2,
+        adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
+        ops.Toffoli: 1,
     }
 
 
@@ -436,23 +440,29 @@ def _decompose_mcx_with_many_workers(wires, work_wires, work_wire_type, **__):
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
 
+    if work_wire_type == "clean":
+        down_gate = qml.TemporaryAND
+        up_gate = ops.adjoint(qml.TemporaryAND)
+    else:
+        up_gate = down_gate = ops.Toffoli
+
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     @control_flow.for_loop(len(work_wires) - 1, 0, -1)
     def loop_down(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     if work_wire_type == "dirty":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
         loop_up()
 
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
     loop_down()
     ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
     loop_up()
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "dirty":
         loop_down()
@@ -848,7 +858,7 @@ def _single_control_zyz(phi, theta, omega, wires):
 
 def _multi_control_zyz(
     phi, theta, omega, wires, work_wires, work_wire_type
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A

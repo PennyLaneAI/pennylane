@@ -16,8 +16,8 @@ Contains the Permute template.
 """
 import copy
 
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import SWAP
 from pennylane.wires import Wires
 
 
@@ -208,7 +208,7 @@ class Permute(Operation):
                 idx_there = working_order.index(permutation[idx_here])
 
                 # SWAP based on the labels of the wires
-                op_list.append(SWAP(wires=wires.subset([idx_here, idx_there])))
+                op_list.append(ops.SWAP(wires=wires.subset([idx_here, idx_there])))
 
                 # Update the working order to account for the SWAP
                 working_order[idx_here], working_order[idx_there] = (

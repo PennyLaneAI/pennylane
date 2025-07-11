@@ -14,14 +14,14 @@
 r"""
 Contains the FermionicDoubleExcitation template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-branches,too-many-arguments,protected-access,too-many-positional-arguments
 import copy
 
 import numpy as np
 
 import pennylane as qml
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
 
 
@@ -47,24 +47,29 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
           list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [Hadamard(wires=s), Hadamard(wires=r), RX(-np.pi / 2, wires=q), Hadamard(wires=p)]
+    op_list = [
+        ops.Hadamard(wires=s),
+        ops.Hadamard(wires=r),
+        ops.RX(-np.pi / 2, wires=q),
+        ops.Hadamard(wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(weight / 8, wires=p))
+    op_list.append(ops.RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(Hadamard(wires=s))
-    op_list.append(Hadamard(wires=r))
-    op_list.append(RX(np.pi / 2, wires=q))
-    op_list.append(Hadamard(wires=p))
+    op_list.append(ops.Hadamard(wires=s))
+    op_list.append(ops.Hadamard(wires=r))
+    op_list.append(ops.RX(np.pi / 2, wires=q))
+    op_list.append(ops.Hadamard(wires=p))
     return op_list
 
 
@@ -91,28 +96,28 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
-        RX(-np.pi / 2, wires=s),
-        Hadamard(wires=r),
-        RX(-np.pi / 2, wires=q),
-        RX(-np.pi / 2, wires=p),
+        ops.RX(-np.pi / 2, wires=s),
+        ops.Hadamard(wires=r),
+        ops.RX(-np.pi / 2, wires=q),
+        ops.RX(-np.pi / 2, wires=p),
     ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(weight / 8, wires=p))
+    op_list.append(ops.RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(RX(np.pi / 2, wires=s))
-    op_list.append(Hadamard(wires=r))
-    op_list.append(RX(np.pi / 2, wires=q))
-    op_list.append(RX(np.pi / 2, wires=p))
+    op_list.append(ops.RX(np.pi / 2, wires=s))
+    op_list.append(ops.Hadamard(wires=r))
+    op_list.append(ops.RX(np.pi / 2, wires=q))
+    op_list.append(ops.RX(np.pi / 2, wires=p))
     return op_list
 
 
@@ -139,28 +144,28 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
-        Hadamard(wires=s),
-        RX(-np.pi / 2, wires=r),
-        RX(-np.pi / 2, wires=q),
-        RX(-np.pi / 2, wires=p),
+        ops.Hadamard(wires=s),
+        ops.RX(-np.pi / 2, wires=r),
+        ops.RX(-np.pi / 2, wires=q),
+        ops.RX(-np.pi / 2, wires=p),
     ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(weight / 8, wires=p))
+    op_list.append(ops.RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(Hadamard(wires=s))
-    op_list.append(RX(np.pi / 2, wires=r))
-    op_list.append(RX(np.pi / 2, wires=q))
-    op_list.append(RX(np.pi / 2, wires=p))
+    op_list.append(ops.Hadamard(wires=s))
+    op_list.append(ops.RX(np.pi / 2, wires=r))
+    op_list.append(ops.RX(np.pi / 2, wires=q))
+    op_list.append(ops.RX(np.pi / 2, wires=p))
     return op_list
 
 
@@ -186,24 +191,29 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [Hadamard(wires=s), Hadamard(wires=r), Hadamard(wires=q), RX(-np.pi / 2, wires=p)]
+    op_list = [
+        ops.Hadamard(wires=s),
+        ops.Hadamard(wires=r),
+        ops.Hadamard(wires=q),
+        ops.RX(-np.pi / 2, wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(weight / 8, wires=p))
+    op_list.append(ops.RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(Hadamard(wires=s))
-    op_list.append(Hadamard(wires=r))
-    op_list.append(Hadamard(wires=q))
-    op_list.append(RX(np.pi / 2, wires=p))
+    op_list.append(ops.Hadamard(wires=s))
+    op_list.append(ops.Hadamard(wires=r))
+    op_list.append(ops.Hadamard(wires=q))
+    op_list.append(ops.RX(np.pi / 2, wires=p))
     return op_list
 
 
@@ -229,24 +239,29 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [RX(-np.pi / 2, wires=s), Hadamard(wires=r), Hadamard(wires=q), Hadamard(wires=p)]
+    op_list = [
+        ops.RX(-np.pi / 2, wires=s),
+        ops.Hadamard(wires=r),
+        ops.Hadamard(wires=q),
+        ops.Hadamard(wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(-weight / 8, wires=p))
+    op_list.append(ops.RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(RX(np.pi / 2, wires=s))
-    op_list.append(Hadamard(wires=r))
-    op_list.append(Hadamard(wires=q))
-    op_list.append(Hadamard(wires=p))
+    op_list.append(ops.RX(np.pi / 2, wires=s))
+    op_list.append(ops.Hadamard(wires=r))
+    op_list.append(ops.Hadamard(wires=q))
+    op_list.append(ops.Hadamard(wires=p))
     return op_list
 
 
@@ -272,24 +287,29 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [Hadamard(wires=s), RX(-np.pi / 2, wires=r), Hadamard(wires=q), Hadamard(wires=p)]
+    op_list = [
+        ops.Hadamard(wires=s),
+        ops.RX(-np.pi / 2, wires=r),
+        ops.Hadamard(wires=q),
+        ops.Hadamard(wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(-weight / 8, wires=p))
+    op_list.append(ops.RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(Hadamard(wires=s))
-    op_list.append(RX(np.pi / 2, wires=r))
-    op_list.append(Hadamard(wires=q))
-    op_list.append(Hadamard(wires=p))
+    op_list.append(ops.Hadamard(wires=s))
+    op_list.append(ops.RX(np.pi / 2, wires=r))
+    op_list.append(ops.Hadamard(wires=q))
+    op_list.append(ops.Hadamard(wires=p))
     return op_list
 
 
@@ -316,28 +336,28 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
-        RX(-np.pi / 2, wires=s),
-        RX(-np.pi / 2, wires=r),
-        RX(-np.pi / 2, wires=q),
-        Hadamard(wires=p),
+        ops.RX(-np.pi / 2, wires=s),
+        ops.RX(-np.pi / 2, wires=r),
+        ops.RX(-np.pi / 2, wires=q),
+        ops.Hadamard(wires=p),
     ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(-weight / 8, wires=p))
+    op_list.append(ops.RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(RX(np.pi / 2, wires=s))
-    op_list.append(RX(np.pi / 2, wires=r))
-    op_list.append(RX(np.pi / 2, wires=q))
-    op_list.append(Hadamard(wires=p))
+    op_list.append(ops.RX(np.pi / 2, wires=s))
+    op_list.append(ops.RX(np.pi / 2, wires=r))
+    op_list.append(ops.RX(np.pi / 2, wires=q))
+    op_list.append(ops.Hadamard(wires=p))
     return op_list
 
 
@@ -364,28 +384,28 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list = [
-        RX(-np.pi / 2, wires=s),
-        RX(-np.pi / 2, wires=r),
-        Hadamard(wires=q),
-        RX(-np.pi / 2, wires=p),
+        ops.RX(-np.pi / 2, wires=s),
+        ops.RX(-np.pi / 2, wires=r),
+        ops.Hadamard(wires=q),
+        ops.RX(-np.pi / 2, wires=p),
     ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    op_list.append(RZ(-weight / 8, wires=p))
+    op_list.append(ops.RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        op_list.append(CNOT(wires=cnot_wires))
+        op_list.append(ops.CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    op_list.append(RX(np.pi / 2, wires=s))
-    op_list.append(RX(np.pi / 2, wires=r))
-    op_list.append(Hadamard(wires=q))
-    op_list.append(RX(np.pi / 2, wires=p))
+    op_list.append(ops.RX(np.pi / 2, wires=s))
+    op_list.append(ops.RX(np.pi / 2, wires=r))
+    op_list.append(ops.Hadamard(wires=q))
+    op_list.append(ops.RX(np.pi / 2, wires=p))
     return op_list
 
 

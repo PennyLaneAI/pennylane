@@ -18,8 +18,8 @@ Contains the ApproxTimeEvolution template.
 import copy
 
 import pennylane as qml
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import PauliRot
 from pennylane.wires import Wires
 
 
@@ -215,7 +215,7 @@ class ApproxTimeEvolution(Operation):
                 theta = 2 * time * coeff / n
                 term_str = "".join(pw.values())
                 wires = qml.wires.Wires(pw.keys())
-                single_round.append(PauliRot(theta, term_str, wires=wires))
+                single_round.append(ops.PauliRot(theta, term_str, wires=wires))
 
         full_decomp = single_round * n
         if qml.QueuingManager.recording():
