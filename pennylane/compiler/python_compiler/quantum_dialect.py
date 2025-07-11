@@ -32,6 +32,7 @@ from xdsl.dialects.builtin import (
     I64,
     AnyAttr,
     Float64Type,
+    FloatAttr,
     IntegerAttr,
     IntegerType,
     StringAttr,
@@ -438,9 +439,13 @@ class GlobalPhaseOp(IRDLOperation):
 
     name = "quantum.gphase"
 
-    # assembly_format = """
-    #        `(` $params `)` attr-dict ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  ( `ctrlvals` `(` $in_ctrl_values^ `)` )? `:` (`ctrls` type($out_ctrl_qubits)^ )?
-    #    """
+    assembly_format = """
+           `(` $params `)` 
+           attr-dict 
+           ( `ctrls` `(` $in_ctrl_qubits^ `)` )?  
+           ( `ctrlvals` `(` $in_ctrl_values^ `)` )? 
+           `:` type(results)
+       """
 
     irdl_options = [
         AttrSizedOperandSegments(as_property=True),
@@ -449,13 +454,44 @@ class GlobalPhaseOp(IRDLOperation):
 
     params = operand_def(Float64Type())
 
-    adjoint = opt_prop_def(UnitAttr)
-
     in_ctrl_qubits = var_operand_def(QubitType)
 
     in_ctrl_values = var_operand_def(IntegerType(1))
 
     out_ctrl_qubits = var_result_def(QubitType)
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        *,
+        params: float | SSAValue[Float64Type],
+        in_ctrl_qubits: (
+            QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
+        ) = None,
+        in_ctrl_values: (
+            SSAValue[IntegerType]
+            | Operation
+            | Sequence[SSAValue[IntegerType]]
+            | Sequence[Operation]
+            | None
+        ) = None,
+    ):
+        if isinstance(params, float):
+            params = FloatAttr(data=params, type=Float64Type())
+        in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
+        in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
+
+        if not isinstance(in_ctrl_qubits, Sequence):
+            in_ctrl_qubits = (in_ctrl_qubits,)
+        if not isinstance(in_ctrl_values, Sequence):
+            in_ctrl_values = (in_ctrl_values,)
+
+        out_ctrl_qubits = tuple(QubitType() for _ in in_ctrl_qubits)
+
+        super().__init__(
+            operands=(params, in_ctrl_qubits, in_ctrl_values),
+            result_types=(out_ctrl_qubits,),
+        )
 
 
 @irdl_op_definition

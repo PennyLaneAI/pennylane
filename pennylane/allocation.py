@@ -24,6 +24,9 @@ from pennylane.wires import Wires
 has_jax = True
 try:
     import jax
+
+    # pylint: disable=ungrouped-imports
+    from pennylane.capture import QmlPrimitive
 except ImportError:
     jax = None
     has_jax = False
@@ -33,7 +36,7 @@ if not has_jax:
     allocate_prim = None
     deallocate_prim = None
 else:
-    allocate_prim = jax.extend.core.Primitive("allocate")
+    allocate_prim = QmlPrimitive("allocate")
     allocate_prim.multiple_results = True
 
     # pylint: disable=unused-argument
@@ -46,7 +49,7 @@ else:
     def _(*, num_wires, require_zeros=True, restored=False):
         return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
 
-    deallocate_prim = jax.extend.core.Primitive("deallocate")
+    deallocate_prim = QmlPrimitive("deallocate")
     deallocate_prim.multiple_results = True
 
     # pylint: disable=unused-argument
