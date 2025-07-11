@@ -14,30 +14,49 @@
 """
 This file contains all the custom exceptions and warnings used in PennyLane.
 """
+# pragma: no cover
+
+# =============================================================================
+# General Execution and Quantum Function Errors
+# =============================================================================
 
 
 class CaptureError(Exception):
     """Errors related to PennyLane's Program Capture execution pipeline."""
 
 
-class DeviceError(Exception):  # pragma: no cover
+class DeviceError(Exception):
     """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
 
-class QuantumFunctionError(Exception):  # pragma: no cover
+class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
-class PennyLaneDeprecationWarning(UserWarning):  # pragma: no cover
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-class ExperimentalWarning(UserWarning):  # pragma: no cover
-    """Warning raised to indicate experimental/non-stable feature or support."""
-
-
-class TransformError(Exception):  # pragma: no cover
+class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
+
+
+class ConditionalTransformError(ValueError):
+    """Error for using qml.cond incorrectly"""
+
+
+class QueuingError(Exception):
+    """Exception that is raised when there is a queuing error"""
+
+
+class WireError(Exception):
+    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
+
+
+class MeasurementShapeError(ValueError):
+    """An error raised when an unsupported operation is attempted with a
+    quantum tape."""
+
+
+# =============================================================================
+# Operator Property Errors
+# =============================================================================
 
 
 class OperatorPropertyUndefined(Exception):
@@ -87,12 +106,30 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     does not have parameter_frequencies"""
 
 
-class AutoGraphError(Exception):
-    """Errors related to PennyLane's AutoGraph submodule."""
+# =============================================================================
+# Warnings
+# =============================================================================
+
+
+class PennyLaneDeprecationWarning(UserWarning):
+    """Warning raised when a PennyLane feature is being deprecated."""
+
+
+class ExperimentalWarning(UserWarning):
+    """Warning raised to indicate experimental/non-stable feature or support."""
 
 
 class AutoGraphWarning(Warning):
     """Warnings related to PennyLane's AutoGraph submodule."""
+
+
+# =============================================================================
+# Autograph and Compilation Errors
+# =============================================================================
+
+
+class AutoGraphError(Exception):
+    """Errors related to PennyLane's AutoGraph submodule."""
 
 
 class CompileError(Exception):
@@ -107,23 +144,6 @@ class InvalidCapabilitiesError(Exception):
     """Exception raised from invalid TOML files."""
 
 
-class MeasurementShapeError(ValueError):
-    """An error raised when an unsupported operation is attempted with a
-    quantum tape."""
-
-
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
     :class:`~.tensor` using Autograd."""
-
-
-class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
-
-
-class QueuingError(Exception):
-    """Exception that is raised when there is a queuing error"""
-
-
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
