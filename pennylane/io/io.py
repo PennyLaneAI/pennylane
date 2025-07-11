@@ -843,14 +843,14 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict = None):
+def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
         The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Built-in mathematical functions and
         constants, custom gates, and pulses are not yet supported. The remaining standard library gates,
-        subroutines, variables, control flow, measurements and ``end`` statements are all supported.
+        subroutines, variables, control flow, measurements, inputs and ``end`` statements are all supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
         environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
@@ -939,6 +939,6 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         ) from e
 
     def interpret_function():
-        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map})
+        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map}, **kwargs)
 
     return interpret_function
