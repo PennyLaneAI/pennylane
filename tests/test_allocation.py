@@ -198,7 +198,7 @@ def test_allocate_context_manager():
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestCaptureIntegration:
 
     @pytest.mark.parametrize("use_context", (True, False))

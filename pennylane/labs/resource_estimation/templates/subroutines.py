@@ -1131,3 +1131,350 @@ class ResourceQROM(ResourceOperator):
             "clean": clean,
         }
         return CompressedResourceOp(cls, params)
+
+
+class ResourceQubitUnitary(ResourceOperator):
+    r"""Resource class for the QubitUnitary template.
+
+    Args:
+        num_wires (int): the number of qubits the operation acts upon
+        precision (Union[float, None], optional): The precision used when preparing the single qubit
+            rotations used to synthesize the n-qubit unitary.
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are defined by combining the two equalities in `Möttönen and Vartiainen
+        (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_ , we can express an :math:`n`
+        qubit unitary as four :math:`n - 1` qubit unitaries and three multiplexed rotations
+        via ( :class:`~.labs.resource_estimation.ResourceSelectPauliRot` ). Specifically, the cost
+        is given by:
+
+        * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
+
+        * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
+
+        * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
+
+    .. seealso:: :class:`~.QubitUnitary`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> qu = plre.ResourceQubitUnitary(num_wires=3)
+    >>> print(plre.estimate_resources(qu, gate_set))
+    --- Resources: ---
+     Total qubits: 3
+     Total gates : 52
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+     Gate breakdown:
+      {'RZ': 24, 'CNOT': 24, 'RY': 4}
+    """
+
+    resource_keys = {"num_wires", "precision"}
+
+    def __init__(self, num_wires, precision=None, wires=None):
+        self.num_wires = num_wires
+        self.precision = precision
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of qubits the operation acts upon
+                * precision (Union[float, None], optional): The precision used when preparing the
+                  single qubit rotations used to synthesize the n-qubit unitary.
+        """
+        return {"num_wires": self.num_wires, "precision": self.precision}
+
+    @classmethod
+    def resource_rep(cls, num_wires, precision) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            precision (Union[float, None], optional): The precision used when preparing the single
+                qubit rotations used to synthesize the n-qubit unitary.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {"num_wires": num_wires, "precision": precision}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(cls, num_wires, precision=None, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of qubits the operation acts upon
+            precision (Union[float, None], optional): The precision used when preparing the single
+                qubit rotations used to synthesize the n-qubit unitary.
+
+        Resources:
+            The resources are defined by combining the two equalities in `Möttönen and Vartiainen
+            (2005), Fig 14 <https://arxiv.org/pdf/quant-ph/0504100>`_, we can express an :math:`n`-
+            qubit unitary as four :math:`n - 1`-qubit unitaries and three multiplexed rotations
+            via (:class:`~.labs.resource_estimation.ResourceSelectPauliRot`). Specifically, the cost
+            is given by:
+
+            * 1-qubit unitary, the cost is approximated as a single :code:`RZ` rotation.
+
+            * 2-qubit unitary, the cost is approximated as four single qubit rotations and three :code:`CNOT` gates.
+
+            * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_lst = []
+        precision = precision or kwargs["config"]["precision_qubit_unitary"]
+
+        one_qubit_decomp_cost = [GateCount(resource_rep(re.ResourceRZ, {"eps": precision}))]
+        two_qubit_decomp_cost = [
+            GateCount(resource_rep(re.ResourceRZ, {"eps": precision}), 4),
+            GateCount(resource_rep(re.ResourceCNOT), 3),
+        ]
+
+        if num_wires == 1:
+            return one_qubit_decomp_cost
+
+        if num_wires == 2:
+            return two_qubit_decomp_cost
+
+        for gc in two_qubit_decomp_cost:
+            gate_lst.append(4 ** (num_wires - 2) * gc)
+
+        for index in range(2, num_wires):
+            multiplex_z = resource_rep(
+                ResourceSelectPauliRot,
+                {
+                    "num_ctrl_wires": index,
+                    "rotation_axis": "Z",
+                    "precision": precision,
+                },
+            )
+            multiplex_y = resource_rep(
+                ResourceSelectPauliRot,
+                {
+                    "num_ctrl_wires": index,
+                    "rotation_axis": "Y",
+                    "precision": precision,
+                },
+            )
+
+            gate_lst.append(GateCount(multiplex_z, 2 * 4 ** (num_wires - (1 + index))))
+            gate_lst.append(GateCount(multiplex_y, 4 ** (num_wires - (1 + index))))
+
+        return gate_lst
+
+
+class ResourceSelectPauliRot(ResourceOperator):
+    r"""Resource class for the SelectPauliRot gate.
+
+    Args:
+        rotation_axis (str): the rotation axis used in the multiplexer
+        num_ctrl_wires (int): the number of control wires of the multiplexer
+        precision (float): the precision used in the single qubit rotations
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
+        (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources
+        for an :math:`n` qubit unitary are given as :math:`2^{n}` instances of the :code:`CNOT`
+        gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
+        :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
+
+    .. seealso:: :class:`~.SelectPauliRot`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> mltplxr = plre.ResourceSelectPauliRot(
+    ...     rotation_axis = "Y",
+    ...     num_ctrl_wires = 4,
+    ...     precision = 1e-3,
+    ... )
+    >>> print(plre.estimate_resources(mltplxr, plre.StandardGateSet))
+    --- Resources: ---
+     Total qubits: 5
+     Total gates : 32
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 5
+     Gate breakdown:
+      {'RY': 16, 'CNOT': 16}
+    """
+
+    resource_keys = {"num_ctrl_wires", "rotation_axis", "precision"}
+
+    def __init__(self, rotation_axis: str, num_ctrl_wires: int, precision=None, wires=None) -> None:
+        if rotation_axis not in ("X", "Y", "Z"):
+            raise ValueError("The `rotation_axis` argument must be one of ('X', 'Y', 'Z')")
+
+        self.num_ctrl_wires = num_ctrl_wires
+        self.rotation_axis = rotation_axis
+        self.precision = precision
+
+        self.num_wires = num_ctrl_wires + 1
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+            * rotation_axis (str): the rotation axis used in the multiplexer
+            * num_ctrl_wires (int): the number of control wires of the multiplexer
+            * precision (float): the precision used in the single qubit rotations
+        """
+        return {
+            "num_ctrl_wires": self.num_ctrl_wires,
+            "rotation_axis": self.rotation_axis,
+            "precision": self.precision,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_ctrl_wires, rotation_axis, precision=None):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            rotation_axis (str): the rotation axis used in the multiplexer
+            num_ctrl_wires (int): the number of control wires of the multiplexer
+            precision (float): the precision used in the single qubit rotations
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(
+            cls,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "rotation_axis": rotation_axis,
+                "precision": precision,
+            },
+        )
+
+    @classmethod
+    def default_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            rotation_axis (str): the rotation axis used in the multiplexer
+            num_ctrl_wires (int): the number of control wires of the multiplexer
+            precision (float): the precision used in the single qubit rotations
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            The resources are obtained from the construction scheme given in `Möttönen and Vartiainen
+            (2005), Fig 7a <https://arxiv.org/abs/quant-ph/0504100>`_. Specifically, the resources
+            for an :math:`n` qubit unitary are given as :math:`2^{n}` instances of the :code:`CNOT`
+            gate and :math:`2^{n}` instances of the single qubit rotation gate (:code:`RX`,
+            :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        rotation_gate_map = {
+            "X": re.ResourceRX,
+            "Y": re.ResourceRY,
+            "Z": re.ResourceRZ,
+        }
+        precision = precision or kwargs["config"]["precision_select_pauli_rot"]
+
+        gate = resource_rep(rotation_gate_map[rotation_axis], {"eps": precision})
+        cnot = resource_rep(re.ResourceCNOT)
+
+        gate_lst = [
+            GateCount(gate, 2**num_ctrl_wires),
+            GateCount(cnot, 2**num_ctrl_wires),
+        ]
+
+        return gate_lst
+
+    @classmethod
+    def phase_grad_resource_decomp(cls, num_ctrl_wires, rotation_axis, precision, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            rotation_axis (str): the rotation axis used in the multiplexer
+            num_ctrl_wires (int): the number of control wires of the multiplexer
+            precision (float): the precision used in the single qubit rotations
+            wires (Sequence[int], optional): the wires the operation acts on
+
+        Resources:
+            The resources are obtained from the construction scheme given in `O'Brien and Sünderhauf
+            (2025), Fig 4 <https://arxiv.org/pdf/2409.07332>`_. Specifically, the resources
+            use two :code:`~.labs.resource_estimation.ResourceQROM`s to digitally load and unload
+            the phase angles up to some precision. These are then applied using a single controlled
+            :code:`~.labs.resource_estimation.ResourceSemiAdder`.
+
+            .. note::
+
+                This method assumes a phase gradient state is prepared on an auxiliary register.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        precision = precision or kwargs["config"]["precision_select_pauli_rot"]
+        num_prec_wires = abs(math.floor(math.log2(precision)))
+        gate_lst = []
+
+        qrom = resource_rep(
+            re.ResourceQROM,
+            {
+                "num_bitstrings": 2**num_ctrl_wires,
+                "num_bit_flips": 2**num_ctrl_wires * num_prec_wires / 2,
+                "size_bitstring": num_prec_wires,
+                "clean": False,
+            },
+        )
+
+        gate_lst.append(AllocWires(num_prec_wires))
+        gate_lst.append(GateCount(qrom))
+        gate_lst.append(
+            GateCount(
+                resource_rep(
+                    re.ResourceControlled,
+                    {
+                        "base_cmpr_op": resource_rep(
+                            re.ResourceSemiAdder,
+                            {"max_register_size": num_prec_wires},
+                        ),
+                        "num_ctrl_wires": 1,
+                        "num_ctrl_values": 0,
+                    },
+                )
+            )
+        )
+        gate_lst.append(GateCount(resource_rep(re.ResourceAdjoint, {"base_cmpr_op": qrom})))
+        gate_lst.append(FreeWires(num_prec_wires))
+
+        h = resource_rep(re.ResourceHadamard)
+        s = resource_rep(re.ResourceS)
+        s_dagg = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": s})
+
+        if rotation_axis == "X":
+            gate_lst.append(GateCount(h, 2))
+        if rotation_axis == "Y":
+            gate_lst.append(GateCount(h, 2))
+            gate_lst.append(GateCount(s))
+            gate_lst.append(GateCount(s_dagg))
+
+        return gate_lst
