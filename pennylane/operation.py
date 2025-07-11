@@ -122,28 +122,6 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
-Errors
-~~~~~~
-
-When an :class:`~.Operator` method is undefined, it raises a error type that depends
-on the method that is undefined.
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~OperatorPropertyUndefined
-    ~AdjointUndefinedError
-    ~DecompositionUndefinedError
-    ~DiagGatesUndefinedError
-    ~EigvalsUndefinedError
-    ~GeneratorUndefinedError
-    ~MatrixUndefinedError
-    ~ParameterFrequenciesUndefinedError
-    ~PowUndefinedError
-    ~SparseMatrixUndefinedError
-    ~TermsUndefinedError
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
