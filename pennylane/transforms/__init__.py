@@ -325,3 +325,31 @@ from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+
+
+def __getattr__(name):
+    if name in {
+        "add_noise",
+        "insert",
+        "mitigate_with_zne",
+        "fold_global",
+        "poly_extrapolate",
+        "richardson_extrapolate",
+        "exponential_extrapolate",
+    }:  # pragma: no cover
+
+        # pylint: disable=import-outside-toplevel
+        import warnings
+        from pennylane import exceptions
+        from pennylane import noise
+
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible from the transforms module \
+                and must be imported as pennylane.noise.{name}. \
+                    Support for access through this module will be removed in v0.44.",
+            exceptions.PennyLaneDeprecationWarning,
+        )
+
+        return getattr(noise, name)
+
+    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
