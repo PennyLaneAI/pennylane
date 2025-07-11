@@ -17,10 +17,9 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import hashlib
 import uuid
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterable
 from copy import copy
 from functools import lru_cache
-from typing import Iterable, Optional, Union
 
 import numpy as np
 
@@ -74,11 +73,11 @@ def _create_parametrized_mid_measure_primitive():
 
 
 def measure_arbitrary_basis(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     angle: float,
     plane: str,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the basis defined by the plane and angle on the
     supplied qubit.
@@ -187,9 +186,9 @@ def measure_arbitrary_basis(
 
 
 def measure_x(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the X basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -236,9 +235,9 @@ def measure_x(
 
 
 def measure_y(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the Y basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -285,9 +284,9 @@ def measure_y(
 
 
 def measure_z(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     reset: bool = False,
-    postselect: Optional[int] = None,
+    postselect: int | None = None,
 ):
     r"""Perform a mid-circuit measurement in the Z basis. The measurements are performed using the 0, 1
     convention rather than the ±1 convention.
@@ -318,7 +317,7 @@ def measure_z(
 
 
 def _measure_impl(
-    wires: Union[Hashable, Wires],
+    wires: Hashable | Wires,
     measurement_class=MidMeasureMP,
     **kwargs,
 ):
@@ -365,13 +364,13 @@ class ParametricMidMeasureMP(MidMeasureMP):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        wires: Optional[Wires],
+        wires: Wires | None,
         *,
-        angle: Optional[float],
-        plane: Optional[str],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        angle: float | None,
+        plane: str | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         self.batch_size = None
         super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, id=id)
@@ -482,10 +481,10 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     def __init__(
         self,
-        wires: Optional[Wires],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: Wires | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         super().__init__(
             wires=Wires(wires), angle=0, plane="XY", reset=reset, postselect=postselect, id=id
@@ -540,10 +539,10 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     def __init__(
         self,
-        wires: Optional[Wires],
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: Wires | None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         super().__init__(
             wires=Wires(wires),

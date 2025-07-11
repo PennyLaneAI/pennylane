@@ -19,7 +19,6 @@ from collections import Counter
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Optional
 
 import numpy as np
 
@@ -276,9 +275,9 @@ class QubitSum(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
 
@@ -431,7 +430,7 @@ class IntegerComparator(Operation):
         value: int,
         wires: WiresLike,
         geq: bool = True,
-        work_wires: Optional[WiresLike] = None,
+        work_wires: WiresLike | None = None,
     ):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
@@ -475,16 +474,16 @@ class IntegerComparator(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
+        control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -556,7 +555,7 @@ class IntegerComparator(Operation):
         value: int,
         wires: WiresLike,
         geq: bool = True,
-        work_wires: Optional[WiresLike] = None,
+        work_wires: WiresLike | None = None,
         **kwargs,
     ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).

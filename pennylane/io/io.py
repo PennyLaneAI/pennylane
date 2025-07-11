@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import wraps
 from importlib import metadata
 from sys import version_info
-from typing import Any, Optional
+from typing import Any
 
 from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
 
@@ -628,10 +628,10 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
 def to_openqasm(
     qnode,
-    wires: Optional[WiresLike] = None,
+    wires: WiresLike | None = None,
     rotations: bool = True,
     measure_all: bool = True,
-    precision: Optional[int] = None,
+    precision: int | None = None,
 ) -> Callable[[Any], str]:
     """Convert a circuit to an OpenQASM 2.0 program.
 

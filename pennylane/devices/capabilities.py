@@ -15,10 +15,10 @@
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Callable, Optional, Union
 
 import tomlkit as toml
 
@@ -35,7 +35,7 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         return toml.load(file)
 
 
@@ -81,7 +81,7 @@ class OperatorProperties:
         )
 
 
-def _get_supported_base_op(op_name: str, op_dict: dict[str, OperatorProperties]) -> Optional[str]:
+def _get_supported_base_op(op_name: str, op_dict: dict[str, OperatorProperties]) -> str | None:
     """Checks if the given operator is supported by name, returns the base op for nested ops"""
 
     if op_name in op_dict:
@@ -179,12 +179,12 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
 
-    def supports_operation(self, operation: Union[str, Operator]) -> bool:
+    def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
         operation_name = operation if isinstance(operation, str) else operation.name
         return bool(_get_supported_base_op(operation_name, self.operations))
 
-    def supports_observable(self, observable: Union[str, Operator]) -> bool:
+    def supports_observable(self, observable: str | Operator) -> bool:
         """Checks if the given observable is supported by name."""
         observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))

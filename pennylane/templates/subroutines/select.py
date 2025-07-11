@@ -275,7 +275,7 @@ class Select(Operation):
 
     """
 
-    resource_keys = set(["ops"])
+    resource_keys = {"ops"}
 
     def _flatten(self):
         return (self.ops), (self.control, self.hyperparameters["work_wires"])

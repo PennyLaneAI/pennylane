@@ -14,9 +14,8 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from types import FunctionType
-from typing import Type, Union
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -54,9 +53,9 @@ def _check_position(position):
 @transform
 def insert(
     tape: QuantumScript,
-    op: Union[callable, Type[Operation]],
-    op_args: Union[tuple, float],
-    position: Union[str, list, Type[Operation]] = "all",
+    op: Callable | type[Operation],
+    op_args: tuple | float,
+    position: str | list | type[Operation] = "all",
     before: bool = False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.

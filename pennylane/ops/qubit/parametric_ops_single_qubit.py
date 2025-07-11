@@ -18,7 +18,6 @@ core parametrized gates.
 """
 # pylint: disable=arguments-differ
 import functools
-from typing import Optional, Union
 
 import numpy as np
 import scipy as sp
@@ -92,7 +91,7 @@ class RX(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -144,7 +143,7 @@ class RX(Operation):
     def adjoint(self) -> "RX":
         return RX(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRX":
@@ -260,7 +259,7 @@ class RY(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -312,7 +311,7 @@ class RY(Operation):
     def adjoint(self) -> "RY":
         return RY(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRY":
@@ -425,7 +424,7 @@ class RZ(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -515,7 +514,7 @@ class RZ(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.CRZ":
@@ -632,14 +631,14 @@ class PhaseShift(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
@@ -746,7 +745,7 @@ class PhaseShift(Operation):
     def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire: WiresLike) -> "qml.ControlledPhaseShift":
@@ -873,7 +872,7 @@ class Rot(Operation):
         theta: TensorLike,
         omega: TensorLike,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
 
@@ -994,7 +993,7 @@ class Rot(Operation):
         H(0)
 
         """
-        p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
+        p0, p1, p2 = (p % (4 * np.pi) for p in self.data)
 
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qml.Identity(wires=self.wires)
@@ -1111,7 +1110,7 @@ class U1(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1181,7 +1180,7 @@ class U1(Operation):
     def adjoint(self) -> "U1":
         return U1(-self.data[0], wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [U1(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
@@ -1256,9 +1255,7 @@ class U2(Operation):
 
     resource_keys = set()
 
-    def __init__(
-        self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
-    ):
+    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, delta, wires=wires, id=id)
 
     @property
@@ -1345,7 +1342,7 @@ class U2(Operation):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        phi, delta = [p % (2 * np.pi) for p in self.data]
+        phi, delta = (p % (2 * np.pi) for p in self.data)
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
             return RY(np.pi / 2, wires=wires)
@@ -1439,7 +1436,7 @@ class U3(Operation):
         phi: TensorLike,
         delta: TensorLike,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
 
@@ -1550,7 +1547,7 @@ class U3(Operation):
         params = self.parameters
 
         p0 = params[0] % (4 * np.pi)
-        p1, p2 = [p % (2 * np.pi) for p in params[1:]]
+        p1, p2 = (p % (2 * np.pi) for p in params[1:])
 
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qml.Identity(wires=wires)

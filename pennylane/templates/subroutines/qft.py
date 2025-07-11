@@ -150,7 +150,7 @@ class QFT(Operation):
         return self.compute_decomposition(wires=self.wires)
 
     @staticmethod
-    @functools.lru_cache()
+    @functools.lru_cache
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2**n_wires), norm="ortho")
 

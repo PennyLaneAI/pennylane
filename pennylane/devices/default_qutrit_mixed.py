@@ -18,7 +18,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Optional, Union
 
 import numpy as np
 
@@ -288,8 +287,8 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -386,7 +385,7 @@ class DefaultQutritMixed(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

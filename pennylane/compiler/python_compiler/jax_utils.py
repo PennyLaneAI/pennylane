@@ -14,8 +14,9 @@
 
 """Utilities for translating JAX to xDSL"""
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeAlias
+from typing import TypeAlias
 
 import jaxlib
 from catalyst import QJIT

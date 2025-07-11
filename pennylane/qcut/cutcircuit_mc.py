@@ -18,7 +18,6 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
 import inspect
 from collections.abc import Callable
 from functools import partial
-from typing import Optional, Union
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -53,11 +52,11 @@ from .utils import (
 # pylint: disable=too-many-positional-arguments
 def _cut_circuit_mc_expand(
     tape: QuantumScript,
-    classical_processing_fn: Optional[callable] = None,
+    classical_processing_fn: Callable | None = None,
     max_depth: int = 1,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
-    auto_cutter: Union[bool, Callable] = False,
+    shots: int | None = None,
+    device_wires: Wires | None = None,
+    auto_cutter: bool | Callable = False,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
@@ -74,11 +73,11 @@ def _cut_circuit_mc_expand(
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
     tape: QuantumScript,
-    classical_processing_fn: Optional[callable] = None,
-    auto_cutter: Union[bool, Callable] = False,
+    classical_processing_fn: Callable | None = None,
+    auto_cutter: bool | Callable = False,
     max_depth: int = 1,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
+    shots: int | None = None,
+    device_wires: Wires | None = None,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """

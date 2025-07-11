@@ -19,7 +19,7 @@ to be passed in as options.
 """
 
 import io
-from typing import Callable
+from collections.abc import Callable
 
 from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context

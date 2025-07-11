@@ -16,9 +16,10 @@ This module contains a developer focused execution function for internal executi
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
@@ -42,8 +43,8 @@ if TYPE_CHECKING:
 
 
 def _construct_tf_autograph_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     inner_transform_program: TransformProgram,
 ):
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
@@ -106,8 +107,8 @@ def _construct_tf_autograph_pipeline(
 
 
 def _construct_ml_execution_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     inner_transform_program: TransformProgram,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
@@ -177,7 +178,7 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: "qml.devices.ExecutionConfig", differentiable=False
+    resolved_execution_config: qml.devices.ExecutionConfig, differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
@@ -264,8 +265,8 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 def run(
     tapes: QuantumScriptBatch,
-    device: "qml.devices.Device",
-    config: "qml.devices.ExecutionConfig",
+    device: qml.devices.Device,
+    config: qml.devices.ExecutionConfig,
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.

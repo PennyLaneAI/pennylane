@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
 import warnings
-from typing import Union
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -22,8 +21,8 @@ from pennylane.pauli import PauliSentence, PauliWord
 
 
 def center(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
-) -> list[Union[Operator, PauliSentence]]:
+    g: list[Operator | PauliWord | PauliSentence], pauli: bool = False
+) -> list[Operator | PauliSentence]:
     r"""
     A function to compute the center of a Lie algebra.
 
