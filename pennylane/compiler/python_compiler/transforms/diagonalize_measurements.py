@@ -97,7 +97,7 @@ class DiagonalizeFinalMeasurementsPattern(
 class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
     """Pass for merging consecutive composable rotation gates."""
 
-    name = "diagonalize-final-measurements"
+    name = "diagonalize-measurements"
 
     # pylint: disable=arguments-renamed
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
